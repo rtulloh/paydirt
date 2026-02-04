@@ -308,3 +308,68 @@ class TestPuntDownAndDistance:
             # Kicking team still has possession
             assert game.state.is_home_possession is True
             assert "FUMBLE" in outcome.description
+
+
+class TestPuntReturnCommentary:
+    """Tests for punt return commentary based on return yardage."""
+    
+    def test_long_return_commentary(self, game):
+        """Long punt returns (30+ yards) should have 'What a return!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, return 35 yards
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (14, "B1+W4+W0=14")]
+            
+            # Patch the return chart to return 35 yards
+            game.state.defense_team.special_teams.punt_return[14] = "35"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "What a return!" in outcome.description
+    
+    def test_good_return_commentary(self, game):
+        """Good punt returns (20-29 yards) should have 'Great return!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, return 22 yards
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (14, "B1+W4+W0=14")]
+            
+            # Patch the return chart to return 22 yards
+            game.state.defense_team.special_teams.punt_return[14] = "22"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "Great return!" in outcome.description
+    
+    def test_no_return_coverage_commentary(self, game):
+        """No return (0 yards) should have 'Excellent coverage!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, return 0 yards
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (15, "B1+W5+W0=15")]
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "Excellent coverage!" in outcome.description
+    
+    def test_negative_return_coverage_commentary(self, game):
+        """Negative return should have 'Outstanding special teams coverage!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, return -5 yards
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (14, "B1+W4+W0=14")]
+            
+            # Patch the return chart to return -5 yards
+            game.state.defense_team.special_teams.punt_return[14] = "-5"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "Outstanding special teams coverage!" in outcome.description

@@ -315,6 +315,20 @@ class PaydirtGameEngine:
             self._score_touchdown()
         
         # Build description based on result
+        # Add commentary for exceptional returns
+        return_commentary = ""
+        if not is_touchback and "OB" not in ko_result and "OUT" not in ko_result.upper():
+            # Calculate actual return yards (from landing spot to final position)
+            actual_return = return_position - landing_spot if landing_spot > 0 else return_position
+            if actual_return >= 40:
+                return_commentary = " What a return!"
+            elif actual_return >= 30:
+                return_commentary = " Great return!"
+            elif actual_return <= 5 and actual_return >= 0:
+                return_commentary = " Excellent coverage!"
+            elif actual_return < 0:
+                return_commentary = " Outstanding special teams coverage!"
+        
         if touchdown:
             description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN!"
         elif is_touchback:
@@ -322,7 +336,7 @@ class PaydirtGameEngine:
         elif "OB" in ko_result or "OUT" in ko_result.upper():
             description = f"Kickoff out of bounds! Ball at the 40."
         else:
-            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}"
+            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}"
         
         outcome = PlayOutcome(
             play_type=PlayType.KICKOFF,
@@ -1832,8 +1846,17 @@ class PaydirtGameEngine:
                     except ValueError:
                         return_yards = 0
                     
-                    if return_yards > 0:
+                    # Add commentary for exceptional returns
+                    if return_yards >= 30:
+                        return_desc = f"returned {return_yards} yards. What a return!"
+                    elif return_yards >= 20:
+                        return_desc = f"returned {return_yards} yards. Great return!"
+                    elif return_yards > 0:
                         return_desc = f"returned {return_yards} yards"
+                    elif return_yards == 0:
+                        return_desc = f"no return. Excellent coverage!"
+                    else:
+                        return_desc = f"tackled for a loss of {abs(return_yards)} yards! Outstanding special teams coverage!"
         
         # Switch possession and set ball position
         self.state.switch_possession()
