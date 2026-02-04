@@ -439,7 +439,8 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
     # Compact prompt
     if state.down == 4:
         fg_distance = 100 - state.ball_position + 17
-        print(f"  OFF: 1-9,Q,H,S,K | P=Punt F=FG({fg_distance}yd) | N,T,/ | ?=help (Default={default_play}/{default_name})")
+        print(f"  *** 4TH DOWN *** P=Punt, F=FG({fg_distance}yd), or go for it (1-9)")
+        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
     else:
         print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
 
