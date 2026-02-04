@@ -1357,9 +1357,10 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     play_name = play_type.value.replace('_', ' ').title()
     def_name = def_type.value.replace('_', ' ').title()
 
-    # Extract dice info from description
-    off_match = re.search(r'Off: (B\d\+W\d\+W\d=\d+)', outcome.description)
-    def_match = re.search(r'Def: R(\d)\+G(\d)=(\d)', outcome.description)
+    # Extract dice info from description (try both outcome.description and outcome.result.description)
+    desc_to_search = outcome.description or outcome.result.description or ""
+    off_match = re.search(r'Off: (B\d\+W\d\+W\d=\d+)', desc_to_search)
+    def_match = re.search(r'Def: R(\d)\+G(\d)=(\d)', desc_to_search)
 
     # Priority resolution for display
     off_cat, _ = categorize_result(outcome.result.raw_result)
