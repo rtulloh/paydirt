@@ -986,9 +986,13 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     # Handle special teams plays (punt, field goal, kickoff) differently
     if play_type == PlayType.PUNT:
         if COMPACT_MODE:
-            # Compact punt display
+            # Compact punt display with dice details
             td_marker = " ★ TOUCHDOWN!" if outcome.touchdown else ""
             print(f"► PUNT: {outcome.description}{td_marker}")
+            # Show dice roll info if available
+            dice_roll = outcome.result.dice_roll if outcome.result else "?"
+            chart_result = outcome.result.raw_result if outcome.result else "?"
+            print(f"  (Roll: {dice_roll} → \"{chart_result}\")")
             return
         
         print("\n" + "=" * 70)
@@ -1083,6 +1087,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     if play_type == PlayType.KICKOFF:
         if COMPACT_MODE:
             print(f"► KICKOFF: {outcome.description}")
+            # Show dice roll info if available
+            if outcome.result:
+                print(f"  (Roll: {outcome.result.dice_roll} → \"{outcome.result.raw_result}\")")
             return
         print("\n" + "=" * 70)
         print(f"  KICKOFF")
