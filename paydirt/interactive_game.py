@@ -523,6 +523,13 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
     print(f"    [S] {'Spike Ball':15} - Stop clock, waste down (saves 20 sec)")
     print(f"    [K] {'QB Kneel':15} - Run out clock (-2 yards, 40 sec)")
     
+    # Show FG/Punt options on non-4th down (for strategic kicks or time pressure)
+    if state.down < 4:
+        fg_distance = 100 - state.ball_position + 17
+        print(f"\n  SPECIAL TEAMS (early kick options):")
+        print(f"    [F] {'Field Goal':15} - {fg_distance}-yard attempt")
+        print(f"    [P] {'Punt':15} - Kick the ball away")
+    
     # Show No Huddle toggle option and timeout
     print("\n  OPTIONS:")
     if no_huddle:
@@ -639,20 +646,18 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
             display_box_score(game, "CURRENT STATS")
             return get_human_offense_play(game, no_huddle)
         
-        # Allow P and F on 4th down even from this menu
-        if state.down == 4:
-            if choice_clean == 'P':
-                # Punt cannot use modifiers
-                return PlayType.PUNT, no_huddle, False, False, call_timeout
-            elif choice_clean == 'F':
-                if out_of_bounds:
-                    print("  [OUT OF BOUNDS: Field Goal - guarantees 10-sec, costs 5 yards]")
-                elif in_bounds:
-                    print("  [IN BOUNDS: Field Goal - keeps clock running, costs 5 yards]")
-                return PlayType.FIELD_GOAL, no_huddle, out_of_bounds, in_bounds, call_timeout
-            print("  Invalid choice. Enter 1-9, Q, H, S, K, N, T, P, F (add '+'/'-' for OOB/IB)")
-        else:
-            print("  Invalid choice. Enter 1-9, Q, H, S, K, N, T (add '+'/'-' for OOB/IB)")
+        # Allow P and F on any down (strategic kicks, time pressure, etc.)
+        if choice_clean == 'P':
+            # Punt cannot use modifiers
+            return PlayType.PUNT, no_huddle, False, False, call_timeout
+        elif choice_clean == 'F':
+            if out_of_bounds:
+                print("  [OUT OF BOUNDS: Field Goal - guarantees 10-sec, costs 5 yards]")
+            elif in_bounds:
+                print("  [IN BOUNDS: Field Goal - keeps clock running, costs 5 yards]")
+            return PlayType.FIELD_GOAL, no_huddle, out_of_bounds, in_bounds, call_timeout
+        
+        print("  Invalid choice. Enter 1-9, Q, H, S, K, N, T, P, F (add '+'/'-' for OOB/IB)")
 
 
 def get_human_offense_play_for_conversion(game: PaydirtGameEngine) -> PlayType:

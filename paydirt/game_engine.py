@@ -2023,16 +2023,26 @@ class PaydirtGameEngine:
                     
                     # Check if kicking team reached line to gain or scored
                     if not touchdown and final_position < line_to_gain:
-                        # Turnover on downs - defense gets ball
-                        turnover = True
-                        defense_position = 100 - final_position
-                        self.state.switch_possession()
-                        self.state.ball_position = defense_position
-                        description += f" - TURNOVER ON DOWNS!"
-                    
-                    # Reset down and distance
-                    self.state.down = 1
-                    self.state.yards_to_go = 10
+                        # Only turnover on downs if it was 4th down
+                        if self.state.down == 4:
+                            turnover = True
+                            defense_position = 100 - final_position
+                            self.state.switch_possession()
+                            self.state.ball_position = defense_position
+                            description += f" - TURNOVER ON DOWNS!"
+                            # Reset down and distance for new possession
+                            self.state.down = 1
+                            self.state.yards_to_go = 10
+                        else:
+                            # Not 4th down - kicking team keeps ball, advance to next down
+                            # Calculate yards lost from original LOS
+                            yards_lost = line_of_scrimmage - final_position
+                            self.state.down += 1
+                            self.state.yards_to_go = max(1, self.state.yards_to_go + yards_lost)
+                    else:
+                        # Reached line to gain or scored - reset downs
+                        self.state.down = 1
+                        self.state.yards_to_go = 10
                 else:
                     # Defense recovers - blocked kick lost (turnover)
                     block_spot_defense = 100 - block_spot
