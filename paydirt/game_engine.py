@@ -1988,10 +1988,11 @@ class PaydirtGameEngine:
                 
                 if kicking_team_recovers:
                     # Kicking team recovers
-                    self.state.ball_position = block_spot
+                    line_of_scrimmage = spot_of_hold + 7  # Original ball position
+                    line_to_gain = line_of_scrimmage + self.state.yards_to_go
+                    final_position = block_spot
                     
                     # Check for return on rolls 17, 18, 19 (only if at/behind LOS)
-                    line_of_scrimmage = spot_of_hold + 7  # Original ball position
                     if recovery_roll in [17, 18, 19] and block_spot <= line_of_scrimmage:
                         return_dice, return_desc = roll_chart_dice()
                         int_return_result = self.state.possession_team.special_teams.interception_return.get(return_dice, "0")
@@ -2005,11 +2006,11 @@ class PaydirtGameEngine:
                             description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) - RETURN TD!"
                         else:
                             return_yards = self._parse_return_yards(int_return_result, block_spot)
-                            new_position = block_spot + return_yards
-                            new_position = min(99, max(1, new_position))
-                            self.state.ball_position = new_position
+                            final_position = block_spot + return_yards
+                            final_position = min(99, max(1, final_position))
+                            self.state.ball_position = final_position
                             
-                            if new_position >= 100:
+                            if final_position >= 100:
                                 touchdown = True
                                 self._score_touchdown()
                                 self.state.ball_position = 97
@@ -2017,9 +2018,23 @@ class PaydirtGameEngine:
                             else:
                                 description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), returns {return_yards} yards"
                     else:
+                        self.state.ball_position = block_spot
                         description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
+                    
+                    # Check if kicking team reached line to gain or scored
+                    if not touchdown and final_position < line_to_gain:
+                        # Turnover on downs - defense gets ball
+                        turnover = True
+                        defense_position = 100 - final_position
+                        self.state.switch_possession()
+                        self.state.ball_position = defense_position
+                        description += f" - TURNOVER ON DOWNS!"
+                    
+                    # Reset down and distance
+                    self.state.down = 1
+                    self.state.yards_to_go = 10
                 else:
-                    # Defense recovers - blocked kick lost
+                    # Defense recovers - blocked kick lost (turnover)
                     block_spot_defense = 100 - block_spot
                     self.state.switch_possession()
                     
@@ -2051,6 +2066,10 @@ class PaydirtGameEngine:
                     else:
                         self.state.ball_position = block_spot_defense
                         description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
+                    
+                    # Reset down and distance for defense (new possession)
+                    self.state.down = 1
+                    self.state.yards_to_go = 10
         
         # Check for penalty (must check before fumble since "DEF" contains "F")
         elif "OFF" in fg_result.upper() or "DEF" in fg_result.upper():

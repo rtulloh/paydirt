@@ -189,20 +189,25 @@ class TestBlockedFieldGoal:
             # Possession should switch (defense recovers on roll 35)
             assert game.state.is_home_possession is False
     
-    def test_blocked_fg_kicking_team_recovers(self, game):
-        """Blocked FG with kicking team recovery roll should keep possession."""
+    def test_blocked_fg_kicking_team_recovers_turnover_on_downs(self, game):
+        """Blocked FG with kicking team recovery but short of line to gain = turnover on downs."""
         game.state.ball_position = 75  # Opponent's 25
         game.state.is_home_possession = True
+        game.state.down = 4
+        game.state.yards_to_go = 10  # Line to gain is at 85
         
         # Mock dice rolls: FG roll = 14 (BK -8 = blocked), recovery roll = 20 (kicking team recovers)
+        # Ball at 75, spot of hold = 68, block -8 = ball at 60
+        # Line to gain = 75 + 10 = 85, so 60 < 85 = turnover on downs
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
             assert "blocked" in outcome.description.lower()
-            # Possession should NOT switch (kicking team recovers on roll 20)
-            assert game.state.is_home_possession is True
+            assert "turnover on downs" in outcome.description.lower()
+            # Possession SHOULD switch (kicking team recovers but short of line to gain)
+            assert game.state.is_home_possession is False
     
     def test_blocked_fg_safety(self, game):
         """Blocked FG in end zone should be a safety."""
