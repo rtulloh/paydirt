@@ -1,6 +1,6 @@
 """
 Entry point for running the paydirt package as a module.
-Usage: python -m paydirt [--play [-d easy|medium|hard] | -auto team1 team2]
+Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | -auto team1 team2]
 """
 import sys
 
@@ -8,20 +8,34 @@ def main():
     """Main entry point - choose between interactive, chart-based, or simple mode."""
     # Check for --play flag for interactive mode
     if len(sys.argv) > 1 and sys.argv[1] in ['--play', '-p', 'play']:
-        # Check for optional difficulty flag
+        # Parse optional flags
         difficulty = 'medium'  # default
-        if len(sys.argv) > 2 and sys.argv[2] in ['-d', '--difficulty']:
-            if len(sys.argv) > 3 and sys.argv[3] in ['easy', 'medium', 'hard']:
-                difficulty = sys.argv[3]
+        compact = False
+        
+        args = sys.argv[2:]
+        i = 0
+        while i < len(args):
+            if args[i] in ['-d', '--difficulty']:
+                if i + 1 < len(args) and args[i + 1] in ['easy', 'medium', 'hard']:
+                    difficulty = args[i + 1]
+                    i += 2
+                else:
+                    print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact]")
+                    print("  Difficulty levels:")
+                    print("    easy   - CPU makes conservative decisions")
+                    print("    medium - Balanced CPU play calling (default)")
+                    print("    hard   - CPU makes aggressive, optimal decisions")
+                    print("  Display modes:")
+                    print("    --compact - Use compact display (less verbose)")
+                    return
+            elif args[i] in ['--compact', '-c']:
+                compact = True
+                i += 1
             else:
-                print("Usage: python -m paydirt --play [-d easy|medium|hard]")
-                print("  Difficulty levels:")
-                print("    easy   - CPU makes conservative decisions")
-                print("    medium - Balanced CPU play calling (default)")
-                print("    hard   - CPU makes aggressive, optimal decisions")
-                return
+                i += 1
+        
         from .interactive_game import run_interactive_game
-        run_interactive_game(difficulty=difficulty)
+        run_interactive_game(difficulty=difficulty, compact=compact)
         return
     
     # Check for -auto flag for CPU vs CPU mode

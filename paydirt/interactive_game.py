@@ -20,6 +20,9 @@ from .computer_ai import ComputerAI
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 
+# Global display mode flag (set by run_interactive_game)
+COMPACT_MODE = False
+
 
 def analyze_team_strength(offense: OffenseChart) -> str:
     """
@@ -185,26 +188,37 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
     
     human_name = human_team.peripheral.short_name
     
-    print("\n" + "=" * 70)
-    print(f"  Q{state.quarter} | {format_time(state.time_remaining)} | {game.get_score_str()}")
-    print("=" * 70)
-    
     # Field position
     if state.ball_position <= 50:
         field_pos = f"{off_team} {state.ball_position}"
     else:
         field_pos = f"{def_team} {100 - state.ball_position}"
     
-    print(f"\n  Ball on: {field_pos}-yard line")
-    # Show "Goal" instead of yards when ball is inside opponent's 10 and yards_to_go >= ball distance to goal
+    # Down and distance string
     yards_to_goal = 100 - state.ball_position
     if yards_to_goal <= 10 and state.yards_to_go >= yards_to_goal:
-        print(f"  Down: {state.down}{_ordinal(state.down)} and Goal")
+        down_str = f"{state.down}{_ordinal(state.down)} & Goal"
     else:
-        print(f"  Down: {state.down}{_ordinal(state.down)} and {state.yards_to_go}")
-    print(f"  Possession: {off_team}{' (YOU)' if is_human_offense else ''}")
-    print(f"  Timeouts: {off_team} {state.offense_timeouts} | {def_team} {state.defense_timeouts}")
-    print()
+        down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
+    
+    if COMPACT_MODE:
+        # Compact single-line status with timeouts in parentheses
+        you_marker = "*" if is_human_offense else ""
+        print(f"\nQ{state.quarter} {format_time(state.time_remaining)} | {game.get_score_str()} | {down_str} {field_pos} | {off_team}{you_marker} ball | TO:{state.offense_timeouts}-{state.defense_timeouts}")
+    else:
+        # Verbose multi-line status
+        print("\n" + "=" * 70)
+        print(f"  Q{state.quarter} | {format_time(state.time_remaining)} | {game.get_score_str()}")
+        print("=" * 70)
+        
+        print(f"\n  Ball on: {field_pos}-yard line")
+        if yards_to_goal <= 10 and state.yards_to_go >= yards_to_goal:
+            print(f"  Down: {state.down}{_ordinal(state.down)} and Goal")
+        else:
+            print(f"  Down: {state.down}{_ordinal(state.down)} and {state.yards_to_go}")
+        print(f"  Possession: {off_team}{' (YOU)' if is_human_offense else ''}")
+        print(f"  Timeouts: {off_team} {state.offense_timeouts} | {def_team} {state.defense_timeouts}")
+        print()
 
 
 def _ordinal(n: int) -> str:
@@ -907,13 +921,17 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     
     # If a penalty was applied, show simplified penalty result instead of play details
     if getattr(outcome, 'penalty_applied', False):
-        print("\n" + "=" * 70)
-        print(f"  PENALTY ENFORCED")
-        print("=" * 70)
-        print(f"\n  {outcome.description}")
-        if outcome.first_down:
-            print("  >> FIRST DOWN!")
-        print(f"\n  Ball spotted at {outcome.field_position_after}")
+        if COMPACT_MODE:
+            first_down_marker = " FIRST DOWN!" if outcome.first_down else ""
+            print(f"► PENALTY: {outcome.description}{first_down_marker} → {outcome.field_position_after}")
+        else:
+            print("\n" + "=" * 70)
+            print(f"  PENALTY ENFORCED")
+            print("=" * 70)
+            print(f"\n  {outcome.description}")
+            if outcome.first_down:
+                print("  >> FIRST DOWN!")
+            print(f"\n  Ball spotted at {outcome.field_position_after}")
         return
     
     # Determine who was on offense during the play
@@ -960,6 +978,12 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     
     # Handle special teams plays (punt, field goal, kickoff) differently
     if play_type == PlayType.PUNT:
+        if COMPACT_MODE:
+            # Compact punt display
+            td_marker = " ★ TOUCHDOWN!" if outcome.touchdown else ""
+            print(f"► PUNT: {outcome.description}{td_marker}")
+            return
+        
         print("\n" + "=" * 70)
         print(f"  PUNT")
         print("=" * 70)
@@ -993,10 +1017,6 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         return
     
     if play_type == PlayType.FIELD_GOAL:
-        print("\n" + "=" * 70)
-        print(f"  FIELD GOAL ATTEMPT")
-        print("=" * 70)
-        
         # Get kicker name from roster
         kicker = "The kicker"
         try:
@@ -1007,16 +1027,28 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             pass
         
         # Parse the result to show details like other plays
-        # outcome.result contains the parsed chart result
         dice_roll = outcome.result.dice_roll if outcome.result else 0
         chart_result = outcome.result.raw_result if outcome.result else ""
         
         # Calculate distances for display
-        # Ball position is from offense perspective, distance to goal = 100 - ball_position
-        # But after a miss, possession may have switched, so use field_position_before
         fg_distance_match = re.search(r'(\d+) yards', outcome.description)
         statistical_distance = int(fg_distance_match.group(1)) if fg_distance_match else 0
         distance_to_goal = statistical_distance - 17 if statistical_distance > 17 else 0
+        
+        if COMPACT_MODE:
+            # Compact field goal display
+            if outcome.field_goal_made:
+                print(f"► FG {statistical_distance} yards: GOOD! ({kicker})")
+            elif "BLOCKED" in outcome.description.upper():
+                print(f"► FG {statistical_distance} yards: BLOCKED!")
+            else:
+                print(f"► FG {statistical_distance} yards: NO GOOD")
+            print(f"  (Roll: {dice_roll} → \"{chart_result}\" | Needed: {distance_to_goal} yds)")
+            return
+        
+        print("\n" + "=" * 70)
+        print(f"  FIELD GOAL ATTEMPT")
+        print("=" * 70)
         
         print(f"\n  {kicker} lines up for the {statistical_distance}-yard attempt...")
         print(f"  Dice Roll: {dice_roll}")
@@ -1042,6 +1074,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         return
     
     if play_type == PlayType.KICKOFF:
+        if COMPACT_MODE:
+            print(f"► KICKOFF: {outcome.description}")
+            return
         print("\n" + "=" * 70)
         print(f"  KICKOFF")
         print("=" * 70)
@@ -1056,13 +1091,87 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     play_name = play_type.value.replace('_', ' ').title()
     def_name = def_type.value.replace('_', ' ').title()
     
-    print("\n" + "=" * 70)
-    print(f"  THE PLAY: {off_team} {play_name} vs {def_name}")
-    print("=" * 70)
-    
     # Extract dice info from description
     off_match = re.search(r'Off: (B\d\+W\d\+W\d=\d+)', outcome.description)
     def_match = re.search(r'Def: R(\d)\+G(\d)=(\d)', outcome.description)
+    
+    # Priority resolution for display
+    off_cat, _ = categorize_result(outcome.result.raw_result)
+    def_cat, _ = categorize_result(outcome.result.defense_modifier)
+    combined = apply_priority_chart(outcome.result.raw_result, outcome.result.defense_modifier,
+                                    is_passing_play=is_passing_play(play_type))
+    
+    if COMPACT_MODE:
+        # Build compact result string
+        result_str = ""
+        special_marker = ""
+        
+        if outcome.result.result_type == ResultType.INCOMPLETE:
+            result_str = "Incomplete"
+        elif outcome.result.result_type == ResultType.INTERCEPTION:
+            result_str = f"INTERCEPTED!"
+            special_marker = " ★ TURNOVER!"
+            if outcome.touchdown:
+                special_marker = " ★ PICK SIX!"
+        elif outcome.result.result_type == ResultType.FUMBLE:
+            if outcome.turnover:
+                result_str = f"FUMBLE - Loss!"
+                special_marker = " ★ TURNOVER!"
+            else:
+                result_str = f"FUMBLE - Recovered"
+        elif outcome.result.result_type == ResultType.BREAKAWAY:
+            result_str = f"BREAKAWAY +{outcome.yards_gained}"
+        elif outcome.result.result_type == ResultType.SACK:
+            result_str = f"SACKED -{abs(outcome.yards_gained)}"
+        elif outcome.yards_gained > 0:
+            result_str = f"+{outcome.yards_gained}"
+        elif outcome.yards_gained < 0:
+            result_str = f"{outcome.yards_gained}"
+        else:
+            result_str = "No gain"
+        
+        if outcome.touchdown:
+            special_marker = " ★ TOUCHDOWN!"
+        elif outcome.first_down and not outcome.turnover:
+            special_marker = " FIRST DOWN!"
+        elif outcome.safety:
+            special_marker = " ★ SAFETY!"
+        
+        # Generate commentary
+        is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
+        skip_commentary = (outcome.result.result_type == ResultType.FUMBLE and not outcome.turnover)
+        is_check_down = False
+        if outcome.result.defense_modifier:
+            def_cat_check, _ = categorize_result(outcome.result.defense_modifier)
+            is_check_down = (def_cat_check == ResultCategory.PARENS_NUMBER)
+        
+        comment = ""
+        if not skip_commentary:
+            comment = commentary.generate(
+                play_type=play_type,
+                result_type=outcome.result.result_type,
+                yards=outcome.yards_gained,
+                is_first_down=outcome.first_down,
+                is_touchdown=outcome.touchdown,
+                is_breakaway=is_breakaway,
+                is_check_down=is_check_down
+            )
+        
+        # Line 1: Result with play type and commentary
+        if comment:
+            print(f"► {play_name.upper()}: {result_str} - {comment}{special_marker}")
+        else:
+            print(f"► {play_name.upper()}: {result_str}{special_marker}")
+        
+        # Line 2: Dice details (condensed)
+        def_row = def_match.group(3) if def_match else "?"
+        print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value})")
+        return
+    
+    # Verbose mode display
+    print("\n" + "=" * 70)
+    print(f"  THE PLAY: {off_team} {play_name} vs {def_name}")
+    print("=" * 70)
     
     # Offensive roll
     print(f"\n  Offensive Roll ({off_team}): {outcome.result.dice_roll}")
@@ -1075,12 +1184,6 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         r, g, row = def_match.groups()
         print(f"\n  Defensive Roll ({def_team}): R{r}+G{g} = Row {row}")
     print(f"  Defense Chart Result: \"{outcome.result.defense_modifier}\"")
-    
-    # Priority resolution
-    off_cat, _ = categorize_result(outcome.result.raw_result)
-    def_cat, _ = categorize_result(outcome.result.defense_modifier)
-    combined = apply_priority_chart(outcome.result.raw_result, outcome.result.defense_modifier,
-                                    is_passing_play=is_passing_play(play_type))
     
     print(f"\n  Priority Chart: [{off_cat.value}] vs [{def_cat.value}]")
     print(f"  Resolution: {combined.priority.value} - {combined.description}")
@@ -1438,7 +1541,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
 
 
-def run_interactive_game(difficulty: str = 'medium'):
+def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
     """
     Main interactive game loop.
     
@@ -1447,7 +1550,12 @@ def run_interactive_game(difficulty: str = 'medium'):
                    - easy: CPU aggression 0.3 (conservative)
                    - medium: CPU aggression 0.5 (balanced, default)
                    - hard: CPU aggression 0.7 (aggressive, optimal)
+        compact: If True, use compact display mode with less verbose output
     """
+    # Set global display mode
+    global COMPACT_MODE
+    COMPACT_MODE = compact
+    
     # Map difficulty to aggression value
     difficulty_map = {
         'easy': 0.3,
