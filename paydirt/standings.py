@@ -241,6 +241,34 @@ class Season:
         return season
 
 
+def add_game_result(year: int, home_team: str, home_score: int,
+                    away_team: str, away_score: int, week: int = 0) -> bool:
+    """
+    Add a game result to standings. Returns True on success.
+    
+    This function is intended to be called programmatically from other modules.
+    """
+    manager = StandingsManager()
+    season = manager.load_season(year)
+    
+    # Normalize team names
+    home = normalize_team_name(home_team, season)
+    away = normalize_team_name(away_team, season)
+    
+    if not home or not away:
+        return False
+    
+    season.add_game(
+        home_team=home,
+        home_score=home_score,
+        away_team=away,
+        away_score=away_score,
+        week=week
+    )
+    manager.save_season(season)
+    return True
+
+
 class StandingsManager:
     """Manages season data persistence."""
 
@@ -395,6 +423,21 @@ def main():
     teams_parser = subparsers.add_parser("teams", help="Show teams and divisions for a year")
     teams_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
 
+    # Delete game command
+    delete_parser = subparsers.add_parser("delete", help="Delete a game result")
+    delete_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
+    delete_parser.add_argument("game_number", type=int, help="Game number to delete (from 'games' list)")
+
+    # Edit game command
+    edit_parser = subparsers.add_parser("edit", help="Edit a game result")
+    edit_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
+    edit_parser.add_argument("game_number", type=int, help="Game number to edit (from 'games' list)")
+    edit_parser.add_argument("--home-team", help="New home team name")
+    edit_parser.add_argument("--home-score", type=int, help="New home team score")
+    edit_parser.add_argument("--away-team", help="New away team name")
+    edit_parser.add_argument("--away-score", type=int, help="New away team score")
+    edit_parser.add_argument("--week", type=int, help="New week number")
+
     args = parser.parse_args()
 
     manager = StandingsManager()
@@ -460,6 +503,76 @@ def main():
                 if div in season.divisions.get(conf, {}):
                     teams = season.divisions[conf][div]
                     print(f"  {div}: {', '.join(teams)}")
+
+    elif args.command == "delete":
+        season = manager.load_season(args.year)
+        game_idx = args.game_number - 1  # Convert to 0-indexed
+
+        if game_idx < 0 or game_idx >= len(season.games):
+            print(f"Error: Game #{args.game_number} not found.")
+            print(f"Season {args.year} has {len(season.games)} games.")
+            print("Use 'standings games <year>' to see the game list.")
+            return 1
+
+        game = season.games[game_idx]
+        print(f"Deleting: Game #{args.game_number} - Week {game.week}: "
+              f"{game.away_team} {game.away_score} @ {game.home_team} {game.home_score}")
+
+        # Confirm deletion
+        confirm = input("Are you sure? (y/n): ").strip().lower()
+        if confirm == 'y':
+            season.games.pop(game_idx)
+            manager.save_season(season)
+            print("Game deleted.")
+        else:
+            print("Cancelled.")
+
+    elif args.command == "edit":
+        season = manager.load_season(args.year)
+        game_idx = args.game_number - 1  # Convert to 0-indexed
+
+        if game_idx < 0 or game_idx >= len(season.games):
+            print(f"Error: Game #{args.game_number} not found.")
+            print(f"Season {args.year} has {len(season.games)} games.")
+            print("Use 'standings games <year>' to see the game list.")
+            return 1
+
+        game = season.games[game_idx]
+        print(f"Editing: Game #{args.game_number} - Week {game.week}: "
+              f"{game.away_team} {game.away_score} @ {game.home_team} {game.home_score}")
+
+        # Apply edits
+        changed = False
+        if args.home_team:
+            new_home = normalize_team_name(args.home_team, season)
+            if not new_home:
+                print(f"Error: Unknown team '{args.home_team}'")
+                return 1
+            game.home_team = new_home
+            changed = True
+        if args.home_score is not None:
+            game.home_score = args.home_score
+            changed = True
+        if args.away_team:
+            new_away = normalize_team_name(args.away_team, season)
+            if not new_away:
+                print(f"Error: Unknown team '{args.away_team}'")
+                return 1
+            game.away_team = new_away
+            changed = True
+        if args.away_score is not None:
+            game.away_score = args.away_score
+            changed = True
+        if args.week is not None:
+            game.week = args.week
+            changed = True
+
+        if changed:
+            manager.save_season(season)
+            print(f"Updated: Week {game.week}: "
+                  f"{game.away_team} {game.away_score} @ {game.home_team} {game.home_score}")
+        else:
+            print("No changes specified. Use --home-team, --home-score, --away-team, --away-score, or --week.")
 
     else:
         parser.print_help()

@@ -1847,6 +1847,32 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
 
 
+def _offer_record_to_standings(year: int, home_team: str, home_score: int,
+                                away_team: str, away_score: int):
+    """Offer to record the game result to season standings."""
+    from .standings import add_game_result
+    
+    print("\n" + "-" * 50)
+    record = input("  Record this game to season standings? (y/n): ").strip().lower()
+    
+    if record == 'y':
+        success = add_game_result(
+            year=year,
+            home_team=home_team,
+            home_score=home_score,
+            away_team=away_team,
+            away_score=away_score
+        )
+        if success:
+            print(f"  Game recorded: {away_team} {away_score} @ {home_team} {home_score}")
+        else:
+            print("  Error: Could not record game (unknown team name?)")
+            print(f"  You can manually add with: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}")
+    else:
+        print("  Game not recorded.")
+        print(f"  To record later: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}")
+
+
 def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
     """
     Main interactive game loop.
@@ -2389,6 +2415,15 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         print("\n  TIE GAME!")
 
     display_box_score(game, "FINAL STATISTICS")
+
+    # Offer to record game to standings
+    _offer_record_to_standings(
+        year=home_chart.peripheral.year,
+        home_team=home_chart.peripheral.team_nickname,
+        home_score=game.state.home_score,
+        away_team=away_chart.peripheral.team_nickname,
+        away_score=game.state.away_score
+    )
 
 
 if __name__ == "__main__":
