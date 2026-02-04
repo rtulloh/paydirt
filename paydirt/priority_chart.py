@@ -22,6 +22,7 @@ class ResultCategory(Enum):
     FUMBLE_PLUS = "F+#"           # Fumble with positive yardage
     FUMBLE_MINUS = "F-#"          # Fumble with negative yardage
     PARENS_NUMBER = "(#)"         # Number in parentheses (overrule)
+    PARENS_TD = "(TD)"            # TD in parentheses (overrule with touchdown)
     PENALTY = "penalty"           # OFF or DEF penalty
     BREAKAWAY = "B"               # Breakaway
     TD = "TD"                     # Touchdown
@@ -42,6 +43,7 @@ class PriorityResult(Enum):
     FUMBLE_MINUS = "F-#"          # Fumble, subtract yardage
     OFFENSE_WITH_B = "#B"         # Use offense result (breakaway only if offense was B)
     PARENS = "(#)"                # Offense overrules (parentheses)
+    PARENS_TD = "(TD)"            # Defense overrules with touchdown
     BLACK = "black"               # Incomplete/no result
 
 
@@ -98,6 +100,10 @@ def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
     if result_str == "F":
         return ResultCategory.FUMBLE, 0
     
+    # Check for (TD) - touchdown in parentheses (overrules)
+    if result_str == "(TD)":
+        return ResultCategory.PARENS_TD, None
+    
     # Check for number in parentheses (defensive modifier that overrules)
     parens_match = re.match(r'\((-?\d+)\)', result_str)
     if parens_match:
@@ -137,6 +143,7 @@ PRIORITY_CHART = {
     (ResultCategory.GREEN_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.GREEN_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.GREEN_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.GREEN_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # White # (zero/neutral) offense results
     (ResultCategory.WHITE_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
@@ -147,6 +154,7 @@ PRIORITY_CHART = {
     (ResultCategory.WHITE_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.WHITE_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.WHITE_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # Red # (negative yardage) offense results
     (ResultCategory.RED_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
@@ -157,6 +165,7 @@ PRIORITY_CHART = {
     (ResultCategory.RED_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.RED_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.RED_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.RED_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # QT offense results
     (ResultCategory.QT, ResultCategory.GREEN_NUMBER): PriorityResult.QT,
@@ -167,6 +176,7 @@ PRIORITY_CHART = {
     (ResultCategory.QT, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.QT, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.QT, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.QT, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # Black (empty/incomplete) offense results
     (ResultCategory.BLACK, ResultCategory.GREEN_NUMBER): PriorityResult.BLACK,
@@ -177,6 +187,7 @@ PRIORITY_CHART = {
     (ResultCategory.BLACK, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.BLACK, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.BLACK, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.BLACK, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # INT offense results
     (ResultCategory.INT, ResultCategory.GREEN_NUMBER): PriorityResult.INT,
@@ -187,6 +198,7 @@ PRIORITY_CHART = {
     (ResultCategory.INT, ResultCategory.INT): PriorityResult.D_INT,
     (ResultCategory.INT, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.INT, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.INT, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # F (Fumble) offense results - Fumble almost always wins
     (ResultCategory.FUMBLE, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
@@ -197,6 +209,7 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE, ResultCategory.INT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
+    (ResultCategory.FUMBLE, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # F+# / F-# offense results
     (ResultCategory.FUMBLE_PLUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
@@ -207,6 +220,7 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_PLUS, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
+    (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     (ResultCategory.FUMBLE_MINUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.WHITE_NUMBER): PriorityResult.FUMBLE_PLUS,
@@ -216,6 +230,7 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_MINUS, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
+    (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # (#) parentheses offense results
     (ResultCategory.PARENS_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
@@ -226,6 +241,7 @@ PRIORITY_CHART = {
     (ResultCategory.PARENS_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.PARENS_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.PARENS_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.PARENS_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # Breakaway offense results - when offense result is actually "B"
     # Breakaway is treated like other offense results for priority purposes
@@ -238,6 +254,7 @@ PRIORITY_CHART = {
     (ResultCategory.BREAKAWAY, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.BREAKAWAY, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.BREAKAWAY, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.BREAKAWAY, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # TD offense results - TD generally wins
     (ResultCategory.TD, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
@@ -248,6 +265,7 @@ PRIORITY_CHART = {
     (ResultCategory.TD, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.TD, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.TD, ResultCategory.PARENS_NUMBER): PriorityResult.OFFENSE,
+    (ResultCategory.TD, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
     
     # PI (Pass Interference) - treated as penalty
     (ResultCategory.PI, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
@@ -258,6 +276,7 @@ PRIORITY_CHART = {
     (ResultCategory.PI, ResultCategory.INT): PriorityResult.OFFENSE,
     (ResultCategory.PI, ResultCategory.FUMBLE): PriorityResult.OFFENSE,
     (ResultCategory.PI, ResultCategory.PARENS_NUMBER): PriorityResult.OFFENSE,
+    (ResultCategory.PI, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
 }
 
 
@@ -365,6 +384,12 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         # The defense's parenthesized number IS the result - offense gains that yardage
         final_yards = def_yards if def_yards is not None else 0
         description = f"Defense (#) gives offense {final_yards} yards: {defense_result}"
+    
+    elif priority == PriorityResult.PARENS_TD:
+        # (TD) on defense means touchdown - defense result overrules with TD
+        is_touchdown = True
+        final_yards = 0  # TD doesn't need yardage
+        description = f"Defense (TD) overrules - TOUCHDOWN: {defense_result}"
     
     elif priority == PriorityResult.QT:
         use_qt = True

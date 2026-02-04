@@ -42,6 +42,12 @@ class TestCategorizeResult:
         assert cat == ResultCategory.PARENS_NUMBER
         assert val == 1
     
+    def test_parentheses_td(self):
+        """(TD) should be categorized as PARENS_TD, not WHITE_NUMBER."""
+        cat, val = categorize_result("(TD)")
+        assert cat == ResultCategory.PARENS_TD
+        assert val is None
+    
     def test_qt(self):
         """QT should be categorized as quarterback trouble."""
         cat, val = categorize_result("QT")
@@ -133,6 +139,31 @@ class TestBreakawayNormalCases:
         result = apply_priority_chart("B", "F")
         
         assert result.priority == PriorityResult.FUMBLE
+
+
+class TestParensTDOverrides:
+    """Tests that (TD) defense results trigger PARENS_TD priority (touchdown)."""
+    
+    def test_green_number_vs_parens_td(self):
+        """(TD) on defense should override green number offense with touchdown."""
+        result = apply_priority_chart("12", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_breakaway_vs_parens_td(self):
+        """(TD) on defense should override breakaway with touchdown."""
+        result = apply_priority_chart("B", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_black_vs_parens_td(self):
+        """(TD) on defense should override incomplete with touchdown."""
+        result = apply_priority_chart("", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
 
 
 class TestParenthesesOverridesOtherResults:
