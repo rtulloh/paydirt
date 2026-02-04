@@ -202,9 +202,16 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
     
     if COMPACT_MODE:
-        # Compact single-line status with timeouts in parentheses
+        # Compact single-line status with timeouts inline with score (Option 1)
         you_marker = "*" if is_human_offense else ""
-        print(f"\nQ{state.quarter} {format_time(state.time_remaining)} | {game.get_score_str()} | {down_str} {field_pos} | {off_team}{you_marker} ball | TO:{state.offense_timeouts}-{state.defense_timeouts}")
+        # Get individual team scores
+        away_name = state.away_chart.peripheral.short_name
+        home_name = state.home_chart.peripheral.short_name
+        away_score = state.away_score
+        home_score = state.home_score
+        away_to = state.away_timeouts
+        home_to = state.home_timeouts
+        print(f"\nQ{state.quarter} {format_time(state.time_remaining)} | {away_name} {away_score} ({away_to}) - {home_name} {home_score} ({home_to}) | {down_str} {field_pos} | {off_team}{you_marker} ball")
     else:
         # Verbose multi-line status
         print("\n" + "=" * 70)
