@@ -17,6 +17,7 @@ from .play_resolver import (
 )
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
 from .computer_ai import ComputerAI
+from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 
 
@@ -1318,12 +1319,22 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         # Show penalty options with projected field position
         for i, opt in enumerate(penalty_choice.penalty_options):
             # Calculate where ball would be after penalty
+            # Apply half-distance rule (except for PI)
+            if opt.penalty_type == "PI":
+                # PI is exempt from half-distance rule
+                adjusted_yards = opt.yards
+            else:
+                is_offensive_penalty = opt.penalty_type == "OFF"
+                adjusted_yards = apply_half_distance_rule(
+                    opt.yards, game.state.ball_position, is_offensive_penalty
+                )
+            
             if opt.penalty_type in ["DEF", "PI"]:
                 # Defensive penalty - offense gains yards
-                pen_new_pos = game.state.ball_position + opt.yards
+                pen_new_pos = game.state.ball_position + adjusted_yards
             else:
                 # Offensive penalty - offense loses yards
-                pen_new_pos = game.state.ball_position - opt.yards
+                pen_new_pos = game.state.ball_position - adjusted_yards
             pen_new_pos = max(1, min(99, pen_new_pos))
             
             if pen_new_pos <= 50:
@@ -1331,20 +1342,24 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             else:
                 pen_field_str = f"opp {100 - pen_new_pos}"
             
-            # Determine down/distance after penalty
+            # Determine down/distance after penalty (use adjusted_yards for half-distance)
             if opt.auto_first_down:
                 pen_down_str = "1st and 10"
             elif opt.penalty_type in ["DEF", "PI"]:
                 # Defensive penalty - offense gains yards, reduces yards to go
-                if opt.yards >= game.state.yards_to_go:
+                if adjusted_yards >= game.state.yards_to_go:
                     pen_down_str = "1st and 10"
                 else:
-                    pen_down_str = f"{game.state.down}{['st','nd','rd','th'][min(game.state.down-1,3)]} and {max(1, game.state.yards_to_go - opt.yards)}"
+                    pen_down_str = f"{game.state.down}{['st','nd','rd','th'][min(game.state.down-1,3)]} and {max(1, game.state.yards_to_go - adjusted_yards)}"
             else:
                 # Offensive penalty - offense loses yards, increases yards to go
-                pen_down_str = f"{game.state.down}{['st','nd','rd','th'][min(game.state.down-1,3)]} and {game.state.yards_to_go + opt.yards}"
+                pen_down_str = f"{game.state.down}{['st','nd','rd','th'][min(game.state.down-1,3)]} and {game.state.yards_to_go + adjusted_yards}"
             
-            print(f"    [{i+1}] Accept PENALTY: {opt.description} -> {pen_down_str} at {pen_field_str}")
+            # Show half-distance note if penalty was reduced
+            half_dist_note = ""
+            if adjusted_yards != opt.yards:
+                half_dist_note = f" (half-distance: {adjusted_yards} yds)"
+            print(f"    [{i+1}] Accept PENALTY: {opt.description}{half_dist_note} -> {pen_down_str} at {pen_field_str}")
         
         while True:
             choice = input("\n  Your choice (0 for play, or penalty number): ").strip()

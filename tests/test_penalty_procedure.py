@@ -658,3 +658,77 @@ class TestPenaltyAdviceTouchdown:
         new_position = ball_position + yards_gained
         
         assert new_position >= 100, "1 yard from the 1 should cross the goal line"
+
+
+class TestHalfDistanceRuleInPenaltyAdvice:
+    """Tests for half-distance rule application in penalty advice display."""
+    
+    def test_half_distance_defensive_penalty_near_goal(self):
+        """15-yard defensive penalty at opponent's 22 should be reduced to 11 yards."""
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at opponent's 22 = position 78 (100 - 22 = 78)
+        ball_position = 78
+        penalty_yards = 15
+        is_offensive_penalty = False  # Defensive penalty
+        
+        adjusted = apply_half_distance_rule(penalty_yards, ball_position, is_offensive_penalty)
+        
+        # Distance to goal is 22 yards, half is 11
+        assert adjusted == 11, f"Expected 11 yards (half of 22), got {adjusted}"
+    
+    def test_half_distance_defensive_penalty_at_10(self):
+        """15-yard defensive penalty at opponent's 10 should be reduced to 5 yards."""
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at opponent's 10 = position 90
+        ball_position = 90
+        penalty_yards = 15
+        is_offensive_penalty = False
+        
+        adjusted = apply_half_distance_rule(penalty_yards, ball_position, is_offensive_penalty)
+        
+        # Distance to goal is 10 yards, half is 5
+        assert adjusted == 5, f"Expected 5 yards (half of 10), got {adjusted}"
+    
+    def test_half_distance_offensive_penalty_near_own_goal(self):
+        """15-yard offensive penalty at own 20 should be reduced to 10 yards."""
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at own 20 = position 20
+        ball_position = 20
+        penalty_yards = 15
+        is_offensive_penalty = True
+        
+        adjusted = apply_half_distance_rule(penalty_yards, ball_position, is_offensive_penalty)
+        
+        # Distance to own goal is 20 yards, half is 10
+        assert adjusted == 10, f"Expected 10 yards (half of 20), got {adjusted}"
+    
+    def test_no_half_distance_when_far_from_goal(self):
+        """15-yard penalty at midfield should not be reduced."""
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at midfield = position 50
+        ball_position = 50
+        penalty_yards = 15
+        is_offensive_penalty = False  # Defensive penalty
+        
+        adjusted = apply_half_distance_rule(penalty_yards, ball_position, is_offensive_penalty)
+        
+        # Distance to goal is 50 yards, half is 25, so 15 is fine
+        assert adjusted == 15, f"Expected 15 yards (no reduction needed), got {adjusted}"
+    
+    def test_5_yard_penalty_at_8_yard_line(self):
+        """5-yard defensive penalty at opponent's 8 should be reduced to 4 yards."""
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at opponent's 8 = position 92
+        ball_position = 92
+        penalty_yards = 5
+        is_offensive_penalty = False
+        
+        adjusted = apply_half_distance_rule(penalty_yards, ball_position, is_offensive_penalty)
+        
+        # Distance to goal is 8 yards, half is 4
+        assert adjusted == 4, f"Expected 4 yards (half of 8), got {adjusted}"
