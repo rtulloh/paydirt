@@ -358,3 +358,50 @@ class TestCompactDisplayTurnoverReturns:
             assert "RED ZONE" in output, f"Expected red zone alert: {output}"
         finally:
             ig.COMPACT_MODE = original_compact
+
+    def test_fumble_touchback_shows_touchback(self):
+        """Fumble in end zone recovered by defense should show TOUCHBACK."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        # CHI now has ball at own 20 after touchback
+        game.state.is_home_possession = True
+        game.state.ball_position = 20
+
+        # Create a fumble outcome with touchback description
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=0,
+            description="Fumble recovered by defense in end zone - TOUCHBACK",
+            dice_roll=13,
+            raw_result="F"
+        )
+
+        outcome = PlayOutcome(
+            play_type=PlayType.SHORT_PASS,
+            defense_type=DefenseType.SHORT_PASS,
+            result=result,
+            yards_gained=0,
+            turnover=True,
+            description="Fumble recovered by defense in end zone - TOUCHBACK"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.SHORT_PASS, DefenseType.SHORT_PASS,
+                                    away_chart, offense_was_home=False)
+                output = mock_stdout.getvalue()
+
+            # Should show TOUCHBACK
+            assert "TOUCHBACK" in output, f"Expected 'TOUCHBACK' in output: {output}"
+            assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact

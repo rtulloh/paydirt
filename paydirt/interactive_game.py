@@ -1394,24 +1394,29 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 special_marker = " ★ PICK SIX!"
         elif outcome.result.result_type == ResultType.FUMBLE:
             if outcome.turnover:
-                # Check for return yardage on fumble recovery
-                return_yards = getattr(outcome.result, 'fumble_return_yards', 0)
-                if return_yards and return_yards > 0:
-                    result_str = f"FUMBLE - Loss! Returned {return_yards} yds"
-                    # Check if return ended in red zone (ball_position >= 80 from new offense perspective)
-                    if game.state.ball_position >= 95:
-                        special_marker = " ★ TURNOVER! GOAL LINE!"
-                    elif game.state.ball_position >= 80:
-                        special_marker = " ★ TURNOVER! IN THE RED ZONE!"
-                    else:
-                        special_marker = " ★ TURNOVER!"
-                else:
-                    result_str = "FUMBLE - Loss!"
+                # Check for touchback (fumble in end zone recovered by defense)
+                if "TOUCHBACK" in outcome.result.description.upper():
+                    result_str = "FUMBLE in end zone - TOUCHBACK!"
                     special_marker = " ★ TURNOVER!"
                 # Check for fumble return TD
-                if outcome.touchdown:
+                elif outcome.touchdown:
                     result_str = "FUMBLE - Loss! RETURNED FOR TD!"
                     special_marker = " ★ SCOOP AND SCORE!"
+                # Check for return yardage on fumble recovery
+                else:
+                    return_yards = getattr(outcome.result, 'fumble_return_yards', 0)
+                    if return_yards and return_yards > 0:
+                        result_str = f"FUMBLE - Loss! Returned {return_yards} yds"
+                        # Check if return ended in red zone (ball_position >= 80 from new offense perspective)
+                        if game.state.ball_position >= 95:
+                            special_marker = " ★ TURNOVER! GOAL LINE!"
+                        elif game.state.ball_position >= 80:
+                            special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                        else:
+                            special_marker = " ★ TURNOVER!"
+                    else:
+                        result_str = "FUMBLE - Loss!"
+                        special_marker = " ★ TURNOVER!"
             else:
                 result_str = "FUMBLE - Recovered"
         elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
