@@ -412,6 +412,148 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     print("+" + "-" * 58 + "+")
 
 
+def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: bool) -> tuple[PlayType, bool, bool, bool, bool]:
+    """Compact offense menu - abbreviated display with '?' for full menu."""
+    # Calculate default play
+    team_strength = analyze_team_strength(state.possession_team.offense)
+    if state.yards_to_go <= 2:
+        default_play = '1'
+        default_name = 'Plunge'
+    elif state.yards_to_go >= 8:
+        default_play = '7'
+        default_name = 'Med Pass'
+    elif state.down == 1:
+        if team_strength == 'run':
+            default_play = '3'
+            default_name = 'End Run'
+        elif team_strength == 'pass':
+            default_play = '7'
+            default_name = 'Med Pass'
+        else:
+            default_play = '3' if random.random() < 0.5 else '7'
+            default_name = 'End Run' if default_play == '3' else 'Med Pass'
+    else:
+        default_play = '3'
+        default_name = 'End Run'
+
+    # Compact prompt
+    if state.down == 4:
+        fg_distance = 100 - state.ball_position + 17
+        print(f"  OFF: 1-9,Q,H,S,K | P=Punt F=FG({fg_distance}yd) | N,T,/ | ?=help [{default_name}]")
+    else:
+        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help [{default_name}]")
+
+    while True:
+        choice = input("  > ").strip().upper()
+
+        # Show full menu on '?'
+        if choice == '?':
+            _show_full_offense_menu(state, no_huddle)
+            continue
+
+        # Handle Enter for default
+        if choice == '':
+            choice = default_play
+
+        # Check for modifiers
+        out_of_bounds = '+' in choice
+        in_bounds = '-' in choice
+        choice_clean = choice.replace('+', '').replace('-', '').strip()
+
+        if out_of_bounds and in_bounds:
+            print("  Cannot use both + and -!")
+            continue
+
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+
+        if call_timeout:
+            if state.offense_timeouts <= 0:
+                print("  No timeouts!")
+                continue
+
+        # Handle choices
+        if choice_clean in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
+            play_type, _, _ = OFFENSE_PLAYS[choice_clean]
+            return play_type, no_huddle, out_of_bounds, in_bounds, call_timeout
+
+        if choice_clean == 'Q':
+            return PlayType.QB_SNEAK, no_huddle, out_of_bounds, in_bounds, call_timeout
+        elif choice_clean == 'H':
+            return PlayType.HAIL_MARY, no_huddle, out_of_bounds, in_bounds, call_timeout
+        elif choice_clean == 'S':
+            return PlayType.SPIKE_BALL, no_huddle, False, False, call_timeout
+        elif choice_clean == 'K':
+            return PlayType.QB_KNEEL, no_huddle, False, False, call_timeout
+        elif choice_clean == 'P':
+            return PlayType.PUNT, no_huddle, False, False, call_timeout
+        elif choice_clean == 'F':
+            return PlayType.FIELD_GOAL, no_huddle, out_of_bounds, in_bounds, call_timeout
+
+        if choice == 'N':
+            new_no_huddle = not no_huddle
+            if new_no_huddle:
+                print("  No Huddle ON")
+            else:
+                print("  No Huddle OFF")
+            return _get_human_offense_play_compact(game, state, new_no_huddle)
+
+        if choice_clean == '/':
+            display_box_score(game, "CURRENT STATS")
+            return _get_human_offense_play_compact(game, state, no_huddle)
+
+        print("  Invalid. 1-9,Q,H,S,K,P,F,N,T,/ or ? for help")
+
+
+def _show_full_offense_menu(state, no_huddle: bool):
+    """Display the full offense menu (called from compact mode with '?')."""
+    print("\n  OFFENSIVE PLAY CALL")
+    print("  " + "-" * 40)
+
+    if state.down == 4:
+        fg_distance = 100 - state.ball_position + 17
+        print("\n  *** 4TH DOWN DECISION ***")
+        print("    [P] PUNT              - Kick the ball away")
+        if state.ball_position >= 55:
+            print(f"    [F] FIELD GOAL        - {fg_distance}-yard attempt")
+        else:
+            print(f"    [F] Field Goal        - {fg_distance}-yard attempt (Out of range)")
+        print(f"    [G] GO FOR IT         - Run a play (4th and {state.yards_to_go})")
+        print()
+
+    print("  RUNNING PLAYS:")
+    for key in ['1', '2', '3', '4']:
+        play_type, name, desc = OFFENSE_PLAYS[key]
+        print(f"    [{key}] {name:15} - {desc}")
+
+    print("\n  PASSING PLAYS:")
+    for key in ['5', '6', '7', '8', '9']:
+        play_type, name, desc = OFFENSE_PLAYS[key]
+        print(f"    [{key}] {name:15} - {desc}")
+
+    print("\n  SPECIAL PLAYS:")
+    print(f"    [Q] {'QB Sneak':15} - Sneak for 1 yard (defense can't respond)")
+    print(f"    [H] {'Hail Mary':15} - Desperation pass (end of half only)")
+    print(f"    [S] {'Spike Ball':15} - Stop clock, waste down (saves 20 sec)")
+    print(f"    [K] {'QB Kneel':15} - Run out clock (-2 yards, 40 sec)")
+
+    if state.down < 4:
+        fg_distance = 100 - state.ball_position + 17
+        print("\n  SPECIAL TEAMS (early kick options):")
+        print(f"    [F] {'Field Goal':15} - {fg_distance}-yard attempt")
+        print(f"    [P] {'Punt':15} - Kick the ball away")
+
+    print("\n  OPTIONS:")
+    if no_huddle:
+        print("    [N] EXIT No Huddle    - Return to normal offense")
+    else:
+        print("    [N] No Huddle         - Hurry-up offense (saves time, penalty risk)")
+    print("    [T] Call Timeout      - Stop clock after this play")
+    print("    [/] Stats             - View current game statistics")
+    print("    Add '+' for Out of Bounds, '-' for In Bounds")
+    print()
+
+
 def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> tuple[PlayType, bool, bool, bool, bool]:
     """
     Prompt human player to select an offensive play.
@@ -429,6 +571,10 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
     if no_huddle:
         print("\n  *** NO HUDDLE OFFENSE ACTIVE ***")
         print("  (Previous play time reduced, but penalty risks increased)")
+
+    # In compact mode, show abbreviated menu
+    if COMPACT_MODE:
+        return _get_human_offense_play_compact(game, state, no_huddle)
 
     print("\n  OFFENSIVE PLAY CALL")
     print("  " + "-" * 40)
@@ -809,14 +955,98 @@ def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI = None) -> bo
     return False
 
 
+def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[DefenseType, bool]:
+    """Compact defense menu - abbreviated display with '?' for full menu."""
+    # Calculate default defense
+    if state.yards_to_go <= 2:
+        default_def = 'B'
+        default_name = 'Short'
+    elif state.down >= 3 and state.yards_to_go >= 8:
+        default_def = 'E'
+        default_name = 'Long Pass'
+    elif state.down >= 2 and state.yards_to_go >= 6:
+        default_def = 'D'
+        default_name = 'Short Pass'
+    else:
+        default_def = 'A'
+        default_name = 'Standard'
+
+    print(f"  DEF: A-F | T,/ | ?=help [{default_name}]")
+
+    while True:
+        choice = input("  > ").strip().upper()
+
+        # Show full menu on '?'
+        if choice == '?':
+            _show_full_defense_menu(state)
+            continue
+
+        # Handle Enter for default
+        if choice == '':
+            choice = default_def
+
+        call_timeout = 'T' in choice
+        choice_clean = choice.replace('T', '').strip()
+
+        if call_timeout and not choice_clean:
+            if state.defense_timeouts <= 0:
+                print("  No timeouts!")
+                continue
+            print("  Timeout - now pick defense (A-F):")
+            continue
+
+        if call_timeout:
+            if state.defense_timeouts <= 0:
+                print("  No timeouts!")
+                continue
+
+        if choice_clean == '/':
+            display_box_score(game, "CURRENT STATS")
+            return _get_human_defense_play_compact(game, state)
+
+        if choice_clean in DEFENSE_PLAYS:
+            def_type, _, _ = DEFENSE_PLAYS[choice_clean]
+            return def_type, call_timeout
+
+        print("  Invalid. A-F, T, / or ? for help")
+
+
+def _show_full_defense_menu(state):
+    """Display the full defense menu (called from compact mode with '?')."""
+    print("\n  DEFENSIVE FORMATION")
+    print("  " + "-" * 40)
+
+    if state.yards_to_go <= 2:
+        print("  Situation: Short yardage - expect a run")
+    elif state.down >= 2 and state.yards_to_go >= 8:
+        print("  Situation: Long yardage - expect a pass")
+    elif state.down == 4 and state.ball_position >= 55:
+        print("  Situation: Field goal range - they may kick")
+    elif state.down == 1:
+        print("  Situation: First down - balanced attack likely")
+
+    print()
+    for key in ['A', 'B', 'C', 'D', 'E', 'F']:
+        def_type, name, desc = DEFENSE_PLAYS[key]
+        print(f"    [{key}] {name:20} - {desc}")
+
+    print("\n    [T] Call Timeout      - Stop clock after this play")
+    print("    [/] Stats             - View current game statistics")
+    print()
+
+
 def get_human_defense_play(game: PaydirtGameEngine) -> tuple[DefenseType, bool]:
     """
     Prompt human player to select a defensive formation.
-    
+
     Returns:
         Tuple of (DefenseType, call_timeout)
     """
     state = game.state
+
+    # In compact mode, show abbreviated menu
+    if COMPACT_MODE:
+        return _get_human_defense_play_compact(game, state)
 
     print("\n  DEFENSIVE FORMATION")
     print("  " + "-" * 40)
