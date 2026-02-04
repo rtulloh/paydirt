@@ -474,20 +474,27 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
 
         # Handle choices
         if choice_clean in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
-            play_type, _, _ = OFFENSE_PLAYS[choice_clean]
+            play_type, name, _ = OFFENSE_PLAYS[choice_clean]
+            print(f"  You called: {name}")
             return play_type, no_huddle, out_of_bounds, in_bounds, call_timeout
 
         if choice_clean == 'Q':
+            print("  You called: QB Sneak")
             return PlayType.QB_SNEAK, no_huddle, out_of_bounds, in_bounds, call_timeout
         elif choice_clean == 'H':
+            print("  You called: Hail Mary")
             return PlayType.HAIL_MARY, no_huddle, out_of_bounds, in_bounds, call_timeout
         elif choice_clean == 'S':
+            print("  You called: Spike Ball")
             return PlayType.SPIKE_BALL, no_huddle, False, False, call_timeout
         elif choice_clean == 'K':
+            print("  You called: QB Kneel")
             return PlayType.QB_KNEEL, no_huddle, False, False, call_timeout
         elif choice_clean == 'P':
+            print("  You called: Punt")
             return PlayType.PUNT, no_huddle, False, False, call_timeout
         elif choice_clean == 'F':
+            print("  You called: Field Goal")
             return PlayType.FIELD_GOAL, no_huddle, out_of_bounds, in_bounds, call_timeout
 
         if choice == 'N':
@@ -1005,7 +1012,8 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[Def
             return _get_human_defense_play_compact(game, state)
 
         if choice_clean in DEFENSE_PLAYS:
-            def_type, _, _ = DEFENSE_PLAYS[choice_clean]
+            def_type, name, _ = DEFENSE_PLAYS[choice_clean]
+            print(f"  You called: {name}")
             return def_type, call_timeout
 
         print("  Invalid. A-F, T, / or ? for help")
