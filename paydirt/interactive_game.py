@@ -1376,14 +1376,42 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         if outcome.result.result_type == ResultType.INCOMPLETE:
             result_str = "Incomplete"
         elif outcome.result.result_type == ResultType.INTERCEPTION:
-            result_str = "INTERCEPTED!"
-            special_marker = " ★ TURNOVER!"
+            # Check for return yardage on interception
+            int_return = getattr(outcome.result, 'interception_return', 0)
+            if int_return and int_return > 0:
+                result_str = f"INTERCEPTED! Returned {int_return} yds"
+                # Check if return ended in red zone
+                if game.state.ball_position >= 95:
+                    special_marker = " ★ TURNOVER! GOAL LINE!"
+                elif game.state.ball_position >= 80:
+                    special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                else:
+                    special_marker = " ★ TURNOVER!"
+            else:
+                result_str = "INTERCEPTED!"
+                special_marker = " ★ TURNOVER!"
             if outcome.touchdown:
                 special_marker = " ★ PICK SIX!"
         elif outcome.result.result_type == ResultType.FUMBLE:
             if outcome.turnover:
-                result_str = "FUMBLE - Loss!"
-                special_marker = " ★ TURNOVER!"
+                # Check for return yardage on fumble recovery
+                return_yards = getattr(outcome.result, 'fumble_return_yards', 0)
+                if return_yards and return_yards > 0:
+                    result_str = f"FUMBLE - Loss! Returned {return_yards} yds"
+                    # Check if return ended in red zone (ball_position >= 80 from new offense perspective)
+                    if game.state.ball_position >= 95:
+                        special_marker = " ★ TURNOVER! GOAL LINE!"
+                    elif game.state.ball_position >= 80:
+                        special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                    else:
+                        special_marker = " ★ TURNOVER!"
+                else:
+                    result_str = "FUMBLE - Loss!"
+                    special_marker = " ★ TURNOVER!"
+                # Check for fumble return TD
+                if outcome.touchdown:
+                    result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                    special_marker = " ★ SCOOP AND SCORE!"
             else:
                 result_str = "FUMBLE - Recovered"
         elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
@@ -1401,7 +1429,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         else:
             result_str = "No gain"
 
-        if outcome.touchdown and special_marker != " ★ TOUCHDOWN!":
+        # Don't overwrite special turnover TD markers (PICK SIX, SCOOP AND SCORE)
+        turnover_td_markers = [" ★ PICK SIX!", " ★ SCOOP AND SCORE!"]
+        if outcome.touchdown and special_marker not in turnover_td_markers and special_marker != " ★ TOUCHDOWN!":
             special_marker = " ★ TOUCHDOWN!"
         elif outcome.first_down and not outcome.turnover and not outcome.touchdown:
             special_marker = " FIRST DOWN!"

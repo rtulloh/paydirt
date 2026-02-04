@@ -214,3 +214,147 @@ class TestCompactDisplayTouchdown:
             assert "TOUCHDOWN" in output, f"Expected 'TOUCHDOWN' in output: {output}"
         finally:
             ig.COMPACT_MODE = original_compact
+
+
+class TestCompactDisplayTurnoverReturns:
+    """Tests for turnover return yardage and red zone alerts in compact display."""
+
+    def test_fumble_return_shows_yardage(self):
+        """Fumble with return yardage should show the return distance."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False  # ATL now has ball after fumble recovery
+        game.state.ball_position = 99  # ATL at CHI 1 yard line (red zone)
+
+        # Create a fumble outcome with return yardage
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=-2,
+            description="FUMBLE! Defense recovers!",
+            dice_roll=39,
+            raw_result="F"
+        )
+        result.fumble_return_yards = 29  # Returned 29 yards
+        result.fumble_spot = 70
+        result.fumble_recovered = False
+
+        outcome = PlayOutcome(
+            play_type=PlayType.DRAW,
+            defense_type=DefenseType.LONG_PASS,
+            result=result,
+            yards_gained=-2,
+            turnover=True,
+            description="FUMBLE! Defense recovers!"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.DRAW, DefenseType.LONG_PASS,
+                                    home_chart, offense_was_home=True)
+                output = mock_stdout.getvalue()
+
+            # Should show return yardage
+            assert "Returned 29 yds" in output, f"Expected return yardage in output: {output}"
+            # Should show red zone alert (ball at 99 = goal line)
+            assert "GOAL LINE" in output or "RED ZONE" in output, f"Expected red zone alert: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
+
+    def test_fumble_return_td_shows_scoop_and_score(self):
+        """Fumble returned for TD should show SCOOP AND SCORE."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False
+        game.state.ball_position = 97
+
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=-2,
+            description="FUMBLE! Returned for TD!",
+            dice_roll=39,
+            raw_result="F"
+        )
+        result.fumble_return_yards = 50
+
+        outcome = PlayOutcome(
+            play_type=PlayType.DRAW,
+            defense_type=DefenseType.LONG_PASS,
+            result=result,
+            yards_gained=-2,
+            turnover=True,
+            touchdown=True,
+            description="FUMBLE! Returned for TD!"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.DRAW, DefenseType.LONG_PASS,
+                                    home_chart, offense_was_home=True)
+                output = mock_stdout.getvalue()
+
+            assert "SCOOP AND SCORE" in output, f"Expected 'SCOOP AND SCORE' in output: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
+
+    def test_interception_return_shows_yardage(self):
+        """Interception with return yardage should show the return distance."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False
+        game.state.ball_position = 85  # In red zone
+
+        result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=0,
+            description="INTERCEPTED!",
+            dice_roll=25,
+            raw_result="INT"
+        )
+        result.interception_return = 35
+
+        outcome = PlayOutcome(
+            play_type=PlayType.LONG_PASS,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=0,
+            turnover=True,
+            description="INTERCEPTED!"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.LONG_PASS, DefenseType.STANDARD,
+                                    home_chart, offense_was_home=True)
+                output = mock_stdout.getvalue()
+
+            assert "Returned 35 yds" in output, f"Expected return yardage in output: {output}"
+            assert "RED ZONE" in output, f"Expected red zone alert: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
