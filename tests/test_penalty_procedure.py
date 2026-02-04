@@ -500,7 +500,11 @@ class TestPenaltyAppliedFlag:
             pending_penalty_decision=True
         )
         
-        final = game.apply_penalty_decision(outcome, accept_play=False, penalty_index=0)
+        # Mock the dice roll to get consistent 5-yard penalty (roll 10-24 = 5 yards for DEF_S)
+        with patch('paydirt.penalty_handler.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W0+W5=15")  # Roll 15 = 5 yard DEF penalty
+            
+            final = game.apply_penalty_decision(outcome, accept_play=False, penalty_index=0)
         
         # Ball should move forward 5 yards (DEF penalty benefits offense)
         assert game.state.ball_position == 35
