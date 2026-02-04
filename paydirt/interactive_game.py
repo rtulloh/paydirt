@@ -439,9 +439,9 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
     # Compact prompt
     if state.down == 4:
         fg_distance = 100 - state.ball_position + 17
-        print(f"  OFF: 1-9,Q,H,S,K | P=Punt F=FG({fg_distance}yd) | N,T,/ | ?=help [{default_name}]")
+        print(f"  OFF: 1-9,Q,H,S,K | P=Punt F=FG({fg_distance}yd) | N,T,/ | ?=help [Enter={default_name}]")
     else:
-        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help [{default_name}]")
+        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help [Enter={default_name}]")
 
     while True:
         choice = input("  > ").strip().upper()
@@ -978,7 +978,7 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[Def
         default_def = 'A'
         default_name = 'Standard'
 
-    print(f"  DEF: A-F | T,/ | ?=help [{default_name}]")
+    print(f"  DEF: A-F | T,/ | ?=help [Enter={default_name}]")
 
     while True:
         choice = input("  > ").strip().upper()
