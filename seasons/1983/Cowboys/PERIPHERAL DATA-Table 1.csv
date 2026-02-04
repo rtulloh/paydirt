@@ -1,0 +1,39 @@
+,,Year,Team (enter team name in D3 and nickname in D4 - do not enter anything in D2),Power rating (see Note 1),Yardage factor (see Note 1),Fumble recovered,Fumble lost,Special defense,Extra point NG (see data entry instructions),Short team name
+,,1983,,226½ ± 1,100 / 80,10-30,31-39,W,19*20*,DAL '83
+,,Replace the sample peripheral data in cells shaded blue with data for your chart and then press <ctrl>d. Then press <ctrl>w ONLY if there is an entry for Special Defense.,,,,,,,,
+Team name:,,,Dallas,Chart designer:,,Dr. Thomas R. Nicely,,,,
+Team nickname:,,,Cowboys,,,"Examples of chart designers:
+For 1971 & 1972: David Neft
+For 1975-1983 & 1987 forward: Dr. Thomas R. Nicely
+For 1984-1987, 1958 (Giants & Colts) & 1967 (Packers & Cowboys): James Barnes",,,,
+Base yardage factor:,,,100,,,,,,,
+Reduced yardage factor:,,,80,,,,,,,
+Macro output - W / FBO:,,,W,,,,,,,
+Peripheral data notes,,,"(for the current power ratings and yardage factors, refer to the file uploaded to the Yahoo Paydirt group by Matt Floray):",,,,,,,
+,,"Instructions, including exceptions to Matt Floray’s instructions applicable only to this template:
+1.  Replace peripheral data in the blue boxes above with correct data for your chart, and then run the <ctrl>d and optional <ctrl>w macros.
+2.  Enter all data in the charts. See Matt Floray’s instructions for data input rules. Do not manually format any cells with colors. Because Excel limits
+     conditional formatting to three conditions, only some of the cells will be color fomatted when entered. Remaining cells will be correctly colored when
+     Step 3 is completed. The following special procedures and exceptions to Matt’s instructions should be followed:
+     a. To enter a B (breakaway), press <ctrl>b. After running the <ctrl>b macro, manually edit the cell to add an asterisk if the entry should be B*.
+     b. To enter a TD not in parentheses or square brackets, press <ctrl>t.
+     c. To enter a QT, press <ctrl>q. After running the <ctrl>q macro, manually edit the cell to add an asterisk if the entry should be QT*.
+     d. To enter a zero in parentheses (red box) in the defensive chart, press <ctrl>n.
+     e. To enter a zero in square brackets (red box) in the defensive chart, press <ctrl>g.
+     f.  To enter a positive number in parentheses, enter the following keystroke where # is the 1 or 2 digit number - A#. [A - the number(s) - a period - and
+         then enter]. The entry will be converted into (#) formatted as text rather than a negative number when running the macros in Step 3.
+     g. To enter a simple negative yardage entry (e.g., not a negative entry after an F, INT, BK, etc., but rather, -X or -DS), enter the negative sign following
+         the entry, with no space. For example, for -DS, enter as DS-. This will prevent Excel from returning an error message (expecting that the DS is a range
+         name reference). The entry will be corrected when the macros in Step 3 are run.
+     h. The # column following the special teams Field Goal column contains formulas that will turn cells red if the Field Goal column indicates an extra point
+         attempt is no good. For teams with extra point designations that are independent of the FG column, replace the formulas in the special teams # column
+         with numbers (10-39). For cells that are supposed to be colored red, enter a negative number. The cell format prints negative numbers to
+         look like positive numbers, but with red cells. For any older charts thathave PAT “No Good” dice rolls printed below the offensive charts, ignore
+         the “Penalty” dice rolls, as these refer to obsolete rules.
+3. Only after completing all data input, press <ctrl>l. This will correct all (#) and simple negative variable yardage entries, as well as correct the color
+    coding of all boxes that have not been formatted during data entry. Do not run this macro more than once!
+4. Fill out the “team notes” section on the offensive chart as desired, including the spill-over / schedule section under the defense/special charts.
+5. Only after proof-reading the charts, press <ctrl>z to run quantitative analysis of the offensive chart. Do not run this macro more than once.
+6. Optional: if you want to replace all penalties (other than PI) with appropriate vairable yardage / modern rule penalties, press <ctrl>u. This will change all OFF and DEF
+    penalties to OFF S and DEF S, with the following exceptions: (a) OFF 5 and pre-existing OFF S penalties in kickoffs are changed to OB; and (b) all OFF
+    and DEF penalties in kickoff, punt and interception returns are changed to OFF R and DEF R.",,,,,,,,
