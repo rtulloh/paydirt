@@ -11,7 +11,7 @@ def main():
         # Parse optional flags
         difficulty = 'medium'  # default
         compact = False
-        
+
         args = sys.argv[2:]
         i = 0
         while i < len(args):
@@ -33,11 +33,11 @@ def main():
                 i += 1
             else:
                 i += 1
-        
+
         from .interactive_game import run_interactive_game
         run_interactive_game(difficulty=difficulty, compact=compact)
         return
-    
+
     # Check for -auto flag for CPU vs CPU mode
     if len(sys.argv) >= 4 and sys.argv[1] in ['--auto', '-auto', '-a', 'auto']:
         team1_name = sys.argv[2]
@@ -45,7 +45,7 @@ def main():
         from .auto_game import run_auto_game
         run_auto_game(team1_name, team2_name)
         return
-    
+
     # Show help if -auto with wrong args
     if len(sys.argv) > 1 and sys.argv[1] in ['--auto', '-auto', '-a', 'auto']:
         print("Usage: python -m paydirt -auto <team1> <team2>")
@@ -55,20 +55,20 @@ def main():
         print("  python -m paydirt -auto seasons/1983/Bears seasons/1985/Cowboys  # Full paths")
         print("\nAvailable teams can be found in the seasons/ directory")
         return
-    
+
     # Try chart-based mode first if team charts are available
     try:
         from .chart_loader import find_team_charts
         from pathlib import Path
-        
+
         # Check for team charts
         seasons_dir = "seasons"
         if not Path(seasons_dir).exists():
             script_dir = Path(__file__).parent.parent
             seasons_dir = str(script_dir / "seasons")
-        
+
         charts = find_team_charts(seasons_dir)
-        
+
         if charts:
             # Show menu
             print("PAYDIRT - Football Simulation")
@@ -77,9 +77,9 @@ def main():
             print("  2. Watch Simulation")
             print("  3. Exit")
             print()
-            
+
             choice = input("Select option: ").strip()
-            
+
             if choice == '1':
                 # Ask for difficulty
                 print("\nSelect CPU difficulty:")

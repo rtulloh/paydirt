@@ -7,10 +7,10 @@ import random
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List
+from typing import List
 
 from .chart_loader import TeamChart, OffenseChart, DefenseChart
-from .priority_chart import apply_priority_chart, categorize_result, CombinedResult
+from .priority_chart import apply_priority_chart
 
 
 class PlayType(Enum):
@@ -158,12 +158,12 @@ def roll_chart_dice() -> tuple[int, str]:
     # Black die: 1, 1, 2, 2, 3, 3
     black_die_faces = [1, 1, 2, 2, 3, 3]
     black = random.choice(black_die_faces)
-    
+
     # Two white dice: each 0-4 (sum 0-8, or 0-5 capped at 9)
     white1 = random.randint(0, 5)
     white2 = random.randint(0, 5)
     white_sum = min(white1 + white2, 9)  # Cap at 9 to stay in 10-39 range
-    
+
     # Combine: tens digit from black, ones digit from sum of whites
     result = (black * 10) + white_sum
     desc = f"B{black}+W{white1}+W{white2}={result}"
@@ -204,11 +204,11 @@ def roll_offensive_dice_detailed() -> tuple[int, int, int, int, int, str]:
     white1 = random.randint(0, 5)
     white2 = random.randint(0, 5)
     white_sum = min(white1 + white2, 9)
-    
+
     total = (black * 10) + white_sum
     direct_sum = black + white1 + white2
     desc = f"B{black}+W{white1}+W{white2}={total} (DS={direct_sum})"
-    
+
     return total, black, white1, white2, direct_sum, desc
 
 
@@ -233,39 +233,39 @@ def resolve_variable_yardage(result_str: str) -> tuple[int, str]:
         Tuple of (yardage, description)
     """
     result_str = result_str.strip().upper()
-    
+
     # Check for negative (either prefix "-" or suffix "-")
     is_negative = result_str.startswith('-') or result_str.endswith('-')
     clean_str = result_str.replace('-', '').strip()
-    
+
     yards = 0
     desc = ""
-    
+
     if clean_str == "DS":
         # Direct Sum: add the three dice values
         total, black, white1, white2, direct_sum, roll_desc = roll_offensive_dice_detailed()
         yards = direct_sum
         desc = f"DS={direct_sum} ({roll_desc})"
-    
+
     elif clean_str == "X":
         # X = 40 minus normal offensive total
         total, roll_desc = roll_chart_dice()
         yards = 40 - total
         desc = f"X=40-{total}={yards} ({roll_desc})"
-    
+
     elif clean_str == "T1":
         # T1 = normal offensive total
         total, roll_desc = roll_chart_dice()
         yards = total
         desc = f"T1={total} ({roll_desc})"
-    
+
     elif clean_str == "T2":
         # T2 = sum of two consecutive rolls
         total1, desc1 = roll_chart_dice()
         total2, desc2 = roll_chart_dice()
         yards = total1 + total2
         desc = f"T2={total1}+{total2}={yards}"
-    
+
     elif clean_str == "T3":
         # T3 = sum of three consecutive rolls
         total1, desc1 = roll_chart_dice()
@@ -273,15 +273,15 @@ def resolve_variable_yardage(result_str: str) -> tuple[int, str]:
         total3, desc3 = roll_chart_dice()
         yards = total1 + total2 + total3
         desc = f"T3={total1}+{total2}+{total3}={yards}"
-    
+
     else:
         # Unknown symbol - return 0
         return 0, f"Unknown variable yardage: {result_str}"
-    
+
     if is_negative:
         yards = -yards
         desc = f"-{desc}"
-    
+
     return yards, desc
 
 
@@ -317,44 +317,44 @@ def parse_result_string(result_str: str) -> PlayResult:
     """
     if not result_str or result_str.strip() == "":
         return PlayResult(ResultType.INCOMPLETE, 0, "Incomplete", raw_result=result_str)
-    
+
     result_str = result_str.strip()
-    
+
     # Check for Breakaway
     if result_str.startswith("B"):
         return PlayResult(ResultType.BREAKAWAY, 0, "Breakaway!", raw_result=result_str)
-    
+
     # Check for Touchdown
     if result_str == "TD":
         return PlayResult(ResultType.TOUCHDOWN, 0, "TOUCHDOWN!", touchdown=True, raw_result=result_str)
-    
+
     # Check for QB scramble time
     if result_str.startswith("QT"):
         return PlayResult(ResultType.QB_SCRAMBLE, 0, "QB scrambles", raw_result=result_str)
-    
+
     # Check for Fumble (F + X or F - X)
     fumble_match = re.match(r'F\s*([+-])\s*(\d+)', result_str)
     if fumble_match:
         sign = 1 if fumble_match.group(1) == '+' else -1
         yards = sign * int(fumble_match.group(2))
-        return PlayResult(ResultType.FUMBLE, yards, f"FUMBLE! ({yards:+d} yards)", 
+        return PlayResult(ResultType.FUMBLE, yards, f"FUMBLE! ({yards:+d} yards)",
                          turnover=True, raw_result=result_str)
-    
+
     # Check for Interception (INT X)
     int_match = re.match(r'INT\s*(-?\d+)', result_str)
     if int_match:
         return_yards = int(int_match.group(1))
-        return PlayResult(ResultType.INTERCEPTION, return_yards, 
+        return PlayResult(ResultType.INTERCEPTION, return_yards,
                          f"INTERCEPTED! {return_yards} yard return",
                          turnover=True, raw_result=result_str)
-    
+
     # Check for Pass Interference (PI X)
     pi_match = re.match(r'PI\s*(\d+)', result_str)
     if pi_match:
         yards = int(pi_match.group(1))
         return PlayResult(ResultType.PASS_INTERFERENCE, yards,
                          f"Pass interference! {yards} yards", raw_result=result_str)
-    
+
     # Check for Offensive Penalty (OFF X or OFF S or OFF R)
     # Full Feature Method: S = scrimmage penalty, R = return penalty
     # The actual yardage is determined by rolling dice again
@@ -370,7 +370,7 @@ def parse_result_string(result_str: str) -> PlayResult:
         else:
             desc = f"Offensive penalty, {pen_val} yards"
         return PlayResult(ResultType.PENALTY_OFFENSE, 0, desc, raw_result=result_str)
-    
+
     # Check for Defensive Penalty (DEF X or DEF S or DEF R)
     # Full Feature Method: S = scrimmage penalty, R = return penalty
     # The actual yardage is determined by rolling dice again
@@ -388,21 +388,21 @@ def parse_result_string(result_str: str) -> PlayResult:
         if modifier:
             desc += f" [{modifier}]"
         return PlayResult(ResultType.PENALTY_DEFENSE, 0, desc, raw_result=result_str)
-    
+
     # Check for defensive modifier in parentheses (X) or [X]
     mod_match = re.match(r'[\(\[](-?\d+)[\)\]]', result_str)
     if mod_match:
         modifier = int(mod_match.group(1))
         return PlayResult(ResultType.YARDS, 0, f"Modifier: {modifier}",
                          raw_result=result_str, defense_modifier=result_str)
-    
+
     # Check for out-of-bounds markers (* or †)
     # Per rules: asterisk and dagger indicate play ended out of bounds
     is_out_of_bounds = '*' in result_str or '†' in result_str or '+' in result_str
-    
+
     # Clean the result string for parsing
     clean_str = result_str.replace('*', '').replace('†', '').replace('+', '').strip()
-    
+
     # Check for variable yardage symbols (DS, X, T1, T2, T3)
     if is_variable_yardage(clean_str):
         yards, var_desc = resolve_variable_yardage(clean_str)
@@ -415,7 +415,7 @@ def parse_result_string(result_str: str) -> PlayResult:
         if is_out_of_bounds:
             desc += " (out of bounds)"
         return PlayResult(ResultType.YARDS, yards, desc, raw_result=result_str, out_of_bounds=is_out_of_bounds)
-    
+
     # Check for simple yardage (positive or negative number)
     yard_match = re.match(r'^(-?\d+)$', clean_str)
     if yard_match:
@@ -429,7 +429,7 @@ def parse_result_string(result_str: str) -> PlayResult:
         if is_out_of_bounds:
             desc += " (out of bounds)"
         return PlayResult(ResultType.YARDS, yards, desc, raw_result=result_str, out_of_bounds=is_out_of_bounds)
-    
+
     # Default: try to parse as number
     try:
         yards = int(clean_str)
@@ -439,7 +439,7 @@ def parse_result_string(result_str: str) -> PlayResult:
         return PlayResult(ResultType.YARDS, yards, desc, raw_result=result_str, out_of_bounds=is_out_of_bounds)
     except ValueError:
         pass
-    
+
     # Unknown result
     return PlayResult(ResultType.YARDS, 0, f"Unknown: {result_str}", raw_result=result_str)
 
@@ -458,7 +458,7 @@ def get_offense_result(chart: OffenseChart, play_type: PlayType, dice_roll: int)
         PlayType.TE_SHORT_LONG: chart.te_short_long,
         PlayType.QB_SNEAK: chart.line_plunge,  # QB Sneak uses Line Plunge column
     }
-    
+
     play_chart = play_charts.get(play_type, {})
     return play_chart.get(dice_roll, "")
 
@@ -483,12 +483,12 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
     """
     # Get the Line Plunge result for this roll
     result_str = chart.line_plunge.get(dice_roll, "0")
-    
+
     if not result_str:
         result_str = "0"
-    
+
     result_str = str(result_str).strip()
-    
+
     # Determine box color based on result content
     # Red box = Fumble (F, F+X, F-X)
     if result_str.upper().startswith('F') and not result_str.upper().startswith('OFF'):
@@ -501,13 +501,13 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
             raw_result=result_str,
             dice_roll=dice_roll
         )
-    
+
     # Check for positive yardage (Green box) = 1 yard gain
     # Green boxes typically have positive numbers
     try:
         # Clean the result string
         clean_str = result_str.replace('*', '').replace('†', '').replace('+', '').strip()
-        
+
         # Check if it's a simple positive number
         if clean_str.lstrip('-').isdigit():
             value = int(clean_str)
@@ -531,7 +531,7 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
                 )
     except ValueError:
         pass
-    
+
     # Check for Breakaway (B, B*) - treat as green box = 1 yard
     if result_str.upper().startswith('B') and not result_str.upper().startswith('BK'):
         return PlayResult(
@@ -541,7 +541,7 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
             raw_result=result_str,
             dice_roll=dice_roll
         )
-    
+
     # Penalties, interceptions, QT, etc. = White/Yellow box = No gain
     # (OFF, DEF, INT, PI, QT all treated as no gain for QB Sneak)
     return PlayResult(
@@ -581,7 +581,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
     # Per rules: yardage is "25 + T1" where T1 is the tens digit
     t1 = dice_roll // 10
     base_yards = 25 + t1  # 25 + 1, 2, or 3 = 26, 27, or 28 yards
-    
+
     if 10 <= dice_roll <= 18:
         # Complete pass (25 + T1 yards downfield)
         yards = base_yards
@@ -602,7 +602,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     elif dice_roll == 19:
         # Automatic touchdown
         return PlayResult(
@@ -613,7 +613,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     elif dice_roll in range(20, 24) or dice_roll in range(26, 30):
         # Interception (25 + T1 yards downfield)
         yards = base_yards
@@ -625,7 +625,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary INT {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     elif dice_roll in [24, 25]:
         # QT - Quick Throw (need to roll again)
         return PlayResult(
@@ -635,7 +635,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary QT {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     elif 30 <= dice_roll <= 38:
         # Incomplete
         return PlayResult(
@@ -645,7 +645,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary INC {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     elif dice_roll == 39:
         # Defensive Pass Interference (25 + T1 yards downfield)
         yards = base_yards
@@ -656,7 +656,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
             raw_result=f"Hail Mary PI {dice_roll}",
             dice_roll=dice_roll
         )
-    
+
     # Fallback (shouldn't happen with valid dice)
     return PlayResult(
         result_type=ResultType.INCOMPLETE,
@@ -667,7 +667,7 @@ def resolve_hail_mary(dice_roll: int, ball_position: int) -> PlayResult:
     )
 
 
-def get_defense_modifier(chart: DefenseChart, defense_type: DefenseType, 
+def get_defense_modifier(chart: DefenseChart, defense_type: DefenseType,
                          play_column: int, sub_roll: int) -> str:
     """
     Get the defensive modifier from the defense chart.
@@ -738,30 +738,30 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
     # Roll OFFENSIVE dice (10-39 range)
     # Black die (tens): 1,1,2,2,3,3 + Two White dice (ones): 0-5 each
     off_dice_roll, off_dice_desc = roll_chart_dice()
-    
+
     # Roll DEFENSIVE dice - special Paydirt dice that sum to 1-5
     # Red die faces: 1, 1, 1, 2, 2, 3
     # Green die faces: 0, 0, 0, 0, 1, 2
     red_die_faces = [1, 1, 1, 2, 2, 3]
     green_die_faces = [0, 0, 0, 0, 1, 2]
-    
+
     def_red = random.choice(red_die_faces)
     def_green = random.choice(green_die_faces)
     sub_row = def_red + def_green  # Range 1-5, maps directly to defense chart row
-    
+
     # Get offensive result from offensive team's chart
     off_result_str = get_offense_result(offense_chart.offense, play_type, off_dice_roll)
-    
+
     # Get defensive result from defensive team's chart
     play_column = _play_type_to_column(play_type)
-    def_result_str = get_defense_modifier(defense_chart.defense, defense_type, 
+    def_result_str = get_defense_modifier(defense_chart.defense, defense_type,
                                           play_column, sub_row)
-    
+
     # Apply Priority Chart to combine results
     # Pass whether this is a passing play to handle BLACK results correctly
     combined = apply_priority_chart(off_result_str, def_result_str,
                                     is_passing_play=is_passing_play(play_type))
-    
+
     # Build the PlayResult based on combined outcome
     result = PlayResult(
         result_type=ResultType.YARDS,
@@ -773,7 +773,7 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
     )
-    
+
     # Handle special priority outcomes
     if combined.use_qt_column:
         # QT result - roll again on QT column
@@ -785,7 +785,7 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
             result.description = f"QB scrambles for {qt_yards} yards (QT roll: {qt_desc})"
         else:
             result.description = f"QB SACKED for {abs(qt_yards)} yard loss (QT roll: {qt_desc})"
-    
+
     elif combined.use_breakaway:
         # Breakaway - offense result was "B", roll on B column for yardage
         b_roll, b_desc = roll_chart_dice()
@@ -793,21 +793,21 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         result.yards = b_yards
         result.result_type = ResultType.BREAKAWAY
         result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
-    
+
     elif combined.is_turnover:
         if "INT" in off_result_str or "INT" in def_result_str:
             result.result_type = ResultType.INTERCEPTION
         else:
             result.result_type = ResultType.FUMBLE
-    
+
     elif combined.is_incomplete:
         result.result_type = ResultType.INCOMPLETE
         result.description = "Incomplete pass"
-    
+
     elif combined.is_touchdown:
         result.result_type = ResultType.TOUCHDOWN
         result.description = "TOUCHDOWN!"
-    
+
     # Check for penalties in original results (penalties always take priority)
     if off_result_str.startswith("OFF"):
         result.result_type = ResultType.PENALTY_OFFENSE
@@ -834,10 +834,10 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         if pi_match:
             result.yards = int(pi_match.group(1))
         result.description = f"Pass interference: {result.yards} yards"
-    
+
     # Add dice roll info to description
     result.description += f" [Off: {off_dice_desc}, Def: R{def_red}+G{def_green}={sub_row}]"
-    
+
     return result
 
 
@@ -874,7 +874,7 @@ def resolve_special_teams(chart: TeamChart, play_type: PlayType) -> PlayResult:
     """Resolve a special teams play (kickoff, punt, field goal)."""
     dice_roll, dice_desc = roll_chart_dice()
     special = chart.special_teams
-    
+
     if play_type == PlayType.KICKOFF:
         result_str = special.kickoff.get(dice_roll, "")
         result = parse_result_string(result_str)
@@ -888,19 +888,19 @@ def resolve_special_teams(chart: TeamChart, play_type: PlayType) -> PlayResult:
             result.yards = yards
             result.description = f"Kickoff {yards} yards"
         return result
-    
+
     elif play_type == PlayType.PUNT:
         result_str = special.punt.get(dice_roll, "")
         result = parse_result_string(result_str)
         result.dice_roll = dice_roll
         return result
-    
+
     elif play_type == PlayType.FIELD_GOAL:
         result_str = special.field_goal.get(dice_roll, "")
         result = parse_result_string(result_str)
         result.dice_roll = dice_roll
         return result
-    
+
     return PlayResult(ResultType.INCOMPLETE, 0, "Unknown special teams play")
 
 
@@ -926,7 +926,7 @@ def _is_penalty_result(result_str: str) -> tuple[bool, str]:
 def _create_penalty_option(result_str: str) -> PenaltyOption:
     """Create a PenaltyOption from a penalty result string."""
     result_upper = result_str.upper().strip()
-    
+
     if result_upper.startswith("PI"):
         # Pass interference
         pi_match = re.match(r'PI\s*(\d+)', result_str, re.IGNORECASE)
@@ -978,7 +978,7 @@ def _create_penalty_option(result_str: str) -> PenaltyOption:
             description=f"Defensive penalty, {yards} yards",
             auto_first_down=auto_first
         )
-    
+
     # Fallback
     return PenaltyOption(
         penalty_type="",
@@ -1016,42 +1016,42 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     def_red = random.choice(red_die_faces)
     def_green = random.choice(green_die_faces)
     sub_row = def_red + def_green
-    
+
     # Get defensive result from defensive team's chart
     play_column = _play_type_to_column(play_type)
-    def_result_str = get_defense_modifier(defense_chart.defense, defense_type, 
+    def_result_str = get_defense_modifier(defense_chart.defense, defense_type,
                                           play_column, sub_row)
     original_def_result = def_result_str
     def_dice_desc = f"R{def_red}+G{def_green}={sub_row}"
-    
+
     # Track penalties encountered
     penalty_options: List[PenaltyOption] = []
     reroll_log: List[str] = []
     has_off_penalty = False
     has_def_penalty = False
-    
+
     # Check if defense result is a penalty
     is_def_pen, def_pen_type = _is_penalty_result(def_result_str)
     if is_def_pen:
         has_def_penalty = True
         penalty_options.append(_create_penalty_option(def_result_str))
-    
+
     # Roll OFFENSIVE dice - may need to reroll if penalty
     max_rerolls = 10  # Safety limit
     reroll_count = 0
     off_result_str = ""
     off_dice_roll = 0
     off_dice_desc = ""
-    
+
     while reroll_count < max_rerolls:
         off_dice_roll, off_dice_desc = roll_chart_dice()
         off_result_str = get_offense_result(offense_chart.offense, play_type, off_dice_roll)
-        
+
         is_off_pen, off_pen_type = _is_penalty_result(off_result_str)
-        
+
         if is_off_pen:
             reroll_log.append(f"Offense roll {off_dice_desc}: {off_result_str} (penalty)")
-            
+
             # Check for PI - special handling, no more rerolls
             if off_pen_type == "PI":
                 penalty_options.append(_create_penalty_option(off_result_str))
@@ -1073,7 +1073,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
                     original_defense_result=original_def_result,
                     reroll_log=reroll_log
                 )
-            
+
             # Non-PI penalty - add to options and reroll
             # Track who committed the penalty:
             # - "OFF 5" on offense chart = OFFENSE committed penalty (defense offended)
@@ -1089,12 +1089,12 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
             # Non-penalty result - we're done rolling
             reroll_log.append(f"Offense roll {off_dice_desc}: {off_result_str}")
             break
-    
+
     # Now combine the final offense result with the original defense result
     # using the Priority Chart
     combined = apply_priority_chart(off_result_str, def_result_str,
                                     is_passing_play=is_passing_play(play_type))
-    
+
     # Build the PlayResult based on combined outcome
     play_result = PlayResult(
         result_type=ResultType.YARDS,
@@ -1106,7 +1106,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
     )
-    
+
     # Handle special priority outcomes (QT, Breakaway, etc.)
     if combined.use_qt_column:
         qt_roll, qt_desc = roll_chart_dice()
@@ -1117,35 +1117,35 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
             play_result.description = f"QB scrambles for {qt_yards} yards (QT roll: {qt_desc})"
         else:
             play_result.description = f"QB SACKED for {abs(qt_yards)} yard loss (QT roll: {qt_desc})"
-    
+
     elif combined.use_breakaway:
         b_roll, b_desc = roll_chart_dice()
         b_yards = resolve_breakaway(offense_chart.offense, b_roll)
         play_result.yards = b_yards
         play_result.result_type = ResultType.BREAKAWAY
         play_result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
-    
+
     elif combined.is_turnover:
         if "INT" in off_result_str or "INT" in def_result_str:
             play_result.result_type = ResultType.INTERCEPTION
         else:
             play_result.result_type = ResultType.FUMBLE
-    
+
     elif combined.is_incomplete:
         play_result.result_type = ResultType.INCOMPLETE
         play_result.description = "Incomplete pass"
-    
+
     elif combined.is_touchdown:
         play_result.result_type = ResultType.TOUCHDOWN
         play_result.description = "TOUCHDOWN!"
-    
+
     # Add dice roll info to description
     play_result.description += f" [Off: {off_dice_desc}, Def: {def_dice_desc}]"
-    
+
     # Determine offended team and offsetting status
     offended_team = ""
     offsetting = False
-    
+
     if has_off_penalty and has_def_penalty:
         # Offsetting penalties
         offsetting = True
@@ -1156,7 +1156,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     elif has_def_penalty:
         # Defense committed penalty - offense is offended
         offended_team = "offense"
-    
+
     return PenaltyChoice(
         play_result=play_result,
         penalty_options=penalty_options,

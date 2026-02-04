@@ -126,20 +126,20 @@ class GameState:
         Returns True if a first down was achieved or touchdown scored.
         """
         self.ball_position += yards
-        
+
         # Check for touchdown
         if self.ball_position >= 100:
             self.ball_position = 100
             return True
-        
+
         # Check for safety (ball in own end zone)
         if self.ball_position <= 0:
             self.ball_position = 0
             return False
-        
+
         # Update yards to go
         self.yards_to_go -= yards
-        
+
         # Check for first down
         if self.yards_to_go <= 0:
             self.down = 1
@@ -148,7 +148,7 @@ class GameState:
             if self.ball_position > 90:
                 self.yards_to_go = 100 - self.ball_position
             return True
-        
+
         return False
 
     def next_down(self):
@@ -204,7 +204,7 @@ class GameState:
         """Use game clock time."""
         minutes = seconds / 60.0
         self.time_remaining -= minutes
-        
+
         if self.time_remaining <= 0:
             self.time_remaining = 0
             if self.quarter < 4:

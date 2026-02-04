@@ -14,7 +14,6 @@ Usage:
 
 import argparse
 import json
-import os
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 from pathlib import Path
@@ -44,7 +43,7 @@ class GameResult:
     home_score: int
     away_team: str
     away_score: int
-    
+
     @property
     def winner(self) -> Optional[str]:
         """Return the winning team, or None if tie."""
@@ -53,7 +52,7 @@ class GameResult:
         elif self.away_score > self.home_score:
             return self.away_team
         return None
-    
+
     @property
     def loser(self) -> Optional[str]:
         """Return the losing team, or None if tie."""
@@ -62,7 +61,7 @@ class GameResult:
         elif self.away_score > self.home_score:
             return self.home_team
         return None
-    
+
     @property
     def is_tie(self) -> bool:
         """Return True if game was a tie."""
@@ -84,11 +83,11 @@ class TeamRecord:
     conference_wins: int = 0
     conference_losses: int = 0
     conference_ties: int = 0
-    
+
     @property
     def games_played(self) -> int:
         return self.wins + self.losses + self.ties
-    
+
     @property
     def win_pct(self) -> float:
         """Calculate winning percentage (ties count as half win)."""
@@ -96,18 +95,18 @@ class TeamRecord:
         if games == 0:
             return 0.0
         return (self.wins + 0.5 * self.ties) / games
-    
+
     @property
     def point_diff(self) -> int:
         return self.points_for - self.points_against
-    
+
     @property
     def record_str(self) -> str:
         """Format record as W-L or W-L-T."""
         if self.ties > 0:
             return f"{self.wins}-{self.losses}-{self.ties}"
         return f"{self.wins}-{self.losses}"
-    
+
     @property
     def div_record_str(self) -> str:
         """Format division record."""
@@ -122,7 +121,7 @@ class Season:
     year: int
     divisions: dict = field(default_factory=dict)
     games: list = field(default_factory=list)
-    
+
     def __post_init__(self):
         # Load division structure for the year
         if self.year == 1983:
@@ -130,7 +129,7 @@ class Season:
         else:
             # Default to 1983 structure for now
             self.divisions = NFL_DIVISIONS_1983
-    
+
     def get_team_conference(self, team: str) -> Optional[str]:
         """Get the conference for a team."""
         for conf, divs in self.divisions.items():
@@ -138,7 +137,7 @@ class Season:
                 if team in teams:
                     return conf
         return None
-    
+
     def get_team_division(self, team: str) -> Optional[tuple]:
         """Get the (conference, division) for a team."""
         for conf, divs in self.divisions.items():
@@ -146,13 +145,13 @@ class Season:
                 if team in teams:
                     return (conf, div)
         return None
-    
-    def add_game(self, home_team: str, home_score: int, 
+
+    def add_game(self, home_team: str, home_score: int,
                  away_team: str, away_score: int, week: int = 0) -> GameResult:
         """Add a game result."""
         if week == 0:
             week = len(self.games) + 1
-        
+
         game = GameResult(
             week=week,
             home_team=home_team,
@@ -162,7 +161,7 @@ class Season:
         )
         self.games.append(game)
         return game
-    
+
     def get_standings(self) -> dict:
         """Calculate standings for all teams."""
         # Initialize records for all teams
@@ -171,30 +170,30 @@ class Season:
             for div, teams in divs.items():
                 for team in teams:
                     records[team] = TeamRecord(team=team)
-        
+
         # Process all games
         for game in self.games:
             home = game.home_team
             away = game.away_team
-            
+
             if home not in records or away not in records:
                 continue
-            
+
             home_rec = records[home]
             away_rec = records[away]
-            
+
             # Update points
             home_rec.points_for += game.home_score
             home_rec.points_against += game.away_score
             away_rec.points_for += game.away_score
             away_rec.points_against += game.home_score
-            
+
             # Check if division/conference game
             home_div = self.get_team_division(home)
             away_div = self.get_team_division(away)
             is_division_game = home_div == away_div
             is_conference_game = home_div and away_div and home_div[0] == away_div[0]
-            
+
             # Update win/loss/tie
             if game.is_tie:
                 home_rec.ties += 1
@@ -223,16 +222,16 @@ class Season:
                 if is_conference_game:
                     away_rec.conference_wins += 1
                     home_rec.conference_losses += 1
-        
+
         return records
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
             "year": self.year,
             "games": [asdict(g) for g in self.games]
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "Season":
         """Create from dictionary."""
@@ -244,17 +243,17 @@ class Season:
 
 class StandingsManager:
     """Manages season data persistence."""
-    
+
     def __init__(self, data_dir: str = None):
         if data_dir is None:
             # Default to seasons directory in project
             data_dir = Path(__file__).parent.parent / "standings_data"
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def _get_season_file(self, year: int) -> Path:
         return self.data_dir / f"season_{year}.json"
-    
+
     def load_season(self, year: int) -> Season:
         """Load a season from disk, or create new if not exists."""
         filepath = self._get_season_file(year)
@@ -263,13 +262,13 @@ class StandingsManager:
                 data = json.load(f)
             return Season.from_dict(data)
         return Season(year=year)
-    
+
     def save_season(self, season: Season):
         """Save a season to disk."""
         filepath = self._get_season_file(season.year)
         with open(filepath, 'w') as f:
             json.dump(season.to_dict(), f, indent=2)
-    
+
     def list_seasons(self) -> list:
         """List all available seasons."""
         seasons = []
@@ -285,35 +284,35 @@ class StandingsManager:
 def display_standings(season: Season):
     """Display standings in NFL format."""
     records = season.get_standings()
-    
+
     print(f"\n{'=' * 70}")
     print(f"  {season.year} NFL STANDINGS")
     print(f"{'=' * 70}")
-    
+
     for conf in ["AFC", "NFC"]:
         print(f"\n  {conf}")
         print(f"  {'-' * 66}")
-        
+
         for div in ["East", "Central", "West"]:
             if div not in season.divisions.get(conf, {}):
                 continue
-            
+
             teams = season.divisions[conf][div]
             div_records = [records[t] for t in teams if t in records]
-            
+
             # Sort by: win%, then point diff
             div_records.sort(key=lambda r: (-r.win_pct, -r.point_diff))
-            
+
             print(f"\n  {conf} {div}")
             print(f"  {'Team':<15} {'W':>3} {'L':>3} {'T':>3} {'Pct':>6} {'PF':>5} {'PA':>5} {'Diff':>5} {'Div':>7}")
             print(f"  {'-' * 64}")
-            
+
             for rec in div_records:
                 pct_str = f"{rec.win_pct:.3f}"
                 diff_str = f"+{rec.point_diff}" if rec.point_diff > 0 else str(rec.point_diff)
                 print(f"  {rec.team:<15} {rec.wins:>3} {rec.losses:>3} {rec.ties:>3} {pct_str:>6} "
                       f"{rec.points_for:>5} {rec.points_against:>5} {diff_str:>5} {rec.div_record_str:>7}")
-    
+
     print()
 
 
@@ -322,19 +321,19 @@ def display_games(season: Season):
     print(f"\n{'=' * 70}")
     print(f"  {season.year} GAME RESULTS")
     print(f"{'=' * 70}")
-    
+
     if not season.games:
         print("\n  No games recorded yet.")
         print()
         return
-    
+
     # Group by week
     games_by_week = {}
     for game in season.games:
         if game.week not in games_by_week:
             games_by_week[game.week] = []
         games_by_week[game.week].append(game)
-    
+
     for week in sorted(games_by_week.keys()):
         print(f"\n  Week {week}")
         print(f"  {'-' * 50}")
@@ -346,14 +345,14 @@ def display_games(season: Season):
                 print(f"  {game.away_team:<15} {game.away_score:>3} *@  {game.home_team:<15} {game.home_score:>3}")
             else:
                 print(f"  {game.away_team:<15} {game.away_score:>3}  @  {game.home_team:<15} {game.home_score:>3}  (TIE)")
-    
+
     print()
 
 
 def normalize_team_name(name: str, season: Season) -> Optional[str]:
     """Try to match a team name to the official name."""
     name_lower = name.lower()
-    
+
     for conf, divs in season.divisions.items():
         for div, teams in divs.items():
             for team in teams:
@@ -362,7 +361,7 @@ def normalize_team_name(name: str, season: Season) -> Optional[str]:
                 # Partial match
                 if name_lower in team.lower() or team.lower() in name_lower:
                     return team
-    
+
     return None
 
 
@@ -371,7 +370,7 @@ def main():
         description="Track NFL season standings for Paydirt football simulation"
     )
     subparsers = parser.add_subparsers(dest="command", help="Commands")
-    
+
     # Add game command
     add_parser = subparsers.add_parser("add", help="Add a game result")
     add_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
@@ -380,33 +379,33 @@ def main():
     add_parser.add_argument("away_team", help="Away team name")
     add_parser.add_argument("away_score", type=int, help="Away team score")
     add_parser.add_argument("--week", type=int, default=0, help="Week number (auto-assigned if not specified)")
-    
+
     # Show standings command
     show_parser = subparsers.add_parser("show", help="Show standings")
     show_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
-    
+
     # Show games command
     games_parser = subparsers.add_parser("games", help="Show all games")
     games_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
-    
+
     # List seasons command
     subparsers.add_parser("list", help="List all seasons with data")
-    
+
     # Teams command - show teams for a year
     teams_parser = subparsers.add_parser("teams", help="Show teams and divisions for a year")
     teams_parser.add_argument("year", type=int, help="Season year (e.g., 1983)")
-    
+
     args = parser.parse_args()
-    
+
     manager = StandingsManager()
-    
+
     if args.command == "add":
         season = manager.load_season(args.year)
-        
+
         # Normalize team names
         home = normalize_team_name(args.home_team, season)
         away = normalize_team_name(args.away_team, season)
-        
+
         if not home:
             print(f"Error: Unknown team '{args.home_team}'")
             print("Use 'standings teams <year>' to see valid team names.")
@@ -415,7 +414,7 @@ def main():
             print(f"Error: Unknown team '{args.away_team}'")
             print("Use 'standings teams <year>' to see valid team names.")
             return 1
-        
+
         game = season.add_game(
             home_team=home,
             home_score=args.home_score,
@@ -424,22 +423,22 @@ def main():
             week=args.week
         )
         manager.save_season(season)
-        
+
         winner = game.winner or "TIE"
         print(f"Added: Week {game.week} - {away} {args.away_score} @ {home} {args.home_score}")
         if game.is_tie:
-            print(f"Result: TIE")
+            print("Result: TIE")
         else:
             print(f"Winner: {winner}")
-    
+
     elif args.command == "show":
         season = manager.load_season(args.year)
         display_standings(season)
-    
+
     elif args.command == "games":
         season = manager.load_season(args.year)
         display_games(season)
-    
+
     elif args.command == "list":
         seasons = manager.list_seasons()
         if seasons:
@@ -450,7 +449,7 @@ def main():
         else:
             print("\nNo seasons recorded yet.")
             print("Use 'standings add <year> <home> <home_score> <away> <away_score>' to add a game.")
-    
+
     elif args.command == "teams":
         season = Season(year=args.year)
         print(f"\n{args.year} NFL Teams by Division")
@@ -461,10 +460,10 @@ def main():
                 if div in season.divisions.get(conf, {}):
                     teams = season.divisions[conf][div]
                     print(f"  {div}: {', '.join(teams)}")
-    
+
     else:
         parser.print_help()
-    
+
     return 0
 
 

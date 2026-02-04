@@ -40,7 +40,6 @@ MARKING OFF PENALTIES:
 - DEF 5X: Automatic first down, marked from end of gain if play gained yardage  
 - DEF 15: Automatic first down, marked from end of gain if play gained yardage
 """
-import random
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Tuple
@@ -80,12 +79,12 @@ def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
         PenaltyResult with yards, automatic first down flag, and mark-from-gain flag
     """
     dice_roll, dice_desc = roll_chart_dice()
-    
+
     yards = 0
     auto_first_down = False
     mark_from_gain = False
     description = ""
-    
+
     if penalty_type == PenaltyType.OFFENSIVE_S:
         # OFF=S: 5 yards (10-29), 10 yards (30-36), 15 yards (37-39)
         if 10 <= dice_roll <= 29:
@@ -100,7 +99,7 @@ def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
         else:
             yards = 5  # Default
             description = "Offensive penalty, 5 yards"
-    
+
     elif penalty_type == PenaltyType.DEFENSIVE_S:
         # DEF=S: 5 yards (10-24), 5Y yards (25-29†), 5X yards (30-35*), 15 yards (36-39*†)
         if 10 <= dice_roll <= 24:
@@ -123,7 +122,7 @@ def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
         else:
             yards = 5
             description = "Defensive penalty, 5 yards"
-    
+
     elif penalty_type == PenaltyType.OFFENSIVE_R:
         # OFF=R: 5 yards (10), 10 yards (11-34), 15 yards (35-39)
         if dice_roll == 10:
@@ -138,7 +137,7 @@ def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
         else:
             yards = 10  # Default
             description = "Offensive penalty on return, 10 yards"
-    
+
     elif penalty_type == PenaltyType.DEFENSIVE_R:
         # DEF=R: -- (10), 5Y yards (11-16†), 5X yards (17-19*), 15 yards (20-39*†)
         # Note: Roll 10 has no entry ("--") - treat as minimum 5 yards
@@ -165,7 +164,7 @@ def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
             yards = 5
             mark_from_gain = True
             description = "Defensive penalty on return, 5 yards"
-    
+
     return PenaltyResult(
         penalty_type=penalty_type,
         yards=yards,
@@ -187,7 +186,7 @@ class NoHuddlePenaltyResult:
     description: str = ""
 
 
-def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType, 
+def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
                                     play_type: str = "normal") -> NoHuddlePenaltyResult:
     """
     Roll penalty yardage using the No Huddle Offense penalty chart.
@@ -204,7 +203,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
         NoHuddlePenaltyResult with special handling or normal penalty
     """
     dice_roll, dice_desc = roll_chart_dice()
-    
+
     if penalty_type == PenaltyType.OFFENSIVE_S:
         # OFF=S: 10-11 = Bad Snap (FS*), 12-29 = 5 yards, 30-36 = 10 yards, 37-39 = 15 yards
         if 10 <= dice_roll <= 11:
@@ -238,7 +237,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
                 normal_penalty=normal_result,
                 description=normal_result.description
             )
-    
+
     elif penalty_type == PenaltyType.DEFENSIVE_S:
         # DEF=S: 10-14 = OFF 5 (false start), 15-24 = DEF 5, 25-29 = 5Y, 30-35 = 5X, 36-39 = 15
         if 10 <= dice_roll <= 14:
@@ -303,7 +302,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
                 ),
                 description=f"Defensive personal foul, 15 yards + auto first down (Roll: {dice_desc})"
             )
-    
+
     elif penalty_type == PenaltyType.OFFENSIVE_R:
         # OFF=R: 10† = 5 yards, 11-34 = 10 yards, 35-39 = 15 yards
         # Same as normal but 10 is marked prior to change of possession
@@ -313,7 +312,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
             normal_penalty=normal_result,
             description=normal_result.description
         )
-    
+
     elif penalty_type == PenaltyType.DEFENSIVE_R:
         # DEF=R: Same as normal with †† markers
         normal_result = roll_penalty_yardage(penalty_type)
@@ -322,7 +321,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
             normal_penalty=normal_result,
             description=normal_result.description
         )
-    
+
     # Fallback
     normal_result = roll_penalty_yardage(penalty_type)
     return NoHuddlePenaltyResult(
@@ -331,7 +330,7 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
     )
 
 
-def apply_half_distance_rule(penalty_yards: int, ball_position: int, 
+def apply_half_distance_rule(penalty_yards: int, ball_position: int,
                               is_offensive_penalty: bool) -> int:
     """
     Apply the half-distance-to-goal rule.
@@ -354,11 +353,11 @@ def apply_half_distance_rule(penalty_yards: int, ball_position: int,
         # Defensive penalty moves ball toward opponent's goal
         # Distance to opponent's goal is (100 - ball_position)
         max_penalty = (100 - ball_position) // 2
-    
+
     return min(penalty_yards, max(1, max_penalty))
 
 
-def calculate_penalty_spot(ball_position: int, yards_gained: int, 
+def calculate_penalty_spot(ball_position: int, yards_gained: int,
                            penalty_yards: int, is_offensive_penalty: bool,
                            mark_from_gain: bool, is_return: bool = False) -> int:
     """
@@ -400,7 +399,7 @@ def calculate_penalty_spot(ball_position: int, yards_gained: int,
             return ball_position + penalty_yards
 
 
-def resolve_penalty(penalty_code: str, ball_position: int, 
+def resolve_penalty(penalty_code: str, ball_position: int,
                     yards_gained: int = 0, is_return: bool = False,
                     yards_to_go: int = 10, down: int = 1) -> Tuple[PenaltyResult, int, int, int, bool]:
     """
@@ -431,24 +430,24 @@ def resolve_penalty(penalty_code: str, ball_position: int,
         else:
             penalty_type = PenaltyType.DEFENSIVE_S
         is_offensive = False
-    
+
     # Roll for actual penalty yardage
     penalty_result = roll_penalty_yardage(penalty_type)
-    
+
     # Apply half-distance rule
     adjusted_yards = apply_half_distance_rule(
         penalty_result.yards, ball_position, is_offensive
     )
-    
+
     # Calculate new ball position
     new_position = calculate_penalty_spot(
         ball_position, yards_gained, adjusted_yards,
         is_offensive, penalty_result.mark_from_end_of_gain, is_return
     )
-    
+
     # Ensure ball stays in bounds
     new_position = max(1, min(99, new_position))
-    
+
     # Determine down and distance
     first_down = False
     if is_offensive:
@@ -470,11 +469,11 @@ def resolve_penalty(penalty_code: str, ball_position: int,
                 first_down = True
             else:
                 new_down = down
-    
+
     # Update description with adjusted yards if different
     if adjusted_yards != penalty_result.yards:
         penalty_result.description += f" (half-distance: {adjusted_yards} yards)"
-    
+
     return penalty_result, new_position, new_down, new_yards_to_go, first_down
 
 
@@ -493,15 +492,15 @@ def resolve_pass_interference(pi_yards: int, ball_position: int) -> Tuple[int, i
         Tuple of (new_ball_position, new_down, new_yards_to_go)
     """
     new_position = ball_position + pi_yards
-    
+
     # PI can go into the end zone for a TD, but cap at 99 for goal-to-go
     if new_position >= 100:
         new_position = 99  # 1st and goal at the 1
-    
+
     return new_position, 1, min(10, 100 - new_position)
 
 
-def check_offsetting_penalties(off_penalty: bool, def_penalty: bool, 
+def check_offsetting_penalties(off_penalty: bool, def_penalty: bool,
                                 pi_penalty: bool) -> bool:
     """
     Check if penalties offset.

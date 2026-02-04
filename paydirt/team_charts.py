@@ -3,7 +3,7 @@ Team charts that determine play outcomes based on dice rolls.
 These charts are inspired by the Paydirt board game mechanics.
 """
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 from .models import PlayType, DefenseType, PlayOutcome, PlayResult, Team
 
@@ -125,23 +125,23 @@ def apply_team_modifier(base_yards: int, offense_rating: int, defense_rating: in
     """
     # Calculate modifier: positive means more yards, negative means fewer
     modifier = (offense_rating - defense_rating) / 2.0
-    
+
     # Apply modifier as a percentage adjustment
     adjusted = base_yards * (1 + modifier * 0.1)
-    
+
     # Add some randomness
     variance = random.randint(-1, 1)
-    
+
     return max(int(adjusted) + variance, base_yards - 3 if base_yards > 0 else base_yards)
 
 
-def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType, 
+def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType,
                           play_type: PlayType) -> PlayOutcome:
     """
     Modify outcome based on defensive formation vs play type.
     """
     yards = outcome.yards
-    
+
     # Blitz is good vs pass but bad vs run
     if defense_type == DefenseType.BLITZ:
         if play_type in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS]:
@@ -156,7 +156,7 @@ def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType,
             # Blitz is terrible vs screens and draws
             if outcome.result == PlayResult.GAIN:
                 yards = int(yards * 1.5)
-    
+
     # Prevent defense is good vs long pass but bad vs run
     elif defense_type == DefenseType.PREVENT:
         if play_type == PlayType.LONG_PASS:
@@ -165,7 +165,7 @@ def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType,
         elif play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
             if outcome.result == PlayResult.GAIN:
                 yards = int(yards * 1.4)  # Easy runs vs prevent
-    
+
     # Goal line defense is good vs short yardage
     elif defense_type == DefenseType.GOAL_LINE:
         if play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
@@ -174,7 +174,7 @@ def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType,
         elif play_type in [PlayType.MEDIUM_PASS, PlayType.LONG_PASS]:
             if outcome.result == PlayResult.GAIN:
                 yards = int(yards * 1.3)  # Vulnerable deep
-    
+
     return PlayOutcome(
         result=outcome.result,
         yards=yards,
@@ -226,7 +226,7 @@ def resolve_play(play_type: PlayType, defense_type: DefenseType,
     dice_roll = roll_dice()
     chart = get_play_chart(play_type)
     base_outcome = chart[dice_roll]
-    
+
     # Determine which ratings to use
     if play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE, PlayType.DRAW]:
         off_rating = offense.rushing_offense
@@ -234,10 +234,10 @@ def resolve_play(play_type: PlayType, defense_type: DefenseType,
     else:
         off_rating = offense.passing_offense
         def_rating = defense.passing_defense
-    
+
     # Apply team modifiers to yards
     modified_yards = apply_team_modifier(base_outcome.yards, off_rating, def_rating)
-    
+
     # Create modified outcome
     modified_outcome = PlayOutcome(
         result=base_outcome.result,
@@ -247,10 +247,10 @@ def resolve_play(play_type: PlayType, defense_type: DefenseType,
         scoring=base_outcome.scoring,
         penalty_yards=base_outcome.penalty_yards
     )
-    
+
     # Apply defense formation modifiers
     final_outcome = apply_defense_modifier(modified_outcome, defense_type, play_type)
-    
+
     return dice_roll, final_outcome
 
 
@@ -266,13 +266,13 @@ def resolve_field_goal(distance: int, kicker_rating: int) -> Tuple[int, bool]:
         Tuple of (dice_roll, success)
     """
     dice_roll = roll_dice()
-    
+
     # Base success threshold depends on distance
     # Short FGs (< 30 yards): need 4+
     # Medium FGs (30-45 yards): need 6+
     # Long FGs (46-55 yards): need 8+
     # Very long FGs (> 55 yards): need 10+
-    
+
     if distance < 30:
         threshold = 4
     elif distance <= 45:
@@ -281,10 +281,10 @@ def resolve_field_goal(distance: int, kicker_rating: int) -> Tuple[int, bool]:
         threshold = 8
     else:
         threshold = 10
-    
+
     # Kicker rating modifies threshold (rating 5 is neutral)
     threshold -= (kicker_rating - 5)
-    
+
     success = dice_roll >= threshold
     return dice_roll, success
 
@@ -300,7 +300,7 @@ def resolve_punt(punter_rating: int) -> Tuple[int, int]:
         Tuple of (dice_roll, punt_distance)
     """
     dice_roll = roll_dice()
-    
+
     # Base punt distance by roll
     base_distances = {
         2: 25,   # Shank
@@ -315,13 +315,13 @@ def resolve_punt(punter_rating: int) -> Tuple[int, int]:
         11: 55,
         12: 60,  # Booming punt
     }
-    
+
     base_distance = base_distances[dice_roll]
-    
+
     # Punter rating modifies distance
     modifier = (punter_rating - 5) * 2
     final_distance = base_distance + modifier
-    
+
     return dice_roll, final_distance
 
 
@@ -336,16 +336,16 @@ def resolve_extra_point(kicker_rating: int) -> Tuple[int, bool]:
         Tuple of (dice_roll, success)
     """
     dice_roll = roll_dice()
-    
+
     # Extra points are almost automatic - need 3+ (miss on snake eyes basically)
     threshold = 3 - (kicker_rating - 5)
     threshold = max(2, threshold)  # Can't be automatic
-    
+
     success = dice_roll >= threshold
     return dice_roll, success
 
 
-def resolve_two_point_conversion(play_type: PlayType, offense: Team, 
+def resolve_two_point_conversion(play_type: PlayType, offense: Team,
                                  defense: Team) -> Tuple[int, bool]:
     """
     Resolve a two-point conversion attempt.
@@ -358,15 +358,15 @@ def resolve_two_point_conversion(play_type: PlayType, offense: Team,
         Tuple of (dice_roll, success)
     """
     dice_roll = roll_dice()
-    
+
     # Two-point conversions succeed on 8+ (about 42% success rate)
     # Modified by team ratings
     if play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
         modifier = (offense.rushing_offense - defense.rushing_defense) / 2
     else:
         modifier = (offense.passing_offense - defense.passing_defense) / 2
-    
+
     threshold = 8 - int(modifier)
     success = dice_roll >= threshold
-    
+
     return dice_roll, success

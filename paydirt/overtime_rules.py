@@ -25,7 +25,7 @@ class OvertimeRules:
     can_end_in_tie_regular: bool  # Can regular season games end in tie?
     can_end_in_tie_playoff: bool  # Can playoff games end in tie? (always False)
     coin_toss_winner_receives: bool  # Does coin toss winner receive the ball?
-    
+
     def get_max_periods(self, is_playoff: bool) -> int:
         """Get max OT periods based on game type."""
         return self.max_periods_playoff if is_playoff else self.max_periods_regular
@@ -44,7 +44,7 @@ OVERTIME_RULES_BY_YEAR = {
         can_end_in_tie_playoff=False,
         coin_toss_winner_receives=True
     ),
-    
+
     # 2010-2011: Modified sudden death for playoffs only
     2010: OvertimeRules(
         format=OvertimeFormat.MODIFIED_SUDDEN_DEATH,
@@ -55,7 +55,7 @@ OVERTIME_RULES_BY_YEAR = {
         can_end_in_tie_playoff=False,
         coin_toss_winner_receives=True
     ),
-    
+
     # 2012-2016: Modified sudden death for all games
     2012: OvertimeRules(
         format=OvertimeFormat.MODIFIED_SUDDEN_DEATH,
@@ -66,7 +66,7 @@ OVERTIME_RULES_BY_YEAR = {
         can_end_in_tie_playoff=False,
         coin_toss_winner_receives=True
     ),
-    
+
     # 2017-2022: Reduced to 10-minute OT in regular season
     2017: OvertimeRules(
         format=OvertimeFormat.MODIFIED_SUDDEN_DEATH,
@@ -77,7 +77,7 @@ OVERTIME_RULES_BY_YEAR = {
         can_end_in_tie_playoff=False,
         coin_toss_winner_receives=True
     ),
-    
+
     # 2022+: Both teams get possession in playoffs
     # (For simplicity, we'll treat this as modified sudden death with guaranteed possession)
     2022: OvertimeRules(
@@ -109,16 +109,16 @@ def get_overtime_rules(year: int) -> OvertimeRules:
             applicable_year = rule_year
         else:
             break
-    
+
     if applicable_year is None:
         # Default to earliest rules for very old seasons
         applicable_year = min(OVERTIME_RULES_BY_YEAR.keys())
-    
+
     return OVERTIME_RULES_BY_YEAR[applicable_year]
 
 
-def check_overtime_winner(home_score: int, away_score: int, 
-                          rules: OvertimeRules, 
+def check_overtime_winner(home_score: int, away_score: int,
+                          rules: OvertimeRules,
                           is_playoff: bool,
                           first_possession_team_scored: bool,
                           first_possession_was_td: bool,
@@ -145,20 +145,20 @@ def check_overtime_winner(home_score: int, away_score: int,
             if rules.can_end_in_tie_regular and not is_playoff:
                 return "tie"
         return None  # Game continues
-    
+
     # Someone is ahead
     if rules.format == OvertimeFormat.SUDDEN_DEATH:
         # Any score wins
         return "home" if home_score > away_score else "away"
-    
+
     elif rules.format == OvertimeFormat.MODIFIED_SUDDEN_DEATH:
         # TD on first possession wins immediately
         # FG on first possession allows other team to respond
         if first_possession_team_scored and first_possession_was_td:
             return "home" if home_score > away_score else "away"
-        
+
         # After both teams have had possession, any score wins
         # (This is simplified - full implementation would track possessions)
         return "home" if home_score > away_score else "away"
-    
+
     return None

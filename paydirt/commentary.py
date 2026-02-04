@@ -6,10 +6,9 @@ import json
 import os
 import random
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional
 
-from .play_resolver import PlayType, DefenseType, ResultType
+from .play_resolver import PlayType, ResultType
 
 
 @dataclass
@@ -21,38 +20,38 @@ class TeamRoster:
     wr: list[str] = field(default_factory=list)  # Wide receivers
     te: list[str] = field(default_factory=list)  # Tight ends
     ol: list[str] = field(default_factory=list)  # Offensive linemen (for run blocking mentions)
-    
+
     # Defense
     dl: list[str] = field(default_factory=list)  # Defensive linemen
     lb: list[str] = field(default_factory=list)  # Linebackers
     db: list[str] = field(default_factory=list)  # Defensive backs
-    
+
     # Special Teams
     k: list[str] = field(default_factory=list)   # Kickers
     p: list[str] = field(default_factory=list)   # Punters
     kr: list[str] = field(default_factory=list)  # Kick returners
-    
+
     def random_qb(self) -> str:
         return random.choice(self.qb) if self.qb else "The quarterback"
-    
+
     def random_rb(self) -> str:
         return random.choice(self.rb) if self.rb else "The running back"
-    
+
     def random_wr(self) -> str:
         return random.choice(self.wr) if self.wr else "The receiver"
-    
+
     def random_te(self) -> str:
         return random.choice(self.te) if self.te else "The tight end"
-    
+
     def random_dl(self) -> str:
         return random.choice(self.dl) if self.dl else "The defensive lineman"
-    
+
     def random_lb(self) -> str:
         return random.choice(self.lb) if self.lb else "The linebacker"
-    
+
     def random_db(self) -> str:
         return random.choice(self.db) if self.db else "The defensive back"
-    
+
     def random_defender(self) -> str:
         """Return a random defensive player."""
         all_defenders = self.dl + self.lb + self.db
@@ -127,7 +126,7 @@ TEAM_ROSTERS = {
         p=["Rohn Stark"],
         kr=["Curtis Dickey", "George Wonsley"],
     ),
-    
+
     # AFC CENTRAL
     "1983 Pittsburgh Steelers": TeamRoster(
         qb=["Terry Bradshaw", "Cliff Stoudt", "David Woodley"],
@@ -181,7 +180,7 @@ TEAM_ROSTERS = {
         p=["Cliff Parsley"],
         kr=["Carl Roaches", "Stan Edwards"],
     ),
-    
+
     # AFC WEST
     "1983 Los Angeles Raiders": TeamRoster(
         qb=["Jim Plunkett", "Marc Wilson"],
@@ -248,7 +247,7 @@ TEAM_ROSTERS = {
         p=["Jim Arnold"],
         kr=["Theotis Brown", "Stephone Paige"],
     ),
-    
+
     # NFC EAST
     "1983 Washington Redskins": TeamRoster(
         qb=["Joe Theismann", "Joe Washington"],
@@ -315,7 +314,7 @@ TEAM_ROSTERS = {
         p=["Dave Jennings"],
         kr=["Leon Bright", "Butch Woolfolk"],
     ),
-    
+
     # NFC CENTRAL
     "1983 Chicago Bears": TeamRoster(
         qb=["Jim McMahon", "Vince Evans"],
@@ -382,7 +381,7 @@ TEAM_ROSTERS = {
         p=["Frank Garcia"],
         kr=["Adger Armstrong", "Leon Bright"],
     ),
-    
+
     # NFC WEST
     "1983 San Francisco 49ers": TeamRoster(
         qb=["Joe Montana", "Matt Cavanaugh"],
@@ -484,14 +483,14 @@ def get_roster(team_full_name: str, team_dir: str = None) -> TeamRoster:
     cache_key = team_dir or team_full_name
     if cache_key in _roster_cache:
         return _roster_cache[cache_key]
-    
+
     # Try loading from file if team_dir provided
     if team_dir:
         roster = load_roster_from_file(team_dir)
         if roster:
             _roster_cache[cache_key] = roster
             return roster
-    
+
     # Fall back to hardcoded rosters
     roster = TEAM_ROSTERS.get(team_full_name, TeamRoster())
     _roster_cache[cache_key] = roster
@@ -664,14 +663,14 @@ BREAKAWAY_CALLS = [
 
 class Commentary:
     """Generates colorful play-by-play commentary."""
-    
+
     def __init__(self, offense_roster: TeamRoster, defense_roster: TeamRoster,
                  offense_name: str, defense_name: str):
         self.off_roster = offense_roster
         self.def_roster = defense_roster
         self.off_name = offense_name
         self.def_name = defense_name
-    
+
     def generate(self, play_type: PlayType, result_type: ResultType,
                  yards: int, is_first_down: bool = False,
                  is_touchdown: bool = False, is_breakaway: bool = False,
@@ -688,13 +687,13 @@ class Commentary:
             is_check_down: Whether defense limited the gain (parentheses result)
         """
         lines = []
-        
+
         # Determine if this is a pass or run play
         is_pass = play_type in [
-            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, 
+            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
             PlayType.LONG_PASS, PlayType.SCREEN, PlayType.TE_SHORT_LONG
         ]
-        
+
         # Get player names
         # Use starting QB (first in list) for passing plays to avoid backup QBs
         # who might also be listed as RBs (e.g., Joe Washington)
@@ -702,11 +701,11 @@ class Commentary:
         rb = self.off_roster.random_rb()
         wr = self.off_roster.random_wr()
         te = self.off_roster.random_te()
-        defender = self.def_roster.random_defender()
+        self.def_roster.random_defender()
         db = self.def_roster.random_db()
         dl = self.def_roster.random_dl()
         lb = self.def_roster.random_lb()
-        
+
         # Choose receiver based on play type
         if play_type == PlayType.TE_SHORT_LONG:
             receiver = te
@@ -721,14 +720,14 @@ class Commentary:
                         break
         else:
             receiver = wr
-        
+
         # Choose ball carrier for runs
         # QB Sneak means the QB runs the ball
         if play_type == PlayType.QB_SNEAK:
             ball_carrier = qb
         else:
             ball_carrier = rb
-        
+
         # Generate commentary based on result type
         if result_type == ResultType.TOUCHDOWN:
             if is_pass:
@@ -741,46 +740,46 @@ class Commentary:
                 lines.append(template.format(
                     player=ball_carrier, team=self.off_name, yards=yards
                 ))
-        
+
         elif result_type == ResultType.INTERCEPTION:
             template = random.choice(INTERCEPTION_CALLS)
             lines.append(template.format(
                 qb=qb, defender=db, team=self.def_name
             ))
-        
+
         elif result_type == ResultType.FUMBLE:
             template = random.choice(FUMBLE_CALLS)
             lines.append(template.format(team=self.def_name))
-        
+
         elif result_type == ResultType.SACK:
             template = random.choice(SACK_CALLS)
             lines.append(template.format(
                 qb=qb, defender=random.choice([dl, lb]), yards=abs(yards)
             ))
-        
+
         elif result_type == ResultType.INCOMPLETE:
             template = random.choice(INCOMPLETE_CALLS)
             lines.append(template.format(qb=qb, receiver=receiver))
-        
+
         elif result_type == ResultType.PENALTY_OFFENSE:
             template = random.choice(PENALTY_OFFENSE_CALLS)
             lines.append(template.format(yards=abs(yards)))
-        
+
         elif result_type == ResultType.PENALTY_DEFENSE:
             template = random.choice(PENALTY_DEFENSE_CALLS)
             lines.append(template.format(yards=yards))
-        
+
         elif result_type == ResultType.PASS_INTERFERENCE:
             template = random.choice(PASS_INTERFERENCE_CALLS)
             lines.append(template.format(yards=yards))
-        
+
         elif result_type == ResultType.BREAKAWAY:
             # Breakaway run
             template = random.choice(BREAKAWAY_CALLS)
             lines.append(template.format(player=ball_carrier, yards=yards))
             if is_touchdown:
                 lines.append(random.choice(TOUCHDOWN_CALLS).format(team=self.off_name))
-        
+
         elif result_type == ResultType.YARDS:
             # Normal yardage play
             if is_touchdown:
@@ -833,9 +832,9 @@ class Commentary:
                 lines.append(template.format(
                     player=ball_carrier if not is_pass else qb, yards=abs(yards)
                 ))
-        
+
         # Add first down call if applicable (and not a touchdown)
         if is_first_down and not is_touchdown:
             lines.append(random.choice(FIRST_DOWN_CALLS).format(team=self.off_name))
-        
+
         return " ".join(lines)
