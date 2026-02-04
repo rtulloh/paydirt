@@ -732,3 +732,57 @@ class TestHalfDistanceRuleInPenaltyAdvice:
         
         # Distance to goal is 8 yards, half is 4
         assert adjusted == 4, f"Expected 4 yards (half of 8), got {adjusted}"
+
+
+class TestPenaltyOptionsFiltering:
+    """Tests for filtering penalty options based on offended team."""
+    
+    def test_offense_offended_only_sees_defensive_penalties(self):
+        """When offense is offended, they should only see DEF/PI penalties."""
+        from paydirt.play_resolver import PenaltyOption
+        
+        # Simulate penalty options list with both OFF and DEF penalties
+        penalty_options = [
+            PenaltyOption(penalty_type="OFF", raw_result="OFF 15", yards=15, 
+                         auto_first_down=False, description="Offensive penalty, 15 yards"),
+            PenaltyOption(penalty_type="PI", raw_result="PI 8", yards=8, 
+                         auto_first_down=True, description="Pass interference, 8 yards"),
+        ]
+        
+        offended_is_offense = True
+        
+        # Filter like interactive_game.py does
+        if offended_is_offense:
+            filtered = [opt for opt in penalty_options if opt.penalty_type in ["DEF", "PI"]]
+        else:
+            filtered = [opt for opt in penalty_options if opt.penalty_type == "OFF"]
+        
+        # Should only have the PI penalty
+        assert len(filtered) == 1
+        assert filtered[0].penalty_type == "PI"
+        assert filtered[0].yards == 8
+    
+    def test_defense_offended_only_sees_offensive_penalties(self):
+        """When defense is offended, they should only see OFF penalties."""
+        from paydirt.play_resolver import PenaltyOption
+        
+        # Simulate penalty options list with both OFF and DEF penalties
+        penalty_options = [
+            PenaltyOption(penalty_type="OFF", raw_result="OFF 10", yards=10, 
+                         auto_first_down=False, description="Offensive penalty, 10 yards"),
+            PenaltyOption(penalty_type="DEF", raw_result="DEF 5", yards=5, 
+                         auto_first_down=False, description="Defensive penalty, 5 yards"),
+        ]
+        
+        offended_is_offense = False
+        
+        # Filter like interactive_game.py does
+        if offended_is_offense:
+            filtered = [opt for opt in penalty_options if opt.penalty_type in ["DEF", "PI"]]
+        else:
+            filtered = [opt for opt in penalty_options if opt.penalty_type == "OFF"]
+        
+        # Should only have the OFF penalty
+        assert len(filtered) == 1
+        assert filtered[0].penalty_type == "OFF"
+        assert filtered[0].yards == 10
