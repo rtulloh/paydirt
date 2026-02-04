@@ -1386,6 +1386,10 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 special_marker = " ★ TURNOVER!"
             else:
                 result_str = "FUMBLE - Recovered"
+        elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
+            # Check for TD before checking yards_gained (TD may have yards_gained=0)
+            result_str = "TOUCHDOWN!"
+            special_marker = " ★ TOUCHDOWN!"
         elif outcome.result.result_type == ResultType.BREAKAWAY:
             result_str = f"BREAKAWAY +{outcome.yards_gained}"
         elif outcome.result.result_type == ResultType.SACK:
@@ -1397,9 +1401,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         else:
             result_str = "No gain"
 
-        if outcome.touchdown:
+        if outcome.touchdown and special_marker != " ★ TOUCHDOWN!":
             special_marker = " ★ TOUCHDOWN!"
-        elif outcome.first_down and not outcome.turnover:
+        elif outcome.first_down and not outcome.turnover and not outcome.touchdown:
             special_marker = " FIRST DOWN!"
         elif outcome.safety:
             special_marker = " ★ SAFETY!"
