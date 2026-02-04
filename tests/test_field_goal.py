@@ -209,22 +209,47 @@ class TestBlockedFieldGoal:
             # Possession SHOULD switch (kicking team recovers but short of line to gain)
             assert game.state.is_home_possession is False
     
-    def test_blocked_fg_safety(self, game):
-        """Blocked FG in end zone should be a safety."""
+    def test_blocked_fg_safety_kicking_team_recovers_in_end_zone(self, game):
+        """Blocked FG with kicking team recovery in end zone = safety."""
         # Ball at own 5 (position 5), spot of hold = -2
-        # Block -8 would put ball at -10 = safety
+        # Block -8 would put ball at -10 = in end zone
+        # Kicking team recovers in their own end zone = safety
         game.state.ball_position = 5
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (14, "B1+W0+W4=14")  # BK -8
+            # FG roll = 14 (BK -8), recovery roll = 20 (kicking team recovers, range 10-31)
+            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
             assert "blocked" in outcome.description.lower()
             assert "safety" in outcome.description.lower()
             assert game.state.away_score == initial_away_score + 2
+    
+    def test_blocked_fg_touchback_defense_recovers_in_end_zone(self, game):
+        """Blocked FG with defense recovery in end zone = touchback."""
+        # Ball at own 5 (position 5), spot of hold = -2
+        # Block -8 would put ball at -10 = in end zone
+        # Defense recovers in kicking team's end zone = touchback for defense
+        game.state.ball_position = 5
+        game.state.is_home_possession = True
+        initial_away_score = game.state.away_score
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # FG roll = 14 (BK -8), recovery roll = 35 (defense recovers, range 32-39)
+            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (35, "B3+W2+W0=35")]
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            assert "blocked" in outcome.description.lower()
+            assert "touchback" in outcome.description.lower()
+            # No safety scored
+            assert game.state.away_score == initial_away_score
+            # Defense gets ball at their 20
+            assert game.state.is_home_possession is False
+            assert game.state.ball_position == 20
     
     def test_blocked_fg_on_3rd_down_kicking_team_recovers(self, game):
         """Blocked FG on 3rd down with kicking team recovery = next down, not turnover."""
