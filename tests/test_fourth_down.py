@@ -67,8 +67,8 @@ class TestFieldGoalDecisions:
         mock_game.state.yards_to_go = 1
         
         play = ai.select_offense(mock_game)
-        # Should be a running play (go for it)
-        assert play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE]
+        # Should be a power run play (go for it) - includes QB_SNEAK
+        assert play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.QB_SNEAK]
     
     def test_long_fg_punts_with_conservative_ai(self, mock_game):
         """Conservative AI should punt on long FG attempts."""
