@@ -225,6 +225,65 @@ class TestBlockedFieldGoal:
             assert "blocked" in outcome.description.lower()
             assert "safety" in outcome.description.lower()
             assert game.state.away_score == initial_away_score + 2
+    
+    def test_blocked_fg_on_3rd_down_kicking_team_recovers(self, game):
+        """Blocked FG on 3rd down with kicking team recovery = next down, not turnover."""
+        game.state.ball_position = 75  # Opponent's 25
+        game.state.is_home_possession = True
+        game.state.down = 3
+        game.state.yards_to_go = 10  # Line to gain is at 85
+        
+        # Mock dice rolls: FG roll = 14 (BK -8 = blocked), recovery roll = 20 (kicking team recovers)
+        # Ball at 75, spot of hold = 68, block -8 = ball at 60
+        # Line to gain = 85, recovery at 60 = short of line to gain
+        # But it's 3rd down, so kicking team keeps ball and advances to 4th down
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            assert "blocked" in outcome.description.lower()
+            assert "turnover" not in outcome.description.lower()
+            # Possession should NOT switch (3rd down, kicking team recovers)
+            assert game.state.is_home_possession is True
+            # Should advance to 4th down
+            assert game.state.down == 4
+    
+    def test_blocked_fg_on_1st_down_kicking_team_recovers(self, game):
+        """Blocked FG on 1st down with kicking team recovery = 2nd down."""
+        game.state.ball_position = 75  # Opponent's 25
+        game.state.is_home_possession = True
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            assert "blocked" in outcome.description.lower()
+            assert "turnover" not in outcome.description.lower()
+            assert game.state.is_home_possession is True
+            assert game.state.down == 2
+    
+    def test_blocked_fg_on_non_4th_down_defense_recovers(self, game):
+        """Blocked FG on non-4th down with defense recovery = turnover regardless of down."""
+        game.state.ball_position = 75
+        game.state.is_home_possession = True
+        game.state.down = 2  # 2nd down
+        game.state.yards_to_go = 10
+        
+        # Defense recovers (roll 35 is in defense recovery range 32-39)
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (35, "B3+W2+W0=35")]
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            assert "blocked" in outcome.description.lower()
+            # Defense recovers = turnover regardless of down
+            assert game.state.is_home_possession is False
+            assert game.state.down == 1
+            assert game.state.yards_to_go == 10
 
 
 class TestFieldGoalPenalties:
