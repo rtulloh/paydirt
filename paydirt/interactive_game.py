@@ -985,10 +985,20 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     
     # Handle special teams plays (punt, field goal, kickoff) differently
     if play_type == PlayType.PUNT:
+        # Get punter name from roster
+        punter = None
+        try:
+            roster = get_roster(off_chart.full_name, off_chart.team_dir)
+            if roster and roster.p:
+                punter = roster.p[0]
+        except:
+            pass
+        
         if COMPACT_MODE:
             # Compact punt display with dice details
             td_marker = " ★ TOUCHDOWN!" if outcome.touchdown else ""
-            print(f"► PUNT: {outcome.description}{td_marker}")
+            punter_str = f" ({punter})" if punter else ""
+            print(f"► PUNT{punter_str}: {outcome.description}{td_marker}")
             # Show dice roll info if available
             dice_roll = outcome.result.dice_roll if outcome.result else "?"
             chart_result = outcome.result.raw_result if outcome.result else "?"
