@@ -1875,16 +1875,30 @@ class PaydirtGameEngine:
         self.state.down = 1
         self.state.yards_to_go = 10
         
+        # Add punt commentary for exceptional punts
+        punt_commentary = ""
+        # Check if receiving team is pinned inside their 20 (ball_position is from their perspective now)
+        if self.state.ball_position <= 20 and not touchdown:
+            if self.state.ball_position <= 10:
+                punt_commentary = " Pinned deep!"
+            else:
+                punt_commentary = " Pinned inside the 20!"
+        # Check for extra long punt (50+ yards) that isn't a touchback
+        elif punt_yards >= 55 and not touchdown:
+            punt_commentary = " What a boot!"
+        elif punt_yards >= 50 and not touchdown:
+            punt_commentary = " Great hang time!"
+        
         # Build description
         if return_desc:
             if "fair catch" in return_desc or "downed" in return_desc:
-                description = f"Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}"
+                description = f"Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}.{punt_commentary}"
             elif touchdown:
                 description = f"Punt {punt_yards} yards, {return_desc} - TOUCHDOWN!"
             else:
-                description = f"Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}"
+                description = f"Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}.{punt_commentary}"
         else:
-            description = f"Punt {punt_yards} yards to {self.state.field_position_str()}"
+            description = f"Punt {punt_yards} yards to {self.state.field_position_str()}.{punt_commentary}"
         
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,
