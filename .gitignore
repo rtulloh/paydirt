@@ -43,6 +43,9 @@ htmlcov/
 # Game logs (user-specific)
 game.log
 
+# Standings data (user-specific season tracking)
+standings_data/
+
 # OS files
 .DS_Store
 Thumbs.db
