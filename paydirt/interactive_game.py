@@ -1032,8 +1032,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         kicker = "The kicker"
         try:
             roster = get_roster(off_chart.full_name, off_chart.team_dir)
-            if roster and roster.kicker:
-                kicker = roster.kicker
+            if roster and roster.k:
+                kicker = roster.k[0]  # Use first kicker in list
         except:
             pass
         
