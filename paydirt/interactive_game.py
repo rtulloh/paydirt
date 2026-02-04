@@ -15,7 +15,7 @@ from .play_resolver import (
     is_passing_play
 )
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
-from .computer_ai import ComputerAI
+from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 
@@ -2161,6 +2161,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
             print("=" * 70)
 
         # Process timeout if called (reduces play time to 10 seconds)
+        # Human timeout (offense or defense)
         if call_timeout:
             if game.state.use_timeout(human_is_home):
                 # With timeout, play only uses 10 seconds (0.167 minutes)
@@ -2173,6 +2174,20 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                 if time_before_play > 0 and game.state.quarter <= 4:
                     game.state.game_over = False
                 print(f"\n  *** TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
+        
+        # CPU timeout when on defense (human is on offense)
+        # CPU calls timeout to stop clock when trailing late in game
+        elif is_human_offense and computer_should_call_timeout_on_defense(game):
+            cpu_is_home = not human_is_home
+            if game.state.use_timeout(cpu_is_home):
+                time_after_timeout = time_before_play - 0.167
+                if time_after_timeout < 0:
+                    time_after_timeout = 0
+                game.state.time_remaining = time_after_timeout
+                if time_before_play > 0 and game.state.quarter <= 4:
+                    game.state.game_over = False
+                cpu_team = game.state.defense_team.peripheral.short_name
+                print(f"\n  *** {cpu_team} TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:

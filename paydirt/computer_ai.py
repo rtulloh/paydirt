@@ -594,6 +594,63 @@ class ComputerAI:
             return True
         return False
 
+    def should_call_timeout_on_defense(self, game: PaydirtGameEngine) -> bool:
+        """
+        Decide if CPU should call a timeout when on defense.
+        
+        Call timeouts when:
+        - Trailing late in the game and opponent has the ball
+        - Need to stop the clock to get the ball back
+        - Have timeouts remaining
+        """
+        state = game.state
+        time_left = state.time_remaining
+        quarter = state.quarter
+        
+        # Get score differential from CPU's perspective (CPU is on defense)
+        if state.is_home_possession:
+            # Home team has ball, CPU is away (defense)
+            cpu_score = state.away_score
+            opp_score = state.home_score
+            cpu_timeouts = state.away_timeouts
+        else:
+            # Away team has ball, CPU is home (defense)
+            cpu_score = state.home_score
+            opp_score = state.away_score
+            cpu_timeouts = state.home_timeouts
+        
+        score_diff = cpu_score - opp_score  # Negative = trailing
+        
+        # No timeouts available
+        if cpu_timeouts <= 0:
+            return False
+        
+        # Only use timeouts in 4th quarter or end of 2nd quarter
+        if quarter not in [2, 4]:
+            return False
+        
+        # End of 4th quarter - trailing and need to get ball back
+        if quarter == 4:
+            # Trailing by any amount with < 5 minutes left
+            if score_diff < 0 and time_left <= 5.0:
+                # More aggressive timeout usage when further behind or less time
+                if time_left <= 2.0:
+                    return True  # Always use timeouts in final 2 minutes when trailing
+                if score_diff <= -8 and time_left <= 4.0:
+                    return True  # Down by more than a TD with < 4 min
+                if score_diff <= -14 and time_left <= 5.0:
+                    return True  # Down by 2+ TDs with < 5 min
+        
+        # End of 2nd quarter - trailing and want to get ball before half
+        if quarter == 2:
+            if score_diff < 0 and time_left <= 2.0:
+                if time_left <= 1.0:
+                    return True  # Final minute of half when trailing
+                if score_diff <= -7:
+                    return True  # Down by TD+ with < 2 min in half
+        
+        return False
+
 
 # Convenience functions for backward compatibility
 def computer_select_offense(game: PaydirtGameEngine) -> PlayType:
@@ -606,3 +663,9 @@ def computer_select_defense(game: PaydirtGameEngine) -> DefenseType:
     """Select defensive formation using default AI."""
     ai = ComputerAI(aggression=0.5)
     return ai.select_defense(game)
+
+
+def computer_should_call_timeout_on_defense(game: PaydirtGameEngine) -> bool:
+    """Check if CPU should call a timeout when on defense."""
+    ai = ComputerAI(aggression=0.5)
+    return ai.should_call_timeout_on_defense(game)
