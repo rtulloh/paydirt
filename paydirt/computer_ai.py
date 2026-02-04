@@ -399,9 +399,12 @@ class ComputerAI:
 
     def _is_two_minute_drill(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be in hurry-up mode."""
-        # End of half, trailing
-        if quarter == 2 and time_left < 2.0 and score_diff <= 0:
-            return True
+        # End of half - try to score regardless of lead (unless huge lead)
+        # Even when leading, smart teams try to add points before halftime
+        if quarter == 2 and time_left < 2.0:
+            # Only skip hurry-up if leading by 14+ (comfortable cushion)
+            if score_diff < 14:
+                return True
         # End of game, trailing
         if quarter == 4 and time_left < 4.0 and score_diff < 0:
             return True
@@ -651,6 +654,56 @@ class ComputerAI:
         
         return False
 
+    def should_call_timeout_on_offense(self, game: PaydirtGameEngine) -> bool:
+        """
+        Decide if CPU should call a timeout when on offense to preserve clock.
+        
+        Call timeouts when:
+        - End of half/game and trying to score
+        - Clock is running and need to stop it
+        - Have timeouts remaining
+        """
+        state = game.state
+        time_left = state.time_remaining
+        quarter = state.quarter
+        
+        # Get score differential and timeouts from CPU's perspective (CPU is on offense)
+        if state.is_home_possession:
+            # Home team has ball, CPU is home (offense)
+            cpu_score = state.home_score
+            opp_score = state.away_score
+            cpu_timeouts = state.home_timeouts
+        else:
+            # Away team has ball, CPU is away (offense)
+            cpu_score = state.away_score
+            opp_score = state.home_score
+            cpu_timeouts = state.away_timeouts
+        
+        score_diff = cpu_score - opp_score
+        
+        # No timeouts available
+        if cpu_timeouts <= 0:
+            return False
+        
+        # Only use timeouts at end of Q2 or Q4
+        if quarter not in [2, 4]:
+            return False
+        
+        # End of Q2 - use timeouts to try to score before half
+        if quarter == 2 and time_left <= 1.0:
+            # Use timeout if not leading by a lot (still want to score)
+            if score_diff < 14:
+                return True
+        
+        # End of Q4 - use timeouts when trailing to preserve clock
+        if quarter == 4:
+            if score_diff < 0 and time_left <= 2.0:
+                return True  # Trailing in final 2 minutes
+            if score_diff <= -8 and time_left <= 4.0:
+                return True  # Down by more than TD with < 4 min
+        
+        return False
+
 
 # Convenience functions for backward compatibility
 def computer_select_offense(game: PaydirtGameEngine) -> PlayType:
@@ -669,3 +722,9 @@ def computer_should_call_timeout_on_defense(game: PaydirtGameEngine) -> bool:
     """Check if CPU should call a timeout when on defense."""
     ai = ComputerAI(aggression=0.5)
     return ai.should_call_timeout_on_defense(game)
+
+
+def computer_should_call_timeout_on_offense(game: PaydirtGameEngine) -> bool:
+    """Check if CPU should call a timeout when on offense to preserve clock."""
+    ai = ComputerAI(aggression=0.5)
+    return ai.should_call_timeout_on_offense(game)

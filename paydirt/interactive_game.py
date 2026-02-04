@@ -15,7 +15,7 @@ from .play_resolver import (
     is_passing_play
 )
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
-from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense
+from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 
@@ -2217,6 +2217,20 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                 if time_before_play > 0 and game.state.quarter <= 4:
                     game.state.game_over = False
                 cpu_team = game.state.defense_team.peripheral.short_name
+                print(f"\n  *** {cpu_team} TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
+        
+        # CPU timeout when on offense (human is on defense)
+        # CPU calls timeout to preserve clock at end of half/game
+        elif not is_human_offense and computer_should_call_timeout_on_offense(game):
+            cpu_is_home = not human_is_home
+            if game.state.use_timeout(cpu_is_home):
+                time_after_timeout = time_before_play - 0.167
+                if time_after_timeout < 0:
+                    time_after_timeout = 0
+                game.state.time_remaining = time_after_timeout
+                if time_before_play > 0 and game.state.quarter <= 4:
+                    game.state.game_over = False
+                cpu_team = game.state.possession_team.peripheral.short_name
                 print(f"\n  *** {cpu_team} TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
 
         # Handle field goal made - kickoff after score

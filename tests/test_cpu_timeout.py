@@ -163,3 +163,110 @@ class TestCPUTimeoutOnDefense:
         game.state.away_timeouts = 3
         
         assert computer_should_call_timeout_on_defense(game) is True
+
+
+class TestCPUTimeoutOnOffense:
+    """Tests for CPU calling timeouts when on offense to preserve clock."""
+
+    def test_cpu_calls_timeout_end_of_q2_to_score(self):
+        """CPU should call timeout at end of Q2 to try to score before half."""
+        from paydirt.computer_ai import computer_should_call_timeout_on_offense
+        
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        # CHI (home) has ball, leading 21-14
+        game.state.is_home_possession = True
+        game.state.quarter = 2
+        game.state.time_remaining = 0.75  # 45 seconds left
+        game.state.home_score = 21
+        game.state.away_score = 14
+        game.state.home_timeouts = 2
+        
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_offense(game) is True
+
+    def test_cpu_no_timeout_q2_if_big_lead(self):
+        """CPU should NOT call timeout at end of Q2 if leading by 14+."""
+        from paydirt.computer_ai import computer_should_call_timeout_on_offense
+        
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        game.state.quarter = 2
+        game.state.time_remaining = 0.75
+        game.state.home_score = 28
+        game.state.away_score = 14  # Leading by 14
+        game.state.home_timeouts = 2
+        
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_offense(game) is False
+
+    def test_cpu_calls_timeout_q4_trailing(self):
+        """CPU should call timeout in Q4 when trailing to preserve clock."""
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        # CHI (home) has ball, trailing 14-21
+        game.state.is_home_possession = True
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5  # 1:30 left
+        game.state.home_score = 14
+        game.state.away_score = 21
+        game.state.home_timeouts = 2
+        
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_offense(game) is True
+
+    def test_cpu_no_timeout_q4_if_leading(self):
+        """CPU should NOT call timeout in Q4 if leading (run out clock instead)."""
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5
+        game.state.home_score = 21
+        game.state.away_score = 14  # Leading
+        game.state.home_timeouts = 2
+        
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_offense(game) is False
+
+    def test_cpu_no_timeout_if_none_remaining(self):
+        """CPU should NOT call timeout if no timeouts remaining."""
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        game.state.quarter = 2
+        game.state.time_remaining = 0.75
+        game.state.home_score = 21
+        game.state.away_score = 14
+        game.state.home_timeouts = 0  # No timeouts
+        
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_offense(game) is False
+
+    def test_convenience_function_offense_works(self):
+        """Test the convenience function computer_should_call_timeout_on_offense."""
+        from paydirt.computer_ai import computer_should_call_timeout_on_offense
+        
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        game.state.quarter = 2
+        game.state.time_remaining = 0.75
+        game.state.home_score = 21
+        game.state.away_score = 14
+        game.state.home_timeouts = 2
+        
+        assert computer_should_call_timeout_on_offense(game) is True
