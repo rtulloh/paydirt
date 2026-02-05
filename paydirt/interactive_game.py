@@ -1612,6 +1612,38 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
 
 
+def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, team_name: str = None):
+    """
+    Apply timeout clock adjustment after a play.
+    
+    With a timeout, the play only uses 10 seconds (0.167 minutes) instead of
+    the normal play time.
+    
+    Args:
+        game: The game engine
+        time_before_play: Time remaining before the play started
+        team_name: Optional team name for display (None = human timeout)
+    """
+    # With timeout, play only uses 10 seconds (0.167 minutes)
+    time_after_timeout = time_before_play - 0.167
+    if time_after_timeout < 0:
+        time_after_timeout = 0
+    game.state.time_remaining = time_after_timeout
+    
+    # Ensure quarter doesn't end prematurely if there was time for the play
+    if time_before_play > 0 and game.state.quarter <= 4:
+        game.state.game_over = False
+    
+    # Format time for display
+    mins = int(game.state.time_remaining)
+    secs = int((game.state.time_remaining % 1) * 60)
+    
+    if team_name:
+        print(f"\n  *** {team_name} TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
+    else:
+        print(f"\n  *** TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
+
+
 def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: bool,
                             human_is_home: bool):
     """
@@ -2279,16 +2311,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         # Human timeout (offense or defense)
         if call_timeout:
             if game.state.use_timeout(human_is_home):
-                # With timeout, play only uses 10 seconds (0.167 minutes)
-                # Calculate what time should be after a 10-second play
-                time_after_timeout = time_before_play - 0.167
-                if time_after_timeout < 0:
-                    time_after_timeout = 0
-                game.state.time_remaining = time_after_timeout
-                # Ensure quarter doesn't end prematurely if there was time for the play
-                if time_before_play > 0 and game.state.quarter <= 4:
-                    game.state.game_over = False
-                print(f"\n  *** TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
+                _apply_timeout(game, time_before_play)
         
         # CPU timeout when on defense (human is on offense)
         # CPU calls timeout to stop clock when trailing late in game
@@ -2296,14 +2319,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         elif is_human_offense and not outcome.turnover and computer_should_call_timeout_on_defense(game):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
-                time_after_timeout = time_before_play - 0.167
-                if time_after_timeout < 0:
-                    time_after_timeout = 0
-                game.state.time_remaining = time_after_timeout
-                if time_before_play > 0 and game.state.quarter <= 4:
-                    game.state.game_over = False
                 cpu_team = game.state.defense_team.peripheral.short_name
-                print(f"\n  *** {cpu_team} TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
+                _apply_timeout(game, time_before_play, cpu_team)
         
         # CPU timeout when on offense (human is on defense)
         # CPU calls timeout to preserve clock at end of half/game
@@ -2311,14 +2328,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         elif not is_human_offense and not outcome.turnover and computer_should_call_timeout_on_offense(game):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
-                time_after_timeout = time_before_play - 0.167
-                if time_after_timeout < 0:
-                    time_after_timeout = 0
-                game.state.time_remaining = time_after_timeout
-                if time_before_play > 0 and game.state.quarter <= 4:
-                    game.state.game_over = False
                 cpu_team = game.state.possession_team.peripheral.short_name
-                print(f"\n  *** {cpu_team} TIMEOUT - Clock stops at {int(game.state.time_remaining)}:{int((game.state.time_remaining % 1) * 60):02d} ***")
+                _apply_timeout(game, time_before_play, cpu_team)
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:
