@@ -19,6 +19,7 @@
 - Removed duplicate implementations from `cli.py`, `cli_charts.py`, `interactive_game.py`
 
 ### Bug Fixes
+- **Timeout at end of half**: Fixed bug where calling timeout near end of half still triggered halftime/end of game. Timeout now correctly reverts quarter advancement when time is preserved.
 - **Offsetting penalties display**: Fixed misleading display where offsetting penalties showed play result (e.g., "No gain" with "O:24→4") instead of clearly indicating "OFFSETTING PENALTIES - Down replayed"
 - **Blocked kick touchdown flag**: Fixed bug where blocked FG returned for TD scored 6 points but skipped PAT/kickoff flow (touchdown flag was hardcoded to False)
 - **Blocked kick display**: Blocked FG now shows full description with recovery roll and return info instead of just "BLOCKED!"

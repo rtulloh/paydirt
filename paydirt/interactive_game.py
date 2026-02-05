@@ -1615,16 +1615,19 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
 
 
-def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, team_name: str = None):
+def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_before_play: int,
+                   team_name: str = None):
     """
     Apply timeout clock adjustment after a play.
     
     With a timeout, the play only uses 10 seconds (0.167 minutes) instead of
-    the normal play time.
+    the normal play time. If the quarter advanced during the play, revert it
+    since the timeout preserves time.
     
     Args:
         game: The game engine
         time_before_play: Time remaining before the play started
+        quarter_before_play: Quarter number before the play started
         team_name: Optional team name for display (None = human timeout)
     """
     # With timeout, play only uses 10 seconds (0.167 minutes)
@@ -1632,6 +1635,10 @@ def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, team_name: 
     if time_after_timeout < 0:
         time_after_timeout = 0
     game.state.time_remaining = time_after_timeout
+    
+    # If quarter advanced during the play but timeout preserves time, revert quarter
+    if game.state.quarter > quarter_before_play and time_after_timeout > 0:
+        game.state.quarter = quarter_before_play
     
     # Ensure quarter doesn't end prematurely if there was time for the play
     if time_before_play > 0 and game.state.quarter <= 4:
@@ -2272,8 +2279,9 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                 print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
-        # If timeout is called, save time before play to ensure we can refund properly
+        # If timeout is called, save time and quarter before play to ensure we can refund properly
         time_before_play = game.state.time_remaining
+        quarter_before_play = game.state.quarter
 
         # Track who was on offense BEFORE the play (possession may change during play)
         offense_was_home = game.state.is_home_possession
@@ -2314,7 +2322,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         # Human timeout (offense or defense)
         if call_timeout:
             if game.state.use_timeout(human_is_home):
-                _apply_timeout(game, time_before_play)
+                _apply_timeout(game, time_before_play, quarter_before_play)
         
         # CPU timeout when on defense (human is on offense)
         # CPU calls timeout to stop clock when trailing late in game
@@ -2323,7 +2331,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
                 cpu_team = game.state.defense_team.peripheral.short_name
-                _apply_timeout(game, time_before_play, cpu_team)
+                _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
         
         # CPU timeout when on offense (human is on defense)
         # CPU calls timeout to preserve clock at end of half/game
@@ -2332,7 +2340,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
                 cpu_team = game.state.possession_team.peripheral.short_name
-                _apply_timeout(game, time_before_play, cpu_team)
+                _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:

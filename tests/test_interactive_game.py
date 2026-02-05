@@ -334,9 +334,11 @@ class TestApplyTimeout:
     def test_reduces_time_by_10_seconds(self, game):
         """Timeout should reduce time to 10 seconds for the play."""
         game.state.time_remaining = 5.0  # 5 minutes
+        game.state.quarter = 2
         time_before = 5.0
+        quarter_before = 2
         
-        _apply_timeout(game, time_before)
+        _apply_timeout(game, time_before, quarter_before)
         
         # Should be time_before - 0.167 (10 seconds)
         assert abs(game.state.time_remaining - 4.833) < 0.01
@@ -344,9 +346,11 @@ class TestApplyTimeout:
     def test_does_not_go_negative(self, game):
         """Time should not go negative."""
         game.state.time_remaining = 0.1  # 6 seconds
+        game.state.quarter = 2
         time_before = 0.1
+        quarter_before = 2
         
-        _apply_timeout(game, time_before)
+        _apply_timeout(game, time_before, quarter_before)
         
         assert game.state.time_remaining == 0
     
@@ -356,10 +360,24 @@ class TestApplyTimeout:
         game.state.quarter = 4
         game.state.game_over = True
         time_before = 0.2
+        quarter_before = 4
         
-        _apply_timeout(game, time_before)
+        _apply_timeout(game, time_before, quarter_before)
         
         assert game.state.game_over is False
+    
+    def test_reverts_quarter_if_timeout_preserves_time(self, game):
+        """Timeout should revert quarter advancement if time is preserved."""
+        game.state.time_remaining = 15.0  # Quarter advanced, time reset
+        game.state.quarter = 3  # Advanced to Q3
+        time_before = 0.26  # Had 0:16 before play
+        quarter_before = 2  # Was Q2 before play
+        
+        _apply_timeout(game, time_before, quarter_before)
+        
+        # Should revert to Q2 with time preserved
+        assert game.state.quarter == 2
+        assert abs(game.state.time_remaining - 0.093) < 0.01  # 0.26 - 0.167
 
 
 class TestFormatTime:
