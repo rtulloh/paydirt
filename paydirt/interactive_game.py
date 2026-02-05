@@ -1978,6 +1978,14 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
 
                 if yards_gained >= game.state.yards_to_go:
                     play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+                elif game.state.down >= 4:
+                    # 4th down failure = turnover on downs
+                    if yards_gained > 0:
+                        play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
+                    elif yards_gained == 0:
+                        play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+                    else:
+                        play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
                 elif yards_gained > 0:
                     next_down = game.state.down + 1
                     next_ytg = game.state.yards_to_go - yards_gained

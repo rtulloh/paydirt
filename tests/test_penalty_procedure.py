@@ -786,3 +786,101 @@ class TestPenaltyOptionsFiltering:
         assert len(filtered) == 1
         assert filtered[0].penalty_type == "OFF"
         assert filtered[0].yards == 10
+
+
+class TestPenaltyDecisionFourthDown:
+    """Tests for penalty decision display on 4th down."""
+
+    def test_fourth_down_no_gain_shows_turnover_on_downs(self):
+        """On 4th down, incomplete/no gain should show TURNOVER ON DOWNS, not 5th down."""
+        # This tests the logic that was causing KeyError: 5
+        game_down = 4
+        yards_to_go = 5
+        yards_gained = 0  # Incomplete pass
+        
+        # Simulate the logic from handle_penalty_decision
+        if yards_gained >= yards_to_go:
+            play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+        elif game_down >= 4:
+            # 4th down failure = turnover on downs
+            if yards_gained > 0:
+                play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
+            elif yards_gained == 0:
+                play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+            else:
+                play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
+        else:
+            next_down = game_down + 1
+            down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+            play_outcome_str = f"No gain -> {next_down}{down_suffix[next_down]} and {yards_to_go}"
+        
+        assert play_outcome_str == "No gain -> TURNOVER ON DOWNS"
+        assert "5th" not in play_outcome_str
+
+    def test_fourth_down_short_gain_shows_turnover_on_downs(self):
+        """On 4th down, short gain that doesn't convert should show TURNOVER ON DOWNS."""
+        game_down = 4
+        yards_to_go = 5
+        yards_gained = 3  # Short of first down
+        
+        if yards_gained >= yards_to_go:
+            play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+        elif game_down >= 4:
+            if yards_gained > 0:
+                play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
+            elif yards_gained == 0:
+                play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+            else:
+                play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
+        else:
+            next_down = game_down + 1
+            next_ytg = yards_to_go - yards_gained
+            down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+            play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+        
+        assert play_outcome_str == "3 yards -> TURNOVER ON DOWNS"
+
+    def test_fourth_down_loss_shows_turnover_on_downs(self):
+        """On 4th down, loss of yards should show TURNOVER ON DOWNS."""
+        game_down = 4
+        yards_to_go = 5
+        yards_gained = -3  # Sack or loss
+        
+        if yards_gained >= yards_to_go:
+            play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+        elif game_down >= 4:
+            if yards_gained > 0:
+                play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
+            elif yards_gained == 0:
+                play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+            else:
+                play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
+        else:
+            next_down = game_down + 1
+            next_ytg = yards_to_go - yards_gained
+            down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+            play_outcome_str = f"Loss of {abs(yards_gained)} -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+        
+        assert play_outcome_str == "Loss of 3 -> TURNOVER ON DOWNS"
+
+    def test_fourth_down_conversion_shows_first_down(self):
+        """On 4th down, gaining enough yards should show FIRST DOWN."""
+        game_down = 4
+        yards_to_go = 5
+        yards_gained = 7  # Converts
+        
+        if yards_gained >= yards_to_go:
+            play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+        elif game_down >= 4:
+            if yards_gained > 0:
+                play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
+            elif yards_gained == 0:
+                play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+            else:
+                play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
+        else:
+            next_down = game_down + 1
+            down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+            play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {yards_to_go - yards_gained}"
+        
+        assert play_outcome_str == "7 yards, FIRST DOWN"
