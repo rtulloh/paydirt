@@ -373,3 +373,45 @@ class TestPuntReturnCommentary:
             outcome = game.run_play(PlayType.PUNT, None)
             
             assert "Outstanding special teams coverage!" in outcome.description
+
+
+class TestPuntReturnPenalties:
+    """Tests for penalty handling on punt returns."""
+    
+    def test_offensive_penalty_on_return_moves_ball_back(self, game):
+        """Offensive penalty on punt return should move ball back 15 yards."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, then OFF 15 penalty on return
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (13, "B1+W3+W0=13")]
+            
+            # Patch the return chart to have OFF 15 penalty
+            game.state.defense_team.special_teams.punt_return[13] = "OFF 15"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Punt 40 from own 30 = lands at 70 = opponent's 30
+            # OFF 15 penalty moves ball back 15 yards = opponent's 15
+            assert game.state.ball_position == 15
+            assert "Penalty on return" in outcome.description
+    
+    def test_defensive_penalty_on_return_moves_ball_forward(self, game):
+        """Defensive penalty on punt return should move ball forward."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, then DEF 15 penalty on return
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (13, "B1+W3+W0=13")]
+            
+            # Patch the return chart to have DEF 15 penalty
+            game.state.defense_team.special_teams.punt_return[13] = "DEF 15"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Punt 40 from own 30 = lands at 70 = opponent's 30
+            # DEF 15 penalty moves ball forward 15 yards = opponent's 45
+            assert game.state.ball_position == 45
+            assert "Penalty on return" in outcome.description

@@ -231,7 +231,7 @@ class PaydirtGameEngine:
         receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
 
         # Roll for kickoff
-        dice_roll = roll_chart_dice()
+        dice_roll, dice_desc = roll_chart_dice()
 
         # Get kickoff distance from kicking team's chart
         ko_result = kicking_chart.special_teams.kickoff.get(dice_roll, "")
@@ -287,24 +287,41 @@ class PaydirtGameEngine:
                     landing_spot, ret_yards, elect_touchback=False
                 )
             else:
-                # Normal field return
-                try:
-                    ret_yards = int(ret_result) if ret_result else 20
-                except ValueError:
-                    if ret_parsed.result_type == ResultType.FUMBLE:
-                        ret_yards = ret_parsed.yards
-                    elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                        ret_yards = 100
+                # Normal field return - check for penalty first
+                if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
+                    # Penalty on kickoff return
+                    penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
+                    if penalty_match:
+                        penalty_yards = int(penalty_match.group(2))
+                        is_offensive_penalty = penalty_match.group(1) == "OFF"
+                        # Offensive penalty: receiving team penalized, ball moves back
+                        # Defensive penalty: kicking team penalized, ball moves forward
+                        if is_offensive_penalty:
+                            ret_yards = -penalty_yards
+                        else:
+                            ret_yards = penalty_yards
                     else:
-                        ret_yards = 20
+                        ret_yards = 0
+                else:
+                    try:
+                        ret_yards = int(ret_result) if ret_result else 20
+                    except ValueError:
+                        if ret_parsed.result_type == ResultType.FUMBLE:
+                            ret_yards = ret_parsed.yards
+                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
+                            ret_yards = 100
+                        else:
+                            ret_yards = 20
 
                 return_position = landing_spot + ret_yards
                 if return_position > 100:
                     return_position = 100  # Touchdown
+                elif return_position < 1:
+                    return_position = 1  # Minimum field position
 
         # Set game state
         self.state.is_home_possession = not kicking_home
-        self.state.ball_position = return_position
+        self.state.ball_position = max(1, min(99, return_position))
         self.state.down = 1
         self.state.yards_to_go = 10
 
@@ -1804,8 +1821,24 @@ class PaydirtGameEngine:
 
             # Parse return result
             if return_result:
+                # Check for penalty on return first (before fumble check since DEF contains F)
+                if "OFF" in return_result.upper() or "DEF" in return_result.upper():
+                    return_desc = f"Penalty on return: {return_result}"
+                    # Parse penalty yardage from result like "OFF 15" or "DEF 10"
+                    penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', return_result.upper())
+                    if penalty_match:
+                        penalty_yards = int(penalty_match.group(2))
+                        is_offensive_penalty = penalty_match.group(1) == "OFF"
+                        # Offensive penalty on return: receiving team penalized, ball moves back
+                        # Defensive penalty on return: kicking team penalized, ball moves forward
+                        if is_offensive_penalty:
+                            return_yards = -penalty_yards  # Move ball back
+                        else:
+                            return_yards = penalty_yards  # Move ball forward
+                    else:
+                        return_yards = 0
                 # Check for fumble on return
-                if "F" in return_result.upper() and "OFF" not in return_result.upper():
+                elif "F" in return_result.upper():
                     # Fumble on return - punting team recovers
                     return_desc = "FUMBLE on the return!"
                     # Punting team gets ball at landing spot
@@ -1828,11 +1861,6 @@ class PaydirtGameEngine:
                     self.play_log.append(outcome)
                     self._use_time(random.uniform(5, 12))
                     return outcome
-
-                # Check for penalty on return
-                if "OFF" in return_result.upper() or "DEF" in return_result.upper():
-                    return_desc = f"Penalty on return: {return_result}"
-                    return_yards = 0
                 else:
                     # Normal return yardage
                     try:

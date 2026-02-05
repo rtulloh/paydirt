@@ -2,6 +2,30 @@
 
 ## Recent Changes (February 2026)
 
+### Code Quality Improvements
+- **pytest-cov integration**: Added test coverage analysis tooling
+- **Ruff linting**: All code passes static analysis checks
+- **Test coverage improvements**:
+  - `computer_ai.py`: 41% → 69% (+28%)
+  - `play_resolver.py`: 59% → 67% (+8%)
+  - `interactive_game.py`: 13% → 14% (testable functions covered)
+  - Overall: 46% → 49%, 846 tests total
+
+### Shared Utilities Refactoring
+- **`paydirt/utils.py`**: Consolidated duplicate code into shared utilities
+  - `ordinal_suffix()` and `ordinal()` for "1st", "2nd", etc.
+  - `format_time()` for clock display
+  - `format_down_and_distance()` for game state display
+- Removed duplicate implementations from `cli.py`, `cli_charts.py`, `interactive_game.py`
+
+### Bug Fixes
+- **Punt return penalties**: Fixed "DEF 15" triggering false fumble detection (DEF contains "F")
+- **Punt/kickoff return penalty yardage**: Now correctly parses and applies penalty yards
+  - OFF penalty: Ball moves back (receiving team penalized)
+  - DEF penalty: Ball moves forward (kicking team penalized)
+- **Kickoff dice roll**: Fixed tuple unpacking bug where `roll_chart_dice()` return value was used directly as dict key
+- **Kickoff return position clamping**: Added minimum position (1) to prevent invalid ball placement
+
 ### Field Goal Penalty Handling
 - **Full penalty procedure**: FG attempts now follow the same penalty rules as normal plays
 - **Roll until outcome**: If a penalty occurs, dice are re-rolled until a non-penalty result
