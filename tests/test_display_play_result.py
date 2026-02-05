@@ -333,7 +333,8 @@ class TestCompactDisplayTurnoverReturns:
             dice_roll=25,
             raw_result="INT"
         )
-        result.interception_return = 35
+        result.int_return_yards = 35
+        result.int_return_dice = 14
 
         outcome = PlayOutcome(
             play_type=PlayType.LONG_PASS,

@@ -1376,9 +1376,10 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             result_str = "Incomplete"
         elif outcome.result.result_type == ResultType.INTERCEPTION:
             # Check for return yardage on interception
-            int_return = getattr(outcome.result, 'interception_return', 0)
+            int_return = getattr(outcome.result, 'int_return_yards', 0)
+            int_dice = getattr(outcome.result, 'int_return_dice', 0)
             if int_return and int_return > 0:
-                result_str = f"INTERCEPTED! Returned {int_return} yds"
+                result_str = f"INTERCEPTED! Returned {int_return} yds (roll {int_dice})"
                 # Check if return ended in red zone
                 if game.state.ball_position >= 95:
                     special_marker = " ★ TURNOVER! GOAL LINE!"
