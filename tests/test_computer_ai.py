@@ -367,3 +367,98 @@ class TestAggressionLevels:
         go_for_it = [p for p in plays if p not in [PlayType.PUNT, PlayType.FIELD_GOAL]]
         # With 90% aggression on 4th and 1, should go for it
         assert len(go_for_it) > 0
+
+
+class TestClockManagement:
+    """Tests for AI clock management when trailing late in game."""
+
+    def test_two_minute_drill_uses_no_huddle(self, game, cpu_ai):
+        """Trailing in Q4 with < 2 min should use no-huddle."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5  # 1:30 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 21  # Trailing by 7
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        assert use_no_huddle is True
+
+    def test_two_minute_drill_uses_oob_on_passes(self, game, cpu_ai):
+        """Trailing in Q4 with < 2 min should use OOB on passing plays."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0  # 1:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 21  # Trailing by 7
+
+        # Run multiple times to get passing plays
+        oob_count = 0
+        for _ in range(20):
+            play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                if use_oob:
+                    oob_count += 1
+
+        # Should use OOB on most passing plays
+        assert oob_count > 0
+
+    def test_trailing_by_two_scores_triggers_hurry_up_earlier(self, game, cpu_ai):
+        """Trailing by 9+ points should trigger hurry-up with 8+ minutes left."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50
+        game.state.quarter = 4
+        game.state.time_remaining = 7.0  # 7:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 10
+        game.state.away_score = 20  # Trailing by 10
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should be in hurry-up mode
+        assert use_no_huddle is True
+
+    def test_leading_does_not_use_hurry_up(self, game, cpu_ai):
+        """Leading in Q4 should NOT use hurry-up."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50
+        game.state.quarter = 4
+        game.state.time_remaining = 3.0  # 3:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 21
+        game.state.away_score = 14  # Leading by 7
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should NOT be in hurry-up mode when leading
+        assert use_no_huddle is False
+        assert use_oob is False
+
+    def test_two_minute_offense_avoids_running_plays(self, game, cpu_ai):
+        """Under 2 minutes trailing, should avoid running plays."""
+        game.state.down = 2
+        game.state.yards_to_go = 8
+        game.state.ball_position = 50
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0  # 1:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 21  # Trailing by 7
+
+        # Run multiple times
+        running_plays = 0
+        for _ in range(20):
+            play, _, _ = cpu_ai.select_offense_with_clock_management(game)
+            if play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]:
+                running_plays += 1
+
+        # Should have very few running plays under 2 minutes
+        assert running_plays < 5  # Less than 25% running plays

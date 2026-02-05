@@ -2465,8 +2465,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
             in_bounds = False
 
             if game.state.down == 4:
-                # CPU makes 4th down decision first
-                play_type = computer_select_offense(game, cpu_ai)
+                # CPU makes 4th down decision first (with clock management)
+                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                if cpu_oob:
+                    out_of_bounds = True
+                if cpu_no_huddle:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} in NO-HUDDLE offense!")
 
                 if play_type == PlayType.PUNT:
                     # CPU punts - no defensive call needed
@@ -2501,7 +2506,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                     print(f"\n  *** GAME SAVED to {filepath} ***")
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
-                play_type = computer_select_offense(game, cpu_ai)
+                # Get play with clock management flags
+                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                if cpu_oob:
+                    out_of_bounds = True
+                if cpu_no_huddle:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} in NO-HUDDLE offense!")
 
                 print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
@@ -2901,7 +2912,13 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             in_bounds = False
 
             if game.state.down == 4:
-                play_type = computer_select_offense(game, cpu_ai)
+                # CPU makes 4th down decision first (with clock management)
+                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                if cpu_oob:
+                    out_of_bounds = True
+                if cpu_no_huddle:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} in NO-HUDDLE offense!")
 
                 if play_type == PlayType.PUNT:
                     cpu_team = game.state.possession_team.peripheral.short_name
@@ -2930,7 +2947,13 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     print(f"\n  *** GAME SAVED to {filepath} ***")
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
-                play_type = computer_select_offense(game, cpu_ai)
+                # Get play with clock management flags
+                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                if cpu_oob:
+                    out_of_bounds = True
+                if cpu_no_huddle:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} in NO-HUDDLE offense!")
                 print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 

@@ -45,6 +45,16 @@ class ComputerAI:
         4. Score differential
         5. Quarter
         """
+        play_type, _, _ = self.select_offense_with_clock_management(game)
+        return play_type
+
+    def select_offense_with_clock_management(self, game: PaydirtGameEngine) -> tuple:
+        """
+        Select an offensive play with clock management options.
+        
+        Returns:
+            tuple: (PlayType, out_of_bounds: bool, no_huddle: bool)
+        """
         state = game.state
         down = state.down
         ytg = state.yards_to_go
@@ -57,6 +67,10 @@ class ComputerAI:
             score_diff = state.home_score - state.away_score
         else:
             score_diff = state.away_score - state.home_score
+        
+        # Clock management flags
+        use_oob = False
+        use_no_huddle = False
 
         # ============================================================
         # SPECIAL SITUATIONS
@@ -65,27 +79,45 @@ class ComputerAI:
         # 4th Down Decision
         if down == 4:
             self.last_mode = "4th Down"
-            return self._fourth_down_decision(game, ytg, field_pos, time_left, quarter, score_diff)
+            play = self._fourth_down_decision(game, ytg, field_pos, time_left, quarter, score_diff)
+            # Use OOB on passing plays in hurry-up 4th down situations
+            if self._needs_hurry_up(time_left, quarter, score_diff):
+                use_no_huddle = True
+                if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                    use_oob = True
+            return (play, use_oob, use_no_huddle)
 
         # Goal Line (inside 5 yard line)
         if field_pos >= 95:
             self.last_mode = "Goal Line"
-            return self._goal_line_offense(ytg)
+            play = self._goal_line_offense(ytg)
+            if self._needs_hurry_up(time_left, quarter, score_diff):
+                use_no_huddle = True
+            return (play, use_oob, use_no_huddle)
 
         # Red Zone (inside 20)
         if field_pos >= 80:
             self.last_mode = "Red Zone"
-            return self._red_zone_offense(down, ytg)
+            play = self._red_zone_offense(down, ytg)
+            if self._needs_hurry_up(time_left, quarter, score_diff):
+                use_no_huddle = True
+            return (play, use_oob, use_no_huddle)
 
-        # 2-Minute Drill
+        # 2-Minute Drill (trailing late - aggressive clock management)
         if self._is_two_minute_drill(time_left, quarter, score_diff):
             self.last_mode = "Two-Minute Drill"
-            return self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
+            play = self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
+            use_no_huddle = True
+            # Use OOB designation on passing plays to guarantee clock stops
+            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                use_oob = True
+            return (play, use_oob, use_no_huddle)
 
         # Running Out Clock (leading late)
         if self._should_run_clock(time_left, quarter, score_diff):
             self.last_mode = "Clock Killing"
-            return self._clock_killing_offense(down, ytg, time_left, field_pos)
+            play = self._clock_killing_offense(down, ytg, time_left, field_pos)
+            return (play, False, False)  # No hurry, let clock run
 
         # ============================================================
         # STANDARD SITUATIONS
@@ -94,14 +126,17 @@ class ComputerAI:
 
         # 3rd Down
         if down == 3:
-            return self._third_down_offense(ytg, field_pos)
+            play = self._third_down_offense(ytg, field_pos)
+            return (play, use_oob, use_no_huddle)
 
         # 2nd Down
         if down == 2:
-            return self._second_down_offense(ytg)
+            play = self._second_down_offense(ytg)
+            return (play, use_oob, use_no_huddle)
 
         # 1st Down - balanced attack
-        return self._first_down_offense(field_pos)
+        play = self._first_down_offense(field_pos)
+        return (play, use_oob, use_no_huddle)
 
     def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> PlayType:
         """
@@ -275,7 +310,7 @@ class ComputerAI:
         ])
 
     def _two_minute_offense(self, down, ytg, field_pos, score_diff, time_left) -> PlayType:
-        """Hurry-up offense when trailing late."""
+        """Hurry-up offense when trailing late. Prioritize passing to stop clock."""
 
         # Hail Mary - last play of half/game, need TD, in range
         if time_left <= 0.15 and field_pos >= 40 and score_diff < 0:
@@ -289,17 +324,30 @@ class ComputerAI:
         if score_diff <= -14:
             return random.choice([PlayType.LONG_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS])
 
-        # 3rd down - must convert
+        # Under 2 minutes - ONLY pass plays (clock stops on incomplete)
+        # Avoid running plays that keep clock running
+        if time_left < 2.0:
+            if down == 3:
+                if ytg <= 5:
+                    return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN])
+                else:
+                    return random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS, PlayType.LONG_PASS])
+            # Early downs - quick passes
+            if score_diff <= -7 or field_pos < 50:
+                return random.choice([PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SHORT_PASS])
+            return random.choice([PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN])
+
+        # 3rd down - must convert (can use draw as surprise)
         if down == 3:
             if ytg <= 5:
                 return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN, PlayType.DRAW])
             else:
                 return random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS])
 
-        # Quick passes to stop clock and move chains
+        # Quick passes to stop clock and move chains (minimize running plays)
         plays = [
             PlayType.SHORT_PASS, PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-            PlayType.SCREEN, PlayType.DRAW
+            PlayType.SCREEN
         ]
 
         # Add long pass if need chunk plays
@@ -405,11 +453,37 @@ class ComputerAI:
             # Only skip hurry-up if leading by 14+ (comfortable cushion)
             if score_diff < 14:
                 return True
-        # End of game, trailing
-        if quarter == 4 and time_left < 4.0 and score_diff < 0:
-            return True
+        # End of game, trailing - be more aggressive based on deficit
+        if quarter == 4 and score_diff < 0:
+            # Down by 2+ scores (9+) - hurry up with 8+ minutes left
+            if score_diff <= -9 and time_left < 8.0:
+                return True
+            # Down by 1-2 scores - hurry up with 5+ minutes left
+            if score_diff <= -4 and time_left < 5.0:
+                return True
+            # Down by any amount - hurry up with 4 minutes left
+            if time_left < 4.0:
+                return True
         # Way behind anytime in 4th quarter
         if quarter == 4 and score_diff <= -14:
+            return True
+        return False
+
+    def _needs_hurry_up(self, time_left, quarter, score_diff) -> bool:
+        """Check if we need to hurry (no-huddle, OOB designation)."""
+        # More aggressive than two-minute drill - use no-huddle earlier
+        if quarter == 4 and score_diff < 0:
+            # Down by 2+ scores - no huddle with 10+ minutes left
+            if score_diff <= -9 and time_left < 10.0:
+                return True
+            # Down by 1 score - no huddle with 6+ minutes left
+            if score_diff <= -4 and time_left < 6.0:
+                return True
+            # Down by any amount - no huddle with 5 minutes left
+            if time_left < 5.0:
+                return True
+        # End of half trailing
+        if quarter == 2 and time_left < 2.0 and score_diff < 0:
             return True
         return False
 
