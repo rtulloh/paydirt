@@ -22,6 +22,8 @@ def main():
         # Parse optional flags
         difficulty = 'medium'  # default
         compact = False
+        load_save = False
+        save_file = None
 
         args = sys.argv[2:]
         i = 0
@@ -31,22 +33,36 @@ def main():
                     difficulty = args[i + 1]
                     i += 2
                 else:
-                    print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact]")
+                    print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]]")
                     print("  Difficulty levels:")
                     print("    easy   - CPU makes conservative decisions")
                     print("    medium - Balanced CPU play calling (default)")
                     print("    hard   - CPU makes aggressive, optimal decisions")
                     print("  Display modes:")
                     print("    --compact - Use compact display (less verbose)")
+                    print("  Save/Load:")
+                    print("    --load [file] - Resume a saved game (default: paydirt_save.json)")
                     return
             elif args[i] in ['--compact', '-c']:
                 compact = True
                 i += 1
+            elif args[i] in ['--load', '-l']:
+                load_save = True
+                # Check if next arg is a filename (not another flag)
+                if i + 1 < len(args) and not args[i + 1].startswith('-'):
+                    save_file = args[i + 1]
+                    i += 2
+                else:
+                    i += 1
             else:
                 i += 1
 
-        from .interactive_game import run_interactive_game
-        run_interactive_game(difficulty=difficulty, compact=compact)
+        if load_save:
+            from .interactive_game import resume_game
+            resume_game(save_file, difficulty=difficulty, compact=compact)
+        else:
+            from .interactive_game import run_interactive_game
+            run_interactive_game(difficulty=difficulty, compact=compact)
         return
 
     # Check for -auto flag for CPU vs CPU mode
