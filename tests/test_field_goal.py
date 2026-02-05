@@ -10,12 +10,30 @@ Official rules:
   (which is 17 yards greater: 10 yards end zone + 7 yards to spot of hold)
 """
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from dataclasses import field
 
 from paydirt.game_engine import PaydirtGameEngine, GameState
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType
+from paydirt.play_resolver import PlayType, FieldGoalResult
+
+
+def create_fg_result(dice_roll: int, raw_result: str, chart_yards: int = 0,
+                     is_blocked: bool = False, is_fumble: bool = False) -> FieldGoalResult:
+    """Helper to create a FieldGoalResult for testing."""
+    return FieldGoalResult(
+        dice_roll=dice_roll,
+        dice_desc=f"B1+W0+W{dice_roll-10}={dice_roll}",
+        raw_result=raw_result,
+        chart_yards=chart_yards,
+        is_blocked=is_blocked,
+        is_fumble=is_fumble,
+        is_penalty=False,
+        penalty_options=[],
+        offsetting=False,
+        offended_team="",
+        reroll_log=[]
+    )
 
 
 @pytest.fixture
@@ -76,9 +94,9 @@ class TestFieldGoalSuccess:
         game.state.is_home_possession = True
         initial_home_score = game.state.home_score
         
-        # Mock dice roll: 10 = chart shows 45 yards, distance is 25, so GOOD
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (10, "B1+W0+W0=10")
+        # Mock FG result: chart shows 45 yards, distance is 25, so GOOD
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(10, "45", chart_yards=45)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -92,9 +110,9 @@ class TestFieldGoalSuccess:
         game.state.is_home_possession = True
         initial_home_score = game.state.home_score
         
-        # Mock dice roll: 11 = chart shows 35 yards, distance is 35, so GOOD
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (11, "B1+W0+W1=11")
+        # Mock FG result: chart shows 35 yards, distance is 35, so GOOD
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(11, "35", chart_yards=35)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -112,9 +130,9 @@ class TestFieldGoalMiss:
         game.state.is_home_possession = True
         initial_home_score = game.state.home_score
         
-        # Mock dice roll: 11 = chart shows 35 yards, distance is 40, so MISS
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (11, "B1+W0+W1=11")
+        # Mock FG result: chart shows 35 yards, distance is 40, so MISS
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(11, "35", chart_yards=35)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -133,9 +151,9 @@ class TestFieldGoalMiss:
         game.state.ball_position = 45
         game.state.is_home_possession = True
         
-        # Mock dice roll: 13 = chart shows 15 yards, distance is 55, so MISS
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (13, "B1+W0+W3=13")
+        # Mock FG result: chart shows 15 yards, distance is 55, so MISS
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(13, "15", chart_yards=15)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -153,15 +171,15 @@ class TestFieldGoalMiss:
         game.state.ball_position = 85
         game.state.is_home_possession = True
         
-        # Mock dice roll: 13 = chart shows 15 yards, distance is 15, so GOOD
         # Let's use a miss scenario instead
         game.state.ball_position = 80  # distance = 20
         # Spot of hold = 80 - 7 = 73
         # Defense at spot = 100 - 73 = 27
         # 27 > 20, so defense takes spot of hold
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (13, "B1+W0+W3=13")  # 15 yards, need 20
+        # Mock FG result: chart shows 15 yards, need 20, so MISS
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(13, "15", chart_yards=15)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -178,16 +196,18 @@ class TestBlockedFieldGoal:
         game.state.ball_position = 75  # Opponent's 25
         game.state.is_home_possession = True
         
-        # Mock dice rolls: FG roll = 14 (BK -8 = blocked), recovery roll = 35 (defense recovers)
-        # Per rules, recovery uses fumble ranges: 10-31 = offense recovers, 32-39 = defense recovers
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (35, "B3+W2+W0=35")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            # Possession should switch (defense recovers on roll 35)
-            assert game.state.is_home_possession is False
+        # Mock FG result as blocked, then mock recovery roll
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 35 (defense recovers, range 32-39)
+                mock_dice.return_value = (35, "B3+W2+W0=35")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                # Possession should switch (defense recovers on roll 35)
+                assert game.state.is_home_possession is False
     
     def test_blocked_fg_kicking_team_recovers_turnover_on_downs(self, game):
         """Blocked FG with kicking team recovery but short of line to gain = turnover on downs."""
@@ -196,18 +216,19 @@ class TestBlockedFieldGoal:
         game.state.down = 4
         game.state.yards_to_go = 10  # Line to gain is at 85
         
-        # Mock dice rolls: FG roll = 14 (BK -8 = blocked), recovery roll = 20 (kicking team recovers)
-        # Ball at 75, spot of hold = 68, block -8 = ball at 60
-        # Line to gain = 75 + 10 = 85, so 60 < 85 = turnover on downs
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            assert "turnover on downs" in outcome.description.lower()
-            # Possession SHOULD switch (kicking team recovers but short of line to gain)
-            assert game.state.is_home_possession is False
+        # Mock FG result as blocked, then mock recovery roll
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 20 (kicking team recovers, range 10-31)
+                mock_dice.return_value = (20, "B2+W0+W0=20")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                assert "turnover on downs" in outcome.description.lower()
+                # Possession SHOULD switch (kicking team recovers but short of line to gain)
+                assert game.state.is_home_possession is False
     
     def test_blocked_fg_safety_kicking_team_recovers_in_end_zone(self, game):
         """Blocked FG with kicking team recovery in end zone = safety."""
@@ -218,15 +239,17 @@ class TestBlockedFieldGoal:
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # FG roll = 14 (BK -8), recovery roll = 20 (kicking team recovers, range 10-31)
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            assert "safety" in outcome.description.lower()
-            assert game.state.away_score == initial_away_score + 2
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 20 (kicking team recovers, range 10-31)
+                mock_dice.return_value = (20, "B2+W0+W0=20")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                assert "safety" in outcome.description.lower()
+                assert game.state.away_score == initial_away_score + 2
     
     def test_blocked_fg_touchback_defense_recovers_in_end_zone(self, game):
         """Blocked FG with defense recovery in end zone = touchback."""
@@ -237,19 +260,21 @@ class TestBlockedFieldGoal:
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # FG roll = 14 (BK -8), recovery roll = 35 (defense recovers, range 32-39)
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (35, "B3+W2+W0=35")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            assert "touchback" in outcome.description.lower()
-            # No safety scored
-            assert game.state.away_score == initial_away_score
-            # Defense gets ball at their 20
-            assert game.state.is_home_possession is False
-            assert game.state.ball_position == 20
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 35 (defense recovers, range 32-39)
+                mock_dice.return_value = (35, "B3+W2+W0=35")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                assert "touchback" in outcome.description.lower()
+                # No safety scored
+                assert game.state.away_score == initial_away_score
+                # Defense gets ball at their 20
+                assert game.state.is_home_possession is False
+                assert game.state.ball_position == 20
     
     def test_blocked_fg_on_3rd_down_kicking_team_recovers(self, game):
         """Blocked FG on 3rd down with kicking team recovery = next down, not turnover."""
@@ -258,21 +283,20 @@ class TestBlockedFieldGoal:
         game.state.down = 3
         game.state.yards_to_go = 10  # Line to gain is at 85
         
-        # Mock dice rolls: FG roll = 14 (BK -8 = blocked), recovery roll = 20 (kicking team recovers)
-        # Ball at 75, spot of hold = 68, block -8 = ball at 60
-        # Line to gain = 85, recovery at 60 = short of line to gain
-        # But it's 3rd down, so kicking team keeps ball and advances to 4th down
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            assert "turnover" not in outcome.description.lower()
-            # Possession should NOT switch (3rd down, kicking team recovers)
-            assert game.state.is_home_possession is True
-            # Should advance to 4th down
-            assert game.state.down == 4
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 20 (kicking team recovers, range 10-31)
+                mock_dice.return_value = (20, "B2+W0+W0=20")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                assert "turnover" not in outcome.description.lower()
+                # Possession should NOT switch (3rd down, kicking team recovers)
+                assert game.state.is_home_possession is True
+                # Should advance to 4th down
+                assert game.state.down == 4
     
     def test_blocked_fg_on_1st_down_kicking_team_recovers(self, game):
         """Blocked FG on 1st down with kicking team recovery = 2nd down."""
@@ -281,14 +305,17 @@ class TestBlockedFieldGoal:
         game.state.down = 1
         game.state.yards_to_go = 10
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (20, "B2+W0+W0=20")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            assert "turnover" not in outcome.description.lower()
-            assert game.state.is_home_possession is True
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll = 20 (kicking team recovers, range 10-31)
+                mock_dice.return_value = (20, "B2+W0+W0=20")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                assert "turnover" not in outcome.description.lower()
+                assert game.state.is_home_possession is True
             assert game.state.down == 2
     
     def test_blocked_fg_on_non_4th_down_defense_recovers(self, game):
@@ -299,50 +326,96 @@ class TestBlockedFieldGoal:
         game.state.yards_to_go = 10
         
         # Defense recovers (roll 35 is in defense recovery range 32-39)
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W0+W4=14"), (35, "B3+W2+W0=35")]
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
-            
-            assert "blocked" in outcome.description.lower()
-            # Defense recovers = turnover regardless of down
-            assert game.state.is_home_possession is False
-            assert game.state.down == 1
-            assert game.state.yards_to_go == 10
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                mock_dice.return_value = (35, "B3+W2+W0=35")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                assert "blocked" in outcome.description.lower()
+                # Defense recovers = turnover regardless of down
+                assert game.state.is_home_possession is False
+                assert game.state.down == 1
+                assert game.state.yards_to_go == 10
 
 
 class TestFieldGoalPenalties:
-    """Tests for penalties on field goal attempts."""
+    """Tests for penalties on field goal attempts with full penalty procedure."""
     
-    def test_defensive_penalty_fg_good(self, game):
-        """Defensive penalty on FG should result in good kick."""
+    def test_defensive_penalty_fg_pending_decision(self, game):
+        """Defensive penalty on FG should return pending decision for offense to choose."""
+        from paydirt.play_resolver import PenaltyOption
+        
         game.state.ball_position = 60  # Opponent's 40
         game.state.is_home_possession = True
-        initial_home_score = game.state.home_score
         
-        # Mock dice roll: 15 = DEF 5 (defensive penalty)
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (15, "B1+W0+W5=15")
+        # Mock FG result with defensive penalty - offense gets choice
+        fg_result = FieldGoalResult(
+            dice_roll=15,
+            dice_desc="B1+W0+W5=15",
+            raw_result="35",  # Final result after reroll
+            chart_yards=35,
+            is_blocked=False,
+            is_fumble=False,
+            is_penalty=True,
+            penalty_options=[PenaltyOption(
+                penalty_type="DEF",
+                raw_result="DEF 5",
+                yards=5,
+                description="Defensive penalty, 5 yards"
+            )],
+            offsetting=False,
+            offended_team="offense",
+            reroll_log=["FG roll: DEF 5 (penalty)", "FG roll: 35"]
+        )
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = fg_result
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
-            assert "good" in outcome.description.lower()
-            assert game.state.home_score == initial_home_score + 3
+            # Should have pending penalty decision
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            assert outcome.penalty_choice.offended_team == "offense"
     
-    def test_offensive_penalty_fg_no_good(self, game):
-        """Offensive penalty on FG should result in no good."""
+    def test_offensive_penalty_fg_pending_decision(self, game):
+        """Offensive penalty on FG should return pending decision for defense to choose."""
+        from paydirt.play_resolver import PenaltyOption
+        
         game.state.ball_position = 75  # Opponent's 25
         game.state.is_home_possession = True
-        initial_home_score = game.state.home_score
         
-        # Mock dice roll: 16 = OFF 10 (offensive penalty)
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (16, "B1+W0+W6=16")
+        # Mock FG result with offensive penalty - defense gets choice
+        fg_result = FieldGoalResult(
+            dice_roll=16,
+            dice_desc="B1+W0+W6=16",
+            raw_result="45",  # Final result after reroll (would be good)
+            chart_yards=45,
+            is_blocked=False,
+            is_fumble=False,
+            is_penalty=True,
+            penalty_options=[PenaltyOption(
+                penalty_type="OFF",
+                raw_result="OFF 10",
+                yards=10,
+                description="Offensive penalty, 10 yards"
+            )],
+            offsetting=False,
+            offended_team="defense",
+            reroll_log=["FG roll: OFF 10 (penalty)", "FG roll: 45"]
+        )
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = fg_result
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
-            assert "off" in outcome.description.lower()
-            assert game.state.home_score == initial_home_score  # No points
+            # Should have pending penalty decision
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            assert outcome.penalty_choice.offended_team == "defense"
 
 
 class TestFieldGoalFumble:
@@ -353,9 +426,9 @@ class TestFieldGoalFumble:
         game.state.ball_position = 75  # Opponent's 25
         game.state.is_home_possession = True
         
-        # Mock dice roll: 17 = F - 5 (fumbled snap)
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (17, "B1+W0+W7=17")
+        # Mock FG result as fumbled snap
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(17, "F - 5", is_fumble=True)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -374,8 +447,8 @@ class TestFieldGoalDistanceCalculation:
         game.state.ball_position = 70
         game.state.is_home_possession = True
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (10, "B1+W0+W0=10")  # 45 yards, need 30
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(10, "45", chart_yards=45)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
@@ -391,8 +464,8 @@ class TestFieldGoalDistanceCalculation:
         game.state.is_home_possession = True
         initial_home_score = game.state.home_score
         
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (10, "B1+W0+W0=10")  # 45 yards
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(10, "45", chart_yards=45)
             
             outcome = game.run_play(PlayType.FIELD_GOAL, None)
             

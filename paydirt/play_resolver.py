@@ -988,6 +988,109 @@ def _create_penalty_option(result_str: str) -> PenaltyOption:
     )
 
 
+@dataclass
+class FieldGoalResult:
+    """Result of a field goal attempt with penalty handling."""
+    dice_roll: int
+    dice_desc: str
+    raw_result: str  # The chart result (e.g., "15", "BK -8", "OFF 10")
+    chart_yards: int  # Parsed yardage from chart (for success check)
+    is_blocked: bool = False
+    is_fumble: bool = False
+    is_penalty: bool = False
+    penalty_options: List[PenaltyOption] = field(default_factory=list)
+    offsetting: bool = False
+    offended_team: str = ""  # "offense" or "defense"
+    reroll_log: List[str] = field(default_factory=list)
+
+
+def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:
+    """
+    Resolve a field goal attempt with full penalty procedure.
+    
+    Like normal plays, if a penalty occurs:
+    - Offense rerolls until a non-penalty result
+    - Collects all penalties encountered
+    - Checks for offsetting penalties
+    - Returns result allowing offended team to choose
+    
+    Args:
+        special_teams_chart: The kicking team's special teams chart
+        
+    Returns:
+        FieldGoalResult with the outcome and any penalty options
+    """
+    penalty_options: List[PenaltyOption] = []
+    reroll_log: List[str] = []
+    has_off_penalty = False
+    has_def_penalty = False
+    
+    max_rerolls = 10  # Safety limit
+    reroll_count = 0
+    
+    while reroll_count < max_rerolls:
+        dice_roll, dice_desc = roll_chart_dice()
+        fg_result = special_teams_chart.field_goal.get(dice_roll, "")
+        
+        # Check if this is a penalty result
+        is_pen, pen_type = _is_penalty_result(fg_result)
+        
+        if is_pen:
+            reroll_log.append(f"FG roll {dice_desc}: {fg_result} (penalty)")
+            
+            # Track who committed the penalty
+            if pen_type == "OFF":
+                has_off_penalty = True
+            else:
+                has_def_penalty = True
+            
+            penalty_options.append(_create_penalty_option(fg_result))
+            reroll_count += 1
+            continue
+        else:
+            # Non-penalty result - we're done rolling
+            reroll_log.append(f"FG roll {dice_desc}: {fg_result}")
+            break
+    
+    # Parse the final result
+    is_blocked = "BK" in fg_result.upper()
+    is_fumble = bool(re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE))
+    
+    # Parse chart yards for success check
+    chart_yards = 0
+    if not is_blocked and not is_fumble and fg_result:
+        try:
+            chart_yards = int(fg_result.strip())
+        except ValueError:
+            chart_yards = 0
+    
+    # Determine offended team and offsetting status
+    offended_team = ""
+    offsetting = False
+    
+    if has_off_penalty and has_def_penalty:
+        offsetting = True
+        offended_team = ""
+    elif has_off_penalty:
+        offended_team = "defense"
+    elif has_def_penalty:
+        offended_team = "offense"
+    
+    return FieldGoalResult(
+        dice_roll=dice_roll,
+        dice_desc=dice_desc,
+        raw_result=fg_result,
+        chart_yards=chart_yards,
+        is_blocked=is_blocked,
+        is_fumble=is_fumble,
+        is_penalty=len(penalty_options) > 0,
+        penalty_options=penalty_options,
+        offsetting=offsetting,
+        offended_team=offended_team,
+        reroll_log=reroll_log
+    )
+
+
 def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: DefenseChart,
                                  play_type: PlayType, defense_type: DefenseType) -> PenaltyChoice:
     """

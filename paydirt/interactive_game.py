@@ -1630,6 +1630,9 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         Updated PlayOutcome after the decision is applied
     """
     penalty_choice = outcome.penalty_choice
+    
+    # Check if this is a field goal penalty (use different apply method)
+    is_fg_penalty = outcome.play_type == PlayType.FIELD_GOAL
 
     # Determine who is the offended team and if human decides
     offended_is_offense = penalty_choice.offended_team == "offense"
@@ -1786,7 +1789,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 # Accept play result - announce like NFL refs
                 penalty_desc = filtered_penalties[0].description if filtered_penalties else "penalty"
                 print(f"\n  >> {penalty_desc.upper()} - DECLINED. Result of the play stands.")
-                return game.apply_penalty_decision(outcome, accept_play=True)
+                if is_fg_penalty:
+                    return game.apply_fg_penalty_decision(outcome, accept_play=True)
+                else:
+                    return game.apply_penalty_decision(outcome, accept_play=True)
             elif choice.isdigit():
                 idx = int(choice) - 1
                 if 0 <= idx < len(filtered_penalties):
@@ -1794,7 +1800,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                     # Find the original index in penalty_options for apply_penalty_decision
                     original_idx = penalty_choice.penalty_options.index(opt)
                     print(f"\n  >> Accepting penalty: {opt.description}")
-                    return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+                    if is_fg_penalty:
+                        return game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+                    else:
+                        return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
                 else:
                     print("  Invalid choice. Try again.")
             else:
@@ -1838,13 +1847,19 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
 
         if accept_play:
             print(f"\n  >> {cpu_team} accepts play result")
-            return game.apply_penalty_decision(outcome, accept_play=True)
+            if is_fg_penalty:
+                return game.apply_fg_penalty_decision(outcome, accept_play=True)
+            else:
+                return game.apply_penalty_decision(outcome, accept_play=True)
         else:
             opt = filtered_penalties[best_penalty_idx]
             # Find the original index in penalty_options for apply_penalty_decision
             original_idx = penalty_choice.penalty_options.index(opt)
             print(f"\n  >> {cpu_team} accepts penalty: {opt.description}")
-            return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+            if is_fg_penalty:
+                return game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+            else:
+                return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
 
 
 def _offer_record_to_standings(year: int, home_team: str, home_score: int,

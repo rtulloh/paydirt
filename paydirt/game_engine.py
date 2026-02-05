@@ -11,7 +11,8 @@ from .play_resolver import (
     PlayType, DefenseType, PlayResult, ResultType,
     resolve_play, roll_chart_dice,
     parse_result_string, roll_white_dice, resolve_qb_sneak, resolve_hail_mary,
-    resolve_play_with_penalties, PenaltyChoice
+    resolve_play_with_penalties, PenaltyChoice, PenaltyOption,
+    resolve_field_goal_with_penalties, FieldGoalResult
 )
 from .penalty_handler import (
     resolve_penalty, resolve_pass_interference
@@ -1910,19 +1911,195 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def _evaluate_field_goal_result(self, fg_result: str, distance_to_goal: int,
+                                     statistical_distance: int, spot_of_hold: int,
+                                     field_pos_before: str, down_before: int,
+                                     dice_roll: int) -> PlayOutcome:
+        """
+        Evaluate a field goal result WITHOUT applying state changes.
+        Used when there's a penalty and we need to show the FG outcome for the choice.
+        
+        Returns a PlayOutcome describing what would happen if the play result is accepted.
+        """
+        parsed = parse_result_string(fg_result)
+        parsed.dice_roll = dice_roll
+        
+        success = False
+        blocked = False
+        is_fumble = False
+        description = ""
+        
+        if "BK" in fg_result.upper():
+            blocked = True
+            description = f"BLOCKED FG! (from {statistical_distance} yards)"
+        elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
+            is_fumble = True
+            description = f"FUMBLED SNAP on FG attempt!"
+        elif fg_result:
+            try:
+                chart_yards = int(fg_result.strip())
+                success = chart_yards >= distance_to_goal
+                if success:
+                    description = f"Field goal GOOD! ({statistical_distance} yards)"
+                else:
+                    description = f"Field goal NO GOOD! ({statistical_distance} yards, kick only reached {chart_yards})"
+            except ValueError:
+                success = False
+                description = f"Field goal NO GOOD from {statistical_distance} yards"
+        else:
+            success = False
+            description = f"Field goal NO GOOD from {statistical_distance} yards"
+        
+        return PlayOutcome(
+            play_type=PlayType.FIELD_GOAL,
+            defense_type=DefenseType.STANDARD,
+            result=parsed,
+            yards_gained=0,
+            touchdown=False,
+            field_goal_made=success and not blocked,
+            field_position_before=field_pos_before,
+            down_before=down_before,
+            description=description
+        )
+
+    def apply_fg_penalty_decision(self, outcome: PlayOutcome, accept_play: bool,
+                                   penalty_index: int = 0) -> PlayOutcome:
+        """
+        Apply the offended team's penalty decision for a field goal attempt.
+        
+        Args:
+            outcome: The PlayOutcome with pending_penalty_decision=True from _handle_field_goal
+            accept_play: True to accept the FG result, False to accept a penalty
+            penalty_index: Which penalty to accept (if multiple)
+            
+        Returns:
+            Updated PlayOutcome with the decision applied
+        """
+        if not outcome.pending_penalty_decision:
+            return outcome
+        
+        penalty_choice = outcome.penalty_choice
+        
+        # Retrieve stored FG-specific state
+        distance_to_goal = getattr(outcome, '_fg_distance_to_goal', 100 - self.state.ball_position)
+        statistical_distance = getattr(outcome, '_fg_statistical_distance', distance_to_goal + 17)
+        spot_of_hold = getattr(outcome, '_fg_spot_of_hold', self.state.ball_position - 7)
+        ball_pos_before = getattr(outcome, '_fg_ball_pos_before', self.state.ball_position)
+        ytg_before = getattr(outcome, '_fg_ytg_before', self.state.yards_to_go)
+        
+        if accept_play:
+            # Accept the FG result - apply the full FG logic
+            fg_result = outcome.result.raw_result
+            
+            success = False
+            blocked = False
+            is_fumble = False
+            description = outcome.description
+            
+            if "BK" in fg_result.upper():
+                # Handle blocked kick (simplified - full logic is complex)
+                blocked = True
+                # For simplicity, treat as turnover at spot of hold
+                defense_at_spot = 100 - max(1, spot_of_hold)
+                self.state.switch_possession()
+                self.state.ball_position = max(20, defense_at_spot)
+                self.state.down = 1
+                self.state.yards_to_go = 10
+                description = f"BLOCKED FG! Defense takes over at {self.state.field_position_str()}"
+                
+            elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
+                is_fumble = True
+                self.state.ball_position = max(1, spot_of_hold)
+                self.state.switch_possession()
+                self.state.down = 1
+                self.state.yards_to_go = 10
+                description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()}"
+                
+            elif fg_result:
+                try:
+                    chart_yards = int(fg_result.strip())
+                    success = chart_yards >= distance_to_goal
+                    if success:
+                        self._score_field_goal()
+                        description = f"Field goal GOOD! ({statistical_distance} yards)"
+                    else:
+                        # Missed FG - defense gets ball
+                        defense_at_20 = 20
+                        defense_at_spot = 100 - max(1, spot_of_hold)
+                        self.state.switch_possession()
+                        if defense_at_spot > defense_at_20:
+                            self.state.ball_position = defense_at_spot
+                        else:
+                            self.state.ball_position = defense_at_20
+                        self.state.down = 1
+                        self.state.yards_to_go = 10
+                        description = f"Field goal NO GOOD! Defense takes over at {self.state.field_position_str()}"
+                except ValueError:
+                    success = False
+                    self.state.switch_possession()
+                    self.state.ball_position = 20
+                    self.state.down = 1
+                    self.state.yards_to_go = 10
+                    description = f"Field goal NO GOOD from {statistical_distance} yards"
+            
+            outcome.field_goal_made = success and not blocked
+            outcome.field_position_after = self.state.field_position_str()
+            outcome.description = description + " (play result accepted)"
+            outcome.pending_penalty_decision = False
+            
+        else:
+            # Accept the penalty - rekick from new spot
+            if penalty_index >= len(penalty_choice.penalty_options):
+                penalty_index = 0
+            
+            penalty = penalty_choice.penalty_options[penalty_index]
+            penalty_yards = penalty.yards
+            
+            if penalty.penalty_type == "OFF":
+                # Offensive penalty - move back, rekick
+                new_position = max(1, ball_pos_before - penalty_yards)
+                self.state.ball_position = new_position
+                description = f"Offensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
+            else:
+                # Defensive penalty - move forward, rekick (or auto first down)
+                new_position = min(99, ball_pos_before + penalty_yards)
+                self.state.ball_position = new_position
+                if penalty.auto_first_down:
+                    # Auto first down - offense keeps ball with new set of downs
+                    self.state.down = 1
+                    self.state.yards_to_go = max(1, 100 - new_position)
+                    description = f"Defensive penalty ({penalty_yards} yards + auto 1st down) - 1st down at {self.state.field_position_str()}"
+                else:
+                    description = f"Defensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
+            
+            outcome.field_goal_made = False
+            outcome.field_position_after = self.state.field_position_str()
+            outcome.description = description
+            outcome.pending_penalty_decision = False
+        
+        self.play_log.append(outcome)
+        self._use_time(random.uniform(5, 10))
+        
+        return outcome
+
     def _handle_field_goal(self) -> PlayOutcome:
         """
-        Handle a field goal attempt per official Paydirt rules.
+        Handle a field goal attempt per official Paydirt rules with full penalty handling.
         
         1. Roll offensive dice, consult Field Goal column on kicking team's Special Team Chart
-        2. If yardage shown EQUALS or EXCEEDS distance from LOS to goal line, FG is GOOD
-        3. On miss, defense gets ball at their 20 OR spot of hold (7 yards back) - whichever
+        2. If penalty, reroll until non-penalty result (like normal plays)
+        3. If yardage shown EQUALS or EXCEEDS distance from LOS to goal line, FG is GOOD
+        4. On miss, defense gets ball at their 20 OR spot of hold (7 yards back) - whichever
            is to their advantage
+        5. If penalties occurred, offended team gets to choose between play result and penalty
         
         NOTE: Chart yardages are distance from LOS to goal line, NOT the statistical length
         (which is 17 yards greater: 10 yards end zone + 7 yards to spot of hold)
         """
         field_pos_before = self.state.field_position_str()
+        down_before = self.state.down
+        ball_pos_before = self.state.ball_position
+        ytg_before = self.state.yards_to_go
 
         # Distance from line of scrimmage to opponent's goal line
         # ball_position is yards from own goal, so distance to opponent's goal = 100 - ball_position
@@ -1934,12 +2111,79 @@ class PaydirtGameEngine:
         # Spot of hold is 7 yards behind line of scrimmage
         spot_of_hold = self.state.ball_position - 7
 
-        # Roll for field goal result
-        dice_roll, dice_desc = roll_chart_dice()
-        fg_result = self.state.possession_team.special_teams.field_goal.get(dice_roll, "")
+        # Roll for field goal result with full penalty procedure
+        fg_roll_result = resolve_field_goal_with_penalties(self.state.possession_team.special_teams)
+        
+        dice_roll = fg_roll_result.dice_roll
+        dice_desc = fg_roll_result.dice_desc
+        fg_result = fg_roll_result.raw_result
 
         parsed = parse_result_string(fg_result)
         parsed.dice_roll = dice_roll  # Store dice roll for display
+
+        # Handle offsetting penalties - replay the down (rekick)
+        if fg_roll_result.offsetting:
+            self._use_time(10)
+            # Create a PenaltyChoice for the outcome
+            penalty_choice = PenaltyChoice(
+                play_result=parsed,
+                penalty_options=fg_roll_result.penalty_options,
+                offended_team="",
+                offsetting=True,
+                is_pass_interference=False,
+                original_defense_result="",
+                reroll_log=fg_roll_result.reroll_log
+            )
+            outcome = PlayOutcome(
+                play_type=PlayType.FIELD_GOAL,
+                defense_type=DefenseType.STANDARD,
+                result=parsed,
+                yards_gained=0,
+                field_position_before=field_pos_before,
+                field_position_after=field_pos_before,
+                down_before=down_before,
+                down_after=down_before,
+                description="Offsetting penalties on FG attempt - rekick",
+                penalty_choice=penalty_choice,
+                pending_penalty_decision=False
+            )
+            self.play_log.append(outcome)
+            return outcome
+
+        # Handle non-offsetting penalties - offended team gets a choice
+        if fg_roll_result.penalty_options and not fg_roll_result.offsetting:
+            # We need to evaluate what the FG result would be, then let offended team choose
+            # Build the FG outcome first (without applying state changes)
+            fg_outcome = self._evaluate_field_goal_result(
+                fg_result, distance_to_goal, statistical_distance, spot_of_hold,
+                field_pos_before, down_before, dice_roll
+            )
+            
+            # Create a PenaltyChoice for the outcome
+            penalty_choice = PenaltyChoice(
+                play_result=fg_outcome.result,
+                penalty_options=fg_roll_result.penalty_options,
+                offended_team=fg_roll_result.offended_team,
+                offsetting=False,
+                is_pass_interference=False,
+                original_defense_result="",
+                reroll_log=fg_roll_result.reroll_log
+            )
+            
+            # Store state for later application
+            fg_outcome.penalty_choice = penalty_choice
+            fg_outcome.pending_penalty_decision = True
+            fg_outcome.field_position_before = field_pos_before
+            fg_outcome.down_before = down_before
+            
+            # Store additional FG-specific info for apply_fg_penalty_decision
+            fg_outcome._fg_distance_to_goal = distance_to_goal
+            fg_outcome._fg_statistical_distance = statistical_distance
+            fg_outcome._fg_spot_of_hold = spot_of_hold
+            fg_outcome._fg_ball_pos_before = ball_pos_before
+            fg_outcome._fg_ytg_before = ytg_before
+            
+            return fg_outcome
 
         # Determine success based on result
         success = False
@@ -2079,20 +2323,6 @@ class PaydirtGameEngine:
                 # Reset down and distance for defense (new possession)
                 self.state.down = 1
                 self.state.yards_to_go = 10
-
-        # Check for penalty (must check before fumble since "DEF" contains "F")
-        elif "OFF" in fg_result.upper() or "DEF" in fg_result.upper():
-            is_penalty = True
-            if "DEF" in fg_result.upper():
-                # Defensive penalty - usually means automatic first down or rekick
-                # For simplicity, treat as good field goal
-                success = True
-                description = f"Defensive penalty on FG attempt - Field goal GOOD! ({statistical_distance} yards)"
-            else:
-                # Offensive penalty - kick is no good, replay down with penalty
-                success = False
-                description = f"Offensive penalty on FG attempt - {fg_result}"
-                # For now, treat as missed kick
 
         # Check for fumble on hold/snap (F followed by space/+/- and number, e.g., "F - 5", "F + 3")
         elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
