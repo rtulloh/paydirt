@@ -1380,11 +1380,11 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             int_dice = getattr(outcome.result, 'int_return_dice', None)
             int_spot = getattr(outcome.result, 'int_spot', None)
             if int_dice is not None:
-                # We have return info - show it
+                # We have return info - show clean game action, details go on technical line
                 if int_return and int_return != 0:
-                    result_str = f"INTERCEPTED at own {int_spot}! Returned {int_return} yds (roll {int_dice})"
+                    result_str = f"INTERCEPTED! Returned {int_return} yds"
                 else:
-                    result_str = f"INTERCEPTED at own {int_spot}! No return (roll {int_dice})"
+                    result_str = "INTERCEPTED!"
                 # Check if return ended in red zone
                 if game.state.ball_position >= 95:
                     special_marker = " ★ TURNOVER! GOAL LINE!"
@@ -1405,12 +1405,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                     special_marker = " ★ TURNOVER!"
                 # Check for fumble return TD
                 elif outcome.touchdown:
-                    # Show recovery roll if available (roll 39 = automatic TD)
-                    recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
-                    if recovery_roll == 39:
-                        result_str = f"FUMBLE - Loss! (Recovery roll {recovery_roll} = AUTO TD!)"
-                    else:
-                        result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                    result_str = "FUMBLE - Loss! RETURNED FOR TD!"
                     special_marker = " ★ SCOOP AND SCORE!"
                 # Check for return yardage on fumble recovery
                 else:
@@ -1428,18 +1423,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                         result_str = "FUMBLE - Loss!"
                         special_marker = " ★ TURNOVER!"
             else:
-                # Offense recovered their own fumble - show details
-                recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
-                fumble_spot = getattr(outcome.result, 'fumble_spot', None)
-                fumble_yards = getattr(outcome.result, 'yards', outcome.yards_gained)
-                if recovery_roll is not None:
-                    if fumble_yards and fumble_yards != 0:
-                        yard_str = f"+{fumble_yards}" if fumble_yards > 0 else str(fumble_yards)
-                        result_str = f"FUMBLE at {yard_str} - Recovered! (roll {recovery_roll})"
-                    else:
-                        result_str = f"FUMBLE at LOS - Recovered! (roll {recovery_roll})"
-                else:
-                    result_str = "FUMBLE - Recovered"
+                # Offense recovered their own fumble - clean game action
+                result_str = "FUMBLE - Recovered!"
         elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
             # Check for TD before checking yards_gained (TD may have yards_gained=0)
             result_str = "TOUCHDOWN!"
@@ -1490,9 +1475,25 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         else:
             print(f"► {play_name.upper()}: {result_str}{special_marker}")
 
-        # Line 2: Dice details (condensed)
+        # Line 2: Dice details (condensed) - include turnover return info here
         def_row = def_match.group(3) if def_match else "?"
-        print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value})")
+        extra_info = ""
+        if outcome.result.result_type == ResultType.INTERCEPTION:
+            int_dice = getattr(outcome.result, 'int_return_dice', None)
+            int_spot = getattr(outcome.result, 'int_spot', None)
+            int_return = getattr(outcome.result, 'int_return_yards', 0)
+            if int_dice is not None:
+                extra_info = f" | INT@{int_spot}, Ret:{int_return}(roll {int_dice})"
+        elif outcome.result.result_type == ResultType.FUMBLE:
+            recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
+            fumble_spot = getattr(outcome.result, 'fumble_spot', None)
+            fumble_return = getattr(outcome.result, 'fumble_return_yards', 0)
+            if recovery_roll is not None:
+                if outcome.turnover:
+                    extra_info = f" | F@{fumble_spot}, Rec:{recovery_roll}(lost), Ret:{fumble_return}"
+                else:
+                    extra_info = f" | F@{fumble_spot}, Rec:{recovery_roll}(kept)"
+        print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
         return
 
     # Verbose mode display

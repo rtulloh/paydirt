@@ -19,8 +19,9 @@
 - Removed duplicate implementations from `cli.py`, `cli_charts.py`, `interactive_game.py`
 
 ### Bug Fixes
-- **Fumble recovery display**: Fixed missing recovery details when offense recovers own fumble. Now shows "FUMBLE at +X - Recovered! (roll Y)" with fumble spot and recovery roll.
-- **Interception return display**: Fixed missing INT return roll and yardage in compact display. Now shows "INTERCEPTED at own X! Returned Y yds (roll Z)" with INT spot and return details.
+- **Cleaner turnover display**: Moved dice roll details from game action line to technical details line. Game action now shows clean commentary (e.g., "INTERCEPTED! Returned 15 yds") while technical line shows full details (e.g., "INT@47, Ret:15(roll 34)").
+- **Fumble recovery display**: Shows fumble recovery info on technical line with spot and recovery roll.
+- **Interception return display**: Shows INT return info on technical line with spot, return yards, and roll.
 - **Timeout at end of half**: Fixed bug where calling timeout near end of half still triggered halftime/end of game. Timeout now correctly reverts quarter advancement when time is preserved.
 - **Offsetting penalties display**: Fixed misleading display where offsetting penalties showed play result (e.g., "No gain" with "O:24→4") instead of clearly indicating "OFFSETTING PENALTIES - Down replayed"
 - **Blocked kick touchdown flag**: Fixed bug where blocked FG returned for TD scored 6 points but skipped PAT/kickoff flow (touchdown flag was hardcoded to False)
