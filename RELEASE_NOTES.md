@@ -34,6 +34,7 @@
 - **Special markers**: Preserves "★ PICK SIX!" and "★ SCOOP AND SCORE!" for turnover TDs
 
 ### Bug Fixes
+- **Untimed down rule**: Quarter/half cannot end on accepted defensive penalty - offense gets one more play at 0:00
 - **Touchdown display**: Fixed compact mode showing "No gain" instead of "TOUCHDOWN!"
 - **Blocked kicks**: Fixed handling - defense recovery in end zone is touchback, kicking team recovery is safety
 - **Field goals on any down**: Can now attempt FG or punt on any down, not just 4th
