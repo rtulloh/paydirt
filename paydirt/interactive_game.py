@@ -18,7 +18,7 @@ from .priority_chart import categorize_result, apply_priority_chart, ResultCateg
 from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
-from .utils import ordinal_suffix, ordinal, format_time
+from .utils import ordinal_suffix, format_time
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -123,11 +123,7 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def format_time(minutes: float) -> str:
-    """Format time as MM:SS."""
-    mins = int(minutes)
-    secs = int((minutes - mins) * 60)
-    return f'{mins}:{secs:02d}'
+# format_time is now imported from utils
 
 
 def get_available_teams() -> list[tuple[str, str]]:

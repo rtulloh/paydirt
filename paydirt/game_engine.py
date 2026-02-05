@@ -11,8 +11,7 @@ from .play_resolver import (
     PlayType, DefenseType, PlayResult, ResultType,
     resolve_play, roll_chart_dice,
     parse_result_string, roll_white_dice, resolve_qb_sneak, resolve_hail_mary,
-    resolve_play_with_penalties, PenaltyChoice, PenaltyOption,
-    resolve_field_goal_with_penalties, FieldGoalResult
+    resolve_play_with_penalties, PenaltyChoice, resolve_field_goal_with_penalties
 )
 from .penalty_handler import (
     resolve_penalty, resolve_pass_interference
@@ -1926,15 +1925,14 @@ class PaydirtGameEngine:
         
         success = False
         blocked = False
-        is_fumble = False
         description = ""
         
         if "BK" in fg_result.upper():
             blocked = True
             description = f"BLOCKED FG! (from {statistical_distance} yards)"
         elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
-            is_fumble = True
-            description = f"FUMBLED SNAP on FG attempt!"
+            # Fumble on FG attempt
+            description = "FUMBLED SNAP on FG attempt!"
         elif fg_result:
             try:
                 chart_yards = int(fg_result.strip())
@@ -1985,7 +1983,8 @@ class PaydirtGameEngine:
         statistical_distance = getattr(outcome, '_fg_statistical_distance', distance_to_goal + 17)
         spot_of_hold = getattr(outcome, '_fg_spot_of_hold', self.state.ball_position - 7)
         ball_pos_before = getattr(outcome, '_fg_ball_pos_before', self.state.ball_position)
-        ytg_before = getattr(outcome, '_fg_ytg_before', self.state.yards_to_go)
+        # ytg_before retrieved but not currently used - kept for potential future use
+        _ = getattr(outcome, '_fg_ytg_before', self.state.yards_to_go)
         
         if accept_play:
             # Accept the FG result - apply the full FG logic
@@ -1993,7 +1992,6 @@ class PaydirtGameEngine:
             
             success = False
             blocked = False
-            is_fumble = False
             description = outcome.description
             
             if "BK" in fg_result.upper():
@@ -2008,7 +2006,7 @@ class PaydirtGameEngine:
                 description = f"BLOCKED FG! Defense takes over at {self.state.field_position_str()}"
                 
             elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
-                is_fumble = True
+                # Fumble on FG attempt
                 self.state.ball_position = max(1, spot_of_hold)
                 self.state.switch_possession()
                 self.state.down = 1
@@ -2115,7 +2113,7 @@ class PaydirtGameEngine:
         fg_roll_result = resolve_field_goal_with_penalties(self.state.possession_team.special_teams)
         
         dice_roll = fg_roll_result.dice_roll
-        dice_desc = fg_roll_result.dice_desc
+        # dice_desc available but not currently used in this method
         fg_result = fg_roll_result.raw_result
 
         parsed = parse_result_string(fg_result)
