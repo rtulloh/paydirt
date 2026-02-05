@@ -2346,7 +2346,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
 
         # Process timeout if called (reduces play time to 10 seconds)
         # Human timeout (offense or defense)
-        if call_timeout:
+        # Skip timeout if touchdown scored - clock stops anyway and timeout is wasted
+        if call_timeout and not outcome.touchdown:
             if game.state.use_timeout(human_is_home):
                 _apply_timeout(game, time_before_play, quarter_before_play)
         

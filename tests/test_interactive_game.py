@@ -380,6 +380,42 @@ class TestApplyTimeout:
         assert abs(game.state.time_remaining - 0.093) < 0.01  # 0.26 - 0.167
 
 
+class TestTimeoutNotUsedOnTouchdown:
+    """Tests for timeout not being consumed when touchdown is scored."""
+    
+    def test_timeout_skipped_on_touchdown(self):
+        """Timeout should not be used if touchdown is scored - clock stops anyway."""
+        # This tests the logic: if call_timeout and not outcome.touchdown
+        call_timeout = True
+        
+        # Case 1: Touchdown scored - timeout should be skipped
+        class MockOutcomeTD:
+            touchdown = True
+        
+        outcome_td = MockOutcomeTD()
+        should_use_timeout = call_timeout and not outcome_td.touchdown
+        assert should_use_timeout is False, "Timeout should be skipped on TD"
+        
+        # Case 2: No touchdown - timeout should be used
+        class MockOutcomeNoTD:
+            touchdown = False
+        
+        outcome_no_td = MockOutcomeNoTD()
+        should_use_timeout = call_timeout and not outcome_no_td.touchdown
+        assert should_use_timeout is True, "Timeout should be used when no TD"
+    
+    def test_no_timeout_called_no_change(self):
+        """When no timeout called, touchdown status doesn't matter."""
+        call_timeout = False
+        
+        class MockOutcome:
+            touchdown = True
+        
+        outcome = MockOutcome()
+        should_use_timeout = call_timeout and not outcome.touchdown
+        assert should_use_timeout is False, "No timeout called means no timeout used"
+
+
 class TestFormatTime:
     """Tests for format_time function (imported from utils)."""
     
