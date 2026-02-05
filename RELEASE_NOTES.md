@@ -2,6 +2,13 @@
 
 ## Recent Changes (February 2026)
 
+### Field Goal Penalty Handling
+- **Full penalty procedure**: FG attempts now follow the same penalty rules as normal plays
+- **Roll until outcome**: If a penalty occurs, dice are re-rolled until a non-penalty result
+- **Penalty choice**: Offended team can choose between the play result or the penalty
+- **Offsetting penalties**: Result in a rekick (replay the down)
+- **Bug fix**: Fixed infinite re-kick bug where offensive penalties allowed repeated FG attempts
+
 ### Standings Management
 - **Post-game standings prompt**: After each game, you're asked if you want to record the result to season standings
 - **Edit game results**: `python -m paydirt.standings edit <year> <game#>` with options for `--home-team`, `--home-score`, `--away-team`, `--away-score`, `--week`
