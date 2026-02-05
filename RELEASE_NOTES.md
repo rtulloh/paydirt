@@ -19,6 +19,9 @@
 - Removed duplicate implementations from `cli.py`, `cli_charts.py`, `interactive_game.py`
 
 ### Bug Fixes
+- **Blocked kick touchdown flag**: Fixed bug where blocked FG returned for TD scored 6 points but skipped PAT/kickoff flow (touchdown flag was hardcoded to False)
+- **Blocked kick display**: Blocked FG now shows full description with recovery roll and return info instead of just "BLOCKED!"
+- **Blocked kick return rolls**: Added return dice roll to descriptions for blocked FG and punt returns
 - **Penalty yardage ignored**: Fixed bug where chart penalties (e.g., "DEF 15") were re-rolled instead of using the explicit yardage. Now uses chart yardage when specified.
 - **Punt return penalties**: Fixed "DEF 15" triggering false fumble detection (DEF contains "F")
 - **Punt/kickoff return penalty yardage**: Now correctly parses and applies penalty yards
