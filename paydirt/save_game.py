@@ -112,8 +112,8 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     away_chart = load_team_chart(save_data["away_team_path"])
     home_chart = load_team_chart(save_data["home_team_path"])
     
-    # Create engine with loaded charts
-    engine = PaydirtGameEngine(away_chart, home_chart)
+    # Create engine with loaded charts (constructor takes home_chart, away_chart)
+    engine = PaydirtGameEngine(home_chart, away_chart)
     state = engine.state
     
     # Restore core game state
