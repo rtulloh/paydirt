@@ -1673,12 +1673,23 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
     # Show play result with projected down/distance
     play_result = penalty_choice.play_result
     print("\n  Play Result (if accepted, down counts):")
-    print(f"    {play_result.description}")
-    if play_result.turnover:
+    
+    # Handle FG plays specially - the chart yardage is kick distance, not yards gained
+    if is_fg_penalty:
+        # For FG, show whether the kick was good or not
+        print(f"    {play_result.description}")
+        if outcome.field_goal_made:
+            print("    -> FIELD GOAL GOOD!")
+        else:
+            print("    -> FIELD GOAL NO GOOD (turnover on downs)")
+    elif play_result.turnover:
+        print(f"    {play_result.description}")
         print("    ** TURNOVER **")
     elif play_result.touchdown:
+        print(f"    {play_result.description}")
         print("    ** TOUCHDOWN **")
     else:
+        print(f"    {play_result.description}")
         # Calculate what the next down/distance would be
         yards_gained = play_result.yards
         current_down = game.state.down
@@ -1701,43 +1712,52 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         print(f"\n  You ({penalty_choice.offended_team.upper()}) may choose:")
 
         # Show play result option with outcome details
-        yards_gained = play_result.yards
-        play_new_pos = game.state.ball_position + yards_gained
-
-        # Check for touchdown first (ball crosses goal line at 100)
-        if play_result.touchdown or play_new_pos >= 100:
-            play_outcome_str = "TOUCHDOWN!"
-            play_field_str = "end zone"
-        elif play_result.turnover:
-            play_outcome_str = "TURNOVER"
-            play_new_pos = max(1, min(99, play_new_pos))
-            if play_new_pos <= 50:
-                play_field_str = f"own {play_new_pos}"
+        # Handle FG plays specially - the chart yardage is kick distance, not yards gained
+        if is_fg_penalty:
+            if outcome.field_goal_made:
+                play_outcome_str = "FIELD GOAL GOOD!"
+                play_field_str = "kickoff"
             else:
-                play_field_str = f"opp {100 - play_new_pos}"
+                play_outcome_str = "FIELD GOAL NO GOOD (turnover)"
+                play_field_str = "defense ball"
         else:
-            play_new_pos = max(1, min(99, play_new_pos))
-            if play_new_pos <= 50:
-                play_field_str = f"own {play_new_pos}"
-            else:
-                play_field_str = f"opp {100 - play_new_pos}"
+            yards_gained = play_result.yards
+            play_new_pos = game.state.ball_position + yards_gained
 
-            if yards_gained >= game.state.yards_to_go:
-                play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
-            elif yards_gained > 0:
-                next_down = game.state.down + 1
-                next_ytg = game.state.yards_to_go - yards_gained
-                down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {next_ytg}"
-            elif yards_gained == 0:
-                next_down = game.state.down + 1
-                down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                play_outcome_str = f"No gain -> {next_down}{down_suffix[next_down]} and {game.state.yards_to_go}"
+            # Check for touchdown first (ball crosses goal line at 100)
+            if play_result.touchdown or play_new_pos >= 100:
+                play_outcome_str = "TOUCHDOWN!"
+                play_field_str = "end zone"
+            elif play_result.turnover:
+                play_outcome_str = "TURNOVER"
+                play_new_pos = max(1, min(99, play_new_pos))
+                if play_new_pos <= 50:
+                    play_field_str = f"own {play_new_pos}"
+                else:
+                    play_field_str = f"opp {100 - play_new_pos}"
             else:
-                next_down = game.state.down + 1
-                next_ytg = game.state.yards_to_go - yards_gained  # yards_gained is negative
-                down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                play_outcome_str = f"Loss of {abs(yards_gained)} -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+                play_new_pos = max(1, min(99, play_new_pos))
+                if play_new_pos <= 50:
+                    play_field_str = f"own {play_new_pos}"
+                else:
+                    play_field_str = f"opp {100 - play_new_pos}"
+
+                if yards_gained >= game.state.yards_to_go:
+                    play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
+                elif yards_gained > 0:
+                    next_down = game.state.down + 1
+                    next_ytg = game.state.yards_to_go - yards_gained
+                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+                    play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+                elif yards_gained == 0:
+                    next_down = game.state.down + 1
+                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+                    play_outcome_str = f"No gain -> {next_down}{down_suffix[next_down]} and {game.state.yards_to_go}"
+                else:
+                    next_down = game.state.down + 1
+                    next_ytg = game.state.yards_to_go - yards_gained  # yards_gained is negative
+                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
+                    play_outcome_str = f"Loss of {abs(yards_gained)} -> {next_down}{down_suffix[next_down]} and {next_ytg}"
 
         # Option 0 is always the play result
         print(f"    [0] Accept PLAY result: {play_outcome_str} at {play_field_str}")
@@ -1825,7 +1845,19 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         accept_play = True
         best_penalty_idx = 0
 
-        if play_td:
+        # Handle FG plays specially - for FG, "play result" is FG good/no good
+        if is_fg_penalty:
+            if outcome.field_goal_made:
+                # FG was good - offense wants to accept play result
+                accept_play = True
+            else:
+                # FG was no good - offense wants penalty (first down or rekick)
+                best_penalty = filtered_penalties[0] if filtered_penalties else None
+                if best_penalty and offended_is_offense:
+                    accept_play = False  # Take the penalty (first down or better position)
+                else:
+                    accept_play = True  # Defense accepts the miss
+        elif play_td:
             # Always accept TD
             accept_play = True
         elif play_turnover:
