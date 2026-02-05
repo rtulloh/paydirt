@@ -753,10 +753,32 @@ class PaydirtGameEngine:
 
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice
+
+                    # Add fumble return event to transaction
+                    if txn:
+                        txn.add_event(create_return_event(
+                            event_type=EventType.FUMBLE_RETURN,
+                            return_roll=return_dice,
+                            return_desc=return_desc,
+                            return_yards=return_yards,
+                            chart_result=str(int_return_result),
+                            acting_team=def_team
+                        ))
                 else:
                     # Normal fumble recovery by defense - no return
                     self.state.switch_possession()
                     self.state.ball_position = fumble_spot_defense
+
+                    # Add fumble return event with 0 yards to transaction
+                    if txn:
+                        txn.add_event(create_return_event(
+                            event_type=EventType.FUMBLE_RETURN,
+                            return_roll=0,
+                            return_desc="",
+                            return_yards=0,
+                            chart_result="0",
+                            acting_team=def_team
+                        ))
 
         # Store recovery info
         result.fumble_recovery_roll = recovery_roll

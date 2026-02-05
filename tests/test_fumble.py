@@ -772,3 +772,48 @@ class TestFumbleActionLine:
         
         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
         assert ret_events[0].yards == 15
+
+    def test_defense_fumble_return_on_roll_37_creates_event(self, game):
+        """Defense recovery on roll 37 should create FUMBLE_RETURN event with actual yards."""
+        from paydirt.play_events import EventType
+        
+        game.state.ball_position = 28  # Own 28
+        game.state.is_home_possession = True
+        game.state.down = 2
+        game.state.yards_to_go = 12
+        
+        # Use run_play_with_penalty_procedure which creates transactions
+        with patch('paydirt.game_engine.resolve_play_with_penalties') as mock_resolve:
+            from paydirt.play_resolver import PenaltyChoice
+            mock_resolve.return_value = PenaltyChoice(
+                play_result=PlayResult(
+                    result_type=ResultType.FUMBLE,
+                    yards=8,  # Fumble at 36
+                    turnover=True,
+                    raw_result="F + 8",
+                    dice_roll=15,
+                ),
+                penalty_options=[],
+                offended_team="",
+            )
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 37 = defense recovers with return
+                # Return roll 14 = some return yards
+                mock_dice.side_effect = [
+                    (37, "B3+W2+W2=37"),  # Recovery roll
+                    (14, "B1+W2+W1=14"),  # Return roll
+                ]
+                
+                outcome = game.run_play_with_penalty_procedure(
+                    PlayType.SHORT_PASS, DefenseType.STANDARD
+                )
+        
+        # Should have a transaction with FUMBLE_RETURN event
+        assert outcome.transaction is not None
+        txn = outcome.transaction
+        
+        # Verify FUMBLE_RETURN event exists
+        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+        assert len(ret_events) == 1
+        # Return yards should match what was calculated (20 based on chart lookup)
+        assert ret_events[0].yards == 20
