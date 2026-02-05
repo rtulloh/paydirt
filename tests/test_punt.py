@@ -135,11 +135,55 @@ class TestBlockedPunt:
             # Possession should switch (defense recovers on roll 35)
             assert game.state.is_home_possession is False
     
-    def test_blocked_punt_kicking_team_recovers(self, game):
-        """Blocked punt with kicking team recovery roll should keep possession."""
+    def test_blocked_punt_kicking_team_recovers_first_down(self, game):
+        """Blocked punt on 4th down, kicking team recovers past first down marker."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         game.state.down = 4
+        game.state.yards_to_go = 5  # First down marker at 35
+        
+        # Mock dice rolls: punt roll = 13 (BK -10 = blocked at 20), recovery roll = 20 (kicking team recovers)
+        # Block at 20 is behind first down marker (35), so turnover on downs
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(13, "B1+W0+W3=13"), (20, "B2+W0+W0=20")]
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "blocked" in outcome.description.lower()
+            # Kicking team recovers at 20, but first down marker was 35
+            # So it's turnover on downs
+            assert "turnover on downs" in outcome.description.lower()
+            assert game.state.is_home_possession is False  # Possession switched
+            assert game.state.down == 1
+
+    def test_blocked_punt_kicking_team_recovers_reaches_first_down(self, game):
+        """Blocked punt on 4th down, kicking team recovers at/past first down marker keeps ball."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        game.state.down = 4
+        game.state.yards_to_go = 5  # First down marker at 35
+        
+        # Mock a blocked punt that lands at the 36 (past first down marker)
+        # We need to mock the punt chart to return a small block
+        game.state.possession_team.special_teams.punt = {13: "BK +6"}  # Block goes forward 6 yards to 36
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(13, "B1+W0+W3=13"), (20, "B2+W0+W0=20")]
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert "blocked" in outcome.description.lower()
+            # Kicking team recovers at 36, past first down marker (35)
+            # So they keep possession with new set of downs
+            assert "turnover" not in outcome.description.lower()
+            assert game.state.is_home_possession is True
+            assert game.state.down == 1
+
+    def test_blocked_punt_kicking_team_recovers_not_fourth_down(self, game):
+        """Blocked punt NOT on 4th down - kicking team always gets new set of downs."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        game.state.down = 1  # Not 4th down (fake punt scenario)
         game.state.yards_to_go = 10
         
         # Mock dice rolls: punt roll = 13 (BK -10 = blocked), recovery roll = 20 (kicking team recovers)
@@ -149,11 +193,10 @@ class TestBlockedPunt:
             outcome = game.run_play(PlayType.PUNT, None)
             
             assert "blocked" in outcome.description.lower()
-            # Possession should NOT switch (kicking team recovers on roll 20)
+            # Not 4th down, so kicking team keeps ball regardless of position
+            assert "turnover" not in outcome.description.lower()
             assert game.state.is_home_possession is True
-            # Kicking team should get a new set of downs (not still 4th down)
             assert game.state.down == 1
-            assert game.state.yards_to_go == 10
     
     def test_blocked_punt_safety(self, game):
         """Blocked punt in end zone should be a safety."""

@@ -1733,7 +1733,9 @@ class PaydirtGameEngine:
         2. If result has † (downed/out of bounds) or * (fair catch), no return allowed
         3. Otherwise, receiving team rolls offensive dice and consults Punt Return column
         """
-        field_pos_before = self.state.field_position_str()
+        field_pos_before = self.state.ball_position
+        down_before = self.state.down
+        ytg_before = self.state.yards_to_go
         punting_team = self.state.possession_team
         receiving_team = self.state.defense_team
 
@@ -1780,19 +1782,20 @@ class PaydirtGameEngine:
                 touchdown = False
 
                 if kicking_team_recovers:
-                    # Kicking team recovers - they get a new set of downs
-                    self.state.ball_position = block_spot
-                    self.state.down = 1
-                    self.state.yards_to_go = min(10, 100 - block_spot)
+                    # Kicking team recovers at block_spot
+                    # On 4th down, must reach first down marker or it's turnover on downs
+                    first_down_marker = field_pos_before + ytg_before
+                    final_spot = block_spot  # May be updated by return
 
                     # Check for return on rolls 17, 18, 19 (only if at/behind LOS)
-                    if recovery_roll in [17, 18, 19] and block_spot <= self.state.ball_position:
+                    if recovery_roll in [17, 18, 19] and block_spot <= field_pos_before:
                         return_dice, return_desc = roll_chart_dice()
                         int_return_result = self.state.possession_team.special_teams.interception_return.get(return_dice, "0")
 
                         if recovery_roll == 19:
                             # Automatic TD
                             return_yards = 100 - block_spot
+                            final_spot = 100
                             touchdown = True
                             self._score_touchdown()
                             self.state.ball_position = 97
@@ -1801,6 +1804,7 @@ class PaydirtGameEngine:
                             return_yards = self._parse_return_yards(int_return_result, block_spot)
                             new_position = block_spot + return_yards
                             new_position = min(99, max(1, new_position))
+                            final_spot = new_position
                             self.state.ball_position = new_position
 
                             if new_position >= 100:
@@ -1811,7 +1815,22 @@ class PaydirtGameEngine:
                             else:
                                 description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
                     else:
+                        self.state.ball_position = block_spot
                         description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
+
+                    # On 4th down, check if kicking team reached first down marker
+                    # If not, it's turnover on downs (unless TD scored)
+                    if down_before == 4 and not touchdown and final_spot < first_down_marker:
+                        turnover = True
+                        self.state.switch_possession()
+                        self.state.ball_position = 100 - final_spot
+                        self.state.down = 1
+                        self.state.yards_to_go = min(10, 100 - self.state.ball_position)
+                        description += " - TURNOVER ON DOWNS!"
+                    elif not touchdown:
+                        # Kicking team keeps ball with new set of downs
+                        self.state.down = 1
+                        self.state.yards_to_go = min(10, 100 - self.state.ball_position)
                 else:
                     # Defense recovers - blocked kick lost
                     block_spot_defense = 100 - block_spot
