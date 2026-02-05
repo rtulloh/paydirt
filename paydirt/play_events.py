@@ -288,7 +288,7 @@ def create_return_event(
 ) -> PlayEvent:
     """Create a return event (INT return, fumble return, etc.)."""
     if is_touchdown:
-        desc = f"Returned for TOUCHDOWN!"
+        desc = "Returned for TOUCHDOWN!"
     elif return_yards > 0:
         desc = f"Returned {return_yards} yards"
     elif return_yards < 0:

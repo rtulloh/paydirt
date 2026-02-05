@@ -19,6 +19,7 @@ from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, co
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import ordinal_suffix, format_time
+from .play_events import EventType
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -1380,6 +1381,112 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             print("  (Penalties offset, no change in field position)")
             return
 
+        # Use transaction-based display if available
+        txn = outcome.transaction
+        if txn and txn.is_complete:
+            # Build result string from transaction
+            if txn.has_event_type(EventType.INTERCEPTION):
+                int_events = txn.get_events_by_type(EventType.INT_RETURN)
+                if int_events and int_events[0].yards != 0:
+                    result_str = f"INTERCEPTED! Returned {int_events[0].yards} yds"
+                else:
+                    result_str = "INTERCEPTED!"
+                if txn.touchdown:
+                    special_marker = " ★ PICK SIX!"
+                elif game.state.ball_position >= 95:
+                    special_marker = " ★ TURNOVER! GOAL LINE!"
+                elif game.state.ball_position >= 80:
+                    special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                else:
+                    special_marker = " ★ TURNOVER!"
+            elif txn.has_event_type(EventType.FUMBLE):
+                recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
+                if txn.turnover:
+                    if txn.touchdown:
+                        result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                        special_marker = " ★ SCOOP AND SCORE!"
+                    else:
+                        return_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+                        if return_events and return_events[0].yards > 0:
+                            result_str = f"FUMBLE - Loss! Returned {return_events[0].yards} yds"
+                        else:
+                            result_str = "FUMBLE - Loss!"
+                        if game.state.ball_position >= 95:
+                            special_marker = " ★ TURNOVER! GOAL LINE!"
+                        elif game.state.ball_position >= 80:
+                            special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                        else:
+                            special_marker = " ★ TURNOVER!"
+                else:
+                    result_str = "FUMBLE - Recovered!"
+            elif txn.touchdown:
+                result_str = "TOUCHDOWN!"
+                special_marker = " ★ TOUCHDOWN!"
+            elif txn.safety:
+                result_str = "SAFETY!"
+                special_marker = " ★ SAFETY!"
+            elif txn.first_down:
+                result_str = f"+{txn.yards_gained}"
+                special_marker = " FIRST DOWN!"
+            elif txn.yards_gained > 0:
+                result_str = f"+{txn.yards_gained}"
+            elif txn.yards_gained < 0:
+                result_str = f"{txn.yards_gained}"
+            else:
+                result_str = "No gain"
+
+            # Generate commentary
+            is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
+            skip_commentary = (txn.has_event_type(EventType.FUMBLE) and not txn.turnover)
+            is_check_down = False
+            if outcome.result.defense_modifier:
+                def_cat_check, _ = categorize_result(outcome.result.defense_modifier)
+                is_check_down = (def_cat_check == ResultCategory.PARENS_NUMBER)
+
+            comment = ""
+            if not skip_commentary:
+                comment = commentary.generate(
+                    play_type=play_type,
+                    result_type=outcome.result.result_type,
+                    yards=txn.yards_gained,
+                    is_first_down=txn.first_down,
+                    is_touchdown=txn.touchdown,
+                    is_breakaway=is_breakaway,
+                    is_check_down=is_check_down
+                )
+
+            # Line 1: Result with play type and commentary
+            if comment:
+                print(f"► {play_name.upper()}: {result_str} - {comment}{special_marker}")
+            else:
+                print(f"► {play_name.upper()}: {result_str}{special_marker}")
+
+            # Line 2: Show transaction events as technical details
+            # Build extra info from transaction events
+            extra_info = ""
+            if txn.has_event_type(EventType.INTERCEPTION):
+                int_event = txn.get_events_by_type(EventType.INTERCEPTION)[0]
+                ret_events = txn.get_events_by_type(EventType.INT_RETURN)
+                if ret_events:
+                    ret_event = ret_events[0]
+                    extra_info = f" | INT@{int_event.spot}, Ret:{ret_event.yards}(roll {ret_event.dice_roll})"
+            elif txn.has_event_type(EventType.FUMBLE):
+                fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
+                recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
+                if recovery_events:
+                    rec_event = recovery_events[0]
+                    if txn.turnover:
+                        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+                        ret_yards = ret_events[0].yards if ret_events else 0
+                        extra_info = f" | F@{fumble_event.spot}, Rec:{rec_event.dice_roll}(lost), Ret:{ret_yards}"
+                    else:
+                        extra_info = f" | F@{fumble_event.spot}, Rec:{rec_event.dice_roll}(kept)"
+
+            def_row = def_match.group(3) if def_match else "?"
+            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
+            return
+
+        # Fallback to legacy display if no transaction
         if outcome.result.result_type == ResultType.INCOMPLETE:
             result_str = "Incomplete"
         elif outcome.result.result_type == ResultType.INTERCEPTION:

@@ -18,6 +18,11 @@ from .penalty_handler import (
 )
 from .commentary import get_roster
 from .overtime_rules import get_overtime_rules, OvertimeRules, OvertimeFormat
+from .play_events import (
+    PlayTransaction, EventType,
+    create_chart_lookup_event, create_fumble_event, create_recovery_event,
+    create_interception_event, create_return_event, create_touchdown_event
+)
 
 
 @dataclass
@@ -195,6 +200,8 @@ class PlayOutcome:
     pending_penalty_decision: bool = False
     # Whether a penalty was accepted (vs play result)
     penalty_applied: bool = False
+    # Transaction-based event chain (new architecture)
+    transaction: Optional[PlayTransaction] = None
 
 
 class PaydirtGameEngine:
@@ -424,7 +431,8 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _handle_interception(self, result: PlayResult, ball_pos_before: int, yards: int) -> tuple:
+    def _handle_interception(self, result: PlayResult, ball_pos_before: int, yards: int,
+                              txn: Optional[PlayTransaction] = None) -> tuple:
         """
         Centralized interception handling per official rules VI-12-E.
         
@@ -432,6 +440,7 @@ class PaydirtGameEngine:
             result: The PlayResult to update with interception details
             ball_pos_before: Ball position before the play (from offense's perspective)
             yards: Yards on the interception (can be negative)
+            txn: Optional transaction to add events to
         
         Returns:
             tuple: (turnover, touchdown, safety)
@@ -441,6 +450,7 @@ class PaydirtGameEngine:
         safety = False
 
         self.state.offense_stats.interceptions_thrown += 1
+        def_team = self.state.defense_team.peripheral.short_name
 
         # Calculate raw interception spot from offense's perspective
         raw_int_spot = ball_pos_before + yards
@@ -484,6 +494,14 @@ class PaydirtGameEngine:
         # Normal interception processing with return
         int_spot_from_defense = 100 - int_spot_from_offense
 
+        # Add interception event to transaction
+        if txn:
+            txn.add_event(create_interception_event(
+                int_spot=int_spot_from_defense,
+                int_yards_downfield=yards,
+                acting_team=def_team
+            ))
+
         # Roll for interception return using defense's special teams chart
         return_dice, return_desc = roll_chart_dice()
         int_return_result = self.state.defense_team.special_teams.interception_return.get(return_dice, "0")
@@ -504,6 +522,18 @@ class PaydirtGameEngine:
         except (ValueError, AttributeError):
             return_yards = 0
 
+        # Add return event to transaction
+        if txn:
+            txn.add_event(create_return_event(
+                event_type=EventType.INT_RETURN,
+                return_roll=return_dice,
+                return_desc=return_desc,
+                return_yards=return_yards,
+                chart_result=int_return_result,
+                is_touchdown=(return_td or (int_spot_from_defense + return_yards >= 100)),
+                acting_team=def_team
+            ))
+
         # Switch possession and set ball position
         self.state.switch_possession()
         final_position = int_spot_from_defense + return_yards
@@ -515,6 +545,8 @@ class PaydirtGameEngine:
             touchdown = True
             self._score_touchdown()
             self.state.ball_position = 97
+            if txn:
+                txn.add_event(create_touchdown_event(acting_team=def_team))
 
         # Store return info
         result.int_return_yards = return_yards
@@ -524,7 +556,8 @@ class PaydirtGameEngine:
         return (turnover, touchdown, safety)
 
     def _handle_fumble(self, result: PlayResult, ball_pos_before: int, yards: int,
-                       down_before: int, ytg_before: int) -> tuple:
+                       down_before: int, ytg_before: int,
+                       txn: Optional[PlayTransaction] = None) -> tuple:
         """
         Centralized fumble handling per official rules VI-12-D.
         
@@ -534,6 +567,7 @@ class PaydirtGameEngine:
             yards: Yards before the fumble (can be negative)
             down_before: Down before the play
             ytg_before: Yards to go before the play
+            txn: Optional transaction to add events to
         
         Returns:
             tuple: (turnover, touchdown, safety, first_down)
@@ -543,8 +577,19 @@ class PaydirtGameEngine:
         safety = False
         first_down = False
 
+        off_team = self.state.possession_team.peripheral.short_name
+        def_team = self.state.defense_team.peripheral.short_name
+
         # Calculate raw fumble spot
         raw_fumble_spot = ball_pos_before + yards
+
+        # Add fumble event to transaction
+        if txn:
+            txn.add_event(create_fumble_event(
+                yards_before_fumble=yards,
+                fumble_spot=raw_fumble_spot,
+                acting_team=off_team
+            ))
 
         # Roll for fumble recovery using offensive dice
         recovery_roll, recovery_desc = roll_chart_dice()
@@ -554,6 +599,16 @@ class PaydirtGameEngine:
 
         # Determine if offense recovers or loses the fumble
         offense_recovers = fumble_rec_range[0] <= recovery_roll <= fumble_rec_range[1]
+
+        # Add recovery event to transaction
+        if txn:
+            txn.add_event(create_recovery_event(
+                recovery_roll=recovery_roll,
+                recovery_desc=recovery_desc,
+                offense_recovers=offense_recovers,
+                recovery_range=fumble_rec_range,
+                acting_team=off_team if offense_recovers else def_team
+            ))
 
         # Handle end zone situations per rule VI-12-D
         if raw_fumble_spot >= 110:
@@ -1234,6 +1289,21 @@ class PaydirtGameEngine:
         safety = False
         first_down = False
 
+        # Build transaction for this play
+        txn = PlayTransaction()
+        off_team = self.state.possession_team.peripheral.short_name
+
+        # Add chart lookup event
+        txn.add_event(create_chart_lookup_event(
+            offense_roll=result.dice_roll,
+            offense_desc=f"Roll {result.dice_roll}",
+            offense_result=result.raw_result,
+            defense_row=result.defense_modifier.split('→')[0] if '→' in str(result.defense_modifier) else "?",
+            defense_result=result.defense_modifier,
+            priority=result.result_type.value,
+            acting_team=off_team
+        ))
+
         # Determine if this is a passing play
         is_pass = play_type in [
             PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
@@ -1244,13 +1314,13 @@ class PaydirtGameEngine:
         if result.result_type == ResultType.INTERCEPTION:
             # Use centralized interception handler
             turnover, touchdown, safety = self._handle_interception(
-                result, ball_pos_before, yards
+                result, ball_pos_before, yards, txn
             )
 
         elif result.result_type == ResultType.FUMBLE:
             # Use centralized fumble handler
             turnover, touchdown, safety, first_down = self._handle_fumble(
-                result, ball_pos_before, yards, down_before, ytg_before
+                result, ball_pos_before, yards, down_before, ytg_before, txn
             )
 
         elif result.result_type == ResultType.INCOMPLETE:
@@ -1302,6 +1372,18 @@ class PaydirtGameEngine:
             elif not first_down:
                 self.state.next_down()
 
+        # Finalize transaction
+        txn.turnover = turnover
+        txn.touchdown = touchdown
+        txn.safety = safety
+        txn.first_down = first_down
+        txn.yards_gained = yards
+        txn.final_ball_position = self.state.ball_position
+        txn.final_down = self.state.down
+        txn.final_yards_to_go = self.state.yards_to_go
+        txn.possession_team = self.state.possession_team.peripheral.short_name
+        txn.is_complete = True
+
         outcome = PlayOutcome(
             play_type=play_type,
             defense_type=defense_type,
@@ -1315,7 +1397,8 @@ class PaydirtGameEngine:
             field_position_after=self.state.field_position_str(),
             down_before=down_before,
             down_after=self.state.down,
-            description=result.description
+            description=result.description,
+            transaction=txn
         )
 
         self.play_log.append(outcome)
