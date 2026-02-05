@@ -1400,7 +1400,12 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                     special_marker = " ★ TURNOVER!"
                 # Check for fumble return TD
                 elif outcome.touchdown:
-                    result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                    # Show recovery roll if available (roll 39 = automatic TD)
+                    recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
+                    if recovery_roll == 39:
+                        result_str = f"FUMBLE - Loss! (Recovery roll {recovery_roll} = AUTO TD!)"
+                    else:
+                        result_str = "FUMBLE - Loss! RETURNED FOR TD!"
                     special_marker = " ★ SCOOP AND SCORE!"
                 # Check for return yardage on fumble recovery
                 else:
