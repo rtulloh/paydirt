@@ -8,6 +8,7 @@ from typing import Optional
 from .chart_loader import load_team_chart, find_team_charts
 from .game_engine import PaydirtGameEngine, PlayOutcome
 from .play_resolver import PlayType, DefenseType
+from .utils import ordinal
 
 
 def clear_screen():
@@ -37,16 +38,8 @@ def print_scoreboard(game: PaydirtGameEngine):
     print("-" * 50)
 
 
-def _ordinal(n: int) -> str:
-    """Convert number to ordinal string."""
-    if n == 1:
-        return "1st"
-    elif n == 2:
-        return "2nd"
-    elif n == 3:
-        return "3rd"
-    else:
-        return f"{n}th"
+# _ordinal is now imported from utils as ordinal
+_ordinal = ordinal
 
 
 def print_play_menu():

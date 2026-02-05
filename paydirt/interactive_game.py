@@ -18,6 +18,7 @@ from .priority_chart import categorize_result, apply_priority_chart, ResultCateg
 from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
+from .utils import ordinal_suffix, ordinal, format_time
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -226,13 +227,8 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         print()
 
 
-def _ordinal(n: int) -> str:
-    """Return ordinal suffix for a number."""
-    if 10 <= n % 100 <= 20:
-        suffix = 'th'
-    else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
-    return suffix
+# _ordinal is now imported from utils as ordinal_suffix
+_ordinal = ordinal_suffix
 
 
 def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
