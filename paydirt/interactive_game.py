@@ -20,6 +20,7 @@ from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import ordinal_suffix, format_time
 from .play_events import EventType
+from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -509,7 +510,11 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
             display_box_score(game, "CURRENT STATS")
             return _get_human_offense_play_compact(game, state, no_huddle)
 
-        print("  Invalid. 1-9,Q,H,S,K,P,F,N,T,/ or ? for help")
+        if choice_clean == 'W':
+            # Save game - return special marker to trigger save in main loop
+            return None, no_huddle, False, False, False
+
+        print("  Invalid. 1-9,Q,H,S,K,P,F,N,T,W,/ or ? for help")
 
 
 def _show_full_offense_menu(state, no_huddle: bool):
@@ -1015,12 +1020,16 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[Def
             display_box_score(game, "CURRENT STATS")
             return _get_human_defense_play_compact(game, state)
 
+        if choice_clean == 'W':
+            # Save game - return special marker to trigger save in main loop
+            return None, False
+
         if choice_clean in DEFENSE_PLAYS:
             def_type, name, _ = DEFENSE_PLAYS[choice_clean]
             print(f"  You called: {name}")
             return def_type, call_timeout
 
-        print("  Invalid. A-F, T, / or ? for help")
+        print("  Invalid. A-F, T, W, / or ? for help")
 
 
 def _show_full_defense_menu(state):
@@ -2373,6 +2382,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
             # Human on offense
             play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode)
 
+            # Check for save command (play_type is None)
+            if play_type is None:
+                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                print(f"\n  *** GAME SAVED to {filepath} ***")
+                print("  Use 'python -m paydirt --load' to resume")
+                continue
+
             # Computer selects defense (hidden)
             def_type = computer_select_defense(game)
 
@@ -2406,11 +2422,23 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                     cpu_team = game.state.possession_team.peripheral.short_name
                     print(f"\n  *** {cpu_team} is going for it on 4th and {game.state.yards_to_go}! ***")
                     def_type, call_timeout = get_human_defense_play(game)
+                    # Check for save command (def_type is None)
+                    if def_type is None:
+                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                        print(f"\n  *** GAME SAVED to {filepath} ***")
+                        print("  Use 'python -m paydirt --load' to resume")
+                        continue
                     print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
                 # Normal down - get defensive call first, then CPU selects offense
                 def_type, call_timeout = get_human_defense_play(game)
+                # Check for save command (def_type is None)
+                if def_type is None:
+                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                    print(f"\n  *** GAME SAVED to {filepath} ***")
+                    print("  Use 'python -m paydirt --load' to resume")
+                    continue
                 play_type = computer_select_offense(game, cpu_ai)
 
                 print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
@@ -2640,6 +2668,313 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         away_team=away_chart.peripheral.team_nickname,
         away_score=game.state.away_score
     )
+
+
+def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool = True):
+    """
+    Resume a saved game from a save file.
+    
+    Args:
+        save_file: Path to save file (default: paydirt_save.json)
+        difficulty: CPU difficulty level
+        compact: Display mode
+    """
+    global COMPACT_MODE
+    COMPACT_MODE = compact
+
+    filepath = save_file or DEFAULT_SAVE_FILE
+    
+    # Check if save file exists
+    info = get_save_info(filepath)
+    if info is None:
+        print(f"No save file found at: {filepath}")
+        print("Start a new game with: python -m paydirt --play")
+        return
+    
+    # Show save info
+    print("=" * 70)
+    print("  PAYDIRT - Resume Saved Game")
+    print("=" * 70)
+    print(f"\n  Save file: {filepath}")
+    print(f"  Saved at: {info['saved_at']}")
+    print(f"  Game: {info['away_team']} @ {info['home_team']}")
+    print(f"  Score: {info['away_score']} - {info['home_score']}")
+    print(f"  Q{info['quarter']} {format_time(info['time_remaining'])}")
+    
+    print("\n  [Enter] Resume game")
+    print("  [N] Start new game instead")
+    choice = input("\n  Your choice: ").strip().upper()
+    
+    if choice == 'N':
+        from .interactive_game import run_interactive_game
+        run_interactive_game(difficulty=difficulty, compact=compact)
+        return
+    
+    # Load the game
+    result = load_game(filepath)
+    if result is None:
+        print("Failed to load save file.")
+        return
+    
+    game, human_is_away, human_is_home = result
+    
+    # Determine human's team
+    if human_is_home:
+        human_chart = game.state.home_chart
+    else:
+        human_chart = game.state.away_chart
+    
+    away_chart = game.state.away_chart
+    home_chart = game.state.home_chart
+    
+    print("\n  Resuming game...")
+    print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
+    
+    # Map difficulty to aggression value
+    difficulty_map = {
+        'easy': 0.3,
+        'medium': 0.5,
+        'hard': 0.7
+    }
+    cpu_aggression = difficulty_map.get(difficulty, 0.5)
+    
+    # Create CPU AI
+    cpu_ai = ComputerAI(aggression=cpu_aggression)
+    
+    # Main game loop (same as run_interactive_game but starting from loaded state)
+    play_num = 0
+    no_huddle_mode = False
+    last_quarter = game.state.quarter
+    
+    # We don't know who kicked first, so just track from current state
+    first_half_kicking_home = not game.state.is_home_possession  # Approximate
+    
+    while not game.state.game_over:
+        play_num += 1
+
+        # Check if quarter changed
+        if game.state.quarter != last_quarter:
+            if last_quarter == 2 and game.state.quarter == 3:
+                print("\n  END OF QUARTER 2")
+                print("\n" + "=" * 70)
+                print("  HALFTIME")
+                print("=" * 70)
+                display_box_score(game, "HALFTIME STATS")
+                input("\n  Press Enter for 2nd half kickoff...")
+
+                second_half_kicking_home = not first_half_kicking_home
+                kicking_team = home_chart.peripheral.short_name if second_half_kicking_home else away_chart.peripheral.short_name
+                receiving_team = away_chart.peripheral.short_name if second_half_kicking_home else home_chart.peripheral.short_name
+
+                is_human_kicking = (second_half_kicking_home == human_is_home)
+                onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
+
+                if onside:
+                    print(f"\n  {kicking_team} attempts an ONSIDE KICK to start the 2nd half!")
+                    outcome = game.onside_kick(kicking_home=second_half_kicking_home)
+                else:
+                    print(f"\n  {kicking_team} kicks off to start the 2nd half...")
+                    outcome = game.kickoff(kicking_home=second_half_kicking_home)
+                print(f"  {outcome.description}")
+                print(f"  {receiving_team} will start at {game.state.field_position_str()}")
+            elif last_quarter < 4:
+                print(f"\n  END OF QUARTER {last_quarter}")
+
+            last_quarter = game.state.quarter
+
+        # Check for end of game conditions
+        is_untimed_down = False
+        if game.state.time_remaining <= 0 and game.has_untimed_down():
+            print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
+            is_untimed_down = True
+        elif game.state.time_remaining <= 0:
+            if game.state.is_overtime:
+                if game.state.game_over:
+                    break
+                continue
+            elif game.state.quarter == 4:
+                if game.needs_overtime():
+                    print("\n" + "=" * 70)
+                    print("  END OF REGULATION - GAME TIED!")
+                    print("=" * 70)
+                    display_box_score(game, "END OF REGULATION")
+
+                    ot_msg = game.start_overtime()
+                    print(f"\n  {ot_msg}")
+
+                    rules = game.get_overtime_rules()
+                    print(f"  Overtime period: {rules.period_length_minutes:.0f} minutes")
+
+                    kicking_home = not game.state.ot_coin_toss_winner_is_home
+                    kicking_team = home_chart.peripheral.short_name if kicking_home else away_chart.peripheral.short_name
+                    receiving_team = away_chart.peripheral.short_name if kicking_home else home_chart.peripheral.short_name
+
+                    print(f"\n  {kicking_team} kicks off to start overtime...")
+                    outcome = game.kickoff(kicking_home=kicking_home)
+                    print(f"  {outcome.description}")
+                    print(f"  {receiving_team} will start at {game.state.field_position_str()}")
+                    continue
+                else:
+                    break
+
+        is_human_offense = (game.state.is_home_possession == human_is_home)
+        display_game_status(game, human_chart, is_human_offense)
+
+        # Get play calls
+        if is_human_offense:
+            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode)
+
+            if play_type is None:
+                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                print(f"\n  *** GAME SAVED to {filepath} ***")
+                print("  Use 'python -m paydirt --load' to resume")
+                continue
+
+            def_type = computer_select_defense(game)
+            print(f"\n  You called: {play_type.value.replace('_', ' ').title()}")
+            print(f"  Defense shows: {def_type.value.replace('_', ' ').title()}")
+        else:
+            call_timeout = False
+            out_of_bounds = False
+            in_bounds = False
+
+            if game.state.down == 4:
+                play_type = computer_select_offense(game, cpu_ai)
+
+                if play_type == PlayType.PUNT:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} punts on 4th and {game.state.yards_to_go}")
+                    def_type = DefenseType.STANDARD
+                elif play_type == PlayType.FIELD_GOAL:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    fg_dist = 100 - game.state.ball_position + 17
+                    print(f"\n  {cpu_team} attempts a {fg_dist}-yard field goal")
+                    def_type = DefenseType.STANDARD
+                else:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  *** {cpu_team} is going for it on 4th and {game.state.yards_to_go}! ***")
+                    def_type, call_timeout = get_human_defense_play(game)
+                    if def_type is None:
+                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                        print(f"\n  *** GAME SAVED to {filepath} ***")
+                        print("  Use 'python -m paydirt --load' to resume")
+                        continue
+                    print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                    print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
+            else:
+                def_type, call_timeout = get_human_defense_play(game)
+                if def_type is None:
+                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                    print(f"\n  *** GAME SAVED to {filepath} ***")
+                    print("  Use 'python -m paydirt --load' to resume")
+                    continue
+                play_type = computer_select_offense(game, cpu_ai)
+                print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
+
+        time_before_play = game.state.time_remaining
+        quarter_before_play = game.state.quarter
+        offense_was_home = game.state.is_home_possession
+        two_min_warning_before = game.state.two_minute_warning_called
+
+        outcome = game.run_play_with_penalty_procedure(play_type, def_type,
+                                                        out_of_bounds_designation=out_of_bounds,
+                                                        in_bounds_designation=in_bounds)
+
+        if outcome.pending_penalty_decision and outcome.penalty_choice:
+            outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+
+        display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
+
+        if is_untimed_down:
+            game.clear_untimed_down()
+
+        if not two_min_warning_before and game.state.two_minute_warning_called:
+            quarter_name = "first half" if game.state.quarter == 2 else "second half"
+            print("\n" + "=" * 70)
+            print("  *** TWO-MINUTE WARNING ***")
+            print(f"  Official timeout - 2:00 remaining in the {quarter_name}")
+            print("=" * 70)
+
+        if call_timeout and not outcome.touchdown:
+            if game.state.use_timeout(human_is_home):
+                _apply_timeout(game, time_before_play, quarter_before_play)
+
+        # Handle scoring plays (TD, FG, safety) - simplified for resume
+        if outcome.touchdown:
+            human_scored = is_human_offense
+            team_year = game.state.home_chart.peripheral.year
+            two_point_allowed = team_year >= 1994
+
+            if human_scored:
+                if two_point_allowed:
+                    print("\n  *** POINT AFTER TOUCHDOWN ***")
+                    print("    [K] Kick extra point (1 point) - DEFAULT")
+                    print("    [2] Go for 2-point conversion")
+                    choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
+                    if choice == '2':
+                        play_type = get_human_offense_play_for_conversion(game)
+                        success, def_points, description = game.attempt_two_point(play_type)
+                        print(f"\n  {description}")
+                    else:
+                        success, description = game.attempt_extra_point()
+                        print(f"\n  {description}")
+                else:
+                    success, description = game.attempt_extra_point()
+                    print(f"\n  {description}")
+            else:
+                go_for_two = two_point_allowed and cpu_should_go_for_two(game, cpu_ai)
+                if go_for_two:
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    print(f"\n  {cpu_team} elects to go for 2-point conversion!")
+                    play_type = cpu_ai.select_offense(game) if cpu_ai else PlayType.LINE_PLUNGE
+                    if play_type in [PlayType.PUNT, PlayType.FIELD_GOAL]:
+                        play_type = PlayType.LINE_PLUNGE
+                    success, def_points, description = game.attempt_two_point(play_type)
+                    print(f"\n  {description}")
+                else:
+                    success, description = game.attempt_extra_point()
+                    print(f"\n  {description}")
+
+            # Kickoff after score
+            kicking_home = game.state.is_home_possession
+            kicking_team = home_chart.peripheral.short_name if kicking_home else away_chart.peripheral.short_name
+            receiving_team = away_chart.peripheral.short_name if kicking_home else home_chart.peripheral.short_name
+
+            is_human_kicking = (kicking_home == human_is_home)
+            onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
+
+            if onside:
+                print(f"\n  {kicking_team} attempts an ONSIDE KICK!")
+                outcome = game.onside_kick(kicking_home=kicking_home)
+            else:
+                print(f"\n  {kicking_team} kicks off...")
+                outcome = game.kickoff(kicking_home=kicking_home)
+            print(f"  {outcome.description}")
+            continue
+
+        # Handle turnover on downs
+        if outcome.turnover and outcome.result.result_type not in [ResultType.INTERCEPTION, ResultType.FUMBLE]:
+            print("\n  *** TURNOVER ON DOWNS ***")
+
+    # Game over
+    print("\n" + "=" * 70)
+    print("  FINAL")
+    print("=" * 70)
+    display_box_score(game, "FINAL STATS")
+
+    # Determine winner
+    if game.state.home_score > game.state.away_score:
+        winner = home_chart.peripheral.short_name
+    elif game.state.away_score > game.state.home_score:
+        winner = away_chart.peripheral.short_name
+    else:
+        winner = "TIE"
+
+    if winner != "TIE":
+        print(f"\n  {winner} WINS!")
+    else:
+        print("\n  GAME ENDS IN A TIE!")
 
 
 if __name__ == "__main__":

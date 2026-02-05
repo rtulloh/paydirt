@@ -1,11 +1,22 @@
 """
 Entry point for running the paydirt package as a module.
-Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | -auto team1 team2]
+Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | -auto team1 team2]
 """
 import sys
 
 def main():
     """Main entry point - choose between interactive, chart-based, or simple mode."""
+    # Check for --load flag to resume a saved game
+    if len(sys.argv) > 1 and sys.argv[1] in ['--load', '-l', 'load']:
+        # Get optional save file path
+        save_file = None
+        if len(sys.argv) > 2 and not sys.argv[2].startswith('-'):
+            save_file = sys.argv[2]
+        
+        from .interactive_game import resume_game
+        resume_game(save_file)
+        return
+
     # Check for --play flag for interactive mode
     if len(sys.argv) > 1 and sys.argv[1] in ['--play', '-p', 'play']:
         # Parse optional flags
