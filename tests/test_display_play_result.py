@@ -335,6 +335,7 @@ class TestCompactDisplayTurnoverReturns:
         )
         result.int_return_yards = 35
         result.int_return_dice = 14
+        result.int_spot = 50  # INT at own 50
 
         outcome = PlayOutcome(
             play_type=PlayType.LONG_PASS,
