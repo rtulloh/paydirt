@@ -594,6 +594,30 @@ SACK_CALLS = [
     "The pocket collapses! {qb} is sacked by {defender}!",
 ]
 
+QB_SCRAMBLE_CALLS = [
+    "{qb} scrambles out of trouble! {yards} yards!",
+    "{qb} escapes the rush and picks up {yards}!",
+    "Pressure! {qb} takes off and gains {yards}!",
+    "{qb} buys time and scrambles for {yards}!",
+    "Nobody open! {qb} tucks it and runs for {yards}!",
+    "{qb} avoids the sack and scrambles for {yards}!",
+    "Great escape by {qb}! Picks up {yards} on the ground!",
+    "{qb} uses his legs! {yards} yard scramble!",
+]
+
+QB_SCRAMBLE_TD_CALLS = [
+    "{qb} scrambles... TOUCHDOWN!",
+    "{qb} escapes and takes it to the house! TOUCHDOWN!",
+    "Nobody can catch {qb}! Scrambles for the TOUCHDOWN!",
+    "{qb} with the legs! TOUCHDOWN on the scramble!",
+]
+
+QB_SCRAMBLE_LOSS_CALLS = [
+    "{qb} scrambles but loses {yards}!",
+    "{qb} tries to escape but is brought down for a loss of {yards}!",
+    "Nowhere to go! {qb} scrambles but loses {yards}!",
+]
+
 INTERCEPTION_CALLS = [
     "INTERCEPTED! {defender} picks it off!",
     "PICKED OFF! {defender} jumps the route!",
@@ -756,6 +780,18 @@ class Commentary:
             lines.append(template.format(
                 qb=qb, defender=random.choice([dl, lb]), yards=abs(yards)
             ))
+
+        elif result_type == ResultType.QB_SCRAMBLE:
+            # QB scramble - escaped pressure and ran
+            if is_touchdown:
+                template = random.choice(QB_SCRAMBLE_TD_CALLS)
+                lines.append(template.format(qb=qb))
+            elif yards < 0:
+                template = random.choice(QB_SCRAMBLE_LOSS_CALLS)
+                lines.append(template.format(qb=qb, yards=abs(yards)))
+            else:
+                template = random.choice(QB_SCRAMBLE_CALLS)
+                lines.append(template.format(qb=qb, yards=yards))
 
         elif result_type == ResultType.INCOMPLETE:
             template = random.choice(INCOMPLETE_CALLS)

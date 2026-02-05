@@ -398,3 +398,30 @@ class TestCommentary:
         
         assert found_pass_language is False, \
             "Run play commentary should not use pass language"
+
+    def test_qb_scramble_commentary(self, commentary):
+        """QB scramble should mention the QB and scramble-related language."""
+        comment = commentary.generate(
+            PlayType.SHORT_PASS, ResultType.QB_SCRAMBLE, yards=16
+        )
+        assert comment is not None
+        # Should mention the QB or scramble-related language
+        assert "Joe Montana" in comment or "scramble" in comment.lower() or "escapes" in comment.lower()
+
+    def test_qb_scramble_loss_commentary(self, commentary):
+        """QB scramble for a loss should have appropriate commentary."""
+        comment = commentary.generate(
+            PlayType.MEDIUM_PASS, ResultType.QB_SCRAMBLE, yards=-3
+        )
+        assert comment is not None
+        # Should mention loss or negative outcome
+        assert "3" in comment or "loss" in comment.lower()
+
+    def test_qb_scramble_td_commentary(self, commentary):
+        """QB scramble touchdown should have TD commentary."""
+        comment = commentary.generate(
+            PlayType.LONG_PASS, ResultType.QB_SCRAMBLE, yards=25, is_touchdown=True
+        )
+        assert comment is not None
+        # Should mention touchdown
+        assert "touchdown" in comment.lower()
