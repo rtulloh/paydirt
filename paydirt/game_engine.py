@@ -652,22 +652,6 @@ class PaydirtGameEngine:
             self._score_safety()
             result.description = "Fumble out of own end zone - SAFETY"
 
-        elif raw_fumble_spot <= 10:
-            # VI-12-D-iv: Fumble within own end zone
-            fumble_spot = raw_fumble_spot
-
-            if offense_recovers:
-                safety = True
-                self._score_safety()
-                result.description = "Offense recovers fumble in own end zone - SAFETY"
-            else:
-                touchdown = True
-                turnover = True
-                self.state.offense_stats.fumbles_lost += 1
-                self.state.switch_possession()
-                self._score_touchdown()
-                self.state.ball_position = 97
-                result.description = "Defense recovers fumble in end zone - TOUCHDOWN"
         else:
             # Normal field position (11-99)
             fumble_spot = raw_fumble_spot

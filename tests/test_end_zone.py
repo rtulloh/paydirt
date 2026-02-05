@@ -1,13 +1,16 @@
 """
 Tests for end zone rules per official Paydirt rules VI-12.
 
+Coordinate system:
+- Position 0 = own goal line (end zone is position 0 and below)
+- Position 100 = opponent's goal line (end zone is position 100 and above)
+- Positions 1-99 = normal field of play (NOT end zone)
+
 Official rules:
-- Goal line (position 100) is part of end zone
-- End line (position 110) is out of bounds
-- Fumble in opponent's end zone: offense recovers = TD, defense recovers = touchback
-- Fumble beyond opponent's end line: roll white dice for distance, same recovery rules
-- Fumble at/behind own end line: safety
-- Fumble in own end zone: offense recovers = safety, defense recovers = TD
+- Fumble in opponent's end zone (pos >= 100): offense recovers = TD, defense recovers = touchback
+- Fumble beyond opponent's end line (pos >= 110): roll white dice for distance, same recovery rules
+- Fumble at/behind own end line (pos <= 0): safety (regardless of recovery)
+- Fumble on normal field (pos 1-99): normal fumble rules apply, no special end zone scoring
 """
 import pytest
 from unittest.mock import patch, MagicMock
@@ -198,15 +201,39 @@ class TestFumbleAtOwnEndLine:
 
 
 class TestFumbleInOwnEndZone:
-    """Tests for fumbles in own end zone (VI-12-D-iv)."""
+    """Tests for fumbles in own end zone (position 0 or below)."""
     
-    def test_offense_recovers_in_own_end_zone_is_safety(self, game):
-        """Offense recovering fumble in own end zone = safety."""
+    def test_fumble_out_of_own_end_zone_is_safety(self, game):
+        """Fumble that goes out of own end zone = safety (regardless of recovery)."""
+        game.state.ball_position = 5  # 5 yards from own goal
+        game.state.is_home_possession = True
+        initial_away_score = game.state.away_score
+        
+        # Fumble 10 yards backward = position -5 (out of own end zone)
+        mock_result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=-10,
+            turnover=True,
+            raw_result="F - 10",
+        )
+        
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll doesn't matter - fumble out of end zone is safety
+                mock_dice.return_value = (15, "B1+W5+W0=15")
+                
+                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+        
+        assert outcome.safety is True
+        assert game.state.away_score == initial_away_score + 2
+    
+    def test_fumble_near_goal_line_not_safety_if_recovered(self, game):
+        """Fumble near goal line (but not in end zone) is NOT a safety if offense recovers."""
         game.state.ball_position = 15  # 15 yards from own goal
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
-        # Fumble 10 yards backward = position 5 (in own end zone)
+        # Fumble 10 yards backward = position 5 (NOT in end zone, just near goal line)
         mock_result = PlayResult(
             result_type=ResultType.FUMBLE,
             yards=-10,
@@ -221,16 +248,18 @@ class TestFumbleInOwnEndZone:
                 
                 outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
-        assert outcome.safety is True
-        assert game.state.away_score == initial_away_score + 2
+        # Position 5 is the 5 yard line, NOT the end zone - no safety
+        assert outcome.safety is False
+        assert game.state.away_score == initial_away_score  # No points scored
+        assert game.state.ball_position == 5  # Ball at fumble spot
     
-    def test_defense_recovers_in_opponent_end_zone_is_td(self, game):
-        """Defense recovering fumble in opponent's end zone = TD for defense."""
+    def test_fumble_near_goal_line_turnover_if_defense_recovers(self, game):
+        """Fumble near goal line recovered by defense is just a turnover, not TD."""
         game.state.ball_position = 15  # 15 yards from own goal
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
-        # Fumble 10 yards backward = position 5 (in own end zone)
+        # Fumble 10 yards backward = position 5 (NOT in end zone)
         mock_result = PlayResult(
             result_type=ResultType.FUMBLE,
             yards=-10,
@@ -245,8 +274,10 @@ class TestFumbleInOwnEndZone:
                 
                 outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
-        assert outcome.touchdown is True
-        assert game.state.away_score == initial_away_score + 6
+        # Position 5 is NOT the end zone - just a turnover, not TD
+        assert outcome.turnover is True
+        assert outcome.touchdown is False
+        assert game.state.away_score == initial_away_score  # No TD scored
 
 
 class TestNormalFieldFumble:
