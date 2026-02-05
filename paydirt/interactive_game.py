@@ -1930,8 +1930,8 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                     down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
                     play_outcome_str = f"Loss of {abs(yards_gained)} -> {next_down}{down_suffix[next_down]} and {next_ytg}"
 
-        # Option 0 is always the play result
-        print(f"    [0] Accept PLAY result: {play_outcome_str} at {play_field_str}")
+        # Option 1 is always the play result
+        print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")
 
         # Show penalty options with projected field position (use filtered_penalties from above)
         for i, opt in enumerate(filtered_penalties):
@@ -1976,12 +1976,12 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             half_dist_note = ""
             if adjusted_yards != opt.yards:
                 half_dist_note = f" (half-distance: {adjusted_yards} yds)"
-            print(f"    [{i+1}] Accept PENALTY: {opt.description}{half_dist_note} -> {pen_down_str} at {pen_field_str}")
+            print(f"    [{i+2}] Accept PENALTY: {opt.description}{half_dist_note} -> {pen_down_str} at {pen_field_str}")
 
         while True:
-            choice = input("\n  Your choice (0 for play, or penalty number): ").strip()
+            choice = input("\n  Your choice (1 for play, or penalty number): ").strip()
 
-            if choice == '0' or choice == '':
+            if choice == '1' or choice == '':
                 # Accept play result - announce like NFL refs
                 penalty_desc = filtered_penalties[0].description if filtered_penalties else "penalty"
                 print(f"\n  >> {penalty_desc.upper()} - DECLINED. Result of the play stands.")
@@ -1990,7 +1990,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 else:
                     return game.apply_penalty_decision(outcome, accept_play=True)
             elif choice.isdigit():
-                idx = int(choice) - 1
+                idx = int(choice) - 2  # Subtract 2 since penalties start at [2]
                 if 0 <= idx < len(filtered_penalties):
                     opt = filtered_penalties[idx]
                     # Find the original index in penalty_options for apply_penalty_decision
