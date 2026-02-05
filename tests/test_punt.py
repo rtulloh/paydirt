@@ -139,6 +139,8 @@ class TestBlockedPunt:
         """Blocked punt with kicking team recovery roll should keep possession."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
+        game.state.down = 4
+        game.state.yards_to_go = 10
         
         # Mock dice rolls: punt roll = 13 (BK -10 = blocked), recovery roll = 20 (kicking team recovers)
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
@@ -149,6 +151,9 @@ class TestBlockedPunt:
             assert "blocked" in outcome.description.lower()
             # Possession should NOT switch (kicking team recovers on roll 20)
             assert game.state.is_home_possession is True
+            # Kicking team should get a new set of downs (not still 4th down)
+            assert game.state.down == 1
+            assert game.state.yards_to_go == 10
     
     def test_blocked_punt_safety(self, game):
         """Blocked punt in end zone should be a safety."""

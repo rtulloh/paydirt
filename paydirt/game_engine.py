@@ -1776,8 +1776,10 @@ class PaydirtGameEngine:
                 touchdown = False
 
                 if kicking_team_recovers:
-                    # Kicking team recovers
+                    # Kicking team recovers - they get a new set of downs
                     self.state.ball_position = block_spot
+                    self.state.down = 1
+                    self.state.yards_to_go = min(10, 100 - block_spot)
 
                     # Check for return on rolls 17, 18, 19 (only if at/behind LOS)
                     if recovery_roll in [17, 18, 19] and block_spot <= self.state.ball_position:
