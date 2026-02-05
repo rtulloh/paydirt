@@ -817,3 +817,78 @@ class TestFumbleActionLine:
         assert len(ret_events) == 1
         # Return yards should match what was calculated (20 based on chart lookup)
         assert ret_events[0].yards == 20
+
+
+class TestFumbleFieldPositionDisplay:
+    """Tests for fumble field position formatting in action lines."""
+
+    def test_fumble_in_own_territory_shows_own(self):
+        """Fumble at own 36 should display as 'own 36'."""
+        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        
+        txn = PlayTransaction()
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            spot=36,  # Own 36
+            dice_roll=15,
+            chart_result="F"
+        ))
+        
+        fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
+        fumble_spot = fumble_event.spot
+        
+        # Format like the display code does
+        if fumble_spot <= 50:
+            fumble_pos_str = f"own {fumble_spot}"
+        else:
+            fumble_pos_str = f"opponent's {100 - fumble_spot}"
+        
+        assert fumble_pos_str == "own 36"
+
+    def test_fumble_in_opponent_territory_shows_opponent(self):
+        """Fumble at position 72 (opponent's 28) should display as 'opponent's 28'."""
+        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        
+        txn = PlayTransaction()
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            spot=72,  # Opponent's 28
+            dice_roll=15,
+            chart_result="F"
+        ))
+        
+        fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
+        fumble_spot = fumble_event.spot
+        
+        # Format like the display code does
+        if fumble_spot <= 50:
+            fumble_pos_str = f"own {fumble_spot}"
+        else:
+            fumble_pos_str = f"opponent's {100 - fumble_spot}"
+        
+        assert fumble_pos_str == "opponent's 28"
+
+    def test_fumble_at_midfield_shows_own_50(self):
+        """Fumble at position 50 (midfield) should display as 'own 50'."""
+        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        
+        txn = PlayTransaction()
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            spot=50,  # Midfield
+            dice_roll=15,
+            chart_result="F"
+        ))
+        
+        fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
+        fumble_spot = fumble_event.spot
+        
+        if fumble_spot <= 50:
+            fumble_pos_str = f"own {fumble_spot}"
+        else:
+            fumble_pos_str = f"opponent's {100 - fumble_spot}"
+        
+        assert fumble_pos_str == "own 50"

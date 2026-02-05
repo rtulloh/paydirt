@@ -1502,29 +1502,34 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             elif txn.has_event_type(EventType.FUMBLE):
                 fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
                 fumble_spot = fumble_event.spot
+                # Format fumble spot as field position (from offense's perspective)
+                if fumble_spot <= 50:
+                    fumble_pos_str = f"own {fumble_spot}"
+                else:
+                    fumble_pos_str = f"opponent's {100 - fumble_spot}"
                 if txn.turnover:
                     ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                     if ret_events:
                         ret_event = ret_events[0]
                         ret_yards = ret_event.yards
                         if txn.touchdown:
-                            print(f"  → Fumble at the {fumble_spot}, recovered and returned {ret_yards} yards for a TOUCHDOWN!")
+                            print(f"  → Fumble at the {fumble_pos_str}, recovered and returned {ret_yards} yards for a TOUCHDOWN!")
                         elif ret_yards > 0:
-                            print(f"  → Fumble at the {fumble_spot}, recovered and returned {ret_yards} yards")
+                            print(f"  → Fumble at the {fumble_pos_str}, recovered and returned {ret_yards} yards")
                         else:
                             # Defense recovered at the fumble spot (0 return yards)
-                            print(f"  → Fumble at the {fumble_spot}, recovered by the defense at the {fumble_spot}")
+                            print(f"  → Fumble at the {fumble_pos_str}, recovered by the defense at the spot")
                     else:
                         # No return event but still a turnover
-                        print(f"  → Fumble at the {fumble_spot}, recovered by the defense")
+                        print(f"  → Fumble at the {fumble_pos_str}, recovered by the defense")
                 else:
                     # Offense recovered
                     if txn.yards_gained > 0:
-                        print(f"  → Fumble at the {fumble_spot}, recovered by offense, advanced {txn.yards_gained} yards")
+                        print(f"  → Fumble at the {fumble_pos_str}, recovered by offense, advanced {txn.yards_gained} yards")
                     elif txn.yards_gained < 0:
-                        print(f"  → Fumble at the {fumble_spot}, recovered by offense, lost {-txn.yards_gained} yards")
+                        print(f"  → Fumble at the {fumble_pos_str}, recovered by offense, lost {-txn.yards_gained} yards")
                     else:
-                        print(f"  → Fumble at the {fumble_spot}, recovered by offense at the spot")
+                        print(f"  → Fumble at the {fumble_pos_str}, recovered by offense at the spot")
 
             # Line 3: Show transaction events as technical details
             # Build extra info from transaction events using consistent O:/D:/R: syntax
