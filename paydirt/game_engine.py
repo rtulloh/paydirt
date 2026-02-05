@@ -537,16 +537,18 @@ class PaydirtGameEngine:
         # Switch possession and set ball position
         self.state.switch_possession()
         final_position = int_spot_from_defense + return_yards
-        final_position = min(99, max(1, final_position))
-        self.state.ball_position = final_position
 
-        # Check for return touchdown
+        # Check for return touchdown BEFORE capping position
         if return_td or final_position >= 100:
             touchdown = True
             self._score_touchdown()
             self.state.ball_position = 97
             if txn:
                 txn.add_event(create_touchdown_event(acting_team=def_team))
+        else:
+            # Cap position for non-TD returns
+            final_position = min(99, max(1, final_position))
+            self.state.ball_position = final_position
 
         # Store return info
         result.int_return_yards = return_yards
