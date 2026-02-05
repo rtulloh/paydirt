@@ -1462,25 +1462,26 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 print(f"► {play_name.upper()}: {result_str}{special_marker}")
 
             # Line 2: Show transaction events as technical details
-            # Build extra info from transaction events
+            # Build extra info from transaction events using consistent O:/D:/R: syntax
             extra_info = ""
             if txn.has_event_type(EventType.INTERCEPTION):
                 int_event = txn.get_events_by_type(EventType.INTERCEPTION)[0]
                 ret_events = txn.get_events_by_type(EventType.INT_RETURN)
                 if ret_events:
                     ret_event = ret_events[0]
-                    extra_info = f" | INT@{int_event.spot}, Ret:{ret_event.yards}(roll {ret_event.dice_roll})"
+                    extra_info = f" | INT@{int_event.spot} | R:{ret_event.dice_roll}→\"{ret_event.yards}\""
             elif txn.has_event_type(EventType.FUMBLE):
                 fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
                 recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
                 if recovery_events:
                     rec_event = recovery_events[0]
+                    rec_result = "kept" if not txn.turnover else "lost"
                     if txn.turnover:
                         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                         ret_yards = ret_events[0].yards if ret_events else 0
-                        extra_info = f" | F@{fumble_event.spot}, Rec:{rec_event.dice_roll}(lost), Ret:{ret_yards}"
+                        extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\" | Ret:{ret_yards}"
                     else:
-                        extra_info = f" | F@{fumble_event.spot}, Rec:{rec_event.dice_roll}(kept)"
+                        extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\""
 
             def_row = def_match.group(3) if def_match else "?"
             print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
@@ -1598,16 +1599,17 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             int_spot = getattr(outcome.result, 'int_spot', None)
             int_return = getattr(outcome.result, 'int_return_yards', 0)
             if int_dice is not None:
-                extra_info = f" | INT@{int_spot}, Ret:{int_return}(roll {int_dice})"
+                extra_info = f" | INT@{int_spot} | R:{int_dice}→\"{int_return}\""
         elif outcome.result.result_type == ResultType.FUMBLE:
             recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
             fumble_spot = getattr(outcome.result, 'fumble_spot', None)
             fumble_return = getattr(outcome.result, 'fumble_return_yards', 0)
             if recovery_roll is not None:
+                rec_result = "kept" if not outcome.turnover else "lost"
                 if outcome.turnover:
-                    extra_info = f" | F@{fumble_spot}, Rec:{recovery_roll}(lost), Ret:{fumble_return}"
+                    extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
                 else:
-                    extra_info = f" | F@{fumble_spot}, Rec:{recovery_roll}(kept)"
+                    extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\""
         print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
         return
 
