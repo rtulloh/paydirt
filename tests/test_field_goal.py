@@ -511,3 +511,52 @@ class TestFieldGoalDistanceCalculation:
             
             assert "good" in outcome.description.lower()
             assert game.state.home_score == initial_home_score + 3
+
+
+class TestBlockedFieldGoalReturnTD:
+    """Tests for blocked FG return touchdown handling."""
+    
+    def test_blocked_fg_return_td_sets_touchdown_flag(self, game):
+        """Blocked FG returned for TD should set touchdown=True in outcome."""
+        game.state.ball_position = 70  # Opponent's 30
+        game.state.is_home_possession = True
+        game.state.down = 4
+        game.state.yards_to_go = 12
+        initial_away_score = game.state.away_score
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 39 = automatic TD for defense
+                mock_dice.return_value = (39, "B3+W3+W6=39")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                # Defense should score TD (6 points)
+                assert game.state.away_score == initial_away_score + 6
+                # Outcome should have touchdown=True
+                assert outcome.touchdown is True
+                assert "TD" in outcome.description or "RETURN" in outcome.description
+    
+    def test_blocked_fg_no_td_has_touchdown_false(self, game):
+        """Blocked FG without TD should have touchdown=False in outcome."""
+        game.state.ball_position = 70  # Opponent's 30
+        game.state.is_home_possession = True
+        game.state.down = 4
+        game.state.yards_to_go = 12
+        initial_away_score = game.state.away_score
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(14, "BK -8", is_blocked=True)
+            
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 35 = defense recovers but no return
+                mock_dice.return_value = (35, "B3+W1+W4=35")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                # Defense should NOT score TD
+                assert game.state.away_score == initial_away_score
+                # Outcome should have touchdown=False
+                assert outcome.touchdown is False

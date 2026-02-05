@@ -1716,9 +1716,9 @@ class PaydirtGameEngine:
                                 touchdown = True
                                 self._score_touchdown()
                                 self.state.ball_position = 97
-                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}) - RETURN TD!"
+                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
                             else:
-                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), returns {return_yards} yards"
+                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
                     else:
                         description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
                 else:
@@ -1748,9 +1748,9 @@ class PaydirtGameEngine:
                                 touchdown = True
                                 self._score_touchdown()
                                 self.state.ball_position = 97
-                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}) - RETURN TD!"
+                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
                             else:
-                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}), returns {return_yards} yards"
+                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
                     else:
                         self.state.ball_position = block_spot_defense
                         description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
@@ -2220,6 +2220,7 @@ class PaydirtGameEngine:
         # Determine success based on result
         success = False
         blocked = False
+        touchdown = False
         is_penalty = False
         is_fumble = False
         description = ""
@@ -2290,9 +2291,9 @@ class PaydirtGameEngine:
                             touchdown = True
                             self._score_touchdown()
                             self.state.ball_position = 97
-                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) - RETURN TD!"
+                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
                         else:
-                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), returns {return_yards} yards"
+                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
                 else:
                     self.state.ball_position = block_spot
                     description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
@@ -2345,9 +2346,9 @@ class PaydirtGameEngine:
                             touchdown = True
                             self._score_touchdown()
                             self.state.ball_position = 97
-                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}) - RETURN TD!"
+                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
                         else:
-                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}), returns {return_yards} yards"
+                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
                 else:
                     self.state.ball_position = block_spot_defense
                     description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
@@ -2430,7 +2431,7 @@ class PaydirtGameEngine:
             defense_type=DefenseType.STANDARD,
             result=parsed,
             yards_gained=0,
-            touchdown=False,
+            touchdown=touchdown,
             field_goal_made=success and not blocked,
             field_position_before=field_pos_before,
             field_position_after=self.state.field_position_str(),

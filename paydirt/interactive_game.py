@@ -1295,7 +1295,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             if outcome.field_goal_made:
                 print(f"► FG {statistical_distance} yards: GOOD! ({kicker})")
             elif "BLOCKED" in outcome.description.upper():
-                print(f"► FG {statistical_distance} yards: BLOCKED!")
+                # Show full description for blocked kicks (includes recovery/return info)
+                print(f"► FG {statistical_distance} yards: {outcome.description}")
             else:
                 print(f"► FG {statistical_distance} yards: NO GOOD")
             print(f"  (Roll: {dice_roll} → \"{chart_result}\" | Needed: {distance_to_goal} yds)")
