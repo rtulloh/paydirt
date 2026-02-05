@@ -437,6 +437,48 @@ class TestFieldGoalFumble:
             assert game.state.is_home_possession is False
 
 
+class TestFieldGoalPenaltyDecision:
+    """Tests for FG penalty decision logic."""
+    
+    def test_fg_penalty_offense_should_take_first_down_on_miss(self, game):
+        """When FG misses with defensive penalty, offense should take the penalty for first down."""
+        from paydirt.play_resolver import PenaltyOption
+        from paydirt.game_engine import PenaltyChoice, PlayOutcome
+        
+        game.state.ball_position = 69  # 4th & 4 at opponent's 31
+        game.state.down = 4
+        game.state.yards_to_go = 4
+        game.state.is_home_possession = True
+        
+        # Create a FG result that missed (chart shows 25, needs 31 to goal)
+        fg_result = create_fg_result(12, "25", chart_yards=25)
+        fg_result.penalty_options = [
+            PenaltyOption(penalty_type="DEF", raw_result="DEF 15", yards=15, description="Defensive penalty, 15 yards", auto_first_down=True)
+        ]
+        fg_result.offended_team = "offense"
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = fg_result
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            # Outcome should have pending penalty decision
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            
+            # The FG was NO GOOD (25 < 31)
+            assert outcome.field_goal_made is False
+            
+            # When offense accepts penalty, they should get first down
+            result = game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=0)
+            
+            # Offense should have first down at new position
+            assert game.state.down == 1
+            assert game.state.yards_to_go == 10 or game.state.yards_to_go == (100 - game.state.ball_position)
+            # Ball should have moved forward 15 yards
+            assert game.state.ball_position == 84  # 69 + 15
+
+
 class TestFieldGoalDistanceCalculation:
     """Tests for correct distance calculations."""
     
