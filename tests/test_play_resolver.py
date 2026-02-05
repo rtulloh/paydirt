@@ -83,6 +83,30 @@ class TestParseResultString:
         result = parse_result_string("0")
         assert result.yards == 0
 
+    def test_parse_plain_fumble(self):
+        """Plain 'F' should be parsed as fumble at line of scrimmage."""
+        result = parse_result_string("F")
+        from paydirt.play_resolver import ResultType
+        assert result.result_type == ResultType.FUMBLE
+        assert result.yards == 0
+        assert result.turnover is True
+
+    def test_parse_fumble_with_positive_yards(self):
+        """'F + 2' should be parsed as fumble with +2 yards."""
+        result = parse_result_string("F + 2")
+        from paydirt.play_resolver import ResultType
+        assert result.result_type == ResultType.FUMBLE
+        assert result.yards == 2
+        assert result.turnover is True
+
+    def test_parse_fumble_with_negative_yards(self):
+        """'F - 4' should be parsed as fumble with -4 yards."""
+        result = parse_result_string("F - 4")
+        from paydirt.play_resolver import ResultType
+        assert result.result_type == ResultType.FUMBLE
+        assert result.yards == -4
+        assert result.turnover is True
+
 
 class TestResolveFieldGoalWithPenalties:
     """Tests for resolve_field_goal_with_penalties function."""

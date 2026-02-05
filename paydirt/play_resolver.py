@@ -332,7 +332,11 @@ def parse_result_string(result_str: str) -> PlayResult:
     if result_str.startswith("QT"):
         return PlayResult(ResultType.QB_SCRAMBLE, 0, "QB scrambles", raw_result=result_str)
 
-    # Check for Fumble (F + X or F - X)
+    # Check for Fumble (F, F + X, or F - X)
+    # Handle plain "F" (fumble at line of scrimmage)
+    if result_str.upper() == 'F':
+        return PlayResult(ResultType.FUMBLE, 0, "FUMBLE at line of scrimmage!",
+                         turnover=True, raw_result=result_str)
     fumble_match = re.match(r'F\s*([+-])\s*(\d+)', result_str)
     if fumble_match:
         sign = 1 if fumble_match.group(1) == '+' else -1
