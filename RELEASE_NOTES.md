@@ -1,6 +1,43 @@
 # Paydirt Release Notes
 
-## Recent Changes (February 2026)
+## Version 1.1 (February 2026)
+
+### Transaction-Based Play Tracking
+- **Play events system**: New `PlayTransaction` and `PlayEvent` classes track every aspect of a play
+- **Event types**: Primary play, fumble, fumble return, interception, interception return, penalty, touchdown, safety
+- **Improved action lines**: Commentary now uses transaction events for accurate play-by-play descriptions
+- **Fumble/INT returns**: Action lines now show return yardage and spot correctly
+
+### AI Clock Management
+- **No-huddle offense**: AI uses no-huddle when trailing late in Q4 (announced in output)
+- **Out-of-bounds designation**: AI automatically uses OOB on passing plays to stop clock when trailing
+- **Earlier hurry-up**: Down by 9+ points triggers hurry-up with 8+ minutes left; down by 4+ with 5+ minutes
+- **Pass-only under 2 minutes**: AI avoids running plays (Draw, Line Plunge) when under 2 minutes and trailing
+- **Smarter play selection**: Two-minute offense prioritizes clock-stopping plays
+
+### Game Save/Load
+- **Save mid-game**: Type `save` during play selection to save current game state
+- **Resume games**: `python -m paydirt --load` to resume saved game
+- **Full state preservation**: Saves score, field position, down/distance, time, timeouts, scoring plays
+
+### Bug Fixes
+- **Fumble return events**: Fixed missing FUMBLE_RETURN events in transactions for defense recoveries
+- **Fumble action line**: Shows fumble spot when defense recovers with 0 return yards
+- **Blocked punt on 4th down**: Now correctly results in turnover if recovery is short of first down marker
+- **Sack ignores OOB designation**: QB sacks no longer incorrectly stop the clock with OOB designation
+- **KeyError on 4th down penalties**: Fixed crash when penalty decision occurred on 4th down
+- **Interception return TD**: Fixed yardage calculation for pick-six plays
+- **ScoringPlay serialization**: Fixed `time_remaining` and `is_home_team` fields for save/load
+
+### Test Coverage
+- **917 unit tests** passing
+- **14 integration games** (28 teams) verified
+- New test files: `test_play_events.py`, `test_save_game.py`
+- Added tests for clock management, fumble handling, punt blocking, sack OOB
+
+---
+
+## Version 1.0 (February 2026)
 
 ### Code Quality Improvements
 - **pytest-cov integration**: Added test coverage analysis tooling
