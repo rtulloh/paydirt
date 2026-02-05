@@ -1512,7 +1512,11 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                         elif ret_yards > 0:
                             print(f"  → Fumble at the {fumble_spot}, recovered and returned {ret_yards} yards")
                         else:
-                            print(f"  → Fumble at the {fumble_spot}, recovered by the defense")
+                            # Defense recovered at the fumble spot (0 return yards)
+                            print(f"  → Fumble at the {fumble_spot}, recovered by the defense at the {fumble_spot}")
+                    else:
+                        # No return event but still a turnover
+                        print(f"  → Fumble at the {fumble_spot}, recovered by the defense")
                 else:
                     # Offense recovered
                     if txn.yards_gained > 0:

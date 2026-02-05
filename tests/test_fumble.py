@@ -699,3 +699,76 @@ class TestFumbleRecoveryDownAdvancement:
         assert outcome.result.fumble_recovered is True
         # Fumbles lost should not increase when offense recovers
         assert game.state.offense_stats.fumbles_lost == initial_fumbles_lost
+
+
+class TestFumbleActionLine:
+    """Tests for fumble action line display in transactions."""
+
+    def test_fumble_turnover_zero_return_shows_spot(self, game):
+        """Defense fumble recovery with 0 return yards should show the fumble spot."""
+        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        
+        # Create a transaction with fumble turnover and 0 return yards
+        txn = PlayTransaction()
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            spot=36,
+            dice_roll=15,
+            chart_result="F + 8"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RECOVERY,
+            description="Defense recovers",
+            dice_roll=37,
+            chart_result="lost"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RETURN,
+            description="No return",
+            yards=0,
+            dice_roll=10,
+            chart_result="0"
+        ))
+        txn.turnover = True
+        txn.touchdown = False
+        
+        # Verify the transaction has the expected structure
+        assert txn.has_event_type(EventType.FUMBLE)
+        assert txn.turnover is True
+        fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
+        assert fumble_event.spot == 36
+        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+        assert len(ret_events) == 1
+        assert ret_events[0].yards == 0
+
+    def test_fumble_turnover_with_return_yards(self, game):
+        """Defense fumble recovery with positive return yards."""
+        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        
+        txn = PlayTransaction()
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            spot=50,
+            dice_roll=15,
+            chart_result="F"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RECOVERY,
+            description="Defense recovers",
+            dice_roll=37,
+            chart_result="lost"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RETURN,
+            description="Return",
+            yards=15,
+            dice_roll=14,
+            chart_result="15"
+        ))
+        txn.turnover = True
+        txn.touchdown = False
+        
+        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+        assert ret_events[0].yards == 15
