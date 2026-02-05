@@ -71,7 +71,7 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         "scoring_plays": [
             {
                 "quarter": sp.quarter,
-                "time": sp.time,
+                "time": sp.time_remaining,
                 "team": sp.team,
                 "play_type": sp.play_type,
                 "description": sp.description,
@@ -154,7 +154,7 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     state.scoring_plays = [
         ScoringPlay(
             quarter=sp["quarter"],
-            time=sp["time"],
+            time_remaining=sp["time"],
             team=sp["team"],
             play_type=sp["play_type"],
             description=sp["description"],
