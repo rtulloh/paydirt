@@ -9,13 +9,13 @@ Tests the full penalty procedure per Paydirt rules:
 - If PI, no rerolls - defensive result cancelled, incomplete pass
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from paydirt.play_resolver import (
     PlayType, DefenseType, ResultType, PlayResult,
     PenaltyChoice, PenaltyOption,
     _is_penalty_result, _create_penalty_option,
-    resolve_play_with_penalties, is_passing_play
+    resolve_play_with_penalties
 )
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.chart_loader import load_team_chart
@@ -554,7 +554,6 @@ class TestPenaltyAdviceDisplay:
         1st and 15, not 1st and 5.
         """
         # Test the calculation logic directly
-        down = 1
         yards_to_go = 10
         penalty_yards = 5
         penalty_type = "OFF"
@@ -571,7 +570,6 @@ class TestPenaltyAdviceDisplay:
     
     def test_defensive_penalty_decreases_yards_to_go(self):
         """Defensive penalty should decrease yards to go."""
-        down = 2
         yards_to_go = 10
         penalty_yards = 5
         penalty_type = "DEF"
@@ -586,7 +584,6 @@ class TestPenaltyAdviceDisplay:
     
     def test_offensive_penalty_on_third_and_long(self):
         """Offensive penalty on 3rd and 15 should result in 3rd and 20."""
-        down = 3
         yards_to_go = 15
         penalty_yards = 5
         penalty_type = "OFF"
@@ -600,7 +597,6 @@ class TestPenaltyAdviceDisplay:
     
     def test_defensive_penalty_gives_first_down_when_enough_yards(self):
         """Defensive penalty that exceeds yards to go should give first down."""
-        down = 3
         yards_to_go = 5
         penalty_yards = 10
         penalty_type = "DEF"
@@ -629,7 +625,7 @@ class TestPenaltyAdviceTouchdown:
         if new_position >= 100:
             result = "TOUCHDOWN!"
         else:
-            result = f"some other result"
+            result = "some other result"
         
         assert result == "TOUCHDOWN!", f"Expected TOUCHDOWN but got {result}"
     

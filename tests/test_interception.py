@@ -7,11 +7,11 @@ Official rules:
 - Defense may decline the interception (treat as incompletion) - handled in interactive mode
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult, resolve_play
+from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
 
 
 @pytest.fixture
@@ -249,7 +249,7 @@ class TestInterceptionPossessionChange:
             with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
                 mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
@@ -277,7 +277,7 @@ class TestInterceptionStats:
             with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
                 mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # After interception, possession switched, so check home_stats directly
         assert game.state.home_stats.interceptions_thrown == initial_ints + 1

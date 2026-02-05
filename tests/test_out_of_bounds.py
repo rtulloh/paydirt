@@ -8,9 +8,9 @@ Official rules:
 - Play is NOT out of bounds if defense overrules or if play results in fumble
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult, parse_result_string
 
@@ -220,7 +220,7 @@ class TestOutOfBoundsExceptions:
                 
                 with patch('paydirt.game_engine.random.uniform', return_value=30.0):
                     initial_time = game.state.time_remaining
-                    outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+                    game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should use full time, not reduced (fumble negates out of bounds)
         # Time used should be 30 seconds = 0.5 minutes
@@ -245,7 +245,7 @@ class TestOutOfBoundsExceptions:
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
             with patch('paydirt.game_engine.random.uniform', return_value=30.0):
                 initial_time = game.state.time_remaining
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should use full time, not reduced (defense overruled)
         assert game.state.time_remaining < initial_time - 0.3  # Used more than 10 seconds

@@ -10,7 +10,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
-from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
+from paydirt.game_engine import PaydirtGameEngine
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ class TestQbKneelBasics:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
         
-        outcome = game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
+        game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
         
         assert game.state.down == 2
     
@@ -66,7 +66,7 @@ class TestQbKneelBasics:
         game.state.is_home_possession = True
         game.state.time_remaining = 2.0  # 2 minutes
         
-        outcome = game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
+        game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
         
         # Should use ~40 seconds (0.667 minutes)
         time_used = 2.0 - game.state.time_remaining
@@ -80,7 +80,7 @@ class TestQbKneelBasics:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_roll:
-            outcome = game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
+            game.run_play(PlayType.QB_KNEEL, DefenseType.STANDARD)
             mock_roll.assert_not_called()
 
 
@@ -223,7 +223,7 @@ class TestInBoundsDesignation:
                 out_of_bounds=True  # Would normally stop clock
             )
             
-            outcome = game.run_play(PlayType.OFF_TACKLE, DefenseType.STANDARD,
+            game.run_play(PlayType.OFF_TACKLE, DefenseType.STANDARD,
                                    in_bounds_designation=True)
         
         # Clock should have run more than 10-second OOB play

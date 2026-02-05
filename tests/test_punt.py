@@ -7,10 +7,9 @@ Official rules:
 - Otherwise, receiving team rolls offensive dice and consults Punt Return column
 """
 import pytest
-from unittest.mock import patch, MagicMock
-from dataclasses import dataclass, field
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType
 
@@ -196,7 +195,6 @@ class TestPuntReturn:
         """Long punt return should result in touchdown."""
         game.state.ball_position = 70  # Own 70 (opponent's 30)
         game.state.is_home_possession = True
-        initial_away_score = game.state.away_score
         
         # Short punt that lands close, then big return
         # Punt 15 yards lands at 85 (opponent's 15)
@@ -246,7 +244,7 @@ class TestPuntFieldPosition:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (11, "B1+W0+W1=11")  # 45* fair catch
             
-            outcome = game.run_play(PlayType.PUNT, None)
+            game.run_play(PlayType.PUNT, None)
             
             # Punt 45 from own 20 = lands at 65 = opponent's 35
             # After possession switch, ball at 35
@@ -262,7 +260,7 @@ class TestPuntFieldPosition:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11")]
             
-            outcome = game.run_play(PlayType.PUNT, None)
+            game.run_play(PlayType.PUNT, None)
             
             # Punt 40 from own 30 = lands at 70 = opponent's 30
             # Return 15 yards = opponent's 45 = our 55
@@ -284,7 +282,7 @@ class TestPuntDownAndDistance:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (11, "B1+W0+W1=11")  # Fair catch
             
-            outcome = game.run_play(PlayType.PUNT, None)
+            game.run_play(PlayType.PUNT, None)
             
             assert game.state.down == 1
             assert game.state.yards_to_go == 10

@@ -6,11 +6,10 @@ Official rules:
 - Safety: 2 points for defense, victims get free kick (kickoff or punt) from own 20
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
 
 
 @pytest.fixture
@@ -108,7 +107,7 @@ class TestSafetyFreeKickKickoff:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
-            outcome = game.safety_free_kick(use_punt=False)
+            game.safety_free_kick(use_punt=False)
         
         assert game.state.is_home_possession is False
     
@@ -122,7 +121,7 @@ class TestSafetyFreeKickKickoff:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
-            outcome = game.safety_free_kick(use_punt=False)
+            game.safety_free_kick(use_punt=False)
         
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
@@ -152,7 +151,7 @@ class TestSafetyFreeKickPunt:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
-            outcome = game.safety_free_kick(use_punt=True)
+            game.safety_free_kick(use_punt=True)
         
         assert game.state.is_home_possession is False
     
@@ -166,7 +165,7 @@ class TestSafetyFreeKickPunt:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
-            outcome = game.safety_free_kick(use_punt=True)
+            game.safety_free_kick(use_punt=True)
         
         assert game.state.down == 1
         assert game.state.yards_to_go == 10

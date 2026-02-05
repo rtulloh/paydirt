@@ -2,13 +2,11 @@
 Tests for play_resolver.py to improve coverage.
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, PlayResult,
-    is_passing_play, roll_chart_dice,
-    resolve_field_goal_with_penalties, FieldGoalResult,
-    parse_result_string
+    PlayType, is_passing_play, roll_chart_dice,
+    resolve_field_goal_with_penalties, parse_result_string
 )
 from paydirt.chart_loader import SpecialTeamsChart
 

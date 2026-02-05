@@ -11,8 +11,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from paydirt.play_resolver import PlayType, DefenseType, ResultType
-from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
-from paydirt.chart_loader import TeamChart
+from paydirt.game_engine import PaydirtGameEngine
 
 
 @pytest.fixture
@@ -56,7 +55,7 @@ class TestSpikeBallBasics:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
         
-        outcome = game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
+        game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
         
         assert game.state.down == 2
         assert game.state.yards_to_go == 10  # Unchanged
@@ -110,7 +109,7 @@ class TestSpikeBallTurnoverOnDowns:
         game.state.yards_to_go = 3
         game.state.is_home_possession = True
         
-        outcome = game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
+        game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
         
         # Defense takes over
         assert game.state.is_home_possession is False
@@ -149,7 +148,7 @@ class TestSpikeBallTimeSavings:
         game.state.is_home_possession = True
         game.state.time_remaining = 2.0  # 2 minutes
         
-        outcome = game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
+        game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
         
         # Spike should use very little time (< 0.1 minutes = 6 seconds)
         time_used = 2.0 - game.state.time_remaining
@@ -182,7 +181,7 @@ class TestSpikeBallNoRolls:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_roll:
-            outcome = game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
+            game.run_play(PlayType.SPIKE_BALL, DefenseType.STANDARD)
             
             # roll_chart_dice should NOT be called for spike
             mock_roll.assert_not_called()

@@ -12,7 +12,7 @@ Official rules:
 import pytest
 from unittest.mock import patch, MagicMock
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult, roll_white_dice
 
@@ -488,7 +488,7 @@ class TestPassInterferenceEndZone:
         )
         
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            outcome = game.run_play(PlayType.LONG_PASS, DefenseType.STANDARD)
+            game.run_play(PlayType.LONG_PASS, DefenseType.STANDARD)
         
         assert game.state.ball_position == 99  # 1 yard from goal
         assert game.state.down == 1

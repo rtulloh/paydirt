@@ -19,7 +19,7 @@ Final seconds rules:
 import pytest
 from unittest.mock import MagicMock
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
 
 

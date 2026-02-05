@@ -69,7 +69,7 @@ class TestKickoffReturnPenalties:
             # Single roll = 11 used for both kickoff (50 yards) and return (OFF 15)
             mock_dice.return_value = (11, "B1+W0+W1=11")
             
-            outcome = game.kickoff(kicking_home=True)
+            game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
@@ -87,7 +87,7 @@ class TestKickoffReturnPenalties:
             # Single roll = 12 used for both kickoff (50 yards) and return (DEF 15)
             mock_dice.return_value = (12, "B1+W0+W2=12")
             
-            outcome = game.kickoff(kicking_home=True)
+            game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
@@ -105,7 +105,7 @@ class TestKickoffReturnPenalties:
             # Single roll = 10 used for both kickoff (50 yards) and return (20 yards)
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
-            outcome = game.kickoff(kicking_home=True)
+            game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15

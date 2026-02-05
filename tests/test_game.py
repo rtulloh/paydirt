@@ -2,7 +2,7 @@
 Tests for the main game engine.
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from paydirt.models import Team, PlayType, DefenseType, PlayResult
 from paydirt.game import PaydirtGame, simulate_drive
@@ -78,7 +78,6 @@ class TestPaydirtGame:
     def test_run_play_basic(self, game):
         """Running a play should update game state."""
         game.kickoff(receiving_team_is_home=False)
-        initial_position = game.state.ball_position
         
         result = game.run_play(PlayType.RUN_MIDDLE, DefenseType.NORMAL)
         

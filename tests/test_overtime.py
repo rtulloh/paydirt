@@ -4,13 +4,11 @@ Unit tests for NFL overtime rules implementation.
 Tests the overtime rules by season and the game engine's overtime handling.
 """
 import pytest
-from unittest.mock import patch, MagicMock
 
 from paydirt.overtime_rules import (
-    get_overtime_rules, OvertimeRules, OvertimeFormat,
-    OVERTIME_RULES_BY_YEAR
+    get_overtime_rules, OvertimeFormat
 )
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
 
 

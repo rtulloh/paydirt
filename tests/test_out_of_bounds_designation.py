@@ -11,7 +11,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
-from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
+from paydirt.game_engine import PaydirtGameEngine
 
 
 @pytest.fixture
@@ -173,7 +173,7 @@ class TestOutOfBoundsTimeSavings:
                 description="Gain of 8 yards"
             )
             
-            outcome = game.run_play(PlayType.OFF_TACKLE, DefenseType.STANDARD,
+            game.run_play(PlayType.OFF_TACKLE, DefenseType.STANDARD,
                                    out_of_bounds_designation=True)
         
         # Time used should be ~10 seconds (0.167 minutes) or less
@@ -203,7 +203,7 @@ class TestOutOfBoundsPuntRestriction:
             mock_dice.side_effect = [(20, "B2+W0+W0=20"), (25, "B2+W2+W3=25")]
             
             # This should work without error - OOB is silently ignored for punts
-            outcome = game.run_play(PlayType.PUNT, DefenseType.STANDARD,
+            game.run_play(PlayType.PUNT, DefenseType.STANDARD,
                                    out_of_bounds_designation=True)
         
         # Punt should execute normally

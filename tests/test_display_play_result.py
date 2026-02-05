@@ -5,11 +5,10 @@ Bug fix: On 4th down failure (turnover on downs), the display was showing the wr
 team on offense because possession had already switched before display_play_result
 was called.
 """
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from io import StringIO
 
-from paydirt.game_engine import GameState, PlayOutcome
+from paydirt.game_engine import PlayOutcome
 from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 
@@ -126,7 +125,7 @@ class TestCompactDisplayTouchdown:
 
     def test_touchdown_not_shown_as_no_gain(self):
         """TD with yards_gained=0 should show 'TOUCHDOWN!' not 'No gain'."""
-        from paydirt.interactive_game import display_play_result, COMPACT_MODE
+        from paydirt.interactive_game import display_play_result
         from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
 

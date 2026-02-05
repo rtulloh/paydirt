@@ -10,10 +10,9 @@ Official rules:
   (which is 17 yards greater: 10 yards end zone + 7 yards to spot of hold)
 """
 import pytest
-from unittest.mock import patch, MagicMock
-from dataclasses import field
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType, FieldGoalResult
 
@@ -443,7 +442,6 @@ class TestFieldGoalPenaltyDecision:
     def test_fg_penalty_offense_should_take_first_down_on_miss(self, game):
         """When FG misses with defensive penalty, offense should take the penalty for first down."""
         from paydirt.play_resolver import PenaltyOption
-        from paydirt.game_engine import PenaltyChoice, PlayOutcome
         
         game.state.ball_position = 69  # 4th & 4 at opponent's 31
         game.state.down = 4
@@ -470,7 +468,7 @@ class TestFieldGoalPenaltyDecision:
             assert outcome.field_goal_made is False
             
             # When offense accepts penalty, they should get first down
-            result = game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=0)
+            game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=0)
             
             # Offense should have first down at new position
             assert game.state.down == 1

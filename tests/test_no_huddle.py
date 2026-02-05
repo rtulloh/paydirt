@@ -7,12 +7,10 @@ No Huddle Offense:
   - OFF=S 10-11: Bad Snap (F-13 punt, F-7 FG, F-2 other)
   - DEF=S 10-14: Becomes OFF 5 (false start, 0 seconds, no rerolls)
 """
-import pytest
 from unittest.mock import patch
 
 from paydirt.penalty_handler import (
-    PenaltyType, PenaltyResult, NoHuddlePenaltyResult,
-    roll_no_huddle_penalty_yardage
+    PenaltyType, roll_no_huddle_penalty_yardage
 )
 
 

@@ -2,12 +2,10 @@
 Tests for the penalty handling module.
 Tests the Full Feature Method penalty resolution per official Paydirt rules.
 """
-import pytest
 from unittest.mock import patch
 
 from paydirt.penalty_handler import (
-    PenaltyType, PenaltyResult,
-    roll_penalty_yardage, apply_half_distance_rule,
+    PenaltyType, roll_penalty_yardage, apply_half_distance_rule,
     calculate_penalty_spot, resolve_penalty, resolve_pass_interference,
     check_offsetting_penalties
 )
@@ -377,3 +375,58 @@ class TestRuleExamples:
         assert new_pos == 44
         assert new_down == 1
         assert new_ytg == 10
+
+
+class TestChartYardagePenalties:
+    """Tests for penalties with explicit chart yardage (e.g., 'DEF 15')."""
+    
+    def test_defensive_penalty_uses_chart_yardage(self):
+        """When chart specifies 'DEF 15', should use 15 yards, not re-roll."""
+        # No mock needed - chart_yards bypasses the roll
+        result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            "DEF 15", ball_position=34, yards_gained=0,
+            is_return=False, yards_to_go=9, down=3,
+            chart_yards=15, auto_first_down=False
+        )
+        assert result.yards == 15
+        assert new_pos == 49  # 34 + 15
+        assert first_down is True  # 15 > 9 yards to go
+        assert new_down == 1
+        assert new_ytg == 10
+    
+    def test_offensive_penalty_uses_chart_yardage(self):
+        """When chart specifies 'OFF 10', should use 10 yards, not re-roll."""
+        result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            "OFF 10", ball_position=50, yards_gained=0,
+            is_return=False, yards_to_go=8, down=2,
+            chart_yards=10, auto_first_down=False
+        )
+        assert result.yards == 10
+        assert new_pos == 40  # 50 - 10
+        assert new_down == 2  # Same down (offensive penalty)
+        assert new_ytg == 18  # 8 + 10
+    
+    def test_chart_yardage_with_auto_first_down(self):
+        """Chart penalty with X modifier should give auto first down."""
+        result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            "DEF 5X", ball_position=30, yards_gained=0,
+            is_return=False, yards_to_go=10, down=3,
+            chart_yards=5, auto_first_down=True
+        )
+        assert result.yards == 5
+        assert result.automatic_first_down is True
+        assert new_pos == 35  # 30 + 5
+        assert first_down is True
+        assert new_down == 1
+        assert new_ytg == 10
+    
+    def test_chart_yardage_none_falls_back_to_roll(self):
+        """When chart_yards is None, should roll for yardage."""
+        with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
+            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+                "DEF S", ball_position=50, yards_gained=0,
+                is_return=False, yards_to_go=10, down=2,
+                chart_yards=None  # Explicitly None - should roll
+            )
+            # Roll of 20 for DEF S = 5 yards
+            assert result.yards == 5

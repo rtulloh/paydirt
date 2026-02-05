@@ -4,11 +4,10 @@ Tests for season and standings tracking.
 import pytest
 import tempfile
 import shutil
-from pathlib import Path
 
 from paydirt.standings import (
     GameResult, TeamRecord, Season, StandingsManager,
-    NFL_DIVISIONS_1983, normalize_team_name
+    normalize_team_name
 )
 
 

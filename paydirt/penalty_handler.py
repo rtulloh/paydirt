@@ -401,7 +401,8 @@ def calculate_penalty_spot(ball_position: int, yards_gained: int,
 
 def resolve_penalty(penalty_code: str, ball_position: int,
                     yards_gained: int = 0, is_return: bool = False,
-                    yards_to_go: int = 10, down: int = 1) -> Tuple[PenaltyResult, int, int, int, bool]:
+                    yards_to_go: int = 10, down: int = 1,
+                    chart_yards: int = None, auto_first_down: bool = False) -> Tuple[PenaltyResult, int, int, int, bool]:
     """
     Fully resolve a penalty using the Full Feature Method.
     
@@ -412,6 +413,8 @@ def resolve_penalty(penalty_code: str, ball_position: int,
         is_return: True if this is a return play
         yards_to_go: Current yards to go for first down
         down: Current down
+        chart_yards: If provided, use this yardage instead of rolling (for explicit chart penalties like "DEF 15")
+        auto_first_down: If True, penalty gives automatic first down (for explicit chart penalties with X modifier)
     
     Returns:
         Tuple of (PenaltyResult, new_ball_position, new_down, new_yards_to_go, first_down)
@@ -431,8 +434,21 @@ def resolve_penalty(penalty_code: str, ball_position: int,
             penalty_type = PenaltyType.DEFENSIVE_S
         is_offensive = False
 
-    # Roll for actual penalty yardage
-    penalty_result = roll_penalty_yardage(penalty_type)
+    # Use chart yardage if provided, otherwise roll for penalty yardage
+    if chart_yards is not None:
+        # Chart explicitly specified yardage (e.g., "DEF 15")
+        penalty_result = PenaltyResult(
+            penalty_type=penalty_type,
+            yards=chart_yards,
+            automatic_first_down=auto_first_down,
+            mark_from_end_of_gain=False,
+            description=f"{'Offensive' if is_offensive else 'Defensive'} penalty, {chart_yards} yards",
+            dice_roll=0,
+            raw_penalty_code=penalty_code
+        )
+    else:
+        # Roll for actual penalty yardage (Full Feature Method)
+        penalty_result = roll_penalty_yardage(penalty_type)
 
     # Apply half-distance rule
     adjusted_yards = apply_half_distance_rule(

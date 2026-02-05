@@ -1144,13 +1144,16 @@ class PaydirtGameEngine:
 
             elif penalty_opt.penalty_type == "OFF":
                 # Offensive penalty - defense was offended
+                # Use chart yardage if explicitly specified (e.g., "OFF 10")
                 penalty_result, new_pos, new_down, new_ytg, got_first = resolve_penalty(
                     penalty_opt.raw_result,
                     ball_pos_numeric,
                     yards_gained=0,
                     is_return=False,
                     yards_to_go=self.state.yards_to_go,
-                    down=self.state.down
+                    down=self.state.down,
+                    chart_yards=penalty_opt.yards,
+                    auto_first_down=penalty_opt.auto_first_down
                 )
                 self.state.offense_stats.penalties += 1
                 self.state.offense_stats.penalty_yards += penalty_result.yards
@@ -1163,13 +1166,16 @@ class PaydirtGameEngine:
 
             elif penalty_opt.penalty_type == "DEF":
                 # Defensive penalty - offense was offended
+                # Use chart yardage if explicitly specified (e.g., "DEF 15")
                 penalty_result, new_pos, new_down, new_ytg, got_first = resolve_penalty(
                     penalty_opt.raw_result,
                     ball_pos_numeric,
                     yards_gained=0,
                     is_return=False,
                     yards_to_go=self.state.yards_to_go,
-                    down=self.state.down
+                    down=self.state.down,
+                    chart_yards=penalty_opt.yards,
+                    auto_first_down=penalty_opt.auto_first_down
                 )
                 self.state.defense_stats.penalties += 1
                 self.state.defense_stats.penalty_yards += penalty_result.yards

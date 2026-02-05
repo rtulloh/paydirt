@@ -4,11 +4,9 @@ Tests for CPU AI timeout logic when on defense.
 The CPU should call timeouts when trailing late in the game to stop the clock
 and get the ball back.
 """
-import pytest
-from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI, computer_should_call_timeout_on_defense
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 
 
@@ -170,7 +168,6 @@ class TestCPUTimeoutOnOffense:
 
     def test_cpu_calls_timeout_end_of_q2_to_score(self):
         """CPU should call timeout at end of Q2 to try to score before half."""
-        from paydirt.computer_ai import computer_should_call_timeout_on_offense
         
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -189,7 +186,6 @@ class TestCPUTimeoutOnOffense:
 
     def test_cpu_no_timeout_q2_if_big_lead(self):
         """CPU should NOT call timeout at end of Q2 if leading by 14+."""
-        from paydirt.computer_ai import computer_should_call_timeout_on_offense
         
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")

@@ -10,13 +10,12 @@ Official rules:
 - Defense doesn't participate (no defensive dice roll)
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, PlayResult, 
-    resolve_qb_sneak
+    PlayType, DefenseType, ResultType, resolve_qb_sneak
 )
 
 
@@ -284,7 +283,7 @@ class TestQbSneakGameEngine:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")  # 1 yard gain
             
-            outcome = game.run_play(PlayType.QB_SNEAK, DefenseType.STANDARD)
+            game.run_play(PlayType.QB_SNEAK, DefenseType.STANDARD)
         
         assert game.state.offense_stats.rushing_yards == initial_yards + 1
         assert game.state.offense_stats.total_yards == initial_total + 1

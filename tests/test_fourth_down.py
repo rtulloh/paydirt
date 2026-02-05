@@ -9,12 +9,11 @@ Tests verify that the AI makes smart decisions based on:
 - Aggression level
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI
 from paydirt.play_resolver import PlayType
 from paydirt.game_engine import PaydirtGameEngine, GameState
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 
 
 @pytest.fixture

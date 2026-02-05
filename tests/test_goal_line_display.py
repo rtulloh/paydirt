@@ -8,7 +8,7 @@ instead of the yards to go (e.g., "1st and Goal" instead of "1st and 8").
 import pytest
 from unittest.mock import MagicMock
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 
 
 class TestGoalLineDisplay:

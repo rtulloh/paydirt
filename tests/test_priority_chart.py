@@ -7,7 +7,6 @@ Key rules:
 - Breakaway (B) should NOT override defense parentheses results
 - QT (quarterback trouble) should override breakaway
 """
-import pytest
 
 from paydirt.priority_chart import (
     apply_priority_chart, categorize_result, 

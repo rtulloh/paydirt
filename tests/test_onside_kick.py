@@ -11,7 +11,6 @@ from unittest.mock import patch, MagicMock
 
 from paydirt.game_engine import PaydirtGameEngine, GameState
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType
 from paydirt.interactive_game import cpu_should_onside_kick
 
 
@@ -125,7 +124,7 @@ class TestOnsideKickBallPosition:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (15, "B1+W3+W2=15")
             
-            outcome = game.onside_kick(kicking_home=True)
+            game.onside_kick(kicking_home=True)
             
             # Kicking team recovers at their own 47
             assert game.state.ball_position == 47
@@ -136,7 +135,7 @@ class TestOnsideKickBallPosition:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (11, "B1+W1+W0=11")
             
-            outcome = game.onside_kick(kicking_home=True)
+            game.onside_kick(kicking_home=True)
             
             # Receiving team recovers at their own 53 (100 - 47)
             assert game.state.ball_position == 53
@@ -147,7 +146,7 @@ class TestOnsideKickBallPosition:
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.return_value = (15, "B1+W3+W2=15")
             
-            outcome = game.onside_kick(kicking_home=True)
+            game.onside_kick(kicking_home=True)
             
             assert game.state.down == 1
             assert game.state.yards_to_go == 10

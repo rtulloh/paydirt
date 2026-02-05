@@ -3,8 +3,7 @@ Tests for the core game models.
 """
 import pytest
 from paydirt.models import (
-    Team, GameState, TeamStats, PlayType, DefenseType,
-    PlayResult, PlayOutcome
+    Team, GameState, PlayResult, PlayOutcome
 )
 
 

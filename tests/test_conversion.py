@@ -10,11 +10,10 @@ Official rules:
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from dataclasses import field
 
-from paydirt.game_engine import PaydirtGameEngine, GameState, PlayOutcome
+from paydirt.game_engine import PaydirtGameEngine, GameState
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType
+from paydirt.play_resolver import PlayType
 from paydirt.interactive_game import cpu_should_go_for_two
 
 

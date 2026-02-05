@@ -11,9 +11,9 @@ Official rules:
 - If offense recovers on 4th down but fails to make first down yardage, defense takes over
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
 
@@ -366,7 +366,7 @@ class TestFumbleStats:
                 # Recovery roll of 30 (lost)
                 mock_dice.return_value = (30, "B2+W5+W4=30")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert game.state.home_stats.fumbles_lost == initial_fumbles + 1
     
@@ -389,7 +389,7 @@ class TestFumbleStats:
                 # Recovery roll of 15 (recovered)
                 mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert game.state.home_stats.fumbles_lost == initial_fumbles  # No change
 

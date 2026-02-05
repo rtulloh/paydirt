@@ -7,10 +7,7 @@ The defensive default should consider both down and distance:
 - 3rd/4th and 8+: Long Pass (E) - expect deep pass
 - Short yardage (≤2): Short Yardage (B) - expect run
 """
-import pytest
-from unittest.mock import MagicMock
 
-from paydirt.game_engine import GameState
 
 
 def get_defensive_default(down: int, yards_to_go: int) -> tuple[str, str]:

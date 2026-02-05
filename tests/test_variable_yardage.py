@@ -10,7 +10,6 @@ Variable yardage symbols:
 
 Negative versions (-DS, -X, -T1, etc.) return negative yardage.
 """
-import pytest
 from unittest.mock import patch
 
 from paydirt.play_resolver import (

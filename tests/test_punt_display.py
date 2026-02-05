@@ -10,13 +10,7 @@ The punt display should provide specific commentary based on the outcome:
 - Blocked: "BLOCKED PUNT!"
 - Fumble: "FUMBLE on the return! Kicking team recovers!"
 """
-import pytest
-from io import StringIO
-import sys
-from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import PlayType, ResultType, PlayResult
-from paydirt.models import DefenseType
 
 
 def get_punt_commentary(description: str, touchdown: bool = False) -> str:

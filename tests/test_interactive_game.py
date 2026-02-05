@@ -2,7 +2,7 @@
 Tests for interactive_game.py functions that don't require user input.
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from paydirt.interactive_game import (
     analyze_team_strength,

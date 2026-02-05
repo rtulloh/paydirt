@@ -4,8 +4,6 @@ Tests for team strength analysis used in offensive play recommendations.
 The analyze_team_strength function examines a team's offensive chart to determine
 if they favor running or passing, which influences the default play suggestion.
 """
-import pytest
-from unittest.mock import MagicMock
 
 from paydirt.chart_loader import OffenseChart
 from paydirt.interactive_game import analyze_team_strength

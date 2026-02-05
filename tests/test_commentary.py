@@ -5,7 +5,6 @@ import json
 import os
 import pytest
 import tempfile
-from unittest.mock import patch, MagicMock
 
 from paydirt.commentary import (
     TeamRoster, get_roster, load_roster_from_file,
@@ -380,7 +379,7 @@ class TestCommentary:
                     break
         
         assert found_running_language is False, \
-            f"Pass play commentary should not use running language"
+            "Pass play commentary should not use running language"
     
     def test_short_run_gain_uses_run_language(self, commentary):
         """Short run gains should use run-appropriate language."""
@@ -398,4 +397,4 @@ class TestCommentary:
                     break
         
         assert found_pass_language is False, \
-            f"Run play commentary should not use pass language"
+            "Run play commentary should not use pass language"

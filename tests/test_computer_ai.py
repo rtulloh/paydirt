@@ -2,10 +2,10 @@
 Tests for computer AI offensive and defensive play selection.
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 

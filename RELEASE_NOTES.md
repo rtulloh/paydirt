@@ -19,6 +19,7 @@
 - Removed duplicate implementations from `cli.py`, `cli_charts.py`, `interactive_game.py`
 
 ### Bug Fixes
+- **Penalty yardage ignored**: Fixed bug where chart penalties (e.g., "DEF 15") were re-rolled instead of using the explicit yardage. Now uses chart yardage when specified.
 - **Punt return penalties**: Fixed "DEF 15" triggering false fumble detection (DEF contains "F")
 - **Punt/kickoff return penalty yardage**: Now correctly parses and applies penalty yards
   - OFF penalty: Ball moves back (receiving team penalized)

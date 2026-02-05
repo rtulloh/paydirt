@@ -1,7 +1,6 @@
 """
 Tests for shared utility functions.
 """
-import pytest
 from paydirt.utils import ordinal_suffix, ordinal, format_down_and_distance, format_time
 
 
