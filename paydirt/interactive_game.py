@@ -1428,7 +1428,18 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                         result_str = "FUMBLE - Loss!"
                         special_marker = " ★ TURNOVER!"
             else:
-                result_str = "FUMBLE - Recovered"
+                # Offense recovered their own fumble - show details
+                recovery_roll = getattr(outcome.result, 'fumble_recovery_roll', None)
+                fumble_spot = getattr(outcome.result, 'fumble_spot', None)
+                fumble_yards = getattr(outcome.result, 'yards', outcome.yards_gained)
+                if recovery_roll is not None:
+                    if fumble_yards and fumble_yards != 0:
+                        yard_str = f"+{fumble_yards}" if fumble_yards > 0 else str(fumble_yards)
+                        result_str = f"FUMBLE at {yard_str} - Recovered! (roll {recovery_roll})"
+                    else:
+                        result_str = f"FUMBLE at LOS - Recovered! (roll {recovery_roll})"
+                else:
+                    result_str = "FUMBLE - Recovered"
         elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
             # Check for TD before checking yards_gained (TD may have yards_gained=0)
             result_str = "TOUCHDOWN!"
