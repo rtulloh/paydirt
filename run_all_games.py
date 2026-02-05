@@ -26,6 +26,7 @@ TEAM_PATTERN = r"(\w+ '?\d+)"
 errors = []
 games_summary = []
 all_stats = []  # Store stats for each game
+clock_management_stats = []  # Track clock management usage
 
 def parse_team_stats(output, team_name):
     """Parse team statistics from output."""
@@ -200,6 +201,19 @@ for away, home in matchups:
         # Print per-game stats
         print(f"  Stats: {away_team}: {away_stats['total_yards']} yds, {away_stats['turnovers']} TO, {away_stats['penalties']} pen")
         print(f"         {home_team}: {home_stats['total_yards']} yds, {home_stats['turnovers']} TO, {home_stats['penalties']} pen")
+    
+    # Parse clock management stats
+    no_huddle_count = output.count("NO-HUDDLE offense!")
+    oob_count = output.count("OUT OF BOUNDS DESIGNATION")
+    two_min_drill_count = output.count("[Two-Minute Drill]")
+    clock_management_stats.append({
+        'game': f"{away}@{home}",
+        'no_huddle': no_huddle_count,
+        'oob': oob_count,
+        'two_min_drill': two_min_drill_count,
+    })
+    if no_huddle_count > 0 or oob_count > 0:
+        print(f"  Clock Mgmt: {no_huddle_count} no-huddle, {oob_count} OOB designations, {two_min_drill_count} 2-min drill plays")
 
 print(f"\n{'='*70}")
 print(f"  SUMMARY: {len(matchups)} games played")
@@ -264,3 +278,24 @@ if errors:
         print(f"    - {e}")
 else:
     print("\n  ALL GAMES PASSED! ✓")
+
+# Print clock management summary
+if clock_management_stats:
+    print("\n  CLOCK MANAGEMENT SUMMARY:")
+    print("  " + "-"*50)
+    total_no_huddle = sum(g['no_huddle'] for g in clock_management_stats)
+    total_oob = sum(g['oob'] for g in clock_management_stats)
+    total_two_min = sum(g['two_min_drill'] for g in clock_management_stats)
+    games_with_clock_mgmt = sum(1 for g in clock_management_stats if g['no_huddle'] > 0 or g['oob'] > 0)
+    
+    print(f"    Games with clock management: {games_with_clock_mgmt}/{len(clock_management_stats)}")
+    print(f"    Total no-huddle plays:       {total_no_huddle}")
+    print(f"    Total OOB designations:      {total_oob}")
+    print(f"    Total two-minute drill plays: {total_two_min}")
+    
+    # Show games with most clock management
+    if games_with_clock_mgmt > 0:
+        print("\n    Games with clock management activity:")
+        for g in sorted(clock_management_stats, key=lambda x: x['no_huddle'] + x['oob'], reverse=True)[:5]:
+            if g['no_huddle'] > 0 or g['oob'] > 0:
+                print(f"      {g['game']}: {g['no_huddle']} no-huddle, {g['oob']} OOB")

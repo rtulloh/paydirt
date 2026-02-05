@@ -197,8 +197,8 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         print(f"\n  Q{state.quarter} {minutes}:{seconds:02d} | {away_name} {state.away_score} - {home_name} {state.home_score}")
         print(f"  {off_team} ball at {state.field_position_str()} | {state.down}&{state.yards_to_go}")
 
-        # CPU selects plays
-        play_type = off_ai.select_offense(game)
+        # CPU selects plays with clock management
+        play_type, use_oob, use_no_huddle = off_ai.select_offense_with_clock_management(game)
         def_type = def_ai.select_defense(game)
 
         play_name = play_type.value.replace('_', ' ').title()
@@ -208,10 +208,16 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         if off_ai.last_mode:
             print(f"  [{off_ai.last_mode}]")
 
+        # Show clock management
+        if use_no_huddle:
+            print(f"  {off_team} in NO-HUDDLE offense!")
+        if use_oob:
+            print(f"  [OUT OF BOUNDS DESIGNATION]")
+
         print(f"  {off_team}: {play_name} vs {def_name}")
 
-        # Run the play
-        outcome = game.run_play(play_type, def_type)
+        # Run the play with OOB designation if applicable
+        outcome = game.run_play(play_type, def_type, out_of_bounds_designation=use_oob)
 
         # Display result
         if outcome.touchdown:
