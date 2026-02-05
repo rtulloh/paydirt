@@ -184,11 +184,13 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         def_team = state.home_chart.peripheral.short_name
 
 
-    # Field position
+    # Field position - use abbreviated team name (e.g., "SF" instead of "SF '83")
+    off_abbrev = off_team.split()[0] if off_team else off_team
+    def_abbrev = def_team.split()[0] if def_team else def_team
     if state.ball_position <= 50:
-        field_pos = f"{off_team} {state.ball_position}"
+        field_pos = f"{off_abbrev} {state.ball_position}"
     else:
-        field_pos = f"{def_team} {100 - state.ball_position}"
+        field_pos = f"{def_abbrev} {100 - state.ball_position}"
 
     # Down and distance string
     yards_to_goal = 100 - state.ball_position
@@ -207,7 +209,7 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         home_score = state.home_score
         away_to = state.away_timeouts
         home_to = state.home_timeouts
-        print(f"\nQ{state.quarter} {format_time(state.time_remaining)} | {away_name} {away_score} ({away_to}) - {home_name} {home_score} ({home_to}) | {down_str} {field_pos} | {off_team}{you_marker} ball")
+        print(f"\nQ{state.quarter} {format_time(state.time_remaining)} | {away_name} {away_score} ({away_to}) - {home_name} {home_score} ({home_to}) | {down_str} @ {field_pos} | {off_team}{you_marker} ball")
     else:
         # Verbose multi-line status
         print("\n" + "=" * 70)
