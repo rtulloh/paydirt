@@ -232,3 +232,55 @@ class TestOutOfBoundsWithoutDesignation:
         # Full 12 yards should be gained
         assert outcome.yards_gained == 12
         assert "Out of Bounds designation" not in outcome.description
+
+
+class TestSackIgnoresOutOfBoundsDesignation:
+    """Tests that sacks ignore Out of Bounds designation - QB was tackled, can't run OOB."""
+
+    def test_sack_ignores_oob_designation_clock_runs(self, game):
+        """Sack with OOB designation should still run the clock (QB can't go OOB if sacked)."""
+        game.state.ball_position = 50
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.is_home_possession = True
+        game.state.time_remaining = 1.0  # 1 minute left
+        game.state.quarter = 2  # In 2-minute drill
+        
+        with patch('paydirt.game_engine.resolve_play') as mock_resolve:
+            mock_resolve.return_value = PlayResult(
+                result_type=ResultType.SACK,
+                yards=-5,
+                description="Sacked for 5 yard loss"
+            )
+            
+            with patch('paydirt.game_engine.random.uniform', return_value=20):  # 20 seconds
+                outcome = game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
+                                       out_of_bounds_designation=True)
+        
+        # Sack should happen
+        assert outcome.result.result_type == ResultType.SACK
+        # Clock should have run (not stopped at 1:00)
+        # With 20 seconds used, should be around 0:40
+        assert game.state.time_remaining < 1.0
+
+    def test_sack_no_oob_penalty_applied(self, game):
+        """Sack with OOB designation should NOT have 5-yard OOB penalty applied."""
+        game.state.ball_position = 50
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.resolve_play') as mock_resolve:
+            mock_resolve.return_value = PlayResult(
+                result_type=ResultType.SACK,
+                yards=-5,
+                description="Sacked for 5 yard loss"
+            )
+            
+            outcome = game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
+                                   out_of_bounds_designation=True)
+        
+        # Should be -5 yards (the sack), NOT -5 - 5 = -10
+        assert outcome.yards_gained == -5
+        # OOB penalty text should NOT be in description
+        assert "Out of Bounds designation" not in outcome.description

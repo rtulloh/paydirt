@@ -1035,9 +1035,11 @@ class PaydirtGameEngine:
             is_out_of_bounds = False  # Defense overruled
         if result.result_type == ResultType.FUMBLE:
             is_out_of_bounds = False  # Fumble negates out of bounds
+        if result.result_type == ResultType.SACK:
+            is_out_of_bounds = False  # Sacks can't go out of bounds
 
-        # Out of Bounds designation guarantees 10-second play
-        if out_of_bounds_designation:
+        # Out of Bounds designation guarantees 10-second play (but not on sacks)
+        if out_of_bounds_designation and result.result_type != ResultType.SACK:
             is_out_of_bounds = True
 
         # In Bounds designation forces clock to keep running
@@ -1410,7 +1412,9 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
         if result.result_type == ResultType.FUMBLE:
             is_out_of_bounds = False
-        if out_of_bounds_designation:
+        if result.result_type == ResultType.SACK:
+            is_out_of_bounds = False  # Sacks can't go out of bounds
+        if out_of_bounds_designation and result.result_type != ResultType.SACK:
             is_out_of_bounds = True
         if in_bounds_designation:
             is_out_of_bounds = False
