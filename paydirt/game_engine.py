@@ -2970,7 +2970,12 @@ class PaydirtGameEngine:
 
         if self.state.time_remaining <= 0:
             self.state.time_remaining = 0
-            if self.state.quarter < 4:
+            # Don't advance quarter if untimed down is pending (defensive penalty at 0:00)
+            # Per NFL rules: No quarter may end on an accepted defensive penalty
+            if self.state.untimed_down_pending:
+                # Keep time at 0, don't advance quarter - untimed down must be played
+                pass
+            elif self.state.quarter < 4:
                 self.state.quarter += 1
                 self.state.time_remaining = 15.0
                 # Reset 2-minute warning for new half

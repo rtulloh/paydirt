@@ -2103,12 +2103,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
 
         # Check if quarter ended or overtime needed
         # But first check for untimed down (defensive penalty at 0:00)
+        is_untimed_down = False
         if game.state.time_remaining <= 0 and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
             print("  The quarter cannot end on an accepted defensive penalty.")
-            game.clear_untimed_down()
-            # Continue to run the untimed play - don't process quarter end yet
-            # The play will be run in the normal flow below
+            is_untimed_down = True
+            # Don't clear the flag yet - it prevents quarter from advancing during _use_time
+            # We'll clear it after the untimed play completes
         elif game.state.time_remaining <= 0:
             if game.state.is_overtime:
                 # End of OT period - game engine handles this
@@ -2227,6 +2228,11 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
 
         # Display result - pass offense_was_home so we show the correct team even after turnover on downs
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
+
+        # Clear untimed down flag after the untimed play completes
+        # This allows the quarter to advance on the next _use_time call
+        if is_untimed_down:
+            game.clear_untimed_down()
 
         # Check for 2-minute warning (official timeout, not charged to either team)
         if not two_min_warning_before and game.state.two_minute_warning_called:

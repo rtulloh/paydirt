@@ -325,3 +325,32 @@ class TestUntimedDown:
         
         # Even if a penalty occurs, no untimed down if time remains
         assert game.state.untimed_down_pending is False
+    
+    def test_quarter_does_not_advance_with_untimed_down_pending(self, game):
+        """Quarter should not advance when untimed_down_pending is True."""
+        game.state.quarter = 2
+        game.state.time_remaining = 0.1  # Small amount of time
+        game.state.untimed_down_pending = True
+        
+        # Simulate time running out via _use_time
+        game._use_time(10)  # Use 10 seconds, which exceeds remaining time
+        
+        # Quarter should NOT advance because untimed_down_pending is True
+        assert game.state.quarter == 2
+        assert game.state.time_remaining == 0
+    
+    def test_quarter_advances_after_untimed_down_cleared(self, game):
+        """Quarter should advance after untimed_down is cleared."""
+        game.state.quarter = 2
+        game.state.time_remaining = 0
+        game.state.untimed_down_pending = True
+        
+        # Clear the untimed down flag (simulating after the untimed play)
+        game.clear_untimed_down()
+        
+        # Now use time again - quarter should advance
+        game._use_time(30)
+        
+        # Quarter should now advance to 3
+        assert game.state.quarter == 3
+        assert game.state.time_remaining == 15.0  # Reset for new quarter
