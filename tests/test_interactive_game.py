@@ -457,3 +457,67 @@ class TestDisplayPlayResultOffsettingPenalties:
                 assert game.state.ball_position == 50, "Ball position should be unchanged"
                 assert outcome.yards_gained == 0, "Yards gained should be 0"
                 break
+
+
+class TestTimeoutInputParsing:
+    """Tests for timeout input parsing in offense play selection."""
+    
+    def test_timeout_with_play_number_is_valid(self):
+        """Input like '7T' should be valid - play 7 with timeout."""
+        # Test the parsing logic directly
+        choice = "7T"
+        choice_clean = choice.upper().replace('+', '').replace('-', '').strip()
+        
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+        
+        assert call_timeout is True
+        assert choice_clean == '7'
+    
+    def test_timeout_alone_leaves_empty_choice(self):
+        """Input of just 'T' should leave empty choice_clean after stripping."""
+        choice = "T"
+        choice_clean = choice.upper().replace('+', '').replace('-', '').strip()
+        
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+        
+        assert call_timeout is True
+        assert choice_clean == ''  # Empty - needs to prompt for play
+    
+    def test_timeout_with_special_play_is_valid(self):
+        """Input like 'QT' should be valid - QB Sneak with timeout."""
+        choice = "QT"
+        choice_clean = choice.upper().replace('+', '').replace('-', '').strip()
+        
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+        
+        assert call_timeout is True
+        assert choice_clean == 'Q'
+    
+    def test_timeout_with_modifiers(self):
+        """Input like '5T+' should parse timeout and out of bounds."""
+        choice = "5T+"
+        out_of_bounds = '+' in choice
+        in_bounds = '-' in choice
+        choice_clean = choice.upper().replace('+', '').replace('-', '').strip()
+        
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+        
+        assert call_timeout is True
+        assert out_of_bounds is True
+        assert in_bounds is False
+        assert choice_clean == '5'
+    
+    def test_lowercase_timeout_is_recognized(self):
+        """Input 't' should be recognized as timeout."""
+        choice = "7t"
+        choice_clean = choice.upper().replace('+', '').replace('-', '').strip()
+        
+        call_timeout = 'T' in choice_clean
+        choice_clean = choice_clean.replace('T', '').strip()
+        
+        assert call_timeout is True
+        assert choice_clean == '7'

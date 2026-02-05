@@ -462,7 +462,11 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
 
         if call_timeout:
             if state.offense_timeouts <= 0:
-                print("  No timeouts!")
+                print("  No timeouts remaining!")
+                continue
+            # If user entered just 'T' without a play, prompt for play
+            if not choice_clean:
+                print("  *** TIMEOUT - Now select your play (e.g., 7T for Med Pass + Timeout) ***")
                 continue
 
         # Handle choices
@@ -743,6 +747,10 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
         if call_timeout:
             if state.offense_timeouts <= 0:
                 print("  No timeouts remaining!")
+                continue
+            # If user entered just 'T' without a play, prompt for play
+            if not choice_clean:
+                print("  *** TIMEOUT - Now select your play (e.g., 7T for Med Pass + Timeout) ***")
                 continue
             print("  *** TIMEOUT WILL BE CALLED AFTER THIS PLAY ***")
 
