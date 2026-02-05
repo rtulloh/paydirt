@@ -2935,6 +2935,39 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             if game.state.use_timeout(human_is_home):
                 _apply_timeout(game, time_before_play, quarter_before_play)
 
+        # Handle field goal made - kickoff after score
+        if outcome.field_goal_made:
+            print(f"  Score: {game.get_score_str()}")
+
+            # Kickoff after field goal
+            kicking_home = game.state.is_home_possession
+            kicking_team = home_chart.peripheral.short_name if kicking_home else away_chart.peripheral.short_name
+
+            is_human_kicking = (kicking_home == human_is_home)
+            onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
+
+            if onside:
+                print(f"\n  {kicking_team} attempts an ONSIDE KICK!")
+                outcome = game.onside_kick(kicking_home=kicking_home)
+            else:
+                print(f"\n  {kicking_team} kicks off...")
+                outcome = game.kickoff(kicking_home=kicking_home)
+            print(f"  {outcome.description}")
+            continue
+
+        # Handle safety - free kick after score
+        if outcome.safety:
+            print(f"  Score: {game.get_score_str()}")
+
+            # Free kick after safety
+            kicking_home = game.state.is_home_possession
+            kicking_team = home_chart.peripheral.short_name if kicking_home else away_chart.peripheral.short_name
+
+            print(f"\n  {kicking_team} free kick after safety...")
+            outcome = game.safety_free_kick(use_punt=False)
+            print(f"  {outcome.description}")
+            continue
+
         # Handle scoring plays (TD, FG, safety) - simplified for resume
         if outcome.touchdown:
             human_scored = is_human_offense
