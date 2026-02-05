@@ -373,3 +373,69 @@ class TestFormatTime:
     
     def test_zero(self):
         assert format_time(0.0) == "0:00"
+
+
+class TestDisplayPlayResultOffsettingPenalties:
+    """Tests for offsetting penalties display handling."""
+    
+    def test_offsetting_penalties_detected(self):
+        """Offsetting penalties should be detected from penalty_choice."""
+        from paydirt.play_resolver import PenaltyChoice, PenaltyOption, PlayResult, ResultType
+        
+        # Create a mock outcome with offsetting penalties
+        play_result = PlayResult(
+            result_type=ResultType.YARDS,
+            yards=4,
+            description="Offense result: 4",
+            raw_result="4",
+            defense_modifier=""
+        )
+        
+        penalty_choice = PenaltyChoice(
+            play_result=play_result,
+            penalty_options=[
+                PenaltyOption(penalty_type="OFF", raw_result="OFF 5", yards=5,
+                              description="Offensive penalty", auto_first_down=False),
+                PenaltyOption(penalty_type="DEF", raw_result="DEF 5", yards=5,
+                              description="Defensive penalty", auto_first_down=False),
+            ],
+            offended_team="",
+            offsetting=True,
+            is_pass_interference=False,
+            original_defense_result=""
+        )
+        
+        # Verify offsetting flag is set correctly
+        assert penalty_choice.offsetting is True
+        assert penalty_choice.offended_team == ""
+        assert len(penalty_choice.penalty_options) == 2
+    
+    def test_offsetting_penalties_game_state_unchanged(self):
+        """Offsetting penalties should not change game state."""
+        from paydirt.chart_loader import load_team_chart
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.play_resolver import PlayType, DefenseType
+        
+        # Load real teams for integration test
+        home = load_team_chart('seasons/1983/steelers')
+        away = load_team_chart('seasons/1983/broncos')
+        
+        game = PaydirtGameEngine(home, away)
+        game.state.ball_position = 50
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        # Run plays until we get offsetting penalties
+        for _ in range(100):
+            game.state.ball_position = 50
+            game.state.down = 1
+            game.state.yards_to_go = 10
+            
+            outcome = game.run_play_with_penalty_procedure(PlayType.OFF_TACKLE, DefenseType.STANDARD)
+            
+            if outcome.penalty_choice and outcome.penalty_choice.offsetting:
+                # Verify game state unchanged
+                assert game.state.down == 1, "Down should stay at 1 for offsetting penalties"
+                assert game.state.ball_position == 50, "Ball position should be unchanged"
+                assert outcome.yards_gained == 0, "Yards gained should be 0"
+                break

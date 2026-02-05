@@ -1366,6 +1366,12 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         result_str = ""
         special_marker = ""
 
+        # Check for offsetting penalties first (special case)
+        if outcome.penalty_choice and outcome.penalty_choice.offsetting:
+            print(f"► {play_name.upper()}: OFFSETTING PENALTIES - Down replayed")
+            print("  (Penalties offset, no change in field position)")
+            return
+
         if outcome.result.result_type == ResultType.INCOMPLETE:
             result_str = "Incomplete"
         elif outcome.result.result_type == ResultType.INTERCEPTION:
