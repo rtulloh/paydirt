@@ -282,3 +282,75 @@ def parse_field_position(field_str: str, off_team: str = None) -> int:
     # Could be team-specific like "GB 35" - would need team context
     # For now, return 50 as fallback
     return 50
+
+
+def clamp_ball_position(position: int) -> int:
+    """
+    Clamp ball position to valid field range (1-99).
+    
+    The ball cannot be at position 0 (own end zone - would be safety/touchback)
+    or position 100 (opponent's end zone - would be touchdown).
+    
+    Args:
+        position: Raw ball position that may be out of bounds
+        
+    Returns:
+        Position clamped to range [1, 99]
+        
+    Examples:
+        >>> clamp_ball_position(50)
+        50
+        >>> clamp_ball_position(0)
+        1
+        >>> clamp_ball_position(100)
+        99
+        >>> clamp_ball_position(-5)
+        1
+        >>> clamp_ball_position(105)
+        99
+    """
+    return max(1, min(99, position))
+
+
+def yards_to_goal(ball_position: int) -> int:
+    """
+    Calculate yards remaining to opponent's goal line.
+    
+    Args:
+        ball_position: Current ball position (1-99, yards from own goal)
+        
+    Returns:
+        Yards to opponent's goal line
+        
+    Examples:
+        >>> yards_to_goal(20)
+        80
+        >>> yards_to_goal(80)
+        20
+        >>> yards_to_goal(50)
+        50
+    """
+    return 100 - ball_position
+
+
+def fg_distance(ball_position: int) -> int:
+    """
+    Calculate field goal distance from current ball position.
+    
+    FG distance = yards to goal + 17 (10 yard end zone + 7 yard snap/hold)
+    
+    Args:
+        ball_position: Current ball position (1-99, yards from own goal)
+        
+    Returns:
+        Field goal distance in yards
+        
+    Examples:
+        >>> fg_distance(80)
+        37
+        >>> fg_distance(50)
+        67
+        >>> fg_distance(97)
+        20
+    """
+    return yards_to_goal(ball_position) + 17

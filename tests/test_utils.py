@@ -4,7 +4,8 @@ Tests for shared utility functions.
 from paydirt.utils import (
     ordinal_suffix, ordinal, format_down_and_distance, format_time,
     format_field_position, format_field_position_with_team, parse_field_position,
-    format_dice_roll, format_play_dice_line
+    format_dice_roll, format_play_dice_line,
+    clamp_ball_position, yards_to_goal, fg_distance
 )
 
 
@@ -206,3 +207,65 @@ class TestFormatPlayDiceLine:
                                        off_dice_desc="B2+W5+W3=28", 
                                        def_dice_desc="R1+G2=12")
         assert result == '(O:B2+W5+W3=28→"+5" | D:R1+G2=12→"A")'
+
+
+class TestClampBallPosition:
+    """Tests for clamp_ball_position function."""
+    
+    def test_valid_position_unchanged(self):
+        assert clamp_ball_position(50) == 50
+        assert clamp_ball_position(1) == 1
+        assert clamp_ball_position(99) == 99
+    
+    def test_zero_clamped_to_one(self):
+        assert clamp_ball_position(0) == 1
+    
+    def test_hundred_clamped_to_99(self):
+        assert clamp_ball_position(100) == 99
+    
+    def test_negative_clamped_to_one(self):
+        assert clamp_ball_position(-5) == 1
+        assert clamp_ball_position(-100) == 1
+    
+    def test_over_hundred_clamped_to_99(self):
+        assert clamp_ball_position(105) == 99
+        assert clamp_ball_position(200) == 99
+
+
+class TestYardsToGoal:
+    """Tests for yards_to_goal function."""
+    
+    def test_own_20(self):
+        assert yards_to_goal(20) == 80
+    
+    def test_opponent_20(self):
+        assert yards_to_goal(80) == 20
+    
+    def test_midfield(self):
+        assert yards_to_goal(50) == 50
+    
+    def test_goal_line(self):
+        assert yards_to_goal(99) == 1
+    
+    def test_own_1(self):
+        assert yards_to_goal(1) == 99
+
+
+class TestFgDistance:
+    """Tests for fg_distance function."""
+    
+    def test_opponent_20(self):
+        # At opponent's 20 (position 80), FG is 20 + 17 = 37 yards
+        assert fg_distance(80) == 37
+    
+    def test_midfield(self):
+        # At midfield (position 50), FG is 50 + 17 = 67 yards
+        assert fg_distance(50) == 67
+    
+    def test_opponent_3(self):
+        # At opponent's 3 (position 97), FG is 3 + 17 = 20 yards
+        assert fg_distance(97) == 20
+    
+    def test_own_20(self):
+        # At own 20 (position 20), FG is 80 + 17 = 97 yards (unrealistic but correct math)
+        assert fg_distance(20) == 97
