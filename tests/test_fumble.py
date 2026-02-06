@@ -870,8 +870,8 @@ class TestFumbleFieldPositionDisplay:
         
         assert fumble_pos_str == "opponent's 28"
 
-    def test_fumble_at_midfield_shows_own_50(self):
-        """Fumble at position 50 (midfield) should display as 'own 50'."""
+    def test_fumble_at_midfield_shows_midfield(self):
+        """Fumble at position 50 (midfield) should display as 'midfield'."""
         from paydirt.play_events import PlayTransaction, EventType, PlayEvent
         
         txn = PlayTransaction()
@@ -886,9 +886,11 @@ class TestFumbleFieldPositionDisplay:
         fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
         fumble_spot = fumble_event.spot
         
-        if fumble_spot <= 50:
+        if fumble_spot == 50:
+            fumble_pos_str = "midfield"
+        elif fumble_spot < 50:
             fumble_pos_str = f"own {fumble_spot}"
         else:
             fumble_pos_str = f"opponent's {100 - fumble_spot}"
         
-        assert fumble_pos_str == "own 50"
+        assert fumble_pos_str == "midfield"

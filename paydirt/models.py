@@ -160,7 +160,9 @@ class GameState:
 
     def get_field_position_description(self) -> str:
         """Get a human-readable description of field position."""
-        if self.ball_position <= 50:
+        if self.ball_position == 50:
+            return "midfield"
+        elif self.ball_position < 50:
             return f"own {self.ball_position}"
         else:
             return f"opponent's {100 - self.ball_position}"

@@ -188,7 +188,9 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
     # Field position - use abbreviated team name (e.g., "SF" instead of "SF '83")
     off_abbrev = off_team.split()[0] if off_team else off_team
     def_abbrev = def_team.split()[0] if def_team else def_team
-    if state.ball_position <= 50:
+    if state.ball_position == 50:
+        field_pos = "50"
+    elif state.ball_position < 50:
         field_pos = f"{off_abbrev} {state.ball_position}"
     else:
         field_pos = f"{def_abbrev} {100 - state.ball_position}"
@@ -1503,7 +1505,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
                 fumble_spot = fumble_event.spot
                 # Format fumble spot as field position (from offense's perspective)
-                if fumble_spot <= 50:
+                if fumble_spot == 50:
+                    fumble_pos_str = "midfield"
+                elif fumble_spot < 50:
                     fumble_pos_str = f"own {fumble_spot}"
                 else:
                     fumble_pos_str = f"opponent's {100 - fumble_spot}"
@@ -1722,7 +1726,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
 
         # Convert raw int_spot to proper field position string
         # int_spot is from offense's perspective (yards from their own goal)
-        if int_spot <= 50:
+        if int_spot == 50:
+            int_pos_str = "midfield"
+        elif int_spot < 50:
             int_pos_str = f"{off_team} {int_spot}"
         else:
             int_pos_str = f"{def_team} {100 - int_spot}"
@@ -1741,7 +1747,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
 
         # Convert raw fumble_spot to proper field position string
         # fumble_spot is from offense's perspective (yards from their own goal)
-        if fumble_spot <= 50:
+        if fumble_spot == 50:
+            fumble_pos_str = "midfield"
+        elif fumble_spot < 50:
             fumble_pos_str = f"{off_team} {fumble_spot}"
         else:
             fumble_pos_str = f"{def_team} {100 - fumble_spot}"
@@ -1974,13 +1982,17 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             elif play_result.turnover:
                 play_outcome_str = "TURNOVER"
                 play_new_pos = max(1, min(99, play_new_pos))
-                if play_new_pos <= 50:
+                if play_new_pos == 50:
+                    play_field_str = "midfield"
+                elif play_new_pos < 50:
                     play_field_str = f"own {play_new_pos}"
                 else:
                     play_field_str = f"opp {100 - play_new_pos}"
             else:
                 play_new_pos = max(1, min(99, play_new_pos))
-                if play_new_pos <= 50:
+                if play_new_pos == 50:
+                    play_field_str = "midfield"
+                elif play_new_pos < 50:
                     play_field_str = f"own {play_new_pos}"
                 else:
                     play_field_str = f"opp {100 - play_new_pos}"
@@ -2034,7 +2046,9 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 pen_new_pos = game.state.ball_position - adjusted_yards
             pen_new_pos = max(1, min(99, pen_new_pos))
 
-            if pen_new_pos <= 50:
+            if pen_new_pos == 50:
+                pen_field_str = "midfield"
+            elif pen_new_pos < 50:
                 pen_field_str = f"own {pen_new_pos}"
             else:
                 pen_field_str = f"opp {100 - pen_new_pos}"
