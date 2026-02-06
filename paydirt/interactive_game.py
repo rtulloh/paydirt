@@ -1449,6 +1449,17 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             else:
                 result_str = "No gain"
 
+            # Detect turnover on downs (4th down failure)
+            is_turnover_on_downs = (
+                outcome.down_before == 4 and
+                not txn.first_down and
+                not txn.turnover and
+                not txn.touchdown and
+                not txn.safety
+            )
+            if is_turnover_on_downs:
+                special_marker = " ★ TURNOVER ON DOWNS!"
+
             # Generate commentary
             is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
             skip_commentary = (txn.has_event_type(EventType.FUMBLE) and not txn.turnover)
@@ -1547,6 +1558,14 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
 
             def_row = def_match.group(3) if def_match else "?"
             print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
+
+            # Announce turnover on downs with expressive commentary and possession change
+            if is_turnover_on_downs:
+                print()
+                print("  " + "=" * 50)
+                print("  *** TURNOVER ON DOWNS! ***")
+                print(f"  The defense holds! {def_team} takes over!")
+                print("  " + "=" * 50)
             return
 
         # Fallback to legacy display if no transaction
@@ -1618,6 +1637,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         else:
             result_str = "No gain"
 
+        # Detect turnover on downs (4th down failure) - for legacy path
+        is_turnover_on_downs = (
+            outcome.down_before == 4 and
+            not outcome.first_down and
+            not outcome.turnover and
+            not outcome.touchdown and
+            not outcome.safety
+        )
+
         # Don't overwrite special turnover TD markers (PICK SIX, SCOOP AND SCORE)
         turnover_td_markers = [" ★ PICK SIX!", " ★ SCOOP AND SCORE!"]
         if outcome.touchdown and special_marker not in turnover_td_markers and special_marker != " ★ TOUCHDOWN!":
@@ -1626,6 +1654,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             special_marker = " FIRST DOWN!"
         elif outcome.safety:
             special_marker = " ★ SAFETY!"
+        elif is_turnover_on_downs:
+            special_marker = " ★ TURNOVER ON DOWNS!"
 
         # Generate commentary
         is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
@@ -1673,6 +1703,14 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 else:
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\""
         print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
+
+        # Announce turnover on downs with expressive commentary and possession change
+        if is_turnover_on_downs:
+            print()
+            print("  " + "=" * 50)
+            print("  *** TURNOVER ON DOWNS! ***")
+            print(f"  The defense holds! {def_team} takes over!")
+            print("  " + "=" * 50)
         return
 
     # Verbose mode display
@@ -1800,6 +1838,21 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print(f"  >>> TOUCHDOWN {off_team}!")
     if outcome.safety:
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
+
+    # Detect and announce turnover on downs (4th down failure)
+    is_turnover_on_downs = (
+        outcome.down_before == 4 and
+        not outcome.first_down and
+        not outcome.turnover and
+        not outcome.touchdown and
+        not outcome.safety
+    )
+    if is_turnover_on_downs:
+        print()
+        print("  " + "=" * 50)
+        print("  *** TURNOVER ON DOWNS! ***")
+        print(f"  The defense holds! {def_team} takes over!")
+        print("  " + "=" * 50)
 
 
 def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_before_play: int,
