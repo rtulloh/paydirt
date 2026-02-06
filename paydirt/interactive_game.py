@@ -19,8 +19,9 @@ from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, co
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import (
-    ordinal_suffix, format_field_position, format_field_position_with_team,
-    format_dice_roll, format_play_dice_line
+    ordinal_suffix, ordinal, format_field_position, format_field_position_with_team,
+    format_dice_roll, format_play_dice_line,
+    clamp_ball_position, yards_to_goal, fg_distance
 )
 from .play_events import EventType
 from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
@@ -192,8 +193,8 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
     field_pos = format_field_position_with_team(state.ball_position, off_team, def_team)
 
     # Down and distance string
-    yards_to_goal = 100 - state.ball_position
-    if yards_to_goal <= 10 and state.yards_to_go >= yards_to_goal:
+    ytg = yards_to_goal(state.ball_position)
+    if ytg <= 10 and state.yards_to_go >= ytg:
         down_str = f"{state.down}{_ordinal(state.down)} & Goal"
     else:
         down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
@@ -432,8 +433,8 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
 
     # Compact prompt
     if state.down == 4:
-        fg_distance = 100 - state.ball_position + 17
-        print(f"  *** 4TH DOWN *** P=Punt, F=FG({fg_distance}yd), or go for it (1-9)")
+        fg_dist = fg_distance(state.ball_position)
+        print(f"  *** 4TH DOWN *** P=Punt, F=FG({fg_dist}yd), or go for it (1-9)")
         print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
     else:
         print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
@@ -521,13 +522,13 @@ def _show_full_offense_menu(state, no_huddle: bool):
     print("  " + "-" * 40)
 
     if state.down == 4:
-        fg_distance = 100 - state.ball_position + 17
+        fg_dist = fg_distance(state.ball_position)
         print("\n  *** 4TH DOWN DECISION ***")
         print("    [P] PUNT              - Kick the ball away")
         if state.ball_position >= 55:
-            print(f"    [F] FIELD GOAL        - {fg_distance}-yard attempt")
+            print(f"    [F] FIELD GOAL        - {fg_dist}-yard attempt")
         else:
-            print(f"    [F] Field Goal        - {fg_distance}-yard attempt (Out of range)")
+            print(f"    [F] Field Goal        - {fg_dist}-yard attempt (Out of range)")
         print(f"    [G] GO FOR IT         - Run a play (4th and {state.yards_to_go})")
         print()
 
@@ -548,9 +549,9 @@ def _show_full_offense_menu(state, no_huddle: bool):
     print(f"    [K] {'QB Kneel':15} - Run out clock (-2 yards, 40 sec)")
 
     if state.down < 4:
-        fg_distance = 100 - state.ball_position + 17
+        fg_dist = fg_distance(state.ball_position)
         print("\n  SPECIAL TEAMS (early kick options):")
-        print(f"    [F] {'Field Goal':15} - {fg_distance}-yard attempt")
+        print(f"    [F] {'Field Goal':15} - {fg_dist}-yard attempt")
         print(f"    [P] {'Punt':15} - Kick the ball away")
 
     print("\n  OPTIONS:")
@@ -595,24 +596,24 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
         print("  " + "-" * 40)
 
         # Calculate field goal distance
-        fg_distance = 100 - state.ball_position + 17  # End zone + holder position
+        fg_dist = fg_distance(state.ball_position)
 
         # Punt option
         print("    [P] PUNT              - Kick the ball away")
 
         # Field goal option with distance and recommendation
         if state.ball_position >= 55:  # Roughly FG range (45 yards or less)
-            if fg_distance <= 35:
+            if fg_dist <= 35:
                 fg_note = "(Good range)"
-            elif fg_distance <= 45:
+            elif fg_dist <= 45:
                 fg_note = "(Makeable)"
-            elif fg_distance <= 55:
+            elif fg_dist <= 55:
                 fg_note = "(Long - risky)"
             else:
                 fg_note = "(Very long - low %)"
-            print(f"    [F] FIELD GOAL        - {fg_distance}-yard attempt {fg_note}")
+            print(f"    [F] FIELD GOAL        - {fg_dist}-yard attempt {fg_note}")
         else:
-            print(f"    [F] Field Goal        - {fg_distance}-yard attempt (Out of range)")
+            print(f"    [F] Field Goal        - {fg_dist}-yard attempt (Out of range)")
 
         # Go for it option
         print(f"    [G] GO FOR IT         - Run a play (4th and {state.yards_to_go})")
@@ -621,7 +622,7 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
         if state.ball_position <= 40:
             default_4th = 'P'
             default_4th_name = 'Punt'
-        elif fg_distance <= 45:
+        elif fg_dist <= 45:
             default_4th = 'F'
             default_4th_name = 'Field Goal'
         else:
@@ -679,9 +680,9 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
 
     # Show FG/Punt options on non-4th down (for strategic kicks or time pressure)
     if state.down < 4:
-        fg_distance = 100 - state.ball_position + 17
+        fg_dist = fg_distance(state.ball_position)
         print("\n  SPECIAL TEAMS (early kick options):")
-        print(f"    [F] {'Field Goal':15} - {fg_distance}-yard attempt")
+        print(f"    [F] {'Field Goal':15} - {fg_dist}-yard attempt")
         print(f"    [P] {'Punt':15} - Kick the ball away")
 
     # Show No Huddle toggle option and timeout
@@ -1982,10 +1983,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 play_field_str = "end zone"
             elif play_result.turnover:
                 play_outcome_str = "TURNOVER"
-                play_new_pos = max(1, min(99, play_new_pos))
+                play_new_pos = clamp_ball_position(play_new_pos)
                 play_field_str = format_field_position(play_new_pos, style="short")
             else:
-                play_new_pos = max(1, min(99, play_new_pos))
+                play_new_pos = clamp_ball_position(play_new_pos)
                 play_field_str = format_field_position(play_new_pos, style="short")
 
                 if yards_gained >= game.state.yards_to_go:
@@ -2035,7 +2036,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             else:
                 # Offensive penalty - offense loses yards
                 pen_new_pos = game.state.ball_position - adjusted_yards
-            pen_new_pos = max(1, min(99, pen_new_pos))
+            pen_new_pos = clamp_ball_position(pen_new_pos)
 
             pen_field_str = format_field_position(pen_new_pos, style="short")
 
