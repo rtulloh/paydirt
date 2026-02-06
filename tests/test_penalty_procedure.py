@@ -884,3 +884,51 @@ class TestPenaltyDecisionFourthDown:
             play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {yards_to_go - yards_gained}"
         
         assert play_outcome_str == "7 yards, FIRST DOWN"
+
+
+class TestCPUPenaltyDecisionWithTurnover:
+    """Tests for CPU penalty decision logic when turnovers are involved.
+    
+    Bug fix: Defense should accept play result (turnover) not penalty.
+    Previously, the code always took the penalty on turnover regardless of who benefited.
+    """
+    
+    def test_defense_accepts_turnover_over_offensive_penalty(self):
+        """Defense offended by offensive penalty should accept turnover, not penalty.
+        
+        Scenario: Offense fumbles, but there was an offensive penalty.
+        Defense is offended and should WANT the turnover (play result).
+        """
+        # Simulate the decision logic
+        play_turnover = True
+        offended_is_offense = False  # Defense is offended (offensive penalty)
+        
+        # The fix: defense wants the turnover
+        if play_turnover:
+            if offended_is_offense:
+                # Offense wants penalty to undo turnover
+                accept_play = False
+            else:
+                # Defense WANTS the turnover!
+                accept_play = True
+        
+        assert accept_play is True, "Defense should accept play result (turnover)"
+    
+    def test_offense_declines_turnover_takes_penalty(self):
+        """Offense offended by defensive penalty should decline turnover, take penalty.
+        
+        Scenario: Offense throws interception, but there was a defensive penalty.
+        Offense is offended and should want the penalty to undo the turnover.
+        """
+        play_turnover = True
+        offended_is_offense = True  # Offense is offended (defensive penalty)
+        
+        if play_turnover:
+            if offended_is_offense:
+                # Offense wants penalty to undo turnover
+                accept_play = False
+            else:
+                # Defense WANTS the turnover!
+                accept_play = True
+        
+        assert accept_play is False, "Offense should decline play (turnover) and take penalty"

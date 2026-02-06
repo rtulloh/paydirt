@@ -2109,8 +2109,13 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             # Always accept TD
             accept_play = True
         elif play_turnover:
-            # Always decline turnover, take penalty
-            accept_play = False
+            # Turnover occurred - who benefits?
+            if offended_is_offense:
+                # Offense is offended (defensive penalty) - offense wants penalty to undo turnover
+                accept_play = False
+            else:
+                # Defense is offended (offensive penalty) - defense WANTS the turnover!
+                accept_play = True
         elif offended_is_offense:
             # Offense is offended (defensive penalty)
             # Accept penalty if it gives more yards or first down
