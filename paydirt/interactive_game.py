@@ -1872,7 +1872,35 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
     print("  *** PENALTY ON THE PLAY ***")
     print("=" * 70)
 
-    # Show reroll log if there were rerolls
+    # Show dice rolls in standard O:/D: format
+    play_result = penalty_choice.play_result
+    off_roll_str = ""
+    def_roll_str = ""
+    
+    # Try to extract dice descriptions from play_result.description
+    # Format is: "... [Off: B2+W5+W3=28, Def: R1+G2=12]"
+    desc = play_result.description if play_result else ""
+    off_dice_match = re.search(r'\[Off: (B\d\+W\d\+W\d=\d+)', desc)
+    def_dice_match = re.search(r'Def: (R\d\+G\d=\d+)\]', desc)
+    
+    # Build offense roll string
+    if off_dice_match and play_result:
+        off_roll_str = f"O:{off_dice_match.group(1)}→\"{play_result.raw_result}\""
+    elif play_result and play_result.dice_roll:
+        off_roll_str = f"O:{play_result.dice_roll}→\"{play_result.raw_result}\""
+    
+    # Build defense roll string
+    def_result = penalty_choice.original_defense_result or (play_result.defense_modifier if play_result else "")
+    if def_dice_match and def_result:
+        def_roll_str = f"D:{def_dice_match.group(1)}→\"{def_result}\""
+    elif def_result:
+        def_roll_str = f"D:\"{def_result}\""
+    
+    if off_roll_str or def_roll_str:
+        roll_parts = [p for p in [off_roll_str, def_roll_str] if p]
+        print(f"\n  ({' | '.join(roll_parts)})")
+
+    # Show reroll log if there were rerolls (for detailed penalty tracking)
     if penalty_choice.reroll_log:
         print("\n  Penalty Reroll Log:")
         for log_entry in penalty_choice.reroll_log:
