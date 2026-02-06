@@ -131,7 +131,7 @@ class TestFormatFieldPositionWithTeam:
         assert format_field_position_with_team(65, "GB", "CHI") == "CHI 35"
     
     def test_midfield(self):
-        assert format_field_position_with_team(50, "GB", "CHI") == "50"
+        assert format_field_position_with_team(50, "GB", "CHI") == "midfield"
     
     def test_strips_year_suffix(self):
         """Should strip year suffix like '83 from team names."""

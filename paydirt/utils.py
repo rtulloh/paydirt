@@ -141,14 +141,14 @@ def format_field_position_with_team(position: int, off_team: str, def_team: str)
         >>> format_field_position_with_team(65, "GB", "CHI")
         'CHI 35'
         >>> format_field_position_with_team(50, "GB", "CHI")
-        '50'
+        'midfield'
     """
     # Strip year suffix for cleaner display (e.g., "SF '83" -> "SF")
     off_abbrev = off_team.split()[0] if off_team else off_team
     def_abbrev = def_team.split()[0] if def_team else def_team
     
     if position == 50:
-        return "50"
+        return "midfield"
     elif position < 50:
         return f"{off_abbrev} {position}"
     else:
