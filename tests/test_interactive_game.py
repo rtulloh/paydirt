@@ -11,8 +11,8 @@ from paydirt.interactive_game import (
     computer_select_offense,
     computer_select_defense,
     _apply_timeout,
-    format_time,
 )
+from paydirt.utils import format_time
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart

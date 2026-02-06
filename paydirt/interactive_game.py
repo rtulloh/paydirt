@@ -18,7 +18,7 @@ from .priority_chart import categorize_result, apply_priority_chart, ResultCateg
 from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
-from .utils import ordinal_suffix, format_time
+from .utils import ordinal_suffix, format_field_position, format_field_position_with_team
 from .play_events import EventType
 from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
 
@@ -186,14 +186,7 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
 
 
     # Field position - use abbreviated team name (e.g., "SF" instead of "SF '83")
-    off_abbrev = off_team.split()[0] if off_team else off_team
-    def_abbrev = def_team.split()[0] if def_team else def_team
-    if state.ball_position == 50:
-        field_pos = "50"
-    elif state.ball_position < 50:
-        field_pos = f"{off_abbrev} {state.ball_position}"
-    else:
-        field_pos = f"{def_abbrev} {100 - state.ball_position}"
+    field_pos = format_field_position_with_team(state.ball_position, off_team, def_team)
 
     # Down and distance string
     yards_to_goal = 100 - state.ball_position
@@ -1488,29 +1481,22 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                     ret_event = ret_events[0]
                     int_spot = int_event.spot
                     ret_yards = ret_event.yards
+                    int_pos_str = format_field_position(int_spot)
                     # Describe the return action
                     if txn.touchdown:
-                        print(f"  → Intercepted at the {int_spot}, returned {ret_yards} yards for a TOUCHDOWN!")
+                        print(f"  → Intercepted at the {int_pos_str}, returned {ret_yards} yards for a TOUCHDOWN!")
                     elif ret_yards > 0:
                         final_spot = int_spot + ret_yards
-                        if final_spot > 50:
-                            print(f"  → Intercepted at the {int_spot}, returned {ret_yards} yards to the opponent's {100 - final_spot}")
-                        else:
-                            print(f"  → Intercepted at the {int_spot}, returned {ret_yards} yards to their own {final_spot}")
+                        final_pos_str = format_field_position(final_spot)
+                        print(f"  → Intercepted at the {int_pos_str}, returned {ret_yards} yards to the {final_pos_str}")
                     elif ret_yards < 0:
-                        print(f"  → Intercepted at the {int_spot}, tackled {-ret_yards} yards behind the catch")
+                        print(f"  → Intercepted at the {int_pos_str}, tackled {-ret_yards} yards behind the catch")
                     else:
-                        print(f"  → Intercepted at the {int_spot}, tackled immediately")
+                        print(f"  → Intercepted at the {int_pos_str}, tackled immediately")
             elif txn.has_event_type(EventType.FUMBLE):
                 fumble_event = txn.get_events_by_type(EventType.FUMBLE)[0]
                 fumble_spot = fumble_event.spot
-                # Format fumble spot as field position (from offense's perspective)
-                if fumble_spot == 50:
-                    fumble_pos_str = "midfield"
-                elif fumble_spot < 50:
-                    fumble_pos_str = f"own {fumble_spot}"
-                else:
-                    fumble_pos_str = f"opponent's {100 - fumble_spot}"
+                fumble_pos_str = format_field_position(fumble_spot)
                 if txn.turnover:
                     ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                     if ret_events:
@@ -1724,14 +1710,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         int_return = outcome.result.int_return_yards if hasattr(outcome.result, 'int_return_yards') else 0
         int_dice = outcome.result.int_return_dice if hasattr(outcome.result, 'int_return_dice') else 0
 
-        # Convert raw int_spot to proper field position string
-        # int_spot is from offense's perspective (yards from their own goal)
-        if int_spot == 50:
-            int_pos_str = "midfield"
-        elif int_spot < 50:
-            int_pos_str = f"{off_team} {int_spot}"
-        else:
-            int_pos_str = f"{def_team} {100 - int_spot}"
+        int_pos_str = format_field_position_with_team(int_spot, off_team, def_team)
 
         print(f"  RESULT: INTERCEPTED at the {int_pos_str} yard line!")
         print(f"  Return roll: {int_dice} -> {int_return} yard return")
@@ -1745,14 +1724,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         return_yards = outcome.result.fumble_return_yards if hasattr(outcome.result, 'fumble_return_yards') else 0
         return_dice = outcome.result.fumble_return_dice if hasattr(outcome.result, 'fumble_return_dice') else 0
 
-        # Convert raw fumble_spot to proper field position string
-        # fumble_spot is from offense's perspective (yards from their own goal)
-        if fumble_spot == 50:
-            fumble_pos_str = "midfield"
-        elif fumble_spot < 50:
-            fumble_pos_str = f"{off_team} {fumble_spot}"
-        else:
-            fumble_pos_str = f"{def_team} {100 - fumble_spot}"
+        fumble_pos_str = format_field_position_with_team(fumble_spot, off_team, def_team)
 
         print(f"  RESULT: FUMBLE at the {fumble_pos_str} yard line!")
         print(f"  Recovery roll: {recovery_roll}")
@@ -1982,20 +1954,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             elif play_result.turnover:
                 play_outcome_str = "TURNOVER"
                 play_new_pos = max(1, min(99, play_new_pos))
-                if play_new_pos == 50:
-                    play_field_str = "midfield"
-                elif play_new_pos < 50:
-                    play_field_str = f"own {play_new_pos}"
-                else:
-                    play_field_str = f"opp {100 - play_new_pos}"
+                play_field_str = format_field_position(play_new_pos, style="short")
             else:
                 play_new_pos = max(1, min(99, play_new_pos))
-                if play_new_pos == 50:
-                    play_field_str = "midfield"
-                elif play_new_pos < 50:
-                    play_field_str = f"own {play_new_pos}"
-                else:
-                    play_field_str = f"opp {100 - play_new_pos}"
+                play_field_str = format_field_position(play_new_pos, style="short")
 
                 if yards_gained >= game.state.yards_to_go:
                     play_outcome_str = f"{yards_gained} yards, FIRST DOWN"
@@ -2046,12 +2008,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 pen_new_pos = game.state.ball_position - adjusted_yards
             pen_new_pos = max(1, min(99, pen_new_pos))
 
-            if pen_new_pos == 50:
-                pen_field_str = "midfield"
-            elif pen_new_pos < 50:
-                pen_field_str = f"own {pen_new_pos}"
-            else:
-                pen_field_str = f"opp {100 - pen_new_pos}"
+            pen_field_str = format_field_position(pen_new_pos, style="short")
 
             # Determine down/distance after penalty (use adjusted_yards for half-distance)
             if opt.auto_first_down:

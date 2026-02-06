@@ -160,12 +160,8 @@ class GameState:
 
     def get_field_position_description(self) -> str:
         """Get a human-readable description of field position."""
-        if self.ball_position == 50:
-            return "midfield"
-        elif self.ball_position < 50:
-            return f"own {self.ball_position}"
-        else:
-            return f"opponent's {100 - self.ball_position}"
+        from .utils import format_field_position
+        return format_field_position(self.ball_position)
 
     def score_touchdown(self):
         """Record a touchdown for the team with possession."""

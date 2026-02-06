@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .chart_loader import TeamChart, load_team_chart
+from .utils import format_field_position
 from .play_resolver import (
     PlayType, DefenseType, PlayResult, ResultType,
     resolve_play, roll_chart_dice,
@@ -104,12 +105,7 @@ class GameState:
 
     def field_position_str(self) -> str:
         """Get human-readable field position."""
-        if self.ball_position == 50:
-            return "midfield"
-        elif self.ball_position < 50:
-            return f"own {self.ball_position}"
-        else:
-            return f"opponent's {100 - self.ball_position}"
+        return format_field_position(self.ball_position)
 
     def switch_possession(self):
         """Switch possession between teams."""
