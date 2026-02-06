@@ -160,6 +160,17 @@ class TestParseFieldPosition:
     def test_case_insensitive(self):
         assert parse_field_position("OWN 35") == 35
         assert parse_field_position("MIDFIELD") == 50
+    
+    def test_plain_number(self):
+        # Lines 277-278 - parse plain number as own territory
+        assert parse_field_position("35") == 35
+        assert parse_field_position("20") == 20
+    
+    def test_unrecognized_format_fallback(self):
+        # Lines 279-284 - unrecognized format falls back to 50
+        assert parse_field_position("GB 35") == 50  # Team-specific not supported
+        assert parse_field_position("invalid") == 50
+        assert parse_field_position("foo bar") == 50
 
 
 class TestFormatDiceRoll:
@@ -185,6 +196,14 @@ class TestFormatDiceRoll:
     
     def test_verbose_no_result(self):
         assert format_dice_roll(28, style="verbose") == "Roll: 28"
+    
+    def test_standard_no_prefix_no_result(self):
+        # Line 200 - no prefix, no result, just returns the roll as string
+        assert format_dice_roll(28) == "28"
+    
+    def test_standard_with_dice_desc_no_prefix_no_result(self):
+        # With dice_desc but no prefix or result
+        assert format_dice_roll(28, dice_desc="B2+W5+W3=28") == "B2+W5+W3=28"
 
 
 class TestFormatPlayDiceLine:

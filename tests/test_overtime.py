@@ -6,7 +6,7 @@ Tests the overtime rules by season and the game engine's overtime handling.
 import pytest
 
 from paydirt.overtime_rules import (
-    get_overtime_rules, OvertimeFormat
+    get_overtime_rules, OvertimeFormat, check_overtime_winner, OvertimeRules
 )
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
@@ -48,6 +48,109 @@ class TestOvertimeRulesByYear:
         """Years before 1974 should use 1974 rules (earliest available)."""
         rules = get_overtime_rules(1970)
         assert rules.format == OvertimeFormat.SUDDEN_DEATH
+
+
+class TestCheckOvertimeWinner:
+    """Tests for check_overtime_winner function (lines 141-164)."""
+    
+    @pytest.fixture
+    def sudden_death_rules(self):
+        """1983 sudden death rules."""
+        return get_overtime_rules(1983)
+    
+    @pytest.fixture
+    def modified_rules(self):
+        """2017 modified sudden death rules."""
+        return get_overtime_rules(2017)
+    
+    def test_still_tied_before_max_periods_returns_none(self, sudden_death_rules):
+        """When scores are tied but haven't reached max periods, game continues."""
+        # Use ot_period=0 to simulate before max periods reached
+        # (max_periods_regular=1 for 1983, so period 0 < 1)
+        result = check_overtime_winner(
+            home_score=14, away_score=14,
+            rules=sudden_death_rules,
+            is_playoff=False,
+            first_possession_team_scored=False,
+            first_possession_was_td=False,
+            ot_period=0  # Before max periods
+        )
+        assert result is None
+    
+    def test_tied_at_max_periods_regular_season_tie(self, sudden_death_rules):
+        """When tied at max periods in regular season, game ends in tie."""
+        result = check_overtime_winner(
+            home_score=14, away_score=14,
+            rules=sudden_death_rules,
+            is_playoff=False,
+            first_possession_team_scored=False,
+            first_possession_was_td=False,
+            ot_period=1  # 1983 rules have max_periods_regular=1
+        )
+        # Still tied after 1 period in regular season = tie
+        assert result == "tie"
+    
+    def test_tied_in_playoffs_continues(self, sudden_death_rules):
+        """When tied in playoffs, game continues (no tie allowed)."""
+        result = check_overtime_winner(
+            home_score=14, away_score=14,
+            rules=sudden_death_rules,
+            is_playoff=True,
+            first_possession_team_scored=False,
+            first_possession_was_td=False,
+            ot_period=1
+        )
+        # Playoffs continue until someone wins
+        assert result is None
+    
+    def test_sudden_death_home_wins(self, sudden_death_rules):
+        """In sudden death, any score wins - home ahead."""
+        result = check_overtime_winner(
+            home_score=17, away_score=14,
+            rules=sudden_death_rules,
+            is_playoff=False,
+            first_possession_team_scored=True,
+            first_possession_was_td=False,
+            ot_period=1
+        )
+        assert result == "home"
+    
+    def test_sudden_death_away_wins(self, sudden_death_rules):
+        """In sudden death, any score wins - away ahead."""
+        result = check_overtime_winner(
+            home_score=14, away_score=17,
+            rules=sudden_death_rules,
+            is_playoff=False,
+            first_possession_team_scored=True,
+            first_possession_was_td=False,
+            ot_period=1
+        )
+        assert result == "away"
+    
+    def test_modified_td_on_first_possession_wins(self, modified_rules):
+        """In modified sudden death, TD on first possession wins."""
+        result = check_overtime_winner(
+            home_score=20, away_score=14,
+            rules=modified_rules,
+            is_playoff=False,
+            first_possession_team_scored=True,
+            first_possession_was_td=True,
+            ot_period=1
+        )
+        assert result == "home"
+    
+    def test_modified_fg_allows_response_but_still_wins_if_ahead(self, modified_rules):
+        """In modified sudden death, after both possess, any lead wins."""
+        result = check_overtime_winner(
+            home_score=17, away_score=14,
+            rules=modified_rules,
+            is_playoff=False,
+            first_possession_team_scored=True,
+            first_possession_was_td=False,  # FG, not TD
+            ot_period=1
+        )
+        # After first possession FG, other team gets chance, but if still ahead, wins
+        assert result == "home"
 
 
 class TestGameEngineOvertime:
