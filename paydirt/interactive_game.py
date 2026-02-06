@@ -1957,8 +1957,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         elif current_down < 4:
             next_down = current_down + 1
             next_ytg = yards_to_go - yards_gained
-            down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-            print(f"    -> {next_down}{down_suffix[next_down]} and {next_ytg}")
+            print(f"    -> {ordinal(next_down)} and {next_ytg}")
 
     if human_decides:
         # Human makes the decision
@@ -2002,17 +2001,14 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 elif yards_gained > 0:
                     next_down = game.state.down + 1
                     next_ytg = game.state.yards_to_go - yards_gained
-                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                    play_outcome_str = f"{yards_gained} yards -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+                    play_outcome_str = f"{yards_gained} yards -> {ordinal(next_down)} and {next_ytg}"
                 elif yards_gained == 0:
                     next_down = game.state.down + 1
-                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                    play_outcome_str = f"No gain -> {next_down}{down_suffix[next_down]} and {game.state.yards_to_go}"
+                    play_outcome_str = f"No gain -> {ordinal(next_down)} and {game.state.yards_to_go}"
                 else:
                     next_down = game.state.down + 1
                     next_ytg = game.state.yards_to_go - yards_gained  # yards_gained is negative
-                    down_suffix = {1: "st", 2: "nd", 3: "rd", 4: "th"}
-                    play_outcome_str = f"Loss of {abs(yards_gained)} -> {next_down}{down_suffix[next_down]} and {next_ytg}"
+                    play_outcome_str = f"Loss of {abs(yards_gained)} -> {ordinal(next_down)} and {next_ytg}"
 
         # Option 1 is always the play result
         print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")
