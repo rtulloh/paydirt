@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
+from .utils import format_dice_roll
+
 
 class EventType(Enum):
     """Types of events that can occur during a play."""
@@ -95,17 +97,12 @@ class PlayEvent:
         return self.description
     
     def format_dice_line(self) -> str:
-        """Format the technical dice details line."""
+        """Format the technical dice details line using standardized format."""
         if self.dice_roll is None:
             return ""
         
-        parts = []
-        if self.dice_desc:
-            parts.append(self.dice_desc)
-        if self.chart_result:
-            parts.append(f'"{self.chart_result}"')
-        
-        return f"({' -> '.join(parts)})" if parts else ""
+        # Use standardized format_dice_roll helper
+        return f"({format_dice_roll(self.dice_roll, self.dice_desc, self.chart_result)})"
 
 
 @dataclass
