@@ -18,7 +18,10 @@ from .priority_chart import categorize_result, apply_priority_chart, ResultCateg
 from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
-from .utils import ordinal_suffix, format_field_position, format_field_position_with_team
+from .utils import (
+    ordinal_suffix, format_field_position, format_field_position_with_team,
+    format_dice_roll, format_play_dice_line
+)
 from .play_events import EventType
 from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
 
@@ -1249,9 +1252,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             punter_str = f" ({punter})" if punter else ""
             print(f"► PUNT{punter_str}: {outcome.description}{td_marker}")
             # Show dice roll info if available
-            dice_roll = outcome.result.dice_roll if outcome.result else "?"
-            chart_result = outcome.result.raw_result if outcome.result else "?"
-            print(f"  (Roll: {dice_roll} → \"{chart_result}\")")
+            if outcome.result:
+                print(f"  ({format_dice_roll(outcome.result.dice_roll, result=outcome.result.raw_result, style='verbose')})")
             return
 
         print("\n" + "=" * 70)
@@ -1314,7 +1316,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 print(f"► FG {statistical_distance} yards: {outcome.description}")
             else:
                 print(f"► FG {statistical_distance} yards: NO GOOD")
-            print(f"  (Roll: {dice_roll} → \"{chart_result}\" | Needed: {distance_to_goal} yds)")
+            print(f"  ({format_dice_roll(dice_roll, result=chart_result, style='verbose')} | Needed: {distance_to_goal} yds)")
             return
 
         print("\n" + "=" * 70)
@@ -1322,8 +1324,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print("=" * 70)
 
         print(f"\n  {kicker} lines up for the {statistical_distance}-yard attempt...")
-        print(f"  Dice Roll: {dice_roll}")
-        print(f"  Chart Result: {chart_result}")
+        print(f"  {format_dice_roll(dice_roll, result=chart_result, style='verbose')}")
         print(f"  Distance needed: {distance_to_goal} yards to goal line")
 
         if outcome.field_goal_made:
@@ -1349,7 +1350,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             print(f"► KICKOFF: {outcome.description}")
             # Show dice roll info if available
             if outcome.result:
-                print(f"  (Roll: {outcome.result.dice_roll} → \"{outcome.result.raw_result}\")")
+                print(f"  ({format_dice_roll(outcome.result.dice_roll, result=outcome.result.raw_result, style='verbose')})")
             return
         print("\n" + "=" * 70)
         print("  KICKOFF")
@@ -1713,7 +1714,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         int_pos_str = format_field_position_with_team(int_spot, off_team, def_team)
 
         print(f"  RESULT: INTERCEPTED at the {int_pos_str} yard line!")
-        print(f"  Return roll: {int_dice} -> {int_return} yard return")
+        print(f"  {format_dice_roll(int_dice, result=str(int_return), prefix='R')} yard return")
         if outcome.touchdown:
             print("  >>> PICK SIX! Returned for a TOUCHDOWN!")
     elif outcome.result.result_type == ResultType.FUMBLE:
@@ -1727,15 +1728,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         fumble_pos_str = format_field_position_with_team(fumble_spot, off_team, def_team)
 
         print(f"  RESULT: FUMBLE at the {fumble_pos_str} yard line!")
-        print(f"  Recovery roll: {recovery_roll}")
+        print(f"  {format_dice_roll(recovery_roll, prefix='R')}")
         if recovered:
             print("  >>> OFFENSE RECOVERS!")
             if return_yards > 0:
-                print(f"  Return: {return_yards} yards (roll: {return_dice})")
+                print(f"  Return: {format_dice_roll(return_dice, result=str(return_yards), prefix='Ret')}")
         else:
             print("  >>> DEFENSE RECOVERS - TURNOVER!")
             if return_yards > 0:
-                print(f"  Return: {return_yards} yards (roll: {return_dice})")
+                print(f"  Return: {format_dice_roll(return_dice, result=str(return_yards), prefix='Ret')}")
         if outcome.touchdown:
             print("  >>> FUMBLE RETURN TOUCHDOWN!")
     elif outcome.result.result_type == ResultType.BREAKAWAY:

@@ -3,7 +3,8 @@ Tests for shared utility functions.
 """
 from paydirt.utils import (
     ordinal_suffix, ordinal, format_down_and_distance, format_time,
-    format_field_position, format_field_position_with_team, parse_field_position
+    format_field_position, format_field_position_with_team, parse_field_position,
+    format_dice_roll, format_play_dice_line
 )
 
 
@@ -158,3 +159,50 @@ class TestParseFieldPosition:
     def test_case_insensitive(self):
         assert parse_field_position("OWN 35") == 35
         assert parse_field_position("MIDFIELD") == 50
+
+
+class TestFormatDiceRoll:
+    """Tests for format_dice_roll function."""
+    
+    def test_standard_with_prefix_and_result(self):
+        assert format_dice_roll(28, result="+5", prefix="O") == 'O:28→"+5"'
+    
+    def test_standard_with_dice_desc(self):
+        assert format_dice_roll(28, "B2+W5+W3=28", "+5", "O") == 'O:B2+W5+W3=28→"+5"'
+    
+    def test_standard_no_prefix(self):
+        assert format_dice_roll(28, result="+5") == '28→"+5"'
+    
+    def test_standard_no_result(self):
+        assert format_dice_roll(28, prefix="R") == "R:28"
+    
+    def test_verbose_style(self):
+        assert format_dice_roll(28, result="+5", style="verbose") == 'Roll: 28 → "+5"'
+    
+    def test_verbose_with_dice_desc(self):
+        assert format_dice_roll(28, "B2+W5+W3=28", "+5", style="verbose") == 'Roll: B2+W5+W3=28 → "+5"'
+    
+    def test_verbose_no_result(self):
+        assert format_dice_roll(28, style="verbose") == "Roll: 28"
+
+
+class TestFormatPlayDiceLine:
+    """Tests for format_play_dice_line function."""
+    
+    def test_basic_format(self):
+        result = format_play_dice_line(28, "+5", "12", "A")
+        assert result == '(O:28→"+5" | D:12→"A")'
+    
+    def test_with_priority(self):
+        result = format_play_dice_line(28, "+5", "12", "A", priority="O-HI")
+        assert result == '(O:28→"+5" | D:12→"A" | O-HI)'
+    
+    def test_with_extra_info(self):
+        result = format_play_dice_line(28, "F+5", "12", "A", priority="O-HI", extra_info="F@33")
+        assert result == '(O:28→"F+5" | D:12→"A" | O-HI | F@33)'
+    
+    def test_with_dice_descriptions(self):
+        result = format_play_dice_line(28, "+5", "12", "A", 
+                                       off_dice_desc="B2+W5+W3=28", 
+                                       def_dice_desc="R1+G2=12")
+        assert result == '(O:B2+W5+W3=28→"+5" | D:R1+G2=12→"A")'

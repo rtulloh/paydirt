@@ -155,6 +155,91 @@ def format_field_position_with_team(position: int, off_team: str, def_team: str)
         return f"{def_abbrev} {100 - position}"
 
 
+def format_dice_roll(roll: int, dice_desc: str = None, result: str = None, 
+                     prefix: str = "", style: str = "standard") -> str:
+    """
+    Format a dice roll for display in a standardized way.
+    
+    Args:
+        roll: The dice roll value (e.g., 28)
+        dice_desc: Optional dice description (e.g., "B2+W5+W3=28")
+        result: The chart result (e.g., "INT 13", "+5")
+        prefix: Optional prefix like "O" for offense, "D" for defense, "R" for recovery
+        style: "standard" for "O:28→\"+5\"", "verbose" for "Roll: 28 → \"+5\""
+        
+    Returns:
+        Formatted dice roll string
+        
+    Examples:
+        >>> format_dice_roll(28, result="+5", prefix="O")
+        'O:28→"+5"'
+        >>> format_dice_roll(28, "B2+W5+W3=28", "+5", "O")
+        'O:B2+W5+W3=28→"+5"'
+        >>> format_dice_roll(28, result="+5", style="verbose")
+        'Roll: 28 → "+5"'
+    """
+    # Use dice_desc if available, otherwise just the roll number
+    roll_str = dice_desc if dice_desc else str(roll)
+    
+    if style == "verbose":
+        if result:
+            return f"Roll: {roll_str} → \"{result}\""
+        else:
+            return f"Roll: {roll_str}"
+    else:
+        # Standard compact format
+        if prefix:
+            if result:
+                return f"{prefix}:{roll_str}→\"{result}\""
+            else:
+                return f"{prefix}:{roll_str}"
+        else:
+            if result:
+                return f"{roll_str}→\"{result}\""
+            else:
+                return str(roll_str)
+
+
+def format_play_dice_line(off_roll: int, off_result: str, def_row: str, def_result: str,
+                          off_dice_desc: str = None, def_dice_desc: str = None,
+                          priority: str = None, extra_info: str = "") -> str:
+    """
+    Format the standard dice line for a play showing offense and defense rolls.
+    
+    Args:
+        off_roll: Offensive dice roll value
+        off_result: Offensive chart result
+        def_row: Defensive row (e.g., "12" or "R1+G2=12")
+        def_result: Defensive chart result
+        off_dice_desc: Optional full offense dice description
+        def_dice_desc: Optional full defense dice description
+        priority: Optional priority resolution result
+        extra_info: Optional extra info to append (e.g., fumble/INT details)
+        
+    Returns:
+        Formatted dice line like "(O:28→"+5" | D:12→"A" | O-HI)"
+    """
+    # Build offense part
+    off_str = off_dice_desc if off_dice_desc else str(off_roll)
+    off_part = f"O:{off_str}→\"{off_result}\""
+    
+    # Build defense part
+    def_str = def_dice_desc if def_dice_desc else def_row
+    def_part = f"D:{def_str}→\"{def_result}\""
+    
+    # Combine parts
+    parts = [off_part, def_part]
+    if priority:
+        parts.append(priority)
+    
+    result = f"({' | '.join(parts)}"
+    if extra_info:
+        result += f" | {extra_info}"
+    result += ")"
+    
+    return result
+
+
 def parse_field_position(field_str: str, off_team: str = None) -> int:
     """
     Convert human-readable field position to internal position (1-99).
