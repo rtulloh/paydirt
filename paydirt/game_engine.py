@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .chart_loader import TeamChart, load_team_chart
-from .utils import format_field_position
+from .utils import format_field_position, clamp_ball_position
 from .play_resolver import (
     PlayType, DefenseType, PlayResult, ResultType,
     resolve_play, roll_chart_dice,
@@ -326,7 +326,7 @@ class PaydirtGameEngine:
 
         # Set game state
         self.state.is_home_possession = not kicking_home
-        self.state.ball_position = max(1, min(99, return_position))
+        self.state.ball_position = clamp_ball_position(return_position)
         self.state.down = 1
         self.state.yards_to_go = 10
 
@@ -545,7 +545,7 @@ class PaydirtGameEngine:
                 txn.add_event(create_touchdown_event(acting_team=def_team))
         else:
             # Cap position for non-TD returns
-            final_position = min(99, max(1, final_position))
+            final_position = clamp_ball_position(final_position)
             self.state.ball_position = final_position
 
         # Store return info
@@ -670,7 +670,7 @@ class PaydirtGameEngine:
                     else:
                         return_yards = self._parse_return_yards(int_return_result, fumble_spot)
                         new_position = fumble_spot + return_yards
-                        new_position = min(99, max(1, new_position))
+                        new_position = clamp_ball_position(new_position)
                         self.state.ball_position = new_position
 
                         if new_position >= 100 or "TD" in str(int_return_result).upper():
@@ -725,7 +725,7 @@ class PaydirtGameEngine:
                     else:
                         return_yards = self._parse_return_yards(int_return_result, fumble_spot_defense)
                         new_position = fumble_spot_defense + return_yards
-                        new_position = min(99, max(1, new_position))
+                        new_position = clamp_ball_position(new_position)
                         self.state.ball_position = new_position
 
                         if new_position >= 100 or "TD" in str(int_return_result).upper():
@@ -1807,7 +1807,7 @@ class PaydirtGameEngine:
                         else:
                             return_yards = self._parse_return_yards(int_return_result, block_spot)
                             new_position = block_spot + return_yards
-                            new_position = min(99, max(1, new_position))
+                            new_position = clamp_ball_position(new_position)
                             final_spot = new_position
                             self.state.ball_position = new_position
 
@@ -1855,7 +1855,7 @@ class PaydirtGameEngine:
                         else:
                             return_yards = self._parse_return_yards(int_return_result, block_spot_defense)
                             new_position = block_spot_defense + return_yards
-                            new_position = min(99, max(1, new_position))
+                            new_position = clamp_ball_position(new_position)
                             self.state.ball_position = new_position
 
                             if new_position >= 100:
@@ -2013,7 +2013,7 @@ class PaydirtGameEngine:
             final_position = 100
             self._score_touchdown()
 
-        self.state.ball_position = max(1, min(99, final_position))
+        self.state.ball_position = clamp_ball_position(final_position)
         self.state.down = 1
         self.state.yards_to_go = 10
 
@@ -2398,7 +2398,7 @@ class PaydirtGameEngine:
                     else:
                         return_yards = self._parse_return_yards(int_return_result, block_spot)
                         final_position = block_spot + return_yards
-                        final_position = min(99, max(1, final_position))
+                        final_position = clamp_ball_position(final_position)
                         self.state.ball_position = final_position
 
                         if final_position >= 100:
@@ -2453,7 +2453,7 @@ class PaydirtGameEngine:
                     else:
                         return_yards = self._parse_return_yards(int_return_result, block_spot_defense)
                         new_position = block_spot_defense + return_yards
-                        new_position = min(99, max(1, new_position))
+                        new_position = clamp_ball_position(new_position)
                         self.state.ball_position = new_position
 
                         if new_position >= 100:
