@@ -3131,8 +3131,17 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             print(f"  {outcome.description}")
             continue
 
-        # Handle turnover on downs
-        if outcome.turnover and outcome.result.result_type not in [ResultType.INTERCEPTION, ResultType.FUMBLE]:
+        # Handle turnover on downs (only for regular plays, not punts/kicks)
+        # Turnover on downs is when offense fails to convert on 4th down
+        is_turnover_on_downs = (
+            outcome.down_before == 4 and
+            not outcome.first_down and
+            not outcome.turnover and  # Not INT/fumble
+            not outcome.touchdown and
+            not outcome.safety and
+            outcome.play_type not in [PlayType.PUNT, PlayType.FIELD_GOAL]
+        )
+        if is_turnover_on_downs:
             print("\n  *** TURNOVER ON DOWNS ***")
 
     # Game over
