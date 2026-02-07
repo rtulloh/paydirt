@@ -3154,6 +3154,15 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     else:
         print("\n  GAME ENDS IN A TIE!")
 
+    # Offer to record game to standings
+    _offer_record_to_standings(
+        year=home_chart.peripheral.year,
+        home_team=home_chart.peripheral.team_nickname,
+        home_score=game.state.home_score,
+        away_team=away_chart.peripheral.team_nickname,
+        away_score=game.state.away_score
+    )
+
 
 if __name__ == "__main__":
     run_interactive_game()
