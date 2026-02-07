@@ -79,6 +79,7 @@ class PlayResult:
     fumble_recovery_roll: int = 0
     fumble_spot: int = 0
     fumble_recovered: bool = False
+    fumble_resolved: bool = False  # True if fumble recovery was already determined
     fumble_return_yards: int = 0
     fumble_return_dice: int = 0
     # Out of bounds marker (* or †) - affects clock in final minutes

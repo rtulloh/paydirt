@@ -591,14 +591,22 @@ class PaydirtGameEngine:
                 acting_team=off_team
             ))
 
-        # Roll for fumble recovery using offensive dice
-        recovery_roll, recovery_desc = roll_chart_dice()
+        # Check if fumble recovery was already determined (e.g., when accepting play result after penalty)
+        # If so, use the stored result instead of re-rolling
+        if getattr(result, 'fumble_resolved', False):
+            recovery_roll = result.fumble_recovery_roll
+            recovery_desc = f"Roll {recovery_roll} (pre-determined)"
+            fumble_rec_range = self.state.possession_team.peripheral.fumble_recovered_range
+            offense_recovers = result.fumble_recovered
+        else:
+            # Roll for fumble recovery using offensive dice
+            recovery_roll, recovery_desc = roll_chart_dice()
 
-        # Get fumble recovery ranges from the offensive team's chart
-        fumble_rec_range = self.state.possession_team.peripheral.fumble_recovered_range
+            # Get fumble recovery ranges from the offensive team's chart
+            fumble_rec_range = self.state.possession_team.peripheral.fumble_recovered_range
 
-        # Determine if offense recovers or loses the fumble
-        offense_recovers = fumble_rec_range[0] <= recovery_roll <= fumble_rec_range[1]
+            # Determine if offense recovers or loses the fumble
+            offense_recovers = fumble_rec_range[0] <= recovery_roll <= fumble_rec_range[1]
 
         # Add recovery event to transaction
         if txn:
@@ -766,6 +774,7 @@ class PaydirtGameEngine:
         result.fumble_recovery_roll = recovery_roll
         result.fumble_spot = fumble_spot if fumble_spot <= 99 else 99
         result.fumble_recovered = offense_recovers
+        result.fumble_resolved = True  # Mark as resolved so we don't re-roll on penalty acceptance
 
         return (turnover, touchdown, safety, first_down)
 
@@ -1463,6 +1472,7 @@ class PaydirtGameEngine:
             result.fumble_recovery_roll = recovery_roll
             result.fumble_spot = self.state.ball_position
             result.fumble_recovered = offense_recovers
+            result.fumble_resolved = True  # Mark as resolved so we don't re-roll on penalty acceptance
 
             if offense_recovers:
                 # Offense recovers at LOS - no gain
