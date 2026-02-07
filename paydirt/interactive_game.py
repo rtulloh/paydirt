@@ -1255,6 +1255,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             # Show dice roll info if available
             if outcome.result:
                 print(f"  ({format_dice_roll(outcome.result.dice_roll, result=outcome.result.raw_result, style='verbose')})")
+            # Clarify fumble recovery possession
+            if "FUMBLE" in outcome.description.upper():
+                print(f"  >> {off_team} recovers and keeps possession!")
             return
 
         print("\n" + "=" * 70)
@@ -1284,7 +1287,7 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             print("  >> BLOCKED PUNT!")
         elif "FUMBLE" in desc.upper():
             print(f"\n  {desc}")
-            print("  >> FUMBLE on the return! Kicking team recovers!")
+            print(f"  >> FUMBLE on the return! {off_team} recovers and keeps possession!")
         else:
             print(f"\n  {desc}")
         return
