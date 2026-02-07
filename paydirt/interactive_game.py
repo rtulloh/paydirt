@@ -20,7 +20,7 @@ from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import (
     ordinal_suffix, ordinal, format_field_position, format_field_position_with_team,
-    format_dice_roll, format_play_dice_line,
+    format_dice_roll, format_play_dice_line, format_time,
     clamp_ball_position, yards_to_goal, fg_distance
 )
 from .play_events import EventType
