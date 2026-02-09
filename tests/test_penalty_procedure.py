@@ -1026,3 +1026,108 @@ class TestFumblePenaltyDisplay:
             play_outcome_str = f"{int_result.yards} yards"
         
         assert play_outcome_str == "TURNOVER"
+
+
+class TestPenaltyChoiceTransaction:
+    """Tests for transaction building in resolve_play_with_penalties."""
+    
+    @pytest.fixture
+    def game_engine(self):
+        """Create a game engine for testing."""
+        from pathlib import Path
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.chart_loader import load_team_chart
+        
+        seasons_dir = Path(__file__).parent.parent / "seasons"
+        home_chart = load_team_chart(seasons_dir / "1983" / "49ers")
+        away_chart = load_team_chart(seasons_dir / "1983" / "Cowboys")
+        return PaydirtGameEngine(home_chart, away_chart)
+    
+    def test_penalty_choice_has_transaction(self, game_engine):
+        """PenaltyChoice should include a transaction with play events."""
+        from paydirt.play_resolver import resolve_play_with_penalties, PlayType, DefenseType
+        from paydirt.play_events import EventType
+        
+        offense_chart = game_engine.state.possession_team
+        defense_chart = game_engine.state.defense_team
+        
+        # Run multiple plays to verify transaction is always present
+        for _ in range(20):
+            penalty_choice = resolve_play_with_penalties(
+                offense_chart, defense_chart,
+                PlayType.SHORT_PASS, DefenseType.STANDARD
+            )
+            
+            # Transaction should always be present
+            assert penalty_choice.transaction is not None
+            
+            # Transaction should have at least a chart lookup event
+            assert penalty_choice.transaction.has_event_type(EventType.CHART_LOOKUP)
+            
+            # If it's a fumble, should have fumble and recovery events
+            if penalty_choice.play_result.result_type == ResultType.FUMBLE:
+                assert penalty_choice.transaction.has_event_type(EventType.FUMBLE)
+                assert penalty_choice.transaction.has_event_type(EventType.FUMBLE_RECOVERY)
+                # Verify fumble_resolved is set
+                assert penalty_choice.play_result.fumble_resolved is True
+                break
+    
+    def test_fumble_transaction_has_recovery_info(self):
+        """Fumble transaction should capture recovery roll details."""
+        from paydirt.play_events import PlayTransaction, EventType, create_fumble_event, create_recovery_event
+        
+        # Build a transaction like resolve_play_with_penalties does
+        txn = PlayTransaction()
+        
+        txn.add_event(create_fumble_event(
+            yards_before_fumble=11,
+            fumble_spot=59,
+            acting_team="STL '83"
+        ))
+        
+        txn.add_event(create_recovery_event(
+            recovery_roll=18,
+            recovery_desc="B1+W0+W4=18",
+            offense_recovers=True,
+            recovery_range=(10, 31),
+            acting_team="STL '83"
+        ))
+        
+        # Verify events are captured
+        assert txn.has_event_type(EventType.FUMBLE)
+        assert txn.has_event_type(EventType.FUMBLE_RECOVERY)
+        
+        # Get recovery event and verify details
+        recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
+        assert len(recovery_events) == 1
+        rec_event = recovery_events[0]
+        assert rec_event.dice_roll == 18
+        assert rec_event.possession_change is False  # Offense recovered
+        assert "RECOVERED" in rec_event.description
+    
+    def test_turnover_fumble_transaction(self):
+        """Fumble with defense recovery should show possession change."""
+        from paydirt.play_events import PlayTransaction, EventType, create_fumble_event, create_recovery_event
+        
+        txn = PlayTransaction()
+        
+        txn.add_event(create_fumble_event(
+            yards_before_fumble=11,
+            fumble_spot=59,
+            acting_team="STL '83"
+        ))
+        
+        txn.add_event(create_recovery_event(
+            recovery_roll=35,
+            recovery_desc="B2+W3+W4=35",
+            offense_recovers=False,  # Defense recovers
+            recovery_range=(10, 31),
+            acting_team="NO '83"  # Defense team
+        ))
+        
+        # Get recovery event and verify turnover
+        recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
+        rec_event = recovery_events[0]
+        assert rec_event.dice_roll == 35
+        assert rec_event.possession_change is True  # Turnover
+        assert "LOST" in rec_event.description
