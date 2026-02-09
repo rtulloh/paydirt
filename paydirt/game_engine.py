@@ -666,25 +666,21 @@ class PaydirtGameEngine:
                 self.state.ball_position = fumble_spot
 
                 # Check for special return on recovery rolls 17, 18, 19
+                # Per rules: offense gets INT return from spot of recovery for fumbles recovered
+                # with totals 17, 18, or 19. (Auto TD on 19 only applies to blocked kicks, not fumbles)
                 if recovery_roll in [17, 18, 19]:
                     return_dice, return_desc = roll_chart_dice()
                     int_return_result = self.state.possession_team.special_teams.interception_return.get(return_dice, "0")
 
-                    if recovery_roll == 19:
-                        return_yards = 100 - fumble_spot
+                    return_yards = self._parse_return_yards(int_return_result, fumble_spot)
+                    new_position = fumble_spot + return_yards
+                    new_position = clamp_ball_position(new_position)
+                    self.state.ball_position = new_position
+
+                    if new_position >= 100 or "TD" in str(int_return_result).upper():
                         touchdown = True
                         self._score_touchdown()
                         self.state.ball_position = 97
-                    else:
-                        return_yards = self._parse_return_yards(int_return_result, fumble_spot)
-                        new_position = fumble_spot + return_yards
-                        new_position = clamp_ball_position(new_position)
-                        self.state.ball_position = new_position
-
-                        if new_position >= 100 or "TD" in str(int_return_result).upper():
-                            touchdown = True
-                            self._score_touchdown()
-                            self.state.ball_position = 97
 
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice

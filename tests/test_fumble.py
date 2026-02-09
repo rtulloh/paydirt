@@ -7,7 +7,8 @@ Official rules:
 - Offense recovers on rolls within recovered range, loses on lost range
 - Special returns:
   - Defense gets INT return on lost fumbles with rolls 37, 38, 39 (39 = auto TD)
-  - Offense gets INT return on recovered fumbles with rolls 17, 18, 19 (19 = auto TD)
+  - Offense gets INT return on recovered fumbles with rolls 17, 18, 19
+  - Note: Auto TD on roll 19/39 only applies to BLOCKED KICKS, not regular fumbles
 - If offense recovers on 4th down but fails to make first down yardage, defense takes over
 """
 import pytest
@@ -212,8 +213,8 @@ class TestFumbleSpecialReturns:
         assert outcome.result.fumble_return_yards == 20
         assert outcome.result.fumble_return_dice == 14
     
-    def test_offense_auto_td_on_roll_19(self, game):
-        """Recovery roll 19 should be automatic TD for offense."""
+    def test_offense_return_on_roll_19(self, game):
+        """Recovery roll 19 should get INT return (not auto TD - auto TD only for blocked kicks)."""
         game.state.ball_position = 50
         game.state.is_home_possession = True
         initial_score = game.state.home_score
@@ -228,13 +229,17 @@ class TestFumbleSpecialReturns:
         
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
             with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 19 = auto TD
-                mock_dice.side_effect = [(19, "B1+W9+W0=19"), (10, "B1+W0+W0=10")]
+                # Recovery roll of 19, then INT return roll of 14 -> 20 yards
+                mock_dice.side_effect = [(19, "B1+W9+W0=19"), (14, "B1+W4+W0=14")]
                 
                 outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
-        assert outcome.touchdown is True
-        assert game.state.home_score == initial_score + 6
+        # Should NOT be auto TD - should use INT return chart
+        # Fumble at 53, return of 20 yards = position 73, not a TD
+        assert outcome.touchdown is False
+        assert game.state.home_score == initial_score  # No score
+        assert outcome.result.fumble_return_yards == 20
+        assert outcome.result.fumble_return_dice == 14
     
     def test_defense_return_on_roll_37(self, game):
         """Defense should get INT return on recovery roll 37."""
