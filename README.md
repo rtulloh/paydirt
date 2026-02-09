@@ -17,11 +17,31 @@ python -m paydirt
 # Interactive game with difficulty setting
 python -m paydirt --play -d hard
 
+# Compact display mode (recommended)
+python -m paydirt --play --compact
+
+# Specify week for standings
+python -m paydirt --play --week 1 --compact
+
+# Resume a saved game
+python -m paydirt --play --load --compact
+
 # Auto game (CPU vs CPU) - great for testing
 python -m paydirt -auto Bears Cowboys
 ```
 
 Select your team, choose home or away, select CPU difficulty, and start playing!
+
+### Command Line Options
+
+| Option | Description |
+|--------|-------------|
+| `--play` | Start interactive game mode |
+| `-d easy\|medium\|hard` | Set CPU difficulty level |
+| `--compact` | Use compact display (less verbose, recommended) |
+| `--week N` | Specify week number for standings |
+| `--load [file]` | Resume a saved game |
+| `-auto team1 team2` | Run CPU vs CPU simulation |
 
 ### CPU Difficulty Levels
 
@@ -318,6 +338,70 @@ Teams are loaded from the `seasons/` directory. The 1983 season includes:
 
 ---
 
+## Save/Load Games
+
+You can save your game at any time and resume later:
+
+### Saving a Game
+During play selection, type `save` to save the current game state:
+```
+Your play: save
+Game saved to paydirt_save.json
+```
+
+### Resuming a Game
+```bash
+python -m paydirt --play --load --compact
+```
+
+The save file preserves:
+- Score and quarter/time
+- Field position, down, and distance
+- Timeouts remaining
+- Team statistics
+- Scoring play history
+
+---
+
+## Season Standings
+
+Track your season results with the standings system:
+
+### Recording Games
+After each game, you'll be prompted to record the result:
+```
+Record this game to season standings? (y/n): y
+Game recorded: Week 1 - Giants 21 @ Redskins 28
+```
+
+Use `--week N` to specify the week number:
+```bash
+python -m paydirt --play --week 1 --compact
+```
+
+### Viewing Standings
+```bash
+# Show standings for a season
+python -m paydirt.standings show 1983
+
+# List all recorded games
+python -m paydirt.standings games 1983
+```
+
+### Managing Results
+```bash
+# Add a game manually
+python -m paydirt.standings add 1983 Redskins 28 Giants 21 --week 1
+
+# Edit a game result
+python -m paydirt.standings edit 1983 1 --home-score 31
+
+# Delete a game
+python -m paydirt.standings delete 1983 1
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -331,7 +415,10 @@ paydirt/
 │   ├── penalty_handler.py   # Penalty resolution per official rules
 │   ├── computer_ai.py       # Computer opponent AI
 │   ├── interactive_game.py  # Interactive CLI game mode
-│   └── commentary.py        # Play-by-play commentary
+│   ├── commentary.py        # Play-by-play commentary
+│   ├── save_game.py         # Game save/load functionality
+│   ├── standings.py         # Season standings tracking
+│   └── utils.py             # Shared utility functions
 ├── seasons/
 │   └── 1983/                # 1983 NFL season team data
 │       ├── TeamName/
@@ -340,7 +427,8 @@ paydirt/
 │       │   ├── special_teams.csv # Kicking/return charts
 │       │   └── roster.json      # Player roster
 │       └── ...
-└── tests/                   # Unit tests
+├── standings/               # Season standings data (JSON)
+└── tests/                   # Unit tests (982 tests)
 ```
 
 ---

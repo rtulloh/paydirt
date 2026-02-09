@@ -2,17 +2,26 @@
 
 ## Version 1.2 (February 2026)
 
+### New Features
+- **Week number support**: Added `--week N` flag to specify week number when recording games to standings
+  - Usage: `python -m paydirt --play --week 1 --compact`
+  - Multiple games can be recorded for the same week
+  - Week number persists correctly through save/load
+
 ### Bug Fixes
+- **Week auto-increment bug**: Fixed bug where `--week` flag was ignored and games were recorded with auto-incrementing week numbers based on total game count
 - **Raiders abbreviation**: Fixed team abbreviation from "LAA" to "LAR" for the Los Angeles Raiders
 - **Fumble recovery roll 19**: Fixed incorrect auto-TD on recovery roll 19. Per official rules, auto-TD on roll 19 only applies to blocked kicks, not regular fumbles. Fumble recovery rolls 17, 18, 19 now correctly use the INT return chart
 - **Penalty turnover acceptance**: Fixed bug where accepting a turnover play result after a penalty would re-roll for fumble recovery instead of using the already-determined result
 - **Turnover on downs after punt**: Fixed incorrect "TURNOVER ON DOWNS" message displaying after punts. Punts are normal possession changes, not turnover on downs
 - **Punt fumble recovery clarity**: Added team name to fumble recovery message (e.g., "NYG '83 recovers and keeps possession!")
+- **Midfield display**: Changed 50-yard line display from team-specific (e.g., "CIN 50") to "midfield" for clarity
 - **Resume game standings**: Added prompt to record game to standings when a resumed game ends
 - **Missing import**: Fixed `NameError: format_time not defined` in resume_game function
 
 ### Test Coverage
-- **977 unit tests** passing
+- **982 unit tests** passing
+- Added tests for week parameter in standings (explicit week, auto-assign, persistence)
 
 ---
 
