@@ -283,6 +283,121 @@ class TestInterceptionStats:
         assert game.state.home_stats.interceptions_thrown == initial_ints + 1
 
 
+class TestInterceptionInEndZone:
+    """Tests for interception in end zone scenarios."""
+
+    def test_interception_in_defense_own_end_zone_is_touchback(self, game):
+        """INT in defense's own end zone (where offense was trying to score) = touchback."""
+        # Offense at opponent's 2-yard line (ball_position = 98, about to score)
+        # INT 3 yards downfield = raw_int_spot = 98 + 3 = 101 (in defense's end zone)
+        # Defense intercepts in their own end zone = TOUCHBACK, ball at 20
+        game.state.ball_position = 98
+        game.state.is_home_possession = True
+        initial_away_score = game.state.away_score
+
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=3,  # INT 3 yards downfield into end zone
+            turnover=True,
+            raw_result="INT 3",
+            dice_roll=11,
+        )
+
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Return roll shouldn't matter - touchback has no return
+                mock_dice.return_value = (10, "B1+W0+W0=10")
+
+                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+
+        # Should be a touchback, NOT a touchdown
+        assert outcome.touchdown is False
+        assert game.state.away_score == initial_away_score  # No points scored
+        assert game.state.ball_position == 20  # Touchback at 20
+        assert game.state.is_home_possession is False  # Defense has ball
+        assert "TOUCHBACK" in outcome.result.description
+
+    def test_interception_at_defense_goal_line_is_touchback(self, game):
+        """INT at defense's goal line (raw_int_spot = 100) = touchback (goal line is part of end zone)."""
+        # Offense at opponent's 5, INT 5 yards = raw_int_spot = 100 (at goal line, in end zone)
+        game.state.ball_position = 95
+        game.state.is_home_possession = True
+        initial_away_score = game.state.away_score
+
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=5,  # INT exactly at goal line
+            turnover=True,
+            raw_result="INT 5",
+            dice_roll=11,
+        )
+
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                mock_dice.return_value = (10, "B1+W0+W0=10")
+
+                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+
+        assert outcome.touchdown is False
+        assert game.state.away_score == initial_away_score
+        assert game.state.ball_position == 20
+        assert "TOUCHBACK" in outcome.result.description
+
+    def test_interception_in_offense_own_end_zone_is_td_for_defense(self, game):
+        """INT in offense's own end zone (behind goal line) = TD for defense."""
+        # Offense at their own 3-yard line (ball_position = 3)
+        # INT -5 yards (behind LOS) = raw_int_spot = 3 + (-5) = -2 (in offense's end zone, behind goal line)
+        # Defense intercepts in opponent's end zone = TOUCHDOWN for defense
+        game.state.ball_position = 3
+        game.state.is_home_possession = True
+        initial_away_score = game.state.away_score
+
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=-5,  # INT behind LOS, into offense's end zone
+            turnover=True,
+            raw_result="INT -5",
+            dice_roll=11,
+        )
+
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+
+        # Should be a TD for defense
+        assert outcome.touchdown is True
+        assert game.state.away_score == initial_away_score + 6
+        assert "TOUCHDOWN" in outcome.result.description
+
+    def test_interception_near_goal_line_has_normal_return(self, game):
+        """INT near goal line (on field, not in end zone) should have normal return."""
+        # Offense at their own 20, INT -5 yards = raw_int_spot = 15 (still on field)
+        game.state.ball_position = 20
+        game.state.is_home_possession = True
+
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=-5,  # INT behind LOS but still on field
+            turnover=True,
+            raw_result="INT -5",
+            dice_roll=11,
+        )
+
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Return roll of 10 = 5 yard return
+                mock_dice.return_value = (10, "B1+W0+W0=10")
+
+                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+
+        # Should have a return (not touchback, not TD)
+        # INT spot from defense = 100 - 15 = 85, plus 5 return = 90
+        assert outcome.touchdown is False
+        assert outcome.result.int_return_yards == 5
+        assert outcome.result.int_return_dice == 10
+        assert game.state.ball_position == 90
+        assert outcome.turnover is True
+
+
 class TestInterceptionReturnTouchdown:
     """Tests for interception return touchdowns."""
 

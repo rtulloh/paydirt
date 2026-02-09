@@ -270,27 +270,41 @@ class PaydirtGameEngine:
             landing_spot = 100 - (35 + ko_yards)  # Where ball lands from receiver's perspective
 
             # Per VI-12-F: Handle end zone returns
+            # landing_spot <= 0 means ball is in or beyond the end zone
+            # landing_spot = 0 is the goal line (part of end zone)
+            # landing_spot < 0 is deeper in end zone (negative = yards deep)
             if landing_spot <= 0:
-                # Ball at/behind end line - automatic touchback, no return allowed
-                return_position = 20
-                is_touchback = True
-            elif landing_spot <= 10:
                 # Ball in end zone - can elect touchback or attempt return
-                # For CPU, attempt return (could add choice for human later)
-                try:
-                    ret_yards = int(ret_result) if ret_result else 20
-                except ValueError:
-                    if ret_parsed.result_type == ResultType.FUMBLE:
-                        ret_yards = ret_parsed.yards
-                    elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                        ret_yards = 100
-                    else:
-                        ret_yards = 20
+                # Per rule VI-12-F-ii: Returns cannot be attempted from on/behind end line
+                # End line is 10 yards deep in end zone (landing_spot <= -10)
+                if landing_spot <= -10:
+                    # At or behind end line - automatic touchback, no return allowed
+                    return_position = 20
+                    is_touchback = True
+                else:
+                    # In end zone but not at end line - can attempt return
+                    # Convert landing_spot to yards deep in end zone (0 = goal line, -5 = 5 yards deep)
+                    yards_deep = abs(landing_spot)  # 0 = at goal line, 5 = 5 yards deep
+                    try:
+                        ret_yards = int(ret_result) if ret_result else 20
+                    except ValueError:
+                        if ret_parsed.result_type == ResultType.FUMBLE:
+                            ret_yards = ret_parsed.yards
+                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
+                            ret_yards = 100
+                        else:
+                            ret_yards = 20
 
-                # End zone yardage counts in return
-                return_position, is_touchback = self._handle_end_zone_return(
-                    landing_spot, ret_yards, elect_touchback=False
-                )
+                    # End zone yardage counts in return
+                    # Must advance past goal line (yards_deep yards) to get on field
+                    if ret_yards > yards_deep:
+                        # Made it out of end zone
+                        return_position = ret_yards - yards_deep  # Field position
+                        is_touchback = False
+                    else:
+                        # Didn't make it out - touchback
+                        return_position = 20
+                        is_touchback = True
             else:
                 # Normal field return - check for penalty first
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
@@ -454,39 +468,31 @@ class PaydirtGameEngine:
         raw_int_spot = ball_pos_before + yards
 
         # Handle end zone interception rules
-        if raw_int_spot >= 110:
-            # VI-12-E-i: INT beyond defender's end line = spot is 9 yards deep in end zone
-            int_spot_from_offense = 109
-            result.description = "Interception 9 yards deep in end zone"
-        elif raw_int_spot >= 100:
-            # INT in defender's end zone - spot is in end zone
-            int_spot_from_offense = raw_int_spot
-        elif raw_int_spot <= 0:
-            # VI-12-E-iii: INT at/behind offense's own end line = SAFETY
-            safety = True
-            self._score_safety()
-            result.description = "Interception - lateral out of end zone - SAFETY"
-            result.int_spot = 1
-            result.int_return_yards = 0
-            result.int_return_dice = 0
-            # After safety, possession switches and ball goes to 20 for free kick
+        # <= 0 = offense's end zone, >= 100 = defense's end zone, 1-99 = field of play
+        if raw_int_spot >= 100:
+            # INT in defense's end zone = TOUCHBACK
+            # Defense intercepts in their own end zone, gets ball at 20
             self.state.switch_possession()
             self.state.ball_position = 20
+            result.description = "Interception in end zone - TOUCHBACK"
+            result.int_spot = 20  # Ball spotted at 20 after touchback
+            result.int_return_yards = 0
+            result.int_return_dice = 0
             return (turnover, touchdown, safety)
-        elif raw_int_spot <= 10:
-            # VI-12-E-ii: INT within offense's own end zone = TD for defense (no return)
-            int_spot_from_offense = raw_int_spot
-            int_spot_from_defense = 100 - int_spot_from_offense
+        elif raw_int_spot <= 0:
+            # INT in offense's end zone = TD for defense
+            # Defense intercepted in opponent's end zone (where they would score)
             touchdown = True
             self.state.switch_possession()
             self._score_touchdown()
             self.state.ball_position = 97
             result.description = "Interception in end zone - TOUCHDOWN for defense"
-            result.int_spot = int_spot_from_defense
+            result.int_spot = 100  # Defense's perspective
             result.int_return_yards = 0
             result.int_return_dice = 0
             return (turnover, touchdown, safety)
         else:
+            # Normal field position (1-99) - process with return
             int_spot_from_offense = raw_int_spot
 
         # Normal interception processing with return
@@ -652,14 +658,25 @@ class PaydirtGameEngine:
                 result.description = "Fumble recovered by defense in end zone - TOUCHBACK"
 
         elif raw_fumble_spot <= 0:
-            # VI-12-D-iii: Fumble at/behind own end line = SAFETY
+            # Fumble in offense's own end zone (behind their goal line)
             fumble_spot = 1
-            safety = True
-            self._score_safety()
-            result.description = "Fumble out of own end zone - SAFETY"
+            if offense_recovers:
+                # Offense recovers in own end zone = SAFETY
+                safety = True
+                self._score_safety()
+                result.description = "Fumble recovered by offense in own end zone - SAFETY"
+            else:
+                # Defense recovers in opponent's end zone = TD for defense
+                turnover = True
+                touchdown = True
+                self.state.offense_stats.fumbles_lost += 1
+                self.state.switch_possession()
+                self._score_touchdown()
+                self.state.ball_position = 97
+                result.description = "Fumble recovered by defense in end zone - TOUCHDOWN"
 
         else:
-            # Normal field position (11-99)
+            # Normal field position (1-99)
             fumble_spot = raw_fumble_spot
 
             if offense_recovers:
@@ -2862,18 +2879,29 @@ class PaydirtGameEngine:
             # Normal return - kick from own 20
             landing_spot = 100 - (20 + ko_yards)  # From receiver's perspective
 
+            # Per VI-12-F: Handle end zone returns
+            # landing_spot <= 0 means ball is in or beyond the end zone
             if landing_spot <= 0:
-                return_position = 20
-                is_touchback = True
-            elif landing_spot <= 10:
-                try:
-                    ret_yards = int(ret_result) if ret_result else 20
-                except ValueError:
-                    ret_yards = 20
-                return_position, is_touchback = self._handle_end_zone_return(
-                    landing_spot, ret_yards, elect_touchback=False
-                )
+                # Ball in end zone
+                if landing_spot <= -10:
+                    # At or behind end line - automatic touchback
+                    return_position = 20
+                    is_touchback = True
+                else:
+                    # In end zone but not at end line - can attempt return
+                    yards_deep = abs(landing_spot)
+                    try:
+                        ret_yards = int(ret_result) if ret_result else 20
+                    except ValueError:
+                        ret_yards = 20
+                    if ret_yards > yards_deep:
+                        return_position = ret_yards - yards_deep
+                        is_touchback = False
+                    else:
+                        return_position = 20
+                        is_touchback = True
             else:
+                # Normal field return
                 try:
                     ret_yards = int(ret_result) if ret_result else 20
                 except ValueError:
@@ -2935,26 +2963,33 @@ class PaydirtGameEngine:
         is_touchback = False
         return_yards = 0
 
+        # Per VI-12-F: Handle end zone returns
+        # landing_spot <= 0 means ball is in or beyond the end zone
         if landing_spot <= 0:
-            # Touchback
-            return_position = 20
-            is_touchback = True
-        elif landing_spot <= 10:
-            # In end zone
-            if is_downed or is_fair_catch:
+            # Ball in end zone
+            if landing_spot <= -10:
+                # At or behind end line - automatic touchback
+                return_position = 20
+                is_touchback = True
+            elif is_downed or is_fair_catch:
+                # Downed or fair catch in end zone = touchback
                 return_position = 20
                 is_touchback = True
             else:
                 # Attempt return from end zone
+                yards_deep = abs(landing_spot)
                 ret_roll, ret_desc = roll_chart_dice()
                 ret_result = receiving_chart.special_teams.punt_return.get(ret_roll, "5")
                 try:
                     return_yards = int(ret_result.replace("*", "").replace("†", "").strip())
                 except ValueError:
                     return_yards = 5
-                return_position, is_touchback = self._handle_end_zone_return(
-                    landing_spot, return_yards, elect_touchback=False
-                )
+                if return_yards > yards_deep:
+                    return_position = return_yards - yards_deep
+                    is_touchback = False
+                else:
+                    return_position = 20
+                    is_touchback = True
         else:
             # Normal field position
             if is_downed or is_fair_catch:
@@ -2995,45 +3030,40 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _handle_end_zone_return(self, position_in_end_zone: int, return_yards: int,
+    def _handle_end_zone_return(self, yards_deep_in_end_zone: int, return_yards: int,
                                  elect_touchback: bool = False) -> tuple[int, bool]:
         """
         Handle return from end zone per official rules VI-12-F.
         
         When a team gains possession in their own end zone:
-        - They may elect an automatic touchback (ball at 20)
-        - Or attempt a return (end zone yardage counts; if not past goal line = touchback)
-        - Returns cannot be attempted from on/behind the end line (position <= 0)
+        i. They may either: (a) Elect an automatic touchback, or (b) Attempt a return.
+           If a return is attempted, the end zone yardage must be counted in the return;
+           if the ball is not advanced across the goal line, a touchback results.
+        ii. Returns may not be attempted from on or behind the end line.
         
         Args:
-            position_in_end_zone: Position in end zone (1-10, where 1 is deepest)
+            yards_deep_in_end_zone: How deep in end zone (0 = goal line, 9 = 1 yard from end line)
             return_yards: Yards gained on return attempt
             elect_touchback: If True, automatically take touchback
         
         Returns:
-            Tuple of (final_position, is_touchback)
+            Tuple of (final_field_position, is_touchback)
         """
-        # Cannot return from on/behind end line
-        if position_in_end_zone <= 0:
+        # Cannot return from on/behind end line (10+ yards deep)
+        if yards_deep_in_end_zone >= 10:
             return 20, True  # Automatic touchback
 
         if elect_touchback:
             return 20, True
 
         # Attempt return - must count end zone yardage
-        # Position in end zone: 1 = 1 yard deep, 10 = at goal line
-        # To get out, need to gain at least (10 - position_in_end_zone + 1) yards
-        # Actually, position 1-10 means yards from goal line into end zone
-        # So position 5 means 5 yards deep, need 5+ yards to get out
-
-        final_position = position_in_end_zone + return_yards
-
-        if final_position > 10:
-            # Made it out of end zone
-            # Convert to field position (11 = 1 yard line, 20 = 10 yard line, etc.)
-            return final_position, False
+        # Must advance MORE than yards_deep to cross goal line onto field
+        if return_yards > yards_deep_in_end_zone:
+            # Made it out of end zone - field position is return yards minus end zone yards
+            field_position = return_yards - yards_deep_in_end_zone
+            return field_position, False
         else:
-            # Didn't make it out - touchback
+            # Didn't make it past goal line - touchback
             return 20, True
 
     def _parse_return_yards(self, return_result: str, current_position: int) -> int:

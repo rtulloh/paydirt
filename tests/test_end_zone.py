@@ -389,32 +389,13 @@ class TestInterceptionEndZoneRules:
         assert game.state.is_home_possession is False
     
     def test_int_in_offense_own_end_zone_is_td_for_defense(self, game):
-        """INT in offense's own end zone = TD for defense (no return needed)."""
-        game.state.ball_position = 15  # 15 yards from own goal
-        game.state.is_home_possession = True
-        initial_away_score = game.state.away_score
-        
-        # INT -10 yards = position 5 (in offense's own end zone)
-        mock_result = PlayResult(
-            result_type=ResultType.INTERCEPTION,
-            yards=-10,
-            turnover=True,
-            raw_result="INT -10",
-        )
-        
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
-        
-        assert outcome.touchdown is True
-        assert game.state.away_score == initial_away_score + 6
-    
-    def test_int_behind_offense_end_line_is_safety(self, game):
-        """INT at/behind offense's own end line = safety."""
+        """INT in offense's own end zone (behind goal line) = TD for defense."""
         game.state.ball_position = 5  # 5 yards from own goal
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
         
-        # INT -10 yards = position -5 (behind end line)
+        # INT -10 yards = position -5 (in offense's end zone, behind goal line)
+        # Defense intercepts in opponent's end zone = TOUCHDOWN
         mock_result = PlayResult(
             result_type=ResultType.INTERCEPTION,
             yards=-10,
@@ -425,24 +406,38 @@ class TestInterceptionEndZoneRules:
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
             outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
-        assert outcome.safety is True
-        assert game.state.away_score == initial_away_score + 2
+        # Should be a TD for defense (they intercepted in opponent's end zone)
+        assert outcome.touchdown is True
+        assert outcome.turnover is True
+        assert game.state.away_score == initial_away_score + 6
+        assert "TOUCHDOWN" in outcome.result.description
 
 
 class TestEndZoneReturns:
-    """Tests for end zone return rules (VI-12-F)."""
+    """Tests for end zone return rules (VI-12-F).
+    
+    Per official rules:
+    i. When a team gains possession within its own End Zone, they may either:
+       (a) Elect an automatic touchback, or (b) Attempt a return.
+       If a return is attempted, the End Zone yardage must be counted in the return;
+       if the ball is not advanced across the Goal Line, a touchback results.
+    ii. Returns may not be attempted from, on or behind the End Line.
+    
+    Coordinate system for _handle_end_zone_return:
+    - yards_deep_in_end_zone: 0 = at goal line, 5 = 5 yards deep, 10+ = at/behind end line
+    """
     
     def test_return_from_end_zone_successful(self, game):
         """Return from end zone that gets past goal line should succeed."""
-        # Position 5 yards deep in end zone, 10 yard return = position 15
+        # 5 yards deep in end zone, 10 yard return = 10 - 5 = 5 yard line
         final_pos, is_touchback = game._handle_end_zone_return(5, 10, elect_touchback=False)
-        assert final_pos == 15
+        assert final_pos == 5  # 10 yards return - 5 yards deep = 5 yard line
         assert is_touchback is False
     
     def test_return_from_end_zone_fails_touchback(self, game):
         """Return from end zone that doesn't get past goal line = touchback."""
-        # Position 8 yards deep in end zone, 2 yard return = position 10 (still in end zone)
-        final_pos, is_touchback = game._handle_end_zone_return(8, 2, elect_touchback=False)
+        # 8 yards deep in end zone, 5 yard return = doesn't cross goal line
+        final_pos, is_touchback = game._handle_end_zone_return(8, 5, elect_touchback=False)
         assert final_pos == 20  # Touchback
         assert is_touchback is True
     
@@ -454,31 +449,38 @@ class TestEndZoneReturns:
     
     def test_no_return_from_end_line(self, game):
         """Cannot return from on/behind end line - automatic touchback."""
-        # Position 0 (at end line) - no return allowed
-        final_pos, is_touchback = game._handle_end_zone_return(0, 50, elect_touchback=False)
+        # 10 yards deep (at end line) - no return allowed per rule ii
+        final_pos, is_touchback = game._handle_end_zone_return(10, 50, elect_touchback=False)
         assert final_pos == 20
         assert is_touchback is True
     
     def test_no_return_from_behind_end_line(self, game):
         """Cannot return from behind end line - automatic touchback."""
-        # Position -5 (behind end line) - no return allowed
-        final_pos, is_touchback = game._handle_end_zone_return(-5, 50, elect_touchback=False)
+        # 15 yards deep (behind end line) - no return allowed per rule ii
+        final_pos, is_touchback = game._handle_end_zone_return(15, 50, elect_touchback=False)
         assert final_pos == 20
         assert is_touchback is True
     
     def test_return_just_past_goal_line(self, game):
         """Return that just gets past goal line should succeed."""
-        # Position 5 yards deep, 6 yard return = position 11 (just past goal line)
+        # 5 yards deep, 6 yard return = crosses goal line, ends at 1 yard line
         final_pos, is_touchback = game._handle_end_zone_return(5, 6, elect_touchback=False)
-        assert final_pos == 11
+        assert final_pos == 1  # 6 - 5 = 1 yard line
         assert is_touchback is False
     
     def test_return_exactly_to_goal_line_is_touchback(self, game):
-        """Return that reaches exactly goal line (position 10) is still touchback."""
-        # Position 5 yards deep, 5 yard return = position 10 (at goal line, still in end zone)
+        """Return that reaches exactly goal line is still touchback (must cross it)."""
+        # 5 yards deep, 5 yard return = reaches goal line but doesn't cross it
         final_pos, is_touchback = game._handle_end_zone_return(5, 5, elect_touchback=False)
-        assert final_pos == 20  # Touchback
+        assert final_pos == 20  # Touchback - didn't cross goal line
         assert is_touchback is True
+    
+    def test_return_from_goal_line(self, game):
+        """Return from goal line (0 yards deep) - any positive return gets on field."""
+        # At goal line (0 yards deep), 1 yard return = crosses goal line
+        final_pos, is_touchback = game._handle_end_zone_return(0, 1, elect_touchback=False)
+        assert final_pos == 1  # 1 yard line
+        assert is_touchback is False
 
 
 class TestPassInterferenceEndZone:

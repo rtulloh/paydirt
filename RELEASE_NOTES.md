@@ -9,6 +9,11 @@
   - Week number persists correctly through save/load
 
 ### Bug Fixes
+- **End zone coordinate system**: Fixed incorrect end zone handling throughout the game engine. Goal lines are now correctly treated as part of the end zone (position <= 0 for offense's end zone, position >= 100 for defense's end zone). Field of play is positions 1-99
+- **Interception in defense's end zone**: Defense intercepting in their own end zone (where offense was trying to score) now correctly results in a touchback
+- **Interception in offense's end zone**: Defense intercepting in opponent's end zone (behind offense's goal line) now correctly results in a TD for defense
+- **Fumble in offense's end zone**: Defense recovering a fumble in opponent's end zone now correctly results in a TD for defense (was incorrectly always a safety)
+- **Kickoff/punt end zone returns**: Fixed per official rules VI-12-F. Returns from end zone now correctly count end zone yardage; ball must cross goal line or it's a touchback. Returns cannot be attempted from on/behind the end line
 - **Week auto-increment bug**: Fixed bug where `--week` flag was ignored and games were recorded with auto-incrementing week numbers based on total game count
 - **Raiders abbreviation**: Fixed team abbreviation from "LAA" to "LAR" for the Los Angeles Raiders
 - **Fumble recovery roll 19**: Fixed incorrect auto-TD on recovery roll 19. Per official rules, auto-TD on roll 19 only applies to blocked kicks, not regular fumbles. Fumble recovery rolls 17, 18, 19 now correctly use the INT return chart
@@ -20,8 +25,9 @@
 - **Missing import**: Fixed `NameError: format_time not defined` in resume_game function
 
 ### Test Coverage
-- **982 unit tests** passing
+- **985 unit tests** passing
 - Added tests for week parameter in standings (explicit week, auto-assign, persistence)
+- Added tests for interception in end zone touchback scenarios
 
 ---
 
