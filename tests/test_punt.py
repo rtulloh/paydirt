@@ -213,6 +213,31 @@ class TestBlockedPunt:
             assert "blocked" in outcome.description.lower()
             # Should be a safety (2 points for away team)
             assert game.state.away_score == initial_away_score + 2
+            # Outcome should have safety flag set for free kick handling
+            assert outcome.safety is True
+    
+    def test_blocked_punt_safety_triggers_free_kick(self, game):
+        """After blocked punt safety, team that gave up safety should kick."""
+        game.state.ball_position = 5  # Own 5
+        game.state.is_home_possession = True
+        
+        # Mock dice roll: punt roll = 13 (BK -10 = blocked, goes into end zone)
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (13, "B1+W0+W3=13")
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert outcome.safety is True
+            # Ball should be at 20 for free kick
+            assert game.state.ball_position == 20
+            # Home team (who gave up safety) should still have possession for free kick
+            assert game.state.is_home_possession is True
+            
+            # Now execute free kick - this should switch possession
+            mock_dice.return_value = (20, "B2+W0+W0=20")
+            kick_outcome = game.safety_free_kick(use_punt=False)
+            
+            # After free kick, possession should switch to receiving team
+            assert game.state.is_home_possession is False
 
 
 class TestTouchback:

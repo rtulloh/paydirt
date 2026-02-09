@@ -1784,6 +1784,7 @@ class PaydirtGameEngine:
         # - Roll offensive dice for recovery (same as fumble)
         # - Defense gets INT return for blocked kicks lost (rolls 19, 39 = auto TD)
         # - Offense gets INT return for blocked kicks recovered at/behind LOS with rolls 17, 18, 19
+        safety = False
         if is_blocked:
             # Extract blocked punt yardage (e.g., "BK -12" means -12 yards)
             try:
@@ -1799,6 +1800,7 @@ class PaydirtGameEngine:
                 description = "BLOCKED PUNT! Safety!"
                 turnover = False
                 touchdown = False
+                safety = True
             else:
                 # Roll for recovery using offensive dice (kicking team)
                 recovery_roll, recovery_desc = roll_chart_dice()
@@ -1899,6 +1901,7 @@ class PaydirtGameEngine:
                 yards_gained=block_yards,
                 turnover=turnover,
                 touchdown=touchdown,
+                safety=safety,
                 field_position_before=field_pos_before,
                 field_position_after=self.state.field_position_str(),
                 description=description
