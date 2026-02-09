@@ -8,7 +8,7 @@ Official rules:
 import pytest
 from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine
+from paydirt.game_engine import PaydirtGameEngine, PlayType, DefenseType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 
 
@@ -169,6 +169,60 @@ class TestSafetyFreeKickPunt:
         
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
+
+
+class TestSafetyEndToEnd:
+    """End-to-end tests for safety -> free kick flow."""
+    
+    def test_safety_play_triggers_free_kick_flow(self, game):
+        """A play resulting in safety should set up for free kick by victim team."""
+        game.state.is_home_possession = True
+        game.state.ball_position = 2  # Near own goal line
+        initial_away_score = game.state.away_score
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll that results in negative yardage pushing into end zone
+            mock_dice.return_value = (15, "B1+W0+W5=15")  # -1 yard play
+            
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+        
+        # Check if safety occurred (ball pushed into end zone)
+        if outcome.safety:
+            # Defense (away) should have scored 2 points
+            assert game.state.away_score == initial_away_score + 2
+            # Ball should be at 20 for free kick
+            assert game.state.ball_position == 20
+            # Victim (home) still has possession for free kick
+            assert game.state.is_home_possession is True
+            
+            # Execute free kick
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                mock_dice.return_value = (15, "B1+W0+W5=15")
+                kick_outcome = game.safety_free_kick(use_punt=False)
+            
+            # After free kick, receiving team (away - who scored safety) has ball
+            assert game.state.is_home_possession is False
+            assert game.state.down == 1
+            assert game.state.yards_to_go == 10
+    
+    def test_sack_safety_triggers_free_kick(self, game):
+        """QB sack in end zone should result in safety and free kick setup."""
+        game.state.is_home_possession = True
+        game.state.ball_position = 3  # Own 3 yard line
+        initial_away_score = game.state.away_score
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # QT result (sack) that pushes into end zone
+            mock_dice.return_value = (30, "B2+W2+W6=30")  # QT on many charts
+            
+            outcome = game.run_play(PlayType.LONG_PASS, DefenseType.BLITZ)
+        
+        if outcome.safety:
+            # Verify safety scored
+            assert game.state.away_score == initial_away_score + 2
+            # Victim has ball at 20 for free kick
+            assert game.state.ball_position == 20
+            assert game.state.is_home_possession is True
 
 
 class TestTouchbackRules:

@@ -204,6 +204,69 @@ class TestInterceptionReturnTouchdown:
         assert game.state.away_score == initial_away_score + 6
 
 
+class TestInterceptionReturnIntoEndZone:
+    """Tests for INT return into own end zone (touchback per momentum rule)."""
+    
+    def test_negative_return_into_end_zone_is_touchback(self, game):
+        """INT return that goes into own end zone should be touchback at 20."""
+        game.state.ball_position = 95  # Offense near defense's goal line
+        game.state.is_home_possession = True
+        
+        # INT at 95 + 3 = 98 from offense view
+        # From defense view = 100 - 98 = 2 (near own goal line)
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=3,
+            turnover=True,
+            raw_result="INT 3",
+            dice_roll=10,
+        )
+        
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Return roll of 15 (-5 yard return) - pushes into end zone
+                mock_dice.return_value = (15, "B1+W5+W0=15")
+                
+                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+        
+        # INT at defense's 2, return -5 = position -3 (in end zone)
+        # Per momentum rule, this is a TOUCHBACK at 20
+        assert game.state.ball_position == 20
+        assert "momentum" in outcome.description.lower() or "TOUCHBACK" in outcome.description
+        # Should NOT be a safety - defense intercepted, momentum carried them back
+        assert outcome.safety is False
+        # Possession should be with defense (away team)
+        assert game.state.is_home_possession is False
+    
+    def test_int_near_goal_with_small_negative_return(self, game):
+        """INT at own 2 with -1 return should be touchback."""
+        game.state.ball_position = 97  # Offense at defense's 3
+        game.state.is_home_possession = True
+        
+        # INT at 97 + 1 = 98 from offense view
+        # From defense view = 100 - 98 = 2
+        mock_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=1,
+            turnover=True,
+            raw_result="INT 1",
+            dice_roll=10,
+        )
+        
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # -6 yard return (like NYG/LAR roll 12)
+                mock_dice.return_value = (12, "B1+W2+W0=12")
+                # Temporarily set return chart to have -6
+                game.state.away_chart.special_teams.interception_return[12] = "-6"
+                
+                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+        
+        # INT at 2, return -6 = -4 (in end zone) -> touchback at 20
+        assert game.state.ball_position == 20
+        assert outcome.safety is False
+
+
 class TestInterceptionPossessionChange:
     """Tests for possession change on interception."""
     

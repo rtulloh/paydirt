@@ -549,8 +549,13 @@ class PaydirtGameEngine:
             self.state.ball_position = 97
             if txn:
                 txn.add_event(create_touchdown_event(acting_team=def_team))
+        elif final_position <= 0:
+            # INT return into own end zone = TOUCHBACK at 20
+            # Per NFL momentum rule, impetus from the pass means touchback, not safety
+            self.state.ball_position = 20
+            result.description = f"INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
         else:
-            # Cap position for non-TD returns
+            # Normal field position
             final_position = clamp_ball_position(final_position)
             self.state.ball_position = final_position
 
@@ -1999,7 +2004,7 @@ class PaydirtGameEngine:
                         defense_type=DefenseType.STANDARD,
                         result=parse_result_string(punt_result),
                         yards_gained=punt_yards,
-                        turnover=True,
+                        turnover=False,  # Punting team recovers - no turnover
                         field_position_before=field_pos_before,
                         field_position_after=self.state.field_position_str(),
                         description=f"Punt {punt_yards} yards, {return_desc} Recovered at {self.state.field_position_str()}"

@@ -303,6 +303,11 @@ class TestPuntReturn:
             assert "fumble" in outcome.description.lower()
             # Punting team should retain possession
             assert game.state.is_home_possession is True
+            # This is NOT a turnover - punting team recovered their own punt
+            assert outcome.turnover is False
+            # Should be 1st and 10 for punting team
+            assert game.state.down == 1
+            assert game.state.yards_to_go == 10
 
 
 class TestPuntFieldPosition:
