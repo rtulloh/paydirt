@@ -2209,8 +2209,17 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
 
 
 def _offer_record_to_standings(year: int, home_team: str, home_score: int,
-                                away_team: str, away_score: int):
-    """Offer to record the game result to season standings."""
+                                away_team: str, away_score: int, week: int = 0):
+    """Offer to record the game result to season standings.
+    
+    Args:
+        year: Season year
+        home_team: Home team nickname
+        home_score: Home team final score
+        away_team: Away team nickname
+        away_score: Away team final score
+        week: Week number (0 = auto-assign based on game count)
+    """
     from .standings import add_game_result
     
     print("\n" + "-" * 50)
@@ -2222,19 +2231,23 @@ def _offer_record_to_standings(year: int, home_team: str, home_score: int,
             home_team=home_team,
             home_score=home_score,
             away_team=away_team,
-            away_score=away_score
+            away_score=away_score,
+            week=week
         )
         if success:
-            print(f"  Game recorded: {away_team} {away_score} @ {home_team} {home_score}")
+            week_str = f"Week {week} - " if week > 0 else ""
+            print(f"  Game recorded: {week_str}{away_team} {away_score} @ {home_team} {home_score}")
         else:
             print("  Error: Could not record game (unknown team name?)")
-            print(f"  You can manually add with: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}")
+            week_arg = f" --week {week}" if week > 0 else ""
+            print(f"  You can manually add with: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}{week_arg}")
     else:
         print("  Game not recorded.")
-        print(f"  To record later: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}")
+        week_arg = f" --week {week}" if week > 0 else ""
+        print(f"  To record later: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}{week_arg}")
 
 
-def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
+def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week: int = 0):
     """
     Main interactive game loop.
     
@@ -2244,6 +2257,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
                    - medium: CPU aggression 0.5 (balanced, default)
                    - hard: CPU aggression 0.7 (aggressive, optimal)
         compact: If True, use compact display mode with less verbose output
+        week: Week number for recording to standings (0 = auto-assign)
     """
     # Set global display mode
     global COMPACT_MODE
@@ -2802,11 +2816,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False):
         home_team=home_chart.peripheral.team_nickname,
         home_score=game.state.home_score,
         away_team=away_chart.peripheral.team_nickname,
-        away_score=game.state.away_score
+        away_score=game.state.away_score,
+        week=week
     )
 
 
-def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool = True):
+def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool = True, week: int = 0):
     """
     Resume a saved game from a save file.
     
@@ -2814,6 +2829,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         save_file: Path to save file (default: paydirt_save.json)
         difficulty: CPU difficulty level
         compact: Display mode
+        week: Week number for recording to standings (0 = auto-assign)
     """
     global COMPACT_MODE
     COMPACT_MODE = compact
@@ -3172,7 +3188,8 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         home_team=home_chart.peripheral.team_nickname,
         home_score=game.state.home_score,
         away_team=away_chart.peripheral.team_nickname,
-        away_score=game.state.away_score
+        away_score=game.state.away_score,
+        week=week
     )
 
 

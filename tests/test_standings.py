@@ -7,7 +7,7 @@ import shutil
 
 from paydirt.standings import (
     GameResult, TeamRecord, Season, StandingsManager,
-    normalize_team_name
+    normalize_team_name, add_game_result
 )
 
 
@@ -122,7 +122,7 @@ class TestSeason:
         assert game.week == 1
     
     def test_add_multiple_games_auto_week(self):
-        """Week numbers should auto-increment."""
+        """Week numbers should auto-increment when not specified."""
         season = Season(year=1983)
         
         game1 = season.add_game("Redskins", 21, "Giants", 13)
@@ -130,6 +130,32 @@ class TestSeason:
         
         assert game1.week == 1
         assert game2.week == 2
+    
+    def test_add_game_with_explicit_week(self):
+        """Week number should be used when explicitly specified."""
+        season = Season(year=1983)
+        
+        # Add games with explicit week numbers
+        game1 = season.add_game("Redskins", 21, "Giants", 13, week=5)
+        game2 = season.add_game("Cowboys", 28, "Eagles", 14, week=5)
+        game3 = season.add_game("Bears", 17, "Packers", 10, week=5)
+        
+        assert game1.week == 5
+        assert game2.week == 5
+        assert game3.week == 5
+    
+    def test_add_game_week_zero_auto_assigns(self):
+        """Week=0 should auto-assign based on game count."""
+        season = Season(year=1983)
+        
+        # Add some games first
+        season.add_game("Redskins", 21, "Giants", 13, week=1)
+        season.add_game("Cowboys", 28, "Eagles", 14, week=1)
+        
+        # Add with week=0 (should auto-assign to 3)
+        game3 = season.add_game("Bears", 17, "Packers", 10, week=0)
+        
+        assert game3.week == 3
     
     def test_standings_single_game(self):
         """Standings after one game."""
@@ -240,6 +266,72 @@ class TestStandingsManager:
         
         assert 1983 in seasons
         assert 1984 in seasons
+
+
+class TestAddGameResult:
+    """Tests for add_game_result helper function and week parameter."""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for test data."""
+        temp = tempfile.mkdtemp()
+        yield temp
+        shutil.rmtree(temp)
+    
+    def test_add_game_result_with_explicit_week(self, temp_dir):
+        """add_game_result should use explicit week when provided."""
+        from pathlib import Path
+        manager = StandingsManager(data_dir=Path(temp_dir))
+        
+        # Add games with explicit week
+        season = manager.load_season(1983)
+        game1 = season.add_game("Redskins", 21, "Giants", 13, week=1)
+        game2 = season.add_game("Cowboys", 28, "Eagles", 14, week=1)
+        manager.save_season(season)
+        
+        # Verify weeks are correct
+        loaded = manager.load_season(1983)
+        assert loaded.games[0].week == 1
+        assert loaded.games[1].week == 1
+    
+    def test_add_game_result_week_persists_after_reload(self, temp_dir):
+        """Week number should persist correctly after save/load."""
+        from pathlib import Path
+        manager = StandingsManager(data_dir=Path(temp_dir))
+        
+        # Add games with explicit week numbers
+        season = manager.load_season(1983)
+        season.add_game("Redskins", 21, "Giants", 13, week=5)
+        season.add_game("Cowboys", 28, "Eagles", 14, week=5)
+        season.add_game("Bears", 17, "Packers", 10, week=6)
+        manager.save_season(season)
+        
+        # Reload and verify
+        loaded = manager.load_season(1983)
+        assert len(loaded.games) == 3
+        assert loaded.games[0].week == 5
+        assert loaded.games[1].week == 5
+        assert loaded.games[2].week == 6
+    
+    def test_multiple_games_same_week(self, temp_dir):
+        """Multiple games can be recorded for the same week."""
+        from pathlib import Path
+        manager = StandingsManager(data_dir=Path(temp_dir))
+        
+        # Add 5 games all in week 1
+        season = manager.load_season(1983)
+        season.add_game("Redskins", 21, "Giants", 13, week=1)
+        season.add_game("Cowboys", 28, "Eagles", 14, week=1)
+        season.add_game("Bears", 17, "Packers", 10, week=1)
+        season.add_game("49ers", 24, "Rams", 17, week=1)
+        season.add_game("Dolphins", 31, "Bills", 14, week=1)
+        manager.save_season(season)
+        
+        # Reload and verify all are week 1
+        loaded = manager.load_season(1983)
+        assert len(loaded.games) == 5
+        for game in loaded.games:
+            assert game.week == 1
 
 
 class TestNormalizeTeamName:

@@ -24,6 +24,8 @@ def main():
         compact = False
         load_save = False
         save_file = None
+        week = 0  # 0 means auto-assign
+        record = False
 
         args = sys.argv[2:]
         i = 0
@@ -33,7 +35,7 @@ def main():
                     difficulty = args[i + 1]
                     i += 2
                 else:
-                    print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]]")
+                    print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]] [--week N] [--record]")
                     print("  Difficulty levels:")
                     print("    easy   - CPU makes conservative decisions")
                     print("    medium - Balanced CPU play calling (default)")
@@ -42,6 +44,9 @@ def main():
                     print("    --compact - Use compact display (less verbose)")
                     print("  Save/Load:")
                     print("    --load [file] - Resume a saved game (default: paydirt_save.json)")
+                    print("  Standings:")
+                    print("    --week N   - Week number for recording to standings")
+                    print("    --record   - Prompt to record game to standings at end")
                     return
             elif args[i] in ['--compact', '-c']:
                 compact = True
@@ -54,15 +59,29 @@ def main():
                     i += 2
                 else:
                     i += 1
+            elif args[i] in ['--week', '-w']:
+                if i + 1 < len(args):
+                    try:
+                        week = int(args[i + 1])
+                        i += 2
+                    except ValueError:
+                        print(f"Error: --week requires a number, got '{args[i + 1]}'")
+                        return
+                else:
+                    print("Error: --week requires a number")
+                    return
+            elif args[i] in ['--record', '-r']:
+                record = True
+                i += 1
             else:
                 i += 1
 
         if load_save:
             from .interactive_game import resume_game
-            resume_game(save_file, difficulty=difficulty, compact=compact)
+            resume_game(save_file, difficulty=difficulty, compact=compact, week=week)
         else:
             from .interactive_game import run_interactive_game
-            run_interactive_game(difficulty=difficulty, compact=compact)
+            run_interactive_game(difficulty=difficulty, compact=compact, week=week)
         return
 
     # Check for -auto flag for CPU vs CPU mode
