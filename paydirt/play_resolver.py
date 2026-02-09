@@ -7,10 +7,14 @@ import random
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from .chart_loader import TeamChart, OffenseChart, DefenseChart
 from .priority_chart import apply_priority_chart
+from .play_events import (
+    PlayTransaction, create_chart_lookup_event, create_fumble_event,
+    create_recovery_event
+)
 
 
 class PlayType(Enum):
@@ -124,6 +128,8 @@ class PenaltyChoice:
     original_defense_result: str = ""
     # All reroll descriptions for logging
     reroll_log: List[str] = field(default_factory=list)
+    # Transaction capturing all play events (chart lookup, fumble recovery, etc.)
+    transaction: Optional[PlayTransaction] = None
 
 
 def roll_dice() -> int:
@@ -1203,6 +1209,22 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     combined = apply_priority_chart(off_result_str, def_result_str,
                                     is_passing_play=is_passing_play(play_type))
 
+    # Build transaction to capture all play events
+    txn = PlayTransaction()
+    off_team = offense_chart.peripheral.short_name
+    def_team = defense_chart.peripheral.short_name if hasattr(defense_chart, 'peripheral') else "DEF"
+
+    # Add chart lookup event
+    txn.add_event(create_chart_lookup_event(
+        offense_roll=off_dice_roll,
+        offense_desc=off_dice_desc,
+        offense_result=off_result_str,
+        defense_row=def_dice_desc,
+        defense_result=def_result_str,
+        priority=combined.description,
+        acting_team=off_team
+    ))
+
     # Build the PlayResult based on combined outcome
     play_result = PlayResult(
         result_type=ResultType.YARDS,
@@ -1243,6 +1265,20 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
             fumble_rec_range = offense_chart.peripheral.fumble_recovered_range
             offense_recovers = fumble_rec_range[0] <= recovery_roll <= fumble_rec_range[1]
             
+            # Add fumble and recovery events to transaction
+            txn.add_event(create_fumble_event(
+                yards_before_fumble=combined.final_yards,
+                fumble_spot=combined.final_yards,  # Will be adjusted by game engine with ball position
+                acting_team=off_team
+            ))
+            txn.add_event(create_recovery_event(
+                recovery_roll=recovery_roll,
+                recovery_desc=recovery_desc,
+                offense_recovers=offense_recovers,
+                recovery_range=fumble_rec_range,
+                acting_team=off_team if offense_recovers else def_team
+            ))
+            
             # Store recovery info on PlayResult
             play_result.fumble_recovery_roll = recovery_roll
             play_result.fumble_recovered = offense_recovers
@@ -1282,5 +1318,6 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         offsetting=offsetting,
         is_pass_interference=False,
         original_defense_result=original_def_result,
-        reroll_log=reroll_log
+        reroll_log=reroll_log,
+        transaction=txn
     )

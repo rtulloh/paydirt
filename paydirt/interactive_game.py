@@ -1981,6 +1981,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
 
     # Show play result with projected down/distance
     play_result = penalty_choice.play_result
+    txn = penalty_choice.transaction
     print("\n  Play Result (if accepted, down counts):")
     
     # Handle FG plays specially - the chart yardage is kick distance, not yards gained
@@ -1991,6 +1992,21 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             print("    -> FIELD GOAL GOOD!")
         else:
             print("    -> FIELD GOAL NO GOOD (turnover on downs)")
+    elif play_result.result_type == ResultType.FUMBLE:
+        # Fumble - show the play result and recovery from transaction
+        print(f"    {play_result.description}")
+        # Get recovery info from transaction
+        if txn and txn.has_event_type(EventType.FUMBLE_RECOVERY):
+            recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
+            if recovery_events:
+                rec_event = recovery_events[0]
+                print(f"    Recovery roll {rec_event.dice_roll}: {rec_event.description}")
+                if rec_event.possession_change:
+                    print("    ** TURNOVER **")
+                else:
+                    print("    (Offense keeps possession)")
+        elif play_result.turnover:
+            print("    ** TURNOVER **")
     elif play_result.turnover:
         print(f"    {play_result.description}")
         print("    ** TURNOVER **")
