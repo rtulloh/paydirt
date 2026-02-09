@@ -937,37 +937,71 @@ class TestCPUPenaltyDecisionWithTurnover:
 class TestFumblePenaltyDisplay:
     """Tests for fumble penalty decision display.
     
-    Bug fix: When a fumble occurs with a penalty, the UI was showing "TURNOVER"
-    before the fumble recovery roll was made. This is incorrect because fumble
-    recovery is not determined until the play result is applied.
+    Bug fix: When a fumble occurs with a penalty, the fumble recovery must be
+    rolled BEFORE presenting the penalty choice, just like in the NFL where the
+    play is fully completed before the penalty decision is made.
     """
     
-    def test_fumble_result_type_not_shown_as_turnover(self):
-        """Fumble play result should not be labeled as TURNOVER in penalty UI.
+    def test_fumble_recovery_rolled_before_penalty_choice(self):
+        """Fumble recovery should be rolled in resolve_play_with_penalties.
         
-        The fumble recovery roll happens AFTER the penalty decision, so we can't
-        know if it's a turnover yet. Should show "FUMBLE (recovery TBD)" instead.
+        The fumble recovery roll now happens during play resolution, so the
+        complete outcome is known before the penalty choice is presented.
         """
-        # Create a fumble play result
+        # Create a fumble play result with pre-determined recovery (offense recovers)
         fumble_result = PlayResult(
             result_type=ResultType.FUMBLE,
             yards=11,
             description="Fumble",
-            turnover=True,  # Chart marks fumbles as turnover, but recovery not yet determined
+            turnover=False,  # Offense recovered
             dice_roll=23
         )
+        fumble_result.fumble_recovered = True
+        fumble_result.fumble_recovery_roll = 18
+        fumble_result.fumble_resolved = True
         
-        # The fix: check result_type, not turnover flag
+        # The UI should show the actual recovery result
+        fumble_recovered = getattr(fumble_result, 'fumble_recovered', False)
+        recovery_roll = getattr(fumble_result, 'fumble_recovery_roll', 0)
         if fumble_result.result_type == ResultType.FUMBLE:
-            # Fumble - recovery not yet determined
-            play_outcome_str = "FUMBLE (recovery TBD)"
+            if fumble_recovered:
+                play_outcome_str = f"FUMBLE - Offense recovers (roll {recovery_roll})"
+            else:
+                play_outcome_str = f"FUMBLE - TURNOVER (roll {recovery_roll})"
         elif fumble_result.turnover:
             play_outcome_str = "TURNOVER"
         else:
             play_outcome_str = f"{fumble_result.yards} yards"
         
-        assert play_outcome_str == "FUMBLE (recovery TBD)"
+        assert play_outcome_str == "FUMBLE - Offense recovers (roll 18)"
         assert "TURNOVER" not in play_outcome_str
+    
+    def test_fumble_turnover_shows_correctly(self):
+        """Fumble with defense recovery should show as TURNOVER."""
+        fumble_result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=11,
+            description="Fumble",
+            turnover=True,  # Defense recovered
+            dice_roll=23
+        )
+        fumble_result.fumble_recovered = False
+        fumble_result.fumble_recovery_roll = 35
+        fumble_result.fumble_resolved = True
+        
+        fumble_recovered = getattr(fumble_result, 'fumble_recovered', False)
+        recovery_roll = getattr(fumble_result, 'fumble_recovery_roll', 0)
+        if fumble_result.result_type == ResultType.FUMBLE:
+            if fumble_recovered:
+                play_outcome_str = f"FUMBLE - Offense recovers (roll {recovery_roll})"
+            else:
+                play_outcome_str = f"FUMBLE - TURNOVER (roll {recovery_roll})"
+        elif fumble_result.turnover:
+            play_outcome_str = "TURNOVER"
+        else:
+            play_outcome_str = f"{fumble_result.yards} yards"
+        
+        assert play_outcome_str == "FUMBLE - TURNOVER (roll 35)"
     
     def test_interception_still_shows_turnover(self):
         """Interception should still show as TURNOVER (no recovery roll needed)."""
@@ -980,8 +1014,12 @@ class TestFumblePenaltyDisplay:
         )
         
         # Interceptions are definite turnovers
+        fumble_recovered = getattr(int_result, 'fumble_recovered', False)
         if int_result.result_type == ResultType.FUMBLE:
-            play_outcome_str = "FUMBLE (recovery TBD)"
+            if fumble_recovered:
+                play_outcome_str = "FUMBLE - Offense recovers"
+            else:
+                play_outcome_str = "FUMBLE - TURNOVER"
         elif int_result.turnover:
             play_outcome_str = "TURNOVER"
         else:

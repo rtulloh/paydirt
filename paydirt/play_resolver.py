@@ -1237,7 +1237,17 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         if "INT" in off_result_str or "INT" in def_result_str:
             play_result.result_type = ResultType.INTERCEPTION
         else:
+            # Fumble - roll for recovery NOW so outcome is known before penalty choice
             play_result.result_type = ResultType.FUMBLE
+            recovery_roll, recovery_desc = roll_chart_dice()
+            fumble_rec_range = offense_chart.peripheral.fumble_recovered_range
+            offense_recovers = fumble_rec_range[0] <= recovery_roll <= fumble_rec_range[1]
+            
+            # Store recovery info on PlayResult
+            play_result.fumble_recovery_roll = recovery_roll
+            play_result.fumble_recovered = offense_recovers
+            play_result.fumble_resolved = True
+            play_result.turnover = not offense_recovers  # Only a turnover if defense recovers
 
     elif combined.is_incomplete:
         play_result.result_type = ResultType.INCOMPLETE
