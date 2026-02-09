@@ -2036,7 +2036,13 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             if play_result.touchdown or play_new_pos >= 100:
                 play_outcome_str = "TOUCHDOWN!"
                 play_field_str = "end zone"
+            elif play_result.result_type == ResultType.FUMBLE:
+                # Fumble - recovery not yet determined, show as fumble not turnover
+                play_outcome_str = "FUMBLE (recovery TBD)"
+                play_new_pos = clamp_ball_position(play_new_pos)
+                play_field_str = format_field_position(play_new_pos, style="short")
             elif play_result.turnover:
+                # Non-fumble turnover (interception)
                 play_outcome_str = "TURNOVER"
                 play_new_pos = clamp_ball_position(play_new_pos)
                 play_field_str = format_field_position(play_new_pos, style="short")

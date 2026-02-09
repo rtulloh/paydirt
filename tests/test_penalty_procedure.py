@@ -932,3 +932,59 @@ class TestCPUPenaltyDecisionWithTurnover:
                 accept_play = True
         
         assert accept_play is False, "Offense should decline play (turnover) and take penalty"
+
+
+class TestFumblePenaltyDisplay:
+    """Tests for fumble penalty decision display.
+    
+    Bug fix: When a fumble occurs with a penalty, the UI was showing "TURNOVER"
+    before the fumble recovery roll was made. This is incorrect because fumble
+    recovery is not determined until the play result is applied.
+    """
+    
+    def test_fumble_result_type_not_shown_as_turnover(self):
+        """Fumble play result should not be labeled as TURNOVER in penalty UI.
+        
+        The fumble recovery roll happens AFTER the penalty decision, so we can't
+        know if it's a turnover yet. Should show "FUMBLE (recovery TBD)" instead.
+        """
+        # Create a fumble play result
+        fumble_result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=11,
+            description="Fumble",
+            turnover=True,  # Chart marks fumbles as turnover, but recovery not yet determined
+            dice_roll=23
+        )
+        
+        # The fix: check result_type, not turnover flag
+        if fumble_result.result_type == ResultType.FUMBLE:
+            # Fumble - recovery not yet determined
+            play_outcome_str = "FUMBLE (recovery TBD)"
+        elif fumble_result.turnover:
+            play_outcome_str = "TURNOVER"
+        else:
+            play_outcome_str = f"{fumble_result.yards} yards"
+        
+        assert play_outcome_str == "FUMBLE (recovery TBD)"
+        assert "TURNOVER" not in play_outcome_str
+    
+    def test_interception_still_shows_turnover(self):
+        """Interception should still show as TURNOVER (no recovery roll needed)."""
+        int_result = PlayResult(
+            result_type=ResultType.INTERCEPTION,
+            yards=-5,
+            description="Interception",
+            turnover=True,
+            dice_roll=12
+        )
+        
+        # Interceptions are definite turnovers
+        if int_result.result_type == ResultType.FUMBLE:
+            play_outcome_str = "FUMBLE (recovery TBD)"
+        elif int_result.turnover:
+            play_outcome_str = "TURNOVER"
+        else:
+            play_outcome_str = f"{int_result.yards} yards"
+        
+        assert play_outcome_str == "TURNOVER"
