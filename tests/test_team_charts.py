@@ -2,6 +2,7 @@
 Tests for team charts and play resolution.
 """
 import pytest
+from pathlib import Path
 from unittest.mock import patch
 
 from paydirt.models import Team, PlayType, DefenseType, PlayResult
@@ -11,6 +12,7 @@ from paydirt.team_charts import (
     apply_team_modifier, apply_defense_modifier, get_base_rushing_chart,
     PlayOutcome
 )
+from paydirt.chart_loader import load_team_chart, parse_offense_chart
 
 
 class TestDiceRolling:
@@ -280,3 +282,100 @@ class TestSpecialTeams:
         
         # Should be around 40-50%
         assert 25 <= successes <= 65
+
+
+class TestChartLoaderPeripheralFromOffense:
+    """Tests for extracting peripheral data from OFFENSE chart (no PERIPHERAL file needed)."""
+    
+    def test_load_team_extracts_year_and_name(self):
+        """Chart loader should extract year and team name from OFFENSE header."""
+        team_dir = Path('seasons/1983/Bears')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+        
+        chart = load_team_chart(team_dir)
+        
+        assert chart.peripheral.year == 1983
+        assert chart.peripheral.team_name == "Chicago"
+    
+    def test_load_team_extracts_fumble_ranges(self):
+        """Chart loader should extract fumble recovery ranges from OFFENSE chart."""
+        team_dir = Path('seasons/1983/Bears')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+        
+        chart = load_team_chart(team_dir)
+        
+        # Bears have fumble recovered 10-27, lost 28-39
+        assert chart.peripheral.fumble_recovered_range == (10, 27)
+        assert chart.peripheral.fumble_lost_range == (28, 39)
+    
+    def test_load_team_generates_short_name(self):
+        """Chart loader should generate correct short names."""
+        team_dir = Path('seasons/1983/Bears')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+        
+        chart = load_team_chart(team_dir)
+        
+        assert chart.peripheral.short_name == "CHI '83"
+    
+    def test_load_team_disambiguates_ny_teams(self):
+        """Chart loader should correctly distinguish Giants vs Jets."""
+        giants_dir = Path('seasons/1983/Giants')
+        jets_dir = Path('seasons/1983/Jets')
+        
+        if not giants_dir.exists() or not jets_dir.exists():
+            pytest.skip("Test data not available")
+        
+        giants = load_team_chart(giants_dir)
+        jets = load_team_chart(jets_dir)
+        
+        assert giants.peripheral.short_name == "NYG '83"
+        assert jets.peripheral.short_name == "NYA '83"
+    
+    def test_load_team_disambiguates_la_teams(self):
+        """Chart loader should correctly distinguish Raiders vs Rams."""
+        raiders_dir = Path('seasons/1983/Raiders')
+        rams_dir = Path('seasons/1983/Rams')
+        
+        if not raiders_dir.exists() or not rams_dir.exists():
+            pytest.skip("Test data not available")
+        
+        raiders = load_team_chart(raiders_dir)
+        rams = load_team_chart(rams_dir)
+        
+        assert raiders.peripheral.short_name == "LAR '83"
+        assert rams.peripheral.short_name == "LAN '83"
+    
+    def test_fumble_ranges_vary_by_team(self):
+        """Different teams should have different fumble recovery ranges."""
+        teams_dir = Path('seasons/1983')
+        if not teams_dir.exists():
+            pytest.skip("Test data not available")
+        
+        fumble_ranges = set()
+        for team_dir in teams_dir.iterdir():
+            if team_dir.is_dir():
+                chart = load_team_chart(team_dir)
+                fumble_ranges.add(chart.peripheral.fumble_recovered_range)
+        
+        # Should have multiple different fumble ranges (not all defaults)
+        assert len(fumble_ranges) > 5, "Expected varied fumble ranges across teams"
+    
+    def test_all_teams_load_without_peripheral_file(self):
+        """All 28 teams should load successfully without PERIPHERAL file."""
+        teams_dir = Path('seasons/1983')
+        if not teams_dir.exists():
+            pytest.skip("Test data not available")
+        
+        loaded_count = 0
+        for team_dir in teams_dir.iterdir():
+            if team_dir.is_dir():
+                # This should not raise an error
+                chart = load_team_chart(team_dir)
+                assert chart.peripheral.short_name  # Should have a short name
+                assert chart.peripheral.fumble_recovered_range[0] == 10  # All start at 10
+                loaded_count += 1
+        
+        assert loaded_count == 28, f"Expected 28 teams, got {loaded_count}"

@@ -184,13 +184,113 @@ def parse_peripheral_data(filepath: str) -> PeripheralData:
     )
 
 
-def parse_offense_chart(filepath: str) -> OffenseChart:
-    """Parse the OFFENSE CSV file."""
+def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
+    """
+    Parse the OFFENSE CSV file.
+    
+    Extracts both the offense chart data and peripheral data (team name, year,
+    fumble ranges) from the offense chart, eliminating the need for a separate
+    PERIPHERAL DATA file.
+    
+    Returns:
+        Tuple of (OffenseChart, PeripheralData)
+    """
     with open(filepath, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         rows = list(reader)
 
     chart = OffenseChart()
+    
+    # Extract peripheral data from offense chart
+    # Row 1 (index 0): "1983 Chicago                      offense"
+    # Row 12 (index 11): Contains "Yardage factors: 100% / 80%" in column 11
+    # Row 21 (index 20): Contains "Power rating: 220½ ± 1" in column 11
+    # Row 26 (index 25): Contains "Fumble Recovered 10-27; Lost Ball 28-39" in column 15
+    
+    year = 1983
+    team_name = ""
+    team_nickname = ""
+    fumble_rec = (10, 31)  # default
+    fumble_lost = (32, 39)  # default
+    
+    # Parse year and team from row 1 (format: "1983 Chicago                      offense")
+    if rows and rows[0]:
+        header = rows[0][0].strip() if rows[0][0] else ""
+        # Extract year (first 4 digits) and team name
+        year_match = re.match(r'(\d{4})\s+(.+?)\s+offense', header, re.IGNORECASE)
+        if year_match:
+            year = int(year_match.group(1))
+            team_name = year_match.group(2).strip()
+            # Use team name as nickname too (can be overridden)
+            team_nickname = team_name
+    
+    # Parse fumble ranges - look for "Fumble Recovered X-Y; Lost Ball Z-W" pattern
+    # This is typically on the row for dice roll 26, but search all rows to be safe
+    for row in rows:
+        row_text = ' '.join(str(cell) for cell in row)
+        fumble_match = re.search(r'Fumble\s+Recovered\s+(\d+)-(\d+);?\s*Lost\s+Ball\s+(\d+)-(\d+)', row_text, re.IGNORECASE)
+        if fumble_match:
+            fumble_rec = (int(fumble_match.group(1)), int(fumble_match.group(2)))
+            fumble_lost = (int(fumble_match.group(3)), int(fumble_match.group(4)))
+            break
+
+    # Generate short name (e.g., "CHI '83")
+    # Use team directory name to disambiguate (Giants vs Jets, Raiders vs Rams)
+    # The team_name from header may be ambiguous (e.g., "New York", "Los Angeles")
+    short_name_map = {
+        'Chicago': 'CHI',
+        'Cincinnati': 'CIN',
+        'Cleveland': 'CLE',
+        'Dallas': 'DAL',
+        'Denver': 'DEN',
+        'Detroit': 'DET',
+        'Green Bay': 'GB',
+        'Houston': 'HOU',
+        'Indianapolis': 'IND',
+        'Baltimore': 'BAL',
+        'Kansas City': 'KC',
+        'Miami': 'MIA',
+        'Minnesota': 'MIN',
+        'New England': 'NE',
+        'New Orleans': 'NO',
+        'Philadelphia': 'PHI',
+        'Pittsburgh': 'PIT',
+        'San Diego': 'SD',
+        'San Francisco': 'SF',
+        'Seattle': 'SEA',
+        'St. Louis': 'STL',
+        'Tampa Bay': 'TB',
+        'Washington': 'Wash',
+        'Atlanta': 'ATL',
+        'Buffalo': 'BUF',
+        # Handle variants without spaces
+        'NewYork': 'NY',  # Will be disambiguated by directory
+        'LosAngeles': 'LA',  # Will be disambiguated by directory
+    }
+    
+    # Try direct lookup first
+    abbrev = short_name_map.get(team_name)
+    
+    # If not found or ambiguous (NY/LA), we'll fix it in load_team_chart
+    # using the directory name
+    if not abbrev:
+        abbrev = team_name[:3].upper() if team_name else 'UNK'
+    
+    short_name = f"{abbrev} '{str(year)[2:]}"
+    
+    peripheral = PeripheralData(
+        year=year,
+        team_name=team_name,
+        team_nickname=team_nickname,
+        power_rating=50,  # Not used in game mechanics
+        power_rating_variance=0,
+        base_yardage_factor=100,
+        reduced_yardage_factor=80,
+        fumble_recovered_range=fumble_rec,
+        fumble_lost_range=fumble_lost,
+        special_defense="",
+        short_name=short_name,
+    )
 
     # The offense data starts at row 4 (index 3) with dice roll 10
     # Columns: ,#,Line Plunge,Off Tackle,End Run,Draw,Screen,Short,Med,Long,T/E S/L,...,B,QT,#
@@ -233,7 +333,7 @@ def parse_offense_chart(filepath: str) -> OffenseChart:
         if len(row) > 14:
             chart.qb_time[dice_roll] = get_cell(14)
 
-    return chart
+    return chart, peripheral
 
 
 def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]:
@@ -337,8 +437,9 @@ def load_team_chart(team_dir: str) -> TeamChart:
     Load a complete team chart from a directory containing the CSV files.
     
     Args:
-        team_dir: Path to directory containing OFFENSE-Table 1.csv, 
-                  DEFENSE-Table 1.csv, and PERIPHERAL DATA-Table 1.csv
+        team_dir: Path to directory containing OFFENSE-Table 1.csv and
+                  DEFENSE-Table 1.csv. PERIPHERAL DATA file is optional -
+                  all required data is extracted from the OFFENSE chart.
     
     Returns:
         TeamChart with all parsed data
@@ -348,18 +449,31 @@ def load_team_chart(team_dir: str) -> TeamChart:
     # Find the CSV files
     offense_file = team_path / "OFFENSE-Table 1.csv"
     defense_file = team_path / "DEFENSE-Table 1.csv"
-    peripheral_file = team_path / "PERIPHERAL DATA-Table 1.csv"
 
     if not offense_file.exists():
         raise FileNotFoundError(f"Offense chart not found: {offense_file}")
     if not defense_file.exists():
         raise FileNotFoundError(f"Defense chart not found: {defense_file}")
-    if not peripheral_file.exists():
-        raise FileNotFoundError(f"Peripheral data not found: {peripheral_file}")
 
-    peripheral = parse_peripheral_data(str(peripheral_file))
-    offense = parse_offense_chart(str(offense_file))
+    # Parse offense chart - also extracts peripheral data
+    offense, peripheral = parse_offense_chart(str(offense_file))
     defense, special_teams = parse_defense_chart(str(defense_file))
+    
+    # Fix ambiguous short names using directory name
+    # Directory names are unique (Giants, Jets, Raiders, Rams)
+    dir_name = team_path.name
+    dir_to_abbrev = {
+        'Giants': 'NYG',
+        'Jets': 'NYA',
+        'Raiders': 'LAR',
+        'Rams': 'LAN',
+    }
+    if dir_name in dir_to_abbrev:
+        peripheral.short_name = f"{dir_to_abbrev[dir_name]} '{str(peripheral.year)[2:]}"
+    
+    # Also set team_nickname from directory name for clarity
+    if peripheral.team_nickname == peripheral.team_name:
+        peripheral.team_nickname = dir_name
 
     return TeamChart(
         peripheral=peripheral,
