@@ -3,11 +3,10 @@
 ## Version 1.3 (February 2026)
 
 ### Data Simplification
-- **PERIPHERAL DATA file no longer required**: All team data is now extracted from the OFFENSE chart
+- **extra data file no longer required**: All team data is now extracted from the OFFENSE chart
   - Team name and year parsed from header row
   - Fumble recovery ranges parsed from the FUMBLE line (varies by team: 10-23 to 10-33)
   - Short names generated programmatically with proper disambiguation (NYG/NYA, LAR/LAN)
-  - Removed 30 PERIPHERAL DATA CSV files (28 teams + 2 samples)
 
 ### Bug Fixes
 - **Punt return fumble turnover flag**: Fixed incorrect `turnover=True` when punting team recovered their own fumble on a muffed punt return. Now correctly sets `turnover=False` since possession doesn't change
@@ -18,8 +17,8 @@
 
 ### Test Coverage
 - **1004 unit tests** passing
-- Added 7 tests for chart loader peripheral extraction
-- Full 28-team simulation verified after PERIPHERAL file removal
+- Added 7 tests for chart loader data extraction
+- Full 28-team simulation verified after extra file removal
 
 ---
 
