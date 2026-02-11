@@ -1,5 +1,28 @@
 # Paydirt Release Notes
 
+## Version 1.3 (February 2026)
+
+### Data Simplification
+- **PERIPHERAL DATA file no longer required**: All team data is now extracted from the OFFENSE chart
+  - Team name and year parsed from header row
+  - Fumble recovery ranges parsed from the FUMBLE line (varies by team: 10-23 to 10-33)
+  - Short names generated programmatically with proper disambiguation (NYG/NYA, LAR/LAN)
+  - Removed 30 PERIPHERAL DATA CSV files (28 teams + 2 samples)
+
+### Bug Fixes
+- **Punt return fumble turnover flag**: Fixed incorrect `turnover=True` when punting team recovered their own fumble on a muffed punt return. Now correctly sets `turnover=False` since possession doesn't change
+- **Interception return into own end zone**: Fixed per NFL momentum rule. When a defender intercepts and their return momentum carries them into their own end zone, it's now correctly ruled a touchback at the 20-yard line (not clamped to the 1-yard line). Commentary explains the momentum rule
+
+### Analysis
+- **Power ratings investigation**: Analyzed power ratings vs actual 1983 NFL records. Found that power ratings are a handicapping mechanism for human vs human play (point spreads, yardage factors), not a simulation of team strength. The chart data itself determines team performance
+
+### Test Coverage
+- **1004 unit tests** passing
+- Added 7 tests for chart loader peripheral extraction
+- Full 28-team simulation verified after PERIPHERAL file removal
+
+---
+
 ## Version 1.2 (February 2026)
 
 ### New Features
