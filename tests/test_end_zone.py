@@ -548,3 +548,53 @@ class TestPassInterferenceEndZone:
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
         assert outcome.first_down is True
+
+
+class TestDirectTouchdownYardage:
+    """Tests for direct TD results showing correct yardage in scoring summary."""
+    
+    def test_direct_td_result_shows_distance_to_endzone(self, game):
+        """Direct TD result should show distance to end zone, not 0 yards."""
+        game.state.ball_position = 75  # 25 yards from end zone
+        game.state.is_home_possession = True
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        # Direct TD result with yards=0 (chart just says "TD")
+        mock_result = PlayResult(
+            result_type=ResultType.TOUCHDOWN,
+            yards=0,  # Chart entry is just "TD"
+            raw_result="TD",
+        )
+        
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            game.run_play(PlayType.LONG_PASS, DefenseType.STANDARD)
+        
+        # Check scoring play description includes correct yardage
+        assert len(game.state.scoring_plays) == 1
+        scoring_play = game.state.scoring_plays[0]
+        # Description should mention 25 yards (100 - 75)
+        assert "25 yards" in scoring_play.description
+    
+    def test_td_with_explicit_yards_uses_those_yards(self, game):
+        """TD result with explicit yards should use those yards."""
+        game.state.ball_position = 90  # 10 yards from end zone
+        game.state.is_home_possession = True
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        # TD result with explicit yardage
+        mock_result = PlayResult(
+            result_type=ResultType.TOUCHDOWN,
+            yards=15,  # Explicit yards (e.g., breakaway)
+            raw_result="15 TD",
+        )
+        
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            game.run_play(PlayType.END_RUN, DefenseType.STANDARD)
+        
+        # Check scoring play description includes explicit yardage
+        assert len(game.state.scoring_plays) == 1
+        scoring_play = game.state.scoring_plays[0]
+        # Description should mention 15 yards (the explicit value)
+        assert "15 yard" in scoring_play.description

@@ -1005,8 +1005,10 @@ class PaydirtGameEngine:
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
+            # For direct TD results, yards is the distance to the end zone
+            td_yards = 100 - self.state.ball_position if yards == 0 else yards
             self.state.ball_position = 100
-            self._score_touchdown(play_type, yards)
+            self._score_touchdown(play_type, td_yards)
 
         elif result.result_type in [ResultType.YARDS, ResultType.BREAKAWAY]:
             # Normal yardage result
@@ -1384,8 +1386,10 @@ class PaydirtGameEngine:
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
+            # For direct TD results, yards is the distance to the end zone
+            td_yards = 100 - self.state.ball_position if yards == 0 else yards
             self.state.ball_position = 100
-            self._score_touchdown(play_type, yards)
+            self._score_touchdown(play_type, td_yards)
 
         elif result.result_type in [ResultType.YARDS, ResultType.BREAKAWAY]:
             if is_pass:
