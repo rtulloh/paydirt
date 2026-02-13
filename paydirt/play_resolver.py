@@ -1178,6 +1178,18 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
                     dice_roll=off_dice_roll,
                     defense_modifier=def_result_str
                 )
+                # Build transaction for PI case
+                off_team = offense_chart.peripheral.short_name
+                pi_txn = PlayTransaction()
+                pi_txn.add_event(create_chart_lookup_event(
+                    offense_roll=off_dice_roll,
+                    offense_desc=off_dice_desc,
+                    offense_result=off_result_str,
+                    defense_row=def_dice_desc,
+                    defense_result=def_result_str,
+                    priority="PI",
+                    acting_team=off_team
+                ))
                 return PenaltyChoice(
                     play_result=play_result,
                     penalty_options=penalty_options,
@@ -1185,7 +1197,8 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
                     offsetting=False,
                     is_pass_interference=True,
                     original_defense_result=original_def_result,
-                    reroll_log=reroll_log
+                    reroll_log=reroll_log,
+                    transaction=pi_txn
                 )
 
             # Non-PI penalty - add to options and reroll
