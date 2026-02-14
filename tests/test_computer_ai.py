@@ -462,3 +462,122 @@ class TestClockManagement:
 
         # Should have very few running plays under 2 minutes
         assert running_plays < 5  # Less than 25% running plays
+
+
+class TestEndOfHalfClockManagement:
+    """Tests for clock management at end of half - ensures time-based checks come before field position."""
+
+    def test_red_zone_at_end_of_half_uses_two_minute_drill(self, game, cpu_ai):
+        """
+        When in red zone at end of half with time running out, should use two-minute drill.
+        
+        This tests the fix for the bug where CPU would enter red zone offense
+        instead of using clock management (OOB designation) at the end of the half.
+        """
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 87  # Enemy 13 (inside red zone)
+        game.state.quarter = 2
+        game.state.time_remaining = 0.4  # 0:24 left
+        game.state.is_home_possession = True
+        game.state.home_score = 21
+        game.state.away_score = 17  # Leading by 4
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should be in two-minute drill mode, not red zone
+        assert cpu_ai.last_mode == "Two-Minute Drill"
+        # Should use no-huddle and OOB to stop clock
+        assert use_no_huddle is True
+
+    def test_red_zone_end_of_half_uses_oob_on_passes(self, game, cpu_ai):
+        """
+        In red zone at end of half, passing plays should use OOB designation.
+        
+        This ensures the CPU stops the clock on incomplete passes.
+        """
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 85  # Enemy 15 (red zone)
+        game.state.quarter = 2
+        game.state.time_remaining = 0.5  # 0:30 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 10  # Leading by 4
+
+        # Run multiple times to get a passing play
+        oob_count = 0
+        pass_count = 0
+        for _ in range(30):
+            play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                pass_count += 1
+                if use_oob:
+                    oob_count += 1
+
+        # Should have gotten some passing plays with OOB
+        assert pass_count > 0
+        # All passing plays should use OOB in two-minute drill
+        assert oob_count == pass_count
+
+    def test_leading_at_end_of_half_uses_two_minute_not_clock_killing(self, game, cpu_ai):
+        """
+        At end of half while leading, should use two-minute drill, not clock killing.
+        
+        Even when leading, teams should try to score more points before halftime.
+        """
+        game.state.down = 2
+        game.state.yards_to_go = 5
+        game.state.ball_position = 60  # Enemy 40
+        game.state.quarter = 2
+        game.state.time_remaining = 1.0  # 1:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 17
+        game.state.away_score = 10  # Leading by 7
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should be in two-minute drill, not clock killing
+        assert cpu_ai.last_mode == "Two-Minute Drill"
+        # Should use no-huddle to hurry up
+        assert use_no_huddle is True
+
+    def test_very_late_in_half_hail_mary_option(self, game, cpu_ai):
+        """
+        At very end of half with no timeouts, should consider Hail Mary.
+        """
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 60  # Enemy 40
+        game.state.quarter = 2
+        game.state.time_remaining = 0.1  # 6 seconds left
+        game.state.is_home_possession = True
+        game.state.home_score = 17
+        game.state.away_score = 20  # Trailing by 3
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should be in two-minute drill
+        assert cpu_ai.last_mode == "Two-Minute Drill"
+        assert use_no_huddle is True
+
+    def test_goal_line_at_end_of_half_uses_two_minute_drill(self, game, cpu_ai):
+        """
+        At goal line at end of half with time running out, should use two-minute drill.
+        
+        Time management is more important than field position when time is running out.
+        """
+        game.state.down = 1
+        game.state.yards_to_go = 3
+        game.state.ball_position = 97  # Enemy 3 (goal line)
+        game.state.quarter = 2
+        game.state.time_remaining = 0.3  # 0:18 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 14  # Tied
+
+        play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+
+        # Should be in two-minute drill mode, not goal line
+        assert cpu_ai.last_mode == "Two-Minute Drill"
+        assert use_no_huddle is True

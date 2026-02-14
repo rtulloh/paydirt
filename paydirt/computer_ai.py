@@ -73,7 +73,7 @@ class ComputerAI:
         use_no_huddle = False
 
         # ============================================================
-        # SPECIAL SITUATIONS
+        # SPECIAL SITUATIONS - Time-based checks FIRST (most important)
         # ============================================================
 
         # 4th Down Decision
@@ -86,6 +86,26 @@ class ComputerAI:
                 if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                     use_oob = True
             return (play, use_oob, use_no_huddle)
+
+        # 2-Minute Drill (time-critical - end of half, aggressive clock management)
+        if self._is_two_minute_drill(time_left, quarter, score_diff):
+            self.last_mode = "Two-Minute Drill"
+            play = self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
+            use_no_huddle = True
+            # Use OOB designation on passing plays to guarantee clock stops
+            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                use_oob = True
+            return (play, use_oob, use_no_huddle)
+
+        # Running Out Clock (time-critical - protecting lead)
+        if self._should_run_clock(time_left, quarter, score_diff):
+            self.last_mode = "Clock Killing"
+            play = self._clock_killing_offense(down, ytg, time_left, field_pos)
+            return (play, False, False)  # No hurry, let clock run
+
+        # ============================================================
+        # FIELD-POSITION BASED SITUATIONS
+        # ============================================================
 
         # Goal Line (inside 5 yard line)
         if field_pos >= 95:
@@ -102,22 +122,6 @@ class ComputerAI:
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
             return (play, use_oob, use_no_huddle)
-
-        # 2-Minute Drill (trailing late - aggressive clock management)
-        if self._is_two_minute_drill(time_left, quarter, score_diff):
-            self.last_mode = "Two-Minute Drill"
-            play = self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
-            use_no_huddle = True
-            # Use OOB designation on passing plays to guarantee clock stops
-            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
-                use_oob = True
-            return (play, use_oob, use_no_huddle)
-
-        # Running Out Clock (leading late)
-        if self._should_run_clock(time_left, quarter, score_diff):
-            self.last_mode = "Clock Killing"
-            play = self._clock_killing_offense(down, ytg, time_left, field_pos)
-            return (play, False, False)  # No hurry, let clock run
 
         # ============================================================
         # STANDARD SITUATIONS

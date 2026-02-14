@@ -15,16 +15,18 @@
 - **PI penalty transaction**: Fixed missing transaction in pass interference penalty choice, ensuring all play events are properly tracked
 - **Hail Mary PI untimed down**: Fixed Hail Mary pass interference at 0:00 not setting `untimed_down_pending`, which caused the quarter to end instead of granting an extra play
 - **CPU timeout after penalty**: Fixed CPU wasting timeout after penalty when clock is already stopped
+- **CPU clock management at end of half**: Fixed CPU entering red zone/goal line offense instead of two-minute drill when time is low at end of half. Time-based decisions now take priority over field-position decisions, ensuring proper OOB designation and hurry-up mode
 
 ### Analysis
 - **Power ratings investigation**: Analyzed power ratings vs actual 1983 NFL records. Found that power ratings are a handicapping mechanism for human vs human play (point spreads, yardage factors), not a simulation of team strength. The chart data itself determines team performance
 
 ### Test Coverage
-- **1010 unit tests** passing
+- **1015 unit tests** passing
 - Added 7 tests for chart loader data extraction
 - Added 2 tests for TD yardage fix
 - Added 3 tests for Hail Mary PI untimed down
 - Added 1 test for CPU timeout after penalty
+- Added 5 tests for CPU clock management at end of half
 - Full 28-team simulation verified after extra file removal
 
 ---
