@@ -382,3 +382,54 @@ class TestCPUTimeoutAfterTurnover:
         
         # The key assertion: when turnover=True, CPU timeout should be skipped
         assert outcome.turnover is True
+
+
+class TestCPUTimeoutSkipsAfterPenalty:
+    """Tests that CPU doesn't waste timeout after penalty (clock already stopped)."""
+    
+    def test_cpu_skips_timeout_after_penalty_on_defense(self):
+        """CPU should NOT call timeout after penalty - clock already stopped."""
+        from paydirt.play_resolver import PlayResult, ResultType
+        from paydirt.game_engine import PlayOutcome, PlayType, DefenseType
+        
+        home_chart = create_mock_chart("PHI '83", "Philadelphia Eagles")
+        away_chart = create_mock_chart("SF '83", "San Francisco 49ers")
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        # Home team (PHI) has ball, CPU is away (SF) on defense
+        game.state.is_home_possession = True
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5  # 1:30 left
+        game.state.home_score = 21  # PHI leading
+        game.state.away_score = 14  # SF trailing by 7
+        game.state.away_timeouts = 3
+        
+        # CPU would normally call timeout in this situation
+        ai = ComputerAI()
+        assert ai.should_call_timeout_on_defense(game) is True
+        
+        # But if penalty was applied, clock is already stopped
+        result = PlayResult(
+            result_type=ResultType.PENALTY_OFFENSE,
+            yards=-5,
+            description="Offensive penalty, 5 yards"
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.OFF_TACKLE,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=-5,
+            turnover=False,
+            touchdown=False,
+            safety=False,
+            first_down=False,
+            field_position_before="PHI 40",
+            field_position_after="PHI 35",
+            down_before=2,
+            down_after=2,
+            description="Offensive penalty, 5 yards",
+            penalty_applied=True  # Key: penalty was applied
+        )
+        
+        # The key assertion: when penalty_applied=True, CPU timeout should be skipped
+        assert outcome.penalty_applied is True

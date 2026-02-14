@@ -2670,7 +2670,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # CPU timeout when on defense (human is on offense)
         # CPU calls timeout to stop clock when trailing late in game
         # Skip if turnover occurred - possession changed, timeout logic doesn't apply
-        elif is_human_offense and not outcome.turnover and computer_should_call_timeout_on_defense(game):
+        # Skip if penalty applied - clock already stopped after penalty
+        elif is_human_offense and not outcome.turnover and not outcome.penalty_applied and computer_should_call_timeout_on_defense(game):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
                 cpu_team = game.state.defense_team.peripheral.short_name
@@ -2679,7 +2680,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # CPU timeout when on offense (human is on defense)
         # CPU calls timeout to preserve clock at end of half/game
         # Skip if turnover occurred - possession changed, timeout logic doesn't apply
-        elif not is_human_offense and not outcome.turnover and computer_should_call_timeout_on_offense(game):
+        # Skip if penalty applied - clock already stopped after penalty
+        elif not is_human_offense and not outcome.turnover and not outcome.penalty_applied and computer_should_call_timeout_on_offense(game):
             cpu_is_home = not human_is_home
             if game.state.use_timeout(cpu_is_home):
                 cpu_team = game.state.possession_team.peripheral.short_name
