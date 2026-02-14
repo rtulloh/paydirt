@@ -257,3 +257,53 @@ class TestHailMaryDefenseNotParticipating:
         
         # Both should have same result since defense doesn't participate
         assert outcome1.touchdown == outcome2.touchdown
+
+
+class TestHailMaryUntimedDown:
+    """Tests for untimed down rule with Hail Mary pass interference."""
+    
+    def test_hail_mary_pi_at_zero_sets_untimed_down(self, game):
+        """Hail Mary PI at 0:00 should set untimed_down_pending."""
+        game.state.ball_position = 50
+        game.state.is_home_possession = True
+        game.state.time_remaining = 0
+        game.state.quarter = 2  # End of first half
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (39, "B3+W9+W0=39")  # PI result
+            
+            outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        
+        assert outcome.first_down is True
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in outcome.description
+    
+    def test_hail_mary_pi_with_time_remaining_no_untimed_down(self, game):
+        """Hail Mary PI with time remaining should NOT set untimed_down_pending."""
+        game.state.ball_position = 50
+        game.state.is_home_possession = True
+        game.state.time_remaining = 10  # 10 seconds left
+        game.state.quarter = 2
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (39, "B3+W9+W0=39")  # PI result
+            
+            outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        
+        assert outcome.first_down is True
+        assert game.state.untimed_down_pending is False
+    
+    def test_hail_mary_pi_in_overtime_no_untimed_down(self, game):
+        """Hail Mary PI in overtime at 0:00 should NOT set untimed_down_pending."""
+        game.state.ball_position = 50
+        game.state.is_home_possession = True
+        game.state.time_remaining = 0
+        game.state.is_overtime = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (39, "B3+W9+W0=39")  # PI result
+            
+            outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        
+        assert outcome.first_down is True
+        assert game.state.untimed_down_pending is False

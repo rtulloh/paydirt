@@ -13,14 +13,16 @@
 - **Interception return into own end zone**: Fixed per NFL momentum rule. When a defender intercepts and their return momentum carries them into their own end zone, it's now correctly ruled a touchback at the 20-yard line (not clamped to the 1-yard line). Commentary explains the momentum rule
 - **TD yardage in scoring summary**: Fixed direct TD results showing "0 yards" instead of actual distance to end zone. A TD pass from the 25-yard line now correctly shows "25 yards" in the scoring summary
 - **PI penalty transaction**: Fixed missing transaction in pass interference penalty choice, ensuring all play events are properly tracked
+- **Hail Mary PI untimed down**: Fixed Hail Mary pass interference at 0:00 not setting `untimed_down_pending`, which caused the quarter to end instead of granting an extra play
 
 ### Analysis
 - **Power ratings investigation**: Analyzed power ratings vs actual 1983 NFL records. Found that power ratings are a handicapping mechanism for human vs human play (point spreads, yardage factors), not a simulation of team strength. The chart data itself determines team performance
 
 ### Test Coverage
-- **1006 unit tests** passing
+- **1009 unit tests** passing
 - Added 7 tests for chart loader data extraction
 - Added 2 tests for TD yardage fix
+- Added 3 tests for Hail Mary PI untimed down
 - Full 28-team simulation verified after extra file removal
 
 ---

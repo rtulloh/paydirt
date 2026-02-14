@@ -1602,6 +1602,11 @@ class PaydirtGameEngine:
             first_down = True
             self.state.defense_stats.penalties += 1
             self.state.defense_stats.penalty_yards += yards
+            
+            # Check for untimed down rule: defensive penalty at 0:00 means extra play
+            if self.state.time_remaining <= 0 and not self.state.is_overtime:
+                self.state.untimed_down_pending = True
+                result.description += " (Untimed down)"
 
         elif result.result_type == ResultType.YARDS:
             # Completion for yardage
