@@ -40,6 +40,13 @@ htmlcov/
 .tox/
 .nox/
 
+# Test outputs and scripts
+*_test*.txt
+run_all_games.py
+
+# Saved games
+paydirt_save.json
+
 # Game logs (user-specific)
 game.log
 
