@@ -581,3 +581,58 @@ class TestEndOfHalfClockManagement:
         # Should be in two-minute drill mode, not goal line
         assert cpu_ai.last_mode == "Two-Minute Drill"
         assert use_no_huddle is True
+
+    def test_way_behind_red_zone_no_long_pass(self, game, cpu_ai):
+        """
+        When way behind in red zone at end of half, should NOT call long pass.
+        
+        Even when trailing by 14+, you can't throw a long pass from the 1-yard line.
+        """
+        game.state.down = 1
+        game.state.yards_to_go = 1
+        game.state.ball_position = 99  # Enemy 1 (goal line)
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5  # 1:30 left
+        game.state.is_home_possession = True
+        game.state.home_score = 10
+        game.state.away_score = 28  # Way behind by 18
+
+        # Run multiple times - should never get LONG_PASS from goal line
+        long_pass_count = 0
+        for _ in range(30):
+            play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+            if play == PlayType.LONG_PASS:
+                long_pass_count += 1
+
+        # Should never call long pass from the 1-yard line
+        assert long_pass_count == 0
+
+    def test_red_zone_two_minute_avoids_long_pass(self, game, cpu_ai):
+        """
+        In red zone during two-minute drill, should avoid long passes.
+        
+        Even when trailing and needing a big play, don't throw deep from the red zone.
+        """
+        game.state.down = 2
+        game.state.yards_to_go = 5
+        game.state.ball_position = 85  # Enemy 15 (red zone)
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0  # 1:00 left
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 24  # Behind by 10
+
+        # Run multiple times - should rarely get LONG_PASS from red zone
+        long_pass_count = 0
+        pass_count = 0
+        for _ in range(30):
+            play, use_oob, use_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+                pass_count += 1
+                if play == PlayType.LONG_PASS:
+                    long_pass_count += 1
+
+        # Should have some passes but rarely long passes from red zone
+        assert pass_count > 0
+        # With the fix, there should be NO long passes from red zone
+        assert long_pass_count == 0

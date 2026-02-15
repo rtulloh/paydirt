@@ -324,8 +324,9 @@ class ComputerAI:
         # Spike Ball - stop clock after a big gain if very low on time
         # (AI would need to track previous play, so this is situational)
 
-        # Need big play if way behind
-        if score_diff <= -14:
+        # Need big play if way behind - BUT NOT in the red zone/goal line
+        # Don't throw long passes from inside the 20 yard line
+        if score_diff <= -14 and field_pos < 80:
             return random.choice([PlayType.LONG_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS])
 
         # Under 2 minutes - ONLY pass plays (clock stops on incomplete)
@@ -336,8 +337,11 @@ class ComputerAI:
                     return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN])
                 else:
                     return random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS, PlayType.LONG_PASS])
-            # Early downs - quick passes
+            # Early downs - quick passes (avoid long passes in red zone)
             if score_diff <= -7 or field_pos < 50:
+                # Don't use LONG_PASS from red zone (inside 20)
+                if field_pos >= 80:
+                    return random.choice([PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN])
                 return random.choice([PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SHORT_PASS])
             return random.choice([PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN])
 
@@ -354,8 +358,11 @@ class ComputerAI:
             PlayType.SCREEN
         ]
 
-        # Add long pass if need chunk plays
-        if score_diff <= -7 or field_pos < 50:
+        # Add long pass if need chunk plays (but not from red zone)
+        if (score_diff <= -7 or field_pos < 50) and field_pos >= 80:
+            # Red zone - use shorter routes only
+            pass  # Don't add LONG_PASS
+        elif score_diff <= -7 or field_pos < 50:
             plays.extend([PlayType.LONG_PASS, PlayType.MEDIUM_PASS])
 
         return random.choice(plays)
