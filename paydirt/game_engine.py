@@ -2155,10 +2155,14 @@ class PaydirtGameEngine:
         else:
             description = f"{description}Punt {punt_yards} yards to {self.state.field_position_str()}.{punt_commentary}"
 
+        parsed_result = parse_result_string(punt_result)
+        parsed_result.dice_roll = punt_roll
+        parsed_result.raw_result = f"{punt_yards}{'*' if is_fair_catch else ''}"
+
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,
             defense_type=DefenseType.STANDARD,
-            result=parse_result_string(punt_result),
+            result=parsed_result,
             yards_gained=punt_yards,
             touchdown=touchdown,
             field_position_before=field_pos_before,
@@ -3094,10 +3098,14 @@ class PaydirtGameEngine:
         if touchdown:
             self._score_touchdown()
 
+        parsed_result = parse_result_string(punt_result)
+        parsed_result.dice_roll = punt_roll
+        parsed_result.raw_result = f"{punt_yards}{'*' if is_fair_catch else ''}"
+
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,
             defense_type=DefenseType.STANDARD,
-            result=parse_result_string(punt_result),
+            result=parsed_result,
             yards_gained=return_yards,
             touchdown=touchdown,
             field_position_after=self.state.field_position_str(),

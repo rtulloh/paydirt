@@ -617,3 +617,36 @@ class TestAdvancedPuntRules:
             # Should still allow return (not automatic OOB)
             # The punt goes 45-10=35 yards
             assert "returned" in outcome.description.lower() or "10" in outcome.description
+
+
+class TestPuntDiceDisplay:
+    """Tests for punt dice display format."""
+
+    def test_punt_dice_roll_stored_in_result(self, game):
+        """Punt result should include the dice roll."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "40"
+            
+            outcome = game._handle_punt()
+            
+            assert outcome.result.dice_roll == 17
+
+    def test_punt_fair_catch_dice_format(self, game):
+        """Punt with fair catch should show dice in display."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "40*"
+            
+            outcome = game._handle_punt()
+            
+            assert outcome.result.dice_roll == 17
+            assert "fair catch" in outcome.description.lower()
