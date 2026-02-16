@@ -239,3 +239,27 @@ class TestCPUOnsideKickDecision:
         mock_game.state.away_score = 21
         
         assert cpu_should_onside_kick(mock_game) is False
+
+
+class TestOnsideKickDiceDisplay:
+    """Tests for onside kick dice display format."""
+
+    def test_onside_kick_recovered_dice_format(self, game):
+        """Onside kick recovered description should include dice in standard format."""
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W2+W3=15")
+            
+            outcome = game.onside_kick(kicking_home=True)
+            
+            assert "(ON:15→" in outcome.description
+            assert "RECOVERED" in outcome.description
+
+    def test_onside_kick_failed_dice_format(self, game):
+        """Onside kick failed description should include dice in standard format."""
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (8, "B1+W0+W0=8")
+            
+            outcome = game.onside_kick(kicking_home=True)
+            
+            assert "(ON:8→" in outcome.description
+            assert "FAILED" in outcome.description

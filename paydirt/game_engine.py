@@ -352,6 +352,7 @@ class PaydirtGameEngine:
         # Build description based on result
         # Add commentary for exceptional returns
         return_commentary = ""
+        actual_return = 0
         if not is_touchback and "OB" not in ko_result and "OUT" not in ko_result.upper():
             # Calculate actual return yards (from landing spot to final position)
             actual_return = return_position - landing_spot if landing_spot > 0 else return_position
@@ -364,14 +365,16 @@ class PaydirtGameEngine:
             elif actual_return < 0:
                 return_commentary = " Outstanding special teams coverage!"
 
+        dice_line = f"(KO:{dice_roll}→\"{ko_yards}\" | RT:{dice_roll}→\"{actual_return}\")"
+
         if touchdown:
-            description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN!"
+            description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN! {dice_line}"
         elif is_touchback:
-            description = f"Kickoff {ko_yards} yards into the end zone. Touchback."
+            description = f"Kickoff {ko_yards} yards into the end zone. Touchback. {dice_line}"
         elif "OB" in ko_result or "OUT" in ko_result.upper():
-            description = "Kickoff out of bounds! Ball at the 40."
+            description = f"Kickoff out of bounds! Ball at the 40. {dice_line}"
         else:
-            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}"
+            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary} {dice_line}"
 
         outcome = PlayOutcome(
             play_type=PlayType.KICKOFF,
@@ -418,12 +421,12 @@ class PaydirtGameEngine:
             # Kicking team gets the ball at their 47
             self.state.is_home_possession = kicking_home
             self.state.ball_position = ball_position_from_kicker
-            description = f"ONSIDE KICK RECOVERED by kicking team! (Roll: {dice_roll}) Ball at own 47"
+            description = f"ONSIDE KICK RECOVERED by kicking team! (ON:{dice_roll}→\"REC\") Ball at own 47"
         else:
             # Receiving team gets the ball at their 53 (kicking team's 47)
             self.state.is_home_possession = not kicking_home
             self.state.ball_position = 100 - ball_position_from_kicker  # = 53 from receiver's view
-            description = f"Onside kick FAILED! Receiving team recovers. (Roll: {dice_roll}) Ball at own 53"
+            description = f"Onside kick FAILED! Receiving team recovers. (ON:{dice_roll}→\"FAIL\") Ball at own 53"
 
         self.state.down = 1
         self.state.yards_to_go = 10
@@ -553,7 +556,7 @@ class PaydirtGameEngine:
             # INT return into own end zone = TOUCHBACK at 20
             # Per NFL momentum rule, impetus from the pass means touchback, not safety
             self.state.ball_position = 20
-            result.description = f"INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
+            result.description = "INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
         else:
             # Normal field position
             final_position = clamp_ball_position(final_position)
@@ -2951,8 +2954,6 @@ class PaydirtGameEngine:
         except ValueError:
             ko_yards = 50
 
-        is_touchback = False
-
         # Handle special kickoff results
         if "OB" in ko_result or "OUT" in ko_result.upper():
             # Out of bounds - ball at 40 from kicking team's perspective
@@ -2961,7 +2962,6 @@ class PaydirtGameEngine:
         elif "TB" in ko_result.upper() or ko_yards >= 80:
             # Touchback (kick from 20 + 80 yards = end zone)
             return_position = 20
-            is_touchback = True
         else:
             # Normal return - kick from own 20
             landing_spot = 100 - (20 + ko_yards)  # From receiver's perspective
@@ -2973,7 +2973,6 @@ class PaydirtGameEngine:
                 if landing_spot <= -10:
                     # At or behind end line - automatic touchback
                     return_position = 20
-                    is_touchback = True
                 else:
                     # In end zone but not at end line - can attempt return
                     yards_deep = abs(landing_spot)
@@ -2983,10 +2982,8 @@ class PaydirtGameEngine:
                         ret_yards = 20
                     if ret_yards > yards_deep:
                         return_position = ret_yards - yards_deep
-                        is_touchback = False
                     else:
                         return_position = 20
-                        is_touchback = True
             else:
                 # Normal field return
                 try:
@@ -3047,7 +3044,6 @@ class PaydirtGameEngine:
         landing_spot_from_kicker = 20 + punt_yards
         landing_spot = 100 - landing_spot_from_kicker
 
-        is_touchback = False
         return_yards = 0
 
         # Per VI-12-F: Handle end zone returns
@@ -3057,11 +3053,9 @@ class PaydirtGameEngine:
             if landing_spot <= -10:
                 # At or behind end line - automatic touchback
                 return_position = 20
-                is_touchback = True
             elif is_downed or is_fair_catch:
                 # Downed or fair catch in end zone = touchback
                 return_position = 20
-                is_touchback = True
             else:
                 # Attempt return from end zone
                 yards_deep = abs(landing_spot)
@@ -3073,10 +3067,8 @@ class PaydirtGameEngine:
                     return_yards = 5
                 if return_yards > yards_deep:
                     return_position = return_yards - yards_deep
-                    is_touchback = False
                 else:
                     return_position = 20
-                    is_touchback = True
         else:
             # Normal field position
             if is_downed or is_fair_catch:

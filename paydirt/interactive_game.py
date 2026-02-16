@@ -20,7 +20,7 @@ from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import (
     ordinal_suffix, ordinal, format_field_position, format_field_position_with_team,
-    format_dice_roll, format_play_dice_line, format_time,
+    format_dice_roll, format_time,
     clamp_ball_position, yards_to_goal, fg_distance
 )
 from .play_events import EventType
@@ -892,7 +892,7 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
                 
                 if yards >= 15:
                     print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
-                    print(f"     Punt will be automatic out of bounds (no return)")
+                    print("     Punt will be automatic out of bounds (no return)")
                 elif yards > 0:
                     print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
                 else:
@@ -1436,9 +1436,6 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     if play_type == PlayType.KICKOFF:
         if COMPACT_MODE:
             print(f"► KICKOFF: {outcome.description}")
-            # Show dice roll info if available
-            if outcome.result:
-                print(f"  ({format_dice_roll(outcome.result.dice_roll, result=outcome.result.raw_result, style='verbose')})")
             return
         print("\n" + "=" * 70)
         print("  KICKOFF")

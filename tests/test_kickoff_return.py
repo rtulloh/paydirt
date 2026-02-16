@@ -112,3 +112,57 @@ class TestKickoffReturnPenalties:
             # Return 20 yards = receiver at their 35
             # return_position = 15 + 20 = 35
             assert game.state.ball_position == 35
+
+
+class TestKickoffDiceDisplay:
+    """Tests for kickoff dice display format."""
+
+    def test_kickoff_dice_format_in_description(self, game):
+        """Kickoff description should include dice in standard format."""
+        game.state.home_chart.special_teams.kickoff[10] = "50"
+        game.state.away_chart.special_teams.kickoff[10] = "50"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            assert "(KO:10→" in outcome.description
+            assert "| RT:10→" in outcome.description
+
+    def test_kickoff_touchback_dice_format(self, game):
+        """Kickoff touchback description should include dice in standard format."""
+        game.state.home_chart.special_teams.kickoff[12] = "TB"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (12, "B1+W0+W2=12")
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            assert "(KO:12→" in outcome.description
+            assert "Touchback" in outcome.description
+
+    def test_kickoff_out_of_bounds_dice_format(self, game):
+        """Kickoff out of bounds description should include dice in standard format."""
+        game.state.home_chart.special_teams.kickoff[11] = "OB"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (11, "B1+W0+W1=11")
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            assert "(KO:11→" in outcome.description
+            assert "out of bounds" in outcome.description
+
+    def test_kickoff_negative_return_dice_format(self, game):
+        """Kickoff with negative return should show negative yards in dice format."""
+        game.state.home_chart.special_teams.kickoff[10] = "55"
+        game.state.away_chart.special_teams.kickoff[10] = "10"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            assert "(KO:10→" in outcome.description
+            assert "| RT:10→" in outcome.description
