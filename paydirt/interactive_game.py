@@ -194,8 +194,9 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
 
     # Down and distance string
     ytg = yards_to_goal(state.ball_position)
-    if ytg <= 10 and state.yards_to_go >= ytg:
-        down_str = f"{state.down}{_ordinal(state.down)} & Goal"
+    # Show "& Goal @ X" when you need a touchdown to convert (yards_to_go >= yards to goal)
+    if state.yards_to_go >= ytg:
+        down_str = f"{state.down}{_ordinal(state.down)} & Goal @ {ytg}"
     else:
         down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
 
