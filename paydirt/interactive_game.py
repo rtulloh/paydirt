@@ -840,9 +840,9 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
     
     print("\n  PUNT OPTIONS:")
     print("  " + "-" * 40)
-    print("    [1] Normal Punt")
+    print("    [1] Normal Punt (default)")
     
-    options = ["1"]
+    options = ["1", ""]  # Empty string for default
     
     if is_short_drop_available:
         print("    [2] Short-Drop Punt (from inside 5-yard line)")
@@ -857,7 +857,11 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
     print(f"\n  Current: Ball at {state.field_position_str()}")
     
     while True:
-        choice = input("\n  Select punt option: ").strip().upper()
+        choice = input("\n  Select punt option (Enter for 1): ").strip().upper()
+        
+        # Handle default (just Enter)
+        if choice == "":
+            choice = "1"
         
         if choice not in options:
             print("  Invalid choice.")
