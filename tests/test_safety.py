@@ -198,7 +198,7 @@ class TestSafetyEndToEnd:
             # Execute free kick
             with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
                 mock_dice.return_value = (15, "B1+W0+W5=15")
-                kick_outcome = game.safety_free_kick(use_punt=False)
+                game.safety_free_kick(use_punt=False)
             
             # After free kick, receiving team (away - who scored safety) has ball
             assert game.state.is_home_possession is False

@@ -213,12 +213,12 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         if use_no_huddle:
             print(f"  {off_team} in NO-HUDDLE offense!")
         if use_oob:
-            print(f"  [OUT OF BOUNDS DESIGNATION]")
+            print("  [OUT OF BOUNDS DESIGNATION]")
         
         # Show punt options
         if play_type == PlayType.PUNT:
             if punt_short_drop:
-                print(f"  [SHORT-DROP PUNT]")
+                print("  [SHORT-DROP PUNT]")
             elif punt_coffin_yards > 0:
                 print(f"  [COFFIN-CORNER PUNT: {punt_coffin_yards} yards subtracted]")
 

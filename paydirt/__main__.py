@@ -25,7 +25,6 @@ def main():
         load_save = False
         save_file = None
         week = 0  # 0 means auto-assign
-        record = False
 
         args = sys.argv[2:]
         i = 0
@@ -71,7 +70,6 @@ def main():
                     print("Error: --week requires a number")
                     return
             elif args[i] in ['--record', '-r']:
-                record = True
                 i += 1
             else:
                 i += 1

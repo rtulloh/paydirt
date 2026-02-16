@@ -7,7 +7,7 @@ import shutil
 
 from paydirt.standings import (
     GameResult, TeamRecord, Season, StandingsManager,
-    normalize_team_name, add_game_result
+    normalize_team_name
 )
 
 
@@ -285,8 +285,8 @@ class TestAddGameResult:
         
         # Add games with explicit week
         season = manager.load_season(1983)
-        game1 = season.add_game("Redskins", 21, "Giants", 13, week=1)
-        game2 = season.add_game("Cowboys", 28, "Eagles", 14, week=1)
+        season.add_game("Redskins", 21, "Giants", 13, week=1)
+        season.add_game("Cowboys", 28, "Eagles", 14, week=1)
         manager.save_season(season)
         
         # Verify weeks are correct

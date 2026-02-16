@@ -234,7 +234,7 @@ class TestBlockedPunt:
             
             # Now execute free kick - this should switch possession
             mock_dice.return_value = (20, "B2+W0+W0=20")
-            kick_outcome = game.safety_free_kick(use_punt=False)
+            game.safety_free_kick(use_punt=False)
             
             # After free kick, possession should switch to receiving team
             assert game.state.is_home_possession is False

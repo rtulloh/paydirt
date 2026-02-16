@@ -201,14 +201,16 @@ class ComputerAI:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)  # Take the points
                 else:
                     # Must go for it - need TD or can't kick
-                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                    go_play, _, _ = self._go_for_it_play(ytg)
+                    return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
             # 2-5 minutes left, trailing
             if time_left < 5.0:
                 if fg_easy and score_diff >= -3:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif ytg <= 2:
-                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)  # Short yardage, go for it
+                    go_play, _, _ = self._go_for_it_play(ytg)
+                    return (go_play, punt_short_drop, punt_coffin_corner_yards)  # Short yardage, go for it
                 elif fg_makeable and score_diff >= -3:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif field_pos >= 50:
@@ -240,11 +242,13 @@ class ComputerAI:
         if fg_long:
             # 4th and 1 - go for it with moderate aggression
             if ytg <= 1 and self.aggression >= 0.5:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
             # 4th and 2 - rare to go for it in 1983
             if ytg <= 2 and self.aggression > 0.8:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
             # Decision between FG and punt based on distance and aggression
             # Closer to 30 (shorter FG) = more likely to kick
@@ -268,10 +272,12 @@ class ComputerAI:
         if field_pos >= 55:
             # 4th and 1 - go for it
             if ytg <= 1:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with aggression
             if ytg <= 2 and self.aggression > 0.6:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt - too far for FG, don't want to give up field position
             return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
@@ -279,10 +285,12 @@ class ComputerAI:
         if field_pos >= 45:
             # 4th and 1 - go for it
             if ytg <= 1:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with high aggression only
             if ytg <= 2 and self.aggression > 0.7:
-                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt from midfield
             return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
@@ -290,7 +298,8 @@ class ComputerAI:
         # 1983 coaches were very conservative here
         if ytg <= 1 and self.aggression > 0.9:
             # Only go for it on 4th and inches with extreme aggression
-            return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+            go_play, _, _ = self._go_for_it_play(ytg)
+            return (go_play, punt_short_drop, punt_coffin_corner_yards)
         return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
     def _go_for_it_play(self, ytg: int) -> tuple:

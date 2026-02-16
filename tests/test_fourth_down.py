@@ -231,7 +231,7 @@ class TestGoForItPlaySelection:
         ai = ComputerAI(aggression=0.5)
         
         # Call _go_for_it_play directly with larger sample for statistical reliability
-        plays = [ai._go_for_it_play(1) for _ in range(50)]
+        plays = [ai._go_for_it_play(1)[0] for _ in range(50)]
         
         # Should be mostly LINE_PLUNGE and OFF_TACKLE
         # Also include QB_SNEAK as a valid short-yardage play
@@ -242,7 +242,7 @@ class TestGoForItPlaySelection:
         """4th and 2-3 should mix run and pass."""
         ai = ComputerAI(aggression=0.5)
         
-        plays = [ai._go_for_it_play(3) for _ in range(20)]
+        plays = [ai._go_for_it_play(3)[0] for _ in range(20)]
         
         # Should have variety
         play_types = set(plays)
@@ -252,7 +252,7 @@ class TestGoForItPlaySelection:
         """4th and long should use passing plays."""
         ai = ComputerAI(aggression=0.5)
         
-        plays = [ai._go_for_it_play(10) for _ in range(20)]
+        plays = [ai._go_for_it_play(10)[0] for _ in range(20)]
         
         # Should be mostly passes
         pass_plays = [p for p in plays if p in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS]]

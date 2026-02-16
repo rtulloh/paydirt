@@ -16,12 +16,12 @@ import sys
 import random
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from paydirt.chart_loader import load_team_chart, find_team_charts
+from paydirt.chart_loader import load_team_chart
 from paydirt.game_engine import PaydirtGameEngine, PlayType, DefenseType
 
 
@@ -314,12 +314,12 @@ def main():
     print(f"\n  Games played: {stats.games_played}")
     print(f"  Total plays: {stats.total_plays}")
     
-    print(f"\n  INTERCEPTIONS:")
+    print("\n  INTERCEPTIONS:")
     print(f"    Total: {stats.interceptions}")
     print(f"    With returns: {stats.int_returns}")
     print(f"    Pick-sixes: {stats.int_touchdowns}")
     
-    print(f"\n  FUMBLES:")
+    print("\n  FUMBLES:")
     print(f"    Total: {stats.fumbles}")
     print(f"    Offense recovers: {stats.fumble_recoveries_offense}")
     print(f"    Defense recovers: {stats.fumble_recoveries_defense}")
@@ -327,7 +327,7 @@ def main():
     
     print(f"\n  SAFETIES: {stats.safeties}")
     
-    print(f"\n  BLOCKED KICKS:")
+    print("\n  BLOCKED KICKS:")
     print(f"    Blocked punts: {stats.blocked_punts}")
     print(f"    Blocked FGs: {stats.blocked_fgs}")
     print(f"    With returns: {stats.blocked_kick_returns}")

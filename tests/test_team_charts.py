@@ -12,7 +12,7 @@ from paydirt.team_charts import (
     apply_team_modifier, apply_defense_modifier, get_base_rushing_chart,
     PlayOutcome
 )
-from paydirt.chart_loader import load_team_chart, parse_offense_chart
+from paydirt.chart_loader import load_team_chart
 
 
 class TestDiceRolling:

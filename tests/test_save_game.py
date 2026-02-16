@@ -6,7 +6,7 @@ import json
 import tempfile
 import pytest
 
-from paydirt.save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
+from paydirt.save_game import save_game, load_game, get_save_info
 from paydirt.game_engine import PaydirtGameEngine, ScoringPlay
 from paydirt.chart_loader import load_team_chart
 

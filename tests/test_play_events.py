@@ -1,7 +1,6 @@
 """
 Tests for the transaction-based play event model.
 """
-import pytest
 
 from paydirt.play_events import (
     EventType,
@@ -15,7 +14,6 @@ from paydirt.play_events import (
     create_interception_event,
     create_return_event,
     create_penalty_event,
-    create_touchdown_event,
 )
 
 

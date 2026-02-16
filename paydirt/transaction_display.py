@@ -7,11 +7,9 @@ scattered attributes on PlayResult/PlayOutcome.
 
 This is a PROTOTYPE to evaluate the viability of the transaction approach.
 """
-from typing import Optional
 
 from .play_events import (
     EventType,
-    PlayEvent,
     PlayTransaction,
     PendingDecision,
 )
@@ -54,14 +52,14 @@ def display_transaction_compact(
             if event.yards > 0:
                 print(f"  Returned {event.yards} yds")
             elif event.yards == 0:
-                print(f"  No return")
+                print("  No return")
         elif event.event_type == EventType.FUMBLE:
             print(f"  Fumble at {'+' if event.yards >= 0 else ''}{event.yards} yds")
         elif event.event_type == EventType.FUMBLE_RECOVERY:
             if event.possession_change:
-                print(f"  Defense recovers!")
+                print("  Defense recovers!")
             else:
-                print(f"  Offense recovers")
+                print("  Offense recovers")
 
 
 def _build_action_line(
@@ -75,7 +73,6 @@ def _build_action_line(
     special_marker = ""
     
     if txn.has_event_type(EventType.INTERCEPTION):
-        int_event = txn.get_events_by_type(EventType.INTERCEPTION)[0]
         return_events = txn.get_events_by_type(EventType.INT_RETURN)
         
         if return_events and return_events[0].yards > 0:
@@ -89,8 +86,6 @@ def _build_action_line(
             special_marker = " ★ TURNOVER!"
     
     elif txn.has_event_type(EventType.FUMBLE):
-        recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
-        
         if txn.turnover:
             if txn.touchdown:
                 result_str = "FUMBLE - Loss! RETURNED FOR TD!"
@@ -166,7 +161,7 @@ def display_transaction_verbose(
             print(f"  Yards: {'+' if event.yards > 0 else ''}{event.yards}")
         
         if event.possession_change:
-            print(f"  >>> POSSESSION CHANGE <<<")
+            print("  >>> POSSESSION CHANGE <<<")
     
     # Final state
     print("\n" + "=" * 70)
