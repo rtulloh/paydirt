@@ -45,7 +45,7 @@ class ComputerAI:
         4. Score differential
         5. Quarter
         """
-        play_type, _, _ = self.select_offense_with_clock_management(game)
+        play_type, _, _, _, _ = self.select_offense_with_clock_management(game)
         return play_type
 
     def select_offense_with_clock_management(self, game: PaydirtGameEngine) -> tuple:
@@ -79,13 +79,13 @@ class ComputerAI:
         # 4th Down Decision
         if down == 4:
             self.last_mode = "4th Down"
-            play = self._fourth_down_decision(game, ytg, field_pos, time_left, quarter, score_diff)
+            play, punt_short_drop, punt_coffin_corner_yards = self._fourth_down_decision(game, ytg, field_pos, time_left, quarter, score_diff)
             # Use OOB on passing plays in hurry-up 4th down situations
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
                 if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                     use_oob = True
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
         if self._is_two_minute_drill(time_left, quarter, score_diff):
@@ -95,13 +95,13 @@ class ComputerAI:
             # Use OOB designation on passing plays to guarantee clock stops
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                 use_oob = True
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, False, 0)  # No punt options in two-minute
 
         # Running Out Clock (time-critical - protecting lead)
         if self._should_run_clock(time_left, quarter, score_diff):
             self.last_mode = "Clock Killing"
             play = self._clock_killing_offense(down, ytg, time_left, field_pos)
-            return (play, False, False)  # No hurry, let clock run
+            return (play, False, False, False, 0)  # No hurry, let clock run - no punt options
 
         # ============================================================
         # FIELD-POSITION BASED SITUATIONS
@@ -113,7 +113,7 @@ class ComputerAI:
             play = self._goal_line_offense(ytg)
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, False, 0)
 
         # Red Zone (inside 20)
         if field_pos >= 80:
@@ -121,7 +121,7 @@ class ComputerAI:
             play = self._red_zone_offense(down, ytg)
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, False, 0)
 
         # ============================================================
         # STANDARD SITUATIONS
@@ -131,18 +131,18 @@ class ComputerAI:
         # 3rd Down
         if down == 3:
             play = self._third_down_offense(ytg, field_pos)
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, False, 0)
 
         # 2nd Down
         if down == 2:
             play = self._second_down_offense(ytg)
-            return (play, use_oob, use_no_huddle)
+            return (play, use_oob, use_no_huddle, False, 0)
 
         # 1st Down - balanced attack
         play = self._first_down_offense(field_pos)
-        return (play, use_oob, use_no_huddle)
+        return (play, use_oob, use_no_huddle, False, 0)
 
-    def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> PlayType:
+    def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> tuple:
         """
         Decide what to do on 4th down using 1983 NFL decision patterns.
         
@@ -153,12 +153,34 @@ class ComputerAI:
         - Going for it was reserved for 4th-and-inches or desperation
         - Coaches were significantly more conservative than modern era
         
-        Returns: PlayType.PUNT, PlayType.FIELD_GOAL, or a go-for-it play
+        Returns: tuple of (PlayType, punt_short_drop: bool, punt_coffin_corner_yards: int)
         """
 
         # Calculate field goal distance and range
         # Ball on 30 = 47 yard FG, ball on 40 = 57 yard FG
         fg_distance = 100 - field_pos + 17  # End zone + holder
+
+        # Determine punt options (default: normal punt)
+        punt_short_drop = False
+        punt_coffin_corner_yards = 0
+        
+        # Check for short-drop punt (inside own 5-yard line)
+        if field_pos <= 5:
+            # Short-drop punt: small chance to use it
+            if self.aggression < 0.3:  # Conservative coaches more likely to use it
+                punt_short_drop = True
+        
+        # Check for coffin corner punt (in opponent's territory, late in half)
+        # Use coffin corner when: opponent has good field position, late in half/game
+        if field_pos >= 50:
+            # Calculate opponent's starting field position if we punt normally
+            # (simplified - actual logic would use chart data)
+            if quarter >= 2 and time_left < 5.0:
+                # Late in half/game - use coffin corner to pin them deep
+                # More aggressive AI uses it more
+                if self.aggression > 0.6 and random.random() < 0.3:
+                    # Subtract 15-20 yards to force out of bounds
+                    punt_coffin_corner_yards = random.choice([15, 18, 20])
 
         # 1983-era field goal probability tiers
         fg_easy = fg_distance <= 35      # ~80%+ make rate (chip shot)
@@ -174,23 +196,23 @@ class ComputerAI:
             if time_left < 2.0:
                 # Under 2 minutes, trailing
                 if fg_easy and score_diff >= -3:
-                    return PlayType.FIELD_GOAL  # FG ties or wins
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)  # FG ties or wins
                 elif fg_makeable and score_diff >= -3:
-                    return PlayType.FIELD_GOAL  # Take the points
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)  # Take the points
                 else:
                     # Must go for it - need TD or can't kick
-                    return self._go_for_it_play(ytg)
+                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
 
             # 2-5 minutes left, trailing
             if time_left < 5.0:
                 if fg_easy and score_diff >= -3:
-                    return PlayType.FIELD_GOAL
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif ytg <= 2:
-                    return self._go_for_it_play(ytg)  # Short yardage, go for it
+                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)  # Short yardage, go for it
                 elif fg_makeable and score_diff >= -3:
-                    return PlayType.FIELD_GOAL
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif field_pos >= 50:
-                    return self._go_for_it_play(ytg)  # In opponent territory, be aggressive
+                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)  # In opponent territory, be aggressive
 
         # ============================================================
         # FIELD GOAL DECISIONS (1983 conservative approach)
@@ -200,41 +222,43 @@ class ComputerAI:
         if fg_easy:
             # Only go for it on 4th and inches inside the 5 with high aggression
             if ytg <= 1 and self.aggression > 0.8 and field_pos >= 95:
-                return self._go_for_it_play(ytg)
-            return PlayType.FIELD_GOAL
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
+            return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
 
         # Makeable field goal (inside 30, 47 yards or less)
         # 1983: ~65% success rate, almost always kick
         if fg_makeable:
             # 4th and 1 - moderately aggressive coaches go for it
             if ytg <= 1 and self.aggression >= 0.5:
-                return self._go_for_it_play(ytg)
-            return PlayType.FIELD_GOAL
+                go_play, _, _ = self._go_for_it_play(ytg)
+                return (go_play, punt_short_drop, punt_coffin_corner_yards)
+            return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
 
         # Long field goal range (30-40 yard line, 47-57 yard kick)
         # 1983 pattern: ~58% FG, ~30% punt, ~12% go for it
         if fg_long:
             # 4th and 1 - go for it with moderate aggression
             if ytg <= 1 and self.aggression >= 0.5:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
 
             # 4th and 2 - rare to go for it in 1983
             if ytg <= 2 and self.aggression > 0.8:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
 
             # Decision between FG and punt based on distance and aggression
             # Closer to 30 (shorter FG) = more likely to kick
             # Closer to 40 (longer FG) = more likely to punt if conservative
             if fg_distance <= 50:
                 # 47-50 yard range - mostly kick FG
-                return PlayType.FIELD_GOAL
+                return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
             else:
                 # 50-57 yard range - split between FG and punt
                 # Aggressive coaches try the long FG, conservative punt
                 if self.aggression >= 0.5:
-                    return PlayType.FIELD_GOAL
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 else:
-                    return PlayType.PUNT
+                    return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
         # ============================================================
         # OUTSIDE FG RANGE (beyond opponent's 40)
@@ -244,46 +268,46 @@ class ComputerAI:
         if field_pos >= 55:
             # 4th and 1 - go for it
             if ytg <= 1:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with aggression
             if ytg <= 2 and self.aggression > 0.6:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt - too far for FG, don't want to give up field position
-            return PlayType.PUNT
+            return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
         # At midfield (45-55 yard line)
         if field_pos >= 45:
             # 4th and 1 - go for it
             if ytg <= 1:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with high aggression only
             if ytg <= 2 and self.aggression > 0.7:
-                return self._go_for_it_play(ytg)
+                return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt from midfield
-            return PlayType.PUNT
+            return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
         # In own territory (inside own 45) - almost always punt
         # 1983 coaches were very conservative here
         if ytg <= 1 and self.aggression > 0.9:
             # Only go for it on 4th and inches with extreme aggression
-            return self._go_for_it_play(ytg)
-        return PlayType.PUNT
+            return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)
+        return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
-    def _go_for_it_play(self, ytg: int) -> PlayType:
+    def _go_for_it_play(self, ytg: int) -> tuple:
         """Select a play when going for it on 4th down."""
         if ytg <= 1:
             # 4th and 1 - power run (75%+) or QB Sneak
-            return random.choice([PlayType.LINE_PLUNGE, PlayType.LINE_PLUNGE, PlayType.LINE_PLUNGE,
-                                  PlayType.OFF_TACKLE, PlayType.OFF_TACKLE, PlayType.QB_SNEAK])
+            return (random.choice([PlayType.LINE_PLUNGE, PlayType.LINE_PLUNGE, PlayType.LINE_PLUNGE,
+                                  PlayType.OFF_TACKLE, PlayType.OFF_TACKLE, PlayType.QB_SNEAK]), False, 0)
         elif ytg <= 3:
             # 4th and short - mix of run and pass
-            return random.choice([PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.SHORT_PASS, PlayType.DRAW])
+            return (random.choice([PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.SHORT_PASS, PlayType.DRAW]), False, 0)
         elif ytg <= 6:
             # 4th and medium - quick passes
-            return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN, PlayType.DRAW])
+            return (random.choice([PlayType.SHORT_PASS, PlayType.SCREEN, PlayType.DRAW]), False, 0)
         else:
             # 4th and long - need a chunk play
-            return random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS, PlayType.LONG_PASS])
+            return (random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS, PlayType.LONG_PASS]), False, 0)
 
     def _goal_line_offense(self, ytg) -> PlayType:
         """Play calling inside the 5 yard line."""

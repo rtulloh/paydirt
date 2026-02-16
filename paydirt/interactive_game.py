@@ -2647,7 +2647,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
             if game.state.down == 4:
                 # CPU makes 4th down decision first (with clock management)
-                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                play_type, cpu_oob, cpu_no_huddle, cpu_punt_short_drop, cpu_punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
                 if cpu_no_huddle:
@@ -2657,7 +2657,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 if play_type == PlayType.PUNT:
                     # CPU punts - no defensive call needed
                     cpu_team = game.state.possession_team.peripheral.short_name
-                    print(f"\n  {cpu_team} punts on 4th and {game.state.yards_to_go}")
+                    if cpu_punt_short_drop:
+                        print(f"\n  {cpu_team} uses SHORT-DROP PUNT on 4th and {game.state.yards_to_go}")
+                    elif cpu_punt_coffin_yards > 0:
+                        print(f"\n  {cpu_team} uses COFFIN-CORNER PUNT ({cpu_punt_coffin_yards} yards subtracted) on 4th and {game.state.yards_to_go}")
+                    else:
+                        print(f"\n  {cpu_team} punts on 4th and {game.state.yards_to_go}")
                     def_type = DefenseType.STANDARD  # Default, doesn't matter for punt
                 elif play_type == PlayType.FIELD_GOAL:
                     # CPU kicks FG - no defensive call needed
@@ -2688,7 +2693,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
                 # Get play with clock management flags
-                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                play_type, cpu_oob, cpu_no_huddle, cpu_punt_short_drop, cpu_punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
                 if cpu_no_huddle:
@@ -2696,7 +2701,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     print(f"\n  {cpu_team} in NO-HUDDLE offense!")
 
                 print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
-                print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
+                print(f"\n  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
         # If timeout is called, save time and quarter before play to ensure we can refund properly
         time_before_play = game.state.time_remaining
@@ -2708,11 +2713,19 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # Track 2-minute warning state before play
         two_min_warning_before = game.state.two_minute_warning_called
 
+        # Initialize punt options (will be overridden if human is on offense)
+        cpu_punt_short_drop = False
+        cpu_punt_coffin_yards = 0
+
         # Get punt options if it's a punt play (human on offense)
         punt_short_drop = False
         punt_coffin_corner_yards = 0
         if is_human_offense and play_type == PlayType.PUNT:
             punt_short_drop, punt_coffin_corner_yards = get_punt_options(game)
+        elif not is_human_offense and play_type == PlayType.PUNT:
+            # CPU is punting - use CPU's punt options
+            punt_short_drop = cpu_punt_short_drop
+            punt_coffin_corner_yards = cpu_punt_coffin_yards
 
         # Run the play with penalty procedure
         if out_of_bounds:
@@ -3106,7 +3119,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
             if game.state.down == 4:
                 # CPU makes 4th down decision first (with clock management)
-                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                play_type, cpu_oob, cpu_no_huddle, cpu_punt_short_drop, cpu_punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
                 if cpu_no_huddle:
@@ -3115,7 +3128,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
                 if play_type == PlayType.PUNT:
                     cpu_team = game.state.possession_team.peripheral.short_name
-                    print(f"\n  {cpu_team} punts on 4th and {game.state.yards_to_go}")
+                    if cpu_punt_short_drop:
+                        print(f"\n  {cpu_team} uses SHORT-DROP PUNT on 4th and {game.state.yards_to_go}")
+                    elif cpu_punt_coffin_yards > 0:
+                        print(f"\n  {cpu_team} uses COFFIN-CORNER PUNT ({cpu_punt_coffin_yards} yards subtracted) on 4th and {game.state.yards_to_go}")
+                    else:
+                        print(f"\n  {cpu_team} punts on 4th and {game.state.yards_to_go}")
                     def_type = DefenseType.STANDARD
                 elif play_type == PlayType.FIELD_GOAL:
                     cpu_team = game.state.possession_team.peripheral.short_name
@@ -3135,13 +3153,16 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
                 def_type, call_timeout = get_human_defense_play(game)
+                # Initialize CPU punt options for non-4th-down case
+                cpu_punt_short_drop = False
+                cpu_punt_coffin_yards = 0
                 if def_type is None:
                     filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
                     print(f"\n  *** GAME SAVED to {filepath} ***")
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
                 # Get play with clock management flags
-                play_type, cpu_oob, cpu_no_huddle = cpu_ai.select_offense_with_clock_management(game)
+                play_type, cpu_oob, cpu_no_huddle, cpu_punt_short_drop, cpu_punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
                 if cpu_no_huddle:
@@ -3155,9 +3176,21 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         offense_was_home = game.state.is_home_possession
         two_min_warning_before = game.state.two_minute_warning_called
 
+        # Initialize punt options
+        punt_short_drop = False
+        punt_coffin_corner_yards = 0
+        if is_human_offense and play_type == PlayType.PUNT:
+            punt_short_drop, punt_coffin_corner_yards = get_punt_options(game)
+        elif not is_human_offense and play_type == PlayType.PUNT:
+            # CPU is punting - use CPU's punt options
+            punt_short_drop = cpu_punt_short_drop
+            punt_coffin_corner_yards = cpu_punt_coffin_yards
+
         outcome = game.run_play_with_penalty_procedure(play_type, def_type,
                                                         out_of_bounds_designation=out_of_bounds,
-                                                        in_bounds_designation=in_bounds)
+                                                        in_bounds_designation=in_bounds,
+                                                        punt_short_drop=punt_short_drop,
+                                                        punt_coffin_corner_yards=punt_coffin_corner_yards)
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)

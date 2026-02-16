@@ -34,6 +34,7 @@
 - Added 1 test for CPU timeout after penalty
 - Added 7 tests for CPU clock management at end of half (including red zone long pass fix)
 - Added 7 tests for advanced punt rules (Short-Drop and Coffin-Corner punts)
+- Added tests for CPU AI punt options
 - Full 28-team simulation verified after extra file removal
 
 ---
