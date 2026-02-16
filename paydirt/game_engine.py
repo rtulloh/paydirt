@@ -1955,6 +1955,7 @@ class PaydirtGameEngine:
             # In full rules, would resolve penalty then re-punt
             punt_yards = 35  # Default punt on penalty
             description = f"Penalty on punt - {punt_result}"
+            original_punt_yards = punt_yards
         else:
             # Parse punt yardage
             try:
@@ -1966,10 +1967,12 @@ class PaydirtGameEngine:
             # Per rules: yardage is subtracted from the Special Team Chart result
             # but not from penalties, blocked kicks, or fumbled snap results
             if coffin_corner_yards > 0:
+                original_punt_yards = punt_yards
                 punt_yards = max(0, punt_yards - coffin_corner_yards)
-                description = f"Coffin Corner punt ({coffin_corner_yards} yards subtracted)"
+                description = f"[CC: {original_punt_yards}-{coffin_corner_yards}={punt_yards}] "
             else:
                 description = ""
+                original_punt_yards = punt_yards
 
         # Calculate where punt lands (from punting team's perspective)
         # Ball position is yards from own goal, punt travels toward opponent's goal
@@ -1979,7 +1982,7 @@ class PaydirtGameEngine:
         if landing_spot >= 100:
             self.state.switch_possession()
             self.state.ball_position = 20  # Touchback at 20
-            description = f"Punt {punt_yards} yards into the end zone - Touchback at the 20"
+            description = f"{description}Punt {punt_yards} yards into the end zone - Touchback at the 20"
 
             outcome = PlayOutcome(
                 play_type=PlayType.PUNT,
@@ -2078,7 +2081,7 @@ class PaydirtGameEngine:
                         turnover=False,  # Punting team recovers - no turnover
                         field_position_before=field_pos_before,
                         field_position_after=self.state.field_position_str(),
-                        description=f"Punt {punt_yards} yards, {return_desc} Recovered at {self.state.field_position_str()}"
+                        description=f"{description}Punt {punt_yards} yards, {return_desc} Recovered at {self.state.field_position_str()}"
                     )
                     self.play_log.append(outcome)
                     self._use_time(random.uniform(5, 12))
@@ -2141,13 +2144,13 @@ class PaydirtGameEngine:
         # Build description
         if return_desc:
             if "fair catch" in return_desc or "downed" in return_desc:
-                description = f"Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}.{punt_commentary}"
+                description = f"{description}Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}.{punt_commentary}"
             elif touchdown:
-                description = f"Punt {punt_yards} yards, {return_desc} - TOUCHDOWN!"
+                description = f"{description}Punt {punt_yards} yards, {return_desc} - TOUCHDOWN!"
             else:
-                description = f"Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}.{punt_commentary}"
+                description = f"{description}Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}.{punt_commentary}"
         else:
-            description = f"Punt {punt_yards} yards to {self.state.field_position_str()}.{punt_commentary}"
+            description = f"{description}Punt {punt_yards} yards to {self.state.field_position_str()}.{punt_commentary}"
 
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,
