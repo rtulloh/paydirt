@@ -18,16 +18,22 @@
 - **CPU clock management at end of half**: Fixed CPU entering red zone/goal line offense instead of two-minute drill when time is low at end of half. Time-based decisions now take priority over field-position decisions, ensuring proper OOB designation and hurry-up mode
 - **Long pass from goal line**: Fixed CPU calling long pass from red zone/goal line during two-minute drill. Now avoids long passes when in the red zone (inside 20) since there's no room to throw deep
 
+### New Features
+- **Advanced Punt Rules**: Added support for Short-Drop and Coffin-Corner punts per advanced rules
+  - Short-Drop Punts: When punting from inside own 5-yard line, defenders get Free All-Out Kick Rush, all * and † markers are deleted, minus yardage returns become 0 yards
+  - Coffin-Corner Punts: Can specify yards to subtract from punt before dice roll. If 15+ yards subtracted, punt is automatic out of bounds (no return possible)
+
 ### Analysis
 - **Power ratings investigation**: Analyzed power ratings vs actual 1983 NFL records. Found that power ratings are a handicapping mechanism for human vs human play (point spreads, yardage factors), not a simulation of team strength. The chart data itself determines team performance
 
 ### Test Coverage
-- **1022 unit tests** passing
+- **1029 unit tests** passing
 - Added 7 tests for chart loader data extraction
 - Added 2 tests for TD yardage fix
 - Added 3 tests for Hail Mary PI untimed down
 - Added 1 test for CPU timeout after penalty
 - Added 7 tests for CPU clock management at end of half (including red zone long pass fix)
+- Added 7 tests for advanced punt rules (Short-Drop and Coffin-Corner punts)
 - Full 28-team simulation verified after extra file removal
 
 ---

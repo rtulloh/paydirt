@@ -798,7 +798,9 @@ class PaydirtGameEngine:
 
     def run_play(self, play_type: PlayType, defense_type: DefenseType,
                  out_of_bounds_designation: bool = False,
-                 in_bounds_designation: bool = False) -> PlayOutcome:
+                 in_bounds_designation: bool = False,
+                 punt_short_drop: bool = False,
+                 punt_coffin_corner_yards: int = 0) -> PlayOutcome:
         """
         Execute an offensive play.
         
@@ -807,6 +809,8 @@ class PaydirtGameEngine:
             defense_type: The defensive formation
             out_of_bounds_designation: If True, guarantees 10-sec play but costs 5 yards
             in_bounds_designation: If True, keeps clock running but costs 5 yards
+            punt_short_drop: If True, apply short-drop punt rules
+            punt_coffin_corner_yards: Yards to subtract from punt (coffin corner)
         
         Returns:
             PlayOutcome with full details
@@ -820,7 +824,7 @@ class PaydirtGameEngine:
 
         # Handle special teams
         if play_type == PlayType.PUNT:
-            return self._handle_punt()
+            return self._handle_punt(short_drop=punt_short_drop, coffin_corner_yards=punt_coffin_corner_yards)
         elif play_type == PlayType.FIELD_GOAL:
             return self._handle_field_goal()
         elif play_type == PlayType.QB_SNEAK:
@@ -1085,7 +1089,9 @@ class PaydirtGameEngine:
 
     def run_play_with_penalty_procedure(self, play_type: PlayType, defense_type: DefenseType,
                                          out_of_bounds_designation: bool = False,
-                                         in_bounds_designation: bool = False) -> PlayOutcome:
+                                         in_bounds_designation: bool = False,
+                                         punt_short_drop: bool = False,
+                                         punt_coffin_corner_yards: int = 0) -> PlayOutcome:
         """
         Execute an offensive play with full penalty procedure per Paydirt rules.
         
@@ -1104,7 +1110,8 @@ class PaydirtGameEngine:
         # Special teams don't use penalty procedure
         if play_type in [PlayType.PUNT, PlayType.FIELD_GOAL, PlayType.QB_SNEAK,
                          PlayType.HAIL_MARY, PlayType.SPIKE_BALL, PlayType.QB_KNEEL]:
-            return self.run_play(play_type, defense_type, out_of_bounds_designation, in_bounds_designation)
+            return self.run_play(play_type, defense_type, out_of_bounds_designation, in_bounds_designation,
+                                 punt_short_drop=punt_short_drop, punt_coffin_corner_yards=punt_coffin_corner_yards)
 
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
@@ -1766,19 +1773,31 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _handle_punt(self) -> PlayOutcome:
+    def _handle_punt(self, short_drop: bool = False, coffin_corner_yards: int = 0) -> PlayOutcome:
         """
         Handle a punt play per official Paydirt rules.
         
-        1. Roll offensive dice, consult Punt column on punting team's Special Team Chart
-        2. If result has † (downed/out of bounds) or * (fair catch), no return allowed
-        3. Otherwise, receiving team rolls offensive dice and consults Punt Return column
+        Advanced Punt Options (per advanced rules):
+        - Short-Drop Punts: If LOS is inside 5-yard line, defenders get Free All-Out Kick Rush,
+          all * and † are deleted, minus yardage returns become 0
+        - Coffin-Corner Punts: Can subtract yardage from punt before dice roll.
+          If 15+ yards subtracted, punt is automatic out of bounds (no return)
+        
+        Args:
+            short_drop: If True, apply short-drop punt rules
+            coffin_corner_yards: Yards to subtract from punt distance (0 = no coffin corner)
         """
         field_pos_before = self.state.ball_position
         down_before = self.state.down
         ytg_before = self.state.yards_to_go
         punting_team = self.state.possession_team
         receiving_team = self.state.defense_team
+
+        # Check for short-drop punt (inside own 5-yard line)
+        is_short_drop = short_drop and field_pos_before <= 5
+
+        # Check for coffin corner (automatic OOB if 15+ yards subtracted)
+        is_coffin_corner = coffin_corner_yards >= 15
 
         # Roll for punt distance
         punt_roll, punt_dice_desc = roll_chart_dice()
@@ -1789,6 +1808,12 @@ class PaydirtGameEngine:
         is_fair_catch = "*" in punt_result  # * = fair catch
         is_blocked = "BK" in punt_result.upper()
         is_penalty = "OFF" in punt_result.upper() or "DEF" in punt_result.upper()
+
+        # Short-drop punt: delete all * and † markers
+        if is_short_drop:
+            punt_result = punt_result.replace("†", "").replace("*", "").replace("+", "")
+            is_downed = False
+            is_fair_catch = False
 
         # Parse punt distance (strip markers)
         punt_clean = punt_result.replace("†", "").replace("*", "").replace("+", "").strip()
@@ -1937,6 +1962,15 @@ class PaydirtGameEngine:
             except ValueError:
                 punt_yards = 40  # Default
 
+            # Apply coffin corner yardage subtraction (before moving ball downfield)
+            # Per rules: yardage is subtracted from the Special Team Chart result
+            # but not from penalties, blocked kicks, or fumbled snap results
+            if coffin_corner_yards > 0:
+                punt_yards = max(0, punt_yards - coffin_corner_yards)
+                description = f"Coffin Corner punt ({coffin_corner_yards} yards subtracted)"
+            else:
+                description = ""
+
         # Calculate where punt lands (from punting team's perspective)
         # Ball position is yards from own goal, punt travels toward opponent's goal
         landing_spot = self.state.ball_position + punt_yards
@@ -1967,6 +2001,34 @@ class PaydirtGameEngine:
         # Check if punt can be returned
         return_yards = 0
         return_desc = ""
+
+        # Coffin corner: 15+ yards subtracted = automatic out of bounds (no return)
+        # Per rules: "If 15 yards or more is subtracted from a punt, the punt is automatically
+        # out of bounds (unless otherwise specified in advance by the punting team),
+        # and there can be no return, fair catch, or roll yardage."
+        if is_coffin_corner:
+            return_desc = "coffin corner - out of bounds"
+            self.state.ball_position = receiving_position
+            self.state.switch_possession()
+            self.state.down = 1
+            self.state.yards_to_go = 10
+            
+            full_description = f"Punt {punt_yards} yards ({coffin_corner_yards} yards subtracted) - out of bounds at {self.state.field_position_str()}"
+            if description:
+                full_description = description + " - " + full_description
+            
+            outcome = PlayOutcome(
+                play_type=PlayType.PUNT,
+                defense_type=DefenseType.STANDARD,
+                result=parse_result_string(punt_result),
+                yards_gained=punt_yards,
+                field_position_before=field_pos_before,
+                field_position_after=self.state.field_position_str(),
+                description=full_description
+            )
+            self.play_log.append(outcome)
+            self._use_time(random.uniform(5, 10))
+            return outcome
 
         if is_downed:
             # Ball downed or out of bounds - no return
@@ -2026,6 +2088,11 @@ class PaydirtGameEngine:
                     try:
                         return_yards = int(return_result.replace("*", "").replace("†", "").strip())
                     except ValueError:
+                        return_yards = 0
+
+                    # Short-drop punt: minus yardage returns become 0 yard returns
+                    # Per rules: "all minus yardage returns are zero yard returns"
+                    if is_short_drop and return_yards < 0:
                         return_yards = 0
 
                     # Add commentary for exceptional returns

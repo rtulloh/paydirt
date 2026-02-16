@@ -491,3 +491,129 @@ class TestPuntReturnPenalties:
             # DEF 15 penalty moves ball forward 15 yards = opponent's 45
             assert game.state.ball_position == 45
             assert "Penalty on return" in outcome.description
+
+
+class TestAdvancedPuntRules:
+    """Tests for advanced punt rules: Short-Drop and Coffin-Corner punts."""
+
+    def test_short_drop_punt_removes_asterisk_markers(self, game):
+        """Short-drop punt should remove * (fair catch) markers from punt result."""
+        # Ball at own 3 (inside 5-yard line)
+        game.state.ball_position = 3
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll that would normally result in fair catch (*)
+            mock_dice.return_value = (12, "B2+W5+W5=12")
+            
+            # Patch punt chart to have * marker
+            game.state.possession_team.special_teams.punt[12] = "35*"
+            
+            # Short-drop punt
+            outcome = game._handle_punt(short_drop=True)
+            
+            # The * should be removed - fair catch should NOT apply
+            assert "*" not in outcome.description
+            assert "fair catch" not in outcome.description.lower()
+
+    def test_short_drop_punt_removes_dagger_markers(self, game):
+        """Short-drop punt should remove † (downed) markers from punt result."""
+        game.state.ball_position = 5
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (14, "B2+W5+W7=14")
+            
+            # Patch punt chart to have † marker
+            game.state.possession_team.special_teams.punt[14] = "40†"
+            
+            outcome = game._handle_punt(short_drop=True)
+            
+            # The † should be removed - downed should NOT apply
+            assert "†" not in outcome.description
+
+    def test_short_drop_punt_minus_returns_become_zero(self, game):
+        """Short-drop punt: minus return yardage should become 0 yards."""
+        game.state.ball_position = 3
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll: punt result, Second roll: return result
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Punt roll
+                (15, "B1+W5+W0=15")   # Return roll
+            ]
+            
+            # Patch return chart to have -10 yards (minus return)
+            game.state.defense_team.special_teams.punt_return[15] = "-10"
+            
+            outcome = game._handle_punt(short_drop=True)
+            
+            # With short-drop, minus return becomes 0
+            assert "0" in outcome.description or "no return" in outcome.description.lower()
+
+    def test_coffin_corner_subtracts_yardage(self, game):
+        """Coffin-corner punt should subtract specified yards from punt distance."""
+        game.state.ball_position = 20
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt would normally go 40 yards
+            mock_dice.return_value = (10, "B1+W0+W0=10")
+            
+            game.state.possession_team.special_teams.punt[10] = "40"
+            
+            outcome = game._handle_punt(coffin_corner_yards=10)
+            
+            # Should subtract 10 yards from 40 = 30 yard punt
+            assert "30" in outcome.description or "10 yards subtracted" in outcome.description
+
+    def test_coffin_corner_15_yards_auto_out_of_bounds(self, game):
+        """Coffin-corner with 15+ yards subtracted = automatic out of bounds."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
+            
+            game.state.possession_team.special_teams.punt[10] = "45"
+            
+            outcome = game._handle_punt(coffin_corner_yards=15)
+            
+            # Should be out of bounds, no return
+            assert "out of bounds" in outcome.description.lower() or "coffin" in outcome.description.lower()
+
+    def test_coffin_corner_20_yards_auto_out_of_bounds(self, game):
+        """Coffin-corner with 20 yards subtracted = automatic out of bounds."""
+        game.state.ball_position = 40
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
+            
+            game.state.possession_team.special_teams.punt[10] = "50"
+            
+            outcome = game._handle_punt(coffin_corner_yards=20)
+            
+            # Should be out of bounds
+            assert "out of bounds" in outcome.description.lower() or "coffin" in outcome.description.lower()
+
+    def test_coffin_corner_less_than_15_allows_return(self, game):
+        """Coffin-corner with less than 15 yards can still be returned."""
+        game.state.ball_position = 25
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Punt roll
+                (15, "B1+W5+W0=15")   # Return roll
+            ]
+            
+            game.state.possession_team.special_teams.punt[10] = "45"
+            game.state.defense_team.special_teams.punt_return[15] = "10"
+            
+            outcome = game._handle_punt(coffin_corner_yards=10)
+            
+            # Should still allow return (not automatic OOB)
+            # The punt goes 45-10=35 yards
+            assert "returned" in outcome.description.lower() or "10" in outcome.description

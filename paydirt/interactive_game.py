@@ -819,6 +819,83 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
         print("  Invalid choice. Enter 1-9, Q, H, S, K, N, T, P, F (add '+'/'-' for OOB/IB)")
 
 
+def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
+    """
+    Prompt human player for advanced punt options.
+    
+    Per advanced rules:
+    - Short-Drop: If LOS is inside 5-yard line, defenders get Free All-Out Kick Rush,
+      all * and † are deleted, minus yardage returns become 0
+    - Coffin-Corner: Can subtract yardage from punt before dice roll.
+      If 15+ yards subtracted, punt is automatic out of bounds (no return)
+    
+    Returns:
+        Tuple of (short_drop: bool, coffin_corner_yards: int)
+    """
+    state = game.state
+    field_pos = state.ball_position  # 0=own goal, 100=opponent goal
+    
+    # Determine if short-drop is available (inside own 5-yard line)
+    is_short_drop_available = field_pos <= 5
+    
+    print("\n  PUNT OPTIONS:")
+    print("  " + "-" * 40)
+    print("    [1] Normal Punt")
+    
+    options = ["1"]
+    
+    if is_short_drop_available:
+        print("    [2] Short-Drop Punt (from inside 5-yard line)")
+        print("        - Defenders get Free All-Out Kick Rush")
+        print("        - All * and † markers deleted")
+        print("        - Minus returns become 0 yards")
+        options.append("2")
+    
+    print("    [3] Coffin-Corner Punt (specify yards to subtract)")
+    options.append("3")
+    
+    print(f"\n  Current: Ball at {state.field_position_str()}")
+    
+    while True:
+        choice = input("\n  Select punt option: ").strip().upper()
+        
+        if choice not in options:
+            print("  Invalid choice.")
+            continue
+        
+        if choice == "1":
+            # Normal punt
+            return (False, 0)
+        
+        elif choice == "2":
+            # Short-drop punt
+            print("\n  >> Short-Drop Punt selected")
+            print("     Defenders will get Free All-Out Kick Rush")
+            return (True, 0)
+        
+        elif choice == "3":
+            # Coffin corner - ask how many yards to subtract
+            while True:
+                try:
+                    yards_str = input("  Yards to subtract (0-25): ").strip()
+                    yards = int(yards_str)
+                    if 0 <= yards <= 25:
+                        break
+                    print("  Enter a number between 0 and 25")
+                except ValueError:
+                    print("  Enter a valid number")
+            
+            if yards >= 15:
+                print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
+                print(f"     Punt will be automatic out of bounds (no return)")
+            elif yards > 0:
+                print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
+            else:
+                print("\n  >> Normal Punt (0 yards subtracted)")
+            
+            return (False, yards)
+
+
 def get_human_offense_play_for_conversion(game: PaydirtGameEngine) -> PlayType:
     """Prompt human player to select a play for 2-point conversion."""
     print("  " + "-" * 40)
@@ -2631,6 +2708,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # Track 2-minute warning state before play
         two_min_warning_before = game.state.two_minute_warning_called
 
+        # Get punt options if it's a punt play (human on offense)
+        punt_short_drop = False
+        punt_coffin_corner_yards = 0
+        if is_human_offense and play_type == PlayType.PUNT:
+            punt_short_drop, punt_coffin_corner_yards = get_punt_options(game)
+
         # Run the play with penalty procedure
         if out_of_bounds:
             print("  [OUT OF BOUNDS DESIGNATION - guarantees 10-sec play, costs 5 yards]")
@@ -2638,7 +2721,9 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             print("  [IN BOUNDS DESIGNATION - keeps clock running, costs 5 yards]")
         outcome = game.run_play_with_penalty_procedure(play_type, def_type,
                                                         out_of_bounds_designation=out_of_bounds,
-                                                        in_bounds_designation=in_bounds)
+                                                        in_bounds_designation=in_bounds,
+                                                        punt_short_drop=punt_short_drop,
+                                                        punt_coffin_corner_yards=punt_coffin_corner_yards)
 
         # Handle pending penalty decision if applicable
         if outcome.pending_penalty_decision and outcome.penalty_choice:
