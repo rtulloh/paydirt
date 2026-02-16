@@ -650,3 +650,64 @@ class TestPuntDiceDisplay:
             
             assert outcome.result.dice_roll == 17
             assert "fair catch" in outcome.description.lower()
+
+
+class TestPuntShankCommentary:
+    """Tests for punt shank commentary."""
+
+    def test_shank_commentary_for_short_normal_punt(self, game):
+        """Normal punt under 20 yards should show 'Shanked!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "15"
+            
+            outcome = game._handle_punt()
+            
+            assert "shanked" in outcome.description.lower()
+
+    def test_no_shank_for_short_drop_punt(self, game):
+        """Short-drop punt under 20 yards should NOT show 'Shanked!' commentary."""
+        game.state.ball_position = 3
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "15"
+            
+            outcome = game._handle_punt(short_drop=True)
+            
+            assert "shanked" not in outcome.description.lower()
+
+    def test_no_shank_for_coffin_corner_punt(self, game):
+        """Coffin-corner punt under 20 yards should NOT show 'Shanked!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "25"
+            
+            outcome = game._handle_punt(coffin_corner_yards=10)
+            
+            assert "shanked" not in outcome.description.lower()
+            assert "[CC:" in outcome.description
+
+    def test_no_shank_for_normal_punt_20_plus_yards(self, game):
+        """Normal punt 20+ yards should NOT show 'Shanked!' commentary."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (17, "B2+W2+W5=17")
+            
+            game.state.possession_team.special_teams.punt[17] = "40"
+            
+            outcome = game._handle_punt()
+            
+            assert "shanked" not in outcome.description.lower()

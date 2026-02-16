@@ -2132,8 +2132,11 @@ class PaydirtGameEngine:
 
         # Add punt commentary for exceptional punts
         punt_commentary = ""
+        # Check for shank: normal punt under 20 yards (not short-drop or coffin-corner)
+        if not short_drop and coffin_corner_yards == 0 and punt_yards < 20 and not touchdown:
+            punt_commentary = " Shanked!"
         # Check if receiving team is pinned inside their 20 (ball_position is from their perspective now)
-        if self.state.ball_position <= 20 and not touchdown:
+        elif self.state.ball_position <= 20 and not touchdown:
             if self.state.ball_position <= 10:
                 punt_commentary = " Pinned deep!"
             else:
