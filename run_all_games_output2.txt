@@ -1,0 +1,153 @@
+
+======================================================================
+  GAME: Packers @ 49ers
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Bills @ Vikings
+======================================================================
+  Final: BUF '83 17 - MIN '83 0
+  BUF '83: 7+0+0+0=7 ✓
+  MIN '83: 0+0+0+0=0 ✓
+  Stats: BUF '83: 536 yds, 0 TO, 14 pen
+         MIN '83: 156 yds, 1 TO, 8 pen
+  Clock Mgmt: 9 no-huddle, 8 OOB designations, 8 2-min drill plays
+
+======================================================================
+  GAME: Bears @ Browns
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Rams @ Saints
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Colts @ Broncos
+======================================================================
+  Final: BAL '83 15 - DEN '83 13
+  BAL '83: 3+0+0+0=3 ✓
+  DEN '83: 3+0+0+0=3 ✓
+  Stats: BAL '83: 522 yds, 3 TO, 16 pen
+         DEN '83: 236 yds, 1 TO, 13 pen
+  Clock Mgmt: 10 no-huddle, 10 OOB designations, 10 2-min drill plays
+
+======================================================================
+  GAME: Raiders @ Chiefs
+======================================================================
+  Final: LAR '83 35 - KC '83 7
+  LAR '83: 7+0+0+0=7 ✓
+  KC '83: 0+0+0+0=0 ✓
+  Stats: LAR '83: 578 yds, 3 TO, 11 pen
+         KC '83: 164 yds, 0 TO, 16 pen
+  Clock Mgmt: 11 no-huddle, 10 OOB designations, 10 2-min drill plays
+
+======================================================================
+  GAME: Steelers @ Falcons
+======================================================================
+  Final: PIT '83 29 - ATL '83 7
+  PIT '83: 0+0+0+0=0 ✓
+  ATL '83: 0+0+0+0=0 ✓
+  Stats: PIT '83: 117 yds, 2 TO, 3 pen
+         ATL '83: 51 yds, 1 TO, 1 pen
+  Clock Mgmt: 25 no-huddle, 23 OOB designations, 23 2-min drill plays
+
+======================================================================
+  GAME: Bengals @ Jets
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Buccaneers @ Patriots
+======================================================================
+  Final: TB '83 10 - NE '83 30
+  TB '83: 0+0+0+0=0 ✓
+  NE '83: 14+0+0+0=14 ✓
+  Stats: TB '83: 415 yds, 1 TO, 8 pen
+         NE '83: 487 yds, 2 TO, 4 pen
+  Clock Mgmt: 21 no-huddle, 17 OOB designations, 18 2-min drill plays
+
+======================================================================
+  GAME: Seahawks @ Dolphins
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Eagles @ Chargers
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Cowboys @ Giants
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  GAME: Lions @ Oilers
+======================================================================
+  Final: DET '83 23 - HOU '83 10
+  DET '83: 13+1+0+0=14 ✓
+  HOU '83: 0+0+0+0=0 ✓
+  Stats: DET '83: 482 yds, 1 TO, 14 pen
+         HOU '83: 294 yds, 3 TO, 7 pen
+  Clock Mgmt: 14 no-huddle, 12 OOB designations, 13 2-min drill plays
+
+======================================================================
+  GAME: Cardinals @ Redskins
+======================================================================
+  ERROR: Python exception!
+
+======================================================================
+  SUMMARY: 14 games played
+======================================================================
+
+  RESULTS:
+  --------------------------------------------------
+    BUF '83       17 - MIN '83        0  (BUF '83 wins)
+    BAL '83       15 - DEN '83       13  (BAL '83 wins)
+    LAR '83       35 - KC '83         7  (LAR '83 wins)
+    PIT '83       29 - ATL '83        7  (PIT '83 wins)
+    TB '83        10 - NE '83        30  (NE '83 wins)
+    DET '83       23 - HOU '83       10  (DET '83 wins)
+  --------------------------------------------------
+    Away wins: 5  |  Home wins: 1  |  Ties: 0
+
+  AGGREGATE STATISTICS:
+  --------------------------------------------------
+    Total Points:          196  (avg 32.7/game, 16.3/team)
+    Total Yards:          4038  (avg 673.0/game, 336.5/team)
+      Rushing:            1911  (avg 159.2/team)
+      Passing:            2127  (avg 177.2/team)
+    First Downs:           204  (avg 17.0/team)
+    Turnovers:              18  (avg 1.5/team)
+      Interceptions:        14
+      Fumbles Lost:          4
+    Penalties:             115  (avg 9.6/team)
+    Penalty Yards:         762  (avg 63.5/team)
+    Sacks:                  16  (avg 1.3/team)
+
+  ERRORS FOUND (8):
+    - Packers@49ers: Python traceback in output
+    - Bears@Browns: Python traceback in output
+    - Rams@Saints: Python traceback in output
+    - Bengals@Jets: Python traceback in output
+    - Seahawks@Dolphins: Python traceback in output
+    - Eagles@Chargers: Python traceback in output
+    - Cowboys@Giants: Python traceback in output
+    - Cardinals@Redskins: Python traceback in output
+
+  CLOCK MANAGEMENT SUMMARY:
+  --------------------------------------------------
+    Games with clock management: 6/6
+    Total no-huddle plays:       90
+    Total OOB designations:      80
+    Total two-minute drill plays: 82
+
+    Games with clock management activity:
+      Steelers@Falcons: 25 no-huddle, 23 OOB
+      Buccaneers@Patriots: 21 no-huddle, 17 OOB
+      Lions@Oilers: 14 no-huddle, 12 OOB
+      Raiders@Chiefs: 11 no-huddle, 10 OOB
+      Colts@Broncos: 10 no-huddle, 10 OOB

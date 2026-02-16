@@ -12,6 +12,7 @@ from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine
 from .computer_ai import ComputerAI
 from .interactive_game import display_box_score
+from .play_resolver import PlayType
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -198,7 +199,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         print(f"  {off_team} ball at {state.field_position_str()} | {state.down}&{state.yards_to_go}")
 
         # CPU selects plays with clock management
-        play_type, use_oob, use_no_huddle = off_ai.select_offense_with_clock_management(game)
+        play_type, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = off_ai.select_offense_with_clock_management(game)
         def_type = def_ai.select_defense(game)
 
         play_name = play_type.value.replace('_', ' ').title()
@@ -213,11 +214,21 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
             print(f"  {off_team} in NO-HUDDLE offense!")
         if use_oob:
             print(f"  [OUT OF BOUNDS DESIGNATION]")
+        
+        # Show punt options
+        if play_type == PlayType.PUNT:
+            if punt_short_drop:
+                print(f"  [SHORT-DROP PUNT]")
+            elif punt_coffin_yards > 0:
+                print(f"  [COFFIN-CORNER PUNT: {punt_coffin_yards} yards subtracted]")
 
         print(f"  {off_team}: {play_name} vs {def_name}")
 
-        # Run the play with OOB designation if applicable
-        outcome = game.run_play(play_type, def_type, out_of_bounds_designation=use_oob)
+        # Run the play with OOB designation and punt options if applicable
+        outcome = game.run_play(play_type, def_type, 
+                                out_of_bounds_designation=use_oob,
+                                punt_short_drop=punt_short_drop,
+                                punt_coffin_corner_yards=punt_coffin_yards)
 
         # Display result
         if outcome.touchdown:
