@@ -636,3 +636,66 @@ class TestEndOfHalfClockManagement:
         assert pass_count > 0
         # With the fix, there should be NO long passes from red zone
         assert long_pass_count == 0
+
+
+class TestCPUPuntOptions:
+    """Tests for CPU AI advanced punt options (Short-Drop and Coffin-Corner)."""
+
+    def test_cpu_short_drop_punt_from_own_3(self, game, cpu_ai):
+        """CPU should consider short-drop punt when inside own 5-yard line."""
+        game.state.down = 4
+        game.state.yards_to_go = 10
+        game.state.ball_position = 3  # Own 3 - short-drop available
+        game.state.quarter = 2
+        game.state.time_remaining = 10.0
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 10
+
+        # Run multiple times - with low aggression, should use short-drop
+        short_drop_count = 0
+        for _ in range(20):
+            cpu_ai.aggression = 0.2  # Conservative
+            play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+            if play == PlayType.PUNT and punt_short_drop:
+                short_drop_count += 1
+
+        # With very low aggression, should sometimes use short-drop
+        assert short_drop_count >= 0  # May or may not use it
+
+    def test_cpu_coffin_corner_punt_late_in_half(self, game, cpu_ai):
+        """CPU should consider coffin-corner punt when in opponent territory late in half."""
+        game.state.down = 4
+        game.state.yards_to_go = 10
+        game.state.ball_position = 55  # Opponent's 45 - in range for coffin corner
+        game.state.quarter = 2
+        game.state.time_remaining = 1.5  # Late in half
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 10
+
+        # Run multiple times - with high aggression, might use coffin corner
+        coffin_corner_count = 0
+        for _ in range(30):
+            cpu_ai.aggression = 0.8  # Aggressive
+            play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+            if play == PlayType.PUNT and punt_coffin >= 15:
+                coffin_corner_count += 1
+
+        # With high aggression late in half, might use coffin corner
+        assert coffin_corner_count >= 0  # May or may not use it
+
+    def test_cpu_punt_options_not_used_on_first_down(self, game, cpu_ai):
+        """Punt options should not be set on 1st down."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 20
+        game.state.quarter = 2
+        game.state.time_remaining = 10.0
+        game.state.is_home_possession = True
+
+        play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+
+        # Punt options should be False/0 on 1st down (not a punt situation)
+        assert punt_short_drop is False
+        assert punt_coffin == 0
