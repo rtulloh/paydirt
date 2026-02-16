@@ -843,18 +843,16 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
     print("    [1] Normal Punt (default)")
     
     options = ["1", ""]  # Empty string for default
-    option_number = 2
     
     if is_short_drop_available:
-        print(f"    [{option_number}] Short-Drop Punt (from inside 5-yard line)")
+        print("    [2] Short-Drop Punt (from inside 5-yard line)")
         print("        - Defenders get Free All-Out Kick Rush")
         print("        - All * and † markers deleted")
         print("        - Minus returns become 0 yards")
-        options.append(str(option_number))
-        option_number += 1
-    
-    print(f"    [{option_number}] Coffin-Corner Punt (specify yards to subtract)")
-    options.append(str(option_number))
+        options.append("2")
+    else:
+        print("    [2] Coffin-Corner Punt (specify yards to subtract)")
+        options.append("2")
     
     print(f"\n  Current: Ball at {state.field_position_str()}")
     
@@ -873,36 +871,33 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
             # Normal punt
             return (False, 0)
         
-        # Determine which option maps to which action based on availability
-        current_option = 2
-        
-        if is_short_drop_available and choice == str(current_option):
-            # Short-drop punt
-            print("\n  >> Short-Drop Punt selected")
-            print("     Defenders will get Free All-Out Kick Rush")
-            return (True, 0)
-        
-        current_option += 1
-        
-        if choice == str(current_option):
-            # Coffin corner - ask how many yards to subtract
-            while True:
-                try:
-                    yards_str = input("  Yards to subtract (0-25): ").strip()
-                    yards = int(yards_str)
-                    if 0 <= yards <= 25:
-                        break
-                    print("  Enter a number between 0 and 25")
-                except ValueError:
-                    print("  Enter a valid number")
-            
-            if yards >= 15:
-                print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
-                print(f"     Punt will be automatic out of bounds (no return)")
-            elif yards > 0:
-                print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
+        if choice == "2":
+            if is_short_drop_available:
+                # Short-drop punt
+                print("\n  >> Short-Drop Punt selected")
+                print("     Defenders will get Free All-Out Kick Rush")
+                return (True, 0)
             else:
-                print("\n  >> Normal Punt (0 yards subtracted)")
+                # Coffin corner - ask how many yards to subtract
+                while True:
+                    try:
+                        yards_str = input("  Yards to subtract (0-25): ").strip()
+                        yards = int(yards_str)
+                        if 0 <= yards <= 25:
+                            break
+                        print("  Enter a number between 0 and 25")
+                    except ValueError:
+                        print("  Enter a valid number")
+                
+                if yards >= 15:
+                    print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
+                    print(f"     Punt will be automatic out of bounds (no return)")
+                elif yards > 0:
+                    print(f"\n  >> Coffin-Corner Punt: {yards} yards subtracted")
+                else:
+                    print("\n  >> Normal Punt (0 yards subtracted)")
+                
+                return (False, yards)
             
             return (False, yards)
 
