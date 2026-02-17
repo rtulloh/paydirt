@@ -1,0 +1,31 @@
+Set-Label,Row,1,2,3,4,5,6,7,8,9
+A-Standard,1,,,,,,,6,,
+A-Standard,2,,,,0,,,-3,,
+A-Standard,3,,,1,0,(-1),,-5,,
+A-Standard,4,1,3,,,,,INT 17,49,17
+A-Standard,5,,,,,,,39,44,12
+B-Short Ydg,1,1,1,,,,,14,,
+B-Short Ydg,2,1,1,,(-1),,,,,
+B-Short Ydg,3,0,,1,0,,,,,
+B-Short Ydg,4,,,-5,,,,,28,13
+B-Short Ydg,5,,,,,,,20,[TD],18
+C-Spread,1,,,-5,,,,14,,
+C-Spread,2,,,1,,,,,,
+C-Spread,3,,2,,,,,,,
+C-Spread,4,2,,,2,-4,INT 8,,37,
+C-Spread,5,,,,,-3,0,,22,17
+D-Short Pass,1,,,,4,,,5,,
+D-Short Pass,2,,,,,,,,,
+D-Short Pass,3,,,1,,,0,,INT 33,
+D-Short Pass,4,,0,,,QT,0,,,
+D-Short Pass,5,1,3,,,QT,INT 6,1,,25
+E-Long Pass,1,,,,7,,,9,,
+E-Long Pass,2,,,,,,,,INT 36,
+E-Long Pass,3,,,,,,6,14,,3
+E-Long Pass,4,,,,,18,9,,,
+E-Long Pass,5,1,1,,,2,16,,,
+F-Blitz,1,,,3,,,,12,,
+F-Blitz,2,,,6,,,,QT,QT,QT
+F-Blitz,3,(-1),(-1),-14,(-2),[TD],,,QT,
+F-Blitz,4,,,,,30,16,QT,21,QT
+F-Blitz,5,,,,,20,12,48,[TD],37

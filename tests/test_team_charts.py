@@ -285,40 +285,40 @@ class TestSpecialTeams:
 
 
 class TestChartLoaderPeripheralFromOffense:
-    """Tests for extracting peripheral data from OFFENSE chart (no PERIPHERAL file needed)."""
+    """Tests for extracting peripheral data from offense.csv (no PERIPHERAL file needed)."""
     
     def test_load_team_extracts_year_and_name(self):
-        """Chart loader should extract year and team name from OFFENSE header."""
-        team_dir = Path('seasons/1983/Bears')
+        """Chart loader should extract year and team name from directory."""
+        team_dir = Path('seasons/1983/Bills')
         if not team_dir.exists():
             pytest.skip("Test data not available")
         
         chart = load_team_chart(team_dir)
         
         assert chart.peripheral.year == 1983
-        assert chart.peripheral.team_name == "Chicago"
+        assert chart.peripheral.team_name == "Bills"
     
     def test_load_team_extracts_fumble_ranges(self):
-        """Chart loader should extract fumble recovery ranges from OFFENSE chart."""
-        team_dir = Path('seasons/1983/Bears')
+        """Chart loader should extract fumble recovery ranges from offense.csv."""
+        team_dir = Path('seasons/1983/Bills')
         if not team_dir.exists():
             pytest.skip("Test data not available")
         
         chart = load_team_chart(team_dir)
         
-        # Bears have fumble recovered 10-27, lost 28-39
-        assert chart.peripheral.fumble_recovered_range == (10, 27)
-        assert chart.peripheral.fumble_lost_range == (28, 39)
+        # Bills have fumble recovered 10-29, lost 30-39
+        assert chart.peripheral.fumble_recovered_range == (10, 29)
+        assert chart.peripheral.fumble_lost_range == (30, 39)
     
     def test_load_team_generates_short_name(self):
         """Chart loader should generate correct short names."""
-        team_dir = Path('seasons/1983/Bears')
+        team_dir = Path('seasons/1983/Bills')
         if not team_dir.exists():
             pytest.skip("Test data not available")
         
         chart = load_team_chart(team_dir)
         
-        assert chart.peripheral.short_name == "CHI '83"
+        assert chart.peripheral.short_name == "BIL '83"
     
     def test_load_team_disambiguates_ny_teams(self):
         """Chart loader should correctly distinguish Giants vs Jets."""
@@ -379,3 +379,44 @@ class TestChartLoaderPeripheralFromOffense:
                 loaded_count += 1
         
         assert loaded_count == 28, f"Expected 28 teams, got {loaded_count}"
+
+
+class TestExtraPointChartLoading:
+    """Tests for loading extra point no-good rolls from special.csv."""
+
+    def test_extra_point_no_good_loaded_from_csv(self):
+        """Chart loader should extract extra_point_no_good rolls from special.csv."""
+        team_dir = Path('seasons/1983/Bills')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(team_dir)
+
+        # Bills have extra point failures on rolls 13, 18, 19, 20
+        assert 13 in chart.special_teams.extra_point_no_good
+        assert 18 in chart.special_teams.extra_point_no_good
+        assert 19 in chart.special_teams.extra_point_no_good
+        assert 20 in chart.special_teams.extra_point_no_good
+
+    def test_different_teams_have_different_no_good_rolls(self):
+        """Different teams should have different extra point failure rolls."""
+        teams_dir = Path('seasons/1983')
+        if not teams_dir.exists():
+            pytest.skip("Test data not available")
+
+        bills = load_team_chart(teams_dir / 'Bills')
+        dolphins = load_team_chart(teams_dir / 'Dolphins')
+
+        # Teams should have different no-good rolls
+        assert bills.special_teams.extra_point_no_good != dolphins.special_teams.extra_point_no_good
+
+    def test_all_teams_have_extra_point_data(self):
+        """All 28 teams should have extra_point_no_good data."""
+        teams_dir = Path('seasons/1983')
+        if not teams_dir.exists():
+            pytest.skip("Test data not available")
+
+        for team_dir in teams_dir.iterdir():
+            if team_dir.is_dir():
+                chart = load_team_chart(team_dir)
+                assert chart.special_teams.extra_point_no_good is not None
