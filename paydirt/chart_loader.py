@@ -701,8 +701,8 @@ def find_team_charts(seasons_dir: str) -> list[tuple[str, str, str]]:
             if not team_dir.is_dir():
                 continue
 
-            # Check if this directory has the required CSV files
-            if (team_dir / "OFFENSE-Table 1.csv").exists():
+            # Check if this directory has the required CSV files (new format)
+            if (team_dir / "offense.csv").exists() and (team_dir / "defense.csv").exists() and (team_dir / "special.csv").exists():
                 charts.append((year, team_dir.name, str(team_dir)))
 
     return sorted(charts)
