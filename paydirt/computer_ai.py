@@ -214,7 +214,8 @@ class ComputerAI:
                 elif fg_makeable and score_diff >= -3:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif field_pos >= 50:
-                    return (self._go_for_it_play(ytg), punt_short_drop, punt_coffin_corner_yards)  # In opponent territory, be aggressive
+                    go_play, _, _ = self._go_for_it_play(ytg)
+                    return (go_play, punt_short_drop, punt_coffin_corner_yards)  # In opponent territory, be aggressive
 
         # ============================================================
         # FIELD GOAL DECISIONS (1983 conservative approach)

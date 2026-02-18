@@ -134,6 +134,11 @@ for away, home in matchups:
     if 'Traceback' in output:
         errors.append(f"{away}@{home}: Python traceback in output")
         print(f"  ERROR: Python exception!")
+        # Print the traceback for debugging
+        print("  Traceback output:")
+        for line in output.split('\n'):
+            if 'Traceback' in line or 'Error' in line or 'Exception' in line or '  File' in line:
+                print(f"    {line}")
         continue
     
     # Extract final score - handles both apostrophe and non-apostrophe team names
