@@ -2,7 +2,10 @@
 
 ## Version 1.3 (February 2026)
 
-### Data Simplification
+### Data Improvements
+- **Consistent offense.csv format**: All 28 teams now use the same 13-column format
+  - Added missing Breakaway (B) and QB Time (QT) columns to 16 teams
+  - Format: `#,Line Plunge,Off Tackle,End Run,Draw,Screen,Short,Med,Long,T/E S/L,B,QT,Fumble`
 - **extra data file no longer required**: All team data is now extracted from the OFFENSE chart
   - Team name and year parsed from header row
   - Fumble recovery ranges parsed from the FUMBLE line (varies by team: 10-23 to 10-33)
@@ -27,7 +30,7 @@
 - **Power ratings investigation**: Analyzed power ratings vs actual 1983 NFL records. Found that power ratings are a handicapping mechanism for human vs human play (point spreads, yardage factors), not a simulation of team strength. The chart data itself determines team performance
 
 ### Test Coverage
-- **1029 unit tests** passing
+- **1041 unit tests** passing
 - Added 7 tests for chart loader data extraction
 - Added 2 tests for TD yardage fix
 - Added 3 tests for Hail Mary PI untimed down
@@ -35,7 +38,8 @@
 - Added 7 tests for CPU clock management at end of half (including red zone long pass fix)
 - Added 7 tests for advanced punt rules (Short-Drop and Coffin-Corner punts)
 - Added tests for CPU AI punt options
-- Full 28-team simulation verified after extra file removal
+- Added tests for punt and kickoff dice display
+- Full 28-team simulation verified with consistent offense.csv format
 
 ---
 
