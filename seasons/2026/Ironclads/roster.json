@@ -1,12 +1,13 @@
 {
   "team_name": "Harbor Bay Ironclads",
-  "year": 2024,
-  "players": {
-    "QB": "Ryan Mitchell",
-    "RB": "Darius Brown",
-    "WR1": "Andre Jackson",
-    "WR2": "Kyle Peterson",
-    "TE": "Michael Torres",
-    "K": "Sam Rodriguez"
-  }
+  "qb": ["Ryan Mitchell"],
+  "rb": ["Darius Brown", "Jamal Harris"],
+  "wr": ["Andre Jackson", "Kyle Peterson", "Terrence Moore", "Darnell Brooks"],
+  "te": ["Michael Torres", "Brandon Lee"],
+  "ol": ["Josh Martinez", "Steve Anderson", "Chris Thompson", "Paul Robinson", "Kevin Wright"],
+  "dl": ["Marcus Green", "Tony Adams", "Carlos Rivera", "Derek Johnson"],
+  "lb": ["William Foster", "Ray Barnes", "Eric Turner"],
+  "db": ["Deion Sanders Jr", "Marvin Harrison Jr", "Troy Polamalu Jr", "Patrick Bates"],
+  "k": ["Sam Rodriguez"],
+  "p": ["Brian Mitchell"]
 }

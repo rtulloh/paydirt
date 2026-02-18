@@ -141,9 +141,10 @@ def get_available_teams() -> list[tuple[str, str]]:
             if season_dir.is_dir():
                 for team_dir in sorted(season_dir.iterdir()):
                     if team_dir.is_dir():
-                        # Check if it has the required CSV files
-                        offense_file = team_dir / 'OFFENSE-Table 1.csv'
-                        if offense_file.exists():
+                        # Check for new format (offense.csv) or old format (OFFENSE-Table 1.csv)
+                        offense_file_new = team_dir / 'offense.csv'
+                        offense_file_old = team_dir / 'OFFENSE-Table 1.csv'
+                        if offense_file_new.exists() or offense_file_old.exists():
                             teams.append((str(team_dir), f"{season_dir.name} {team_dir.name}"))
     return teams
 

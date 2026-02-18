@@ -1,5 +1,19 @@
 # Paydirt Release Notes
 
+## Version 1.4 (February 2026)
+
+### Bug Fixes
+- **Nested tuple AttributeError**: Fixed crash in CPU AI when selecting certain plays. A nested tuple was being created when going for it on 4th down in opponent territory, causing `AttributeError: 'tuple' object has no attribute 'value'`
+
+### Sample Teams
+- **Expanded roster data**: Added complete rosters to sample teams (Ironclads, Thunderhawks) for commentary - now includes full depth charts with player names for all positions (QB, RB, WR, TE, OL, DL, LB, DB, K, P)
+- **Team discovery fix**: Fixed interactive mode not discovering teams with new CSV format (offense.csv). Now detects both old (OFFENSE-Table 1.csv) and new (offense.csv) formats
+
+### Test Coverage
+- **1041 unit tests** passing
+
+---
+
 ## Version 1.3 (February 2026)
 
 ### Data Improvements

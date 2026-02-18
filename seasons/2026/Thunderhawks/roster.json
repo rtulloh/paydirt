@@ -1,12 +1,13 @@
 {
   "team_name": "Metro City Thunderhawks",
-  "year": 2024,
-  "players": {
-    "QB": "Jake Sterling",
-    "RB": "Marcus Thompson",
-    "WR1": "Devon Williams",
-    "WR2": "Chris Martinez",
-    "TE": "Tyler Johnson",
-    "K": "Alex Chen"
-  }
+  "qb": ["Jake Sterling"],
+  "rb": ["Marcus Thompson", "Tony Brooks"],
+  "wr": ["Devon Williams", "Chris Martinez", "Rashad Jackson", "Dwayne Carter"],
+  "te": ["Tyler Johnson", "Austin Reed"],
+  "ol": ["Jason Peters", "David Diehl", "John Sullivan", "Richie Incognito", "Sebastian Vollmer"],
+  "dl": ["J.J. Watt Jr", "Haloti Ngata Jr", "Brock Lesnar", "Cameron Wake Jr"],
+  "lb": ["Luke Kuechly Jr", "Von Miller Jr", "Bobby Wagner Jr", "Blake Martinez"],
+  "db": ["Richard Sherman Jr", "Earl Thomas Jr", "Kam Chancellor Jr", "Marcus Peters Jr"],
+  "k": ["Alex Chen"],
+  "p": ["Tommy Lee"]
 }
