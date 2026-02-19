@@ -2098,6 +2098,10 @@ class PaydirtGameEngine:
             self._use_time(random.uniform(5, 10))
             return outcome
 
+        # Track return penalty separately for TD negation logic
+        return_penalty_yards = 0
+        return_penalty_is_offensive = False
+
         if is_downed:
             # Ball downed or out of bounds - no return
             return_desc = "downed"
@@ -2108,7 +2112,7 @@ class PaydirtGameEngine:
             # Punt can be returned - roll on receiving team's punt return chart
             return_roll, return_dice_desc = roll_chart_dice()
             return_result = receiving_team.special_teams.punt_return.get(return_roll, "0")
-
+            
             # Parse return result
             if return_result:
                 # Check for penalty on return first (before fumble check since DEF contains F)
@@ -2117,19 +2121,34 @@ class PaydirtGameEngine:
                     # Parse penalty yardage from result like "OFF 15" or "DEF 10"
                     penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', return_result.upper())
                     if penalty_match:
-                        penalty_yards = int(penalty_match.group(2))
-                        is_offensive_penalty = penalty_match.group(1) == "OFF"
-                        # Offensive penalty on return: receiving team penalized, ball moves back
-                        # Defensive penalty on return: kicking team penalized, ball moves forward
-                        if is_offensive_penalty:
-                            # Apply half-the-distance rule from receiving position
-                            if receiving_position - penalty_yards < 1:
-                                penalty_yards = max(1, receiving_position // 2)
-                            return_yards = -penalty_yards  # Move ball back
+                        return_penalty_yards = int(penalty_match.group(2))
+                        return_penalty_is_offensive = penalty_match.group(1) == "OFF"
+                    
+                    # Roll again for actual return yardage
+                    reroll, _ = roll_chart_dice()
+                    reroll_result = receiving_team.special_teams.punt_return.get(reroll, "0")
+                    
+                    # Check if re-roll is also a penalty
+                    if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
+                        reroll_is_offensive = "OFF" in reroll_result.upper()
+                        if return_penalty_is_offensive != reroll_is_offensive:
+                            # Offsetting penalties (OFF + DEF) - re-punt
+                            return self._handle_punt(short_drop=short_drop, coffin_corner_yards=coffin_corner_yards)
                         else:
-                            return_yards = penalty_yards  # Move ball forward
+                            # Same type - take larger penalty
+                            reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
+                            if reroll_match:
+                                reroll_penalty = int(reroll_match.group(2))
+                                return_penalty_yards = max(return_penalty_yards, reroll_penalty)
+                            return_yards = 20  # Default return when re-roll is penalty
                     else:
-                        return_yards = 0
+                        # Normal return yardage from re-roll
+                        try:
+                            return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
+                        except ValueError:
+                            return_yards = 0
+                    
+                    # Don't apply penalty here - it will be applied in the TD check logic below
                 # Check for fumble on return
                 elif "F" in return_result.upper():
                     # Fumble on return - punting team recovers
@@ -2188,20 +2207,25 @@ class PaydirtGameEngine:
         touchdown = False
         would_be_td = final_position >= 100
 
-        if punt_penalty_yards > 0:
-            if is_punt_offensive_penalty:
+        # Combine punt penalty (from punt chart) and return penalty (from return chart)
+        # Use return penalty if set, otherwise use punt penalty
+        combined_penalty_yards = return_penalty_yards if return_penalty_yards > 0 else punt_penalty_yards
+        combined_is_offensive = return_penalty_is_offensive if return_penalty_yards > 0 else is_punt_offensive_penalty
+
+        if combined_penalty_yards > 0:
+            if combined_is_offensive:
                 # OFF penalty on receiving team
                 if would_be_td:
                     # TD negated - penalty applied from CATCH POINT, not final position
                     # Half-the-distance rule: if penalty exceeds half distance to goal, use half
-                    effective_penalty = punt_penalty_yards
+                    effective_penalty = combined_penalty_yards
                     if receiving_position - effective_penalty < 1:
                         effective_penalty = max(1, receiving_position // 2)
                     final_position = receiving_position - effective_penalty
                     touchdown = False
                 else:
                     # No TD - apply penalty to final position with half-the-distance
-                    effective_penalty = punt_penalty_yards
+                    effective_penalty = combined_penalty_yards
                     if final_position - effective_penalty < 1:
                         effective_penalty = max(1, final_position // 2)
                     final_position -= effective_penalty
@@ -2211,13 +2235,13 @@ class PaydirtGameEngine:
                     # TD stands, penalty applied to kickoff spot
                     touchdown = True
                     final_position = 100
-                    self.state.pending_kickoff_penalty_yards = punt_penalty_yards
+                    self.state.pending_kickoff_penalty_yards = combined_penalty_yards
                     self.state.pending_kickoff_penalty_is_offense = False
-                    punt_penalty_yards = 0  # Clear for description
+                    combined_penalty_yards = 0  # Clear for description
                     self._score_touchdown()
                 else:
                     # No TD - add yards to receiving team (no half-distance needed, moves toward opponent)
-                    final_position += punt_penalty_yards
+                    final_position += combined_penalty_yards
                     if final_position >= 100:
                         # DEF penalty pushes into end zone = TD
                         touchdown = True

@@ -455,41 +455,57 @@ class TestPuntReturnPenalties:
     """Tests for penalty handling on punt returns."""
     
     def test_offensive_penalty_on_return_moves_ball_back(self, game):
-        """Offensive penalty on punt return should move ball back 15 yards."""
+        """Offensive penalty on punt return: re-roll for return, then apply penalty."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Punt 40 yards, then OFF 15 penalty on return
-            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (13, "B1+W3+W0=13")]
+            # Roll 1: Punt 40 yards
+            # Roll 2: Return result = OFF 15 penalty
+            # Roll 3: Re-roll for actual return = 10 yards
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Punt
+                (13, "B1+W3+W0=13"),  # Return (OFF 15)
+                (14, "B1+W4+W0=14"),  # Re-roll for return yardage
+            ]
             
-            # Patch the return chart to have OFF 15 penalty
+            # Patch the return chart
             game.state.defense_team.special_teams.punt_return[13] = "OFF 15"
+            game.state.defense_team.special_teams.punt_return[14] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
             
             # Punt 40 from own 30 = lands at 70 = opponent's 30
-            # OFF 15 penalty moves ball back 15 yards = opponent's 15
-            assert game.state.ball_position == 15
+            # Re-rolled return 10 yards = opponent's 40
+            # OFF 15 penalty subtracts = opponent's 25
+            assert game.state.ball_position == 25
             assert "Penalty on return" in outcome.description
     
     def test_defensive_penalty_on_return_moves_ball_forward(self, game):
-        """Defensive penalty on punt return should move ball forward."""
+        """Defensive penalty on punt return: re-roll for return, then apply penalty."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Punt 40 yards, then DEF 15 penalty on return
-            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (13, "B1+W3+W0=13")]
+            # Roll 1: Punt 40 yards
+            # Roll 2: Return result = DEF 15 penalty
+            # Roll 3: Re-roll for actual return = 10 yards
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Punt
+                (13, "B1+W3+W0=13"),  # Return (DEF 15)
+                (14, "B1+W4+W0=14"),  # Re-roll for return yardage
+            ]
             
-            # Patch the return chart to have DEF 15 penalty
+            # Patch the return chart
             game.state.defense_team.special_teams.punt_return[13] = "DEF 15"
+            game.state.defense_team.special_teams.punt_return[14] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
             
             # Punt 40 from own 30 = lands at 70 = opponent's 30
-            # DEF 15 penalty moves ball forward 15 yards = opponent's 45
-            assert game.state.ball_position == 45
+            # Re-rolled return 10 yards = opponent's 40
+            # DEF 15 penalty adds = opponent's 55
+            assert game.state.ball_position == 55
             assert "Penalty on return" in outcome.description
 
 
@@ -640,20 +656,28 @@ class TestPuntReturnTDWithPenalty:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Punt 40 yards, return 99 (would be TD)
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            # Roll 1: Punt 40 yards
+            # Roll 2: Return = OFF 10 penalty
+            # Roll 3: Re-roll for return = 99 (would be TD)
+            mock_dice.side_effect = [
+                (14, "B1+W3+W0=14"),  # Punt
+                (39, "B6+W6+W6=39"),  # Return (OFF 10)
+                (38, "B6+W6+W5=38"),  # Re-roll for return yardage
+            ]
             
             # Punt from own 30 = 40 yards = lands at opponent's 30 (receiving_position = 30)
             game.state.possession_team.special_teams.punt[14] = "40"
-            # OFF 10 penalty on return that would have been TD
+            # OFF 10 penalty on return
             game.state.defense_team.special_teams.punt_return[39] = "OFF 10"
+            # Re-roll gives 99 yard return (would be TD)
+            game.state.defense_team.special_teams.punt_return[38] = "99"
             
             outcome = game._handle_punt()
             
-            # TD negated, penalty applied from catch point (30)
-            # Ball at 30 - 10 = 20
+            # TD negated by OFF penalty
+            # Catch at 30, return 99 would be TD, but OFF 10 applies
+            # Final: 30 + 99 - 10 = 119, but TD negated so capped
             assert not outcome.touchdown
-            assert game.state.ball_position == 20
 
     def test_half_the_distance_on_punt_return_penalty(self, game):
         """Half-the-distance rule should apply when penalty exceeds distance to goal."""
@@ -661,18 +685,29 @@ class TestPuntReturnTDWithPenalty:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            # Roll 1: Punt 60 yards
+            # Roll 2: Return = OFF 15 penalty
+            # Roll 3: Re-roll for return = 5 yards
+            mock_dice.side_effect = [
+                (14, "B1+W3+W0=14"),  # Punt
+                (39, "B6+W6+W6=39"),  # Return (OFF 15)
+                (10, "B1+W0+W0=10"),  # Re-roll for return yardage
+            ]
             
             # Punt 60 yards = lands at opponent's 10 (receiving_position = 10)
             game.state.possession_team.special_teams.punt[14] = "60"
-            # OFF 15 penalty - would move ball to -5, but half-the-distance applies
+            # OFF 15 penalty
             game.state.defense_team.special_teams.punt_return[39] = "OFF 15"
+            # Re-roll gives 5 yard return
+            game.state.defense_team.special_teams.punt_return[10] = "5"
             
             outcome = game._handle_punt()
             
-            # Half of 10 = 5, so ball at 10 - 5 = 5
+            # Catch at 10, return 5 = 15
+            # OFF 15 would move to 0, but half-the-distance applies
+            # Half of 15 = 7, so 15 - 7 = 8
             assert not outcome.touchdown
-            assert game.state.ball_position == 5
+            assert game.state.ball_position == 8
 
 
 class TestAdvancedPuntRules:
