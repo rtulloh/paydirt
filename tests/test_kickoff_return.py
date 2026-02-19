@@ -128,27 +128,50 @@ class TestKickoffReturnPenalties:
             # Return 25 yards = 10 + 25 = 35
             assert game.state.ball_position == 35
 
-    def test_same_penalty_twice_uses_default_return(self, game):
-        """Two penalties of same type (OFF + OFF) should use default return, not rekick."""
+    def test_same_penalty_twice_takes_larger_penalty(self, game):
+        """Two penalties of same type (OFF + OFF) should take the larger penalty."""
         # Set up charts for the scenario
         game.state.home_chart.special_teams.kickoff[11] = "50"
         game.state.away_chart.special_teams.kickoff[11] = "50"
-        # Roll 12 gives another OFF penalty (same type, not offsetting)
-        game.state.away_chart.special_teams.kickoff_return[12] = "OFF 10"
+        # Roll 12 gives another OFF penalty but larger (OFF 20)
+        game.state.away_chart.special_teams.kickoff_return[12] = "OFF 20"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 12: re-roll gets OFF 10 - same type, not offsetting
+            # Second roll = 12: re-roll gets OFF 20 - same type, take larger
             mock_dice.side_effect = [
                 (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
-                (12, "B1+W0+W2=12"),  # Re-roll gets OFF 10 - same type
+                (12, "B1+W0+W2=12"),  # Re-roll gets OFF 20 - larger penalty
             ]
             
             game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15
             # Default return 20 yards (since re-roll was also penalty) = 15 + 20 = 35
-            # OFF 15 penalty subtracts = 35 - 15 = 20
+            # OFF 20 penalty (larger of 15 and 20) subtracts = 35 - 20 = 15
+            assert game.state.ball_position == 15
+    
+    def test_same_penalty_twice_keeps_first_if_larger(self, game):
+        """When first penalty is larger, it should be kept."""
+        # Set up charts for the scenario
+        game.state.home_chart.special_teams.kickoff[11] = "50"
+        game.state.away_chart.special_teams.kickoff[11] = "50"
+        # Roll 12 gives smaller OFF penalty (OFF 5)
+        game.state.away_chart.special_teams.kickoff_return[12] = "OFF 5"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
+            # Second roll = 12: re-roll gets OFF 5 - same type, keep larger (15)
+            mock_dice.side_effect = [
+                (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
+                (12, "B1+W0+W2=12"),  # Re-roll gets OFF 5 - smaller
+            ]
+            
+            game.kickoff(kicking_home=True)
+            
+            # Kickoff 50 yards from 35 = lands at 15
+            # Default return 20 yards (since re-roll was also penalty) = 15 + 20 = 35
+            # OFF 15 penalty (larger of 15 and 5) subtracts = 35 - 15 = 20
             assert game.state.ball_position == 20
 
     def test_normal_kickoff_return_still_works(self, game):

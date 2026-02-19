@@ -347,8 +347,13 @@ class PaydirtGameEngine:
                             # Offsetting penalties (one OFF, one DEF) - rekick
                             return self.kickoff(kicking_home=kicking_home)
                         else:
-                            # Same type of penalty twice - just use default return
-                            ret_yards = 20
+                            # Same type of penalty twice - offended team chooses larger penalty
+                            reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
+                            if reroll_match:
+                                reroll_penalty_yards = int(reroll_match.group(2))
+                                # Take the larger penalty (better for offended team)
+                                ko_penalty_yards = max(ko_penalty_yards, reroll_penalty_yards)
+                            ret_yards = 20  # Default return when re-roll is penalty
                     else:
                         try:
                             ret_yards = int(ret_result) if ret_result else 20
