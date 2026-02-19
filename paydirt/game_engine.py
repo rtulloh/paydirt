@@ -1955,11 +1955,17 @@ class PaydirtGameEngine:
             self._use_time(random.uniform(3, 6))
             return outcome
 
-        # Handle penalty on punt
+        # Handle penalty on punt (before the ball is kicked)
+        punt_penalty_yards = 0
+        is_punt_offensive_penalty = False
         if is_penalty:
-            # For now, treat as a re-punt situation (simplified)
-            # In full rules, would resolve penalty then re-punt
-            punt_yards = 35  # Default punt on penalty
+            # Parse penalty yardage from result like "OFF 15" or "DEF 10"
+            penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', punt_result.upper())
+            if penalty_match:
+                punt_penalty_yards = int(penalty_match.group(2))
+                is_punt_offensive_penalty = penalty_match.group(1) == "OFF"
+            # Use default punt yardage
+            punt_yards = 35
             description = f"Penalty on punt - {punt_result}"
             original_punt_yards = punt_yards
         else:
@@ -2122,6 +2128,17 @@ class PaydirtGameEngine:
         # Final position is receiving position plus return yards
         final_position = receiving_position + return_yards
 
+        # Apply post-possession penalty yardage (tack on to the return result)
+        # DEF penalty: kicking team penalized, receiving team gets yardage
+        # OFF penalty: receiving team penalized, kicking team gets yardage
+        if punt_penalty_yards > 0:
+            if is_punt_offensive_penalty:
+                # Receiving team penalized - subtract yards
+                final_position -= punt_penalty_yards
+            else:
+                # Defense (kicking team) penalized - add yards to receiving team
+                final_position += punt_penalty_yards
+
         # Check for return touchdown
         touchdown = False
         if final_position >= 100:
@@ -2151,15 +2168,22 @@ class PaydirtGameEngine:
             punt_commentary = " Great hang time!"
 
         # Build description
+        penalty_desc = ""
+        if punt_penalty_yards > 0:
+            if is_punt_offensive_penalty:
+                penalty_desc = f" (OFF {punt_penalty_yards} - offense penalized)"
+            else:
+                penalty_desc = f" (DEF {punt_penalty_yards} added)"
+        
         if return_desc:
             if "fair catch" in return_desc or "downed" in return_desc:
-                description = f"{description}Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}.{punt_commentary}"
+                description = f"{description}Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
             elif touchdown:
                 description = f"{description}Punt {punt_yards} yards, {return_desc} - TOUCHDOWN!"
             else:
-                description = f"{description}Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}.{punt_commentary}"
+                description = f"{description}Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
         else:
-            description = f"{description}Punt {punt_yards} yards to {self.state.field_position_str()}.{punt_commentary}"
+            description = f"{description}Punt {punt_yards} yards to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
 
         parsed_result = parse_result_string(punt_result)
         parsed_result.dice_roll = punt_roll

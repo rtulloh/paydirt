@@ -5,13 +5,15 @@
 ### Bug Fixes
 - **Nested tuple AttributeError**: Fixed crash in CPU AI when selecting certain plays. A nested tuple was being created when going for it on 4th down in opponent territory, causing `AttributeError: 'tuple' object has no attribute 'value'`
 - **Blocked punt dice roll**: Fixed blocked punts showing "Roll: 0" instead of actual dice roll in game output
+- **Punt penalty yardage**: Fixed penalties on punts not being applied to field position. DEF penalties now add yardage to the receiving team, OFF penalties subtract yardage. Description now shows applied penalty
 
 ### Sample Teams
 - **Expanded roster data**: Added complete rosters to sample teams (Ironclads, Thunderhawks) for commentary - now includes full depth charts with player names for all positions (QB, RB, WR, TE, OL, DL, LB, DB, K, P)
 - **Team discovery fix**: Fixed interactive mode not discovering teams with new CSV format (offense.csv). Now detects both old (OFFENSE-Table 1.csv) and new (offense.csv) formats
 
 ### Test Coverage
-- **1041 unit tests** passing
+- **1044 unit tests** passing
+- Added 3 tests for punt penalty handling
 
 ---
 

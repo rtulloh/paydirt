@@ -493,6 +493,75 @@ class TestPuntReturnPenalties:
             assert "Penalty on return" in outcome.description
 
 
+class TestPuntPenalties:
+    """Tests for penalty handling on the punt itself (before the ball is kicked)."""
+    
+    def test_defensive_penalty_on_punt_adds_yardage(self, game):
+        """DEF penalty on punt should add yardage to the return result."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll: punt result with DEF 5 penalty (uses default 35 yards)
+            # Second roll: return result (no penalty)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            
+            # Patch punt chart to have DEF 5 penalty
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            # Patch return chart for normal return
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
+            # Return 10 yards = opponent's 45
+            # DEF 5 penalty adds 5 yards = opponent's 50
+            assert game.state.ball_position == 50
+            assert "DEF 5 added" in outcome.description
+    
+    def test_offensive_penalty_on_punt_subtracts_yardage(self, game):
+        """OFF penalty on punt should subtract yardage from the return result."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            
+            # Patch punt chart to have OFF 5 penalty
+            game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
+            # Return 10 yards = opponent's 45
+            # OFF 5 penalty subtracts 5 yards = opponent's 40
+            assert game.state.ball_position == 40
+            assert "OFF 5 - offense penalized" in outcome.description
+    
+    def test_punt_penalty_with_no_return(self, game):
+        """Punt penalty should work even when there's no return (fair catch or downed)."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll: punt with DEF 5
+            # Second roll: downed result (no return needed)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (12, "B1+W0+W0=12")]
+            
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            # Use a downed result for the return (no return yardage)
+            game.state.defense_team.special_teams.punt_return[12] = "0"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
+            # Downed at opponent's 35 (no return)
+            # DEF 5 adds 5 yards = opponent's 40
+            assert game.state.ball_position == 40
+            assert "DEF 5 added" in outcome.description
+
+
 class TestAdvancedPuntRules:
     """Tests for advanced punt rules: Short-Drop and Coffin-Corner punts."""
 
