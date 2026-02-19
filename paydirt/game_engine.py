@@ -252,7 +252,24 @@ class PaydirtGameEngine:
         ret_parsed = parse_result_string(ret_result)
 
         # Calculate field position
-        # Kickoff from 35, travels ko_yards, returned ret_yards
+        # Kickoff normally from 35, but adjust for pending penalty from previous scoring play
+        kickoff_spot = 35
+        penalty_desc = ""
+        if self.state.pending_kickoff_penalty_yards > 0:
+            if self.state.pending_kickoff_penalty_is_offense:
+                # Scoring team (now receiving) committed penalty - they kick from further back
+                # This means kickoff travels further, disadvantage to receiving team
+                kickoff_spot += self.state.pending_kickoff_penalty_yards
+                penalty_desc = f" (Kickoff from {kickoff_spot} due to OFF {self.state.pending_kickoff_penalty_yards} penalty)"
+            else:
+                # Kicking team committed penalty during scoring play - kick from closer
+                # Shorter kick, advantage to receiving team
+                kickoff_spot -= self.state.pending_kickoff_penalty_yards
+                penalty_desc = f" (Kickoff from {kickoff_spot} due to DEF {self.state.pending_kickoff_penalty_yards} penalty)"
+            # Clear the pending penalty
+            self.state.pending_kickoff_penalty_yards = 0
+            self.state.pending_kickoff_penalty_is_offense = False
+
         try:
             ko_yards = int(ko_result) if ko_result and ko_result.isdigit() else 65
         except ValueError:
@@ -270,7 +287,7 @@ class PaydirtGameEngine:
             is_touchback = True
         else:
             # Normal return
-            landing_spot = 100 - (35 + ko_yards)  # Where ball lands from receiver's perspective
+            landing_spot = 100 - (kickoff_spot + ko_yards)  # Where ball lands from receiver's perspective
 
             # Per VI-12-F: Handle end zone returns
             # landing_spot <= 0 means ball is in or beyond the end zone
@@ -341,21 +358,6 @@ class PaydirtGameEngine:
                 elif return_position < 1:
                     return_position = 1  # Minimum field position
 
-        # Apply pending penalty from previous play (e.g., TD scored with penalty on return)
-        penalty_desc = ""
-        if self.state.pending_kickoff_penalty_yards > 0:
-            if self.state.pending_kickoff_penalty_is_offense:
-                # Offense committed penalty - receiving team penalized, ball moves back
-                return_position -= self.state.pending_kickoff_penalty_yards
-                penalty_desc = f" (OFF {self.state.pending_kickoff_penalty_yards} - offense penalized)"
-            else:
-                # Defense committed penalty - kicking team penalized, ball moves forward
-                return_position += self.state.pending_kickoff_penalty_yards
-                penalty_desc = f" (DEF {self.state.pending_kickoff_penalty_yards} added)"
-            # Clear the pending penalty
-            self.state.pending_kickoff_penalty_yards = 0
-            self.state.pending_kickoff_penalty_is_offense = False
-
         # Set game state
         self.state.is_home_possession = not kicking_home
         self.state.ball_position = clamp_ball_position(return_position)
@@ -385,17 +387,12 @@ class PaydirtGameEngine:
 
         dice_line = f"(KO:{dice_roll}→\"{ko_yards}\" | RT:{dice_roll}→\"{actual_return}\")"
 
-        # Check if there was a pending penalty applied (from TD + penalty on previous return)
-        # Note: We need to check this AFTER the penalty was applied but save it for description
-        # Since we cleared the pending penalty above, we need to detect it differently
-        # Actually, we cleared it, so let's rebuild the description with the info
-        
         if touchdown:
-            description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN! {dice_line}"
+            description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN!{penalty_desc} {dice_line}"
         elif is_touchback:
-            description = f"Kickoff {ko_yards} yards into the end zone. Touchback. {dice_line}"
+            description = f"Kickoff {ko_yards} yards into the end zone. Touchback.{penalty_desc} {dice_line}"
         elif "OB" in ko_result or "OUT" in ko_result.upper():
-            description = f"Kickoff out of bounds! Ball at the 40. {dice_line}"
+            description = f"Kickoff out of bounds! Ball at the 40.{penalty_desc} {dice_line}"
         else:
             description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}{penalty_desc} {dice_line}"
 
