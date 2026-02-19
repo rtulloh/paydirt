@@ -59,7 +59,7 @@ class TestKickoffReturnPenalties:
     """Tests for penalty handling on kickoff returns."""
     
     def test_offensive_penalty_on_kickoff_return_moves_ball_back(self, game):
-        """Offensive penalty on kickoff return should move ball back with half-the-distance rule."""
+        """Offensive penalty on kickoff return: landing + default return - penalty."""
         # Note: Kickoff uses same dice roll for both kickoff and return charts
         # Set up charts so roll 11 gives 50 yard kickoff and OFF 15 return
         game.state.home_chart.special_teams.kickoff[11] = "50"
@@ -73,12 +73,12 @@ class TestKickoffReturnPenalties:
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
-            # OFF 15 penalty would move ball to 0, but half-the-distance applies
-            # Half of 15 = 7, so ball at 15 - 7 = 8
-            assert game.state.ball_position == 8
+            # Default return 20 yards = 15 + 20 = 35
+            # OFF 15 penalty subtracts = 35 - 15 = 20
+            assert game.state.ball_position == 20
     
     def test_defensive_penalty_on_kickoff_return_moves_ball_forward(self, game):
-        """Defensive penalty on kickoff return should move ball forward 15 yards."""
+        """Defensive penalty on kickoff return: landing + default return + penalty."""
         # Note: Kickoff uses same dice roll for both kickoff and return charts
         # Set up charts so roll 12 gives 50 yard kickoff and DEF 15 return
         game.state.home_chart.special_teams.kickoff[12] = "50"
@@ -92,8 +92,9 @@ class TestKickoffReturnPenalties:
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
-            # DEF 15 penalty moves ball forward 15 yards = 15 + 15 = 30
-            assert game.state.ball_position == 30
+            # Default return 20 yards = 15 + 20 = 35
+            # DEF 15 penalty adds = 35 + 15 = 50
+            assert game.state.ball_position == 50
     
     def test_normal_kickoff_return_still_works(self, game):
         """Normal kickoff return without penalty should work correctly."""

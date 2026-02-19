@@ -326,42 +326,46 @@ class PaydirtGameEngine:
                         return_position = 20
                         is_touchback = True
             else:
-                # Normal field return - check for penalty first
+                # Normal field return - parse return yardage first
+                try:
+                    ret_yards = int(ret_result) if ret_result else 20
+                except ValueError:
+                    if ret_parsed.result_type == ResultType.FUMBLE:
+                        ret_yards = ret_parsed.yards
+                    elif ret_parsed.result_type == ResultType.TOUCHDOWN:
+                        ret_yards = 100
+                    else:
+                        ret_yards = 20
+
+                # Check for penalty on return
                 ko_penalty_yards = 0
                 ko_is_offensive_penalty = False
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on kickoff return - penalty applied from catch point (landing_spot)
+                    # Penalty on kickoff return
                     penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
                     if penalty_match:
                         ko_penalty_yards = int(penalty_match.group(2))
                         ko_is_offensive_penalty = penalty_match.group(1) == "OFF"
-                    
-                    if ko_is_offensive_penalty:
-                        # OFF penalty - apply from landing spot with half-the-distance
-                        effective_penalty = ko_penalty_yards
-                        if landing_spot - effective_penalty < 1:
-                            effective_penalty = max(1, landing_spot // 2)
-                        return_position = landing_spot - effective_penalty
-                    else:
-                        # DEF penalty - add yards from landing spot
-                        return_position = landing_spot + ko_penalty_yards
-                        if return_position >= 100:
-                            return_position = 100  # TD
-                else:
-                    try:
-                        ret_yards = int(ret_result) if ret_result else 20
-                    except ValueError:
-                        if ret_parsed.result_type == ResultType.FUMBLE:
-                            ret_yards = ret_parsed.yards
-                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                            ret_yards = 100
-                        else:
-                            ret_yards = 20
+                        # Use default return yardage when penalty occurs
+                        ret_yards = 20
 
-                    return_position = landing_spot + ret_yards
-                    if return_position > 100:
-                        return_position = 100  # Touchdown
-                
+                # Calculate return position: landing spot + return yards
+                return_position = landing_spot + ret_yards
+
+                # Apply penalty on top of return
+                if ko_penalty_yards > 0:
+                    if ko_is_offensive_penalty:
+                        # OFF penalty - subtract from return position with half-the-distance
+                        effective_penalty = ko_penalty_yards
+                        if return_position - effective_penalty < 1:
+                            effective_penalty = max(1, return_position // 2)
+                        return_position -= effective_penalty
+                    else:
+                        # DEF penalty - add yards to return position
+                        return_position += ko_penalty_yards
+
+                if return_position > 100:
+                    return_position = 100  # Touchdown
                 if return_position < 1:
                     return_position = 1  # Minimum field position
 
