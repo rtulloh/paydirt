@@ -228,6 +228,60 @@ class PaydirtGameEngine:
         away_chart = load_team_chart(away_dir)
         return cls(home_chart, away_chart)
 
+    def _handle_return_penalty(self, return_result: str, return_chart: dict, 
+                                default_return: int = 20) -> tuple[int, int, bool, bool]:
+        """
+        Handle penalty logic for kickoff/punt returns.
+        
+        Args:
+            return_result: The initial return chart result (e.g., "OFF 15", "DEF 10", "20")
+            return_chart: The return chart dict to re-roll from if needed
+            default_return: Default return yards when re-roll is also a penalty
+            
+        Returns:
+            tuple of (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
+        """
+        penalty_yards = 0
+        is_offensive_penalty = False
+        needs_rekick = False
+        return_yards = default_return
+        
+        if "OFF" in return_result.upper() or "DEF" in return_result.upper():
+            # Parse penalty from initial result
+            penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', return_result.upper())
+            if penalty_match:
+                penalty_yards = int(penalty_match.group(2))
+                is_offensive_penalty = penalty_match.group(1) == "OFF"
+            
+            # Roll again for actual return yardage
+            reroll, _ = roll_chart_dice()
+            reroll_result = return_chart.get(reroll, str(default_return))
+            
+            # Check if re-roll is also a penalty
+            if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
+                reroll_is_offensive = "OFF" in reroll_result.upper()
+                if is_offensive_penalty != reroll_is_offensive:
+                    # Offsetting penalties (OFF + DEF) - need to rekick/repunt
+                    needs_rekick = True
+                else:
+                    # Same type - take larger penalty
+                    reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
+                    if reroll_match:
+                        reroll_penalty = int(reroll_match.group(2))
+                        penalty_yards = max(penalty_yards, reroll_penalty)
+                    return_yards = default_return
+            else:
+                # Normal return yardage from re-roll
+                try:
+                    return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
+                except ValueError:
+                    return_yards = default_return
+        else:
+            # No penalty - just return 0 penalty
+            penalty_yards = 0
+        
+        return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
+
     def kickoff(self, kicking_home: bool = True) -> PlayOutcome:
         """
         Perform a kickoff.
@@ -326,41 +380,19 @@ class PaydirtGameEngine:
                         return_position = 20
                         is_touchback = True
             else:
-                # Check for penalty on return first
-                ko_penalty_yards = 0
-                ko_is_offensive_penalty = False
+                # Handle return with potential penalty using shared helper
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on kickoff return - need to roll again for actual return yardage
-                    penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
-                    if penalty_match:
-                        ko_penalty_yards = int(penalty_match.group(2))
-                        ko_is_offensive_penalty = penalty_match.group(1) == "OFF"
-                    
-                    # Roll again for actual return yardage
-                    ret_roll, _ = roll_chart_dice()
-                    ret_result = receiving_chart.special_teams.kickoff_return.get(ret_roll, "20")
-                    # Check if re-roll is also a penalty
-                    if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                        # Check if it's an offsetting penalty (OFF + DEF or DEF + OFF)
-                        reroll_is_offensive = "OFF" in ret_result.upper()
-                        if ko_is_offensive_penalty != reroll_is_offensive:
-                            # Offsetting penalties (one OFF, one DEF) - rekick
-                            return self.kickoff(kicking_home=kicking_home)
-                        else:
-                            # Same type of penalty twice - offended team chooses larger penalty
-                            reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
-                            if reroll_match:
-                                reroll_penalty_yards = int(reroll_match.group(2))
-                                # Take the larger penalty (better for offended team)
-                                ko_penalty_yards = max(ko_penalty_yards, reroll_penalty_yards)
-                            ret_yards = 20  # Default return when re-roll is penalty
-                    else:
-                        try:
-                            ret_yards = int(ret_result) if ret_result else 20
-                        except ValueError:
-                            ret_yards = 20
+                    # Penalty on return - use helper to handle re-roll logic
+                    ret_yards, ko_penalty_yards, ko_is_offensive_penalty, needs_rekick = \
+                        self._handle_return_penalty(ret_result, 
+                                                    receiving_chart.special_teams.kickoff_return, 
+                                                    default_return=20)
+                    if needs_rekick:
+                        return self.kickoff(kicking_home=kicking_home)
                 else:
                     # Normal return - parse yardage
+                    ko_penalty_yards = 0
+                    ko_is_offensive_penalty = False
                     try:
                         ret_yards = int(ret_result) if ret_result else 20
                     except ValueError:
@@ -2118,37 +2150,14 @@ class PaydirtGameEngine:
                 # Check for penalty on return first (before fumble check since DEF contains F)
                 if "OFF" in return_result.upper() or "DEF" in return_result.upper():
                     return_desc = f"Penalty on return: {return_result}"
-                    # Parse penalty yardage from result like "OFF 15" or "DEF 10"
-                    penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', return_result.upper())
-                    if penalty_match:
-                        return_penalty_yards = int(penalty_match.group(2))
-                        return_penalty_is_offensive = penalty_match.group(1) == "OFF"
-                    
-                    # Roll again for actual return yardage
-                    reroll, _ = roll_chart_dice()
-                    reroll_result = receiving_team.special_teams.punt_return.get(reroll, "0")
-                    
-                    # Check if re-roll is also a penalty
-                    if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
-                        reroll_is_offensive = "OFF" in reroll_result.upper()
-                        if return_penalty_is_offensive != reroll_is_offensive:
-                            # Offsetting penalties (OFF + DEF) - re-punt
-                            return self._handle_punt(short_drop=short_drop, coffin_corner_yards=coffin_corner_yards)
-                        else:
-                            # Same type - take larger penalty
-                            reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
-                            if reroll_match:
-                                reroll_penalty = int(reroll_match.group(2))
-                                return_penalty_yards = max(return_penalty_yards, reroll_penalty)
-                            return_yards = 20  # Default return when re-roll is penalty
-                    else:
-                        # Normal return yardage from re-roll
-                        try:
-                            return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
-                        except ValueError:
-                            return_yards = 0
-                    
-                    # Don't apply penalty here - it will be applied in the TD check logic below
+                    # Use shared helper to handle re-roll logic
+                    return_yards, return_penalty_yards, return_penalty_is_offensive, needs_repunt = \
+                        self._handle_return_penalty(return_result,
+                                                    receiving_team.special_teams.punt_return,
+                                                    default_return=20)
+                    if needs_repunt:
+                        return self._handle_punt(short_drop=short_drop, coffin_corner_yards=coffin_corner_yards)
+                    # Penalty will be applied in the TD check logic below
                 # Check for fumble on return
                 elif "F" in return_result.upper():
                     # Fumble on return - punting team recovers
