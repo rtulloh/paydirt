@@ -1936,10 +1936,13 @@ class PaydirtGameEngine:
                         self.state.ball_position = block_spot_defense
                         description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
+            parsed_result = parse_result_string(punt_result)
+            parsed_result.dice_roll = punt_roll
+            
             outcome = PlayOutcome(
                 play_type=PlayType.PUNT,
                 defense_type=DefenseType.STANDARD,
-                result=parse_result_string(punt_result),
+                result=parsed_result,
                 yards_gained=block_yards,
                 turnover=turnover,
                 touchdown=touchdown,

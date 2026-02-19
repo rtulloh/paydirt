@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 - **Nested tuple AttributeError**: Fixed crash in CPU AI when selecting certain plays. A nested tuple was being created when going for it on 4th down in opponent territory, causing `AttributeError: 'tuple' object has no attribute 'value'`
+- **Blocked punt dice roll**: Fixed blocked punts showing "Roll: 0" instead of actual dice roll in game output
 
 ### Sample Teams
 - **Expanded roster data**: Added complete rosters to sample teams (Ironclads, Thunderhawks) for commentary - now includes full depth charts with player names for all positions (QB, RB, WR, TE, OL, DL, LB, DB, K, P)
