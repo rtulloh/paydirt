@@ -589,8 +589,8 @@ class TestPuntReturnTDWithPenalty:
             assert game.state.pending_kickoff_penalty_yards == 5
             assert not game.state.pending_kickoff_penalty_is_offense  # DEF penalty
     
-    def test_punt_return_td_with_off_penalty_stores_for_kickoff(self, game):
-        """When punt is returned for TD with OFF penalty, penalty should apply to kickoff."""
+    def test_punt_return_td_with_off_penalty_negates_td(self, game):
+        """When punt is returned for TD with OFF penalty, TD is negated and penalty applied."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         game.state.home_score = 0
@@ -604,9 +604,12 @@ class TestPuntReturnTDWithPenalty:
             
             outcome = game._handle_punt()
             
-            assert outcome.touchdown
-            assert game.state.pending_kickoff_penalty_yards == 5
-            assert game.state.pending_kickoff_penalty_is_offense  # OFF penalty
+            # OFF penalty negates the TD - receiving team is penalized
+            assert not outcome.touchdown
+            # No pending kickoff penalty since there's no score
+            assert game.state.pending_kickoff_penalty_yards == 0
+            # Ball should be placed with penalty applied (not in end zone)
+            assert game.state.ball_position < 100
     
     def test_pending_def_penalty_adjusts_kickoff_spot(self, game):
         """DEF penalty during scoring play should move kickoff spot back (shorter kick)."""
@@ -631,30 +634,6 @@ class TestPuntReturnTDWithPenalty:
             # Pending penalty should be cleared
             assert game.state.pending_kickoff_penalty_yards == 0
     
-    def test_pending_off_penalty_adjusts_kickoff_spot(self, game):
-        """OFF penalty during scoring play should move kickoff spot forward (longer kick)."""
-        # Set up pending OFF penalty (scoring team committed penalty during their TD)
-        game.state.pending_kickoff_penalty_yards = 5
-        game.state.pending_kickoff_penalty_is_offense = True  # OFF penalty
-        
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.return_value = (20, "B3+W3+W4=20")
-            
-            game.state.possession_team.special_teams.kickoff[20] = "60"
-            game.state.defense_team.special_teams.kickoff_return[20] = "20"
-            
-            outcome = game.kickoff(kicking_home=True)
-            
-            # OFF penalty: kickoff from 40 instead of 35 (longer kick, disadvantage to receiving team)
-            # Kickoff 60 from 40 = lands at 100 = end zone (touchback or return from end zone)
-            # With 60 yard kick from 40, ball lands at 0 (goal line) - end zone return scenario
-            # Return 20 yards from goal line = opponent's 20
-            assert game.state.ball_position == 20
-            assert "Kickoff from 40" in outcome.description
-            assert "OFF 5" in outcome.description
-            assert game.state.pending_kickoff_penalty_yards == 0
-
-
 class TestAdvancedPuntRules:
     """Tests for advanced punt rules: Short-Drop and Coffin-Corner punts."""
 

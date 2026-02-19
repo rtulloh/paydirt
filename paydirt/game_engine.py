@@ -2162,17 +2162,28 @@ class PaydirtGameEngine:
         # Check for return touchdown
         touchdown = False
         if final_position >= 100:
-            touchdown = True
-            final_position = 100
-            # If there's also a penalty, store it for the kickoff instead of applying to return
-            # Per NFL rules: if TD scored AND kicking team commits penalty during return,
-            # the penalty is applied to the subsequent kickoff (after the PAT)
-            if punt_penalty_yards > 0:
+            # Check if there's a penalty that affects the TD
+            if punt_penalty_yards > 0 and is_punt_offensive_penalty:
+                # OFF penalty on receiving team negates the TD
+                # Apply penalty to return position instead
+                final_position = final_position - punt_penalty_yards
+                if final_position > 99:
+                    final_position = 99  # Can't score with penalty against you
+                touchdown = False
+                # punt_penalty_yards stays set for description
+            elif punt_penalty_yards > 0:
+                # DEF penalty on kicking team - TD stands, penalty applied to kickoff
+                touchdown = True
+                final_position = 100
                 self.state.pending_kickoff_penalty_yards = punt_penalty_yards
-                self.state.pending_kickoff_penalty_is_offense = is_punt_offensive_penalty
+                self.state.pending_kickoff_penalty_is_offense = False
                 punt_penalty_yards = 0  # Don't apply to return
-                is_punt_offensive_penalty = False
-            self._score_touchdown()
+                self._score_touchdown()
+            else:
+                # No penalty - normal TD
+                touchdown = True
+                final_position = 100
+                self._score_touchdown()
 
         self.state.ball_position = clamp_ball_position(final_position)
         self.state.down = 1
