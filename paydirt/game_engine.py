@@ -339,9 +339,10 @@ class PaydirtGameEngine:
                     # Roll again for actual return yardage
                     ret_roll, _ = roll_chart_dice()
                     ret_result = receiving_chart.special_teams.kickoff_return.get(ret_roll, "20")
-                    # If we get another penalty on re-roll, just use 20 yards
+                    # If we get another penalty on re-roll, offsetting penalties - rekick
                     if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                        ret_yards = 20
+                        # Offsetting penalties - recursive call to rekick
+                        return self.kickoff(kicking_home=kicking_home)
                     else:
                         try:
                             ret_yards = int(ret_result) if ret_result else 20
