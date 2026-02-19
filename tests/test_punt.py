@@ -633,7 +633,48 @@ class TestPuntReturnTDWithPenalty:
             assert "DEF 5" in outcome.description
             # Pending penalty should be cleared
             assert game.state.pending_kickoff_penalty_yards == 0
-    
+
+    def test_off_penalty_on_td_return_applies_from_catch_point(self, game):
+        """OFF penalty on TD return should apply from catch point, not final position."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Punt 40 yards, return 99 (would be TD)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            
+            # Punt from own 30 = 40 yards = lands at opponent's 30 (receiving_position = 30)
+            game.state.possession_team.special_teams.punt[14] = "40"
+            # OFF 10 penalty on return that would have been TD
+            game.state.defense_team.special_teams.punt_return[39] = "OFF 10"
+            
+            outcome = game._handle_punt()
+            
+            # TD negated, penalty applied from catch point (30)
+            # Ball at 30 - 10 = 20
+            assert not outcome.touchdown
+            assert game.state.ball_position == 20
+
+    def test_half_the_distance_on_punt_return_penalty(self, game):
+        """Half-the-distance rule should apply when penalty exceeds distance to goal."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            
+            # Punt 60 yards = lands at opponent's 10 (receiving_position = 10)
+            game.state.possession_team.special_teams.punt[14] = "60"
+            # OFF 15 penalty - would move ball to -5, but half-the-distance applies
+            game.state.defense_team.special_teams.punt_return[39] = "OFF 15"
+            
+            outcome = game._handle_punt()
+            
+            # Half of 10 = 5, so ball at 10 - 5 = 5
+            assert not outcome.touchdown
+            assert game.state.ball_position == 5
+
+
 class TestAdvancedPuntRules:
     """Tests for advanced punt rules: Short-Drop and Coffin-Corner punts."""
 

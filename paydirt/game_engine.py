@@ -327,20 +327,26 @@ class PaydirtGameEngine:
                         is_touchback = True
             else:
                 # Normal field return - check for penalty first
+                ko_penalty_yards = 0
+                ko_is_offensive_penalty = False
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on kickoff return
+                    # Penalty on kickoff return - penalty applied from catch point (landing_spot)
                     penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
                     if penalty_match:
-                        penalty_yards = int(penalty_match.group(2))
-                        is_offensive_penalty = penalty_match.group(1) == "OFF"
-                        # Offensive penalty: receiving team penalized, ball moves back
-                        # Defensive penalty: kicking team penalized, ball moves forward
-                        if is_offensive_penalty:
-                            ret_yards = -penalty_yards
-                        else:
-                            ret_yards = penalty_yards
+                        ko_penalty_yards = int(penalty_match.group(2))
+                        ko_is_offensive_penalty = penalty_match.group(1) == "OFF"
+                    
+                    if ko_is_offensive_penalty:
+                        # OFF penalty - apply from landing spot with half-the-distance
+                        effective_penalty = ko_penalty_yards
+                        if landing_spot - effective_penalty < 1:
+                            effective_penalty = max(1, landing_spot // 2)
+                        return_position = landing_spot - effective_penalty
                     else:
-                        ret_yards = 0
+                        # DEF penalty - add yards from landing spot
+                        return_position = landing_spot + ko_penalty_yards
+                        if return_position >= 100:
+                            return_position = 100  # TD
                 else:
                     try:
                         ret_yards = int(ret_result) if ret_result else 20
@@ -352,10 +358,11 @@ class PaydirtGameEngine:
                         else:
                             ret_yards = 20
 
-                return_position = landing_spot + ret_yards
-                if return_position > 100:
-                    return_position = 100  # Touchdown
-                elif return_position < 1:
+                    return_position = landing_spot + ret_yards
+                    if return_position > 100:
+                        return_position = 100  # Touchdown
+                
+                if return_position < 1:
                     return_position = 1  # Minimum field position
 
         # Set game state
@@ -2089,6 +2096,9 @@ class PaydirtGameEngine:
                         # Offensive penalty on return: receiving team penalized, ball moves back
                         # Defensive penalty on return: kicking team penalized, ball moves forward
                         if is_offensive_penalty:
+                            # Apply half-the-distance rule from receiving position
+                            if receiving_position - penalty_yards < 1:
+                                penalty_yards = max(1, receiving_position // 2)
                             return_yards = -penalty_yards  # Move ball back
                         else:
                             return_yards = penalty_yards  # Move ball forward
@@ -2145,45 +2155,53 @@ class PaydirtGameEngine:
         # Switch possession and set ball position
         self.state.switch_possession()
 
-        # Final position is receiving position plus return yards
+        # Final position is receiving position plus return yards (before penalty)
         final_position = receiving_position + return_yards
 
-        # Apply post-possession penalty yardage (tack on to the return result)
-        # DEF penalty: kicking team penalized, receiving team gets yardage
-        # OFF penalty: receiving team penalized, kicking team gets yardage
+        # Check for return touchdown first (before applying penalties)
+        touchdown = False
+        would_be_td = final_position >= 100
+
         if punt_penalty_yards > 0:
             if is_punt_offensive_penalty:
-                # Receiving team penalized - subtract yards
-                final_position -= punt_penalty_yards
+                # OFF penalty on receiving team
+                if would_be_td:
+                    # TD negated - penalty applied from CATCH POINT, not final position
+                    # Half-the-distance rule: if penalty exceeds half distance to goal, use half
+                    effective_penalty = punt_penalty_yards
+                    if receiving_position - effective_penalty < 1:
+                        effective_penalty = max(1, receiving_position // 2)
+                    final_position = receiving_position - effective_penalty
+                    touchdown = False
+                else:
+                    # No TD - apply penalty to final position with half-the-distance
+                    effective_penalty = punt_penalty_yards
+                    if final_position - effective_penalty < 1:
+                        effective_penalty = max(1, final_position // 2)
+                    final_position -= effective_penalty
             else:
-                # Defense (kicking team) penalized - add yards to receiving team
-                final_position += punt_penalty_yards
-
-        # Check for return touchdown
-        touchdown = False
-        if final_position >= 100:
-            # Check if there's a penalty that affects the TD
-            if punt_penalty_yards > 0 and is_punt_offensive_penalty:
-                # OFF penalty on receiving team negates the TD
-                # Apply penalty to return position instead
-                final_position = final_position - punt_penalty_yards
-                if final_position > 99:
-                    final_position = 99  # Can't score with penalty against you
-                touchdown = False
-                # punt_penalty_yards stays set for description
-            elif punt_penalty_yards > 0:
-                # DEF penalty on kicking team - TD stands, penalty applied to kickoff
-                touchdown = True
-                final_position = 100
-                self.state.pending_kickoff_penalty_yards = punt_penalty_yards
-                self.state.pending_kickoff_penalty_is_offense = False
-                punt_penalty_yards = 0  # Don't apply to return
-                self._score_touchdown()
-            else:
-                # No penalty - normal TD
-                touchdown = True
-                final_position = 100
-                self._score_touchdown()
+                # DEF penalty on kicking team
+                if would_be_td:
+                    # TD stands, penalty applied to kickoff spot
+                    touchdown = True
+                    final_position = 100
+                    self.state.pending_kickoff_penalty_yards = punt_penalty_yards
+                    self.state.pending_kickoff_penalty_is_offense = False
+                    punt_penalty_yards = 0  # Clear for description
+                    self._score_touchdown()
+                else:
+                    # No TD - add yards to receiving team (no half-distance needed, moves toward opponent)
+                    final_position += punt_penalty_yards
+                    if final_position >= 100:
+                        # DEF penalty pushes into end zone = TD
+                        touchdown = True
+                        final_position = 100
+                        self._score_touchdown()
+        elif would_be_td:
+            # No penalty - normal TD
+            touchdown = True
+            final_position = 100
+            self._score_touchdown()
 
         self.state.ball_position = clamp_ball_position(final_position)
         self.state.down = 1

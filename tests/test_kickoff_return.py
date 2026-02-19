@@ -59,7 +59,7 @@ class TestKickoffReturnPenalties:
     """Tests for penalty handling on kickoff returns."""
     
     def test_offensive_penalty_on_kickoff_return_moves_ball_back(self, game):
-        """Offensive penalty on kickoff return should move ball back 15 yards."""
+        """Offensive penalty on kickoff return should move ball back with half-the-distance rule."""
         # Note: Kickoff uses same dice roll for both kickoff and return charts
         # Set up charts so roll 11 gives 50 yard kickoff and OFF 15 return
         game.state.home_chart.special_teams.kickoff[11] = "50"
@@ -73,8 +73,9 @@ class TestKickoffReturnPenalties:
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
-            # OFF 15 penalty moves ball back 15 yards = 15 + (-15) = 0 -> clamped to 1
-            assert game.state.ball_position == 1
+            # OFF 15 penalty would move ball to 0, but half-the-distance applies
+            # Half of 15 = 7, so ball at 15 - 7 = 8
+            assert game.state.ball_position == 8
     
     def test_defensive_penalty_on_kickoff_return_moves_ball_forward(self, game):
         """Defensive penalty on kickoff return should move ball forward 15 yards."""
