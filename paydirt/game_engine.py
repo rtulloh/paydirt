@@ -326,28 +326,38 @@ class PaydirtGameEngine:
                         return_position = 20
                         is_touchback = True
             else:
-                # Normal field return - parse return yardage first
-                try:
-                    ret_yards = int(ret_result) if ret_result else 20
-                except ValueError:
-                    if ret_parsed.result_type == ResultType.FUMBLE:
-                        ret_yards = ret_parsed.yards
-                    elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                        ret_yards = 100
-                    else:
-                        ret_yards = 20
-
-                # Check for penalty on return
+                # Check for penalty on return first
                 ko_penalty_yards = 0
                 ko_is_offensive_penalty = False
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on kickoff return
+                    # Penalty on kickoff return - need to roll again for actual return yardage
                     penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
                     if penalty_match:
                         ko_penalty_yards = int(penalty_match.group(2))
                         ko_is_offensive_penalty = penalty_match.group(1) == "OFF"
-                        # Use default return yardage when penalty occurs
+                    
+                    # Roll again for actual return yardage
+                    ret_roll, _ = roll_chart_dice()
+                    ret_result = receiving_chart.special_teams.kickoff_return.get(ret_roll, "20")
+                    # If we get another penalty on re-roll, just use 20 yards
+                    if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
                         ret_yards = 20
+                    else:
+                        try:
+                            ret_yards = int(ret_result) if ret_result else 20
+                        except ValueError:
+                            ret_yards = 20
+                else:
+                    # Normal return - parse yardage
+                    try:
+                        ret_yards = int(ret_result) if ret_result else 20
+                    except ValueError:
+                        if ret_parsed.result_type == ResultType.FUMBLE:
+                            ret_yards = ret_parsed.yards
+                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
+                            ret_yards = 100
+                        else:
+                            ret_yards = 20
 
                 # Calculate return position: landing spot + return yards
                 return_position = landing_spot + ret_yards

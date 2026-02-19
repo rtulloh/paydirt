@@ -59,40 +59,44 @@ class TestKickoffReturnPenalties:
     """Tests for penalty handling on kickoff returns."""
     
     def test_offensive_penalty_on_kickoff_return_moves_ball_back(self, game):
-        """Offensive penalty on kickoff return: landing + default return - penalty."""
-        # Note: Kickoff uses same dice roll for both kickoff and return charts
-        # Set up charts so roll 11 gives 50 yard kickoff and OFF 15 return
+        """Offensive penalty on kickoff return: landing + rolled return - penalty."""
+        # Set up charts for the scenario
         game.state.home_chart.special_teams.kickoff[11] = "50"
         game.state.away_chart.special_teams.kickoff[11] = "50"
+        # Roll 13 gives 30 yard return (used on re-roll after penalty)
+        game.state.away_chart.special_teams.kickoff_return[13] = "30"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Single roll = 11 used for both kickoff (50 yards) and return (OFF 15)
-            mock_dice.return_value = (11, "B1+W0+W1=11")
+            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
+            # Second roll = 13: re-roll for actual return yardage (30 yards)
+            mock_dice.side_effect = [(11, "B1+W0+W1=11"), (13, "B1+W2+W1=13")]
             
             game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
-            # Default return 20 yards = 15 + 20 = 35
-            # OFF 15 penalty subtracts = 35 - 15 = 20
-            assert game.state.ball_position == 20
+            # Re-rolled return 30 yards = 15 + 30 = 45
+            # OFF 15 penalty subtracts = 45 - 15 = 30
+            assert game.state.ball_position == 30
     
     def test_defensive_penalty_on_kickoff_return_moves_ball_forward(self, game):
-        """Defensive penalty on kickoff return: landing + default return + penalty."""
-        # Note: Kickoff uses same dice roll for both kickoff and return charts
-        # Set up charts so roll 12 gives 50 yard kickoff and DEF 15 return
+        """Defensive penalty on kickoff return: landing + rolled return + penalty."""
+        # Set up charts for the scenario
         game.state.home_chart.special_teams.kickoff[12] = "50"
         game.state.away_chart.special_teams.kickoff[12] = "50"
+        # Roll 10 gives 20 yard return (used on re-roll after penalty)
+        game.state.away_chart.special_teams.kickoff_return[10] = "20"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Single roll = 12 used for both kickoff (50 yards) and return (DEF 15)
-            mock_dice.return_value = (12, "B1+W0+W2=12")
+            # First roll = 12: kickoff (50 yards) and return (DEF 15 penalty)
+            # Second roll = 10: re-roll for actual return yardage (20 yards)
+            mock_dice.side_effect = [(12, "B1+W0+W2=12"), (10, "B1+W0+W0=10")]
             
             game.kickoff(kicking_home=True)
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
-            # Default return 20 yards = 15 + 20 = 35
+            # Re-rolled return 20 yards = 15 + 20 = 35
             # DEF 15 penalty adds = 35 + 15 = 50
             assert game.state.ball_position == 50
     
