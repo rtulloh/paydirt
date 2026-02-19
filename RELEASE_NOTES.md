@@ -6,6 +6,7 @@
 - **Nested tuple AttributeError**: Fixed crash in CPU AI when selecting certain plays. A nested tuple was being created when going for it on 4th down in opponent territory, causing `AttributeError: 'tuple' object has no attribute 'value'`
 - **Blocked punt dice roll**: Fixed blocked punts showing "Roll: 0" instead of actual dice roll in game output
 - **Punt penalty yardage**: Fixed penalties on punts not being applied to field position. DEF penalties now add yardage to the receiving team, OFF penalties subtract yardage. Description now shows applied penalty
+- **TD with penalty on return**: When a touchdown is scored AND the kicking team commits a penalty during the return, the penalty is now applied to the ensuing kickoff (after the PAT) instead of being lost. Description shows "will apply to kickoff"
 
 ### Sample Teams
 - **Expanded roster data**: Added complete rosters to sample teams (Ironclads, Thunderhawks) for commentary - now includes full depth charts with player names for all positions (QB, RB, WR, TE, OL, DL, LB, DB, K, P)

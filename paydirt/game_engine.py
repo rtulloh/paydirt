@@ -86,6 +86,9 @@ class GameState:
     is_playoff: bool = False  # Is this a playoff game?
     # Untimed down tracking (defensive penalty at 0:00)
     untimed_down_pending: bool = False  # True if an untimed down must be played
+    # Pending penalty to apply to next kickoff (e.g., when TD scored on return with penalty)
+    pending_kickoff_penalty_yards: int = 0
+    pending_kickoff_penalty_is_offense: bool = False  # True = offense committed penalty, False = defense
 
     @property
     def possession_team(self) -> TeamChart:
@@ -338,6 +341,21 @@ class PaydirtGameEngine:
                 elif return_position < 1:
                     return_position = 1  # Minimum field position
 
+        # Apply pending penalty from previous play (e.g., TD scored with penalty on return)
+        penalty_desc = ""
+        if self.state.pending_kickoff_penalty_yards > 0:
+            if self.state.pending_kickoff_penalty_is_offense:
+                # Offense committed penalty - receiving team penalized, ball moves back
+                return_position -= self.state.pending_kickoff_penalty_yards
+                penalty_desc = f" (OFF {self.state.pending_kickoff_penalty_yards} - offense penalized)"
+            else:
+                # Defense committed penalty - kicking team penalized, ball moves forward
+                return_position += self.state.pending_kickoff_penalty_yards
+                penalty_desc = f" (DEF {self.state.pending_kickoff_penalty_yards} added)"
+            # Clear the pending penalty
+            self.state.pending_kickoff_penalty_yards = 0
+            self.state.pending_kickoff_penalty_is_offense = False
+
         # Set game state
         self.state.is_home_possession = not kicking_home
         self.state.ball_position = clamp_ball_position(return_position)
@@ -367,6 +385,11 @@ class PaydirtGameEngine:
 
         dice_line = f"(KO:{dice_roll}→\"{ko_yards}\" | RT:{dice_roll}→\"{actual_return}\")"
 
+        # Check if there was a pending penalty applied (from TD + penalty on previous return)
+        # Note: We need to check this AFTER the penalty was applied but save it for description
+        # Since we cleared the pending penalty above, we need to detect it differently
+        # Actually, we cleared it, so let's rebuild the description with the info
+        
         if touchdown:
             description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN! {dice_line}"
         elif is_touchback:
@@ -374,7 +397,7 @@ class PaydirtGameEngine:
         elif "OB" in ko_result or "OUT" in ko_result.upper():
             description = f"Kickoff out of bounds! Ball at the 40. {dice_line}"
         else:
-            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary} {dice_line}"
+            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}{penalty_desc} {dice_line}"
 
         outcome = PlayOutcome(
             play_type=PlayType.KICKOFF,
@@ -2144,6 +2167,14 @@ class PaydirtGameEngine:
         if final_position >= 100:
             touchdown = True
             final_position = 100
+            # If there's also a penalty, store it for the kickoff instead of applying to return
+            # Per NFL rules: if TD scored AND kicking team commits penalty during return,
+            # the penalty is applied to the subsequent kickoff (after the PAT)
+            if punt_penalty_yards > 0:
+                self.state.pending_kickoff_penalty_yards = punt_penalty_yards
+                self.state.pending_kickoff_penalty_is_offense = is_punt_offensive_penalty
+                punt_penalty_yards = 0  # Don't apply to return
+                is_punt_offensive_penalty = False
             self._score_touchdown()
 
         self.state.ball_position = clamp_ball_position(final_position)
@@ -2174,6 +2205,13 @@ class PaydirtGameEngine:
                 penalty_desc = f" (OFF {punt_penalty_yards} - offense penalized)"
             else:
                 penalty_desc = f" (DEF {punt_penalty_yards} added)"
+        
+        # Check if there's a pending penalty for the kickoff (from TD + penalty scenario)
+        if self.state.pending_kickoff_penalty_yards > 0:
+            if self.state.pending_kickoff_penalty_is_offense:
+                penalty_desc = f" (PENALTY on return - will apply to kickoff: OFF {self.state.pending_kickoff_penalty_yards})"
+            else:
+                penalty_desc = f" (PENALTY on return - will apply to kickoff: DEF {self.state.pending_kickoff_penalty_yards} added)"
         
         if return_desc:
             if "fair catch" in return_desc or "downed" in return_desc:

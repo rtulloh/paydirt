@@ -291,6 +291,9 @@ def clamp_ball_position(position: int) -> int:
     The ball cannot be at position 0 (own end zone - would be safety/touchback)
     or position 100 (opponent's end zone - would be touchdown).
     
+    Per NFL rules, when a penalty would move the ball past the goal line,
+    the ball is placed at the 1-yard line (minimum), not clamped to 99.
+    
     Args:
         position: Raw ball position that may be out of bounds
         
