@@ -101,11 +101,11 @@ class TestKickoffReturnPenalties:
             assert game.state.ball_position == 50
     
     def test_offsetting_penalties_cause_rekick(self, game):
-        """Offsetting penalties (penalty on re-roll) should cause a rekick."""
+        """Offsetting penalties (OFF + DEF) should cause a rekick."""
         # Set up charts for the scenario
         game.state.home_chart.special_teams.kickoff[11] = "50"
         game.state.away_chart.special_teams.kickoff[11] = "50"
-        # Roll 12 also gives a penalty (offsetting)
+        # Roll 12 gives DEF penalty (opposite of OFF 15) - this is offsetting
         game.state.away_chart.special_teams.kickoff_return[12] = "DEF 10"
         # Roll 14 gives normal kickoff and return for the rekick
         game.state.home_chart.special_teams.kickoff[14] = "55"
@@ -114,7 +114,7 @@ class TestKickoffReturnPenalties:
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 12: re-roll gets another penalty (DEF 10) - offsetting!
+            # Second roll = 12: re-roll gets DEF 10 - offsetting (OFF + DEF)!
             # Third roll = 14: rekick - kickoff (55 yards) and return (25 yards)
             mock_dice.side_effect = [
                 (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
@@ -127,6 +127,29 @@ class TestKickoffReturnPenalties:
             # Rekick: 55 yards from 35 = lands at 10
             # Return 25 yards = 10 + 25 = 35
             assert game.state.ball_position == 35
+
+    def test_same_penalty_twice_uses_default_return(self, game):
+        """Two penalties of same type (OFF + OFF) should use default return, not rekick."""
+        # Set up charts for the scenario
+        game.state.home_chart.special_teams.kickoff[11] = "50"
+        game.state.away_chart.special_teams.kickoff[11] = "50"
+        # Roll 12 gives another OFF penalty (same type, not offsetting)
+        game.state.away_chart.special_teams.kickoff_return[12] = "OFF 10"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
+            # Second roll = 12: re-roll gets OFF 10 - same type, not offsetting
+            mock_dice.side_effect = [
+                (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
+                (12, "B1+W0+W2=12"),  # Re-roll gets OFF 10 - same type
+            ]
+            
+            game.kickoff(kicking_home=True)
+            
+            # Kickoff 50 yards from 35 = lands at 15
+            # Default return 20 yards (since re-roll was also penalty) = 15 + 20 = 35
+            # OFF 15 penalty subtracts = 35 - 15 = 20
+            assert game.state.ball_position == 20
 
     def test_normal_kickoff_return_still_works(self, game):
         """Normal kickoff return without penalty should work correctly."""
