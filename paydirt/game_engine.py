@@ -228,6 +228,21 @@ class PaydirtGameEngine:
         away_chart = load_team_chart(away_dir)
         return cls(home_chart, away_chart)
 
+    def _apply_half_the_distance(self, position: int, penalty_yards: int) -> int:
+        """
+        Apply half-the-distance rule for penalties near the goal line.
+        
+        Args:
+            position: Current field position (1-99)
+            penalty_yards: Penalty yards to apply
+            
+        Returns:
+            Effective penalty yards (may be reduced by half-the-distance rule)
+        """
+        if position - penalty_yards < 1:
+            return max(1, position // 2)
+        return penalty_yards
+
     def _handle_return_penalty(self, return_result: str, return_chart: dict, 
                                 default_return: int = 20) -> tuple[int, int, bool, bool]:
         """
@@ -282,12 +297,13 @@ class PaydirtGameEngine:
         
         return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
 
-    def kickoff(self, kicking_home: bool = True) -> PlayOutcome:
+    def kickoff(self, kicking_home: bool = True, kickoff_spot: int = 35) -> PlayOutcome:
         """
         Perform a kickoff.
         
         Args:
             kicking_home: True if home team is kicking
+            kickoff_spot: Yard line to kick from (default 35, use 20 for safety free kick)
         """
         kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
         receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
@@ -305,9 +321,7 @@ class PaydirtGameEngine:
         parse_result_string(ko_result)
         ret_parsed = parse_result_string(ret_result)
 
-        # Calculate field position
-        # Kickoff normally from 35, but adjust for pending penalty from previous scoring play
-        kickoff_spot = 35
+        # Calculate field position - use provided kickoff_spot, adjust for pending penalty
         penalty_desc = ""
         if self.state.pending_kickoff_penalty_yards > 0:
             if self.state.pending_kickoff_penalty_is_offense:
@@ -410,9 +424,7 @@ class PaydirtGameEngine:
                 if ko_penalty_yards > 0:
                     if ko_is_offensive_penalty:
                         # OFF penalty - subtract from return position with half-the-distance
-                        effective_penalty = ko_penalty_yards
-                        if return_position - effective_penalty < 1:
-                            effective_penalty = max(1, return_position // 2)
+                        effective_penalty = self._apply_half_the_distance(return_position, ko_penalty_yards)
                         return_position -= effective_penalty
                     else:
                         # DEF penalty - add yards to return position
@@ -451,15 +463,18 @@ class PaydirtGameEngine:
                 return_commentary = " Outstanding special teams coverage!"
 
         dice_line = f"(KO:{dice_roll}→\"{ko_yards}\" | RT:{dice_roll}→\"{actual_return}\")"
+        
+        # Use "Safety free kick" for kicks from own 20
+        kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
 
         if touchdown:
-            description = f"Kickoff {ko_yards} yards, RETURNED FOR A TOUCHDOWN!{penalty_desc} {dice_line}"
+            description = f"{kick_type} {ko_yards} yards, RETURNED FOR A TOUCHDOWN!{penalty_desc} {dice_line}"
         elif is_touchback:
-            description = f"Kickoff {ko_yards} yards into the end zone. Touchback.{penalty_desc} {dice_line}"
+            description = f"{kick_type} {ko_yards} yards into the end zone. Touchback.{penalty_desc} {dice_line}"
         elif "OB" in ko_result or "OUT" in ko_result.upper():
-            description = f"Kickoff out of bounds! Ball at the 40.{penalty_desc} {dice_line}"
+            description = f"{kick_type} out of bounds! Ball at the 40.{penalty_desc} {dice_line}"
         else:
-            description = f"Kickoff {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}{penalty_desc} {dice_line}"
+            description = f"{kick_type} {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}{penalty_desc} {dice_line}"
 
         outcome = PlayOutcome(
             play_type=PlayType.KICKOFF,
@@ -1861,7 +1876,8 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _handle_punt(self, short_drop: bool = False, coffin_corner_yards: int = 0) -> PlayOutcome:
+    def _handle_punt(self, short_drop: bool = False, coffin_corner_yards: int = 0,
+                     punt_from: int = None) -> PlayOutcome:
         """
         Handle a punt play per official Paydirt rules.
         
@@ -1874,8 +1890,9 @@ class PaydirtGameEngine:
         Args:
             short_drop: If True, apply short-drop punt rules
             coffin_corner_yards: Yards to subtract from punt distance (0 = no coffin corner)
+            punt_from: Override field position to punt from (for safety free kick punt)
         """
-        field_pos_before = self.state.ball_position
+        field_pos_before = punt_from if punt_from is not None else self.state.ball_position
         down_before = self.state.down
         ytg_before = self.state.yards_to_go
         punting_team = self.state.possession_team
@@ -2226,17 +2243,12 @@ class PaydirtGameEngine:
                 # OFF penalty on receiving team
                 if would_be_td:
                     # TD negated - penalty applied from CATCH POINT, not final position
-                    # Half-the-distance rule: if penalty exceeds half distance to goal, use half
-                    effective_penalty = combined_penalty_yards
-                    if receiving_position - effective_penalty < 1:
-                        effective_penalty = max(1, receiving_position // 2)
+                    effective_penalty = self._apply_half_the_distance(receiving_position, combined_penalty_yards)
                     final_position = receiving_position - effective_penalty
                     touchdown = False
                 else:
                     # No TD - apply penalty to final position with half-the-distance
-                    effective_penalty = combined_penalty_yards
-                    if final_position - effective_penalty < 1:
-                        effective_penalty = max(1, final_position // 2)
+                    effective_penalty = self._apply_half_the_distance(final_position, combined_penalty_yards)
                     final_position -= effective_penalty
             else:
                 # DEF penalty on kicking team
@@ -2298,15 +2310,18 @@ class PaydirtGameEngine:
             else:
                 penalty_desc = f" (PENALTY on return - will apply to kickoff: DEF {self.state.pending_kickoff_penalty_yards} added)"
         
+        # Use "Safety free kick punt" for punts from own 20 (after safety)
+        punt_type = "Safety free kick punt" if punt_from == 20 else "Punt"
+        
         if return_desc:
             if "fair catch" in return_desc or "downed" in return_desc:
-                description = f"{description}Punt {punt_yards} yards, {return_desc} at {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
+                description = f"{description}{punt_type} {punt_yards} yards, {return_desc} at {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
             elif touchdown:
-                description = f"{description}Punt {punt_yards} yards, {return_desc} - TOUCHDOWN!"
+                description = f"{description}{punt_type} {punt_yards} yards, {return_desc} - TOUCHDOWN!"
             else:
-                description = f"{description}Punt {punt_yards} yards, {return_desc} to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
+                description = f"{description}{punt_type} {punt_yards} yards, {return_desc} to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
         else:
-            description = f"{description}Punt {punt_yards} yards to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
+            description = f"{description}{punt_type} {punt_yards} yards to {self.state.field_position_str()}{penalty_desc}.{punt_commentary}"
 
         parsed_result = parse_result_string(punt_result)
         parsed_result.dice_roll = punt_roll
@@ -3095,180 +3110,13 @@ class PaydirtGameEngine:
 
     def _handle_safety_kickoff(self, kicking_home: bool) -> PlayOutcome:
         """Handle kickoff after safety (from own 20 instead of 35)."""
-        kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
-        receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
-
-        # Roll for kickoff
-        dice_roll, dice_desc = roll_chart_dice()
-        ko_result = kicking_chart.special_teams.kickoff.get(dice_roll, "50")
-        ret_result = receiving_chart.special_teams.kickoff_return.get(dice_roll, "20")
-
-        parse_result_string(ko_result)
-        ret_parsed = parse_result_string(ret_result)
-
-        try:
-            ko_yards = int(ko_result) if ko_result and ko_result.isdigit() else 50
-        except ValueError:
-            ko_yards = 50
-
-        # Handle special kickoff results
-        if "OB" in ko_result or "OUT" in ko_result.upper():
-            # Out of bounds - ball at 40 from kicking team's perspective
-            # From own 20, that's receiving team's 40
-            return_position = 40
-        elif "TB" in ko_result.upper() or ko_yards >= 80:
-            # Touchback (kick from 20 + 80 yards = end zone)
-            return_position = 20
-        else:
-            # Normal return - kick from own 20
-            landing_spot = 100 - (20 + ko_yards)  # From receiver's perspective
-
-            # Per VI-12-F: Handle end zone returns
-            # landing_spot <= 0 means ball is in or beyond the end zone
-            if landing_spot <= 0:
-                # Ball in end zone
-                if landing_spot <= -10:
-                    # At or behind end line - automatic touchback
-                    return_position = 20
-                else:
-                    # In end zone but not at end line - can attempt return
-                    yards_deep = abs(landing_spot)
-                    try:
-                        ret_yards = int(ret_result) if ret_result else 20
-                    except ValueError:
-                        ret_yards = 20
-                    if ret_yards > yards_deep:
-                        return_position = ret_yards - yards_deep
-                    else:
-                        return_position = 20
-            else:
-                # Normal field return
-                try:
-                    ret_yards = int(ret_result) if ret_result else 20
-                except ValueError:
-                    ret_yards = 20
-                return_position = landing_spot + ret_yards
-                if return_position > 100:
-                    return_position = 100
-
-        # Switch possession to receiving team
-        self.state.is_home_possession = not kicking_home
-        self.state.ball_position = return_position
-        self.state.down = 1
-        self.state.yards_to_go = 10
-
-        touchdown = return_position >= 100
-        if touchdown:
-            self._score_touchdown()
-
-        outcome = PlayOutcome(
-            play_type=PlayType.KICKOFF,
-            defense_type=DefenseType.STANDARD,
-            result=ret_parsed,
-            yards_gained=return_position,
-            touchdown=touchdown,
-            field_position_after=self.state.field_position_str(),
-            description=f"Safety free kick {ko_yards} yards, returned to {self.state.field_position_str()}"
-        )
-
-        self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 15))
-
-        return outcome
+        # Use the standard kickoff method with kickoff_spot=20
+        return self.kickoff(kicking_home=kicking_home, kickoff_spot=20)
 
     def _handle_safety_punt(self, kicking_home: bool) -> PlayOutcome:
         """Handle punt after safety (from own 20)."""
-        kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
-        receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
-
-        # Roll for punt
-        punt_roll, punt_desc = roll_chart_dice()
-        punt_result = kicking_chart.special_teams.punt.get(punt_roll, "40")
-
-        # Check for special markers
-        is_downed = "†" in punt_result or "+" in punt_result
-        is_fair_catch = "*" in punt_result
-
-        # Parse punt distance
-        punt_clean = punt_result.replace("†", "").replace("*", "").replace("+", "").strip()
-        try:
-            punt_yards = int(punt_clean) if punt_clean.isdigit() else 40
-        except ValueError:
-            punt_yards = 40
-
-        # Calculate landing spot from receiver's perspective
-        # Punt from own 20
-        landing_spot_from_kicker = 20 + punt_yards
-        landing_spot = 100 - landing_spot_from_kicker
-
-        return_yards = 0
-
-        # Per VI-12-F: Handle end zone returns
-        # landing_spot <= 0 means ball is in or beyond the end zone
-        if landing_spot <= 0:
-            # Ball in end zone
-            if landing_spot <= -10:
-                # At or behind end line - automatic touchback
-                return_position = 20
-            elif is_downed or is_fair_catch:
-                # Downed or fair catch in end zone = touchback
-                return_position = 20
-            else:
-                # Attempt return from end zone
-                yards_deep = abs(landing_spot)
-                ret_roll, ret_desc = roll_chart_dice()
-                ret_result = receiving_chart.special_teams.punt_return.get(ret_roll, "5")
-                try:
-                    return_yards = int(ret_result.replace("*", "").replace("†", "").strip())
-                except ValueError:
-                    return_yards = 5
-                if return_yards > yards_deep:
-                    return_position = return_yards - yards_deep
-                else:
-                    return_position = 20
-        else:
-            # Normal field position
-            if is_downed or is_fair_catch:
-                return_position = landing_spot
-            else:
-                ret_roll, ret_desc = roll_chart_dice()
-                ret_result = receiving_chart.special_teams.punt_return.get(ret_roll, "5")
-                try:
-                    return_yards = int(ret_result.replace("*", "").replace("†", "").strip())
-                except ValueError:
-                    return_yards = 5
-                return_position = landing_spot + return_yards
-                if return_position > 100:
-                    return_position = 100
-
-        # Switch possession
-        self.state.is_home_possession = not kicking_home
-        self.state.ball_position = return_position
-        self.state.down = 1
-        self.state.yards_to_go = 10
-
-        touchdown = return_position >= 100
-        if touchdown:
-            self._score_touchdown()
-
-        parsed_result = parse_result_string(punt_result)
-        parsed_result.dice_roll = punt_roll
-        parsed_result.raw_result = f"{punt_yards}{'*' if is_fair_catch else ''}"
-
-        outcome = PlayOutcome(
-            play_type=PlayType.PUNT,
-            defense_type=DefenseType.STANDARD,
-            result=parsed_result,
-            yards_gained=return_yards,
-            touchdown=touchdown,
-            field_position_after=self.state.field_position_str(),
-            description=f"Safety free kick punt {punt_yards} yards to {self.state.field_position_str()}"
-        )
-
-        self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 12))
-
-        return outcome
+        # Use the standard punt method with punt_from=20
+        return self._handle_punt(punt_from=20)
 
     def _handle_end_zone_return(self, yards_deep_in_end_zone: int, return_yards: int,
                                  elect_touchback: bool = False) -> tuple[int, bool]:
