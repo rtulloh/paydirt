@@ -1,5 +1,30 @@
 # Paydirt Release Notes
 
+## Version 1.5 (February 2026)
+
+### Kickoff & Punt Return Penalty Consistency
+- **Re-roll for return yardage**: When a penalty occurs on a kickoff or punt return, the game now re-rolls for actual return yardage instead of using a default value
+- **Offsetting penalties**: If the re-roll results in an offsetting penalty (OFF + DEF), the play is reset and the kick is replayed
+- **Larger penalty selection**: If the re-roll results in the same type of penalty (OFF + OFF or DEF + DEF), the larger penalty is automatically chosen
+- **OFF penalty on TD return**: Negates the touchdown; penalty applied from catch point with half-the-distance rule
+- **DEF penalty on TD return**: Touchdown stands; penalty applied to ensuing kickoff spot
+- **Safety kicks now use shared logic**: Safety free kicks (kickoff and punt) now use the same penalty handling as regular kicks
+
+### Code Quality & Refactoring
+- **Extracted `game_state.py`**: Moved `ScoringPlay`, `TeamStats`, `GameState`, and `PlayOutcome` dataclasses to a new module for better organization
+- **Shared `_handle_return_penalty()` helper**: Both kickoff and punt returns use the same function for penalty handling (re-roll, offsetting, larger penalty selection)
+- **Shared `_apply_half_the_distance()` helper**: Centralized half-the-distance rule calculation
+- **Parameterized kickoff/punt**: Added `kickoff_spot` and `punt_from` parameters to eliminate duplicated safety kick code
+- **File size reduction**: `game_engine.py` reduced from 3593 to 3263 lines (-330 lines)
+
+### Test Coverage
+- **1052 unit tests** passing
+- Added tests for kickoff/punt return penalty re-rolls
+- Added tests for offsetting penalties causing rekick/repunt
+- Added tests for larger penalty selection on same-type penalties
+
+---
+
 ## Version 1.4 (February 2026)
 
 ### Bug Fixes
