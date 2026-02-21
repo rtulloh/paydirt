@@ -1338,3 +1338,31 @@ class TestPuntPenaltyDisplayLogic:
             assert 'final_position' in game._pending_punt_state
             # Punt 40 from 30 = 70, return 10 = 40
             assert game._pending_punt_state['final_position'] == 40
+    
+    def test_punt_penalty_half_distance_adjusts_position(self, game):
+        """When half-distance rule applies, penalty position should be adjusted.
+        
+        This tests that when a 15-yard penalty is called near the goal line,
+        the half-distance rule is applied and the adjusted position is used.
+        Example: Ball at own 17, OFF 15 penalty -> half-distance = 8 yards
+        Display should show 'Replay punt from own 9' not 'from own 2'.
+        """
+        from paydirt.penalty_handler import apply_half_distance_rule
+        
+        # Ball at own 17 (position 17), OFF 15 penalty
+        ball_position = 17
+        penalty_yards = 15
+        is_offensive_penalty = True  # OFF penalty moves ball backward
+        
+        # Half-distance rule: can't go more than half the distance to goal
+        # Half of 17 = 8.5, rounded to 8
+        adjusted_yards = apply_half_distance_rule(
+            penalty_yards, ball_position, is_offensive_penalty
+        )
+        
+        # Should be reduced to 8 yards (half-distance)
+        assert adjusted_yards == 8
+        
+        # New position should be 17 - 8 = 9 (own 9)
+        new_position = ball_position - adjusted_yards
+        assert new_position == 9
