@@ -699,3 +699,120 @@ class TestCPUPuntOptions:
         # Punt options should be False/0 on 1st down (not a punt situation)
         assert punt_short_drop is False
         assert punt_coffin == 0
+
+
+class TestEndOfHalfFieldGoal:
+    """Tests for CPU kicking a field goal at the end of a half on any down."""
+
+    def test_kicks_fg_at_end_of_q2_first_down_in_range(self, game, cpu_ai):
+        """Should kick FG on 1st down with ~10 seconds left in Q2 when in range."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 90  # Opponent's 10, fg_distance = 27
+        game.state.quarter = 2
+        game.state.time_remaining = 10 / 60.0  # 10 seconds
+        game.state.is_home_possession = True
+
+        play = cpu_ai.select_offense(game)
+        assert play == PlayType.FIELD_GOAL
+
+    def test_kicks_fg_at_end_of_q2_second_down(self, game, cpu_ai):
+        """Should kick FG on 2nd down with ~8 seconds left in Q2 when in range."""
+        game.state.down = 2
+        game.state.yards_to_go = 7
+        game.state.ball_position = 75  # Opponent's 25, fg_distance = 42
+        game.state.quarter = 2
+        game.state.time_remaining = 8 / 60.0
+        game.state.is_home_possession = True
+
+        play = cpu_ai.select_offense(game)
+        assert play == PlayType.FIELD_GOAL
+
+    def test_kicks_fg_at_end_of_q2_third_down(self, game, cpu_ai):
+        """Should kick FG on 3rd down with ~5 seconds left in Q2 when in range."""
+        game.state.down = 3
+        game.state.yards_to_go = 15
+        game.state.ball_position = 80  # Opponent's 20, fg_distance = 37
+        game.state.quarter = 2
+        game.state.time_remaining = 5 / 60.0
+        game.state.is_home_possession = True
+
+        play = cpu_ai.select_offense(game)
+        assert play == PlayType.FIELD_GOAL
+
+    def test_kicks_fg_at_end_of_q4_trailing_by_3(self, game, cpu_ai):
+        """Should kick tying FG in Q4 when trailing by 3 with ~10 seconds left."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 85  # Opponent's 15, fg_distance = 32
+        game.state.quarter = 4
+        game.state.time_remaining = 10 / 60.0
+        game.state.is_home_possession = True
+        game.state.home_score = 14
+        game.state.away_score = 17  # Trailing by 3
+
+        play = cpu_ai.select_offense(game)
+        assert play == PlayType.FIELD_GOAL
+
+    def test_does_not_kick_fg_q4_trailing_by_7(self, game, cpu_ai):
+        """Should NOT kick FG in Q4 when trailing by 7 (need TD, not FG)."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 85
+        game.state.quarter = 4
+        game.state.time_remaining = 10 / 60.0
+        game.state.is_home_possession = True
+        game.state.home_score = 10
+        game.state.away_score = 17  # Trailing by 7
+
+        play = cpu_ai.select_offense(game)
+        assert play != PlayType.FIELD_GOAL
+
+    def test_does_not_kick_fg_out_of_range(self, game, cpu_ai):
+        """Should NOT kick FG when out of makeable range (> 47 yards)."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50  # Midfield, fg_distance = 67
+        game.state.quarter = 2
+        game.state.time_remaining = 8 / 60.0
+        game.state.is_home_possession = True
+
+        play = cpu_ai.select_offense(game)
+        assert play != PlayType.FIELD_GOAL
+
+    def test_does_not_kick_fg_with_plenty_of_time(self, game, cpu_ai):
+        """Should NOT kick end-of-half FG when plenty of time remains."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 85
+        game.state.quarter = 2
+        game.state.time_remaining = 1.0  # 1 minute left
+        game.state.is_home_possession = True
+
+        play = cpu_ai.select_offense(game)
+        assert play != PlayType.FIELD_GOAL
+
+    def test_end_of_half_fg_uses_no_huddle(self, game, cpu_ai):
+        """End-of-half FG should use no-huddle mode."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 80
+        game.state.quarter = 2
+        game.state.time_remaining = 6 / 60.0
+        game.state.is_home_possession = True
+
+        play, _, no_huddle, _, _ = cpu_ai.select_offense_with_clock_management(game)
+        assert play == PlayType.FIELD_GOAL
+        assert no_huddle is True
+
+    def test_end_of_half_fg_mode_label(self, game, cpu_ai):
+        """End-of-half FG should set the mode label correctly."""
+        game.state.down = 2
+        game.state.yards_to_go = 8
+        game.state.ball_position = 85
+        game.state.quarter = 2
+        game.state.time_remaining = 7 / 60.0
+        game.state.is_home_possession = True
+
+        cpu_ai.select_offense(game)
+        assert cpu_ai.last_mode == "End-of-Half FG"

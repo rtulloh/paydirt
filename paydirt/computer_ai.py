@@ -76,6 +76,17 @@ class ComputerAI:
         # SPECIAL SITUATIONS - Time-based checks FIRST (most important)
         # ============================================================
 
+        # End-of-half FG: kick on any down when time is about to expire
+        # and the ball is in easy/makeable FG range (inside opponent 30).
+        # Exception: in Q4, don't kick if trailing by more than 3 (need TD instead)
+        if quarter in [2, 4] and time_left <= 0.17:  # ~10 seconds or less
+            fg_distance = 100 - field_pos + 17  # End zone + holder
+            fg_helps = (quarter == 2) or (score_diff >= -3)  # Q2 always; Q4 only if FG ties/wins
+            if fg_distance <= 47 and fg_helps:  # Makeable range (~65%+ in 1983)
+                self.last_mode = "End-of-Half FG"
+                use_no_huddle = True
+                return (PlayType.FIELD_GOAL, use_oob, use_no_huddle, False, 0)
+
         # 4th Down Decision
         if down == 4:
             self.last_mode = "4th Down"

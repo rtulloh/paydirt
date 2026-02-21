@@ -2,6 +2,9 @@
 
 ## Version 1.5.1 (February 2026)
 
+### AI Improvements
+- **End-of-half field goal awareness**: CPU now kicks a field goal on any down (not just 4th) when ~10 seconds or less remain in Q2 or Q4 and the ball is in makeable FG range (inside opponent's 30, <=47 yard attempt). In Q4, the CPU only kicks if trailing by 3 or fewer (where a FG ties or wins); otherwise it goes for the TD. Previously the CPU would run a normal play and waste the last seconds of the half.
+
 ### Bug Fixes
 - **Half not ending at 0:00**: Fixed a bug where a play could randomly use just enough clock time to leave a sub-second residual (e.g., 0.003 minutes) that displayed as "0:00" but was technically positive, preventing the quarter from advancing. The game would prompt for another play at "Q2 0:00" instead of going to halftime. The `_use_time()` method now clamps any residual under 1 second to exactly 0 so the quarter-end logic triggers correctly.
 - **Game loop safety net for quarter end**: Added a safety net in both the `run_interactive_game` and `resume_game` loops to force quarter advancement when time is effectively zero at Q1-Q3, preventing any edge case from allowing play to continue past the end of a half.
@@ -9,7 +12,8 @@
 - **Breakaway commentary on negative yardage**: Fixed commentary incorrectly using exciting breakaway language (e.g., "LOOK OUT! Wilbert Montgomery has daylight!") when the B column roll produced negative yardage (e.g., -10 yards). Breakaway commentary now correctly uses loss language for negative yards and no-gain language for zero yards.
 
 ### Test Coverage
-- **1087 unit tests** passing
+- **1096 unit tests** passing
+- Added 9 new tests for end-of-half FG: Q2 on 1st/2nd/3rd down, Q4 trailing by 3, Q4 trailing by 7 (should not kick), out of range, plenty of time remaining, no-huddle flag, and mode label
 - Added 7 new tests for sub-second clock clamping: Q1-Q4 quarter advancement, non-clamping above threshold, exact zero handling, and halftime timeout reset
 - Added 6 new tests for breakaway commentary: positive yards, negative yards (no daylight), negative yards (loss language), zero yards, touchdown, and negative yards with no touchdown call
 
