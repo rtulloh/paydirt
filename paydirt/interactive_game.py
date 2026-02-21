@@ -2025,33 +2025,70 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
     print("  *** PENALTY ON THE PLAY ***")
     print("=" * 70)
 
-    # Show dice rolls in standard O:/D: format
+    # Show dice rolls in standard format
     play_result = penalty_choice.play_result
-    off_roll_str = ""
-    def_roll_str = ""
     
-    # Try to extract dice descriptions from play_result.description
-    # Format is: "... [Off: B2+W5+W3=28, Def: R1+G2=12]"
-    desc = play_result.description if play_result else ""
-    off_dice_match = re.search(r'\[Off: (B\d\+W\d\+W\d=\d+)', desc)
-    def_dice_match = re.search(r'Def: (R\d\+G\d=\d+)\]', desc)
-    
-    # Build offense roll string
-    if off_dice_match and play_result:
-        off_roll_str = f"O:{off_dice_match.group(1)}→\"{play_result.raw_result}\""
-    elif play_result and play_result.dice_roll:
-        off_roll_str = f"O:{play_result.dice_roll}→\"{play_result.raw_result}\""
-    
-    # Build defense roll string
-    def_result = penalty_choice.original_defense_result or (play_result.defense_modifier if play_result else "")
-    if def_dice_match and def_result:
-        def_roll_str = f"D:{def_dice_match.group(1)}→\"{def_result}\""
-    elif def_result:
-        def_roll_str = f"D:\"{def_result}\""
-    
-    if off_roll_str or def_roll_str:
-        roll_parts = [p for p in [off_roll_str, def_roll_str] if p]
+    # For punt/kickoff penalties, get dice info from pending state
+    if is_punt_penalty and hasattr(game, '_pending_punt_state'):
+        state = game._pending_punt_state
+        punt_roll = state.get('punt_roll', 0)
+        punt_result = state.get('punt_result', '')
+        return_yards = state.get('return_yards', 0)
+        
+        # Format: (P:14→"OFF 15" | reroll:15→"40" | R:10→"10")
+        roll_parts = []
+        roll_parts.append(f"P:{punt_roll}→\"{punt_result}\"")
+        
+        # If there was a reroll for actual yardage, show it
+        if penalty_choice.reroll_log:
+            for log_entry in penalty_choice.reroll_log:
+                roll_parts.append(f"reroll: {log_entry}")
+        
+        # Show return roll if there was a return
+        if return_yards > 0:
+            roll_parts.append(f"R:→\"{return_yards}\"")
+        
         print(f"\n  ({' | '.join(roll_parts)})")
+    elif is_kickoff_penalty and hasattr(game, '_pending_kickoff_state'):
+        state = game._pending_kickoff_state
+        kick_roll = state.get('kick_roll', 0)
+        kick_result = state.get('kick_result', '')
+        return_yards = state.get('return_yards', 0)
+        
+        roll_parts = []
+        roll_parts.append(f"K:{kick_roll}→\"{kick_result}\"")
+        
+        if return_yards > 0:
+            roll_parts.append(f"R:→\"{return_yards}\"")
+        
+        print(f"\n  ({' | '.join(roll_parts)})")
+    else:
+        # Standard scrimmage play - show O:/D: format
+        off_roll_str = ""
+        def_roll_str = ""
+        
+        # Try to extract dice descriptions from play_result.description
+        # Format is: "... [Off: B2+W5+W3=28, Def: R1+G2=12]"
+        desc = play_result.description if play_result else ""
+        off_dice_match = re.search(r'\[Off: (B\d\+W\d\+W\d=\d+)', desc)
+        def_dice_match = re.search(r'Def: (R\d\+G\d=\d+)\]', desc)
+        
+        # Build offense roll string
+        if off_dice_match and play_result:
+            off_roll_str = f"O:{off_dice_match.group(1)}→\"{play_result.raw_result}\""
+        elif play_result and play_result.dice_roll:
+            off_roll_str = f"O:{play_result.dice_roll}→\"{play_result.raw_result}\""
+        
+        # Build defense roll string
+        def_result = penalty_choice.original_defense_result or (play_result.defense_modifier if play_result else "")
+        if def_dice_match and def_result:
+            def_roll_str = f"D:{def_dice_match.group(1)}→\"{def_result}\""
+        elif def_result:
+            def_roll_str = f"D:\"{def_result}\""
+        
+        if off_roll_str or def_roll_str:
+            roll_parts = [p for p in [off_roll_str, def_roll_str] if p]
+            print(f"\n  ({' | '.join(roll_parts)})")
 
     # Show reroll log if there were rerolls (for detailed penalty tracking)
     if penalty_choice.reroll_log:

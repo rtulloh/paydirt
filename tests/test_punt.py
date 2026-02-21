@@ -1366,3 +1366,34 @@ class TestPuntPenaltyDisplayLogic:
         # New position should be 17 - 8 = 9 (own 9)
         new_position = ball_position - adjusted_yards
         assert new_position == 9
+    
+    def test_punt_penalty_stores_dice_roll_for_display(self, game):
+        """Punt penalty should store punt_roll in _pending_punt_state for dice display.
+        
+        This ensures handle_penalty_decision can show dice rolls like:
+        (P:14→"OFF 15" | R:→"10")
+        """
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 14 for punt chart (OFF 15), roll 15 for reroll (40 yards), roll 10 for return
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 15"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert outcome.pending_penalty_decision is True
+            assert hasattr(game, '_pending_punt_state')
+            
+            # Verify dice roll info is stored for display
+            state = game._pending_punt_state
+            assert 'punt_roll' in state
+            assert state['punt_roll'] == 14
+            assert 'punt_result' in state
+            assert state['punt_result'] == "OFF 15"
+            assert 'return_yards' in state
+            assert state['return_yards'] == 10
