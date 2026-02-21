@@ -1886,12 +1886,15 @@ class PaydirtGameEngine:
         # Handle penalty on punt (before the ball is kicked)
         punt_penalty_yards = 0
         is_punt_offensive_penalty = False
+        punt_penalty_auto_first_down = False
         if is_penalty:
-            # Parse penalty yardage from result like "OFF 15" or "DEF 10"
-            penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', punt_result.upper())
+            # Parse penalty yardage from result like "OFF 15", "DEF 10", or "DEF 5X"
+            # X modifier means automatic first down
+            penalty_match = re.search(r'(OFF|DEF)\s*(\d+)(X)?', punt_result.upper())
             if penalty_match:
                 punt_penalty_yards = int(penalty_match.group(2))
                 is_punt_offensive_penalty = penalty_match.group(1) == "OFF"
+                punt_penalty_auto_first_down = penalty_match.group(3) == "X"
             
             # Re-roll to get actual punt yardage
             reroll, reroll_desc = roll_chart_dice()
@@ -2188,17 +2191,21 @@ class PaydirtGameEngine:
                     accept_pos = 99
                 
                 # Check if accepting would give a first down
-                would_get_first_down = punt_penalty_yards >= ytg_before
+                # X modifier (e.g., DEF 5X) means automatic first down regardless of ytg
+                would_get_first_down = punt_penalty_auto_first_down or punt_penalty_yards >= ytg_before
                 
                 if would_get_first_down:
-                    accept_desc = f"Accept penalty: 1st down at {format_field_position(accept_pos)}"
+                    if punt_penalty_auto_first_down:
+                        accept_desc = f"Accept penalty: 1st down at {format_field_position(accept_pos)} (auto first down)"
+                    else:
+                        accept_desc = f"Accept penalty: 1st down at {format_field_position(accept_pos)}"
                 else:
                     new_ytg = ytg_before - punt_penalty_yards
                     accept_desc = f"Accept penalty: 4th and {new_ytg} at {format_field_position(accept_pos)}"
                 
                 accept_option = PenaltyOption(
                     penalty_type="DEF",
-                    raw_result=f"DEF {punt_penalty_yards}",
+                    raw_result=f"DEF {punt_penalty_yards}{'X' if punt_penalty_auto_first_down else ''}",
                     yards=punt_penalty_yards,
                     description=accept_desc,
                     auto_first_down=would_get_first_down
@@ -2233,6 +2240,7 @@ class PaydirtGameEngine:
                     'would_be_td': would_be_td,
                     'punt_penalty_yards': punt_penalty_yards,
                     'is_offensive_penalty': False,
+                    'punt_penalty_auto_first_down': punt_penalty_auto_first_down,
                     'short_drop': short_drop,
                     'coffin_corner_yards': coffin_corner_yards,
                     'is_fair_catch': is_fair_catch,
@@ -2242,7 +2250,8 @@ class PaydirtGameEngine:
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
                 
-                description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards} on receiving team. Kicking team chooses: accept OR decline."
+                penalty_suffix = "X" if punt_penalty_auto_first_down else ""
+                description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards}{penalty_suffix} on receiving team. Kicking team chooses: accept OR decline."
                 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -2477,14 +2486,16 @@ class PaydirtGameEngine:
                 self.state.ball_position = new_pos
                 
                 # Check if penalty yards give a first down
-                # Original situation was 4th down with ytg_before yards to go
+                # X modifier means automatic first down regardless of ytg
                 ytg_before = state.get('ytg_before', 10)
-                got_first_down = penalty_yards >= ytg_before
+                auto_first_down = state.get('punt_penalty_auto_first_down', False)
+                got_first_down = auto_first_down or penalty_yards >= ytg_before
                 
+                penalty_suffix = "X" if auto_first_down else ""
                 if got_first_down:
                     self.state.down = 1
                     self.state.yards_to_go = min(10, 100 - new_pos)
-                    description = f"Kicking team accepts penalty: DEF {penalty_yards}. 1st down at {self.state.field_position_str()}."
+                    description = f"Kicking team accepts penalty: DEF {penalty_yards}{penalty_suffix}. 1st down at {self.state.field_position_str()}."
                 else:
                     # Still 4th down, but with reduced yards to go
                     self.state.down = 4

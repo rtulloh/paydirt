@@ -724,6 +724,35 @@ class TestPuntPenalties:
             assert game.state.down == 1
             assert final_outcome.first_down is True
     
+    def test_def_5x_auto_first_down(self, game):
+        """DEF 5X (X modifier) should give automatic first down even on 4th and 10."""
+        game.state.ball_position = 30
+        game.state.yards_to_go = 10  # 4th and 10
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 1: punt chart (DEF 5X), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            # DEF 5X = automatic first down (X modifier)
+            game.state.possession_team.special_teams.punt[14] = "DEF 5X"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            # Description should mention auto first down
+            assert "auto first down" in outcome.penalty_choice.penalty_options[0].description.lower()
+            
+            # Kicking team accepts penalty
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            
+            # Ball moves forward 5 yards (30 + 5 = 35), automatic first down
+            assert game.state.ball_position == 35
+            assert game.state.is_home_possession is True
+            assert game.state.down == 1  # First down due to X modifier
+            assert final_outcome.first_down is True
+    
     def test_offsetting_penalties_on_punt_replay_down(self, game):
         """When punt chart penalty re-roll results in opposite penalty type, penalties offset and down is replayed."""
         game.state.ball_position = 30
