@@ -797,7 +797,7 @@ class TestPuntPenalties:
             assert outcome.pending_penalty_decision is True
             
             # Kicking team declines penalty, takes punt result
-            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            game.apply_punt_penalty_decision(outcome, accept_penalty=False)
             
             # Punt 40 yards from 30 = lands at 70 = opponent's 30
             # Downed at opponent's 30 (no return, no penalty applied)
