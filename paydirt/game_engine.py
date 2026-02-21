@@ -3736,6 +3736,11 @@ class PaydirtGameEngine:
                     self.state.two_minute_warning_called = True
                     two_minute_warning = True
 
+        # Clamp sub-second residuals to 0 to prevent phantom plays at "0:00"
+        # (e.g., 0.003 minutes displays as 0:00 but doesn't trigger quarter end)
+        if 0 < self.state.time_remaining < 0.0167:  # Less than 1 second
+            self.state.time_remaining = 0
+
         if self.state.time_remaining <= 0:
             self.state.time_remaining = 0
             # Don't advance quarter if untimed down is pending (defensive penalty at 0:00)

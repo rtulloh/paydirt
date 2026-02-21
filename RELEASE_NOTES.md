@@ -3,10 +3,14 @@
 ## Version 1.5.1 (February 2026)
 
 ### Bug Fixes
+- **Half not ending at 0:00**: Fixed a bug where a play could randomly use just enough clock time to leave a sub-second residual (e.g., 0.003 minutes) that displayed as "0:00" but was technically positive, preventing the quarter from advancing. The game would prompt for another play at "Q2 0:00" instead of going to halftime. The `_use_time()` method now clamps any residual under 1 second to exactly 0 so the quarter-end logic triggers correctly.
+- **Game loop safety net for quarter end**: Added a safety net in both the `run_interactive_game` and `resume_game` loops to force quarter advancement when time is effectively zero at Q1-Q3, preventing any edge case from allowing play to continue past the end of a half.
+- **Timeout clock residual**: Fixed `_apply_timeout()` to clamp residuals under 1 second to 0, preventing timeouts from leaving the game in an inconsistent state.
 - **Breakaway commentary on negative yardage**: Fixed commentary incorrectly using exciting breakaway language (e.g., "LOOK OUT! Wilbert Montgomery has daylight!") when the B column roll produced negative yardage (e.g., -10 yards). Breakaway commentary now correctly uses loss language for negative yards and no-gain language for zero yards.
 
 ### Test Coverage
-- **1080 unit tests** passing
+- **1087 unit tests** passing
+- Added 7 new tests for sub-second clock clamping: Q1-Q4 quarter advancement, non-clamping above threshold, exact zero handling, and halftime timeout reset
 - Added 6 new tests for breakaway commentary: positive yards, negative yards (no daylight), negative yards (loss language), zero yards, touchdown, and negative yards with no touchdown call
 
 ## Version 1.5 (February 2026)

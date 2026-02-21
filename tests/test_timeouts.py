@@ -419,3 +419,102 @@ class TestFinalSecondsClockManagement:
         # Play should complete (result varies based on dice)
         assert outcome is not None
         assert outcome.play_type == PlayType.HAIL_MARY
+
+
+class TestSubSecondClockClamping:
+    """Tests for sub-second clock residual clamping.
+
+    When _use_time() consumes most of the remaining time but leaves less than
+    1 second (0.0167 minutes), the residual displays as 0:00 but is technically
+    > 0, preventing the quarter from advancing. The fix clamps any residual
+    under 1 second to 0 so the quarter-end logic triggers correctly.
+    """
+
+    def test_sub_second_residual_clamped_to_zero_q2(self, game):
+        """Sub-second residual in Q2 should be clamped to 0 and quarter should advance."""
+        game.state.quarter = 2
+        # 10 seconds remaining = 0.1667 minutes
+        game.state.time_remaining = 10 / 60.0
+        game.state.two_minute_warning_called = True
+
+        # Use 9.5 seconds - leaves ~0.5 seconds which is < 1 second threshold
+        game._use_time(9.5)
+
+        # Should have advanced to Q3 (sub-second residual clamped to 0)
+        assert game.state.quarter == 3
+        assert game.state.time_remaining == 15.0
+
+    def test_sub_second_residual_clamped_to_zero_q1(self, game):
+        """Sub-second residual in Q1 should be clamped to 0 and quarter should advance."""
+        game.state.quarter = 1
+        game.state.time_remaining = 5 / 60.0  # 5 seconds
+
+        # Use 4.5 seconds - leaves ~0.5 seconds
+        game._use_time(4.5)
+
+        assert game.state.quarter == 2
+        assert game.state.time_remaining == 15.0
+
+    def test_sub_second_residual_clamped_to_zero_q3(self, game):
+        """Sub-second residual in Q3 should be clamped to 0 and quarter should advance."""
+        game.state.quarter = 3
+        game.state.time_remaining = 8 / 60.0  # 8 seconds
+
+        # Use 7.5 seconds
+        game._use_time(7.5)
+
+        assert game.state.quarter == 4
+        assert game.state.time_remaining == 15.0
+
+    def test_sub_second_residual_clamped_to_zero_q4(self, game):
+        """Sub-second residual in Q4 should be clamped to 0 and trigger game end."""
+        game.state.quarter = 4
+        game.state.time_remaining = 6 / 60.0  # 6 seconds
+        game.state.home_score = 14
+        game.state.away_score = 7  # Not tied
+
+        # Use 5.5 seconds
+        game._use_time(5.5)
+
+        assert game.state.time_remaining == 0
+        assert game.state.game_over is True
+
+    def test_more_than_one_second_not_clamped(self, game):
+        """Time remaining > 1 second should NOT be clamped."""
+        game.state.quarter = 2
+        game.state.time_remaining = 10 / 60.0  # 10 seconds
+        game.state.two_minute_warning_called = True
+
+        # Use 7 seconds - leaves 3 seconds (> 1 second threshold)
+        game._use_time(7)
+
+        # Should still be in Q2 with ~3 seconds
+        assert game.state.quarter == 2
+        assert game.state.time_remaining > 0.0167  # More than 1 second
+
+    def test_exact_zero_still_advances_quarter(self, game):
+        """Time going to exactly 0 should still advance the quarter."""
+        game.state.quarter = 2
+        game.state.time_remaining = 10 / 60.0
+        game.state.two_minute_warning_called = True
+
+        # Use exactly 10 seconds
+        game._use_time(10)
+
+        assert game.state.quarter == 3
+        assert game.state.time_remaining == 15.0
+
+    def test_halftime_timeouts_reset_on_sub_second_clamp(self, game):
+        """Halftime timeout reset should work when sub-second clamp triggers Q2→Q3."""
+        game.state.quarter = 2
+        game.state.time_remaining = 6 / 60.0  # 6 seconds
+        game.state.two_minute_warning_called = True
+        game.state.home_timeouts = 1
+        game.state.away_timeouts = 0
+
+        # Use 5.5 seconds - triggers sub-second clamp and Q2→Q3
+        game._use_time(5.5)
+
+        assert game.state.quarter == 3
+        assert game.state.home_timeouts == 3
+        assert game.state.away_timeouts == 3

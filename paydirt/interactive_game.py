@@ -1968,7 +1968,9 @@ def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_bef
     """
     # With timeout, play only uses 10 seconds (0.167 minutes)
     time_after_timeout = time_before_play - 0.167
-    if time_after_timeout < 0:
+    # Clamp to 0 if less than 1 second remains (avoids tiny positive residuals
+    # from floating-point arithmetic that display as 0:00 but prevent quarter end)
+    if time_after_timeout < 0.0167:  # Less than 1 second
         time_after_timeout = 0
     game.state.time_remaining = time_after_timeout
     
@@ -2687,15 +2689,20 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             last_quarter = game.state.quarter
 
         # Check if quarter ended or overtime needed
+        # Use < 0.0167 (1 second) threshold to catch tiny positive residuals
+        # from floating-point arithmetic in timeout calculations that display as 0:00
+        time_effectively_zero = game.state.time_remaining < 0.0167
         # But first check for untimed down (defensive penalty at 0:00)
         is_untimed_down = False
-        if game.state.time_remaining <= 0 and game.has_untimed_down():
+        if time_effectively_zero and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
             print("  The quarter cannot end on an accepted defensive penalty.")
             is_untimed_down = True
             # Don't clear the flag yet - it prevents quarter from advancing during _use_time
             # We'll clear it after the untimed play completes
-        elif game.state.time_remaining <= 0:
+        elif time_effectively_zero:
+            # Clamp any tiny residual to exactly 0
+            game.state.time_remaining = 0
             if game.state.is_overtime:
                 # End of OT period - game engine handles this
                 if game.state.game_over:
@@ -2737,10 +2744,15 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 else:
                     # Game over (not tied)
                     break
-            else:
-                # Normal quarter change - this path is for Q4 end only now
-                # (Q1-Q3 transitions are handled by the quarter change detection above)
-                pass
+            elif game.state.quarter < 4:
+                # Safety net: time expired in Q1-Q3 but quarter wasn't advanced
+                # (can happen if timeout reverted the quarter with tiny residual time)
+                # Force the quarter transition that _use_time() would normally handle
+                game.state.quarter += 1
+                game.state.time_remaining = 15.0
+                if game.state.quarter == 3:
+                    game.state.reset_timeouts_for_half()
+                continue  # Re-enter loop to handle quarter change detection
 
         # Determine if human is on offense or defense
         is_human_offense = (game.state.is_home_possession == human_is_home)
@@ -3207,11 +3219,16 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             last_quarter = game.state.quarter
 
         # Check for end of game conditions
+        # Use < 0.0167 (1 second) threshold to catch tiny positive residuals
+        # from floating-point arithmetic in timeout calculations that display as 0:00
+        time_effectively_zero = game.state.time_remaining < 0.0167
         is_untimed_down = False
-        if game.state.time_remaining <= 0 and game.has_untimed_down():
+        if time_effectively_zero and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
             is_untimed_down = True
-        elif game.state.time_remaining <= 0:
+        elif time_effectively_zero:
+            # Clamp any tiny residual to exactly 0
+            game.state.time_remaining = 0
             if game.state.is_overtime:
                 if game.state.game_over:
                     break
@@ -3246,6 +3263,15 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     continue
                 else:
                     break
+            elif game.state.quarter < 4:
+                # Safety net: time expired in Q1-Q3 but quarter wasn't advanced
+                # (can happen if timeout reverted the quarter with tiny residual time)
+                # Force the quarter transition that _use_time() would normally handle
+                game.state.quarter += 1
+                game.state.time_remaining = 15.0
+                if game.state.quarter == 3:
+                    game.state.reset_timeouts_for_half()
+                continue  # Re-enter loop to handle quarter change detection
 
         is_human_offense = (game.state.is_home_possession == human_is_home)
         display_game_status(game, human_chart, is_human_offense)
