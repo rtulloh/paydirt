@@ -42,9 +42,24 @@
 - **QB kneel commentary**: Fixed commentary incorrectly referencing the running back instead of the quarterback when a QB takes a knee. Now shows "Phil Simms is hit in the backfield!" instead of "Gerald Riggs is hit in the backfield!"
 - **Punt return dice display**: Added return dice roll to display in format `(P:17→"32" | R:10→"13" | return)` showing both punt and return dice rolls
 
+### AI Penalty Decision Handling
+- **Correct apply methods for punt/kickoff**: `handle_penalty_decision` now routes to `apply_punt_penalty_decision` and `apply_kickoff_penalty_decision` instead of the generic `apply_penalty_decision`
+- **CPU decision logic**: Added intelligent CPU decision-making for punt/kickoff penalties (generally accepts penalties, takes first downs)
+- **Kickoff penalty handling**: All kickoff locations (opening, halftime, overtime, post-score) now properly handle penalty decisions
+
+### Penalty Display Improvements
+- **Fixed punt penalty option 1**: Now shows "Punt stands as called" instead of incorrectly showing "TURNOVER ON DOWNS"
+- **Half-distance position fix**: Penalty descriptions now show the adjusted position after half-distance rule (e.g., "Replay punt from own 9" not "from own 2")
+- **Dice roll display for punt/kickoff penalties**: Shows rolls in format `(P:14→"OFF 15" | reroll: 15→40 | R:→"10")` for easier diagnosis
+
+### Documentation
+- **Prerequisites section**: Added Python installation instructions for macOS, Linux, and Windows to README
+
 ### Test Coverage Additions
-- **1070 unit tests** passing
+- **1074 unit tests** passing
 - Added test for punt return dice roll tracking
+- Added tests for punt penalty display logic (play_type, final_position, half-distance)
+- Added test for dice roll storage in _pending_punt_state
 
 ---
 
