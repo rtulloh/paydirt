@@ -2240,11 +2240,18 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 # Offensive penalty - offense loses yards, increases yards to go
                 pen_down_str = f"{game.state.down}{['st','nd','rd','th'][min(game.state.down-1,3)]} and {game.state.yards_to_go + adjusted_yards}"
 
-            # Show half-distance note if penalty was reduced
-            half_dist_note = ""
+            # Build description - use adjusted position if half-distance was applied
             if adjusted_yards != opt.yards:
-                half_dist_note = f" (half-distance: {adjusted_yards} yds)"
-            print(f"    [{i+2}] Accept PENALTY: {opt.description}{half_dist_note} -> {pen_down_str} at {pen_field_str}")
+                # Half-distance was applied - rebuild description with correct position
+                if is_punt_penalty and "Replay punt" in opt.description:
+                    display_desc = f"Replay punt from {pen_field_str} (half-distance: {adjusted_yards} yds)"
+                elif is_kickoff_penalty and "Re-kick" in opt.description:
+                    display_desc = f"Re-kick from {pen_field_str} (half-distance: {adjusted_yards} yds)"
+                else:
+                    display_desc = f"{opt.description} (half-distance: {adjusted_yards} yds)"
+            else:
+                display_desc = opt.description
+            print(f"    [{i+2}] Accept PENALTY: {display_desc} -> {pen_down_str} at {pen_field_str}")
 
         while True:
             choice = input("\n  Your choice (1 for play, or penalty number): ").strip()
