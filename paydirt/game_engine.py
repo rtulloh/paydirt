@@ -400,7 +400,7 @@ class PaydirtGameEngine:
             elif actual_return < 0:
                 return_commentary = " Outstanding special teams coverage!"
 
-        dice_line = f"(KO:{dice_roll}→\"{ko_yards}\" | RT:{dice_roll}→\"{actual_return}\")"
+        dice_line = f"(KO:{dice_roll}→\"{ko_result}\" | RT:{dice_roll}→\"{actual_return}\")"
         
         # Use "Safety free kick" for kicks from own 20
         kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"

@@ -347,7 +347,7 @@ class TestKickoffDiceDisplay:
             
             outcome = game.kickoff(kicking_home=True)
             
-            assert "(KO:11→" in outcome.description
+            assert "(KO:11→\"OB\"" in outcome.description
             assert "out of bounds" in outcome.description
 
     def test_kickoff_negative_return_dice_format(self, game):
