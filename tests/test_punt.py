@@ -512,8 +512,8 @@ class TestPuntReturnPenalties:
 class TestPuntPenalties:
     """Tests for penalty handling on the punt itself (before the ball is kicked)."""
     
-    def test_defensive_penalty_on_punt_adds_yardage(self, game):
-        """DEF penalty on punt should add yardage to the return result."""
+    def test_defensive_penalty_on_punt_offers_choice(self, game):
+        """DEF penalty on punt should offer receiving team a choice: replay OR keep result + yardage."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         
@@ -529,11 +529,58 @@ class TestPuntPenalties:
             
             outcome = game.run_play(PlayType.PUNT, None)
             
+            # Should return pending decision
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            assert len(outcome.penalty_choice.penalty_options) == 2
+            assert "replay" in outcome.penalty_choice.penalty_options[0].description.lower()
+            assert "keep" in outcome.penalty_choice.penalty_options[1].description.lower()
+    
+    def test_defensive_penalty_on_punt_keep_result(self, game):
+        """When receiving team chooses to keep result, penalty yards are added."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Choose to keep result + yardage (replay_punt=False)
+            final_outcome = game.apply_punt_penalty_decision(outcome, replay_punt=False)
+            
             # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
             # Return 10 yards = opponent's 45
             # DEF 5 penalty adds 5 yards = opponent's 50
             assert game.state.ball_position == 50
-            assert "DEF 5 added" in outcome.description
+            assert "keeps result" in final_outcome.description.lower()
+    
+    def test_defensive_penalty_on_punt_replay(self, game):
+        """When receiving team chooses to replay, punt is replayed from LOS minus penalty."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Choose to replay punt (replay_punt=True)
+            final_outcome = game.apply_punt_penalty_decision(outcome, replay_punt=True)
+            
+            # Penalty moves ball back 5 yards from original LOS (30 - 5 = 25)
+            # Possession should still be with punting team (home)
+            assert game.state.ball_position == 25
+            assert game.state.is_home_possession is True  # Still punting team's ball
+            assert "replay" in final_outcome.description.lower()
     
     def test_offensive_penalty_on_punt_subtracts_yardage(self, game):
         """OFF penalty on punt should subtract yardage from the return result."""
@@ -556,7 +603,7 @@ class TestPuntPenalties:
             assert "OFF 5 - offense penalized" in outcome.description
     
     def test_punt_penalty_with_no_return(self, game):
-        """Punt penalty should work even when there's no return (fair catch or downed)."""
+        """DEF penalty on punt with no return should still offer choice."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         
@@ -571,18 +618,23 @@ class TestPuntPenalties:
             
             outcome = game.run_play(PlayType.PUNT, None)
             
+            # Should return pending decision for DEF penalty
+            assert outcome.pending_penalty_decision is True
+            
+            # Choose to keep result + yardage
+            final_outcome = game.apply_punt_penalty_decision(outcome, replay_punt=False)
+            
             # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
             # Downed at opponent's 35 (no return)
             # DEF 5 adds 5 yards = opponent's 40
             assert game.state.ball_position == 40
-            assert "DEF 5 added" in outcome.description
 
 
 class TestPuntReturnTDWithPenalty:
     """Tests for TD on punt return with penalty - penalty applies to kickoff."""
     
-    def test_punt_return_td_with_def_penalty_stores_for_kickoff(self, game):
-        """When punt is returned for TD with DEF penalty, penalty should apply to kickoff."""
+    def test_punt_return_td_with_def_penalty_offers_choice(self, game):
+        """When punt is returned for TD with DEF penalty, receiving team gets choice."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         game.state.home_score = 0
@@ -599,8 +651,16 @@ class TestPuntReturnTDWithPenalty:
             
             outcome = game._handle_punt()
             
+            # Should return pending decision
+            assert outcome.pending_penalty_decision is True
+            # One option should mention TOUCHDOWN
+            assert "TOUCHDOWN" in outcome.penalty_choice.penalty_options[1].description
+            
+            # Choose to keep result (TD + penalty to kickoff)
+            final_outcome = game.apply_punt_penalty_decision(outcome, replay_punt=False)
+            
             # TD should be scored
-            assert outcome.touchdown
+            assert final_outcome.touchdown
             # Penalty should be stored for kickoff
             assert game.state.pending_kickoff_penalty_yards == 5
             assert not game.state.pending_kickoff_penalty_is_offense  # DEF penalty

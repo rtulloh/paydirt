@@ -8,7 +8,7 @@ from typing import Optional
 from .chart_loader import TeamChart, load_team_chart
 from .utils import clamp_ball_position
 from .play_resolver import (
-    PlayType, DefenseType, PlayResult, ResultType, PenaltyChoice,
+    PlayType, DefenseType, PlayResult, ResultType, PenaltyChoice, PenaltyOption,
     resolve_play, roll_chart_dice,
     parse_result_string, roll_white_dice, resolve_qb_sneak, resolve_hail_mary,
     resolve_play_with_penalties, resolve_field_goal_with_penalties
@@ -2049,9 +2049,6 @@ class PaydirtGameEngine:
                     else:
                         return_desc = f"tackled for a loss of {abs(return_yards)} yards! Outstanding special teams coverage!"
 
-        # Switch possession and set ball position
-        self.state.switch_possession()
-
         # Final position is receiving position plus return yards (before penalty)
         final_position = receiving_position + return_yards
 
@@ -2063,6 +2060,88 @@ class PaydirtGameEngine:
         # Use return penalty if set, otherwise use punt penalty
         combined_penalty_yards = return_penalty_yards if return_penalty_yards > 0 else punt_penalty_yards
         combined_is_offensive = return_penalty_is_offensive if return_penalty_yards > 0 else is_punt_offensive_penalty
+
+        # Check if DEF penalty on punt chart (punting team foul) - receiving team gets a choice
+        # Per NFL rules: receiving team can choose to replay the punt OR keep result + yardage
+        # NOTE: Do NOT switch possession yet - wait for penalty decision
+        if punt_penalty_yards > 0 and not is_punt_offensive_penalty and return_penalty_yards == 0:
+            # DEF penalty on punt - offer choice to receiving team
+            # Don't apply state changes yet - return pending decision
+            
+            # Calculate what happens if they keep the result (Option 2: tack on yardage)
+            keep_position = final_position + punt_penalty_yards
+            keep_td = keep_position >= 100
+            if keep_td:
+                keep_position = 100
+            
+            # Option 1: Replay the punt (penalty from original LOS)
+            replay_option = PenaltyOption(
+                penalty_type="DEF",
+                raw_result=f"DEF {punt_penalty_yards}",
+                yards=punt_penalty_yards,
+                description=f"Replay punt from {field_pos_before} minus {punt_penalty_yards} yards",
+                auto_first_down=False
+            )
+            
+            # Option 2: Keep result + yardage
+            keep_desc = f"Keep return, add {punt_penalty_yards} yards → {self.state.field_position_str() if not keep_td else 'TOUCHDOWN'}"
+            keep_option = PenaltyOption(
+                penalty_type="DEF",
+                raw_result=f"KEEP+{punt_penalty_yards}",
+                yards=punt_penalty_yards,
+                description=keep_desc,
+                auto_first_down=False
+            )
+            
+            # Create penalty choice - receiving team is offended
+            penalty_choice = PenaltyChoice(
+                play_result=parse_result_string(punt_result),
+                penalty_options=[replay_option, keep_option],
+                offended_team="defense",  # Receiving team (was on defense during punt)
+                offsetting=False
+            )
+            
+            # Store punt state for apply_punt_penalty_decision
+            self._pending_punt_state = {
+                'field_pos_before': field_pos_before,
+                'down_before': down_before,
+                'ytg_before': ytg_before,
+                'punt_yards': punt_yards,
+                'punt_result': punt_result,
+                'punt_roll': punt_roll,
+                'receiving_position': receiving_position,
+                'return_yards': return_yards,
+                'return_desc': return_desc,
+                'final_position': final_position,
+                'would_be_td': would_be_td,
+                'punt_penalty_yards': punt_penalty_yards,
+                'short_drop': short_drop,
+                'coffin_corner_yards': coffin_corner_yards,
+                'is_fair_catch': is_fair_catch,
+                'punt_from': punt_from,
+            }
+            
+            parsed_result = parse_result_string(punt_result)
+            parsed_result.dice_roll = punt_roll
+            
+            description = f"Punt {punt_yards} yards, returned {return_yards} yards. PENALTY: DEF {punt_penalty_yards} on punting team. Receiving team chooses: replay punt OR keep result + yardage."
+            
+            outcome = PlayOutcome(
+                play_type=PlayType.PUNT,
+                defense_type=DefenseType.STANDARD,
+                result=parsed_result,
+                yards_gained=punt_yards,
+                touchdown=False,
+                field_position_before=field_pos_before,
+                field_position_after="pending",
+                description=description,
+                penalty_choice=penalty_choice,
+                pending_penalty_decision=True
+            )
+            return outcome
+
+        # Switch possession now (after DEF penalty check passed)
+        self.state.switch_possession()
 
         if combined_penalty_yards > 0:
             if combined_is_offensive:
@@ -2077,7 +2156,7 @@ class PaydirtGameEngine:
                     effective_penalty = self._apply_half_the_distance(final_position, combined_penalty_yards)
                     final_position -= effective_penalty
             else:
-                # DEF penalty on kicking team
+                # DEF penalty on kicking team (from return chart, not punt chart)
                 if would_be_td:
                     # TD stands, penalty applied to kickoff spot
                     touchdown = True
@@ -2168,6 +2247,107 @@ class PaydirtGameEngine:
         self._use_time(random.uniform(5, 12))
 
         return outcome
+
+    def apply_punt_penalty_decision(self, outcome: PlayOutcome, replay_punt: bool) -> PlayOutcome:
+        """
+        Apply the receiving team's punt penalty decision.
+        
+        Per NFL rules, when the punting team commits a penalty, the receiving team can:
+        - Option 1 (replay_punt=True): Replay the punt from original LOS minus penalty yards
+        - Option 2 (replay_punt=False): Keep the return result, add penalty yards to final position
+        
+        Args:
+            outcome: The PlayOutcome with pending_penalty_decision=True
+            replay_punt: True to replay the punt, False to keep result + yardage
+        
+        Returns:
+            Updated PlayOutcome with game state applied
+        """
+        if not outcome.pending_penalty_decision or not hasattr(self, '_pending_punt_state'):
+            return outcome
+        
+        state = self._pending_punt_state
+        
+        if replay_punt:
+            # Option 1: Replay the punt from original LOS minus penalty yards
+            # Apply penalty to punting team's field position
+            penalty_yards = state['punt_penalty_yards']
+            original_pos = self.state.ball_position  # Still at original LOS
+            
+            # Penalty moves ball back for punting team (toward their own goal)
+            new_pos = original_pos - penalty_yards
+            if new_pos < 1:
+                new_pos = 1  # Can't go into own end zone
+            
+            self.state.ball_position = new_pos
+            self.state.down = 1  # Replay the down
+            self.state.yards_to_go = 10
+            
+            # Clear pending state
+            del self._pending_punt_state
+            
+            description = f"Receiving team accepts penalty: DEF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
+            
+            return PlayOutcome(
+                play_type=PlayType.PUNT,
+                defense_type=DefenseType.STANDARD,
+                result=outcome.result,
+                yards_gained=0,
+                touchdown=False,
+                field_position_before=state['field_pos_before'],
+                field_position_after=self.state.field_position_str(),
+                description=description,
+                penalty_applied=True
+            )
+        else:
+            # Option 2: Keep the return result, add penalty yards to final position
+            penalty_yards = state['punt_penalty_yards']
+            final_position = state['final_position'] + penalty_yards
+            
+            touchdown = False
+            if final_position >= 100:
+                touchdown = True
+                final_position = 100
+            
+            # Switch possession and apply final position
+            self.state.switch_possession()
+            self.state.ball_position = clamp_ball_position(final_position)
+            self.state.down = 1
+            self.state.yards_to_go = 10
+            
+            if touchdown:
+                # TD scored - store penalty for kickoff (per NFL rules)
+                self.state.pending_kickoff_penalty_yards = penalty_yards
+                self.state.pending_kickoff_penalty_is_offense = False  # DEF penalty
+                self._score_touchdown()
+            
+            # Clear pending state
+            del self._pending_punt_state
+            
+            punt_yards = state['punt_yards']
+            return_yards = state['return_yards']
+            
+            if touchdown:
+                description = f"Receiving team keeps result + {penalty_yards} yards: Punt {punt_yards} yards, returned {return_yards} yards = TOUCHDOWN! (DEF {penalty_yards} will apply to kickoff)"
+            else:
+                description = f"Receiving team keeps result + {penalty_yards} yards: Punt {punt_yards} yards, returned {return_yards} yards + {penalty_yards} penalty to {self.state.field_position_str()}."
+            
+            new_outcome = PlayOutcome(
+                play_type=PlayType.PUNT,
+                defense_type=DefenseType.STANDARD,
+                result=outcome.result,
+                yards_gained=punt_yards,
+                touchdown=touchdown,
+                field_position_before=state['field_pos_before'],
+                field_position_after=self.state.field_position_str(),
+                description=description,
+                penalty_applied=True
+            )
+            
+            self.play_log.append(new_outcome)
+            self._use_time(random.uniform(5, 12))
+            
+            return new_outcome
 
     def _evaluate_field_goal_result(self, fg_result: str, distance_to_goal: int,
                                      statistical_distance: int, spot_of_hold: int,
