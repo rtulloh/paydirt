@@ -77,7 +77,7 @@ class PaydirtGameEngine:
         Args:
             return_result: The initial return chart result (e.g., "OFF 15", "DEF 10", "20")
             return_chart: The return chart dict to re-roll from if needed
-            default_return: Default return yards when re-roll is also a penalty
+            default_return: Default return yards when chart has no valid entries (fallback only)
             
         Returns:
             tuple of (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
@@ -85,7 +85,7 @@ class PaydirtGameEngine:
         penalty_yards = 0
         is_offensive_penalty = False
         needs_rekick = False
-        return_yards = default_return
+        return_yards = None
         
         if "OFF" in return_result.upper() or "DEF" in return_result.upper():
             # Parse penalty from initial result
@@ -94,32 +94,44 @@ class PaydirtGameEngine:
                 penalty_yards = int(penalty_match.group(2))
                 is_offensive_penalty = penalty_match.group(1) == "OFF"
             
-            # Roll again for actual return yardage
-            reroll, _ = roll_chart_dice()
-            reroll_result = return_chart.get(reroll, str(default_return))
+            # Keep re-rolling until we get actual return yardage
+            max_rerolls = 10  # Safety limit
+            reroll_count = 0
             
-            # Check if re-roll is also a penalty
-            if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
-                reroll_is_offensive = "OFF" in reroll_result.upper()
-                if is_offensive_penalty != reroll_is_offensive:
-                    # Offsetting penalties (OFF + DEF) - need to rekick/repunt
-                    needs_rekick = True
+            while return_yards is None and reroll_count < max_rerolls:
+                reroll_count += 1
+                reroll, _ = roll_chart_dice()
+                reroll_result = return_chart.get(reroll, str(default_return))
+                
+                # Check if re-roll is also a penalty
+                if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
+                    reroll_is_offensive = "OFF" in reroll_result.upper()
+                    if is_offensive_penalty != reroll_is_offensive:
+                        # Offsetting penalties (OFF + DEF) - need to rekick/repunt
+                        needs_rekick = True
+                        return_yards = default_return  # Exit loop
+                    else:
+                        # Same type - take larger penalty and re-roll again
+                        reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
+                        if reroll_match:
+                            reroll_penalty = int(reroll_match.group(2))
+                            penalty_yards = max(penalty_yards, reroll_penalty)
+                        # Continue loop to get actual yardage
                 else:
-                    # Same type - take larger penalty
-                    reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
-                    if reroll_match:
-                        reroll_penalty = int(reroll_match.group(2))
-                        penalty_yards = max(penalty_yards, reroll_penalty)
-                    return_yards = default_return
-            else:
-                # Normal return yardage from re-roll
-                try:
-                    return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
-                except ValueError:
-                    return_yards = default_return
+                    # Normal return yardage from re-roll
+                    try:
+                        return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
+                    except ValueError:
+                        # Non-numeric, non-penalty result - continue rolling
+                        pass
+            
+            # Fallback only if chart has no valid yardage entries
+            if return_yards is None:
+                return_yards = default_return
         else:
             # No penalty - just return 0 penalty
             penalty_yards = 0
+            return_yards = default_return
         
         return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
 
