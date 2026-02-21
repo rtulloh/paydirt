@@ -177,9 +177,9 @@ class PaydirtGameEngine:
             self.state.pending_kickoff_penalty_is_offense = False
 
         # Check for penalty on kickoff chart (pre-return)
-        # On kickoff: kicking team = offense, receiving team = defense
-        # OFF penalty = receiving team foul → kicking team gets choice
-        # DEF penalty = kicking team foul → receiving team gets choice
+        # Chart penalties use scrimmage play perspective (kicking team = offense, receiving team = defense)
+        # OFF penalty = kicking team foul → receiving team gets choice
+        # DEF penalty = receiving team foul → kicking team gets choice
         if "OFF" in ko_result.upper() or "DEF" in ko_result.upper():
             ko_penalty_match = re.search(r'(OFF|DEF)\s*(\d+)(X)?', ko_result.upper())
             if ko_penalty_match:
@@ -2227,9 +2227,9 @@ class PaydirtGameEngine:
         combined_is_offensive = return_penalty_is_offensive if return_penalty_yards > 0 else is_punt_offensive_penalty
 
         # Check for penalty on punt chart that requires a choice
-        # Roles: Kicking team = OFFENSE, Receiving team = DEFENSE
-        # OFF penalty = kicking team foul → receiving team gets choice
-        # DEF penalty = receiving team foul → kicking team gets choice (may include auto first down)
+        # Chart penalties use scrimmage play perspective (punting team = offense, receiving team = defense)
+        # OFF penalty = punting team foul → receiving team gets choice
+        # DEF penalty = receiving team foul → punting team gets choice (X modifier = auto first down)
         # NOTE: Do NOT switch possession yet - wait for penalty decision
         if punt_penalty_yards > 0 and return_penalty_yards == 0:
             if is_punt_offensive_penalty:
