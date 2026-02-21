@@ -2,6 +2,93 @@
 
 A Python implementation of the classic Paydirt football board game, originally published by Avalon Hill.
 
+## Prerequisites
+
+This project requires **Python 3.9 or higher**. Follow the instructions below for your operating system.
+
+### macOS
+
+macOS comes with Python pre-installed, but it may be an older version. To install the latest Python:
+
+**Option 1: Using Homebrew (recommended)**
+```bash
+# Install Homebrew if you don't have it
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python
+brew install python
+
+# Verify installation
+python3 --version
+```
+
+**Option 2: Download from python.org**
+1. Visit [python.org/downloads](https://www.python.org/downloads/)
+2. Download the macOS installer
+3. Run the installer and follow the prompts
+
+### Linux
+
+Most Linux distributions include Python. To install or update:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+
+# Verify installation
+python3 --version
+```
+
+**Fedora:**
+```bash
+sudo dnf install python3 python3-pip
+
+# Verify installation
+python3 --version
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S python python-pip
+
+# Verify installation
+python3 --version
+```
+
+### Windows
+
+**Option 1: Microsoft Store (easiest)**
+1. Open the Microsoft Store
+2. Search for "Python 3.12" (or latest version)
+3. Click "Get" to install
+
+**Option 2: Download from python.org**
+1. Visit [python.org/downloads](https://www.python.org/downloads/)
+2. Download the Windows installer
+3. **Important:** Check "Add Python to PATH" during installation
+4. Run the installer and follow the prompts
+
+**Verify installation:**
+```cmd
+python --version
+```
+
+### Verify Your Installation
+
+After installing, verify Python is working:
+```bash
+# macOS/Linux
+python3 --version
+
+# Windows
+python --version
+```
+
+You should see output like `Python 3.12.x` (or higher).
+
+---
+
 ## Overview
 
 Paydirt is a football simulation game where you select an NFL team and call plays against a computer opponent. The outcome of each play is determined by dice rolls and team-specific charts that reflect each team's real-world strengths and weaknesses.
