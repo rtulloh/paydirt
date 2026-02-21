@@ -2,6 +2,18 @@
 
 ## Version 1.5 (February 2026)
 
+### Kickoff & Punt Penalty Handling Overhaul
+- **Kickoff chart penalties**: Added support for penalties on the kickoff chart itself (pre-return)
+  - DEF penalty (receiving team foul): Kicking team gets choice - accept (re-kick from adjusted spot) or decline
+  - OFF penalty (kicking team foul): Receiving team gets choice - accept (re-kick from adjusted spot) or decline
+  - Offsetting penalties on re-roll: Automatic re-kick from original spot
+- **Punt chart penalties with choice**: Penalties on punt chart now offer the offended team a choice
+  - OFF penalty (punting team foul): Receiving team chooses - replay punt from LOS minus penalty yards, or keep result plus penalty yards
+  - DEF penalty (receiving team foul): Punting team chooses - accept penalty (ball moves forward, potential first down), or decline and take punt result
+  - X modifier support (e.g., DEF 5X): Automatic first down for punting team when accepting penalty
+- **Removed default yardage bug**: No more 35-yard default punt or 20-yard default return - game re-rolls until actual yardage is obtained from chart
+- **Chart penalty perspective clarified**: Penalties use scrimmage play perspective (punting/kicking team = offense, receiving team = defense)
+
 ### Kickoff & Punt Return Penalty Consistency
 - **Re-roll for return yardage**: When a penalty occurs on a kickoff or punt return, the game now re-rolls for actual return yardage instead of using a default value
 - **Offsetting penalties**: If the re-roll results in an offsetting penalty (OFF + DEF), the play is reset and the kick is replayed
@@ -15,10 +27,13 @@
 - **Shared `_handle_return_penalty()` helper**: Both kickoff and punt returns use the same function for penalty handling (re-roll, offsetting, larger penalty selection)
 - **Shared `_apply_half_the_distance()` helper**: Centralized half-the-distance rule calculation
 - **Parameterized kickoff/punt**: Added `kickoff_spot` and `punt_from` parameters to eliminate duplicated safety kick code
-- **File size reduction**: `game_engine.py` reduced from 3593 to 3263 lines (-330 lines)
+- **New `apply_kickoff_penalty_decision()` method**: Handles kickoff chart penalty choices
+- **New `apply_punt_penalty_decision()` method**: Handles punt chart penalty choices
 
 ### Test Coverage
-- **1052 unit tests** passing
+- **1065 unit tests** passing
+- Added tests for kickoff chart penalty handling (DEF/OFF penalties, offsetting, choice mechanism)
+- Added tests for punt chart penalty handling (DEF/OFF penalties, X modifier, first down logic)
 - Added tests for kickoff/punt return penalty re-rolls
 - Added tests for offsetting penalties causing rekick/repunt
 - Added tests for larger penalty selection on same-type penalties
