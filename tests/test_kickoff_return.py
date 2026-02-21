@@ -202,6 +202,114 @@ class TestKickoffReturnPenalties:
             assert game.state.ball_position == 35
 
 
+class TestKickoffChartPenalties:
+    """Tests for penalties on the kickoff chart (pre-return)."""
+    
+    def test_def_penalty_on_kickoff_chart_offers_choice(self, game):
+        """DEF penalty on kickoff chart should offer receiving team a choice."""
+        # Set up DEF penalty on kickoff chart
+        game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
+        game.state.home_chart.special_teams.kickoff[11] = "60"  # Re-roll result
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 1: kickoff chart (DEF 5), Roll 2: re-roll (60 yards)
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11")]
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            # Should return pending decision for receiving team
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            assert outcome.penalty_choice.offended_team == "defense"  # Receiving team
+            assert "DEF 5" in outcome.description
+    
+    def test_def_penalty_on_kickoff_accept_rekicks_from_closer(self, game):
+        """When receiving team accepts DEF penalty, re-kick from closer spot."""
+        game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
+        game.state.home_chart.special_teams.kickoff[11] = "60"  # Re-roll result
+        game.state.home_chart.special_teams.kickoff[12] = "55"  # Re-kick result
+        game.state.away_chart.special_teams.kickoff_return[12] = "20"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 1: kickoff chart (DEF 5), Roll 2: re-roll (60 yards)
+            # Roll 3: re-kick (55 yards), uses same roll for return (20 yards)
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
+                (11, "B1+W0+W1=11"),  # Re-roll for yardage - 60
+                (12, "B1+W0+W2=12"),  # Re-kick roll - 55 yards kickoff, 20 return
+            ]
+            
+            outcome = game.kickoff(kicking_home=True)
+            assert outcome.pending_penalty_decision is True
+            
+            # Accept penalty - re-kick from 30 (35 - 5)
+            final_outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
+            
+            # Re-kick from 30: 55 yards = lands at 15 (100 - 30 - 55)
+            # Return 20 yards = 15 + 20 = 35
+            assert game.state.ball_position == 35
+            assert game.state.is_home_possession is False  # Receiving team has ball
+    
+    def test_def_penalty_on_kickoff_decline_takes_result(self, game):
+        """When receiving team declines DEF penalty, take kickoff result."""
+        game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
+        game.state.home_chart.special_teams.kickoff[11] = "60"  # Re-roll result
+        game.state.away_chart.special_teams.kickoff_return[10] = "25"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
+                (11, "B1+W0+W1=11"),  # Re-roll for yardage - 60
+            ]
+            
+            outcome = game.kickoff(kicking_home=True)
+            assert outcome.pending_penalty_decision is True
+            
+            # Decline penalty - take kickoff result
+            final_outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
+            
+            # Kickoff 60 yards from 35 = lands at 5 (100 - 35 - 60)
+            # Return 25 yards = 5 + 25 = 30
+            assert game.state.ball_position == 30
+            assert "penalty declined" in final_outcome.description.lower()
+    
+    def test_off_penalty_on_kickoff_chart_offers_choice_to_kicking_team(self, game):
+        """OFF penalty on kickoff chart should offer kicking team a choice."""
+        game.state.home_chart.special_teams.kickoff[10] = "OFF 10"
+        game.state.home_chart.special_teams.kickoff[11] = "55"  # Re-roll result
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11")]
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            # Should return pending decision for kicking team
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice.offended_team == "offense"  # Kicking team
+            assert "OFF 10" in outcome.description
+    
+    def test_offsetting_penalties_on_kickoff_chart_rekicks(self, game):
+        """Offsetting penalties on kickoff chart should cause re-kick."""
+        game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
+        game.state.home_chart.special_teams.kickoff[11] = "OFF 10"  # Re-roll - opposite type!
+        game.state.home_chart.special_teams.kickoff[12] = "55"  # Re-kick result
+        game.state.away_chart.special_teams.kickoff_return[12] = "20"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
+                (11, "B1+W0+W1=11"),  # Re-roll - OFF 10 (offsetting!)
+                (12, "B1+W0+W2=12"),  # Re-kick - normal result
+            ]
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            # Offsetting penalties should auto-rekick, no pending decision
+            assert outcome.pending_penalty_decision is False or outcome.pending_penalty_decision is None
+            # Ball should be at normal position from re-kick
+            assert game.state.is_home_possession is False
+
+
 class TestKickoffDiceDisplay:
     """Tests for kickoff dice display format."""
 
