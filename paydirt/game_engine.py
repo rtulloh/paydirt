@@ -2146,31 +2146,27 @@ class PaydirtGameEngine:
                 return outcome
             else:
                 # DEF penalty - receiving team committed foul, kicking team gets choice
-                # Check for auto first down (e.g., roughing the kicker)
-                # For now, assume DEF 15 = roughing (auto first down), DEF 5 = running into kicker (no auto first down)
-                auto_first_down = punt_penalty_yards >= 15
-                
                 # Calculate accept penalty position (ball moves forward for kicking team)
                 accept_pos = self.state.ball_position + punt_penalty_yards
                 if accept_pos > 99:
                     accept_pos = 99
                 
-                if auto_first_down:
-                    accept_option = PenaltyOption(
-                        penalty_type="DEF",
-                        raw_result=f"DEF {punt_penalty_yards}",
-                        yards=punt_penalty_yards,
-                        description=f"Accept penalty: 1st down at {format_field_position(accept_pos)} (auto first down)",
-                        auto_first_down=True
-                    )
+                # Check if accepting would give a first down
+                would_get_first_down = punt_penalty_yards >= ytg_before
+                
+                if would_get_first_down:
+                    accept_desc = f"Accept penalty: 1st down at {format_field_position(accept_pos)}"
                 else:
-                    accept_option = PenaltyOption(
-                        penalty_type="DEF",
-                        raw_result=f"DEF {punt_penalty_yards}",
-                        yards=punt_penalty_yards,
-                        description=f"Accept penalty: Replay punt from {format_field_position(accept_pos)}",
-                        auto_first_down=False
-                    )
+                    new_ytg = ytg_before - punt_penalty_yards
+                    accept_desc = f"Accept penalty: 4th and {new_ytg} at {format_field_position(accept_pos)}"
+                
+                accept_option = PenaltyOption(
+                    penalty_type="DEF",
+                    raw_result=f"DEF {punt_penalty_yards}",
+                    yards=punt_penalty_yards,
+                    description=accept_desc,
+                    auto_first_down=would_get_first_down
+                )
                 
                 decline_option = PenaltyOption(
                     penalty_type="DEF",
@@ -2201,7 +2197,6 @@ class PaydirtGameEngine:
                     'would_be_td': would_be_td,
                     'punt_penalty_yards': punt_penalty_yards,
                     'is_offensive_penalty': False,
-                    'auto_first_down': auto_first_down,
                     'short_drop': short_drop,
                     'coffin_corner_yards': coffin_corner_yards,
                     'is_fair_catch': is_fair_catch,
@@ -2211,10 +2206,7 @@ class PaydirtGameEngine:
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
                 
-                if auto_first_down:
-                    description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards} (roughing the kicker) on receiving team. Kicking team chooses: accept for 1st down OR decline."
-                else:
-                    description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards} on receiving team. Kicking team chooses: accept and replay OR decline."
+                description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards} on receiving team. Kicking team chooses: accept OR decline."
                 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -2439,8 +2431,6 @@ class PaydirtGameEngine:
                 return new_outcome
         else:
             # DEF penalty - receiving team committed foul, kicking team decides
-            auto_first_down = state.get('auto_first_down', False)
-            
             if accept_penalty:
                 # Accept penalty - ball moves forward for kicking team
                 original_pos = self.state.ball_position
@@ -2450,47 +2440,35 @@ class PaydirtGameEngine:
                 
                 self.state.ball_position = new_pos
                 
-                if auto_first_down:
-                    # Roughing the kicker - automatic first down, no punt
+                # Check if penalty yards give a first down
+                # Original situation was 4th down with ytg_before yards to go
+                ytg_before = state.get('ytg_before', 10)
+                got_first_down = penalty_yards >= ytg_before
+                
+                if got_first_down:
                     self.state.down = 1
                     self.state.yards_to_go = min(10, 100 - new_pos)
-                    
-                    del self._pending_punt_state
-                    
-                    description = f"Kicking team accepts penalty: DEF {penalty_yards} (roughing). 1st down at {self.state.field_position_str()}."
-                    
-                    return PlayOutcome(
-                        play_type=PlayType.PUNT,
-                        defense_type=DefenseType.STANDARD,
-                        result=outcome.result,
-                        yards_gained=penalty_yards,
-                        touchdown=False,
-                        first_down=True,
-                        field_position_before=state['field_pos_before'],
-                        field_position_after=self.state.field_position_str(),
-                        description=description,
-                        penalty_applied=True
-                    )
+                    description = f"Kicking team accepts penalty: DEF {penalty_yards}. 1st down at {self.state.field_position_str()}."
                 else:
-                    # Running into kicker - replay punt from new position
+                    # Still 4th down, but with reduced yards to go
                     self.state.down = 4
-                    self.state.yards_to_go = max(1, 10 - penalty_yards)
-                    
-                    del self._pending_punt_state
-                    
-                    description = f"Kicking team accepts penalty: DEF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
-                    
-                    return PlayOutcome(
-                        play_type=PlayType.PUNT,
-                        defense_type=DefenseType.STANDARD,
-                        result=outcome.result,
-                        yards_gained=0,
-                        touchdown=False,
-                        field_position_before=state['field_pos_before'],
-                        field_position_after=self.state.field_position_str(),
-                        description=description,
-                        penalty_applied=True
-                    )
+                    self.state.yards_to_go = ytg_before - penalty_yards
+                    description = f"Kicking team accepts penalty: DEF {penalty_yards}. 4th and {self.state.yards_to_go} at {self.state.field_position_str()}."
+                
+                del self._pending_punt_state
+                
+                return PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=outcome.result,
+                    yards_gained=penalty_yards,
+                    touchdown=False,
+                    first_down=got_first_down,
+                    field_position_before=state['field_pos_before'],
+                    field_position_after=self.state.field_position_str(),
+                    description=description,
+                    penalty_applied=True
+                )
             else:
                 # Decline penalty - take punt result as-is
                 final_position = state['final_position']

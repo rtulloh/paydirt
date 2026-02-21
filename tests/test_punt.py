@@ -607,14 +607,16 @@ class TestPuntPenalties:
             # Options: accept (replay from better position) or decline (take punt result)
             assert "decline" in outcome.penalty_choice.penalty_options[1].description.lower()
     
-    def test_defensive_penalty_on_punt_accept(self, game):
-        """When kicking team accepts DEF penalty, ball moves forward and punt replayed."""
+    def test_defensive_penalty_on_punt_accept_no_first_down(self, game):
+        """When kicking team accepts DEF penalty but doesn't get first down, still 4th down."""
         game.state.ball_position = 30
+        game.state.yards_to_go = 10  # 4th and 10
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
             
+            # DEF 5 on 4th and 10 = still 4th down (5 < 10)
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
@@ -624,10 +626,37 @@ class TestPuntPenalties:
             # Kicking team accepts penalty (accept_penalty=True)
             final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
             
-            # Ball moves forward 5 yards (30 + 5 = 35), replay punt
+            # Ball moves forward 5 yards (30 + 5 = 35)
             assert game.state.ball_position == 35
             assert game.state.is_home_possession is True  # Still kicking team's ball
-            assert "replay" in final_outcome.description.lower()
+            assert game.state.down == 4  # Still 4th down
+            assert game.state.yards_to_go == 5  # 10 - 5 = 5 yards to go
+            assert final_outcome.first_down is False
+    
+    def test_defensive_penalty_on_punt_accept_gets_first_down(self, game):
+        """When kicking team accepts DEF penalty and gets first down."""
+        game.state.ball_position = 30
+        game.state.yards_to_go = 5  # 4th and 5
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            
+            # DEF 5 on 4th and 5 = first down (5 >= 5)
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Kicking team accepts penalty (accept_penalty=True)
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            
+            # Ball moves forward 5 yards (30 + 5 = 35), first down
+            assert game.state.ball_position == 35
+            assert game.state.is_home_possession is True
+            assert game.state.down == 1  # First down!
+            assert final_outcome.first_down is True
     
     def test_defensive_penalty_on_punt_decline(self, game):
         """When kicking team declines DEF penalty, punt result stands."""
@@ -652,26 +681,26 @@ class TestPuntPenalties:
             assert game.state.is_home_possession is False  # Receiving team has ball
             assert "decline" in final_outcome.description.lower()
     
-    def test_roughing_kicker_auto_first_down(self, game):
-        """DEF 15 (roughing the kicker) should give automatic first down."""
+    def test_large_def_penalty_gives_first_down(self, game):
+        """DEF 15 on 4th and 10 should give first down (15 >= 10)."""
         game.state.ball_position = 30
+        game.state.yards_to_go = 10  # 4th and 10
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
             
-            # DEF 15 = roughing the kicker (auto first down)
+            # DEF 15 on 4th and 10 = first down (15 >= 10)
             game.state.possession_team.special_teams.punt[14] = "DEF 15"
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
             assert outcome.pending_penalty_decision is True
-            assert "roughing" in outcome.description.lower()
             
             # Kicking team accepts penalty
             final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
             
-            # Ball moves forward 15 yards (30 + 15 = 45), automatic first down
+            # Ball moves forward 15 yards (30 + 15 = 45), first down
             assert game.state.ball_position == 45
             assert game.state.is_home_possession is True
             assert game.state.down == 1
