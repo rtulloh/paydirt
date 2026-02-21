@@ -1104,6 +1104,28 @@ class TestPuntDiceDisplay:
             
             assert outcome.result.dice_roll == 17
             assert "fair catch" in outcome.description.lower()
+    
+    def test_punt_return_dice_roll_stored_in_result(self, game):
+        """Punt return result should include the return dice roll."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll: punt 40 yards
+            # Second roll: return 10 yards
+            mock_dice.side_effect = [
+                (17, "B2+W2+W5=17"),  # Punt
+                (10, "B1+W1+W1=10"),  # Return
+            ]
+            
+            game.state.possession_team.special_teams.punt[17] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game._handle_punt()
+            
+            assert outcome.result.dice_roll == 17
+            assert outcome.result.punt_return_dice == 10
+            assert "returned 10 yards" in outcome.description
 
 
 class TestPuntShankCommentary:

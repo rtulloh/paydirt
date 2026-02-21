@@ -1337,9 +1337,20 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             td_marker = " ★ TOUCHDOWN!" if outcome.touchdown else ""
             punter_str = f" ({punter})" if punter else ""
             print(f"► PUNT{punter_str}: {outcome.description}{td_marker}")
-            # Show dice roll info if available
+            # Show dice roll info if available (both punt and return)
             if outcome.result:
-                print(f"  ({format_dice_roll(outcome.result.dice_roll, result=outcome.result.raw_result, style='verbose')})")
+                # Format: (O:10→"4" | D:2→"" | offense) style
+                punt_dice = outcome.result.dice_roll
+                punt_result_str = outcome.result.raw_result or ""
+                return_dice = getattr(outcome.result, 'punt_return_dice', 0) or 0
+                # Get return result from description
+                return_match = re.search(r'returned (\d+) yards', outcome.description)
+                return_yards_str = return_match.group(1) if return_match else ""
+                
+                if return_dice > 0:
+                    print(f"  (P:{punt_dice}→\"{punt_result_str}\" | R:{return_dice}→\"{return_yards_str}\" | return)")
+                else:
+                    print(f"  ({format_dice_roll(punt_dice, result=punt_result_str, style='verbose')})")
             # Clarify fumble recovery possession
             if "FUMBLE" in outcome.description.upper():
                 print(f"  >> {off_team} recovers and keeps possession!")

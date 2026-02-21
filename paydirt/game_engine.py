@@ -2141,6 +2141,7 @@ class PaydirtGameEngine:
         # Track return penalty separately for TD negation logic
         return_penalty_yards = 0
         return_penalty_is_offensive = False
+        return_roll = 0  # Initialize for all code paths
 
         if is_downed:
             # Ball downed or out of bounds - no return
@@ -2484,6 +2485,8 @@ class PaydirtGameEngine:
         parsed_result = parse_result_string(punt_result)
         parsed_result.dice_roll = punt_roll
         parsed_result.raw_result = f"{punt_yards}{'*' if is_fair_catch else ''}"
+        # Add return dice roll for display
+        parsed_result.punt_return_dice = return_roll if return_roll else 0
 
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,

@@ -38,6 +38,14 @@
 - Added tests for offsetting penalties causing rekick/repunt
 - Added tests for larger penalty selection on same-type penalties
 
+### Bug Fixes
+- **QB kneel commentary**: Fixed commentary incorrectly referencing the running back instead of the quarterback when a QB takes a knee. Now shows "Phil Simms is hit in the backfield!" instead of "Gerald Riggs is hit in the backfield!"
+- **Punt return dice display**: Added return dice roll to display in format `(P:17→"32" | R:10→"13" | return)` showing both punt and return dice rolls
+
+### Test Coverage Additions
+- **1070 unit tests** passing
+- Added test for punt return dice roll tracking
+
 ---
 
 ## Version 1.4 (February 2026)

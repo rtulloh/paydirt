@@ -75,6 +75,8 @@ class PlayResult:
     raw_result: str = ""
     dice_roll: int = 0
     defense_modifier: str = ""
+    # Punt return dice roll
+    punt_return_dice: int = 0
     # Interception return details (set by game engine)
     int_return_yards: int = 0
     int_return_dice: int = 0
