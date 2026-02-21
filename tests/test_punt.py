@@ -1288,3 +1288,53 @@ class TestPuntPenaltyApplyMethods:
             assert game.state.ball_position == 40
             assert game.state.is_home_possession is False  # Receiving team has ball
             assert "declines" in final_outcome.description.lower()
+
+
+class TestPuntPenaltyDisplayLogic:
+    """Tests for punt penalty display in handle_penalty_decision.
+    
+    Verifies that punt penalties show 'Punt stands as called' instead of
+    incorrectly showing 'TURNOVER ON DOWNS' when declining the penalty.
+    """
+    
+    def test_punt_penalty_play_type_is_punt(self, game):
+        """Punt penalty outcome should have play_type=PUNT for correct display routing."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        game.state.down = 4  # 4th down punt
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 15"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # The outcome should have play_type=PUNT so display logic routes correctly
+            assert outcome.play_type == PlayType.PUNT
+            assert outcome.pending_penalty_decision is True
+            # This ensures handle_penalty_decision will use is_punt_penalty branch
+            # which shows "Punt stands as called" instead of "TURNOVER ON DOWNS"
+    
+    def test_punt_penalty_stores_final_position_for_display(self, game):
+        """Punt penalty should store final_position in _pending_punt_state for display."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            assert outcome.pending_penalty_decision is True
+            # The pending state should have final_position for display
+            assert hasattr(game, '_pending_punt_state')
+            assert 'final_position' in game._pending_punt_state
+            # Punt 40 from 30 = 70, return 10 = 40
+            assert game._pending_punt_state['final_position'] == 40
