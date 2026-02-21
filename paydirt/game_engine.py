@@ -1896,43 +1896,57 @@ class PaydirtGameEngine:
                 is_punt_offensive_penalty = penalty_match.group(1) == "OFF"
                 punt_penalty_auto_first_down = penalty_match.group(3) == "X"
             
-            # Re-roll to get actual punt yardage
-            reroll, reroll_desc = roll_chart_dice()
-            reroll_result = punting_team.special_teams.punt.get(reroll, "40")
+            # Re-roll to get actual punt yardage - keep rolling until we get a non-penalty result
+            punt_yards = None
+            max_rerolls = 10  # Safety limit to prevent infinite loops
+            reroll_count = 0
             
-            # Check if re-roll is also a penalty
-            if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
-                reroll_is_offensive = "OFF" in reroll_result.upper()
-                if is_punt_offensive_penalty != reroll_is_offensive:
-                    # Offsetting penalties (OFF + DEF) - replay the down
-                    description = f"OFFSETTING PENALTIES: {punt_result} and {reroll_result}. Down replayed."
-                    
-                    outcome = PlayOutcome(
-                        play_type=PlayType.PUNT,
-                        defense_type=DefenseType.STANDARD,
-                        result=parse_result_string(punt_result),
-                        yards_gained=0,
-                        field_position_before=field_pos_before,
-                        field_position_after=self.state.field_position_str(),
-                        description=description
-                    )
-                    self.play_log.append(outcome)
-                    return outcome
+            while punt_yards is None and reroll_count < max_rerolls:
+                reroll_count += 1
+                reroll, reroll_desc = roll_chart_dice()
+                reroll_result = punting_team.special_teams.punt.get(reroll, "40")
+                
+                # Check if re-roll is also a penalty
+                if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
+                    reroll_is_offensive = "OFF" in reroll_result.upper()
+                    if is_punt_offensive_penalty != reroll_is_offensive:
+                        # Offsetting penalties (OFF + DEF) - replay the down
+                        description = f"OFFSETTING PENALTIES: {punt_result} and {reroll_result}. Down replayed."
+                        
+                        outcome = PlayOutcome(
+                            play_type=PlayType.PUNT,
+                            defense_type=DefenseType.STANDARD,
+                            result=parse_result_string(punt_result),
+                            yards_gained=0,
+                            field_position_before=field_pos_before,
+                            field_position_after=self.state.field_position_str(),
+                            description=description
+                        )
+                        self.play_log.append(outcome)
+                        return outcome
+                    else:
+                        # Same type penalties - take larger penalty and re-roll again
+                        reroll_match = re.search(r'(OFF|DEF)\s*(\d+)(X)?', reroll_result.upper())
+                        if reroll_match:
+                            reroll_penalty = int(reroll_match.group(2))
+                            punt_penalty_yards = max(punt_penalty_yards, reroll_penalty)
+                            # Check for X modifier on re-roll too
+                            if reroll_match.group(3) == "X":
+                                punt_penalty_auto_first_down = True
+                        # Continue loop to get actual yardage
                 else:
-                    # Same type penalties - take larger penalty
-                    reroll_match = re.search(r'(OFF|DEF)\s*(\d+)', reroll_result.upper())
-                    if reroll_match:
-                        reroll_penalty = int(reroll_match.group(2))
-                        punt_penalty_yards = max(punt_penalty_yards, reroll_penalty)
-                    punt_yards = 35  # Default when both rolls are penalties
-                    description = f"Penalty on punt - {punt_result} (larger of two same-type penalties)"
-            else:
-                # Re-roll gave actual punt yardage
-                try:
-                    punt_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
-                except ValueError:
-                    punt_yards = 35  # Default
-                description = f"Penalty on punt - {punt_result}"
+                    # Re-roll gave actual punt yardage
+                    try:
+                        punt_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
+                    except ValueError:
+                        # Non-numeric, non-penalty result (e.g., blocked kick) - continue rolling
+                        pass
+            
+            # If we exhausted re-rolls without getting yardage, use chart average
+            if punt_yards is None:
+                punt_yards = 40  # Fallback only if chart has no valid yardage entries
+            
+            description = f"Penalty on punt - {punt_result}"
             
             original_punt_yards = punt_yards
         else:
