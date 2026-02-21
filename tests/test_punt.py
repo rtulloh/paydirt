@@ -1165,3 +1165,104 @@ class TestPuntShankCommentary:
             outcome = game._handle_punt()
             
             assert "shanked" not in outcome.description.lower()
+
+
+class TestPuntPenaltyApplyMethods:
+    """Tests for apply_punt_penalty_decision method.
+    
+    Chart penalties use scrimmage play perspective:
+    - OFF penalty = punting team foul → receiving team gets choice (replay or keep+yards)
+    - DEF penalty = receiving team foul → punting team gets choice (accept for yards/1st down or decline)
+    """
+    
+    def test_apply_punt_penalty_decision_off_accept_replay(self, game):
+        """OFF penalty (punting team foul) accept = replay punt from LOS - penalty yards."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Receiving team accepts penalty = replay punt from LOS - 5 yards
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            
+            assert game.state.ball_position == 25  # 30 - 5
+            assert game.state.is_home_possession is True  # Still punting team's ball
+            assert "replay" in final_outcome.description.lower()
+    
+    def test_apply_punt_penalty_decision_off_decline_keep_result(self, game):
+        """OFF penalty (punting team foul) decline = keep result + penalty yards."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Receiving team declines penalty = keep result + 5 yards
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            
+            # Punt 40 from 30 = 70, return 10 = 40, + 5 penalty = 45
+            assert game.state.ball_position == 45
+            assert game.state.is_home_possession is False  # Receiving team has ball
+            assert "keeps result" in final_outcome.description.lower()
+    
+    def test_apply_punt_penalty_decision_def_accept_first_down(self, game):
+        """DEF penalty (receiving team foul) accept = ball moves forward, potential first down."""
+        game.state.ball_position = 30
+        game.state.yards_to_go = 10
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "DEF 15"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Punting team accepts penalty = ball moves forward 15 yards, first down
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            
+            assert game.state.ball_position == 45  # 30 + 15
+            assert game.state.is_home_possession is True  # Punting team keeps ball
+            assert game.state.down == 1  # First down
+            assert final_outcome.first_down is True
+    
+    def test_apply_punt_penalty_decision_def_decline(self, game):
+        """DEF penalty (receiving team foul) decline = take punt result as-is."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
+            
+            game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "10"
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            assert outcome.pending_penalty_decision is True
+            
+            # Punting team declines penalty = take punt result
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            
+            # Punt 40 from 30 = 70, return 10 = 40
+            assert game.state.ball_position == 40
+            assert game.state.is_home_possession is False  # Receiving team has ball
+            assert "declines" in final_outcome.description.lower()

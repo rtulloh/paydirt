@@ -1999,8 +1999,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
     """
     penalty_choice = outcome.penalty_choice
     
-    # Check if this is a field goal penalty (use different apply method)
+    # Check play type to use correct apply method
     is_fg_penalty = outcome.play_type == PlayType.FIELD_GOAL
+    is_punt_penalty = outcome.play_type == PlayType.PUNT
+    is_kickoff_penalty = outcome.play_type == PlayType.KICKOFF
 
     # Determine who is the offended team and if human decides
     offended_is_offense = penalty_choice.offended_team == "offense"
@@ -2229,6 +2231,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 print(f"\n  >> {penalty_desc.upper()} - DECLINED. Result of the play stands.")
                 if is_fg_penalty:
                     return game.apply_fg_penalty_decision(outcome, accept_play=True)
+                elif is_punt_penalty:
+                    return game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+                elif is_kickoff_penalty:
+                    return game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
                 else:
                     return game.apply_penalty_decision(outcome, accept_play=True)
             elif choice.isdigit():
@@ -2240,6 +2246,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                     print(f"\n  >> Accepting penalty: {opt.description}")
                     if is_fg_penalty:
                         return game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+                    elif is_punt_penalty:
+                        return game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+                    elif is_kickoff_penalty:
+                        return game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
                     else:
                         return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
                 else:
@@ -2270,6 +2280,24 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                     accept_play = False  # Take the penalty (first down or better position)
                 else:
                     accept_play = True  # Defense accepts the miss
+        elif is_punt_penalty or is_kickoff_penalty:
+            # For punt/kickoff penalties, evaluate the options
+            # Punt: OFF penalty = punting team foul, DEF penalty = receiving team foul
+            # Kickoff: OFF penalty = kicking team foul, DEF penalty = receiving team foul
+            best_penalty = filtered_penalties[0] if filtered_penalties else None
+            if best_penalty:
+                # For punt DEF penalty (receiving team foul), punting team can get first down
+                if best_penalty.auto_first_down:
+                    accept_play = False  # Take the first down
+                elif is_punt_penalty and offended_is_offense:
+                    # Receiving team offended by DEF penalty - keep result + yardage is usually better
+                    # unless replay gives better field position
+                    accept_play = False  # Accept penalty (keep result + yards or replay)
+                else:
+                    # Evaluate based on penalty yards vs play result
+                    accept_play = False  # Generally accept penalties on kicks
+            else:
+                accept_play = True  # No penalty to accept
         elif play_td:
             # Always accept TD
             accept_play = True
@@ -2304,6 +2332,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             print(f"\n  >> {cpu_team} accepts play result")
             if is_fg_penalty:
                 return game.apply_fg_penalty_decision(outcome, accept_play=True)
+            elif is_punt_penalty:
+                return game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            elif is_kickoff_penalty:
+                return game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
             else:
                 return game.apply_penalty_decision(outcome, accept_play=True)
         else:
@@ -2313,6 +2345,10 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             print(f"\n  >> {cpu_team} accepts penalty: {opt.description}")
             if is_fg_penalty:
                 return game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
+            elif is_punt_penalty:
+                return game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            elif is_kickoff_penalty:
+                return game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
             else:
                 return game.apply_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
 
@@ -2525,6 +2561,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
     else:
         print(f"\n  {kicking_team} kicks off...")
         outcome = game.kickoff(kicking_home=first_half_kicking_home)
+    
+    # Handle kickoff penalty decision if applicable
+    if outcome.pending_penalty_decision and outcome.penalty_choice:
+        is_human_offense = (first_half_kicking_home != human_is_home)  # Receiving team is offense
+        outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+    
     print(f"  {outcome.description}")
     print(f"  {receiving_team} will start at {game.state.field_position_str()}")
 
@@ -2562,6 +2604,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 else:
                     print(f"\n  {kicking_team} kicks off to start the 2nd half...")
                     outcome = game.kickoff(kicking_home=second_half_kicking_home)
+                
+                # Handle kickoff penalty decision if applicable
+                if outcome.pending_penalty_decision and outcome.penalty_choice:
+                    is_human_offense = (second_half_kicking_home != human_is_home)
+                    outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+                
                 print(f"  {outcome.description}")
                 print(f"  {receiving_team} will start at {game.state.field_position_str()}")
             elif last_quarter < 4:
@@ -2609,6 +2657,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
                     print(f"\n  {kicking_team} kicks off to start overtime...")
                     outcome = game.kickoff(kicking_home=kicking_home)
+                    
+                    # Handle kickoff penalty decision if applicable
+                    if outcome.pending_penalty_decision and outcome.penalty_choice:
+                        is_human_offense = (kicking_home != human_is_home)
+                        outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+                    
                     print(f"  {outcome.description}")
                     print(f"  {receiving_team} will start at {game.state.field_position_str()}")
                     continue
@@ -2810,6 +2864,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 print("\n  KICKOFF")
                 print("  " + "-" * 40)
                 outcome = game.kickoff(kicking_home=kicking_home)
+            
+            # Handle kickoff penalty decision if applicable
+            if outcome.pending_penalty_decision and outcome.penalty_choice:
+                is_human_offense = (kicking_home != human_is_home)
+                outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+            
             print(f"  {outcome.description}")
             continue  # Skip to next iteration after kickoff
 
@@ -2888,6 +2948,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 print("\n  KICKOFF")
                 print("  " + "-" * 40)
                 outcome = game.kickoff(kicking_home=kicking_home)
+            
+            # Handle kickoff penalty decision if applicable
+            if outcome.pending_penalty_decision and outcome.penalty_choice:
+                is_human_offense = (kicking_home != human_is_home)
+                outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+            
             print(f"  {outcome.description}")
             continue  # Skip to next iteration after kickoff
 
@@ -3059,6 +3125,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 else:
                     print(f"\n  {kicking_team} kicks off to start the 2nd half...")
                     outcome = game.kickoff(kicking_home=second_half_kicking_home)
+                
+                # Handle kickoff penalty decision if applicable
+                if outcome.pending_penalty_decision and outcome.penalty_choice:
+                    is_human_offense = (second_half_kicking_home != human_is_home)
+                    outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+                
                 print(f"  {outcome.description}")
                 print(f"  {receiving_team} will start at {game.state.field_position_str()}")
             elif last_quarter < 4:
@@ -3095,6 +3167,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
                     print(f"\n  {kicking_team} kicks off to start overtime...")
                     outcome = game.kickoff(kicking_home=kicking_home)
+                    
+                    # Handle kickoff penalty decision if applicable
+                    if outcome.pending_penalty_decision and outcome.penalty_choice:
+                        is_human_offense = (kicking_home != human_is_home)
+                        outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+                    
                     print(f"  {outcome.description}")
                     print(f"  {receiving_team} will start at {game.state.field_position_str()}")
                     continue
@@ -3233,6 +3311,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             else:
                 print(f"\n  {kicking_team} kicks off...")
                 outcome = game.kickoff(kicking_home=kicking_home)
+            
+            # Handle kickoff penalty decision if applicable
+            if outcome.pending_penalty_decision and outcome.penalty_choice:
+                is_human_offense = (kicking_home != human_is_home)
+                outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+            
             print(f"  {outcome.description}")
             continue
 
@@ -3299,6 +3383,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             else:
                 print(f"\n  {kicking_team} kicks off...")
                 outcome = game.kickoff(kicking_home=kicking_home)
+            
+            # Handle kickoff penalty decision if applicable
+            if outcome.pending_penalty_decision and outcome.penalty_choice:
+                is_human_offense = (kicking_home != human_is_home)
+                outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+            
             print(f"  {outcome.description}")
             continue
 
