@@ -2085,22 +2085,98 @@ class PaydirtGameEngine:
 
         # Check for touchback
         if landing_spot >= 100:
-            self.state.switch_possession()
-            self.state.ball_position = 20  # Touchback at 20
-            description = f"{description}Punt {punt_yards} yards into the end zone - Touchback at the 20"
+            # Handle penalty on touchback - can't return early, need to offer choice
+            if punt_penalty_yards > 0 and is_punt_offensive_penalty:
+                # OFF penalty - receiving team gets choice: replay from LOS-penalty OR keep touchback + yards
+                # Touchback is at the 20 (receiving team's perspective)
+                receiving_position = 20
+                final_position = 20
+                
+                # Calculate options
+                # Replay: ball moves back from original LOS (not touchback position)
+                replay_pos = self.state.ball_position - punt_penalty_yards
+                if replay_pos < 1:
+                    replay_pos = 1
+                
+                # Keep result: touchback + penalty yards = 20 + 5 = 25
+                keep_position = 20 + punt_penalty_yards
+                
+                replay_option = PenaltyOption(
+                    penalty_type="OFF",
+                    raw_result=f"OFF {punt_penalty_yards}",
+                    yards=punt_penalty_yards,
+                    description=f"Replay punt from {format_field_position(replay_pos)}",
+                    auto_first_down=False
+                )
+                
+                keep_option = PenaltyOption(
+                    penalty_type="OFF",
+                    raw_result=f"KEEP+{punt_penalty_yards}",
+                    yards=punt_penalty_yards,
+                    description=f"Keep touchback + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
+                    auto_first_down=False
+                )
+                
+                penalty_choice = PenaltyChoice(
+                    play_result=parse_result_string(punt_result),
+                    penalty_options=[replay_option, keep_option],
+                    offended_team="defense",  # Receiving team is offended
+                    offsetting=False
+                )
+                
+                self._pending_punt_state = {
+                    'field_pos_before': field_pos_before,
+                    'down_before': down_before,
+                    'ytg_before': ytg_before,
+                    'punt_yards': punt_yards,
+                    'punt_result': punt_result,
+                    'punt_roll': punt_roll,
+                    'receiving_position': receiving_position,
+                    'return_yards': 0,
+                    'return_desc': 'touchback',
+                    'final_position': final_position,
+                    'would_be_td': False,
+                    'punt_penalty_yards': punt_penalty_yards,
+                    'is_offensive_penalty': True,
+                    'short_drop': short_drop,
+                    'coffin_corner_yards': coffin_corner_yards,
+                    'is_fair_catch': False,
+                    'punt_from': punt_from,
+                }
+                
+                description = f"Punt {punt_yards} yards into the end zone - Touchback at the 20. PENALTY: OFF {punt_penalty_yards} on kicking team. Receiving team chooses: replay punt OR keep result + yardage."
+                
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parse_result_string(punt_result),
+                    yards_gained=punt_yards,
+                    touchdown=False,
+                    field_position_before=field_pos_before,
+                    field_position_after="pending",
+                    description=description,
+                    penalty_choice=penalty_choice,
+                    pending_penalty_decision=True
+                )
+                return outcome
+            else:
+                # No penalty - regular touchback
+                self.state.switch_possession()
+                self.state.ball_position = 20  # Touchback at 20
+                description = f"{description}Punt {punt_yards} yards into the end zone - Touchback at the 20"
 
-            outcome = PlayOutcome(
-                play_type=PlayType.PUNT,
-                defense_type=DefenseType.STANDARD,
-                result=parse_result_string(punt_result),
-                yards_gained=punt_yards,
-                field_position_before=field_pos_before,
-                field_position_after=self.state.field_position_str(),
-                description=description
-            )
-            self.play_log.append(outcome)
-            self._use_time(random.uniform(5, 10))
-            return outcome
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parse_result_string(punt_result),
+                    yards_gained=punt_yards,
+                    field_position_before=field_pos_before,
+                    field_position_after=self.state.field_position_str(),
+                    description=description
+                )
+                self.play_log.append(outcome)
+                self._use_time(random.uniform(5, 10))
+                return outcome
 
         # Convert landing spot to receiving team's perspective
         # If punt lands at punting team's 70, that's receiving team's 30
@@ -2115,28 +2191,101 @@ class PaydirtGameEngine:
         # out of bounds (unless otherwise specified in advance by the punting team),
         # and there can be no return, fair catch, or roll yardage."
         if is_coffin_corner:
-            return_desc = "coffin corner - out of bounds"
-            self.state.ball_position = receiving_position
-            self.state.switch_possession()
-            self.state.down = 1
-            self.state.yards_to_go = 10
-            
-            full_description = f"Punt {punt_yards} yards ({coffin_corner_yards} yards subtracted) - out of bounds at {self.state.field_position_str()}"
-            if description:
-                full_description = description + " - " + full_description
-            
-            outcome = PlayOutcome(
-                play_type=PlayType.PUNT,
-                defense_type=DefenseType.STANDARD,
-                result=parse_result_string(punt_result),
-                yards_gained=punt_yards,
-                field_position_before=field_pos_before,
-                field_position_after=self.state.field_position_str(),
-                description=full_description
-            )
-            self.play_log.append(outcome)
-            self._use_time(random.uniform(5, 10))
-            return outcome
+            # Handle penalty on OOB - can't return early, need to offer choice
+            if punt_penalty_yards > 0 and is_punt_offensive_penalty:
+                # OFF penalty - receiving team gets choice: replay from LOS-penalty OR keep OOB spot + yards
+                receiving_position = clamp_ball_position(100 - landing_spot)
+                final_position = receiving_position
+                
+                # Calculate options
+                replay_pos = self.state.ball_position - punt_penalty_yards
+                if replay_pos < 1:
+                    replay_pos = 1
+                
+                keep_position = receiving_position + punt_penalty_yards
+                
+                replay_option = PenaltyOption(
+                    penalty_type="OFF",
+                    raw_result=f"OFF {punt_penalty_yards}",
+                    yards=punt_penalty_yards,
+                    description=f"Replay punt from {format_field_position(replay_pos)}",
+                    auto_first_down=False
+                )
+                
+                keep_option = PenaltyOption(
+                    penalty_type="OFF",
+                    raw_result=f"KEEP+{punt_penalty_yards}",
+                    yards=punt_penalty_yards,
+                    description=f"Keep result + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
+                    auto_first_down=False
+                )
+                
+                penalty_choice = PenaltyChoice(
+                    play_result=parse_result_string(punt_result),
+                    penalty_options=[replay_option, keep_option],
+                    offended_team="defense",
+                    offsetting=False
+                )
+                
+                self._pending_punt_state = {
+                    'field_pos_before': field_pos_before,
+                    'down_before': down_before,
+                    'ytg_before': ytg_before,
+                    'punt_yards': punt_yards,
+                    'punt_result': punt_result,
+                    'punt_roll': punt_roll,
+                    'receiving_position': receiving_position,
+                    'return_yards': 0,
+                    'return_desc': return_desc,
+                    'final_position': final_position,
+                    'would_be_td': False,
+                    'punt_penalty_yards': punt_penalty_yards,
+                    'is_offensive_penalty': True,
+                    'short_drop': short_drop,
+                    'coffin_corner_yards': coffin_corner_yards,
+                    'is_fair_catch': False,
+                    'punt_from': punt_from,
+                }
+                
+                full_description = f"Punt {punt_yards} yards ({coffin_corner_yards} yards subtracted) - out of bounds at {format_field_position(receiving_position)}. PENALTY: OFF {punt_penalty_yards} on kicking team. Receiving team chooses: replay punt OR keep result + yardage."
+                
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parse_result_string(punt_result),
+                    yards_gained=punt_yards,
+                    touchdown=False,
+                    field_position_before=field_pos_before,
+                    field_position_after="pending",
+                    description=full_description,
+                    penalty_choice=penalty_choice,
+                    pending_penalty_decision=True
+                )
+                return outcome
+            else:
+                # No penalty - regular coffin corner
+                return_desc = "coffin corner - out of bounds"
+                self.state.ball_position = receiving_position
+                self.state.switch_possession()
+                self.state.down = 1
+                self.state.yards_to_go = 10
+                
+                full_description = f"Punt {punt_yards} yards ({coffin_corner_yards} yards subtracted) - out of bounds at {self.state.field_position_str()}"
+                if description:
+                    full_description = description + " - " + full_description
+                
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parse_result_string(punt_result),
+                    yards_gained=punt_yards,
+                    field_position_before=field_pos_before,
+                    field_position_after=self.state.field_position_str(),
+                    description=full_description
+                )
+                self.play_log.append(outcome)
+                self._use_time(random.uniform(5, 10))
+                return outcome
 
         # Track return penalty separately for TD negation logic
         return_penalty_yards = 0

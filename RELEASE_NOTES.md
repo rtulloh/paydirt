@@ -6,16 +6,19 @@
 - **End-of-half field goal awareness**: CPU now kicks a field goal on any down (not just 4th) when ~10 seconds or less remain in Q2 or Q4 and the ball is in makeable FG range (inside opponent's 30, <=47 yard attempt). In Q4, the CPU only kicks if trailing by 3 or fewer (where a FG ties or wins); otherwise it goes for the TD. Previously the CPU would run a normal play and waste the last seconds of the half.
 
 ### Bug Fixes
+- **Punt penalty ignored on touchback**: Fixed a bug where a punt that went into the end zone for a touchback with a penalty (e.g., OFF 5) would skip the penalty decision entirely. The receiving team now correctly gets the choice to either replay the punt from the LOS minus penalty yards, or keep the touchback plus the penalty yards (e.g., 20 + 5 = 25). Previously the ball would just be placed at the 20 with no penalty applied.
+- **Punt penalty ignored on coffin corner**: Fixed a similar bug where a punt that went out of bounds due to coffin corner rules (15+ yards subtracted) with a penalty would skip the penalty decision. The receiving team now correctly gets the choice.
 - **Half not ending at 0:00**: Fixed a bug where a play could randomly use just enough clock time to leave a sub-second residual (e.g., 0.003 minutes) that displayed as "0:00" but was technically positive, preventing the quarter from advancing. The game would prompt for another play at "Q2 0:00" instead of going to halftime. The `_use_time()` method now clamps any residual under 1 second to exactly 0 so the quarter-end logic triggers correctly.
 - **Game loop safety net for quarter end**: Added a safety net in both the `run_interactive_game` and `resume_game` loops to force quarter advancement when time is effectively zero at Q1-Q3, preventing any edge case from allowing play to continue past the end of a half.
 - **Timeout clock residual**: Fixed `_apply_timeout()` to clamp residuals under 1 second to 0, preventing timeouts from leaving the game in an inconsistent state.
 - **Breakaway commentary on negative yardage**: Fixed commentary incorrectly using exciting breakaway language (e.g., "LOOK OUT! Wilbert Montgomery has daylight!") when the B column roll produced negative yardage (e.g., -10 yards). Breakaway commentary now correctly uses loss language for negative yards and no-gain language for zero yards.
 
 ### Test Coverage
-- **1096 unit tests** passing
+- **1099 unit tests** passing
 - Added 9 new tests for end-of-half FG: Q2 on 1st/2nd/3rd down, Q4 trailing by 3, Q4 trailing by 7 (should not kick), out of range, plenty of time remaining, no-huddle flag, and mode label
 - Added 7 new tests for sub-second clock clamping: Q1-Q4 quarter advancement, non-clamping above threshold, exact zero handling, and halftime timeout reset
 - Added 6 new tests for breakaway commentary: positive yards, negative yards (no daylight), negative yards (loss language), zero yards, touchdown, and negative yards with no touchdown call
+- Added 3 new tests for punt touchback with penalty: choice creation, accept replay, decline keep result
 
 ## Version 1.5 (February 2026)
 

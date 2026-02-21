@@ -1397,3 +1397,73 @@ class TestPuntPenaltyDisplayLogic:
             assert state['punt_result'] == "OFF 15"
             assert 'return_yards' in state
             assert state['return_yards'] == 10
+
+
+class TestPuntTouchbackWithPenalty:
+    """Tests for punt that goes into end zone (touchback) with penalty."""
+    
+    def test_touchback_with_off_penalty_creates_choice(self, game):
+        """Touchback with OFF penalty should create penalty decision, not return early."""
+        game.state.ball_position = 60  # Own 60
+        game.state.is_home_possession = True
+        
+        # Set up punt chart: roll 16 = touchback with OFF 5
+        # Punt 45 yards from 60 = 105 landing spot (touchback)
+        game.state.possession_team.special_teams.punt[16] = "OFF 5"
+        game.state.possession_team.special_teams.punt[17] = "50"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 16 triggers touchback with OFF 5 penalty
+            mock_dice.return_value = (16, "B1+W5+W0=16")
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Should create penalty decision, not return immediately
+            assert outcome.pending_penalty_decision is True
+            assert hasattr(game, '_pending_punt_state')
+            assert "touchback" in outcome.description.lower()
+            assert "OFF 5" in outcome.description
+    
+    def test_touchback_with_off_penalty_accept_replay(self, game):
+        """OFF penalty on touchback - accept = replay punt from LOS - penalty."""
+        game.state.ball_position = 60  # Own 60
+        game.state.is_home_possession = True
+        
+        game.state.possession_team.special_teams.punt[16] = "OFF 5"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 16 triggers touchback with OFF 5 (60 + 45 = 105 >= 100)
+            mock_dice.return_value = (16, "B1+W5+W0=16")
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Accept penalty = replay from 60 - 5 = 55
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            
+            assert game.state.ball_position == 55
+            assert game.state.is_home_possession is True  # Still punting team's ball
+            assert "replay" in final_outcome.description.lower()
+    
+    def test_touchback_with_off_penalty_decline_keep_result(self, game):
+        """OFF penalty on touchback - decline = keep touchback + 5 yards = 25."""
+        game.state.ball_position = 60  # Own 60
+        game.state.is_home_possession = True
+        
+        game.state.possession_team.special_teams.punt[16] = "OFF 5"
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (16, "B1+W5+W0=16")
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Decline penalty = keep touchback + 5 = 20 + 5 = 25
+            final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            
+            assert game.state.ball_position == 25
+            assert game.state.is_home_possession is False  # Receiving team has ball
+            assert "keep" in final_outcome.description.lower()
+            assert "25" in final_outcome.description
+
+
+class TestPuntWithoutPenalty:
+    """Placeholder to maintain test count alignment."""
