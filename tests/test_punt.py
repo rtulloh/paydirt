@@ -523,10 +523,14 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (OFF 5 penalty)
+            # Roll 2: re-roll for punt yardage (40 yards)
+            # Roll 3: return chart (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             # OFF penalty = kicking team committed foul
             game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -545,9 +549,11 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (OFF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -556,10 +562,10 @@ class TestPuntPenalties:
             # Receiving team chooses to keep result + yardage (accept_penalty=False)
             final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
             
-            # Punt 35 yards from 30 = lands at 65 = opponent's 35
-            # Return 10 yards = opponent's 45
-            # OFF 5 penalty adds 5 yards = opponent's 50
-            assert game.state.ball_position == 50
+            # Punt 40 yards from 30 = lands at 70 = opponent's 30
+            # Return 10 yards = opponent's 40
+            # OFF 5 penalty adds 5 yards = opponent's 45
+            assert game.state.ball_position == 45
             assert "keeps result" in final_outcome.description.lower()
     
     def test_offensive_penalty_on_punt_replay(self, game):
@@ -568,9 +574,11 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (OFF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -591,10 +599,12 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             # DEF penalty = receiving team committed foul (e.g., running into kicker)
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -614,10 +624,12 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             # DEF 5 on 4th and 10 = still 4th down (5 < 10)
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -640,10 +652,12 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             # DEF 5 on 4th and 5 = first down (5 >= 5)
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -664,9 +678,11 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -675,9 +691,9 @@ class TestPuntPenalties:
             # Kicking team declines penalty (accept_penalty=False)
             final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
             
-            # Punt 35 yards from 30 = lands at 65 = opponent's 35
-            # Return 10 yards = opponent's 45 (no penalty applied)
-            assert game.state.ball_position == 45
+            # Punt 40 yards from 30 = lands at 70 = opponent's 30
+            # Return 10 yards = opponent's 40 (no penalty applied)
+            assert game.state.ball_position == 40
             assert game.state.is_home_possession is False  # Receiving team has ball
             assert "decline" in final_outcome.description.lower()
     
@@ -688,10 +704,12 @@ class TestPuntPenalties:
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (10, "B1+W0+W0=10")]
+            # Roll 1: punt chart (DEF 15), Roll 2: re-roll (40 yards), Roll 3: return (10 yards)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (10, "B1+W0+W0=10")]
             
             # DEF 15 on 4th and 10 = first down (15 >= 10)
             game.state.possession_team.special_teams.punt[14] = "DEF 15"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[10] = "10"
             
             outcome = game.run_play(PlayType.PUNT, None)
@@ -706,17 +724,41 @@ class TestPuntPenalties:
             assert game.state.down == 1
             assert final_outcome.first_down is True
     
+    def test_offsetting_penalties_on_punt_replay_down(self, game):
+        """When punt chart penalty re-roll results in opposite penalty type, penalties offset and down is replayed."""
+        game.state.ball_position = 30
+        game.state.down = 4
+        game.state.yards_to_go = 10
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # Roll 1: punt chart (OFF 5), Roll 2: re-roll (DEF 10) - offsetting!
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15")]
+            
+            game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "DEF 10"  # Re-roll is opposite penalty type
+            
+            outcome = game.run_play(PlayType.PUNT, None)
+            
+            # Offsetting penalties - down replayed, no pending decision
+            assert outcome.pending_penalty_decision is False or outcome.pending_penalty_decision is None
+            assert "OFFSETTING" in outcome.description
+            # Ball position unchanged
+            assert game.state.ball_position == 30
+            # Still 4th down
+            assert game.state.down == 4
+    
     def test_punt_penalty_with_no_return(self, game):
         """DEF penalty on punt with no return should still offer choice to kicking team."""
         game.state.ball_position = 30
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll: punt with DEF 5
-            # Second roll: downed result (no return needed)
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (12, "B1+W0+W0=12")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return (0 yards - downed)
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (12, "B1+W0+W0=12")]
             
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             # Use a downed result for the return (no return yardage)
             game.state.defense_team.special_teams.punt_return[12] = "0"
             
@@ -728,9 +770,9 @@ class TestPuntPenalties:
             # Kicking team declines penalty, takes punt result
             final_outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
             
-            # Punt 35 yards (default for penalty) from 30 = lands at 65 = opponent's 35
-            # Downed at opponent's 35 (no return, no penalty applied)
-            assert game.state.ball_position == 35
+            # Punt 40 yards from 30 = lands at 70 = opponent's 30
+            # Downed at opponent's 30 (no return, no penalty applied)
+            assert game.state.ball_position == 30
 
 
 class TestPuntReturnTDWithPenalty:
@@ -744,11 +786,11 @@ class TestPuntReturnTDWithPenalty:
         game.state.away_score = 0
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll: punt with DEF 5 penalty
-            # Second roll: return for TD (large return)
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            # Roll 1: punt chart (DEF 5), Roll 2: re-roll (40 yards), Roll 3: return for TD
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (39, "B6+W6+W6=39")]
             
             game.state.possession_team.special_teams.punt[14] = "DEF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             # Large return that will result in TD
             game.state.defense_team.special_teams.punt_return[39] = "99"
             
@@ -774,9 +816,11 @@ class TestPuntReturnTDWithPenalty:
         game.state.away_score = 0
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (39, "B6+W6+W6=39")]
+            # Roll 1: punt chart (OFF 5), Roll 2: re-roll (40 yards), Roll 3: return for TD
+            mock_dice.side_effect = [(14, "B1+W3+W0=14"), (15, "B2+W3+W0=15"), (39, "B6+W6+W6=39")]
             
             game.state.possession_team.special_teams.punt[14] = "OFF 5"
+            game.state.possession_team.special_teams.punt[15] = "40"  # Re-roll result
             game.state.defense_team.special_teams.punt_return[39] = "99"
             
             outcome = game._handle_punt()
