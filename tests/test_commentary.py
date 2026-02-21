@@ -425,3 +425,83 @@ class TestCommentary:
         assert comment is not None
         # Should mention touchdown
         assert "touchdown" in comment.lower()
+
+    def test_breakaway_positive_yards(self, commentary):
+        """Breakaway with positive yards should use exciting breakaway language."""
+        # Run multiple times to check all generated commentary is positive
+        breakaway_phrases = [
+            "breaks loose", "daylight", "GONE", "HUGE hole", "makes a man miss"
+        ]
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.OFF_TACKLE, ResultType.BREAKAWAY, yards=25
+            )
+            assert comment is not None
+            assert len(comment) > 0
+            assert any(phrase in comment for phrase in breakaway_phrases), \
+                f"Positive breakaway should use exciting language, got: {comment}"
+
+    def test_breakaway_negative_yards_no_daylight(self, commentary):
+        """Breakaway with negative yards should NOT use positive breakaway language."""
+        # This is the bug fix: -10 yards should not say "has daylight!"
+        positive_phrases = [
+            "breaks loose", "daylight", "GONE", "HUGE hole", "makes a man miss",
+            "ALL THE WAY", "takes off", "room to run"
+        ]
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.BREAKAWAY, yards=-10
+            )
+            assert comment is not None
+            assert len(comment) > 0
+            for phrase in positive_phrases:
+                assert phrase not in comment, \
+                    f"Negative breakaway should not say '{phrase}', got: {comment}"
+
+    def test_breakaway_negative_yards_uses_loss_language(self, commentary):
+        """Breakaway with negative yards should use loss-appropriate language."""
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.DRAW, ResultType.BREAKAWAY, yards=-10
+            )
+            assert comment is not None
+            # Should mention the yardage loss
+            assert "10" in comment, \
+                f"Negative breakaway should mention yardage, got: {comment}"
+
+    def test_breakaway_zero_yards(self, commentary):
+        """Breakaway with zero yards should use no-gain language."""
+        positive_phrases = [
+            "breaks loose", "daylight", "GONE", "HUGE hole", "makes a man miss"
+        ]
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.OFF_TACKLE, ResultType.BREAKAWAY, yards=0
+            )
+            assert comment is not None
+            assert len(comment) > 0
+            for phrase in positive_phrases:
+                assert phrase not in comment, \
+                    f"Zero-yard breakaway should not say '{phrase}', got: {comment}"
+
+    def test_breakaway_touchdown(self, commentary):
+        """Breakaway with touchdown should include touchdown call."""
+        found_td = False
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.OFF_TACKLE, ResultType.BREAKAWAY, yards=45,
+                is_touchdown=True
+            )
+            assert comment is not None
+            if "touchdown" in comment.lower():
+                found_td = True
+        assert found_td, "Breakaway TD should include touchdown commentary"
+
+    def test_breakaway_negative_yards_no_touchdown_call(self, commentary):
+        """Breakaway with negative yards should never include touchdown language."""
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.BREAKAWAY, yards=-5
+            )
+            assert "touchdown" not in comment.lower(), \
+                f"Negative breakaway should not mention touchdown, got: {comment}"

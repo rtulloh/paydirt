@@ -810,11 +810,18 @@ class Commentary:
             lines.append(template.format(yards=yards))
 
         elif result_type == ResultType.BREAKAWAY:
-            # Breakaway run
-            template = random.choice(BREAKAWAY_CALLS)
-            lines.append(template.format(player=ball_carrier, yards=yards))
-            if is_touchdown:
-                lines.append(random.choice(TOUCHDOWN_CALLS).format(team=self.off_name))
+            # Breakaway run - but the B column can still produce negative yardage
+            if yards > 0:
+                template = random.choice(BREAKAWAY_CALLS)
+                lines.append(template.format(player=ball_carrier, yards=yards))
+                if is_touchdown:
+                    lines.append(random.choice(TOUCHDOWN_CALLS).format(team=self.off_name))
+            elif yards == 0:
+                template = random.choice(NO_GAIN_CALLS)
+                lines.append(template.format(player=ball_carrier))
+            else:
+                template = random.choice(LOSS_CALLS)
+                lines.append(template.format(player=ball_carrier, yards=abs(yards)))
 
         elif result_type == ResultType.YARDS:
             # Normal yardage play

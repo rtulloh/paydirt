@@ -1,5 +1,14 @@
 # Paydirt Release Notes
 
+## Version 1.5.1 (February 2026)
+
+### Bug Fixes
+- **Breakaway commentary on negative yardage**: Fixed commentary incorrectly using exciting breakaway language (e.g., "LOOK OUT! Wilbert Montgomery has daylight!") when the B column roll produced negative yardage (e.g., -10 yards). Breakaway commentary now correctly uses loss language for negative yards and no-gain language for zero yards.
+
+### Test Coverage
+- **1080 unit tests** passing
+- Added 6 new tests for breakaway commentary: positive yards, negative yards (no daylight), negative yards (loss language), zero yards, touchdown, and negative yards with no touchdown call
+
 ## Version 1.5 (February 2026)
 
 ### Kickoff & Punt Penalty Handling Overhaul
