@@ -2139,6 +2139,19 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             else:
                 play_outcome_str = "FIELD GOAL NO GOOD (turnover)"
                 play_field_str = "defense ball"
+        elif is_punt_penalty:
+            # For punt penalties, show the punt result (not turnover on downs)
+            play_outcome_str = "Punt stands as called"
+            # Get the final position from the pending state if available
+            if hasattr(game, '_pending_punt_state'):
+                final_pos = game._pending_punt_state.get('final_position', game.state.ball_position)
+                play_field_str = format_field_position(final_pos, style="short")
+            else:
+                play_field_str = "opponent's ball"
+        elif is_kickoff_penalty:
+            # For kickoff penalties, show the kickoff result
+            play_outcome_str = "Kickoff stands as called"
+            play_field_str = format_field_position(game.state.ball_position, style="short")
         else:
             yards_gained = play_result.yards
             play_new_pos = game.state.ball_position + yards_gained
