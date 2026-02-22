@@ -1,5 +1,25 @@
 # Paydirt Release Notes
 
+## Version 1.5.2 (February 2026)
+
+### Critical Bug Fixes - Priority Chart
+Fixed 5 bugs in priority chart resolution that would have caused incorrect yardage calculations during gameplay:
+- **(PARENS, WHITE_NUMBER)**: Was incorrectly ADDING, should use OFFENSE (parentheses take precedence)
+- **(PARENS, RED_NUMBER)**: Was incorrectly ADDING, should use PARENS (parentheses overrule negative)
+- **(WHITE_NUMBER, RED_NUMBER)**: Was incorrectly ADDING, should use DEFENSE (defense wins over no gain)
+- **(RED_NUMBER, WHITE_NUMBER)**: Was incorrectly ADDING, should use DEFENSE (defense wins)
+- **PARENS result handling**: Was using defense's value in both cases, now correctly uses offense's value when offense has parentheses
+
+### Bug Fixes
+- **Defense chart CSV parsing**: Fixed wrong column indices in parse_defense_csv that prevented defense modifiers from loading
+- **1983 Bears defense chart**: All 30 formation/sub-row combinations now load correctly
+
+### Test Coverage
+- **1118 unit tests** passing (up from 1107)
+- Added 1983 Bears defense chart tests (B-3, D-5, all 30 rows, all formations)
+- Added 1983 Bears offense chart test (die roll 24 with empty cell and BLACK cells)
+- Added priority chart edge case tests for the 5 bugs fixed
+
 ## Version 1.5.1 (February 2026)
 
 ### AI Improvements
