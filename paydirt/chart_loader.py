@@ -18,8 +18,8 @@ class PeripheralData:
     power_rating_variance: int = 1
     base_yardage_factor: int = 100
     reduced_yardage_factor: int = 80
-    fumble_recovered_range: tuple[int, int] = (10, 31)  # dice roll range for recovered
-    fumble_lost_range: tuple[int, int] = (32, 39)  # dice roll range for lost
+    fumble_recovered_range: tuple[int, int] = (0, 0)  # dice roll range for recovered
+    fumble_lost_range: tuple[int, int] = (0, 0)  # dice roll range for lost
     special_defense: str = ""
     short_name: str = ""
 
@@ -480,6 +480,11 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     for row in rows[1:]:  # Skip header
         if len(row) < 2:
             continue
+        
+        # Skip comment rows (starting with #)
+        if row[0] and str(row[0]).strip().startswith('#'):
+            continue
+        
         try:
             dice_roll = int(row[0])
         except (ValueError, IndexError):
@@ -520,10 +525,32 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
         if len(row) > 11 and row[11]:
             chart.qb_time[dice_roll] = row[11]
 
-    # Set fumble ranges from the data
-    if fumble_recovered_rolls:
+    # Parse fumble ranges from comment lines at the end of file
+    for row in rows:
+        if not row or len(row) < 2:
+            continue
+        first_cell = str(row[0]).strip()
+        if first_cell == '# Recovered' and len(row) > 1:
+            range_str = str(row[1]).strip()
+            if '-' in range_str:
+                try:
+                    parts = range_str.split('-')
+                    peripheral.fumble_recovered_range = (int(parts[0]), int(parts[1]))
+                except Exception:
+                    pass
+        elif first_cell == '# Lost' and len(row) > 1:
+            range_str = str(row[1]).strip()
+            if '-' in range_str:
+                try:
+                    parts = range_str.split('-')
+                    peripheral.fumble_lost_range = (int(parts[0]), int(parts[1]))
+                except Exception:
+                    pass
+
+    # Set fumble ranges from the data (fallback if comments not found)
+    if peripheral.fumble_recovered_range == (0, 0) and fumble_recovered_rolls:
         peripheral.fumble_recovered_range = (min(fumble_recovered_rolls), max(fumble_recovered_rolls))
-    if fumble_lost_rolls:
+    if peripheral.fumble_lost_range == (0, 0) and fumble_lost_rolls:
         peripheral.fumble_lost_range = (min(fumble_lost_rolls), max(fumble_lost_rolls))
 
     return chart, peripheral
@@ -535,7 +562,7 @@ def parse_defense_csv(filepath: str) -> DefenseChart:
     
     Format:
     #,Formation,Sub,1,2,3,4,5,6,7,8,9
-    A-Standard,1,,,,"(4)",-3,,-1,-13,6
+    A-1,A,1,,,,-2.0,(-1),,,-3.0
     
     Returns:
         DefenseChart
@@ -551,19 +578,20 @@ def parse_defense_csv(filepath: str) -> DefenseChart:
         if len(row) < 3:
             continue
         
-        formation = row[0].strip()
+        # Formation is in column 1, Sub is in column 2
+        formation = row[1].strip()
         try:
-            sub_row = int(row[1])
+            sub_row = int(row[2])
         except (ValueError, IndexError):
             continue
         
-        # Parse modifiers for each play type (columns 2-10)
+        # Parse modifiers for each play type (columns 3-11 for dice 1-9)
         modifiers = {}
-        for col_idx in range(2, 11):
+        for col_idx in range(3, 12):
             if col_idx < len(row) and row[col_idx]:
                 cell_value = row[col_idx].strip()
                 if cell_value:
-                    modifiers[col_idx - 1] = cell_value  # 1-indexed play columns
+                    modifiers[col_idx - 2] = cell_value  # 1-indexed play columns (col 3 -> dice 1)
         
         if modifiers:
             defense.modifiers[(formation, sub_row)] = modifiers

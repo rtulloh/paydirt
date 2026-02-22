@@ -376,10 +376,10 @@ class TestWhiteNumberOffense:
         assert result.priority == PriorityResult.ADD
         assert result.final_yards == 0
     
-    def test_white_vs_red_adds(self):
-        """White # vs Red # should ADD."""
+    def test_white_vs_red(self):
+        """White # vs Red # should use DEFENSE (defense wins over no gain)."""
         result = apply_priority_chart("0", "-3")
-        assert result.priority == PriorityResult.ADD
+        assert result.priority == PriorityResult.DEFENSE
         assert result.final_yards == -3
     
     def test_white_vs_qt(self):
@@ -419,11 +419,11 @@ class TestRedNumberOffense:
         assert result.priority == PriorityResult.OFFENSE
         assert result.final_yards == -3
     
-    def test_red_vs_white_adds(self):
-        """Red # vs White # should ADD."""
+    def test_red_vs_white(self):
+        """Red # vs White # should use DEFENSE (defense wins)."""
         result = apply_priority_chart("-3", "0")
-        assert result.priority == PriorityResult.ADD
-        assert result.final_yards == -3
+        assert result.priority == PriorityResult.DEFENSE
+        assert result.final_yards == 0
     
     def test_red_vs_red_adds(self):
         """Red # vs Red # should ADD."""
@@ -742,14 +742,14 @@ class TestParensOffense:
         assert result.priority == PriorityResult.OFFENSE
     
     def test_parens_vs_white(self):
-        """(#) vs White # should ADD."""
+        """(#) vs White # should use OFFENSE (parentheses takes precedence)."""
         result = apply_priority_chart("(5)", "0")
-        assert result.priority == PriorityResult.ADD
+        assert result.priority == PriorityResult.OFFENSE
     
     def test_parens_vs_red(self):
-        """(#) vs Red # should ADD."""
+        """(#) vs Red # should use PARENS (parentheses takes precedence over negative)."""
         result = apply_priority_chart("(5)", "-2")
-        assert result.priority == PriorityResult.ADD
+        assert result.priority == PriorityResult.PARENS
     
     def test_parens_vs_qt(self):
         """(#) vs QT should use QT."""
@@ -914,3 +914,51 @@ class TestPIOffense:
         """PI vs (#) should use OFFENSE (PI)."""
         result = apply_priority_chart("PI 15", "(3)")
         assert result.priority == PriorityResult.OFFENSE
+
+
+class TestPriorityChartEdgeCaseFixes:
+    """
+    Tests for edge cases that were previously buggy.
+    
+    These tests verify the fixes for:
+    1. (PARENS_NUMBER, WHITE_NUMBER) - should use OFFENSE, not ADD
+    2. (PARENS_NUMBER, RED_NUMBER) - should use PARENS, not ADD
+    3. (WHITE_NUMBER, RED_NUMBER) - should use DEFENSE, not ADD
+    4. (RED_NUMBER, WHITE_NUMBER) - should use DEFENSE, not ADD
+    """
+
+    def test_parens_offense_vs_zero_defense(self):
+        """(#) vs 0 - offense parentheses should win, not ADD."""
+        result = apply_priority_chart("(5)", "0")
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.final_yards == 5  # Offense gets their guaranteed yards
+
+    def test_parens_offense_vs_negative_defense(self):
+        """(#) vs negative - parentheses should overrule negative, not ADD."""
+        result = apply_priority_chart("(5)", "-3")
+        assert result.priority == PriorityResult.PARENS
+        assert result.final_yards == 5  # Offense gets their guaranteed yards, not -3
+
+    def test_zero_offense_vs_negative_defense(self):
+        """0 vs negative - defense should win, not ADD."""
+        result = apply_priority_chart("0", "-3")
+        assert result.priority == PriorityResult.DEFENSE
+        assert result.final_yards == -3  # Defense negative yards apply
+
+    def test_negative_offense_vs_zero_defense(self):
+        """negative vs 0 - defense should win, not ADD."""
+        result = apply_priority_chart("-3", "0")
+        assert result.priority == PriorityResult.DEFENSE
+        assert result.final_yards == 0  # Defense 0 (no gain) beats offense -3
+
+    def test_parens_vs_white_adds_correctly_when_appropriate(self):
+        """When offense has no parens and defense has positive, ADD works."""
+        result = apply_priority_chart("5", "3")
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == 8
+
+    def test_parens_vs_green_still_works(self):
+        """(#) vs positive - offense should win."""
+        result = apply_priority_chart("(5)", "10")
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.final_yards == 5

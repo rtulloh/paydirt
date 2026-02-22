@@ -243,7 +243,7 @@ class TestKickoffChartPenalties:
             assert outcome.pending_penalty_decision is True
             
             # Accept penalty - re-kick from 30 (35 - 5)
-            final_outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
+            game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
             
             # Re-kick from 30: 55 yards = lands at 15 (100 - 30 - 55)
             # Return 20 yards = 15 + 20 = 35

@@ -3,6 +3,32 @@ Priority Chart for combining offensive and defensive results in Paydirt.
 
 The Priority Chart determines the final outcome when both offense and defense
 have results that need to be reconciled.
+
+# Priority Chart Reference:
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | OFF \ DEF |  Oyg   |  Oyl   | NO CHG | (#)  | (#)  | (TD) | QR | QT | BLACK | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | Oyg or B  |  ADD   |  ADD   |  Oyg   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | Oyl       |  ADD   |  ADD   |  Oyl   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | NO GAIN   |  Oyg   |  Oyl   |NO GAIN | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | TD        |   TD   |   TD   |   TD   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | QR        |  ADD   |   QR   |   QR   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | QT        |   QT   |   QT   |   QT   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | BLACK     |  INC   |  INC   |  INC   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | INT       |  INT   |  INT   |  INT   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT*|
+# +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
+# | F or BK   |       FUMBLE/BLOCKED KICK PRIORITY OVER ALL BUT PENALTY               |
+# +-----------+-----------------------------------------------------------------------+
+# | DEF/OFF/PI|                   PENALTIES ALWAYS TAKE PRIORITY                     |
+# +-----------+-----------------------------------------------------------------------+
+# *INT Shortest Yards
 """
 import re
 from enum import Enum
@@ -154,7 +180,7 @@ PRIORITY_CHART = {
     # White # (zero/neutral) offense results
     (ResultCategory.WHITE_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
-    (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
+    (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.DEFENSE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.WHITE_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.INT): PriorityResult.INT,
@@ -164,7 +190,7 @@ PRIORITY_CHART = {
 
     # Red # (negative yardage) offense results
     (ResultCategory.RED_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
-    (ResultCategory.RED_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
+    (ResultCategory.RED_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.DEFENSE,
     (ResultCategory.RED_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.RED_NUMBER, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.RED_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
@@ -240,8 +266,8 @@ PRIORITY_CHART = {
 
     # (#) parentheses offense results
     (ResultCategory.PARENS_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
-    (ResultCategory.PARENS_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
-    (ResultCategory.PARENS_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
+    (ResultCategory.PARENS_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.OFFENSE,
+    (ResultCategory.PARENS_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.PARENS,
     (ResultCategory.PARENS_NUMBER, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.PARENS_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.PARENS_NUMBER, ResultCategory.INT): PriorityResult.INT,
@@ -386,10 +412,15 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         description = f"Defense result: {defense_result}"
 
     elif priority == PriorityResult.PARENS:
-        # Parenthesized number on defense means "offense gets these yards"
-        # The defense's parenthesized number IS the result - offense gains that yardage
-        final_yards = def_yards if def_yards is not None else 0
-        description = f"Defense (#) gives offense {final_yards} yards: {defense_result}"
+        # When offense has parenthesized number, it takes precedence
+        # When defense has parenthesized number, it takes precedence
+        # Check which side has the parentheses
+        if off_cat == ResultCategory.PARENS_NUMBER:
+            final_yards = off_yards if off_yards is not None else 0
+            description = f"Offense (#) gives {final_yards} yards: {offense_result}"
+        else:
+            final_yards = def_yards if def_yards is not None else 0
+            description = f"Defense (#) gives offense {final_yards} yards: {defense_result}"
 
     elif priority == PriorityResult.PARENS_TD:
         # (TD) on defense means touchdown - defense result overrules with TD

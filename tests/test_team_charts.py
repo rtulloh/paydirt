@@ -306,7 +306,7 @@ class TestChartLoaderPeripheralFromOffense:
         
         chart = load_team_chart(team_dir)
         
-        # Bills have fumble recovered 10-29, lost 30-39
+        # Bills have fumble recovered 10-29, lost 30-39 (from Excel PERIPHERAL DATA)
         assert chart.peripheral.fumble_recovered_range == (10, 29)
         assert chart.peripheral.fumble_lost_range == (30, 39)
     
@@ -420,3 +420,104 @@ class TestExtraPointChartLoading:
             if team_dir.is_dir():
                 chart = load_team_chart(team_dir)
                 assert chart.special_teams.extra_point_no_good is not None
+
+
+class Test1983BearsDefenseChart:
+    """Tests for 1983 Bears defense chart values."""
+
+    def test_bears_defense_b3_modifiers(self):
+        """Bears defense B-3 should have correct modifier values."""
+        bears_dir = Path('seasons/1983/Bears')
+        if not bears_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(bears_dir)
+
+        # B-3: dice 1=1.0, dice 2=1.0, dice 4=-1.0, dice 6=6.0
+        b3_modifiers = chart.defense.modifiers.get(('B', 3), {})
+        
+        assert b3_modifiers.get(1) == '1.0'
+        assert b3_modifiers.get(2) == '1.0'
+        assert b3_modifiers.get(4) == '-1.0'
+        assert b3_modifiers.get(6) == '6.0'
+        # Empty columns should not be present
+        assert 3 not in b3_modifiers
+        assert 5 not in b3_modifiers
+        assert 7 not in b3_modifiers
+        assert 8 not in b3_modifiers
+        assert 9 not in b3_modifiers
+
+    def test_bears_defense_d5_modifiers(self):
+        """Bears defense D-5 should have correct modifier values."""
+        bears_dir = Path('seasons/1983/Bears')
+        if not bears_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(bears_dir)
+
+        # D-5: dice 4=2.0, dice 5=-1.0, dice 6=-1.0, dice 7=[TD], dice 8=[TD], dice 9=3.0
+        d5_modifiers = chart.defense.modifiers.get(('D', 5), {})
+        
+        assert d5_modifiers.get(4) == '2.0'
+        assert d5_modifiers.get(5) == '-1.0'
+        assert d5_modifiers.get(6) == '-1.0'
+        assert d5_modifiers.get(7) == '[TD]'
+        assert d5_modifiers.get(8) == '[TD]'
+        assert d5_modifiers.get(9) == '3.0'
+        # Empty columns should not be present
+        assert 1 not in d5_modifiers
+        assert 2 not in d5_modifiers
+        assert 3 not in d5_modifiers
+
+    def test_bears_defense_has_30_rows(self):
+        """Bears defense chart should have all 30 formation/sub-row combinations."""
+        bears_dir = Path('seasons/1983/Bears')
+        if not bears_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(bears_dir)
+
+        # Should have 6 formations (A-F) x 5 sub-rows (1-5) = 30 entries
+        assert len(chart.defense.modifiers) == 30
+
+    def test_bears_defense_all_formations_present(self):
+        """Bears defense chart should have all formations A-F."""
+        bears_dir = Path('seasons/1983/Bears')
+        if not bears_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(bears_dir)
+
+        modifiers = chart.defense.modifiers
+        
+        for formation in ['A', 'B', 'C', 'D', 'E', 'F']:
+            for sub_row in range(1, 6):
+                assert (formation, sub_row) in modifiers, f"Missing {formation}-{sub_row}"
+
+
+class Test1983BearsOffenseChart:
+    """Tests for 1983 Bears offense chart values."""
+
+    def test_bears_offense_roll_24(self):
+        """Bears offense roll 24 should have correct values including empty cell and BLACK cells."""
+        bears_dir = Path('seasons/1983/Bears')
+        if not bears_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(bears_dir)
+
+        # Roll 24: Line Plunge=B, Off Tackle=-3, End Run=(empty), Draw=3, 
+        # Screen=BLACK, Short=BLACK, Med=BLACK, Long=BLACK, T/E S/L=10, B=10, QT=8, Fumble=R
+        assert chart.offense.line_plunge.get(24) == 'B'
+        assert chart.offense.off_tackle.get(24) == '-3'
+        assert chart.offense.end_run.get(24) is None  # Empty cell
+        assert chart.offense.draw.get(24) == '3'
+        assert chart.offense.screen.get(24) == 'BLACK'  # Incomplete pass
+        assert chart.offense.short_pass.get(24) == 'BLACK'  # Incomplete pass
+        assert chart.offense.medium_pass.get(24) == 'BLACK'  # Incomplete pass
+        assert chart.offense.long_pass.get(24) == 'BLACK'  # Incomplete pass
+        assert chart.offense.te_short_long.get(24) == '10'
+        assert chart.offense.breakaway.get(24) == '10'
+        assert chart.offense.qb_time.get(24) == '8'
+        # Fumble is stored in peripheral - check that's loaded
+        assert chart.peripheral.fumble_recovered_range is not None

@@ -53,6 +53,8 @@ def mock_team_chart(mock_special_teams):
             team_nickname="Team",
             short_name="TST '83",
             power_rating=50,
+            fumble_recovered_range=(10, 31),
+            fumble_lost_range=(32, 39),
         ),
         offense=OffenseChart(),
         defense=DefenseChart(),
