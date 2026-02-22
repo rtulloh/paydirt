@@ -24,6 +24,12 @@ class TestCategorizeResult:
         assert cat == ResultCategory.GREEN_NUMBER
         assert val == 5
     
+    def test_positive_decimal_number(self):
+        """Positive decimal numbers should be categorized as green."""
+        cat, val = categorize_result("2.0")
+        assert cat == ResultCategory.GREEN_NUMBER
+        assert val == 2
+    
     def test_negative_number(self):
         """Negative numbers should be categorized as red."""
         cat, val = categorize_result("-3")

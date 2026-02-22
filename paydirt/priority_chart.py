@@ -147,16 +147,20 @@ def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
         # Square brackets also indicate overrule
         return ResultCategory.PARENS_NUMBER, int(bracket_match.group(1))
 
-    # Check for simple number (with optional asterisk)
-    num_match = re.match(r'^(-?\d+)\*?$', result_str)
+    # Check for simple number (with optional decimal and optional asterisk)
+    num_match = re.match(r'^(-?\d+\.?\d*)\*?$', result_str)
     if num_match:
-        yards = int(num_match.group(1))
-        if yards > 0:
-            return ResultCategory.GREEN_NUMBER, yards
-        elif yards < 0:
-            return ResultCategory.RED_NUMBER, yards
+        try:
+            yards = int(float(num_match.group(1)))
+        except ValueError:
+            pass
         else:
-            return ResultCategory.WHITE_NUMBER, 0
+            if yards > 0:
+                return ResultCategory.GREEN_NUMBER, yards
+            elif yards < 0:
+                return ResultCategory.RED_NUMBER, yards
+            else:
+                return ResultCategory.WHITE_NUMBER, 0
 
     # Default to white/neutral
     return ResultCategory.WHITE_NUMBER, None
