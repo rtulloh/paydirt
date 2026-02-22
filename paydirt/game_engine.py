@@ -3009,8 +3009,15 @@ class PaydirtGameEngine:
         
         Returns a PlayOutcome describing what would happen if the play result is accepted.
         """
-        parsed = parse_result_string(fg_result)
-        parsed.dice_roll = dice_roll
+        # For FG, don't use parse_result_string - it treats "12" as 12 yards gained
+        # Instead, create a proper PlayResult for field goal (yards=0 to avoid "Gain of" display)
+        parsed = PlayResult(
+            result_type=ResultType.YARDS,
+            yards=0,
+            description="",
+            raw_result=fg_result,
+            dice_roll=dice_roll
+        )
         
         success = False
         blocked = False

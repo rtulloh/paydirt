@@ -560,3 +560,53 @@ class TestBlockedFieldGoalReturnTD:
                 assert game.state.away_score == initial_away_score
                 # Outcome should have touchdown=False
                 assert outcome.touchdown is False
+
+
+class TestFGPenaltyResultDisplay:
+    """Tests for FG penalty result display.
+    
+    Bug fix: When an offensive penalty occurs on FG and the penalty choice is displayed,
+    the play_result should NOT show "Gain of X yards" for the FG chart result.
+    The FG chart result (e.g., "12") represents kick distance, not yards gained.
+    """
+    
+    def test_fg_penalty_result_has_zero_yards(self, game):
+        """FG penalty result should have yards=0 to avoid 'Gain of X yards' display."""
+        from paydirt.play_resolver import PenaltyOption
+        
+        game.state.ball_position = 59  # Kicking team's 41 yard line (41 FG)
+        game.state.is_home_possession = True
+        
+        # Create FG result with penalty
+        fg_result = FieldGoalResult(
+            dice_roll=15,
+            dice_desc="B1+W0+W5=15",
+            raw_result="12",  # Chart result - 12 yards (FG NO GOOD)
+            chart_yards=12,
+            is_blocked=False,
+            is_fumble=False,
+            is_penalty=True,
+            penalty_options=[PenaltyOption(
+                penalty_type="OFF",
+                raw_result="OFF 10",
+                yards=10,
+                description="Offensive penalty, 10 yards"
+            )],
+            offsetting=False,
+            offended_team="defense",
+            reroll_log=["FG roll: OFF 10 (penalty)", "FG roll: 15 -> 12"]
+        )
+        
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = fg_result
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            # Verify penalty choice was created
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice is not None
+            
+            # Key fix: play_result should have yards=0, not 12
+            # This prevents "Gain of 12 yards" from showing in the display
+            assert outcome.penalty_choice.play_result.yards == 0, \
+                f"Expected yards=0, got {outcome.penalty_choice.play_result.yards}"
