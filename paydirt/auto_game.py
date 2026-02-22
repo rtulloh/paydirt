@@ -280,6 +280,33 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
 
             print(f"  {result_str}")
 
+        # Handle penalty decisions for special teams (punt, field goal, kickoff)
+        if outcome.pending_penalty_decision and outcome.penalty_choice:
+            penalty_choice = outcome.penalty_choice
+            
+            # CPU makes a decision based on what's beneficial
+            # For punt: OFF penalty = accept (replay from worse spot), DEF penalty = accept (usually first down)
+            # For FG: usually accept the penalty
+            # For kickoff: usually accept the penalty
+            
+            if penalty_choice.offended_team == "defense":
+                # Defense was offended - accept penalty is usually better
+                accept_penalty = True
+            else:
+                # Offense was offended - usually accept penalty
+                accept_penalty = True
+            
+            # Apply the decision
+            if play_type == PlayType.PUNT:
+                outcome = game.apply_punt_penalty_decision(outcome, accept_penalty)
+                print(f"  [PENALTY: {'Accepted' if accept_penalty else 'Declined'}]")
+            elif play_type == PlayType.FIELD_GOAL:
+                outcome = game.apply_fg_penalty_decision(outcome, accept_play=True, penalty_index=0)
+                print("  [PENALTY: Accepted]")
+            elif play_type == PlayType.KICKOFF:
+                outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
+                print("  [PENALTY: Accepted]")
+
         play_count += 1
         time.sleep(delay)
 
