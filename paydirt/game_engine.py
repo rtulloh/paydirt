@@ -2481,8 +2481,9 @@ class PaydirtGameEngine:
                 
                 # Check if accepting would give a first down
                 # X modifier (e.g., DEF 5X) means automatic first down regardless of ytg
-                # For DEF penalty, offense ALWAYS gets first down (gains yards + auto 1st down)
-                would_get_first_down = punt_penalty_auto_first_down or True  # DEF penalty always gives first down
+                # For DEF penalty on a PUNT, it's typically a pre-snap penalty (encroachment/offsides),
+                # so the offense just gets 5 yards and replays the down - not a new set of downs
+                would_get_first_down = punt_penalty_auto_first_down or punt_penalty_yards >= ytg_before
                 
                 if would_get_first_down:
                     if punt_penalty_auto_first_down:
