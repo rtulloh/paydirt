@@ -2053,10 +2053,13 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
         state = game._pending_punt_state
         punt_roll = state.get('punt_roll', 0)
         punt_result = state.get('punt_result', '')
+        punt_yards = state.get('punt_yards', 0)
         return_yards = state.get('return_yards', 0)
         
-        # Format: (P:14→"OFF 15" | reroll:15→"40" | R:10→"10")
+        # Format: (Punt: 35 yards | P:14→"OFF 15" | R:10→"10")
         roll_parts = []
+        if punt_yards > 0:
+            roll_parts.append(f"Punt: {punt_yards} yards")
         roll_parts.append(f"P:{punt_roll}→\"{punt_result}\"")
         
         # If there was a reroll for actual yardage, show it
