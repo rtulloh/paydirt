@@ -195,3 +195,40 @@ class TestResolveFieldGoalWithPenalties:
             
             assert result.offsetting is True
             assert len(result.penalty_options) == 2
+
+
+class TestBreakawayDiceField:
+    """Tests for breakaway_dice field in PlayResult.
+    
+    Bug fix: Breakaway dice roll should be stored in PlayResult for diagnostic display.
+    """
+    
+    def test_play_result_has_breakaway_dice_field(self):
+        """PlayResult should have breakaway_dice field initialized to 0."""
+        from paydirt.play_resolver import PlayResult, ResultType
+        
+        result = PlayResult(
+            result_type=ResultType.BREAKAWAY,
+            yards=10,
+            description="Breakaway!",
+            dice_roll=25
+        )
+        
+        # breakaway_dice should default to 0
+        assert result.breakaway_dice == 0
+    
+    def test_play_result_breakaway_dice_can_be_set(self):
+        """PlayResult breakaway_dice should be settable."""
+        from paydirt.play_resolver import PlayResult, ResultType
+        
+        result = PlayResult(
+            result_type=ResultType.BREAKAWAY,
+            yards=15,
+            description="Breakaway!",
+            dice_roll=25
+        )
+        
+        # Set breakaway_dice
+        result.breakaway_dice = 22
+        
+        assert result.breakaway_dice == 22
