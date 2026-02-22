@@ -14,6 +14,7 @@ Fixed 5 bugs in priority chart resolution that would have caused incorrect yarda
 - **Defense chart CSV parsing**: Fixed wrong column indices in parse_defense_csv that prevented defense modifiers from loading
 - **1983 Bears defense chart**: All 30 formation/sub-row combinations now load correctly
 - **Auto game penalty handling**: Fixed bug where CPU vs CPU games didn't handle penalty decisions for punts (including coffin corner), field goals, and kickoffs
+- **Timeout after two-minute warning**: Fixed bug where timeout used pre-play time instead of current time after two-minute warning triggered. Now correctly uses current time (2:00) when subtracting 10 seconds
 
 ### Test Coverage
 - **1118 unit tests** passing (up from 1107)
