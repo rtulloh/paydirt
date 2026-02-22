@@ -139,3 +139,126 @@ class TestMultipleTeams:
         
         summary = analyzer.get_offense_summary()
         assert summary['total_play_types'] > 0
+
+
+class TestOpponentTendencyTracker:
+    """Tests for opponent tendency tracking."""
+    
+    def test_situation_type_categorization(self):
+        """Should correctly categorize situations."""
+        from paydirt.ai_analysis import get_situation_type, SituationType
+        
+        assert get_situation_type(1, 10) == SituationType.FIRST_DOWN
+        assert get_situation_type(2, 3) == SituationType.SECOND_SHORT
+        assert get_situation_type(2, 8) == SituationType.SECOND_LONG
+        assert get_situation_type(3, 5) == SituationType.THIRD_MEDIUM
+        assert get_situation_type(3, 15) == SituationType.THIRD_LONG
+        assert get_situation_type(4, 1) == SituationType.FOURTH_SHORT
+    
+    def test_record_and_predict_plays(self):
+        """Should record and predict opponent plays."""
+        from paydirt.ai_analysis import OpponentTendencyTracker, PlayCategory
+        
+        tracker = OpponentTendencyTracker()
+        
+        # Record runs
+        tracker.record_play(1, 10, 'Off Tackle', 5)
+        tracker.record_play(1, 10, 'Line Plunge', 3)
+        
+        # Record passes
+        tracker.record_play(3, 10, 'Long', 20, is_pass=True)
+        tracker.record_play(3, 10, 'Med', 10, is_pass=True)
+        
+        # Predict on 3rd & 10 - should be PASS
+        prediction = tracker.predict_play(3, 10)
+        assert prediction == PlayCategory.PASS
+        
+        # Predict on 1st & 10 - should be balanced
+        prediction = tracker.predict_play(1, 10)
+        assert prediction in [PlayCategory.RUN, PlayCategory.PASS]
+    
+    def test_defense_recommendation(self):
+        """Should recommend appropriate defense."""
+        from paydirt.ai_analysis import OpponentTendencyTracker
+        
+        tracker = OpponentTendencyTracker()
+        
+        # Record mostly passes on 3rd & long
+        for _ in range(5):
+            tracker.record_play(3, 10, 'Long', 15, is_pass=True)
+        
+        # Record mostly runs on 1st & 10
+        for _ in range(5):
+            tracker.record_play(1, 10, 'Off Tackle', 4)
+        
+        # Should recommend pass defense for 3rd & 10
+        defense = tracker.get_defense_recommendation(3, 10)
+        assert defense == "D"  # Short Pass defense
+        
+        # Should recommend run defense for 1st & 10
+        defense = tracker.get_defense_recommendation(1, 10)
+        assert defense == "B"  # Short Yardage
+    
+    def test_streak_detection(self):
+        """Should detect play streaks."""
+        from paydirt.ai_analysis import OpponentTendencyTracker, PlayCategory
+        
+        tracker = OpponentTendencyTracker()
+        
+        # No streak initially
+        assert tracker.get_streak() is None
+        
+        # Record 3 consecutive passes
+        for _ in range(3):
+            tracker.record_play(3, 10, 'Long', 15, is_pass=True)
+        
+        # Should detect pass streak
+        assert tracker.get_streak() == PlayCategory.PASS
+    
+    def test_empty_prediction(self):
+        """Should handle no data gracefully."""
+        from paydirt.ai_analysis import OpponentTendencyTracker, PlayCategory
+        
+        tracker = OpponentTendencyTracker()
+        
+        # With no data, should default to RUN
+        prediction = tracker.predict_play(3, 10)
+        assert prediction == PlayCategory.RUN
+
+
+class TestOpponentModel:
+    """Tests for opponent model with game state awareness."""
+    
+    def test_comeback_mode_defense(self):
+        """Should recommend pass defense when opponent is trailing."""
+        from paydirt.ai_analysis import OpponentModel
+        
+        model = OpponentModel()
+        
+        # Trailing in 4th quarter
+        defense = model.predict_defense(3, 10, -7, 4, 3.0)
+        assert defense == "E"  # Long Pass - expecting them to pass
+    
+    def test_protect_lead_defense(self):
+        """Should recommend run defense when opponent is leading."""
+        from paydirt.ai_analysis import OpponentModel
+        
+        model = OpponentModel()
+        
+        # Leading in 4th quarter
+        defense = model.predict_defense(3, 10, 7, 4, 3.0)
+        assert defense == "A"  # Standard - expecting them to run
+    
+    def test_tendency_overrides_early_game(self):
+        """Should use tendencies in early game before game state kicks in."""
+        from paydirt.ai_analysis import OpponentModel
+        
+        model = OpponentModel()
+        
+        # Record opponent tends to pass on 3rd & long
+        for _ in range(5):
+            model.record_opponent_play(3, 10, 'Long', 15, is_pass=True)
+        
+        # Early game, close score - should use tendency
+        defense = model.predict_defense(3, 10, 0, 2, 10.0)
+        assert defense == "D"  # Based on tendency

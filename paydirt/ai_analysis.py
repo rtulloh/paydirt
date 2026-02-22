@@ -493,3 +493,257 @@ class TeamAnalyzer:
 def analyze_team(team_chart: TeamChart) -> TeamAnalyzer:
     """Create a team analyzer for the given team chart."""
     return TeamAnalyzer(team_chart)
+
+
+# ============================================================
+# PHASE 2: OPPONENT MODELING
+# ============================================================
+
+from collections import defaultdict
+from typing import Optional
+from enum import Enum
+
+
+class PlayCategory(Enum):
+    """Categories for play type classification."""
+    RUN = "run"
+    PASS = "pass"
+    SPECIAL = "special"
+
+
+class SituationType(Enum):
+    """Situation categories for tendency tracking."""
+    FIRST_DOWN = "first_down"  # 1st & any
+    SECOND_SHORT = "second_short"  # 2nd & short (< 4)
+    SECOND_MEDIUM = "second_medium"  # 2nd & medium (4-6)
+    SECOND_LONG = "second_long"  # 2nd & 7+
+    THIRD_SHORT = "third_short"  # 3rd & short (< 4)
+    THIRD_MEDIUM = "third_medium"  # 3rd & medium (4-6)
+    THIRD_LONG = "third_long"  # 3rd & 7+
+    FOURTH_SHORT = "fourth_short"  # 4th & short
+    FOURTH_LONG = "fourth_long"  # 4th & long
+
+
+def get_situation_type(down: int, distance: int) -> SituationType:
+    """Categorize a down/distance into a situation type."""
+    if down == 1:
+        return SituationType.FIRST_DOWN
+    elif down == 2:
+        if distance <= 3:
+            return SituationType.SECOND_SHORT
+        elif distance <= 6:
+            return SituationType.SECOND_MEDIUM
+        else:
+            return SituationType.SECOND_LONG
+    elif down == 3:
+        if distance <= 3:
+            return SituationType.THIRD_SHORT
+        elif distance <= 6:
+            return SituationType.THIRD_MEDIUM
+        else:
+            return SituationType.THIRD_LONG
+    else:  # down 4
+        if distance <= 3:
+            return SituationType.FOURTH_SHORT
+        else:
+            return SituationType.FOURTH_LONG
+
+
+def categorize_play(play_type: str) -> PlayCategory:
+    """Categorize a play type as run, pass, or special."""
+    run_keywords = ['Line Plunge', 'Off Tackle', 'End Run', 'Draw']
+    pass_keywords = ['Screen', 'Short', 'Med', 'Long', 'T/E S/L']
+    
+    for keyword in run_keywords:
+        if keyword in play_type:
+            return PlayCategory.RUN
+    for keyword in pass_keywords:
+        if keyword in play_type:
+            return PlayCategory.PASS
+    return PlayCategory.SPECIAL
+
+
+@dataclass
+class SituationTendency:
+    """Tendency statistics for a specific situation type."""
+    situation: SituationType
+    total_plays: int = 0
+    run_plays: int = 0
+    pass_plays: int = 0
+    special_plays: int = 0
+    
+    @property
+    def run_percentage(self) -> float:
+        if self.total_plays == 0:
+            return 50.0  # Default to balanced
+        return (self.run_plays / self.total_plays) * 100
+    
+    @property
+    def pass_percentage(self) -> float:
+        if self.total_plays == 0:
+            return 50.0
+        return (self.pass_plays / self.total_plays) * 100
+
+
+class OpponentTendencyTracker:
+    """
+    Tracks opponent tendencies to predict their play choices.
+    
+    Ignores penalties and turnovers - only tracks actual play outcomes.
+    """
+    
+    def __init__(self):
+        # Track plays by situation type
+        self.situation_plays: dict[SituationType, list[PlayCategory]] = defaultdict(list)
+        
+        # Track recent plays for streak detection
+        self.recent_plays: list[PlayCategory] = []
+        self.max_recent_plays = 10  # Keep last 10 plays
+        
+        # Track results (for success rate calculation)
+        self.situation_results: dict[SituationType, dict[PlayCategory, list[int]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+    
+    def record_play(self, down: int, distance: int, play_type: str, 
+                    yards_gained: int, is_pass: bool = None):
+        """
+        Record an opponent's play choice.
+        
+        Args:
+            down: Down number (1-4)
+            distance: Yards to go
+            play_type: The play type they chose
+            yards_gained: Yards gained (used to filter out big plays, not for tendency tracking)
+            is_pass: Optional override for pass vs run classification
+        """
+        situation = get_situation_type(down, distance)
+        
+        # Categorize the play
+        if is_pass is not None:
+            category = PlayCategory.PASS if is_pass else PlayCategory.RUN
+        else:
+            category = categorize_play(play_type)
+        
+        # Record the play
+        self.situation_plays[situation].append(category)
+        self.recent_plays.append(category)
+        
+        # Keep only recent plays
+        if len(self.recent_plays) > self.max_recent_plays:
+            self.recent_plays.pop(0)
+    
+    def get_tendency(self, down: int, distance: int) -> SituationTendency:
+        """Get tendency statistics for a specific down/distance."""
+        situation = get_situation_type(down, distance)
+        
+        tendency = SituationTendency(situation=situation)
+        plays = self.situation_plays.get(situation, [])
+        
+        tendency.total_plays = len(plays)
+        tendency.run_plays = sum(1 for p in plays if p == PlayCategory.RUN)
+        tendency.pass_plays = sum(1 for p in plays if p == PlayCategory.PASS)
+        tendency.special_plays = sum(1 for p in plays if p == PlayCategory.SPECIAL)
+        
+        return tendency
+    
+    def predict_play(self, down: int, distance: int) -> PlayCategory:
+        """
+        Predict what the opponent will do in a given situation.
+        
+        Returns the most likely play category (RUN, PASS, or SPECIAL).
+        """
+        tendency = self.get_tendency(down, distance)
+        
+        # If we have no data, return balanced prediction
+        if tendency.total_plays == 0:
+            return PlayCategory.RUN  # Default assumption
+        
+        # Return the category with higher percentage
+        if tendency.run_percentage >= tendency.pass_percentage:
+            return PlayCategory.RUN
+        else:
+            return PlayCategory.PASS
+    
+    def get_streak(self) -> Optional[PlayCategory]:
+        """Get the current streak of same play types."""
+        if len(self.recent_plays) < 3:
+            return None
+        
+        # Check last 3 plays
+        last_three = self.recent_plays[-3:]
+        if len(set(last_three)) == 1:
+            return last_three[0]
+        return None
+    
+    def get_defense_recommendation(self, down: int, distance: int) -> str:
+        """
+        Get a defense recommendation based on opponent tendencies.
+        
+        Returns a defense type recommendation (A-F).
+        """
+        tendency = self.get_tendency(down, distance)
+        
+        # If opponent runs a lot, use run defense (A, B)
+        # If opponent passes a lot, use pass defense (D, E)
+        if tendency.pass_percentage > 60:
+            return "D"  # Short Pass defense
+        elif tendency.pass_percentage > 40:
+            return "C"  # Spread (balanced)
+        elif tendency.run_percentage > 60:
+            return "B"  # Short Yardage
+        else:
+            return "A"  # Standard
+
+
+class OpponentModel:
+    """
+    Complete opponent model combining tendencies with game state awareness.
+    """
+    
+    def __init__(self):
+        self.tracker = OpponentTendencyTracker()
+        self.score_differential_history: list[int] = []
+        self.is_protecting_lead: bool = False
+        self.is_comeback_mode: bool = False
+    
+    def update_game_state(self, score_diff: int, quarter: int, time_remaining: float):
+        """Update game state awareness."""
+        self.score_differential_history.append(score_diff)
+        
+        # Determine game state
+        if quarter >= 4 and time_remaining < 5.0:
+            if score_diff > 0:
+                self.is_protecting_lead = True
+                self.is_comeback_mode = False
+            elif score_diff < 0:
+                self.is_comeback_mode = True
+                self.is_protecting_lead = False
+        else:
+            self.is_protecting_lead = False
+            self.is_comeback_mode = False
+    
+    def predict_defense(self, down: int, distance: int, score_diff: int,
+                       quarter: int, time_remaining: float) -> str:
+        """
+        Predict the best defense to use against opponent.
+        
+        Considers both opponent tendencies and game state.
+        """
+        self.update_game_state(score_diff, quarter, time_remaining)
+        
+        # First, check game state overrides
+        if self.is_protecting_lead:
+            # They're likely to run - use run defense
+            return "A"  # Standard/balanced
+        elif self.is_comeback_mode:
+            # They're likely to pass - use pass defense
+            return "E"  # Long Pass
+        
+        # Otherwise, use tendency data
+        return self.tracker.get_defense_recommendation(down, distance)
+    
+    def record_opponent_play(self, down: int, distance: int, play_type: str,
+                            yards_gained: int, is_pass: bool = None):
+        """Record an opponent's play for tendency tracking."""
+        self.tracker.record_play(down, distance, play_type, yards_gained, is_pass)
