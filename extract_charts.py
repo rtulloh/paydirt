@@ -242,6 +242,16 @@ def extract_defense_chart(file_path):
             cell = sheet.cell(row_idx, col_idx)
             cell_value = str(cell.value).strip() if cell.value else ''
             
+            # Clean up cell value - convert floats like "-2.0" to integers like "-2"
+            if cell_value and cell_value not in ['', 'None']:
+                try:
+                    # Check if it's a float that can be converted to int (e.g., "-2.0" -> "-2")
+                    float_val = float(cell_value)
+                    if float_val == int(float_val):
+                        cell_value = str(int(float_val))
+                except (ValueError, TypeError):
+                    pass
+            
             # Check if BLACK cell
             is_black = is_black_cell(workbook, cell)
             
