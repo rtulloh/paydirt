@@ -2065,8 +2065,9 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                 roll_parts.append(f"reroll: {log_entry}")
         
         # Show return roll if there was a return
-        if return_yards > 0:
-            roll_parts.append(f"R:→\"{return_yards}\"")
+        return_roll = state.get('return_roll', 0)
+        if return_roll > 0:
+            roll_parts.append(f"R:{return_roll}→\"{return_yards}\"")
         
         print(f"\n  ({' | '.join(roll_parts)})")
     elif is_kickoff_penalty and hasattr(game, '_pending_kickoff_state'):
