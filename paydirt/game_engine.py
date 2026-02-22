@@ -2124,7 +2124,7 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=f"Keep touchback + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
-                    auto_first_down=False
+                    auto_first_down=True  # Offense gets first down when accepting defensive penalty
                 )
                 
                 penalty_choice = PenaltyChoice(
@@ -2227,7 +2227,7 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=f"Keep result + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
-                    auto_first_down=False
+                    auto_first_down=True  # Offense gets first down when accepting defensive penalty
                 )
                 
                 penalty_choice = PenaltyChoice(
@@ -2421,7 +2421,7 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=keep_desc,
-                    auto_first_down=False
+                    auto_first_down=True  # Offense gets first down when accepting defensive penalty
                 )
                 
                 penalty_choice = PenaltyChoice(
