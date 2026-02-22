@@ -16,6 +16,7 @@
 - **Interception return after penalty decision**: Fixed a bug where accepting a play result after a penalty would re-roll the interception return dice instead of using the original return. This was causing 5-yard interceptions to become 70-yard returns after penalty choices.
 - **BLACK categorized as BREAKAWAY**: Fixed a bug where "BLACK" in offense charts was being miscategorized as BREAKAWAY (since it starts with "B"), causing incomplete passes to trigger breakaway resolution instead of being treated as incomplete. Now checks for "BLACK" before "B" in the categorization logic.
 - **FG penalty result showing "Gain of X yards"**: Fixed a bug where field goal attempts with penalties would incorrectly display "Gain of X yards" in the penalty choice. The FG chart result (e.g., "12" for a 12-yard kick) was being parsed as 12 yards gained on a normal play. Now uses yards=0 for FG penalty results to avoid incorrect display.
+- **Punt penalty options showing wrong down/distance**: Fixed a bug where punt penalty options ("Keep touchback + X yards" and "Keep result + X yards") were showing "4th and X" instead of "1st and 10". When the offense accepts a defensive penalty on a punt, they should get an automatic first down. Now sets auto_first_down=True for keep options.
 
 ### Test Coverage
 - **1102 unit tests** passing
