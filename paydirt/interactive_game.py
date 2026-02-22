@@ -1653,7 +1653,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                         extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\""
 
             def_row = def_match.group(3) if def_match else "?"
-            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
+            
+            # Add breakaway dice if this is a breakaway play
+            breakaway_extra = ""
+            if outcome.result.result_type == ResultType.BREAKAWAY:
+                b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+                if b_dice:
+                    breakaway_extra = f" | B:{b_dice}"
+            
+            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra})")
 
             # Announce turnover on downs with expressive commentary and possession change
             if is_turnover_on_downs:
@@ -1798,7 +1806,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
                 else:
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\""
-        print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info})")
+            
+            # Add breakaway dice if this is a breakaway play
+            breakaway_extra = ""
+            if outcome.result.result_type == ResultType.BREAKAWAY:
+                b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+                if b_dice:
+                    breakaway_extra = f" | B:{b_dice}"
+            
+            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra})")
 
         # Announce turnover on downs with expressive commentary and possession change
         if is_turnover_on_downs:

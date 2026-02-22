@@ -88,6 +88,8 @@ class PlayResult:
     fumble_resolved: bool = False  # True if fumble recovery was already determined
     fumble_return_yards: int = 0
     fumble_return_dice: int = 0
+    # Breakaway dice roll (set when offense result is "B")
+    breakaway_dice: int = 0
     # Out of bounds marker (* or †) - affects clock in final minutes
     out_of_bounds: bool = False
 
@@ -805,6 +807,7 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         b_yards = resolve_breakaway(offense_chart.offense, b_roll)
         result.yards = b_yards
         result.result_type = ResultType.BREAKAWAY
+        result.breakaway_dice = b_roll
         result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
 
     elif combined.is_turnover:
@@ -1268,6 +1271,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         b_yards = resolve_breakaway(offense_chart.offense, b_roll)
         play_result.yards = b_yards
         play_result.result_type = ResultType.BREAKAWAY
+        play_result.breakaway_dice = b_roll
         play_result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
 
     elif combined.is_turnover:
