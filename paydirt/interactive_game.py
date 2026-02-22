@@ -1658,8 +1658,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             breakaway_extra = ""
             if outcome.result.result_type == ResultType.BREAKAWAY:
                 b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+                b_yards = getattr(outcome.result, 'breakaway_yards', 0)
                 if b_dice:
-                    breakaway_extra = f" | B:{b_dice}"
+                    breakaway_extra = f" | B:{b_dice}→{b_yards}"
             
             print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra})")
 
@@ -1811,8 +1812,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             breakaway_extra = ""
             if outcome.result.result_type == ResultType.BREAKAWAY:
                 b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+                b_yards = getattr(outcome.result, 'breakaway_yards', 0)
                 if b_dice:
-                    breakaway_extra = f" | B:{b_dice}"
+                    breakaway_extra = f" | B:{b_dice}→{b_yards}"
             
             print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra})")
 
