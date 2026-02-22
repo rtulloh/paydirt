@@ -17,11 +17,14 @@
 - **BLACK categorized as BREAKAWAY**: Fixed a bug where "BLACK" in offense charts was being miscategorized as BREAKAWAY (since it starts with "B"), causing incomplete passes to trigger breakaway resolution instead of being treated as incomplete. Now checks for "BLACK" before "B" in the categorization logic.
 - **FG penalty result showing "Gain of X yards"**: Fixed a bug where field goal attempts with penalties would incorrectly display "Gain of X yards" in the penalty choice. The FG chart result (e.g., "12" for a 12-yard kick) was being parsed as 12 yards gained on a normal play. Now uses yards=0 for FG penalty results to avoid incorrect display.
 - **Punt penalty options showing wrong down/distance**: Fixed a bug where punt penalty options ("Keep touchback + X yards" and "Keep result + X yards") were showing "4th and X" instead of "1st and 10". When the offense accepts a defensive penalty on a punt, they should get an automatic first down. Now sets auto_first_down=True for keep options.
+- **Breakaway dice not shown in diagnostic display**: Fixed a bug where breakaway plays didn't show the breakaway dice roll in the diagnostic output (e.g., `(O:34→"B" | D:3→"-2" | #B)`). Now also shows `| B:22` for the breakaway roll. Added `breakaway_dice` field to PlayResult and updated display logic.
 
 ### Test Coverage
-- **1102 unit tests** passing
+- **1106 unit tests** passing
 - Added tests for interception return reuse after penalty decision
 - Added tests for BLACK result categorization
+- Added tests for punt penalty keep options auto_first_down
+- Added tests for breakaway_dice field in PlayResult
 
 ## Version 1.5 (February 2026)
 
