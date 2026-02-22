@@ -74,6 +74,10 @@ def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
     if result_str == "TD":
         return ResultCategory.TD, None
 
+    # Check for BLACK (incomplete/no result) - must check before "B" breakaway
+    if result_str == "BLACK":
+        return ResultCategory.BLACK, None
+
     # Check for Breakaway
     if result_str.startswith("B"):
         return ResultCategory.BREAKAWAY, None

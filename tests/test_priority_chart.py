@@ -57,6 +57,16 @@ class TestCategorizeResult:
         cat, val = categorize_result("INT 15")
         assert cat == ResultCategory.INT
 
+    def test_black_not_breakaway(self):
+        """BLACK should be categorized as BLACK, not breakaway.
+        
+        Bug fix: BLACK starts with 'B' but should be categorized as BLACK,
+        not as BREAKAWAY (which would trigger breakaway resolution).
+        """
+        cat, val = categorize_result("BLACK")
+        assert cat == ResultCategory.BLACK
+        assert val is None
+
 
 class TestBreakawayVsDefenseParentheses:
     """Tests for breakaway vs defense (1) priority resolution.
