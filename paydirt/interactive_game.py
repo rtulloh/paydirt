@@ -219,7 +219,7 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         print("=" * 70)
 
         print(f"\n  Ball on: {field_pos}-yard line")
-        if yards_to_goal <= 10 and state.yards_to_go >= yards_to_goal:
+        if ytg <= 10 and state.yards_to_go >= ytg:
             print(f"  Down: {state.down}{_ordinal(state.down)} and Goal")
         else:
             print(f"  Down: {state.down}{_ordinal(state.down)} and {state.yards_to_go}")
