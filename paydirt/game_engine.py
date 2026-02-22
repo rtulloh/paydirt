@@ -3167,7 +3167,7 @@ class PaydirtGameEngine:
                 if penalty.auto_first_down:
                     # Auto first down - offense keeps ball with new set of downs
                     self.state.down = 1
-                    self.state.yards_to_go = max(1, 100 - new_position)
+                    self.state.yards_to_go = 10
                     description = f"Defensive penalty ({penalty_yards} yards + auto 1st down) - 1st down at {self.state.field_position_str()}"
                 else:
                     description = f"Defensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"

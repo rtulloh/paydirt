@@ -472,7 +472,7 @@ class TestFieldGoalPenaltyDecision:
             
             # Offense should have first down at new position
             assert game.state.down == 1
-            assert game.state.yards_to_go == 10 or game.state.yards_to_go == (100 - game.state.ball_position)
+            assert game.state.yards_to_go == 10  # Fresh set of downs = 10 yards
             # Ball should have moved forward 15 yards
             assert game.state.ball_position == 84  # 69 + 15
 

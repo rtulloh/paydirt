@@ -133,7 +133,7 @@ class TestBreakawayNormalCases:
     
     def test_breakaway_vs_black(self):
         """Breakaway vs empty/black should use breakaway."""
-        result = apply_priority_chart("B", "")
+        result = apply_priority_chart("B", "BLACK")
         
         assert result.priority == PriorityResult.OFFENSE_WITH_B
     
@@ -169,7 +169,7 @@ class TestParensTDOverrides:
     
     def test_black_vs_parens_td(self):
         """(TD) on defense should override incomplete with touchdown."""
-        result = apply_priority_chart("", "(TD)")
+        result = apply_priority_chart("BLACK", "(TD)")
         
         assert result.priority == PriorityResult.PARENS_TD
         assert result.is_touchdown is True
@@ -207,7 +207,7 @@ class TestParenthesesOverridesOtherResults:
         When offense chart is empty and defense has (4), offense gets 4 yards.
         Per the board game chart, (#) on defense always gives offense those yards.
         """
-        result = apply_priority_chart("", "(4)")
+        result = apply_priority_chart("BLACK", "(4)")
         
         assert result.priority == PriorityResult.PARENS
         assert result.final_yards == 4  # Defense's parenthesized number
@@ -216,15 +216,15 @@ class TestParenthesesOverridesOtherResults:
     def test_black_vs_parens_various_values(self):
         """BLACK vs various parenthesized numbers should use defense yards."""
         # Test (12)
-        result = apply_priority_chart("", "(12)")
+        result = apply_priority_chart("BLACK", "(12)")
         assert result.final_yards == 12
         
         # Test (0)
-        result = apply_priority_chart("", "(0)")
+        result = apply_priority_chart("BLACK", "(0)")
         assert result.final_yards == 0
         
         # Test negative (-2)
-        result = apply_priority_chart("", "(-2)")
+        result = apply_priority_chart("BLACK", "(-2)")
         assert result.final_yards == -2
 
 
@@ -258,7 +258,7 @@ class TestBlackResultForRunningVsPassingPlays:
     
     def test_black_vs_black_passing_play_is_incomplete(self):
         """BLACK vs BLACK on passing play should be incomplete pass."""
-        result = apply_priority_chart("", "", is_passing_play=True)
+        result = apply_priority_chart("BLACK", "BLACK", is_passing_play=True)
         
         assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is True
@@ -266,7 +266,7 @@ class TestBlackResultForRunningVsPassingPlays:
     
     def test_black_vs_black_running_play_is_no_gain(self):
         """BLACK vs BLACK on running play should be no gain, not incomplete."""
-        result = apply_priority_chart("", "", is_passing_play=False)
+        result = apply_priority_chart("BLACK", "BLACK", is_passing_play=False)
         
         assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is False
@@ -275,26 +275,27 @@ class TestBlackResultForRunningVsPassingPlays:
     
     def test_default_is_passing_play(self):
         """Default behavior (no is_passing_play arg) should treat as passing play."""
-        result = apply_priority_chart("", "")
+        result = apply_priority_chart("BLACK", "BLACK")
         
         assert result.is_incomplete is True
         assert "Incomplete pass" in result.description
     
     def test_positive_vs_black_running_play_uses_offense(self):
         """Positive yardage vs BLACK on running play should use offense result."""
-        result = apply_priority_chart("5", "", is_passing_play=False)
+        result = apply_priority_chart("5", "BLACK", is_passing_play=False)
         
         assert result.priority == PriorityResult.OFFENSE
         assert result.final_yards == 5
         assert result.is_incomplete is False
     
-    def test_positive_vs_black_passing_play_uses_offense(self):
-        """Positive yardage vs BLACK on passing play should use offense result."""
-        result = apply_priority_chart("5", "", is_passing_play=True)
+    def test_positive_vs_black_passing_play_is_incomplete(self):
+        """Positive yardage vs BLACK on passing play should be incomplete."""
+        result = apply_priority_chart("5", "BLACK", is_passing_play=True)
         
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == 5
-        assert result.is_incomplete is False
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
+        assert result.final_yards == 0
+        assert "Incomplete" in result.description
 
 
 # =============================================================================
@@ -329,9 +330,16 @@ class TestGreenNumberOffense:
         assert result.priority == PriorityResult.QT
         assert result.use_qt_column is True
     
-    def test_green_vs_black(self):
-        """Green # vs BLACK should use OFFENSE."""
-        result = apply_priority_chart("8", "")
+    def test_green_vs_black_on_pass_is_incomplete(self):
+        """Green # vs BLACK on passing play should be incomplete."""
+        result = apply_priority_chart("8", "BLACK")
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
+        assert result.final_yards == 0
+    
+    def test_green_vs_black_on_run_uses_offense(self):
+        """Green # vs BLACK on running play should use offense result."""
+        result = apply_priority_chart("8", "BLACK", is_passing_play=False)
         assert result.priority == PriorityResult.OFFENSE
         assert result.final_yards == 8
     
@@ -381,7 +389,7 @@ class TestWhiteNumberOffense:
     
     def test_white_vs_black(self):
         """White # vs BLACK should use OFFENSE."""
-        result = apply_priority_chart("0", "")
+        result = apply_priority_chart("0", "BLACK")
         assert result.priority == PriorityResult.OFFENSE
         assert result.final_yards == 0
     
@@ -430,7 +438,7 @@ class TestRedNumberOffense:
     
     def test_red_vs_black(self):
         """Red # vs BLACK should use OFFENSE."""
-        result = apply_priority_chart("-3", "")
+        result = apply_priority_chart("-3", "BLACK")
         assert result.priority == PriorityResult.OFFENSE
         assert result.final_yards == -3
     
@@ -476,7 +484,7 @@ class TestQTOffense:
     
     def test_qt_vs_black(self):
         """QT vs BLACK should use QT."""
-        result = apply_priority_chart("QT", "")
+        result = apply_priority_chart("QT", "BLACK")
         assert result.priority == PriorityResult.QT
     
     def test_qt_vs_int(self):
@@ -500,51 +508,51 @@ class TestBlackOffense:
     
     def test_black_vs_green(self):
         """BLACK vs Green # should use BLACK (incomplete for pass)."""
-        result = apply_priority_chart("", "5", is_passing_play=True)
+        result = apply_priority_chart("BLACK", "5", is_passing_play=True)
         assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is True
     
     def test_black_vs_white(self):
         """BLACK vs White # should use BLACK."""
-        result = apply_priority_chart("", "0", is_passing_play=True)
+        result = apply_priority_chart("BLACK", "0", is_passing_play=True)
         assert result.priority == PriorityResult.BLACK
     
     def test_black_vs_red(self):
         """BLACK vs Red # should use BLACK."""
-        result = apply_priority_chart("", "-3", is_passing_play=True)
+        result = apply_priority_chart("BLACK", "-3", is_passing_play=True)
         assert result.priority == PriorityResult.BLACK
     
     def test_black_vs_qt(self):
         """BLACK vs QT should use QT."""
-        result = apply_priority_chart("", "QT")
+        result = apply_priority_chart("BLACK", "QT")
         assert result.priority == PriorityResult.QT
     
     def test_black_vs_black_passing(self):
         """BLACK vs BLACK on passing play should be incomplete."""
-        result = apply_priority_chart("", "", is_passing_play=True)
+        result = apply_priority_chart("BLACK", "", is_passing_play=True)
         assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is True
     
     def test_black_vs_black_running(self):
         """BLACK vs BLACK on running play should be no gain."""
-        result = apply_priority_chart("", "", is_passing_play=False)
+        result = apply_priority_chart("BLACK", "", is_passing_play=False)
         assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is False
         assert result.final_yards == 0
     
     def test_black_vs_int(self):
         """BLACK vs INT should use INT."""
-        result = apply_priority_chart("", "INT 20")
+        result = apply_priority_chart("BLACK", "INT 20")
         assert result.priority == PriorityResult.INT
     
     def test_black_vs_fumble(self):
         """BLACK vs F should use FUMBLE."""
-        result = apply_priority_chart("", "F")
+        result = apply_priority_chart("BLACK", "F")
         assert result.priority == PriorityResult.FUMBLE
     
     def test_black_vs_parens(self):
         """BLACK vs (#) should use PARENS with defense yards."""
-        result = apply_priority_chart("", "(4)")
+        result = apply_priority_chart("BLACK", "(4)")
         assert result.priority == PriorityResult.PARENS
         assert result.final_yards == 4  # Defense's parenthesized number
 
@@ -574,7 +582,7 @@ class TestINTOffense:
     
     def test_int_vs_black(self):
         """INT vs BLACK should use INT."""
-        result = apply_priority_chart("INT 15", "")
+        result = apply_priority_chart("INT 15", "BLACK")
         assert result.priority == PriorityResult.INT
     
     def test_int_vs_int(self):
@@ -618,7 +626,7 @@ class TestFumbleOffense:
     
     def test_fumble_vs_black(self):
         """F vs BLACK should use FUMBLE."""
-        result = apply_priority_chart("F", "")
+        result = apply_priority_chart("F", "BLACK")
         assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_vs_int(self):
@@ -662,7 +670,7 @@ class TestFumblePlusOffense:
     
     def test_fumble_plus_vs_black(self):
         """F+# vs BLACK should use FUMBLE."""
-        result = apply_priority_chart("F + 3", "")
+        result = apply_priority_chart("F + 3", "BLACK")
         assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_plus_vs_int(self):
@@ -706,7 +714,7 @@ class TestFumbleMinusOffense:
     
     def test_fumble_minus_vs_black(self):
         """F-# vs BLACK should use FUMBLE."""
-        result = apply_priority_chart("F - 3", "")
+        result = apply_priority_chart("F - 3", "BLACK")
         assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_minus_vs_int(self):
@@ -750,7 +758,7 @@ class TestParensOffense:
     
     def test_parens_vs_black(self):
         """(#) vs BLACK should use OFFENSE."""
-        result = apply_priority_chart("(5)", "")
+        result = apply_priority_chart("(5)", "BLACK")
         assert result.priority == PriorityResult.OFFENSE
     
     def test_parens_vs_int(self):
@@ -794,7 +802,7 @@ class TestBreakawayOffense:
     
     def test_breakaway_vs_black(self):
         """B vs BLACK should use OFFENSE_WITH_B."""
-        result = apply_priority_chart("B", "")
+        result = apply_priority_chart("B", "BLACK")
         assert result.priority == PriorityResult.OFFENSE_WITH_B
     
     def test_breakaway_vs_int(self):
@@ -843,7 +851,7 @@ class TestTDOffense:
     
     def test_td_vs_black(self):
         """TD vs BLACK should use OFFENSE (TD)."""
-        result = apply_priority_chart("TD", "")
+        result = apply_priority_chart("TD", "BLACK")
         assert result.priority == PriorityResult.OFFENSE
         assert result.is_touchdown is True
     
@@ -889,7 +897,7 @@ class TestPIOffense:
     
     def test_pi_vs_black(self):
         """PI vs BLACK should use OFFENSE (PI)."""
-        result = apply_priority_chart("PI 15", "")
+        result = apply_priority_chart("PI 15", "BLACK")
         assert result.priority == PriorityResult.OFFENSE
     
     def test_pi_vs_int(self):

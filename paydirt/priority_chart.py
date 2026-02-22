@@ -16,6 +16,8 @@ class ResultCategory(Enum):
     WHITE_NUMBER = "white_#"      # Yardage in white/empty box
     RED_NUMBER = "red_#"          # Negative yardage in red box
     QT = "QT"                     # Quarterback scramble time
+    # TODO: QR (Quarterback Rush) should be added as separate category from QT when implementing QB runs
+    # Per priority chart: QR + Oyg = ADD, QR + Oyl = QR, QR + NO CHG = QR, etc.
     BLACK = "black"              # Black/empty cell (incomplete)
     INT = "INT"                   # Interception
     FUMBLE = "F"                  # Fumble (F, F+#, F-#)
@@ -58,7 +60,7 @@ def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
         Tuple of (category, optional yardage value)
     """
     if not result_str or result_str.strip() == "":
-        return ResultCategory.BLACK, None
+        return ResultCategory.GREEN_NUMBER, 0
 
     result_str = result_str.strip()
 
@@ -440,9 +442,17 @@ def apply_priority_chart(offense_result: str, defense_result: str,
             is_incomplete = True
             description = "Incomplete pass"
         else:
-            # Running play with black/black = no gain (tackled at line of scrimmage)
+            # Running play with black result = no gain (tackled at line of scrimmage)
             final_yards = 0
             description = "No gain (tackled at line of scrimmage)"
+
+    # Override: if it's a passing play with positive offense result and BLACK defense, it's incomplete
+    # This handles the case where priority chart gives OFFENSE but defense BLACK means incomplete
+    if is_passing_play and def_cat == ResultCategory.BLACK and off_cat == ResultCategory.GREEN_NUMBER:
+        is_incomplete = True
+        priority = PriorityResult.BLACK
+        final_yards = 0
+        description = "Incomplete pass"
 
     return CombinedResult(
         priority=priority,

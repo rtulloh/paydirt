@@ -18,9 +18,11 @@
 - **FG penalty result showing "Gain of X yards"**: Fixed a bug where field goal attempts with penalties would incorrectly display "Gain of X yards" in the penalty choice. The FG chart result (e.g., "12" for a 12-yard kick) was being parsed as 12 yards gained on a normal play. Now uses yards=0 for FG penalty results to avoid incorrect display.
 - **Punt penalty options showing wrong down/distance**: Fixed a bug where punt penalty options ("Keep touchback + X yards" and "Keep result + X yards") were showing "4th and X" instead of "1st and 10". When the offense accepts a defensive penalty on a punt, they should get an automatic first down. Now sets auto_first_down=True for keep options.
 - **Breakaway dice not shown in diagnostic display**: Fixed a bug where breakaway plays didn't show the breakaway dice roll in the diagnostic output (e.g., `(O:34→"B" | D:3→"-2" | #B)`). Now also shows `| B:22` for the breakaway roll. Added `breakaway_dice` field to PlayResult and updated display logic.
+- **FG penalty auto first down shows wrong distance**: Fixed a bug where accepting a defensive penalty on a field goal attempt showed "1st & Goal @ X" instead of "1st and 10 at opp X". After a defensive penalty with automatic first down, the offense gets a fresh set of downs (10 yards to go), not the distance to the goal line. Previously the code used `100 - ball_position` which resulted in showing "& Goal" when inside the 20.
+- **D1 Black should mean incomplete**: Fixed a bug where defense rolling BLACK (incomplete) was being treated the same as an empty/no result. For passing plays with positive offense yards and BLACK defense, the pass is now correctly ruled incomplete. Empty cells now return GREEN_NUMBER with value 0 so they ADD with defense results (e.g., empty + 3 = 3 yards).
 
 ### Test Coverage
-- **1106 unit tests** passing
+- **1107 unit tests** passing
 - Added tests for interception return reuse after penalty decision
 - Added tests for BLACK result categorization
 - Added tests for punt penalty keep options auto_first_down
