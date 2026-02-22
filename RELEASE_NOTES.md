@@ -12,13 +12,14 @@
 - **Game loop safety net for quarter end**: Added a safety net in both the `run_interactive_game` and `resume_game` loops to force quarter advancement when time is effectively zero at Q1-Q3, preventing any edge case from allowing play to continue past the end of a half.
 - **Timeout clock residual**: Fixed `_apply_timeout()` to clamp residuals under 1 second to 0, preventing timeouts from leaving the game in an inconsistent state.
 - **Breakaway commentary on negative yardage**: Fixed commentary incorrectly using exciting breakaway language (e.g., "LOOK OUT! Wilbert Montgomery has daylight!") when the B column roll produced negative yardage (e.g., -10 yards). Breakaway commentary now correctly uses loss language for negative yards and no-gain language for zero yards.
+- **1983 Redskins & Eagles charts**: Fixed defense and offense charts to correctly parse parentheses from Excel cell format and detect BLACK cells (incomplete passes) from background color.
+- **Interception return after penalty decision**: Fixed a bug where accepting a play result after a penalty would re-roll the interception return dice instead of using the original return. This was causing 5-yard interceptions to become 70-yard returns after penalty choices.
+- **BLACK categorized as BREAKAWAY**: Fixed a bug where "BLACK" in offense charts was being miscategorized as BREAKAWAY (since it starts with "B"), causing incomplete passes to trigger breakaway resolution instead of being treated as incomplete. Now checks for "BLACK" before "B" in the categorization logic.
 
 ### Test Coverage
-- **1099 unit tests** passing
-- Added 9 new tests for end-of-half FG: Q2 on 1st/2nd/3rd down, Q4 trailing by 3, Q4 trailing by 7 (should not kick), out of range, plenty of time remaining, no-huddle flag, and mode label
-- Added 7 new tests for sub-second clock clamping: Q1-Q4 quarter advancement, non-clamping above threshold, exact zero handling, and halftime timeout reset
-- Added 6 new tests for breakaway commentary: positive yards, negative yards (no daylight), negative yards (loss language), zero yards, touchdown, and negative yards with no touchdown call
-- Added 3 new tests for punt touchback with penalty: choice creation, accept replay, decline keep result
+- **1101 unit tests** passing
+- Added tests for interception return reuse after penalty decision
+- Added tests for BLACK result categorization
 
 ## Version 1.5 (February 2026)
 
