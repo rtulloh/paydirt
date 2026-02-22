@@ -547,9 +547,19 @@ class PaydirtGameEngine:
                 acting_team=def_team
             ))
 
-        # Roll for interception return using defense's special teams chart
-        return_dice, return_desc = roll_chart_dice()
-        int_return_result = self.state.defense_team.special_teams.interception_return.get(return_dice, "0")
+        # Check if interception return was already calculated (e.g., after penalty decision)
+        # If so, reuse the existing return instead of re-rolling
+        if result.int_return_yards and result.int_return_yards != 0:
+            # Use previously calculated return
+            return_yards = result.int_return_yards
+            return_dice = result.int_return_dice if result.int_return_dice else 0
+            return_td = (result.int_spot + return_yards >= 100) if result.int_spot else False
+            return_desc = f"Reuse:{return_dice}"
+            int_return_result = str(return_yards) if not return_td else "TD"
+        else:
+            # Roll for interception return using defense's special teams chart
+            return_dice, return_desc = roll_chart_dice()
+            int_return_result = self.state.defense_team.special_teams.interception_return.get(return_dice, "0")
 
         # Parse return result
         return_yards = 0
