@@ -15,9 +15,10 @@
 - **1983 Redskins & Eagles charts**: Fixed defense and offense charts to correctly parse parentheses from Excel cell format and detect BLACK cells (incomplete passes) from background color.
 - **Interception return after penalty decision**: Fixed a bug where accepting a play result after a penalty would re-roll the interception return dice instead of using the original return. This was causing 5-yard interceptions to become 70-yard returns after penalty choices.
 - **BLACK categorized as BREAKAWAY**: Fixed a bug where "BLACK" in offense charts was being miscategorized as BREAKAWAY (since it starts with "B"), causing incomplete passes to trigger breakaway resolution instead of being treated as incomplete. Now checks for "BLACK" before "B" in the categorization logic.
+- **FG penalty result showing "Gain of X yards"**: Fixed a bug where field goal attempts with penalties would incorrectly display "Gain of X yards" in the penalty choice. The FG chart result (e.g., "12" for a 12-yard kick) was being parsed as 12 yards gained on a normal play. Now uses yards=0 for FG penalty results to avoid incorrect display.
 
 ### Test Coverage
-- **1101 unit tests** passing
+- **1102 unit tests** passing
 - Added tests for interception return reuse after penalty decision
 - Added tests for BLACK result categorization
 
