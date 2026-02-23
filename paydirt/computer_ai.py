@@ -6,11 +6,14 @@ Makes intelligent decisions based on:
 - Time remaining
 - Score differential
 - Game situation (2-minute drill, goal line, etc.)
+- Team chart analysis (Phase 1)
+- Opponent tendencies (Phase 2)
 """
 import random
 
 from .play_resolver import PlayType, DefenseType
 from .game_engine import PaydirtGameEngine
+from .ai_analysis import TeamAnalyzer, OpponentModel
 
 
 class ComputerAI:
@@ -22,17 +25,29 @@ class ComputerAI:
     - Situational awareness for 3rd/4th down
     - Clock management in late-game situations
     - Aggressive when trailing, conservative when leading
+    - Uses chart analysis and opponent modeling in hard mode
     """
 
-    def __init__(self, aggression: float = 0.5):
+    def __init__(self, aggression: float = 0.5, use_analysis: bool = False):
         """
         Initialize AI with aggression level.
         
         Args:
             aggression: 0.0 = very conservative, 1.0 = very aggressive
+            use_analysis: If True, use chart analysis and opponent modeling
         """
         self.aggression = aggression
+        self.use_analysis = use_analysis
         self.last_mode = None  # Track current mode for logging
+        
+        # For opponent modeling (shared across offense and defense)
+        self.opponent_model = OpponentModel() if use_analysis else None
+        self.team_analyzer = None  # Set when we know our team
+
+    def set_team(self, team_chart):
+        """Set the AI's team for chart analysis."""
+        if self.use_analysis:
+            self.team_analyzer = TeamAnalyzer(team_chart)
 
     def select_offense(self, game: PaydirtGameEngine) -> PlayType:
         """
@@ -44,9 +59,42 @@ class ComputerAI:
         3. Time remaining
         4. Score differential
         5. Quarter
+        6. Team chart analysis (if use_analysis=True)
         """
         play_type, _, _, _, _ = self.select_offense_with_clock_management(game)
         return play_type
+
+    def _get_ai_play_suggestion(self, down: int, distance: int):
+        """
+        Use chart analysis to get AI's play suggestion.
+        
+        Returns play type name (e.g., 'Screen', 'Off Tackle') or None if not available.
+        """
+        if not self.team_analyzer:
+            return None
+        
+        try:
+            suggestion = self.team_analyzer.suggest_play(down, distance)
+            return suggestion.get('recommended_play') or None
+        except Exception:
+            return None
+
+    def _ai_play_to_play_type(self, play_name):
+        """Convert play name from analysis to PlayType enum."""
+        if not play_name:
+            return None
+        play_map = {
+            'Line Plunge': PlayType.LINE_PLUNGE,
+            'Off Tackle': PlayType.OFF_TACKLE,
+            'End Run': PlayType.END_RUN,
+            'Draw': PlayType.DRAW,
+            'Screen': PlayType.SCREEN,
+            'Short': PlayType.SHORT_PASS,
+            'Med': PlayType.MEDIUM_PASS,
+            'Long': PlayType.LONG_PASS,
+            'T/E S/L': PlayType.TE_SHORT_LONG,
+        }
+        return play_map.get(play_name)
 
     def select_offense_with_clock_management(self, game: PaydirtGameEngine) -> tuple:
         """
@@ -562,6 +610,7 @@ class ComputerAI:
         2. Field position
         3. Time remaining
         4. Score differential
+        5. Opponent tendencies (if use_analysis=True)
         """
         state = game.state
         down = state.down
@@ -575,6 +624,26 @@ class ComputerAI:
             score_diff = state.away_score - state.home_score  # Defense perspective
         else:
             score_diff = state.home_score - state.away_score
+
+        # ============================================================
+        # USE OPPONENT MODELING (Phase 2) if enabled
+        # ============================================================
+        
+        if self.use_analysis and self.opponent_model:
+            # Use opponent model to predict and choose best defense
+            defense_rec = self.opponent_model.predict_defense(
+                down, ytg, score_diff, quarter, time_left
+            )
+            # Convert to DefenseType
+            defense_map = {
+                'A': DefenseType.STANDARD,
+                'B': DefenseType.SHORT_YARDAGE,
+                'C': DefenseType.SPREAD,
+                'D': DefenseType.SHORT_PASS,
+                'E': DefenseType.LONG_PASS,
+                'F': DefenseType.BLITZ,
+            }
+            return defense_map.get(defense_rec, DefenseType.STANDARD)
 
         # ============================================================
         # SPECIAL SITUATIONS

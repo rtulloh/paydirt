@@ -816,3 +816,58 @@ class TestEndOfHalfFieldGoal:
 
         cpu_ai.select_offense(game)
         assert cpu_ai.last_mode == "End-of-Half FG"
+
+
+class TestAIWithAnalysis:
+    """Tests for AI with chart analysis and opponent modeling enabled."""
+    
+    def test_ai_init_with_analysis(self):
+        """AI can be initialized with analysis enabled."""
+        ai = ComputerAI(aggression=0.5, use_analysis=True)
+        assert ai.use_analysis is True
+        assert ai.opponent_model is not None
+    
+    def test_ai_init_without_analysis(self):
+        """AI can be initialized without analysis."""
+        ai = ComputerAI(aggression=0.5, use_analysis=False)
+        assert ai.use_analysis is False
+        assert ai.opponent_model is None
+    
+    def test_ai_set_team(self):
+        """AI can have team set for chart analysis."""
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        ai = ComputerAI(aggression=0.5, use_analysis=True)
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        ai.set_team(bears)
+        
+        assert ai.team_analyzer is not None
+    
+    def test_defense_uses_opponent_model(self):
+        """Defense selection uses opponent model when enabled."""
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        ai = ComputerAI(aggression=0.5, use_analysis=True)
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        
+        # Set up game state
+        game = PaydirtGameEngine(
+            away_chart=bears,
+            home_chart=bears,
+        )
+        game.state.down = 3
+        game.state.yards_to_go = 10
+        game.state.ball_position = 50
+        game.state.quarter = 2
+        game.state.time_remaining = 10.0
+        game.state.is_home_possession = True
+        game.state.home_score = 10
+        game.state.away_score = 10
+        
+        # Should not crash and should return a valid defense
+        defense = ai.select_defense(game)
+        assert defense in [DefenseType.STANDARD, DefenseType.SHORT_YARDAGE, 
+                         DefenseType.SPREAD, DefenseType.SHORT_PASS,
+                         DefenseType.LONG_PASS, DefenseType.BLITZ]
