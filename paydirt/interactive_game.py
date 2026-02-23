@@ -2926,6 +2926,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             call_timeout = False
             out_of_bounds = False
             in_bounds = False
+            cpu_punt_short_drop = False
+            cpu_punt_coffin_yards = 0
 
             if game.state.down == 4:
                 # CPU makes 4th down decision first (with clock management)
@@ -2995,17 +2997,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # Track 2-minute warning state before play
         two_min_warning_before = game.state.two_minute_warning_called
 
-        # Initialize punt options (will be overridden if human is on offense)
-        cpu_punt_short_drop = False
-        cpu_punt_coffin_yards = 0
-
-        # Get punt options if it's a punt play (human on offense)
+        # Get punt options if it's a punt play
         punt_short_drop = False
         punt_coffin_corner_yards = 0
         if is_human_offense and play_type == PlayType.PUNT:
             punt_short_drop, punt_coffin_corner_yards = get_punt_options(game)
         elif not is_human_offense and play_type == PlayType.PUNT:
-            # CPU is punting - use CPU's punt options
+            # CPU is punting - use CPU's punt options (already set in 4th down logic)
             punt_short_drop = cpu_punt_short_drop
             punt_coffin_corner_yards = cpu_punt_coffin_yards
 
@@ -3457,6 +3455,8 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             call_timeout = False
             out_of_bounds = False
             in_bounds = False
+            cpu_punt_short_drop = False
+            cpu_punt_coffin_yards = 0
 
             if game.state.down == 4:
                 # CPU makes 4th down decision first (with clock management)
