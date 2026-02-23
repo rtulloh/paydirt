@@ -2922,7 +2922,6 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             # Computer selects defense (hidden)
             def_type = computer_select_defense(game)
 
-            print(f"\n  You called: {play_type.value.replace('_', ' ').title()}")
             print(f"  Defense shows: {def_type.value.replace('_', ' ').title()}")
         else:
             # Human on defense
@@ -3454,7 +3453,6 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 continue
 
             def_type = computer_select_defense(game)
-            print(f"\n  You called: {play_type.value.replace('_', ' ').title()}")
             print(f"  Defense shows: {def_type.value.replace('_', ' ').title()}")
         else:
             call_timeout = False
