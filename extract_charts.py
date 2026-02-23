@@ -2,6 +2,10 @@
 """
 Extract chart data from Excel files and generate CSV files.
 Identifies BLACK cells (incomplete passes) from cell background colors.
+
+NOTE: xlrd 1.2.0 cannot evaluate Excel formulas.
+If a cell contains a formula (e.g., ="(1)"), it will show as empty.
+Teams with formula cells (Redskins, Eagles) need manual fix or .xlsx conversion.
 """
 
 import xlrd
@@ -42,6 +46,19 @@ def is_black_cell(workbook, cell):
         fg_color_idx = bg.pattern_colour_index
         # BLACK cell = solid fill with black foreground
         return fill == 1 and fg_color_idx == 8
+    except Exception:
+        return False
+
+
+def has_paren_format(workbook, cell):
+    """Check if a cell has parentheses number format (displays values like (2))."""
+    try:
+        xf = workbook.xf_list[cell.xf_index]
+        fmt_key = xf.format_key
+        if fmt_key in workbook.format_map:
+            fmt_str = workbook.format_map[fmt_key].format_str
+            return '\\(0\\)' in fmt_str
+        return False
     except Exception:
         return False
 
@@ -240,20 +257,26 @@ def extract_defense_chart(file_path):
         # Get dice values using the dice_col_map
         for dice_num, col_idx in dice_col_map.items():
             cell = sheet.cell(row_idx, col_idx)
-            cell_value = str(cell.value).strip() if cell.value else ''
-            
-            # Clean up cell value - convert floats like "-2.0" to integers like "-2"
-            if cell_value and cell_value not in ['', 'None']:
-                try:
-                    # Check if it's a float that can be converted to int (e.g., "-2.0" -> "-2")
-                    float_val = float(cell_value)
-                    if float_val == int(float_val):
-                        cell_value = str(int(float_val))
-                except (ValueError, TypeError):
-                    pass
             
             # Check if BLACK cell
             is_black = is_black_cell(workbook, cell)
+            
+            # Check if cell has parentheses format
+            use_parens = has_paren_format(workbook, cell)
+            
+            # Get cell value based on type
+            if cell.ctype == 2:  # numeric
+                float_val = cell.value
+                if float_val == int(float_val):
+                    cell_value = str(int(float_val))
+                else:
+                    cell_value = str(float_val)
+                if use_parens:
+                    cell_value = f'({cell_value})'
+            elif cell.ctype == 1:  # text
+                cell_value = str(cell.value).strip()
+            else:
+                cell_value = ''
             
             if is_black and not cell_value:
                 cell_value = 'BLACK'
@@ -289,15 +312,13 @@ def write_defense_csv(chart_data, output_path):
     """Write defense chart to CSV."""
     with open(output_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['#', 'Formation', 'Sub', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+        writer.writerow(['#', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
         
         for (formation, sub_row) in sorted(chart_data.keys()):
-            row = [f'{formation}-{sub_row}', formation, sub_row]
+            row = [formation, sub_row]
             row_data = chart_data[(formation, sub_row)]
             for dice in range(1, 10):
                 row.append(row_data.get(dice, ''))
-            while row and row[-1] == '':
-                row.pop()
             writer.writerow(row)
 
 def process_team(excel_file):
