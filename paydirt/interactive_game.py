@@ -25,6 +25,7 @@ from .utils import (
 )
 from .play_events import EventType
 from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
+from .ai_analysis import create_easy_mode_helper
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -1055,7 +1056,48 @@ def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI = None) -> bo
     return False
 
 
-def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[DefenseType, bool]:
+def _show_easy_mode_helper(helper, game: PaydirtGameEngine, is_offense: bool):
+    """Show easy mode AI helper suggestions."""
+    state = game.state
+    
+    if is_offense:
+        suggestions = helper.suggest_offense_plays(state.down, state.yards_to_go, 3)
+        print("\n  === AI HELPER (Your Best Plays) ===")
+        print("  " + "-" * 40)
+        for i, s in enumerate(suggestions, 1):
+            print(f"    {i}. {s['play']} - {s['success_rate']:.0f}% success, {s['avg_yards']:.1f} avg yards")
+        
+        # Show tip
+        if state.is_home_possession:
+            score_diff = state.home_score - state.away_score
+        else:
+            score_diff = state.away_score - state.home_score
+        
+        tip = helper.get_situation_tip(state.down, state.yards_to_go, state.quarter, 
+                                       state.time_remaining, score_diff)
+        if tip:
+            print(f"\n  Tip: {tip}")
+    else:
+        defense = helper.suggest_defense(state.down, state.yards_to_go)
+        print("\n  === AI HELPER (Suggested Defense) ===")
+        print("  " + "-" * 40)
+        defense_names = {
+            'A': 'Standard (balanced)',
+            'B': 'Short Yardage',
+            'C': 'Spread',
+            'D': 'Short Pass',
+            'E': 'Long Pass',
+            'F': 'Blitz',
+        }
+        print(f"    Recommended: {defense} - {defense_names.get(defense, 'Unknown')}")
+        
+        # Show warning if any
+        warning = helper.warn_danger(state.down, state.yards_to_go)
+        if warning:
+            print(f"\n  {warning}")
+
+
+def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=None) -> tuple[DefenseType, bool]:
     """Compact defense menu - abbreviated display with '?' for full menu."""
     # Calculate default defense
     if state.yards_to_go <= 2:
@@ -1071,7 +1113,7 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[Def
         default_def = 'A'
         default_name = 'Standard'
 
-    print(f"  DEF: A-F | T,/ | ?=help (Default={default_def}/{default_name})")
+    print(f"  DEF: A-F | T,W,H,/ | ?=help (Default={default_def}/{default_name})")
 
     while True:
         choice = input("  > ").strip().upper()
@@ -1102,7 +1144,11 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state) -> tuple[Def
 
         if choice_clean == '/':
             display_box_score(game, "CURRENT STATS")
-            return _get_human_defense_play_compact(game, state)
+            return _get_human_defense_play_compact(game, state, easy_helper)
+
+        if choice_clean == 'H' and easy_helper:
+            _show_easy_mode_helper(easy_helper, game, is_offense=False)
+            return _get_human_defense_play_compact(game, state, easy_helper)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -1140,7 +1186,7 @@ def _show_full_defense_menu(state):
     print()
 
 
-def get_human_defense_play(game: PaydirtGameEngine) -> tuple[DefenseType, bool]:
+def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[DefenseType, bool]:
     """
     Prompt human player to select a defensive formation.
 
@@ -1151,7 +1197,7 @@ def get_human_defense_play(game: PaydirtGameEngine) -> tuple[DefenseType, bool]:
 
     # In compact mode, show abbreviated menu
     if COMPACT_MODE:
-        return _get_human_defense_play_compact(game, state)
+        return _get_human_defense_play_compact(game, state, easy_helper)
 
     print("\n  DEFENSIVE FORMATION")
     print("  " + "-" * 40)
@@ -2519,6 +2565,12 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
     }
     cpu_aggression = difficulty_map.get(difficulty, 0.5)
 
+    # Easy mode helper - available in easy mode
+    easy_mode_helper = None
+    if difficulty == 'easy':
+        # Will be set after team selection (need human_chart first)
+        pass
+
     clear_screen()
 
     print("=" * 70)
@@ -2639,7 +2691,13 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
     # Create CPU AI for computer opponent decisions
     cpu_ai = ComputerAI(aggression=cpu_aggression)
-
+    
+    # Create easy mode helper if in easy mode
+    if difficulty == 'easy':
+        easy_mode_helper = create_easy_mode_helper(human_chart)
+    else:
+        easy_mode_helper = None
+    
     # Display difficulty setting
     difficulty_names = {'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard'}
     print(f"\n  CPU Difficulty: {difficulty_names.get(difficulty, 'Medium')}")
@@ -2846,7 +2904,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     # CPU is going for it! Now ask for defensive call
                     cpu_team = game.state.possession_team.peripheral.short_name
                     print(f"\n  *** {cpu_team} is going for it on 4th and {game.state.yards_to_go}! ***")
-                    def_type, call_timeout = get_human_defense_play(game)
+                    def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                     # Check for save command (def_type is None)
                     if def_type is None:
                         filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
@@ -3204,6 +3262,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     # Create CPU AI
     cpu_ai = ComputerAI(aggression=cpu_aggression)
     
+    # Create easy mode helper if in easy mode
+    if difficulty == 'easy':
+        easy_mode_helper = create_easy_mode_helper(human_chart)
+    else:
+        easy_mode_helper = None
+    
     # Main game loop (same as run_interactive_game but starting from loaded state)
     play_num = 0
     no_huddle_mode = False
@@ -3353,7 +3417,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 else:
                     cpu_team = game.state.possession_team.peripheral.short_name
                     print(f"\n  *** {cpu_team} is going for it on 4th and {game.state.yards_to_go}! ***")
-                    def_type, call_timeout = get_human_defense_play(game)
+                    def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                     if def_type is None:
                         filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
                         print(f"\n  *** GAME SAVED to {filepath} ***")

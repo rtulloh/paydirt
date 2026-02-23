@@ -4,8 +4,11 @@ AI Analysis module for studying team charts and opponent tendencies.
 This module provides utilities for analyzing offense and defense charts to identify
 best plays for different situations, ignoring penalties and turnovers.
 """
+from collections import defaultdict
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional
+
 from paydirt.chart_loader import OffenseChart, DefenseChart, TeamChart
 
 
@@ -498,10 +501,6 @@ def analyze_team(team_chart: TeamChart) -> TeamAnalyzer:
 # ============================================================
 # PHASE 2: OPPONENT MODELING
 # ============================================================
-
-from collections import defaultdict
-from typing import Optional
-from enum import Enum
 
 
 class PlayCategory(Enum):
