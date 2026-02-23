@@ -1484,6 +1484,11 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             print("  >> BLOCKED PUNT!")
         elif "FUMBLE" in desc.upper():
             print(f"\n  {desc}")
+            # Show return dice if available
+            return_dice = getattr(outcome.result, 'punt_return_dice', 0) or 0
+            if return_dice > 0:
+                punt_dice = outcome.result.dice_roll if outcome.result else 0
+                print(f"  (P:{punt_dice}→\"{outcome.result.raw_result}\" | R:{return_dice}→\"F\" | return)")
             print(f"  >> FUMBLE on the return! {off_team} recovers and keeps possession!")
         else:
             print(f"\n  {desc}")

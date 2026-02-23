@@ -2339,10 +2339,14 @@ class PaydirtGameEngine:
                     self.state.down = 1
                     self.state.yards_to_go = 10
 
+                    # Add return dice to result so it can be displayed
+                    parsed_result = parse_result_string(punt_result)
+                    parsed_result.punt_return_dice = return_roll
+
                     outcome = PlayOutcome(
                         play_type=PlayType.PUNT,
                         defense_type=DefenseType.STANDARD,
-                        result=parse_result_string(punt_result),
+                        result=parsed_result,
                         yards_gained=punt_yards,
                         turnover=False,  # Punting team recovers - no turnover
                         field_position_before=field_pos_before,
