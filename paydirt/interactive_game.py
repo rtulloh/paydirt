@@ -1226,6 +1226,10 @@ def get_human_defense_play(game: PaydirtGameEngine) -> tuple[DefenseType, bool]:
             display_box_score(game, "CURRENT STATS")
             return get_human_defense_play(game)
 
+        if choice_clean == 'W':
+            # Save game - return special marker to trigger save in main loop
+            return None, False
+
         if choice_clean in DEFENSE_PLAYS:
             def_type, name, _ = DEFENSE_PLAYS[choice_clean]
             return def_type, call_timeout
