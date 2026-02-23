@@ -262,3 +262,93 @@ class TestOpponentModel:
         # Early game, close score - should use tendency
         defense = model.predict_defense(3, 10, 0, 2, 10.0)
         assert defense == "D"  # Based on tendency
+
+
+class TestEasyModeHelper:
+    """Tests for easy mode helper."""
+    
+    def test_create_helper(self):
+        """Should create easy mode helper."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        assert helper is not None
+        assert helper.team_analyzer is not None
+    
+    def test_suggest_offense_plays(self):
+        """Should suggest offense plays."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        suggestions = helper.suggest_offense_plays(3, 7, 3)
+        
+        assert len(suggestions) > 0
+        assert len(suggestions) <= 3
+        assert 'play' in suggestions[0]
+        assert 'success_rate' in suggestions[0]
+        assert 'avg_yards' in suggestions[0]
+    
+    def test_suggest_defense(self):
+        """Should suggest defense formation."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        defense = helper.suggest_defense(3, 7)
+        
+        assert defense in ['A', 'B', 'C', 'D', 'E', 'F']
+    
+    def test_get_situation_tip(self):
+        """Should get situational tip."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        # Normal situation
+        tip = helper.get_situation_tip(1, 10, 2, 10.0, 0)
+        assert tip != ""
+        
+        # Late game trailing
+        tip = helper.get_situation_tip(3, 7, 4, 3.0, -7)
+        assert "Hurry up" in tip
+    
+    def test_explain_play(self):
+        """Should explain why a play is good."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        explanation = helper.explain_play("Screen", 3, 7)
+        
+        assert "Screen" in explanation
+        assert "%" in explanation  # Contains success rate
+    
+    def test_warn_danger(self):
+        """Should warn about opponent tendencies."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        # Not enough data - should be empty
+        warning = helper.warn_danger(3, 7)
+        assert warning == ""

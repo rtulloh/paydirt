@@ -747,3 +747,146 @@ class OpponentModel:
                             yards_gained: int, is_pass: bool = None):
         """Record an opponent's play for tendency tracking."""
         self.tracker.record_play(down, distance, play_type, yards_gained, is_pass)
+
+
+# ============================================================
+# PHASE 4: EASY MODE HELPER
+# ============================================================
+
+class EasyModeHelper:
+    """
+    Helper for human player in easy mode.
+    
+    Provides:
+    - Play suggestions with success rates
+    - Explanations for why plays are recommended
+    - Warning about opponent tendencies
+    - "Tricky" play suggestions that might work unexpectedly
+    """
+    
+    def __init__(self, team_chart: TeamChart):
+        self.team_analyzer = TeamAnalyzer(team_chart)
+        self.opponent_tracker = OpponentTendencyTracker()
+        self._last_suggestion = None
+    
+    def suggest_offense_plays(self, down: int, distance: int, count: int = 3) -> list[dict]:
+        """
+        Get play suggestions for current situation.
+        
+        Returns list of dicts with:
+        - play: play type name
+        - success_rate: percentage chance of positive yards
+        - avg_yards: average yards gained
+        - is_pass: True if passing play
+        """
+        all_stats = self.team_analyzer.offense.get_all_play_stats()
+        
+        # Calculate success rate for each play type
+        suggestions = []
+        for play_type, stats in all_stats.items():
+            if stats.valid_rolls > 0:
+                suggestions.append({
+                    'play': play_type,
+                    'success_rate': stats.success_rate,
+                    'avg_yards': stats.avg_yards,
+                    'is_pass': self.team_analyzer.offense.PLAY_TYPE_MAP.get(play_type) == 'pass',
+                })
+        
+        # Sort by success rate
+        suggestions.sort(key=lambda x: x['success_rate'], reverse=True)
+        return suggestions[:count]
+    
+    def suggest_defense(self, down: int, distance: int) -> str:
+        """
+        Get defense formation suggestion.
+        
+        Based on opponent tendencies if available.
+        """
+        return self.opponent_tracker.get_defense_recommendation(down, distance)
+    
+    def get_situation_tip(self, down: int, distance: int, quarter: int, 
+                          time_remaining: float, score_diff: int) -> str:
+        """
+        Get a situational tip for the player.
+        """
+        tips = []
+        
+        # Time-based tips
+        if quarter == 2 and time_remaining < 2.0:
+            tips.append("Two-minute warning! Consider quick passes to stop clock.")
+        elif quarter == 4 and time_remaining < 5.0:
+            if score_diff > 0:
+                tips.append("Protecting lead - runs are safer to kill clock.")
+            elif score_diff < 0:
+                tips.append("Hurry up! Need to score fast.")
+        
+        # Down-based tips
+        if down == 3:
+            if distance >= 7:
+                tips.append("Third & long - passing is usually better.")
+            elif distance <= 2:
+                tips.append("Short yardage - power running is often best.")
+        
+        if down == 4:
+            tips.append("Fourth down - consider punting or going for it.")
+        
+        # Add play suggestion
+        suggestions = self.suggest_offense_plays(down, distance, 1)
+        if suggestions:
+            best = suggestions[0]
+            tips.append(f"Recommended: {best['play']} ({best['success_rate']:.0f}% success)")
+        
+        return " | ".join(tips) if tips else ""
+    
+    def explain_play(self, play_type: str, down: int, distance: int) -> str:
+        """
+        Explain why a play type is good or bad for current situation.
+        """
+        stats = self.team_analyzer.offense.analyze_play_type(play_type)
+        
+        if stats.valid_rolls == 0:
+            return f"{play_type}: Not enough data to analyze."
+        
+        play_category = self.team_analyzer.offense.PLAY_TYPE_MAP.get(play_type, "unknown")
+        
+        explanation = f"{play_type}: {stats.success_rate:.0f}% success, {stats.avg_yards:.1f} avg yards"
+        
+        # Add context based on situation
+        if down == 3 and distance >= 7:
+            if play_category == "pass":
+                explanation += " - Good for third and long!"
+            elif play_category == "run":
+                explanation += " - Risky on third and long."
+        elif down == 3 and distance <= 2:
+            if play_category == "run":
+                explanation += " - Good for short yardage!"
+            elif play_category == "pass":
+                explanation += " - Risky on short yardage."
+        
+        return explanation
+    
+    def warn_danger(self, down: int, distance: int) -> str:
+        """
+        Warn about dangerous opponent tendencies.
+        """
+        tendency = self.opponent_tracker.get_tendency(down, distance)
+        
+        if tendency.total_plays < 3:
+            return ""  # Not enough data
+        
+        warnings = []
+        
+        if tendency.pass_percentage > 70:
+            warnings.append(f"Warning: Opponent passes {tendency.pass_percentage:.0f}% on this situation!")
+        
+        streak = self.opponent_tracker.get_streak()
+        if streak:
+            streak_name = "passing" if streak == PlayCategory.PASS else "running"
+            warnings.append(f"Note: Opponent has been {streak_name} consecutively.")
+        
+        return " ".join(warnings)
+
+
+def create_easy_mode_helper(team_chart: TeamChart) -> EasyModeHelper:
+    """Create an easy mode helper for a team."""
+    return EasyModeHelper(team_chart)
