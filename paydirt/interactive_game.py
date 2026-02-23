@@ -1275,7 +1275,11 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
         # Stats request
         if choice_clean == '/':
             display_box_score(game, "CURRENT STATS")
-            return get_human_defense_play(game)
+            return get_human_defense_play(game, easy_helper)
+        
+        # Easy mode helper
+        if choice_clean == 'H' and easy_helper:
+            _show_easy_mode_helper(easy_helper, game, is_offense=False)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -2920,7 +2924,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
                 # Normal down - get defensive call first, then CPU selects offense
-                def_type, call_timeout = get_human_defense_play(game)
+                def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                 # Check for save command (def_type is None)
                 if def_type is None:
                     filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
@@ -3445,7 +3449,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
-                def_type, call_timeout = get_human_defense_play(game)
+                def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                 # Initialize CPU punt options for non-4th-down case
                 cpu_punt_short_drop = False
                 cpu_punt_coffin_yards = 0
