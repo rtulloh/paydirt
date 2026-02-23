@@ -433,13 +433,13 @@ class Test1983BearsDefenseChart:
 
         chart = load_team_chart(bears_dir)
 
-        # B-3: dice 1=1, dice 2=1, dice 4=-1, dice 6=6
+        # B-3: dice 1=(1), dice 2=(1), dice 4=-1, dice 6=(6) - parens from Excel format
         b3_modifiers = chart.defense.modifiers.get(('B', 3), {})
         
-        assert b3_modifiers.get(1) == '1'
-        assert b3_modifiers.get(2) == '1'
+        assert b3_modifiers.get(1) == '(1)'
+        assert b3_modifiers.get(2) == '(1)'
         assert b3_modifiers.get(4) == '-1'
-        assert b3_modifiers.get(6) == '6'
+        assert b3_modifiers.get(6) == '(6)'
         # Empty columns should not be present
         assert 3 not in b3_modifiers
         assert 5 not in b3_modifiers
@@ -455,7 +455,7 @@ class Test1983BearsDefenseChart:
 
         chart = load_team_chart(bears_dir)
 
-        # D-5: dice 4=2, dice 5=-1, dice 6=-1, dice 7=[TD], dice 8=[TD], dice 9=3
+        # D-5: dice 4=2, dice 5=-1, dice 6=-1, dice 7=[TD], dice 8=[TD], dice 9=(3)
         d5_modifiers = chart.defense.modifiers.get(('D', 5), {})
         
         assert d5_modifiers.get(4) == '2'
@@ -463,7 +463,7 @@ class Test1983BearsDefenseChart:
         assert d5_modifiers.get(6) == '-1'
         assert d5_modifiers.get(7) == '[TD]'
         assert d5_modifiers.get(8) == '[TD]'
-        assert d5_modifiers.get(9) == '3'
+        assert d5_modifiers.get(9) == '(3)'
         # Empty columns should not be present
         assert 1 not in d5_modifiers
         assert 2 not in d5_modifiers

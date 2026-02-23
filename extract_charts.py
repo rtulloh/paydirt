@@ -312,10 +312,10 @@ def write_defense_csv(chart_data, output_path):
     """Write defense chart to CSV."""
     with open(output_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['#', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+        writer.writerow(['#', 'Formation', 'Sub', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
         
         for (formation, sub_row) in sorted(chart_data.keys()):
-            row = [formation, sub_row]
+            row = [f'{formation}-{sub_row}', formation, sub_row]
             row_data = chart_data[(formation, sub_row)]
             for dice in range(1, 10):
                 row.append(row_data.get(dice, ''))
