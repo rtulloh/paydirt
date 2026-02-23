@@ -5,8 +5,7 @@ import pytest
 from pathlib import Path
 from paydirt.chart_loader import load_team_chart
 from paydirt.ai_analysis import (
-    OffenseAnalyzer, DefenseAnalyzer, TeamAnalyzer, analyze_team,
-    PlayOutcome
+    OffenseAnalyzer, analyze_team
 )
 
 
@@ -21,8 +20,8 @@ class TestPlayOutcomeParsing:
     
     def test_parses_positive_number(self):
         """Parse positive yardage result."""
-        result = "5"
         # Would need to test via analyzer
+        pass
     
     def test_excludes_penalties(self):
         """Penalties should be excluded from success calculation."""
@@ -352,3 +351,141 @@ class TestEasyModeHelper:
         # Not enough data - should be empty
         warning = helper.warn_danger(3, 7)
         assert warning == ""
+
+
+class TestBreakawayExclusion:
+    """Tests for breakaway (B) play type exclusion."""
+    
+    def test_breakaway_not_in_suggestions(self):
+        """Breakaway 'B' should not be in play suggestions."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        suggestions = helper.suggest_offense_plays(1, 10, 10)
+        play_names = [s['play'] for s in suggestions]
+        
+        assert 'B' not in play_names
+    
+    def test_breakaway_column_has_stats_but_not_suggested(self):
+        """Breakaway column can have stats but shouldn't be suggested."""
+        from paydirt.ai_analysis import OffenseAnalyzer, create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        stats = analyzer.analyze_play_type('B')
+        
+        # B column does have valid rolls (yards to gain on breakaway)
+        assert stats.valid_rolls > 0
+        
+        # But it shouldn't be in suggestions
+        helper = create_easy_mode_helper(bears)
+        suggestions = helper.suggest_offense_plays(1, 10, 10)
+        play_names = [s['play'] for s in suggestions]
+        assert 'B' not in play_names
+    
+    def test_breakaway_results_excluded_from_other_plays(self):
+        """Breakaway 'B' results in other columns should be excluded."""
+        from paydirt.ai_analysis import OffenseAnalyzer
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        
+        # Check that other plays don't count B as valid
+        stats = analyzer.analyze_play_type('Line Plunge')
+        
+        # valid_rolls should not count breakaway results
+        # (they should be filtered out as invalid)
+        assert stats.valid_rolls > 0
+
+
+class TestPlayOutcomeBreakaway:
+    """Tests for PlayOutcome breakaway field."""
+    
+    def test_parse_breakaway_result(self):
+        """Parse 'B' as breakaway result."""
+        from paydirt.ai_analysis import OffenseAnalyzer
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        
+        outcome = analyzer._parse_result('B')
+        
+        assert outcome.is_breakaway
+        assert not outcome.is_positive
+    
+    def test_breakaway_not_valid_play(self):
+        """Breakaway should not be counted as valid play."""
+        from paydirt.ai_analysis import OffenseAnalyzer
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        
+        outcome = analyzer._parse_result('B')
+        
+        assert not analyzer._is_valid_play(outcome)
+    
+    def test_breakaway_result_in_other_columns_excluded(self):
+        """Breakaway 'B' results in other play columns should be excluded from stats."""
+        from paydirt.ai_analysis import OffenseAnalyzer
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        
+        # Analyze a play type that has B results (check some columns)
+        # Line Plunge might have some B results in the data
+        stats = analyzer.analyze_play_type('Line Plunge')
+        
+        # The valid_rolls should NOT include any B results
+        # Since we can't easily verify exact counts, we verify the stats are reasonable
+        assert stats.total_rolls >= stats.valid_rolls
+        assert stats.valid_rolls > 0
+    
+    def test_breakaway_column_has_100_percent_success_rate(self):
+        """Breakaway column has 100% success because B means big gain."""
+        from paydirt.ai_analysis import OffenseAnalyzer
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        analyzer = OffenseAnalyzer(bears.offense)
+        stats = analyzer.analyze_play_type('B')
+        
+        # B column has all positive yards (10-49 yards typically)
+        assert stats.success_rate == 100.0
+    
+    def test_breakaway_in_all_situations_excluded(self):
+        """Breakaway should be excluded from suggestions in all down/distance situations."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from pathlib import Path
+        from paydirt.chart_loader import load_team_chart
+        
+        bears = load_team_chart(Path('seasons/1983/Bears'))
+        helper = create_easy_mode_helper(bears)
+        
+        # Test various down and distance situations
+        test_cases = [
+            (1, 10),
+            (2, 5),
+            (3, 1),
+            (3, 15),
+            (4, 2),
+        ]
+        
+        for down, distance in test_cases:
+            suggestions = helper.suggest_offense_plays(down, distance, 10)
+            play_names = [s['play'] for s in suggestions]
+            assert 'B' not in play_names, f"B found in suggestions for {down} & {distance}"

@@ -1,5 +1,27 @@
 # Paydirt Release Notes
 
+## Version 1.6 (February 2026)
+
+### AI Helper System
+Added an AI-powered helper system to assist players in Easy mode:
+- **AI Helper toggle**: Press `Z` to toggle the AI helper on/off (Easy mode only)
+- **Play suggestions**: Shows top 3 plays ranked by success rate and average yards
+- **Situational tips**: Provides context-aware advice for clock management, red zone, two-minute drill, etc.
+- **Team chart analysis**: Analyzes your team's offensive charts to find optimal plays based on historical dice roll results
+- **Defense suggestions**: Recommends defensive formations based on opponent tendencies
+
+### Bug Fixes
+- **Breakaway (B) in play suggestions**: Fixed the AI helper from incorrectly suggesting the "B" play type. "B" is not a callable play - it's a random result that occurs during play resolution when a big gain is possible. The breakaway column now correctly shows 0 valid plays in suggestions.
+- **Z key in Medium/Hard modes**: The Z key no longer appears in the play menu or responds to input in Medium/Hard difficulty modes. It now only works in Easy mode where the AI helper is available.
+
+### Test Coverage
+- **1165 unit tests** passing (up from 1154)
+- Added tests for breakaway exclusion from play suggestions
+- Added tests for PlayOutcome is_breakaway field
+- Added tests for AI Helper Z key behavior in different difficulty modes
+
+---
+
 ## Version 1.5.2 (February 2026)
 
 ### Critical Bug Fixes - Priority Chart

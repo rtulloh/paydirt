@@ -26,6 +26,7 @@ class PlayOutcome:
     is_interception: bool
     is_touchdown: bool
     is_penalty: bool
+    is_breakaway: bool = False  # B - breakaway, requires second roll
 
 
 @dataclass
@@ -271,6 +272,23 @@ class OffenseAnalyzer:
                 is_penalty=False
             )
         
+        # B (breakaway) - requires second roll, treat as intangible
+        if result_upper == 'B':
+            return PlayOutcome(
+                result=result,
+                yards=0,
+                is_positive=False,
+                is_first_down=False,
+                is_negative=False,
+                is_zero=False,
+                is_black=False,
+                is_fumble=False,
+                is_interception=False,
+                is_touchdown=False,
+                is_penalty=False,
+                is_breakaway=True
+            )
+        
         # Default - unknown result
         return PlayOutcome(
             result=result,
@@ -287,8 +305,8 @@ class OffenseAnalyzer:
         )
     
     def _is_valid_play(self, outcome: PlayOutcome) -> bool:
-        """Check if a play outcome is valid (not penalty, fumble, or interception)."""
-        return not (outcome.is_penalty or outcome.is_fumble or outcome.is_interception)
+        """Check if a play outcome is valid (not penalty, fumble, interception, or breakaway)."""
+        return not (outcome.is_penalty or outcome.is_fumble or outcome.is_interception or outcome.is_breakaway)
     
     def analyze_play_type(self, play_column: str) -> PlayTypeStats:
         """Analyze a specific play type column."""
@@ -783,6 +801,9 @@ class EasyModeHelper:
         # Calculate success rate for each play type
         suggestions = []
         for play_type, stats in all_stats.items():
+            # Skip breakaway (B) - not a callable play, it's a random result
+            if play_type == 'B':
+                continue
             if stats.valid_rolls > 0:
                 suggestions.append({
                     'play': play_type,

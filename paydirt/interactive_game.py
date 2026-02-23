@@ -415,6 +415,11 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
 
 def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: bool, easy_helper=None) -> tuple[PlayType, bool, bool, bool, bool]:
     """Compact offense menu - abbreviated display with '?' for full menu."""
+    global AI_HELPER_ENABLED
+    # Auto-show AI helper if enabled
+    if AI_HELPER_ENABLED and easy_helper:
+        _show_easy_mode_helper(easy_helper, game, is_offense=True)
+    
     # Calculate default play
     team_strength = analyze_team_strength(state.possession_team.offense)
     if state.yards_to_go <= 2:
@@ -437,13 +442,14 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
         default_play = '3'
         default_name = 'End Run'
 
-    # Compact prompt
+    # Compact prompt - show Z only in easy mode (when easy_helper is available)
+    z_option = ",Z" if easy_helper else ""
     if state.down == 4:
         fg_dist = fg_distance(state.ball_position)
         print(f"  *** 4TH DOWN *** P=Punt, F=FG({fg_dist}yd), or go for it (1-9)")
-        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
+        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/{z_option} | ?=help (Default={default_play}/{default_name})")
     else:
-        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/ | ?=help (Default={default_play}/{default_name})")
+        print(f"  OFF: 1-9,Q,H,S,K,P,F | N,T,/{z_option} | ?=help (Default={default_play}/{default_name})")
 
     while True:
         choice = input("  > ").strip().upper()
@@ -516,15 +522,17 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
             return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
         if choice_clean == 'Z':
-            global AI_HELPER_ENABLED
-            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
-            if AI_HELPER_ENABLED:
-                print("\n  *** AI HELPER ENABLED ***")
-                if easy_helper:
+            if easy_helper:
+                AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+                if AI_HELPER_ENABLED:
+                    print("\n  *** AI HELPER ENABLED ***")
                     _show_easy_mode_helper(easy_helper, game, is_offense=True)
+                else:
+                    print("\n  *** AI HELPER DISABLED ***")
+                return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
             else:
-                print("\n  *** AI HELPER DISABLED ***")
-            return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
+                print("  Invalid. 1-9,Q,H,S,K,P,F,N,T,W,/ or ? for help")
+                return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -1114,6 +1122,11 @@ def _show_easy_mode_helper(helper, game: PaydirtGameEngine, is_offense: bool):
 
 def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=None) -> tuple[DefenseType, bool]:
     """Compact defense menu - abbreviated display with '?' for full menu."""
+    global AI_HELPER_ENABLED
+    # Auto-show AI helper if enabled
+    if AI_HELPER_ENABLED and easy_helper:
+        _show_easy_mode_helper(easy_helper, game, is_offense=False)
+    
     # Calculate default defense
     if state.yards_to_go <= 2:
         default_def = 'B'
@@ -1128,7 +1141,9 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=
         default_def = 'A'
         default_name = 'Standard'
 
-    print(f"  DEF: A-F | T,W,Z,/ | ?=help (Default={default_def}/{default_name})")
+    # Show Z only in easy mode (when easy_helper is available)
+    z_option = ",Z" if easy_helper else ""
+    print(f"  DEF: A-F | T,W{z_option},/ | ?=help (Default={default_def}/{default_name})")
 
     while True:
         choice = input("  > ").strip().upper()
@@ -1162,15 +1177,17 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=
             return _get_human_defense_play_compact(game, state, easy_helper)
 
         if choice_clean == 'Z':
-            global AI_HELPER_ENABLED
-            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
-            if AI_HELPER_ENABLED:
-                print("\n  *** AI HELPER ENABLED ***")
-                if easy_helper:
+            if easy_helper:
+                AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+                if AI_HELPER_ENABLED:
+                    print("\n  *** AI HELPER ENABLED ***")
                     _show_easy_mode_helper(easy_helper, game, is_offense=False)
+                else:
+                    print("\n  *** AI HELPER DISABLED ***")
+                return _get_human_defense_play_compact(game, state, easy_helper)
             else:
-                print("\n  *** AI HELPER DISABLED ***")
-            return _get_human_defense_play_compact(game, state, easy_helper)
+                print("  Invalid. A-F, T, / or ? for help")
+                return _get_human_defense_play_compact(game, state, easy_helper)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -1215,6 +1232,7 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
     Returns:
         Tuple of (DefenseType, call_timeout)
     """
+    global AI_HELPER_ENABLED
     state = game.state
 
     # In compact mode, show abbreviated menu
@@ -1294,16 +1312,16 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
             display_box_score(game, "CURRENT STATS")
             return get_human_defense_play(game, easy_helper)
         
-        # AI Helper toggle
+        # AI Helper toggle (only in easy mode)
         if choice_clean == 'Z':
-            global AI_HELPER_ENABLED
-            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
-            if AI_HELPER_ENABLED:
-                print("\n  *** AI HELPER ENABLED ***")
-                if easy_helper:
+            if easy_helper:
+                AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+                if AI_HELPER_ENABLED:
+                    print("\n  *** AI HELPER ENABLED ***")
                     _show_easy_mode_helper(easy_helper, game, is_offense=False)
-            else:
-                print("\n  *** AI HELPER DISABLED ***")
+                else:
+                    print("\n  *** AI HELPER DISABLED ***")
+            return get_human_defense_play(game, easy_helper)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop

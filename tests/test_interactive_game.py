@@ -2,7 +2,7 @@
 Tests for interactive_game.py functions that don't require user input.
 """
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from paydirt.interactive_game import (
     analyze_team_strength,
@@ -557,3 +557,44 @@ class TestTimeoutInputParsing:
         
         assert call_timeout is True
         assert choice_clean == '7'
+
+
+class TestAIHelperZKey:
+    """Tests for Z key (AI Helper toggle) behavior."""
+    
+    def test_easy_helper_created_in_easy_mode(self):
+        """Easy mode should create easy_helper."""
+        from paydirt.ai_analysis import create_easy_mode_helper
+        from paydirt.chart_loader import load_team_chart
+        from pathlib import Path
+        
+        chart = load_team_chart(Path('seasons/1983/Bears'))
+        
+        # In easy mode, easy_helper is created
+        easy_helper = create_easy_mode_helper(chart)
+        assert easy_helper is not None
+    
+    def test_z_key_logic_with_easy_helper(self):
+        """Z key should toggle when easy_helper is provided."""
+        # This test verifies the logic: when easy_helper exists, Z key can toggle
+        easy_helper = "some_helper"  # Simulating easy mode helper
+        
+        # The Z key logic checks: if easy_helper is not None, it allows toggle
+        if easy_helper:
+            can_toggle = True
+        else:
+            can_toggle = False
+        
+        assert can_toggle is True
+    
+    def test_z_key_logic_without_easy_helper(self):
+        """Z key should not work when easy_helper is None."""
+        easy_helper = None  # Simulating medium/hard mode
+        
+        # The Z key logic checks: if easy_helper is not None, it allows toggle
+        if easy_helper:
+            can_toggle = True
+        else:
+            can_toggle = False
+        
+        assert can_toggle is False

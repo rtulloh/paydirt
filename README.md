@@ -138,6 +138,75 @@ Select your team, choose home or away, select CPU difficulty, and start playing!
 | **Medium** | Balanced (default) | Standard NFL-like decisions |
 | **Hard** | Aggressive | Goes for it on 4th down more, attempts long FGs, optimal play calling |
 
+### Difficulty Settings Explained
+
+#### Easy Mode
+
+- **AI Helper**: Enabled by default - shows suggested plays based on your team's offensive chart analysis
+- **CPU Aggression**: 0.3 (conservative)
+- **4th Down**: Rarely goes for it, prefers to punt
+- **Field Goals**: Conservative range, won't attempt long attempts
+- **Onside Kicks**: Rarely attempts
+
+**AI Helper Features**:
+- Shows your top 3 plays ranked by success rate
+- Provides situational tips (clock management, red zone, etc.)
+- Displays average yards per play
+- Toggle with `Z` key during play selection
+
+#### Medium Mode (Default)
+
+- **AI Helper**: Disabled by default
+- **CPU Aggression**: 0.5 (balanced)
+- **4th Down**: Standard NFL decision-making
+- **Field Goals**: Normal range considerations
+- **Onside Kicks**: Occasional surprise attempts
+
+**Manual AI Helper**:
+- Press `Z` during play selection to toggle AI Helper on/off
+- Works in any difficulty mode
+
+#### Hard Mode
+
+- **AI Helper**: Disabled by default
+- **CPU Aggression**: 0.7 (aggressive)
+- **4th Down**: Aggressive - often goes for it
+- **Field Goals**: Will attempt longer field goals
+- **Onside Kicks**: More likely to surprise
+
+**AI Analysis (for CPU)**:
+- CPU uses team chart analysis to find optimal plays
+- Tracks opponent tendencies to predict play calls
+- Makes decisions based on down, distance, and game situation
+
+### AI Helper Controls
+
+| Key | Action |
+|-----|--------|
+| `Z` | Toggle AI Helper on/off (Easy mode only) |
+| `?` | View full play menu (compact mode) |
+| `/` | View game statistics |
+
+### AI Helper Display Example
+
+When enabled, the AI Helper shows before each play:
+
+```
+  === AI HELPER (Your Best Plays) ===
+  ----------------------------------------
+    1. Line Plunge - 91% success, 4.2 avg yards
+    2. Off Tackle - 82% success, 3.7 avg yards
+    3. Short Pass - 74% success, 4.9 avg yards
+
+  Tip: 3rd & short - power runs are best here
+  Recommended: Line Plunge (91% success)
+```
+
+The helper analyzes your team's offensive charts to find:
+- **Success Rate**: Percentage of plays with positive yardage
+- **Average Yards**: Mean yards gained per play
+- **Situational Tips**: Context-aware advice for clock management, red zone, etc.
+
 ## How to Play
 
 ### Starting a Game
