@@ -512,7 +512,7 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
             display_box_score(game, "CURRENT STATS")
             return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
-        if choice_clean == 'H' and easy_helper:
+        if choice_clean == 'Z' and easy_helper:
             _show_easy_mode_helper(easy_helper, game, is_offense=True)
             return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
@@ -1118,7 +1118,7 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=
         default_def = 'A'
         default_name = 'Standard'
 
-    print(f"  DEF: A-F | T,W,H,/ | ?=help (Default={default_def}/{default_name})")
+    print(f"  DEF: A-F | T,W,Z,/ | ?=help (Default={default_def}/{default_name})")
 
     while True:
         choice = input("  > ").strip().upper()
@@ -1151,7 +1151,7 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=
             display_box_score(game, "CURRENT STATS")
             return _get_human_defense_play_compact(game, state, easy_helper)
 
-        if choice_clean == 'H' and easy_helper:
+        if choice_clean == 'Z' and easy_helper:
             _show_easy_mode_helper(easy_helper, game, is_offense=False)
             return _get_human_defense_play_compact(game, state, easy_helper)
 
@@ -1278,7 +1278,7 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
             return get_human_defense_play(game, easy_helper)
         
         # Easy mode helper
-        if choice_clean == 'H' and easy_helper:
+        if choice_clean == 'Z' and easy_helper:
             _show_easy_mode_helper(easy_helper, game, is_offense=False)
 
         if choice_clean == 'W':
