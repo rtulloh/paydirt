@@ -30,6 +30,9 @@ from .ai_analysis import create_easy_mode_helper
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
 
+# Global AI helper toggle (set by run_interactive_game)
+AI_HELPER_ENABLED = False
+
 
 def analyze_team_strength(offense: OffenseChart) -> str:
     """
@@ -512,8 +515,15 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
             display_box_score(game, "CURRENT STATS")
             return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
-        if choice_clean == 'Z' and easy_helper:
-            _show_easy_mode_helper(easy_helper, game, is_offense=True)
+        if choice_clean == 'Z':
+            global AI_HELPER_ENABLED
+            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+            if AI_HELPER_ENABLED:
+                print("\n  *** AI HELPER ENABLED ***")
+                if easy_helper:
+                    _show_easy_mode_helper(easy_helper, game, is_offense=True)
+            else:
+                print("\n  *** AI HELPER DISABLED ***")
             return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
         if choice_clean == 'W':
@@ -1151,8 +1161,15 @@ def _get_human_defense_play_compact(game: PaydirtGameEngine, state, easy_helper=
             display_box_score(game, "CURRENT STATS")
             return _get_human_defense_play_compact(game, state, easy_helper)
 
-        if choice_clean == 'Z' and easy_helper:
-            _show_easy_mode_helper(easy_helper, game, is_offense=False)
+        if choice_clean == 'Z':
+            global AI_HELPER_ENABLED
+            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+            if AI_HELPER_ENABLED:
+                print("\n  *** AI HELPER ENABLED ***")
+                if easy_helper:
+                    _show_easy_mode_helper(easy_helper, game, is_offense=False)
+            else:
+                print("\n  *** AI HELPER DISABLED ***")
             return _get_human_defense_play_compact(game, state, easy_helper)
 
         if choice_clean == 'W':
@@ -1277,9 +1294,16 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
             display_box_score(game, "CURRENT STATS")
             return get_human_defense_play(game, easy_helper)
         
-        # Easy mode helper
-        if choice_clean == 'Z' and easy_helper:
-            _show_easy_mode_helper(easy_helper, game, is_offense=False)
+        # AI Helper toggle
+        if choice_clean == 'Z':
+            global AI_HELPER_ENABLED
+            AI_HELPER_ENABLED = not AI_HELPER_ENABLED
+            if AI_HELPER_ENABLED:
+                print("\n  *** AI HELPER ENABLED ***")
+                if easy_helper:
+                    _show_easy_mode_helper(easy_helper, game, is_offense=False)
+            else:
+                print("\n  *** AI HELPER DISABLED ***")
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -2563,8 +2587,9 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         week: Week number for recording to standings (0 = auto-assign)
     """
     # Set global display mode
-    global COMPACT_MODE
+    global COMPACT_MODE, AI_HELPER_ENABLED
     COMPACT_MODE = compact
+    AI_HELPER_ENABLED = (difficulty == 'easy')
 
     # Map difficulty to aggression value
     difficulty_map = {
@@ -3223,8 +3248,9 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         compact: Display mode
         week: Week number for recording to standings (0 = auto-assign)
     """
-    global COMPACT_MODE
+    global COMPACT_MODE, AI_HELPER_ENABLED
     COMPACT_MODE = compact
+    AI_HELPER_ENABLED = (difficulty == 'easy')
 
     filepath = save_file or DEFAULT_SAVE_FILE
     
