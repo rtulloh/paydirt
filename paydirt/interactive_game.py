@@ -410,7 +410,7 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     print("+" + "-" * 58 + "+")
 
 
-def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: bool) -> tuple[PlayType, bool, bool, bool, bool]:
+def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: bool, easy_helper=None) -> tuple[PlayType, bool, bool, bool, bool]:
     """Compact offense menu - abbreviated display with '?' for full menu."""
     # Calculate default play
     team_strength = analyze_team_strength(state.possession_team.offense)
@@ -510,7 +510,11 @@ def _get_human_offense_play_compact(game: PaydirtGameEngine, state, no_huddle: b
 
         if choice_clean == '/':
             display_box_score(game, "CURRENT STATS")
-            return _get_human_offense_play_compact(game, state, no_huddle)
+            return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
+
+        if choice_clean == 'H' and easy_helper:
+            _show_easy_mode_helper(easy_helper, game, is_offense=True)
+            return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
         if choice_clean == 'W':
             # Save game - return special marker to trigger save in main loop
@@ -568,13 +572,14 @@ def _show_full_offense_menu(state, no_huddle: bool):
     print()
 
 
-def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> tuple[PlayType, bool, bool, bool, bool]:
+def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False, easy_helper=None) -> tuple[PlayType, bool, bool, bool, bool]:
     """
     Prompt human player to select an offensive play.
     
     Args:
         game: The game engine
         no_huddle: Whether No Huddle mode is currently active
+        easy_helper: Optional EasyModeHelper for suggestions
     
     Returns:
         Tuple of (PlayType, no_huddle_for_next_play, out_of_bounds_designation, in_bounds_designation, call_timeout)
@@ -588,7 +593,7 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
 
     # In compact mode, show abbreviated menu
     if COMPACT_MODE:
-        return _get_human_offense_play_compact(game, state, no_huddle)
+        return _get_human_offense_play_compact(game, state, no_huddle, easy_helper)
 
     print("\n  OFFENSIVE PLAY CALL")
     print("  " + "-" * 40)
@@ -801,12 +806,12 @@ def get_human_offense_play(game: PaydirtGameEngine, no_huddle: bool = False) -> 
                 print("  Risks: Penalties may become bad snaps or false starts")
             else:
                 print("\n  *** RETURNING TO NORMAL OFFENSE ***")
-            return get_human_offense_play(game, new_no_huddle)
+            return get_human_offense_play(game, new_no_huddle, easy_helper)
 
         # Stats request
         if choice_clean == '/':
             display_box_score(game, "CURRENT STATS")
-            return get_human_offense_play(game, no_huddle)
+            return get_human_offense_play(game, no_huddle, easy_helper)
 
         # Allow P and F on any down (strategic kicks, time pressure, etc.)
         if choice_clean == 'P':
@@ -2853,7 +2858,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # Get play calls
         if is_human_offense:
             # Human on offense
-            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode)
+            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode, easy_mode_helper)
 
             # Check for save command (play_type is None)
             if play_type is None:
@@ -2974,7 +2979,21 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
         # Display result - pass offense_was_home so we show the correct team even after turnover on downs
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
-
+        
+        # Record opponent play for easy mode tendency tracking (if enabled)
+        if easy_mode_helper and not is_human_offense:
+            # Human was on defense, so CPU (opponent) just ran a play
+            # Record what the CPU ran using current down/distance (before it updates)
+            from paydirt.play_resolver import is_passing_play
+            game_state = game.state
+            easy_mode_helper.opponent_tracker.record_play(
+                down=game_state.down,
+                distance=game_state.yards_to_go,
+                play_type=play_type.value if hasattr(play_type, 'value') else str(play_type),
+                yards_gained=outcome.yards_gained,
+                is_pass=is_passing_play(play_type)
+            )
+        
         # Clear untimed down flag after the untimed play completes
         # This allows the quarter to advance on the next _use_time call
         if is_untimed_down:
@@ -3375,7 +3394,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
         # Get play calls
         if is_human_offense:
-            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode)
+            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode, easy_mode_helper)
 
             if play_type is None:
                 filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
