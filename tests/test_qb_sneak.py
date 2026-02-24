@@ -198,9 +198,10 @@ class TestQbSneakGameEngine:
         assert game.state.down == 1
     
     def test_qb_sneak_fumble_recovered(self, game):
-        """QB Sneak fumble recovered by offense should result in no gain."""
+        """QB Sneak fumble recovered by offense should result in no gain and advance the down."""
         game.state.ball_position = 50
         game.state.is_home_possession = True
+        game.state.down = 3  # Start on 3rd down
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             # First call: offensive dice for play (fumble)
@@ -214,6 +215,7 @@ class TestQbSneakGameEngine:
         
         assert outcome.turnover is False
         assert "RECOVERED" in outcome.description
+        assert game.state.down == 4  # Down should advance to 4th
     
     def test_qb_sneak_fumble_lost(self, game):
         """QB Sneak fumble lost should result in turnover."""

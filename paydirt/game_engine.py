@@ -1555,8 +1555,9 @@ class PaydirtGameEngine:
             result.fumble_resolved = True  # Mark as resolved so we don't re-roll on penalty acceptance
 
             if offense_recovers:
-                # Offense recovers at LOS - no gain
+                # Offense recovers at LOS - no gain, but get another down
                 turnover = False
+                self.state.next_down()
                 result.description = f"QB Sneak - Fumble RECOVERED at LOS (roll {recovery_roll})"
             else:
                 # Defense recovers
