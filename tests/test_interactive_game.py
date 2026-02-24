@@ -598,3 +598,126 @@ class TestAIHelperZKey:
             can_toggle = False
         
         assert can_toggle is False
+
+
+class TestAIOpponentAnalysis:
+    """Tests for AI opponent analysis at end of game."""
+    
+    def test_opponent_model_created_in_hard_mode(self):
+        """Hard mode should create opponent_model for AI."""
+        from paydirt.computer_ai import ComputerAI
+        
+        # Hard mode (use_analysis=True)
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        assert ai.use_analysis is True
+        assert ai.opponent_model is not None
+        assert ai.opponent_model.tracker is not None
+    
+    def test_opponent_model_not_created_in_medium_mode(self):
+        """Medium mode should not create opponent_model."""
+        from paydirt.computer_ai import ComputerAI
+        
+        # Medium mode (use_analysis=False)
+        ai = ComputerAI(aggression=0.5, use_analysis=False)
+        assert ai.use_analysis is False
+        assert ai.opponent_model is None
+    
+    def test_opponent_model_not_created_in_easy_mode(self):
+        """Easy mode should not create opponent_model."""
+        from paydirt.computer_ai import ComputerAI
+        
+        # Easy mode (use_analysis=False)
+        ai = ComputerAI(aggression=0.3, use_analysis=False)
+        assert ai.use_analysis is False
+        assert ai.opponent_model is None
+    
+    def test_opponent_tracker_records_plays(self):
+        """Opponent tracker should record plays when human is on offense."""
+        from paydirt.computer_ai import ComputerAI
+        from paydirt.ai_analysis import PlayCategory
+        
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        
+        # Record some plays
+        ai.opponent_model.record_opponent_play(
+            down=1, distance=10, play_type="Short Pass",
+            yards_gained=5, is_pass=True
+        )
+        ai.opponent_model.record_opponent_play(
+            down=2, distance=7, play_type="Run",
+            yards_gained=3, is_pass=False
+        )
+        
+        # Check the tracker has recorded the plays
+        tracker = ai.opponent_model.tracker
+        total_plays = sum(len(plays) for plays in tracker.situation_plays.values())
+        
+        assert total_plays == 2
+    
+    def test_opponent_tracker_calculates_tendencies(self):
+        """Opponent tracker should calculate tendencies correctly."""
+        from paydirt.computer_ai import ComputerAI
+        
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        
+        # Record more pass plays than run plays
+        for _ in range(4):
+            ai.opponent_model.record_opponent_play(
+                down=1, distance=10, play_type="Long Pass",
+                yards_gained=15, is_pass=True
+            )
+        for _ in range(1):
+            ai.opponent_model.record_opponent_play(
+                down=2, distance=5, play_type="Run",
+                yards_gained=2, is_pass=False
+            )
+        
+        # Get tendency for 1st & 10
+        tendency = ai.opponent_model.tracker.get_tendency(1, 10)
+        
+        assert tendency.total_plays == 4
+        assert tendency.pass_plays == 4
+        assert tendency.run_plays == 0
+    
+    def test_opponent_tracker_gets_defense_recommendation(self):
+        """Opponent tracker should give defense recommendations based on tendencies."""
+        from paydirt.computer_ai import ComputerAI
+        
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        
+        # Record mostly pass plays (>60%) -> should recommend D (Short Pass defense)
+        for _ in range(7):
+            ai.opponent_model.record_opponent_play(
+                down=3, distance=8, play_type="Long Pass",
+                yards_gained=10, is_pass=True
+            )
+        for _ in range(3):
+            ai.opponent_model.record_opponent_play(
+                down=3, distance=8, play_type="Run",
+                yards_gained=2, is_pass=False
+            )
+        
+        # With >60% passes, should recommend D defense
+        rec = ai.opponent_model.tracker.get_defense_recommendation(3, 8)
+        
+        assert rec == "D"
+    
+    def test_opponent_tracker_detects_streak(self):
+        """Opponent tracker should detect streaks of same play types."""
+        from paydirt.computer_ai import ComputerAI
+        from paydirt.ai_analysis import PlayCategory
+        
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        
+        # Record 3 consecutive pass plays
+        for _ in range(3):
+            ai.opponent_model.record_opponent_play(
+                down=1, distance=10, play_type="Long Pass",
+                yards_gained=15, is_pass=True
+            )
+        
+        # Check streak detection (need at least 3 plays)
+        streak = ai.opponent_model.tracker.get_streak()
+        
+        assert streak is not None
+        assert streak == PlayCategory.PASS
