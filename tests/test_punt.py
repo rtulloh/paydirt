@@ -1129,6 +1129,29 @@ class TestPuntDiceDisplay:
             assert outcome.result.punt_return_dice == 10
             assert "returned 10 yards" in outcome.description
 
+    def test_punt_return_fumble_stores_return_dice(self, game):
+        """Punt return fumble should store the return dice roll for display."""
+        game.state.ball_position = 30
+        game.state.is_home_possession = True
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            # First roll: punt 40 yards
+            # Second roll: fumble on return
+            mock_dice.side_effect = [
+                (17, "B2+W2+W5=17"),  # Punt
+                (10, "B1+W1+W1=10"),  # Return - F means fumble
+            ]
+            
+            game.state.possession_team.special_teams.punt[17] = "40"
+            game.state.defense_team.special_teams.punt_return[10] = "F"  # Fumble
+            
+            outcome = game._handle_punt()
+            
+            assert outcome.result.dice_roll == 17
+            assert outcome.result.punt_return_dice == 10
+            assert "FUMBLE" in outcome.description
+            assert outcome.turnover is False  # Kicking team recovers
+
 
 class TestPuntShankCommentary:
     """Tests for punt shank commentary."""

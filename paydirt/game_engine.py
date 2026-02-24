@@ -2343,6 +2343,7 @@ class PaydirtGameEngine:
                     # Add return dice to result so it can be displayed
                     parsed_result = parse_result_string(punt_result)
                     parsed_result.punt_return_dice = return_roll
+                    parsed_result.dice_roll = punt_roll  # Also preserve the original punt dice roll
 
                     outcome = PlayOutcome(
                         play_type=PlayType.PUNT,
