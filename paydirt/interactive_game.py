@@ -3752,7 +3752,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             run_pct = (total_runs / total_plays * 100) if total_plays > 0 else 0
             pass_pct = (total_passes / total_plays * 100) if total_plays > 0 else 0
             
-            print(f"\n  Opponent (human) play tendencies:")
+            print("\n  Opponent (human) play tendencies:")
             print(f"    Total plays tracked: {total_plays}")
             print(f"    Run: {total_runs} ({run_pct:.0f}%)")
             print(f"    Pass: {total_passes} ({pass_pct:.0f}%)")
@@ -3763,7 +3763,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 print(f"\n  Current streak detected: {streak.value.upper()} ({streak.value} plays in a row)")
             
             # Show tendencies by situation
-            print(f"\n  Tendencies by situation:")
+            print("\n  Tendencies by situation:")
             for situation in ['short_yardage', 'third_down', 'red_zone', 'standard']:
                 tendency = tracker.get_tendency(1, 10)  # Generic lookup
                 # Just show if we have data
@@ -3783,7 +3783,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             else:
                 print(f"\n  Need more plays to analyze specific situations (have {total_plays}, need 5)")
             
-            print(f"\n  AI used this analysis to help defend against you!")
+            print("\n  AI used this analysis to help defend against you!")
         else:
             print("\n  No opponent data collected (you may have played very little on defense)")
         
@@ -3791,9 +3791,9 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         human_won = (human_is_home and game.state.home_score > game.state.away_score) or \
                     (not human_is_home and game.state.away_score > game.state.home_score)
         if human_won:
-            print(f"\n  Result: You won! The AI learned from its mistakes.")
+            print("\n  Result: You won! The AI learned from its mistakes.")
         else:
-            print(f"\n  Result: AI won! Its analysis helped predict your plays.")
+            print("\n  Result: AI won! Its analysis helped predict your plays.")
 
     # Offer to record game to standings
     _offer_record_to_standings(
