@@ -406,3 +406,105 @@ class TestCompactDisplayTurnoverReturns:
             assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
         finally:
             ig.COMPACT_MODE = original_compact
+
+
+class TestPuntReturnFumbleDisplay:
+    """Tests for punt return fumble display showing dice rolls."""
+    
+    def test_punt_return_fumble_shows_dice_rolls(self):
+        """Punt return fumble should show both punt and return dice rolls."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False  # Away (ATL) is on offense
+        game.state.ball_position = 30
+
+        # Create a punt return fumble outcome
+        result = PlayResult(
+            result_type=ResultType.YARDS,
+            yards=40,
+            description="Punt 40 yards, FUMBLE on the return! Recovered at opponent's 30",
+            dice_roll=17,
+            raw_result="40"
+        )
+        result.punt_return_dice = 10  # Return dice that caused fumble
+
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=40,
+            turnover=False,  # Kicking team recovers
+            description="Punt 40 yards, FUMBLE on the return! Recovered at opponent's 30"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.PUNT, DefenseType.STANDARD,
+                                    away_chart, offense_was_home=False)
+                output = mock_stdout.getvalue()
+
+            # Should show both punt dice and return dice
+            assert "P:17" in output, f"Expected 'P:17' in output: {output}"
+            assert "R:10" in output, f"Expected 'R:10' in output: {output}"
+            assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
+            assert "recovers" in output.lower(), f"Expected 'recovers' in output: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
+    
+    def test_punt_return_fumble_no_dice_when_not_set(self):
+        """Punt return fumble without return dice set should not show dice breakdown."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False
+        game.state.ball_position = 30
+
+        # Create a punt return fumble outcome WITHOUT punt_return_dice set
+        result = PlayResult(
+            result_type=ResultType.YARDS,
+            yards=40,
+            description="Punt 40 yards, FUMBLE on the return! Recovered at opponent's 30",
+            dice_roll=17,
+            raw_result="40"
+        )
+        # Note: punt_return_dice is NOT set
+
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=40,
+            turnover=False,
+            description="Punt 40 yards, FUMBLE on the return! Recovered at opponent's 30"
+        )
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.PUNT, DefenseType.STANDARD,
+                                    away_chart, offense_was_home=False)
+                output = mock_stdout.getvalue()
+
+            # Should NOT show the dice breakdown format
+            assert "P:" not in output, f"Did not expect 'P:' in output: {output}"
+            assert "R:" not in output, f"Did not expect 'R:' in output: {output}"
+            # But should still show FUMBLE
+            assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
