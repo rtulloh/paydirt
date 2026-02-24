@@ -2747,7 +2747,15 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             first_half_kicking_home = False  # Away (human) kicks
 
     # Create CPU AI for computer opponent decisions
-    cpu_ai = ComputerAI(aggression=cpu_aggression)
+    # Enable analysis/opponent modeling in hard mode
+    use_analysis = (difficulty == 'hard')
+    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=use_analysis)
+    
+    # Set the AI's team for analysis
+    if use_analysis:
+        # CPU AI needs to know its own team (the team it's controlling)
+        cpu_team_chart = home_chart if not human_is_home else away_chart
+        cpu_ai.set_team(cpu_team_chart)
     
     # Create easy mode helper if in easy mode
     if difficulty == 'easy':
@@ -3028,6 +3036,22 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
         # Display result - pass offense_was_home so we show the correct team even after turnover on downs
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
+        
+        # Record opponent play for tendency tracking (if AI is using analysis)
+        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
+            # Record whatever the opponent (human) just did
+            # is_human_offense tells us who ran the play
+            if is_human_offense:
+                # Human was on offense - record their play
+                from paydirt.play_resolver import is_passing_play
+                game_state = game.state
+                cpu_ai.opponent_model.record_opponent_play(
+                    down=game_state.down,
+                    distance=game_state.yards_to_go,
+                    play_type=play_type.value if hasattr(play_type, 'value') else str(play_type),
+                    yards_gained=outcome.yards_gained,
+                    is_pass=is_passing_play(play_type)
+                )
         
         # Record opponent play for easy mode tendency tracking (if enabled)
         if easy_mode_helper and not is_human_offense:
@@ -3328,8 +3352,14 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     }
     cpu_aggression = difficulty_map.get(difficulty, 0.5)
     
-    # Create CPU AI
-    cpu_ai = ComputerAI(aggression=cpu_aggression)
+    # Create CPU AI - enable analysis in hard mode
+    use_analysis = (difficulty == 'hard')
+    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=use_analysis)
+    
+    # Set the AI's team for analysis
+    if use_analysis:
+        cpu_team_chart = home_chart if not human_is_home else away_chart
+        cpu_ai.set_team(cpu_team_chart)
     
     # Create easy mode helper if in easy mode
     if difficulty == 'easy':
@@ -3540,6 +3570,19 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
+        
+        # Record opponent play for tendency tracking (if AI is using analysis)
+        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
+            if is_human_offense:
+                from paydirt.play_resolver import is_passing_play
+                game_state = game.state
+                cpu_ai.opponent_model.record_opponent_play(
+                    down=game_state.down,
+                    distance=game_state.yards_to_go,
+                    play_type=play_type.value if hasattr(play_type, 'value') else str(play_type),
+                    yards_gained=outcome.yards_gained,
+                    is_pass=is_passing_play(play_type)
+                )
 
         if is_untimed_down:
             game.clear_untimed_down()
@@ -3684,6 +3727,73 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         print(f"\n  {winner} WINS!")
     else:
         print("\n  GAME ENDS IN A TIE!")
+
+    # Print AI opponent analysis summary (hard mode only)
+    if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
+        print("\n" + "=" * 70)
+        print("  AI OPPONENT ANALYSIS SUMMARY")
+        print("=" * 70)
+        
+        tracker = cpu_ai.opponent_model.tracker
+        
+        # Get overall tendency
+        total_plays = sum(len(plays) for plays in tracker.situation_plays.values())
+        if total_plays > 0:
+            # Count all plays
+            total_runs = 0
+            total_passes = 0
+            for situation, plays in tracker.situation_plays.items():
+                for play in plays:
+                    if play.value == 'run':
+                        total_runs += 1
+                    elif play.value == 'pass':
+                        total_passes += 1
+            
+            run_pct = (total_runs / total_plays * 100) if total_plays > 0 else 0
+            pass_pct = (total_passes / total_plays * 100) if total_plays > 0 else 0
+            
+            print(f"\n  Opponent (human) play tendencies:")
+            print(f"    Total plays tracked: {total_plays}")
+            print(f"    Run: {total_runs} ({run_pct:.0f}%)")
+            print(f"    Pass: {total_passes} ({pass_pct:.0f}%)")
+            
+            # Get streak info
+            streak = tracker.get_streak()
+            if streak:
+                print(f"\n  Current streak detected: {streak.value.upper()} ({streak.value} plays in a row)")
+            
+            # Show tendencies by situation
+            print(f"\n  Tendencies by situation:")
+            for situation in ['short_yardage', 'third_down', 'red_zone', 'standard']:
+                tendency = tracker.get_tendency(1, 10)  # Generic lookup
+                # Just show if we have data
+            if total_plays >= 5:
+                # Get recommendations for common situations
+                common_situations = [
+                    (1, 10, "1st & 10"),
+                    (2, 7, "2nd & 7"), 
+                    (3, 5, "3rd & 5"),
+                    (4, 3, "4th & 3")
+                ]
+                for down, dist, name in common_situations:
+                    tendency = tracker.get_tendency(down, dist)
+                    if tendency.total_plays > 0:
+                        rec = tracker.get_defense_recommendation(down, dist)
+                        print(f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P -> recommend {rec}")
+            else:
+                print(f"\n  Need more plays to analyze specific situations (have {total_plays}, need 5)")
+            
+            print(f"\n  AI used this analysis to help defend against you!")
+        else:
+            print("\n  No opponent data collected (you may have played very little on defense)")
+        
+        # Print win/loss result
+        human_won = (human_is_home and game.state.home_score > game.state.away_score) or \
+                    (not human_is_home and game.state.away_score > game.state.home_score)
+        if human_won:
+            print(f"\n  Result: You won! The AI learned from its mistakes.")
+        else:
+            print(f"\n  Result: AI won! Its analysis helped predict your plays.")
 
     # Offer to record game to standings
     _offer_record_to_standings(
