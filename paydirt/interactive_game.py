@@ -3271,6 +3271,60 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
     display_box_score(game, "FINAL STATISTICS")
 
+    # Print AI opponent analysis summary (hard mode only)
+    if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
+        tracker = cpu_ai.opponent_model.tracker
+        total_plays = sum(len(plays) for plays in tracker.situation_plays.values())
+        if total_plays > 0:
+            total_runs = 0
+            total_passes = 0
+            for situation, plays in tracker.situation_plays.items():
+                for play in plays:
+                    if play.value == 'run':
+                        total_runs += 1
+                    elif play.value == 'pass':
+                        total_passes += 1
+            
+            run_pct = (total_runs / total_plays * 100) if total_plays > 0 else 0
+            pass_pct = (total_passes / total_plays * 100) if total_plays > 0 else 0
+            
+            print("\n" + "=" * 70)
+            print("  AI OPPONENT ANALYSIS SUMMARY")
+            print("=" * 70)
+            print(f"\n  Opponent (human) play tendencies:")
+            print(f"    Total plays tracked: {total_plays}")
+            print(f"    Run: {total_runs} ({run_pct:.0f}%)")
+            print(f"    Pass: {total_passes} ({pass_pct:.0f}%)")
+            
+            streak = tracker.get_streak()
+            if streak:
+                print(f"\n  Current streak detected: {streak.value.upper()} ({streak.value} plays in a row)")
+            
+            if total_plays >= 5:
+                common_situations = [
+                    (1, 10, "1st & 10"),
+                    (2, 7, "2nd & 7"), 
+                    (3, 5, "3rd & 5"),
+                    (4, 3, "4th & 3")
+                ]
+                print("\n  Tendencies by situation:")
+                for down, dist, name in common_situations:
+                    tendency = tracker.get_tendency(down, dist)
+                    if tendency.total_plays > 0:
+                        rec = tracker.get_defense_recommendation(down, dist)
+                        print(f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P -> recommend {rec}")
+            else:
+                print(f"\n  Need more plays to analyze specific situations (have {total_plays}, need 5)")
+            
+            print("\n  AI used this analysis to help defend against you!")
+            
+            human_won = (human_is_home and game.state.home_score > game.state.away_score) or \
+                        (not human_is_home and game.state.away_score > game.state.home_score)
+            if human_won:
+                print("\n  Result: You won! The AI learned from its mistakes.")
+            else:
+                print("\n  Result: AI won! Its analysis helped predict your plays.")
+
     # Offer to record game to standings
     _offer_record_to_standings(
         year=home_chart.peripheral.year,
@@ -3727,73 +3781,6 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         print(f"\n  {winner} WINS!")
     else:
         print("\n  GAME ENDS IN A TIE!")
-
-    # Print AI opponent analysis summary (hard mode only)
-    if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
-        print("\n" + "=" * 70)
-        print("  AI OPPONENT ANALYSIS SUMMARY")
-        print("=" * 70)
-        
-        tracker = cpu_ai.opponent_model.tracker
-        
-        # Get overall tendency
-        total_plays = sum(len(plays) for plays in tracker.situation_plays.values())
-        if total_plays > 0:
-            # Count all plays
-            total_runs = 0
-            total_passes = 0
-            for situation, plays in tracker.situation_plays.items():
-                for play in plays:
-                    if play.value == 'run':
-                        total_runs += 1
-                    elif play.value == 'pass':
-                        total_passes += 1
-            
-            run_pct = (total_runs / total_plays * 100) if total_plays > 0 else 0
-            pass_pct = (total_passes / total_plays * 100) if total_plays > 0 else 0
-            
-            print("\n  Opponent (human) play tendencies:")
-            print(f"    Total plays tracked: {total_plays}")
-            print(f"    Run: {total_runs} ({run_pct:.0f}%)")
-            print(f"    Pass: {total_passes} ({pass_pct:.0f}%)")
-            
-            # Get streak info
-            streak = tracker.get_streak()
-            if streak:
-                print(f"\n  Current streak detected: {streak.value.upper()} ({streak.value} plays in a row)")
-            
-            # Show tendencies by situation
-            print("\n  Tendencies by situation:")
-            for situation in ['short_yardage', 'third_down', 'red_zone', 'standard']:
-                tendency = tracker.get_tendency(1, 10)  # Generic lookup
-                # Just show if we have data
-            if total_plays >= 5:
-                # Get recommendations for common situations
-                common_situations = [
-                    (1, 10, "1st & 10"),
-                    (2, 7, "2nd & 7"), 
-                    (3, 5, "3rd & 5"),
-                    (4, 3, "4th & 3")
-                ]
-                for down, dist, name in common_situations:
-                    tendency = tracker.get_tendency(down, dist)
-                    if tendency.total_plays > 0:
-                        rec = tracker.get_defense_recommendation(down, dist)
-                        print(f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P -> recommend {rec}")
-            else:
-                print(f"\n  Need more plays to analyze specific situations (have {total_plays}, need 5)")
-            
-            print("\n  AI used this analysis to help defend against you!")
-        else:
-            print("\n  No opponent data collected (you may have played very little on defense)")
-        
-        # Print win/loss result
-        human_won = (human_is_home and game.state.home_score > game.state.away_score) or \
-                    (not human_is_home and game.state.away_score > game.state.home_score)
-        if human_won:
-            print("\n  Result: You won! The AI learned from its mistakes.")
-        else:
-            print("\n  Result: AI won! Its analysis helped predict your plays.")
 
     # Offer to record game to standings
     _offer_record_to_standings(
