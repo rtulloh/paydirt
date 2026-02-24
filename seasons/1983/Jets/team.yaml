@@ -1,0 +1,19 @@
+# Team metadata for the 1983 New York Jets
+# This file stores team-specific information that may change across seasons
+
+team_name: New York Jets
+short_name: NYJ
+location: East Rutherford, New Jersey
+nickname: Jets
+
+# Alternative names this team has been known by (for historical matching)
+aliases:
+  - New York
+  - NYJ
+  - Jets
+
+# For teams that have moved or renamed
+history:
+  - year: 1983
+    name: New York Jets
+    location: East Rutherford, New Jersey

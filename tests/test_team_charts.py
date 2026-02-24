@@ -332,7 +332,7 @@ class TestChartLoaderPeripheralFromOffense:
         jets = load_team_chart(jets_dir)
         
         assert giants.peripheral.short_name == "NYG '83"
-        assert jets.peripheral.short_name == "NYA '83"
+        assert jets.peripheral.short_name == "NYJ"
     
     def test_load_team_disambiguates_la_teams(self):
         """Chart loader should correctly distinguish Raiders vs Rams."""
