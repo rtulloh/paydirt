@@ -3,9 +3,52 @@ Loader for Paydirt team chart CSV files.
 Parses the actual team chart format used in the board game.
 """
 import csv
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
+import yaml
+
+
+@dataclass
+class TeamMetadata:
+    """Team metadata loaded from team.yaml file."""
+    team_name: str = ""
+    short_name: str = ""
+    location: str = ""
+    nickname: str = ""
+    aliases: list[str] = field(default_factory=list)
+    history: list[dict] = field(default_factory=list)
+
+
+def load_team_metadata(team_dir: str) -> Optional[TeamMetadata]:
+    """
+    Load team metadata from team.yaml file in the team directory.
+    
+    Returns None if the file doesn't exist or can't be parsed.
+    """
+    yaml_path = os.path.join(team_dir, 'team.yaml')
+    if not os.path.exists(yaml_path):
+        return None
+    
+    try:
+        with open(yaml_path, 'r') as f:
+            data = yaml.safe_load(f)
+        
+        if not data:
+            return None
+        
+        return TeamMetadata(
+            team_name=data.get('team_name', ''),
+            short_name=data.get('short_name', ''),
+            location=data.get('location', ''),
+            nickname=data.get('nickname', ''),
+            aliases=data.get('aliases', []),
+            history=data.get('history', [])
+        )
+    except Exception:
+        return None
 
 
 @dataclass

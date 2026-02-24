@@ -1,0 +1,19 @@
+# Team metadata for the 1983 Washington Redskins
+# This file stores team-specific information that may change across seasons
+
+team_name: Washington Redskins
+short_name: WSH
+location: Washington, D.C.
+nickname: Redskins
+
+# Alternative names this team has been known by (for historical matching)
+aliases:
+  - Washington
+  - WSH
+  - Redskins
+
+# For teams that have moved or renamed
+history:
+  - year: 1983
+    name: Washington Redskins
+    location: Washington, D.C.
