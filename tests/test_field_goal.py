@@ -427,7 +427,7 @@ class TestFieldGoalFumble:
         game.state.ball_position = 75  # Opponent's 25
         game.state.is_home_possession = True
         
-        # Mock FG result as fumbled snap
+        # Mock FG result as fumbled snap - uses fixture's default "F - 5"
         with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
             mock_fg.return_value = create_fg_result(17, "F - 5", is_fumble=True)
             
@@ -436,6 +436,48 @@ class TestFieldGoalFumble:
             assert "fumble" in outcome.description.lower()
             # Possession should switch
             assert game.state.is_home_possession is False
+
+    def test_fumbled_snap_with_negative_yards(self, game):
+        """Fumble with negative yards (e.g., 'F - 7') should calculate correct recovery spot."""
+        # Ball at opponent's 27 (position 73), spot_of_hold = 73 - 7 = 66 (opponent's 34)
+        # "F - 7" means fumble loses 7 yards from spot_of_hold = 66 - 7 = 59 (opponent's 41)
+        # After switching possession: defense at 100 - 59 = 41 (their own 41)
+        game.state.ball_position = 73  # Opponent's 27
+        game.state.is_home_possession = True
+        
+        # Mock FG result as fumbled snap with -7 yards - use the actual result from chart lookup
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(17, "F - 7", is_fumble=True)
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            # Check the raw_result in the outcome to verify our mock is being used
+            assert outcome.result.raw_result == "F - 7", f"Expected 'F - 7' but got {outcome.result.raw_result}"
+            assert "fumble" in outcome.description.lower()
+            # Possession should switch to away team
+            assert game.state.is_home_possession is False
+            # Ball should be at defense's 41 (100 - 59 = 41)
+            assert game.state.ball_position == 41, f"Expected 41 but got {game.state.ball_position}"
+
+    def test_fumbled_snap_no_return(self, game):
+        """Fumble with recovery roll outside 37-39 should not return."""
+        # Ball at opponent's 27 (position 73), spot_of_hold = 73 - 7 = 66
+        # "F - 5" means fumble loses 5 yards from spot_of_hold = 66 - 5 = 61
+        # After switching possession: defense at 100 - 61 = 39 (their own 39)
+        game.state.ball_position = 73  # Opponent's 27
+        game.state.is_home_possession = True
+        
+        # Mock FG result as fumbled snap
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(17, "F - 5", is_fumble=True)
+            
+            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            
+            # Should not mention return TD
+            assert "return td" not in outcome.description.lower()
+            assert outcome.touchdown is False
+            # Should have ball position at defense's 39 (100 - 61 = 39)
+            assert game.state.ball_position == 39, f"Expected 39 but got {game.state.ball_position}"
 
 
 class TestFieldGoalPenaltyDecision:

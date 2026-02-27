@@ -3432,27 +3432,31 @@ class PaydirtGameEngine:
                 self.state.yards_to_go = 10
 
         # Check for fumble on hold/snap (F followed by space/+/- and number, e.g., "F - 5", "F + 3")
-        elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
+        elif re.match(r'^F\s*([+-])\s*(\d+)', fg_result, re.IGNORECASE):
             success = False
             is_fumble = True
             
             # Parse the yards from fumble result (e.g., "F - 7" -> -7 yards)
             fumble_yards = 0
-            match = re.match(r'^F\s*([+-])(\d+)', fg_result, re.IGNORECASE)
+            match = re.match(r'^F\s*([+-])\s*(\d+)', fg_result, re.IGNORECASE)
             if match:
                 sign = match.group(1)
                 yards = int(match.group(2))
                 fumble_yards = -yards if sign == '-' else yards
             
-            # Fumble - defense recovers at spot of hold minus the fumble yards
+            # Fumble - defense recovers at spot of hold minus/plus the fumble yards
             # Calculate recovery spot from kicking team's perspective
-            recovery_spot = max(1, spot_of_hold - fumble_yards)  # Subtract because negative yards means loss
+            # spot_of_hold is from kicking team's perspective (ball_position - 7)
+            # recovery_spot is where the ball ends up after fumble, from kicking team's perspective
+            recovery_spot = max(1, spot_of_hold + fumble_yards)  # Add fumble yards (can be negative)
             
-            # Switch possession first (ball_position will flip to defense's perspective)
-            self.state.switch_possession()
-            
-            # Now recovery_spot from kicking team's perspective becomes (100 - recovery_spot) from defense's perspective
+            # Convert recovery_spot from kicking team's perspective to defense's perspective
+            # Before switch: recovery_spot is from kicking team's perspective (e.g., 59 = opponent's 41)
+            # After switch: we need position from defense's perspective = 100 - recovery_spot
             fumble_spot_defense = 100 - recovery_spot
+            
+            # Switch possession (this flips ball_position from kicking team's to defense's perspective)
+            self.state.switch_possession()
             
             # Check for return on recovery roll (like blocked FGs - rolls 37, 38, 39)
             recovery_roll = random.randint(1, 36)
@@ -3488,6 +3492,7 @@ class PaydirtGameEngine:
                 description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()}"
             
             # Reset down and distance for defense (new possession)
+            # Note: switch_possession already does this, but we need to ensure consistency
             self.state.down = 1
             self.state.yards_to_go = 10
 
