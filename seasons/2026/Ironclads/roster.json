@@ -1,13 +1,13 @@
 {
-  "team_name": "Harbor Bay Ironclads",
-  "qb": ["Ryan Mitchell"],
-  "rb": ["Darius Brown", "Jamal Harris"],
-  "wr": ["Andre Jackson", "Kyle Peterson", "Terrence Moore", "Darnell Brooks"],
-  "te": ["Michael Torres", "Brandon Lee"],
-  "ol": ["Josh Martinez", "Steve Anderson", "Chris Thompson", "Paul Robinson", "Kevin Wright"],
-  "dl": ["Marcus Green", "Tony Adams", "Carlos Rivera", "Derek Johnson"],
-  "lb": ["William Foster", "Ray Barnes", "Eric Turner"],
-  "db": ["Deion Sanders Jr", "Marvin Harrison Jr", "Troy Polamalu Jr", "Patrick Bates"],
-  "k": ["Sam Rodriguez"],
-  "p": ["Brian Mitchell"]
+  "team_name": "Chicago Bears",
+  "qb": ["Jim McMahon"],
+  "rb": ["Walter Payton", "Matt Suhey"],
+  "wr": ["Willie Gault", "Dennis McKinnon", "Alvin Garrett", "Lemuel Stinson"],
+  "te": ["Otis Wilson", "Keith Van Horne"],
+  "ol": ["Jimbo Covert", "Mark Bortz", "Jay Hilgenberg", "Tom Thayer", "Keith Van Horne"],
+  "dl": ["Richard Dent", "Dan Hampton", "William Perry", "Steve McMichael"],
+  "lb": ["Mike Singletary", "Wilber Marshall", "Otis Wilson"],
+  "db": ["Gary Fencik", "Dave Duerson", "Vestee Jackson", "Mike Richardson"],
+  "k": ["Kevin Butler"],
+  "p": ["Rohn Stark"]
 }
