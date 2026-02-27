@@ -3435,11 +3435,61 @@ class PaydirtGameEngine:
         elif re.match(r'^F\s*[+-]', fg_result, re.IGNORECASE):
             success = False
             is_fumble = True
-            # Fumble - defense recovers at spot of hold
-            # Set ball position first (from kicking team's perspective), then switch
-            self.state.ball_position = max(1, spot_of_hold)
-            self.state.switch_possession()  # This flips ball_position to defense's perspective
-            description = f"FUMBLED SNAP! Recovered at {self.state.field_position_str()}"
+            
+            # Parse the yards from fumble result (e.g., "F - 7" -> -7 yards)
+            fumble_yards = 0
+            match = re.match(r'^F\s*([+-])(\d+)', fg_result, re.IGNORECASE)
+            if match:
+                sign = match.group(1)
+                yards = int(match.group(2))
+                fumble_yards = -yards if sign == '-' else yards
+            
+            # Fumble - defense recovers at spot of hold minus the fumble yards
+            # Calculate recovery spot from kicking team's perspective
+            recovery_spot = max(1, spot_of_hold - fumble_yards)  # Subtract because negative yards means loss
+            
+            # Switch possession first (ball_position will flip to defense's perspective)
+            self.state.switch_possession()
+            
+            # Now recovery_spot from kicking team's perspective becomes (100 - recovery_spot) from defense's perspective
+            fumble_spot_defense = 100 - recovery_spot
+            
+            # Check for return on recovery roll (like blocked FGs - rolls 37, 38, 39)
+            recovery_roll = random.randint(1, 36)
+            touchdown = False
+            
+            if recovery_roll in [37, 38, 39]:
+                return_dice, return_desc = roll_chart_dice()
+                int_return_result = self.state.possession_team.special_teams.interception_return.get(return_dice, "0")
+                
+                if recovery_roll == 39:
+                    # Automatic TD
+                    return_yards = 100 - fumble_spot_defense
+                    touchdown = True
+                    self._score_touchdown()
+                    self.state.ball_position = 97
+                    description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}) - RETURN TD!"
+                else:
+                    return_yards = self._parse_return_yards(int_return_result, fumble_spot_defense)
+                    new_position = fumble_spot_defense + return_yards
+                    new_position = clamp_ball_position(new_position)
+                    self.state.ball_position = new_position
+                    
+                    if new_position >= 100:
+                        touchdown = True
+                        self._score_touchdown()
+                        self.state.ball_position = 97
+                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
+                    else:
+                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+            else:
+                # No return - defense takes over at fumble spot
+                self.state.ball_position = fumble_spot_defense
+                description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()}"
+            
+            # Reset down and distance for defense (new possession)
+            self.state.down = 1
+            self.state.yards_to_go = 10
 
         # Normal field goal result - number indicates max distance kick can reach
         elif fg_result:
