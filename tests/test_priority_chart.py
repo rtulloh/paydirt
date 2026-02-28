@@ -872,10 +872,20 @@ class TestTDOffense:
         assert result.priority == PriorityResult.FUMBLE
     
     def test_td_vs_parens(self):
-        """TD vs (#) should use OFFENSE (TD wins over parens)."""
+        """TD vs (#) should use PARENS - defense overrule takes precedence."""
         result = apply_priority_chart("TD", "(3)")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.PARENS
+        assert result.is_touchdown is False
+        assert result.final_yards == 3  # Defense gives 3 yards
+
+    def test_td_vs_parens_interception_yards(self):
+        """TD vs (#) with interception-like yardage should use defense overrule - not a TD."""
+        # This is the case from the bug: offense TD, defense (20) should NOT be a TD
+        result = apply_priority_chart("TD", "(20)")
+        assert result.priority == PriorityResult.PARENS
+        assert result.is_touchdown is False
+        assert result.final_yards == 20  # Defense gives 20 yards back
+        assert result.is_turnover is False  # Not a turnover, just less yards
 
 
 class TestPIOffense:

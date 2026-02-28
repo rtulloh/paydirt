@@ -300,7 +300,7 @@ PRIORITY_CHART = {
     (ResultCategory.TD, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.TD, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
-    (ResultCategory.TD, ResultCategory.PARENS_NUMBER): PriorityResult.OFFENSE,
+    (ResultCategory.TD, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
     (ResultCategory.TD, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
 
     # PI (Pass Interference) - treated as penalty
