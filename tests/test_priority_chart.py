@@ -694,9 +694,10 @@ class TestINTOffense:
         assert result.priority == PriorityResult.QT
     
     def test_int_vs_black(self):
-        """INT vs BLACK should use INT."""
+        """INT vs BLACK should be incomplete (per priority chart: INT + BLACK = INC)."""
         result = apply_priority_chart("INT 15", "BLACK")
-        assert result.priority == PriorityResult.INT
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
     
     def test_int_vs_int(self):
         """INT vs INT should use D_INT (defense interception)."""
