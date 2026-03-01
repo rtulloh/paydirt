@@ -3730,6 +3730,8 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     print(f"\n  {description}")
 
             # Kickoff after score
+            print(f"  Score: {game.get_score_str()}")
+            
             kicking_home = game.state.is_home_possession
             kicking_team = home_chart.peripheral.short_name if kicking_home else away_chart.peripheral.short_name
             receiving_team = away_chart.peripheral.short_name if kicking_home else home_chart.peripheral.short_name
