@@ -256,6 +256,20 @@ class TestParensTDOverrides:
         
         assert result.priority == PriorityResult.OFFENSE
         assert result.is_touchdown is False
+    
+    def test_off_penalty_vs_parens_td(self):
+        """OFF penalty takes priority over (TD) - per chart: penalties always win."""
+        result = apply_priority_chart("OFF 5", "(TD)")
+        
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_touchdown is False
+    
+    def test_def_penalty_vs_parens_td(self):
+        """DEF penalty takes priority over (TD) - per chart: penalties always win."""
+        result = apply_priority_chart("DEF 5", "(TD)")
+        
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_touchdown is False
 
 
 class TestParenthesesOverridesOtherResults:
