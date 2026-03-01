@@ -251,11 +251,11 @@ class TestParensTDOverrides:
         assert result.is_touchdown is True
     
     def test_pi_vs_parens_td(self):
-        """(TD) on defense should override pass interference offense with touchdown."""
+        """PI takes priority over (TD) - per chart: penalties always win."""
         result = apply_priority_chart("PI 15", "(TD)")
         
-        assert result.priority == PriorityResult.PARENS_TD
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_touchdown is False
 
 
 class TestParenthesesOverridesOtherResults:

@@ -318,7 +318,8 @@ PRIORITY_CHART = {
     (ResultCategory.PI, ResultCategory.INT): PriorityResult.OFFENSE,
     (ResultCategory.PI, ResultCategory.FUMBLE): PriorityResult.OFFENSE,
     (ResultCategory.PI, ResultCategory.PARENS_NUMBER): PriorityResult.OFFENSE,
-    (ResultCategory.PI, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
+    # Per priority chart: PENALTIES always take priority
+    (ResultCategory.PI, ResultCategory.PARENS_TD): PriorityResult.OFFENSE,
 }
 
 
