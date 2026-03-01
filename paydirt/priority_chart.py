@@ -283,9 +283,13 @@ PRIORITY_CHART = {
     # Breakaway offense results - when offense result is actually "B"
     # Breakaway is treated like other offense results for priority purposes
     # Defense (#) in parentheses still overrules breakaway
-    (ResultCategory.BREAKAWAY, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE_WITH_B,
+    # Per priority chart: Oyg or B + Oyg = ADD
+    (ResultCategory.BREAKAWAY, ResultCategory.GREEN_NUMBER): PriorityResult.ADD,
+    # Per priority chart: Oyg or B + Oyl = ADD
     (ResultCategory.BREAKAWAY, ResultCategory.WHITE_NUMBER): PriorityResult.OFFENSE_WITH_B,
-    (ResultCategory.BREAKAWAY, ResultCategory.RED_NUMBER): PriorityResult.OFFENSE_WITH_B,
+    (ResultCategory.BREAKAWAY, ResultCategory.RED_NUMBER): PriorityResult.ADD,
+    # Per priority chart: Oyg or B + BLACK = INC
+    (ResultCategory.BREAKAWAY, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.BREAKAWAY, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.BREAKAWAY, ResultCategory.BLACK): PriorityResult.OFFENSE_WITH_B,
     (ResultCategory.BREAKAWAY, ResultCategory.INT): PriorityResult.INT,
@@ -484,7 +488,7 @@ def apply_priority_chart(offense_result: str, defense_result: str,
 
     # Override: if it's a passing play with positive offense result and BLACK defense, it's incomplete
     # This handles the case where priority chart gives OFFENSE but defense BLACK means incomplete
-    if is_passing_play and def_cat == ResultCategory.BLACK and off_cat == ResultCategory.GREEN_NUMBER:
+    if is_passing_play and def_cat == ResultCategory.BLACK and off_cat in [ResultCategory.GREEN_NUMBER, ResultCategory.BREAKAWAY]:
         is_incomplete = True
         priority = PriorityResult.BLACK
         final_yards = 0

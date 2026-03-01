@@ -87,7 +87,7 @@ class TestBreakawayVsDefenseParentheses:
         result = apply_priority_chart("B", "(1)")
         
         assert result.priority == PriorityResult.PARENS
-        # PARENS means offense overrules - breakaway has no yards value
+        # PARENS means defense overrules - breakaway has no yards value
         assert result.use_breakaway is False
     
     def test_breakaway_vs_parens_no_breakaway_roll(self):
@@ -126,22 +126,25 @@ class TestBreakawayNormalCases:
     """Tests for breakaway in normal (non-override) situations."""
     
     def test_breakaway_vs_positive_number(self):
-        """Breakaway vs positive number should use breakaway."""
+        """Breakaway vs positive number (Oyg) should ADD per priority chart."""
         result = apply_priority_chart("B", "3")
         
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == 3  # B has no yardage value, so just defense result
     
     def test_breakaway_vs_negative_number(self):
-        """Breakaway vs negative number should use breakaway."""
+        """Breakaway vs negative number (Oyl) should ADD per priority chart."""
         result = apply_priority_chart("B", "-2")
         
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == -2  # B has no value, defense negative applies
     
     def test_breakaway_vs_black(self):
-        """Breakaway vs empty/black should use breakaway."""
+        """Breakaway vs BLACK should be incomplete (per priority chart: Oyg or B + BLACK = INC)."""
         result = apply_priority_chart("B", "BLACK")
         
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
     
     def test_breakaway_vs_interception(self):
         """Breakaway vs interception should use interception (turnover)."""
@@ -798,22 +801,29 @@ class TestParensOffense:
 
 
 class TestBreakawayOffense:
-    """Tests for B (breakaway) offense results."""
+    """Tests for B (breakaway) offense results.
+    
+    Per priority chart: Oyg or B row
+    - vs Oyg = ADD
+    - vs Oyl = ADD  
+    - vs NO CHG = Oyg (offense)
+    - vs BLACK = INC
+    """
     
     def test_breakaway_vs_green(self):
-        """B vs Green # should use OFFENSE_WITH_B."""
+        """B vs Green # (Oyg) should ADD per priority chart."""
         result = apply_priority_chart("B", "5")
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.ADD
     
     def test_breakaway_vs_white(self):
-        """B vs White # should use OFFENSE_WITH_B."""
+        """B vs White # (NO CHG) should use offense result."""
         result = apply_priority_chart("B", "0")
         assert result.priority == PriorityResult.OFFENSE_WITH_B
     
     def test_breakaway_vs_red(self):
-        """B vs Red # should use OFFENSE_WITH_B."""
+        """B vs Red # (Oyl) should ADD per priority chart."""
         result = apply_priority_chart("B", "-3")
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.ADD
     
     def test_breakaway_vs_qt(self):
         """B vs QT should use QT."""
@@ -821,9 +831,9 @@ class TestBreakawayOffense:
         assert result.priority == PriorityResult.QT
     
     def test_breakaway_vs_black(self):
-        """B vs BLACK should use OFFENSE_WITH_B."""
+        """B vs BLACK should be incomplete (INC) per priority chart."""
         result = apply_priority_chart("B", "BLACK")
-        assert result.priority == PriorityResult.OFFENSE_WITH_B
+        assert result.priority == PriorityResult.BLACK
     
     def test_breakaway_vs_int(self):
         """B vs INT should use INT."""
