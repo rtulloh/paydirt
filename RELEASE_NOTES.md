@@ -5,14 +5,21 @@
 ### Bug Fixes
 - **Punt penalty decision**: Fixed bug where selecting "Keep return + yards" option on offensive punt penalties incorrectly applied the replay logic instead of keeping the return result. Added `penalty_index` parameter to distinguish between penalty options.
 - **Priority chart Oyl + Oyg**: Fixed priority chart to correctly ADD negative offense result (Oyl) with positive defense result (Oyg) per official rules. Example: -1 + 1 = 0 net yards (was incorrectly using -1).
-- **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart (was incorrectly using OFFENSE_WITH_B). Also fixed breakaway vs BLACK to be incomplete on passing plays.
-- **Priority chart FUMBLE vs (TD)**: Fixed fumble/BK to take priority over (TD) per official chart (F/BK priority over ALL but penalty).
+- **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart. Also fixed breakaway vs BLACK to be incomplete on passing plays.
+- **Priority chart FUMBLE**: Fixed fumble/BK to take priority over all but penalty per official chart - includes fixes for FUMBLE vs QT, INT, (TD), and RED_NUMBER.
+- **Priority chart GREEN/WHITE/RED vs BLACK**: Fixed all cases where offense has yardage vs defense BLACK to be BLACK (incomplete/no gain) per priority chart.
+- **Priority chart WHITE vs GREEN/RED**: Fixed WHITE vs GREEN and WHITE vs RED to ADD per priority chart (no notion of GREEN in CSV files).
+- **Priority chart RED vs WHITE**: Fixed to ADD per priority chart (negative + zero = negative).
+- **Priority chart TD vs QT/BLACK**: Fixed to use QT and BLACK respectively per priority chart.
+- **Priority chart INT vs INT**: Fixed to use shortest yards when both have INT.
+- **Priority chart penalties always win**: Added tests confirming PI, OFF, and DEF penalties take priority over all but penalty.
 
 ### Test Coverage
-- **1204 unit tests** passing
+- **1210 unit tests** passing
 - Added tests for penalty_index parameter in punt penalty handling
 - Added tests for RED_NUMBER + GREEN_NUMBER priority resolution
 - Added comprehensive tests for (TD) defense overriding all offense result types
+- Added tests for penalties vs fumble and (TD)
 
 ---
 
