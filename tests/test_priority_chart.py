@@ -374,6 +374,7 @@ class TestBlackResultForRunningVsPassingPlays:
         """Default behavior (no is_passing_play arg) should treat as passing play."""
         result = apply_priority_chart("BLACK", "BLACK")
         
+        assert result.priority == PriorityResult.BLACK
         assert result.is_incomplete is True
         assert "Incomplete pass" in result.description
     
