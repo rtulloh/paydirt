@@ -894,9 +894,9 @@ class TestParensOffense:
         assert result.priority == PriorityResult.OFFENSE
     
     def test_parens_vs_red(self):
-        """(#) vs Red # should use PARENS (parentheses takes precedence over negative)."""
+        """(#) vs Red # should use OFFENSE (offense never has parens in practice)."""
         result = apply_priority_chart("(5)", "-2")
-        assert result.priority == PriorityResult.PARENS
+        assert result.priority == PriorityResult.OFFENSE
     
     def test_parens_vs_qt(self):
         """(#) vs QT should use QT."""
@@ -998,10 +998,9 @@ class TestTDOffense:
         assert result.is_touchdown is True
     
     def test_td_vs_qt(self):
-        """TD vs QT should use OFFENSE (TD)."""
+        """TD vs QT should use QT per priority chart."""
         result = apply_priority_chart("TD", "QT")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.QT
     
     def test_td_vs_black(self):
         """TD vs BLACK should use OFFENSE (TD)."""
@@ -1098,10 +1097,10 @@ class TestPriorityChartEdgeCaseFixes:
         assert result.final_yards == 5  # Offense gets their guaranteed yards
 
     def test_parens_offense_vs_negative_defense(self):
-        """(#) vs negative - parentheses should overrule negative, not ADD."""
+        """(#) vs negative - should use OFFENSE (offense never has parens in practice)."""
         result = apply_priority_chart("(5)", "-3")
-        assert result.priority == PriorityResult.PARENS
-        assert result.final_yards == 5  # Offense gets their guaranteed yards, not -3
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.final_yards == 5  # Offense gets their guaranteed yards
 
     def test_zero_offense_vs_negative_defense(self):
         """0 vs negative - should ADD (negative + zero = negative)."""

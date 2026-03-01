@@ -285,10 +285,11 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,
 
-    # (#) parentheses offense results
+    # (#) parentheses offense results - offense never actually has parens, only defense does
+    # These entries exist for completeness but offense always wins
     (ResultCategory.PARENS_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.PARENS_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.OFFENSE,
-    (ResultCategory.PARENS_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.PARENS,
+    (ResultCategory.PARENS_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.PARENS_NUMBER, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.PARENS_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.PARENS_NUMBER, ResultCategory.INT): PriorityResult.INT,
@@ -317,7 +318,7 @@ PRIORITY_CHART = {
     (ResultCategory.TD, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.WHITE_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.RED_NUMBER): PriorityResult.OFFENSE,
-    (ResultCategory.TD, ResultCategory.QT): PriorityResult.OFFENSE,
+    (ResultCategory.TD, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.TD, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.TD, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
