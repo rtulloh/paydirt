@@ -8,9 +8,10 @@
 - **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart (was incorrectly using OFFENSE_WITH_B). Also fixed breakaway vs BLACK to be incomplete on passing plays.
 
 ### Test Coverage
-- **1194 unit tests** passing
+- **1204 unit tests** passing
 - Added tests for penalty_index parameter in punt penalty handling
 - Added tests for RED_NUMBER + GREEN_NUMBER priority resolution
+- Added comprehensive tests for (TD) defense overriding all offense result types
 
 ---
 
