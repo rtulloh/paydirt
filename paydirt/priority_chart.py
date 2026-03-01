@@ -175,7 +175,8 @@ PRIORITY_CHART = {
     (ResultCategory.GREEN_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
     (ResultCategory.GREEN_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.GREEN_NUMBER, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.GREEN_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
+    # Per priority chart: Oyg + BLACK = INC (incomplete)
+    (ResultCategory.GREEN_NUMBER, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.GREEN_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.GREEN_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.GREEN_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,

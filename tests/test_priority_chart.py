@@ -270,6 +270,27 @@ class TestParensTDOverrides:
         
         assert result.priority == PriorityResult.OFFENSE
         assert result.is_touchdown is False
+    
+    def test_off_penalty_vs_fumble(self):
+        """OFF penalty takes priority over fumble - per chart: penalties always win."""
+        result = apply_priority_chart("OFF 5", "F")
+        
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_turnover is False
+    
+    def test_def_penalty_vs_fumble(self):
+        """DEF penalty takes priority over fumble - per chart: penalties always win."""
+        result = apply_priority_chart("DEF 5", "F")
+        
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_turnover is False
+    
+    def test_pi_vs_fumble(self):
+        """PI takes priority over fumble - per chart: penalties always win."""
+        result = apply_priority_chart("PI 15", "F")
+        
+        assert result.priority == PriorityResult.OFFENSE
+        assert result.is_turnover is False
 
 
 class TestParenthesesOverridesOtherResults:
@@ -379,12 +400,13 @@ class TestBlackResultForRunningVsPassingPlays:
         assert "Incomplete pass" in result.description
     
     def test_positive_vs_black_running_play_uses_offense(self):
-        """Positive yardage vs BLACK on running play should use offense result."""
+        """Positive yardage vs BLACK should be BLACK per priority chart (Oyg + BLACK = INC)."""
         result = apply_priority_chart("5", "BLACK", is_passing_play=False)
         
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == 5
+        assert result.priority == PriorityResult.BLACK
+        # For running plays, BLACK = no gain (not incomplete)
         assert result.is_incomplete is False
+        assert result.final_yards == 0
     
     def test_positive_vs_black_passing_play_is_incomplete(self):
         """Positive yardage vs BLACK on passing play should be incomplete."""
@@ -436,10 +458,12 @@ class TestGreenNumberOffense:
         assert result.final_yards == 0
     
     def test_green_vs_black_on_run_uses_offense(self):
-        """Green # vs BLACK on running play should use offense result."""
+        """Green # vs BLACK should be BLACK per priority chart (Oyg + BLACK = INC)."""
         result = apply_priority_chart("8", "BLACK", is_passing_play=False)
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == 8
+        assert result.priority == PriorityResult.BLACK
+        # For running plays, BLACK = no gain (not incomplete)
+        assert result.is_incomplete is False
+        assert result.final_yards == 0
     
     def test_green_vs_int(self):
         """Green # vs INT should use INT (turnover)."""
