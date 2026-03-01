@@ -214,7 +214,8 @@ PRIORITY_CHART = {
     (ResultCategory.QT, ResultCategory.WHITE_NUMBER): PriorityResult.QT,
     (ResultCategory.QT, ResultCategory.RED_NUMBER): PriorityResult.QT,
     (ResultCategory.QT, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.QT, ResultCategory.BLACK): PriorityResult.QT,
+    # Per priority chart: QT + BLACK = INC (incomplete on passing plays)
+    (ResultCategory.QT, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.QT, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.QT, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.QT, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
