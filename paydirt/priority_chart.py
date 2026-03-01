@@ -264,9 +264,11 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_PLUS, ResultCategory.WHITE_NUMBER): PriorityResult.FUMBLE_PLUS,
     # Per priority chart: F or BK priority over ALL but penalty - fumble always wins
     (ResultCategory.FUMBLE_PLUS, ResultCategory.RED_NUMBER): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE_PLUS, ResultCategory.QT): PriorityResult.QT,
+    # Per priority chart: F or BK priority over ALL but penalty
+    (ResultCategory.FUMBLE_PLUS, ResultCategory.QT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.BLACK): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE_PLUS, ResultCategory.INT): PriorityResult.INT,
+    # Per priority chart: F or BK priority over ALL but penalty
+    (ResultCategory.FUMBLE_PLUS, ResultCategory.INT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,
@@ -274,9 +276,11 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_MINUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.WHITE_NUMBER): PriorityResult.FUMBLE_PLUS,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.RED_NUMBER): PriorityResult.FUMBLE_MINUS,
-    (ResultCategory.FUMBLE_MINUS, ResultCategory.QT): PriorityResult.QT,
+    # Per priority chart: F or BK priority over ALL but penalty
+    (ResultCategory.FUMBLE_MINUS, ResultCategory.QT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.BLACK): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE_MINUS, ResultCategory.INT): PriorityResult.INT,
+    # Per priority chart: F or BK priority over ALL but penalty
+    (ResultCategory.FUMBLE_MINUS, ResultCategory.INT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,

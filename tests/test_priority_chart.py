@@ -811,9 +811,9 @@ class TestFumblePlusOffense:
         assert result.final_yards == 3  # fumble always wins, use offense yards
     
     def test_fumble_plus_vs_qt(self):
-        """F+# vs QT should use QT."""
+        """F+# vs QT should use FUMBLE (per priority chart: F/BK priority over all but penalty)."""
         result = apply_priority_chart("F + 3", "QT")
-        assert result.priority == PriorityResult.QT
+        assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_plus_vs_black(self):
         """F+# vs BLACK should use FUMBLE."""
@@ -821,9 +821,9 @@ class TestFumblePlusOffense:
         assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_plus_vs_int(self):
-        """F+# vs INT should use INT."""
+        """F+# vs INT should use FUMBLE (per priority chart: F/BK priority over all but penalty)."""
         result = apply_priority_chart("F + 3", "INT 10")
-        assert result.priority == PriorityResult.INT
+        assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_plus_vs_fumble(self):
         """F+# vs F should use D_FUMBLE."""
@@ -855,9 +855,9 @@ class TestFumbleMinusOffense:
         assert result.priority == PriorityResult.FUMBLE_MINUS
     
     def test_fumble_minus_vs_qt(self):
-        """F-# vs QT should use QT."""
+        """F-# vs QT should use FUMBLE (per priority chart: F/BK priority over all but penalty)."""
         result = apply_priority_chart("F - 3", "QT")
-        assert result.priority == PriorityResult.QT
+        assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_minus_vs_black(self):
         """F-# vs BLACK should use FUMBLE."""
@@ -865,9 +865,9 @@ class TestFumbleMinusOffense:
         assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_minus_vs_int(self):
-        """F-# vs INT should use INT."""
+        """F-# vs INT should use FUMBLE (per priority chart: F/BK priority over all but penalty)."""
         result = apply_priority_chart("F - 3", "INT 10")
-        assert result.priority == PriorityResult.INT
+        assert result.priority == PriorityResult.FUMBLE
     
     def test_fumble_minus_vs_fumble(self):
         """F-# vs F should use D_FUMBLE."""
