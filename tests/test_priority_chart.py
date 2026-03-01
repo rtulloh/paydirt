@@ -1003,10 +1003,10 @@ class TestTDOffense:
         assert result.priority == PriorityResult.QT
     
     def test_td_vs_black(self):
-        """TD vs BLACK should use OFFENSE (TD)."""
+        """TD vs BLACK should be incomplete per priority chart (TD + BLACK = INC)."""
         result = apply_priority_chart("TD", "BLACK")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
     
     def test_td_vs_int(self):
         """TD vs INT should use INT (turnover beats TD)."""

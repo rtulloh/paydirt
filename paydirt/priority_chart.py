@@ -319,7 +319,7 @@ PRIORITY_CHART = {
     (ResultCategory.TD, ResultCategory.WHITE_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.RED_NUMBER): PriorityResult.OFFENSE,
     (ResultCategory.TD, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.TD, ResultCategory.BLACK): PriorityResult.OFFENSE,
+    (ResultCategory.TD, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.TD, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.TD, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.TD, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
