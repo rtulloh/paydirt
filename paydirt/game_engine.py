@@ -1529,6 +1529,7 @@ class PaydirtGameEngine:
         Defensive dice are never rolled.
         """
         field_pos_before = self.state.field_position_str()
+        down_before = self.state.down
 
         # Roll offensive dice only
         dice_roll, dice_desc = roll_chart_dice()
@@ -1596,6 +1597,7 @@ class PaydirtGameEngine:
             safety=safety,
             field_position_before=field_pos_before,
             field_position_after=self.state.field_position_str(),
+            down_before=down_before,
             description=result.description
         )
 
