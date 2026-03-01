@@ -1,5 +1,18 @@
 # Paydirt Release Notes
 
+## Unreleased
+
+### Bug Fixes
+- **Punt penalty decision**: Fixed bug where selecting "Keep return + yards" option on offensive punt penalties incorrectly applied the replay logic instead of keeping the return result. Added `penalty_index` parameter to distinguish between penalty options.
+- **Priority chart Oyl + Oyg**: Fixed priority chart to correctly ADD negative offense result (Oyl) with positive defense result (Oyg) per official rules. Example: -1 + 1 = 0 net yards (was incorrectly using -1).
+
+### Test Coverage
+- **1194 unit tests** passing
+- Added tests for penalty_index parameter in punt penalty handling
+- Added tests for RED_NUMBER + GREEN_NUMBER priority resolution
+
+---
+
 ## Version 1.6 (February 2026)
 
 ### AI Helper System
