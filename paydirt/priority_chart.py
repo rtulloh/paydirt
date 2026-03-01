@@ -239,7 +239,9 @@ PRIORITY_CHART = {
     (ResultCategory.INT, ResultCategory.QT): PriorityResult.QT,
     # Per priority chart: INT + BLACK = INC (incomplete on passing plays)
     (ResultCategory.INT, ResultCategory.BLACK): PriorityResult.BLACK,
-    (ResultCategory.INT, ResultCategory.INT): PriorityResult.D_INT,
+    # Per priority chart: INT vs INT = INT (shortest yards wins)
+    # If offense yards <= defense yards, use INT (offense wins), else D_INT
+    (ResultCategory.INT, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.INT, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.INT, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
     (ResultCategory.INT, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
@@ -462,13 +464,20 @@ def apply_priority_chart(offense_result: str, defense_result: str,
 
     elif priority in [PriorityResult.INT, PriorityResult.D_INT]:
         is_turnover = True
-        # Use the INT return yards - for D_INT use shortest (defense)
-        if priority == PriorityResult.D_INT:
-            # Defense INT wins, use shorter of the two (defense yards)
-            final_yards = def_yards if def_yards is not None else 0
+        off_yards_val = off_yards if off_yards is not None else 0
+        def_yards_val = def_yards if def_yards is not None else 0
+        
+        # Per priority chart: INT vs INT = INT (shortest yards wins)
+        # Only apply shortest yards logic when both are INT
+        if off_cat == ResultCategory.INT and def_cat == ResultCategory.INT:
+            if off_yards_val <= def_yards_val:
+                final_yards = off_yards_val
+            else:
+                final_yards = def_yards_val
+                priority = PriorityResult.D_INT
         else:
-            # Offense INT wins
-            final_yards = off_yards if off_yards is not None else 0
+            # INT vs non-INT: offense wins
+            final_yards = off_yards_val
         description = f"INTERCEPTION! {final_yards} yard return"
 
     elif priority in [PriorityResult.FUMBLE, PriorityResult.D_FUMBLE,

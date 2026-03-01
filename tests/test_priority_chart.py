@@ -705,6 +705,12 @@ class TestINTOffense:
         assert result.priority == PriorityResult.D_INT
         assert result.final_yards == 10  # shortest yards wins
     
+    def test_int_vs_int_offense_wins(self):
+        """INT vs INT should use INT when offense is shorter (offense wins, shortest yards)."""
+        result = apply_priority_chart("INT 10", "INT 15")
+        assert result.priority == PriorityResult.INT
+        assert result.final_yards == 10  # offense wins, shortest yards
+    
     def test_int_vs_fumble(self):
         """INT vs F should use FUMBLE."""
         result = apply_priority_chart("INT 15", "F")
