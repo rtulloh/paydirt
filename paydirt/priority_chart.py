@@ -198,10 +198,12 @@ PRIORITY_CHART = {
     # Red # (negative yardage) offense results
     # Per priority chart: Oyl + Oyg = ADD (add them together)
     (ResultCategory.RED_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.ADD,
-    (ResultCategory.RED_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.DEFENSE,
+    # Per priority chart: Oyl + Oyl = ADD (negative + zero = negative)
+    (ResultCategory.RED_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
     (ResultCategory.RED_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.RED_NUMBER, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.RED_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
+    # Per priority chart: Oyl + BLACK = INC (incomplete on passing plays)
+    (ResultCategory.RED_NUMBER, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.RED_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.RED_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.RED_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
