@@ -2003,7 +2003,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
     elif outcome.result.result_type == ResultType.SACK:
         print(f"  RESULT: SACKED for {abs(outcome.yards_gained)} yard loss!")
     elif outcome.result.result_type == ResultType.QB_SCRAMBLE:
-        if outcome.yards_gained >= 0:
+        if outcome.touchdown:
+            print(f"  RESULT: QB scrambles for {outcome.yards_gained} yards - TOUCHDOWN!")
+        elif outcome.yards_gained >= 0:
             print(f"  RESULT: QB scrambles for {outcome.yards_gained} yards")
         else:
             print(f"  RESULT: SACKED for {abs(outcome.yards_gained)} yard loss!")
