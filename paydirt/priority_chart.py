@@ -182,7 +182,8 @@ PRIORITY_CHART = {
     (ResultCategory.GREEN_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
 
     # White # (zero/neutral) offense results
-    (ResultCategory.WHITE_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
+    # Per priority chart: Oyg + NO CHG = ADD (no notion of GREEN in CSV, positive adds to zero)
+    (ResultCategory.WHITE_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.ADD,
     (ResultCategory.WHITE_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
     (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.DEFENSE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.QT): PriorityResult.QT,

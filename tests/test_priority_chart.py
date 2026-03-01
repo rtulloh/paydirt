@@ -463,10 +463,10 @@ class TestWhiteNumberOffense:
     """Tests for WHITE_NUMBER (zero/neutral) offense results."""
     
     def test_white_vs_green(self):
-        """White # vs Green # should use OFFENSE."""
+        """White # vs Green # should ADD (no notion of GREEN in CSV, positive adds to zero)."""
         result = apply_priority_chart("0", "5")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == 0
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == 5  # 0 + 5 = 5
     
     def test_white_vs_white_adds(self):
         """White # vs White # should ADD."""
