@@ -5,6 +5,7 @@
 ### Bug Fixes
 - **Punt penalty decision**: Fixed bug where selecting "Keep return + yards" option on offensive punt penalties incorrectly applied the replay logic instead of keeping the return result. Added `penalty_index` parameter to distinguish between penalty options.
 - **Priority chart Oyl + Oyg**: Fixed priority chart to correctly ADD negative offense result (Oyl) with positive defense result (Oyg) per official rules. Example: -1 + 1 = 0 net yards (was incorrectly using -1).
+- **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart (was incorrectly using OFFENSE_WITH_B). Also fixed breakaway vs BLACK to be incomplete on passing plays.
 
 ### Test Coverage
 - **1194 unit tests** passing
