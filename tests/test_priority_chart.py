@@ -419,11 +419,25 @@ class TestWhiteNumberOffense:
 class TestRedNumberOffense:
     """Tests for RED_NUMBER (negative yardage) offense results."""
     
-    def test_red_vs_green(self):
-        """Red # vs Green # should use OFFENSE."""
+    def test_red_vs_green_adds(self):
+        """Red # vs Green # should ADD (per priority chart: Oyl + Oyg = ADD).
+        
+        Per Paydirt rules: negative (Oyl) + positive (Oyg) = ADD
+        Example: -3 + 5 = 2 net yards
+        """
         result = apply_priority_chart("-3", "5")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == -3
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == 2  # -3 + 5 = 2
+    
+    def test_red_vs_green_net_zero(self):
+        """Red # vs Green # that cancel out should result in net zero.
+        
+        This is the specific case from the user's play:
+        Offense: -1, Defense: +1 -> net 0 yards (ADD)
+        """
+        result = apply_priority_chart("-1", "1")
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == 0  # -1 + 1 = 0
     
     def test_red_vs_white(self):
         """Red # vs White # should use DEFENSE (defense wins)."""

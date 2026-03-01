@@ -2675,15 +2675,16 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def apply_punt_penalty_decision(self, outcome: PlayOutcome, accept_penalty: bool) -> PlayOutcome:
+    def apply_punt_penalty_decision(self, outcome: PlayOutcome, accept_penalty: bool,
+                                     penalty_index: int = 0) -> PlayOutcome:
         """
         Apply the punt penalty decision.
         
         Roles: Kicking team = OFFENSE, Receiving team = DEFENSE
         
         OFF penalty (kicking team foul) - receiving team chooses:
-        - accept_penalty=True: Replay punt from LOS - penalty yards (kicking team pushed back)
-        - accept_penalty=False: Keep return result + penalty yards added to final position
+        - penalty_index=0: Replay punt from LOS - penalty yards (kicking team pushed back)
+        - penalty_index=1: Keep return result + penalty yards added to final position
         
         DEF penalty (receiving team foul) - kicking team chooses:
         - accept_penalty=True: Accept penalty (1st down if auto, else replay from LOS + penalty)
@@ -2692,6 +2693,7 @@ class PaydirtGameEngine:
         Args:
             outcome: The PlayOutcome with pending_penalty_decision=True
             accept_penalty: True to accept/enforce penalty, False to decline/keep result
+            penalty_index: Which penalty option was selected (0=first, 1=second, etc.)
         
         Returns:
             Updated PlayOutcome with game state applied
@@ -2705,34 +2707,15 @@ class PaydirtGameEngine:
         
         if is_offensive_penalty:
             # OFF penalty - kicking team committed foul, receiving team decides
-            if accept_penalty:
-                # Option 1: Replay punt from LOS - penalty yards (kicking team pushed back)
-                original_pos = self.state.ball_position
-                new_pos = original_pos - penalty_yards
-                if new_pos < 1:
-                    new_pos = 1
-                
-                self.state.ball_position = new_pos
-                self.state.down = 4  # Still 4th down, replay the punt
-                self.state.yards_to_go = 10 + penalty_yards  # Yards to go increased
-                
-                del self._pending_punt_state
-                
-                description = f"Receiving team accepts penalty: OFF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
-                
-                return PlayOutcome(
-                    play_type=PlayType.PUNT,
-                    defense_type=DefenseType.STANDARD,
-                    result=outcome.result,
-                    yards_gained=0,
-                    touchdown=False,
-                    field_position_before=state['field_pos_before'],
-                    field_position_after=self.state.field_position_str(),
-                    description=description,
-                    penalty_applied=True
-                )
-            else:
-                # Option 2: Keep return result + penalty yards added
+            # Check if the selected option is "keep return" (contains "KEEP" in raw_result)
+            keep_return = False
+            if outcome.penalty_choice and outcome.penalty_choice.penalty_options:
+                if penalty_index < len(outcome.penalty_choice.penalty_options):
+                    selected_option = outcome.penalty_choice.penalty_options[penalty_index]
+                    keep_return = "KEEP" in selected_option.raw_result
+            
+            if keep_return:
+                # Option 2: Keep return result + penalty yards added (user selected "Keep return + X yards")
                 final_position = state['final_position'] + penalty_yards
                 
                 touchdown = False
@@ -2774,6 +2757,33 @@ class PaydirtGameEngine:
                 self._use_time(random.uniform(5, 12))
                 
                 return new_outcome
+            else:
+                # Option 1: Replay punt from LOS - penalty yards (kicking team pushed back)
+                # User selected "Replay punt from X" or default when penalty_index=0
+                original_pos = self.state.ball_position
+                new_pos = original_pos - penalty_yards
+                if new_pos < 1:
+                    new_pos = 1
+                
+                self.state.ball_position = new_pos
+                self.state.down = 4  # Still 4th down, replay the punt
+                self.state.yards_to_go = 10 + penalty_yards  # Yards to go increased
+                
+                del self._pending_punt_state
+                
+                description = f"Receiving team accepts penalty: OFF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
+                
+                return PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=outcome.result,
+                    yards_gained=0,
+                    touchdown=False,
+                    field_position_before=state['field_pos_before'],
+                    field_position_after=self.state.field_position_str(),
+                    description=description,
+                    penalty_applied=True
+                )
         else:
             # DEF penalty - receiving team committed foul, kicking team decides
             if accept_penalty:

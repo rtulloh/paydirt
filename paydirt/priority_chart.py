@@ -193,7 +193,8 @@ PRIORITY_CHART = {
     (ResultCategory.WHITE_NUMBER, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
 
     # Red # (negative yardage) offense results
-    (ResultCategory.RED_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,
+    # Per priority chart: Oyl + Oyg = ADD (add them together)
+    (ResultCategory.RED_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.ADD,
     (ResultCategory.RED_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.DEFENSE,
     (ResultCategory.RED_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.RED_NUMBER, ResultCategory.QT): PriorityResult.QT,

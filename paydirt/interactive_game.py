@@ -2452,7 +2452,7 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
                     if is_fg_penalty:
                         return game.apply_fg_penalty_decision(outcome, accept_play=False, penalty_index=original_idx)
                     elif is_punt_penalty:
-                        return game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+                        return game.apply_punt_penalty_decision(outcome, accept_penalty=True, penalty_index=original_idx)
                     elif is_kickoff_penalty:
                         return game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
                     else:

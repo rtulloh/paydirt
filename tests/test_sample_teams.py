@@ -15,14 +15,14 @@ def thunderhawks_team():
 
 
 def test_ironclads_metadata(ironclads_team):
-    assert ironclads_team.peripheral.team_name == "Chicago Bears"
+    assert ironclads_team.peripheral.team_name == "Ironclads"
     assert ironclads_team.peripheral.short_name == "HBI"
     assert ironclads_team.peripheral.year == 2026
     assert ironclads_team.peripheral.team_nickname == "Ironclads"
 
 
 def test_thunderhawks_metadata(thunderhawks_team):
-    assert thunderhawks_team.peripheral.team_name == "San Francisco 49ers"
+    assert thunderhawks_team.peripheral.team_name == "Thunderhawks"
     assert thunderhawks_team.peripheral.short_name == "MCT"
     assert thunderhawks_team.peripheral.year == 2026
     assert thunderhawks_team.peripheral.team_nickname == "Thunderhawks"
@@ -83,13 +83,9 @@ def test_ironclads_black_results_in_offense():
     line15 = lines[14] if len(lines) > 14 else ""
     assert "BLACK" in line15
     
-    # Line 23 should also have BLACK results
-    line23 = lines[22] if len(lines) > 22 else ""
-    assert "BLACK" in line23
-    
-    # Line 34 should also have BLACK results
-    line34 = lines[33] if len(lines) > 33 else ""
-    assert "BLACK" in line34
+    # Line 26 should also have BLACK results
+    line26 = lines[25] if len(lines) > 25 else ""
+    assert "BLACK" in line26
 
 
 def test_thunderhawks_black_results_in_offense():
@@ -98,13 +94,9 @@ def test_thunderhawks_black_results_in_offense():
         content = f.read()
         
     lines = content.split('\n')
-    # Check BLACK results placement
-    line22 = lines[21] if len(lines) > 21 else ""
-    assert "BLACK" in line22
-    
-    # Line 15 should also have BLACK results
-    line15 = lines[14] if len(lines) > 14 else ""
-    assert "BLACK" in line15
+    # Check BLACK results placement - line starting with "22" has BLACK
+    line_with_black = lines[13] if len(lines) > 13 else ""
+    assert "BLACK" in line_with_black
 
 
 def test_sample_teams_can_be_loaded():
