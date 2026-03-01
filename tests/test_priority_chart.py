@@ -160,11 +160,78 @@ class TestBreakawayNormalCases:
 
 
 class TestParensTDOverrides:
-    """Tests that (TD) defense results trigger PARENS_TD priority (touchdown)."""
+    """Tests that (TD) defense results trigger PARENS_TD priority (touchdown).
+    
+    Per Paydirt rules, (TD) on defense overrides ALL offense results with a touchdown.
+    This is a comprehensive test of every offense result type against (TD).
+    """
     
     def test_green_number_vs_parens_td(self):
         """(TD) on defense should override green number offense with touchdown."""
         result = apply_priority_chart("12", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_white_number_vs_parens_td(self):
+        """(TD) on defense should override white number (0) offense with touchdown."""
+        result = apply_priority_chart("0", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_red_number_vs_parens_td(self):
+        """(TD) on defense should override negative number offense with touchdown."""
+        result = apply_priority_chart("-3", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_qt_vs_parens_td(self):
+        """(TD) on defense should override QT offense with touchdown."""
+        result = apply_priority_chart("QT", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_black_vs_parens_td(self):
+        """(TD) on defense should override incomplete with touchdown."""
+        result = apply_priority_chart("BLACK", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_int_vs_parens_td(self):
+        """(TD) on defense should override interception offense with touchdown."""
+        result = apply_priority_chart("INT 20", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_fumble_vs_parens_td(self):
+        """(TD) on defense should override fumble offense with touchdown."""
+        result = apply_priority_chart("F", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_fumble_plus_vs_parens_td(self):
+        """(TD) on defense should override F+# offense with touchdown."""
+        result = apply_priority_chart("F + 5", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_fumble_minus_vs_parens_td(self):
+        """(TD) on defense should override F-# offense with touchdown."""
+        result = apply_priority_chart("F - 3", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_parens_number_vs_parens_td(self):
+        """(TD) on defense should override parentheses number offense with touchdown."""
+        result = apply_priority_chart("(5)", "(TD)")
         
         assert result.priority == PriorityResult.PARENS_TD
         assert result.is_touchdown is True
@@ -176,9 +243,16 @@ class TestParensTDOverrides:
         assert result.priority == PriorityResult.PARENS_TD
         assert result.is_touchdown is True
     
-    def test_black_vs_parens_td(self):
-        """(TD) on defense should override incomplete with touchdown."""
-        result = apply_priority_chart("BLACK", "(TD)")
+    def test_td_vs_parens_td(self):
+        """(TD) on defense should override TD offense with touchdown."""
+        result = apply_priority_chart("TD", "(TD)")
+        
+        assert result.priority == PriorityResult.PARENS_TD
+        assert result.is_touchdown is True
+    
+    def test_pi_vs_parens_td(self):
+        """(TD) on defense should override pass interference offense with touchdown."""
+        result = apply_priority_chart("PI 15", "(TD)")
         
         assert result.priority == PriorityResult.PARENS_TD
         assert result.is_touchdown is True
