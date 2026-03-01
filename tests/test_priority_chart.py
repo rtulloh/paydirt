@@ -475,10 +475,10 @@ class TestWhiteNumberOffense:
         assert result.final_yards == 0
     
     def test_white_vs_red(self):
-        """White # vs Red # should use DEFENSE (defense wins over no gain)."""
+        """White # vs Red # should ADD (negative + zero = negative)."""
         result = apply_priority_chart("0", "-3")
-        assert result.priority == PriorityResult.DEFENSE
-        assert result.final_yards == -3
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == -3  # 0 + (-3) = -3
     
     def test_white_vs_qt(self):
         """White # vs QT should use QT."""
@@ -1069,10 +1069,10 @@ class TestPriorityChartEdgeCaseFixes:
         assert result.final_yards == 5  # Offense gets their guaranteed yards, not -3
 
     def test_zero_offense_vs_negative_defense(self):
-        """0 vs negative - defense should win, not ADD."""
+        """0 vs negative - should ADD (negative + zero = negative)."""
         result = apply_priority_chart("0", "-3")
-        assert result.priority == PriorityResult.DEFENSE
-        assert result.final_yards == -3  # Defense negative yards apply
+        assert result.priority == PriorityResult.ADD
+        assert result.final_yards == -3  # 0 + (-3) = -3
 
     def test_negative_offense_vs_zero_defense(self):
         """negative vs 0 - defense should win, not ADD."""

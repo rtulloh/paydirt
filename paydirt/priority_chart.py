@@ -185,7 +185,8 @@ PRIORITY_CHART = {
     # Per priority chart: Oyg + NO CHG = ADD (no notion of GREEN in CSV, positive adds to zero)
     (ResultCategory.WHITE_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.ADD,
     (ResultCategory.WHITE_NUMBER, ResultCategory.WHITE_NUMBER): PriorityResult.ADD,
-    (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.DEFENSE,
+    # Per priority chart: Oyl + NO CHG = ADD (negative + zero = negative)
+    (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.WHITE_NUMBER, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.WHITE_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.INT): PriorityResult.INT,
