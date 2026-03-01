@@ -486,10 +486,10 @@ class TestWhiteNumberOffense:
         assert result.priority == PriorityResult.QT
     
     def test_white_vs_black(self):
-        """White # vs BLACK should use OFFENSE."""
+        """White # vs BLACK should be incomplete (per priority chart: NO CHG + BLACK = INC)."""
         result = apply_priority_chart("0", "BLACK")
-        assert result.priority == PriorityResult.OFFENSE
-        assert result.final_yards == 0
+        assert result.priority == PriorityResult.BLACK
+        assert result.is_incomplete is True
     
     def test_white_vs_int(self):
         """White # vs INT should use INT."""

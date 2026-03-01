@@ -188,7 +188,8 @@ PRIORITY_CHART = {
     # Per priority chart: Oyl + NO CHG = ADD (negative + zero = negative)
     (ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER): PriorityResult.ADD,
     (ResultCategory.WHITE_NUMBER, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.WHITE_NUMBER, ResultCategory.BLACK): PriorityResult.OFFENSE,
+    # Per priority chart: NO CHG + BLACK = INC (incomplete on passing plays)
+    (ResultCategory.WHITE_NUMBER, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.WHITE_NUMBER, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.WHITE_NUMBER, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.WHITE_NUMBER, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
