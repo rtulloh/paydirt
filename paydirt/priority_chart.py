@@ -246,7 +246,8 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE, ResultCategory.INT): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
+    # Per priority chart: F or BK priority over ALL but penalty
+    (ResultCategory.FUMBLE, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,
 
     # F+# / F-# offense results
     (ResultCategory.FUMBLE_PLUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
@@ -257,7 +258,7 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_PLUS, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
+    (ResultCategory.FUMBLE_PLUS, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,
 
     (ResultCategory.FUMBLE_MINUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.WHITE_NUMBER): PriorityResult.FUMBLE_PLUS,
@@ -267,7 +268,7 @@ PRIORITY_CHART = {
     (ResultCategory.FUMBLE_MINUS, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.FUMBLE): PriorityResult.D_FUMBLE,
     (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_NUMBER): PriorityResult.FUMBLE,
-    (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_TD): PriorityResult.PARENS_TD,
+    (ResultCategory.FUMBLE_MINUS, ResultCategory.PARENS_TD): PriorityResult.FUMBLE,
 
     # (#) parentheses offense results
     (ResultCategory.PARENS_NUMBER, ResultCategory.GREEN_NUMBER): PriorityResult.OFFENSE,

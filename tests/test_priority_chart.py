@@ -209,25 +209,25 @@ class TestParensTDOverrides:
         assert result.is_touchdown is True
     
     def test_fumble_vs_parens_td(self):
-        """(TD) on defense should override fumble offense with touchdown."""
+        """FUMBLE takes priority over (TD) - per chart: F/BK priority over ALL but penalty."""
         result = apply_priority_chart("F", "(TD)")
         
-        assert result.priority == PriorityResult.PARENS_TD
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.FUMBLE
+        assert result.is_touchdown is False
     
     def test_fumble_plus_vs_parens_td(self):
-        """(TD) on defense should override F+# offense with touchdown."""
+        """FUMBLE takes priority over (TD) - per chart: F/BK priority over ALL but penalty."""
         result = apply_priority_chart("F + 5", "(TD)")
         
-        assert result.priority == PriorityResult.PARENS_TD
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.FUMBLE
+        assert result.is_touchdown is False
     
     def test_fumble_minus_vs_parens_td(self):
-        """(TD) on defense should override F-# offense with touchdown."""
+        """FUMBLE takes priority over (TD) - per chart: F/BK priority over ALL but penalty."""
         result = apply_priority_chart("F - 3", "(TD)")
         
-        assert result.priority == PriorityResult.PARENS_TD
-        assert result.is_touchdown is True
+        assert result.priority == PriorityResult.FUMBLE
+        assert result.is_touchdown is False
     
     def test_parens_number_vs_parens_td(self):
         """(TD) on defense should override parentheses number offense with touchdown."""
