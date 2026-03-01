@@ -700,9 +700,10 @@ class TestINTOffense:
         assert result.is_incomplete is True
     
     def test_int_vs_int(self):
-        """INT vs INT should use D_INT (defense interception)."""
+        """INT vs INT should use D_INT (defense interception, shortest yards wins)."""
         result = apply_priority_chart("INT 15", "INT 10")
         assert result.priority == PriorityResult.D_INT
+        assert result.final_yards == 10  # shortest yards wins
     
     def test_int_vs_fumble(self):
         """INT vs F should use FUMBLE."""

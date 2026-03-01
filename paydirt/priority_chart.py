@@ -462,11 +462,13 @@ def apply_priority_chart(offense_result: str, defense_result: str,
 
     elif priority in [PriorityResult.INT, PriorityResult.D_INT]:
         is_turnover = True
-        # Use the INT return yards
-        if off_cat == ResultCategory.INT:
-            final_yards = off_yards if off_yards is not None else 0
-        else:
+        # Use the INT return yards - for D_INT use shortest (defense)
+        if priority == PriorityResult.D_INT:
+            # Defense INT wins, use shorter of the two (defense yards)
             final_yards = def_yards if def_yards is not None else 0
+        else:
+            # Offense INT wins
+            final_yards = off_yards if off_yards is not None else 0
         description = f"INTERCEPTION! {final_yards} yard return"
 
     elif priority in [PriorityResult.FUMBLE, PriorityResult.D_FUMBLE,
