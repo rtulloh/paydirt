@@ -261,7 +261,8 @@ PRIORITY_CHART = {
     # F+# / F-# offense results
     (ResultCategory.FUMBLE_PLUS, ResultCategory.GREEN_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.WHITE_NUMBER): PriorityResult.FUMBLE_PLUS,
-    (ResultCategory.FUMBLE_PLUS, ResultCategory.RED_NUMBER): PriorityResult.FUMBLE_MINUS,
+    # Per priority chart: F or BK priority over ALL but penalty - fumble always wins
+    (ResultCategory.FUMBLE_PLUS, ResultCategory.RED_NUMBER): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.QT): PriorityResult.QT,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.BLACK): PriorityResult.FUMBLE,
     (ResultCategory.FUMBLE_PLUS, ResultCategory.INT): PriorityResult.INT,
@@ -483,17 +484,8 @@ def apply_priority_chart(offense_result: str, defense_result: str,
     elif priority in [PriorityResult.FUMBLE, PriorityResult.D_FUMBLE,
                       PriorityResult.FUMBLE_PLUS, PriorityResult.FUMBLE_MINUS]:
         is_turnover = True
-        # Calculate fumble yardage
-        if priority == PriorityResult.FUMBLE_PLUS:
-            off_val = off_yards if off_yards is not None else 0
-            def_val = def_yards if def_yards is not None else 0
-            final_yards = off_val + abs(def_val)
-        elif priority == PriorityResult.FUMBLE_MINUS:
-            off_val = off_yards if off_yards is not None else 0
-            def_val = def_yards if def_yards is not None else 0
-            final_yards = off_val - abs(def_val)
-        else:
-            final_yards = off_yards if off_yards is not None else 0
+        # Fumble always wins - use offense fumble yards
+        final_yards = off_yards if off_yards is not None else 0
         description = f"FUMBLE! {final_yards} yards before fumble"
 
     elif priority == PriorityResult.BLACK:

@@ -781,9 +781,10 @@ class TestFumblePlusOffense:
         assert result.final_yards == 3  # fumble yards + abs(defense yards)
     
     def test_fumble_plus_vs_red(self):
-        """F+# vs Red # should use FUMBLE_MINUS."""
+        """F+# vs Red # should use FUMBLE (fumble always wins, use offense yards)."""
         result = apply_priority_chart("F + 3", "-2")
-        assert result.priority == PriorityResult.FUMBLE_MINUS
+        assert result.priority == PriorityResult.FUMBLE
+        assert result.final_yards == 3  # fumble always wins, use offense yards
     
     def test_fumble_plus_vs_qt(self):
         """F+# vs QT should use QT."""
