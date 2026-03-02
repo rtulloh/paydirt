@@ -862,8 +862,8 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
     field_pos = state.ball_position  # 0=own goal, 100=opponent goal
     
     # Determine if short-drop is available (inside own 5-yard line)
-    # Short-drop punt only available when NOT in own territory (risky near own end zone)
-    is_short_drop_available = field_pos >= 10
+    # Short-drop punt only available inside opponent's 5-yard line (position >= 95)
+    is_short_drop_available = field_pos >= 95
     
     print("\n  PUNT OPTIONS:")
     print("  " + "-" * 40)
