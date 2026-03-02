@@ -2099,18 +2099,13 @@ def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_bef
         quarter_before_play: Quarter number before the play started
         team_name: Optional team name for display (None = human timeout)
     """
-    # If quarter advanced, use the pre-play time to preserve it (timeout "stops" that time)
-    # Otherwise, use current time - timeout stops the clock at current time
-    # This is especially important after two-minute warning where time is set to 2.0
-    if game.state.quarter > quarter_before_play:
-        time_to_use = time_before_play
-    else:
-        time_to_use = game.state.time_remaining
+    # Timeout means exactly 10 seconds elapse, not the random play time
+    # Reset to time_before_play and use exactly 10 seconds
+    timeout_seconds = 0.167  # 10 seconds
     
-    time_after_timeout = time_to_use - 0.167
-    # Clamp to 0 if less than 1 second remains (avoids tiny positive residuals
-    # from floating-point arithmetic that display as 0:00 but prevent quarter end)
-    if time_after_timeout < 0.0167:  # Less than 1 second
+    time_after_timeout = time_before_play - timeout_seconds
+    # Clamp to 0 if less than 1 second remains
+    if time_after_timeout < 0.0167:
         time_after_timeout = 0
     game.state.time_remaining = time_after_timeout
     
