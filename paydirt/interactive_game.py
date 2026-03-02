@@ -2321,7 +2321,11 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             # Get the final position from the pending state if available
             if hasattr(game, '_pending_punt_state'):
                 final_pos = game._pending_punt_state.get('final_position', game.state.ball_position)
-                play_field_str = format_field_position(final_pos, style="short")
+                # Check for touchdown - ball past goal line (position >= 100)
+                if final_pos >= 100:
+                    play_field_str = "TOUCHDOWN"
+                else:
+                    play_field_str = format_field_position(final_pos, style="short")
             else:
                 play_field_str = "opponent's ball"
         elif is_kickoff_penalty:
