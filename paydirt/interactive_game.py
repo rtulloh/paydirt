@@ -861,9 +861,15 @@ def get_punt_options(game: PaydirtGameEngine) -> tuple[bool, int]:
     state = game.state
     field_pos = state.ball_position  # 0=own goal, 100=opponent goal
     
-    # Determine if short-drop is available (inside own 5-yard line)
-    # Short-drop punt only available inside opponent's 5-yard line (position >= 95)
+    # Short-drop punt is mandatory inside opponent's 5-yard line (position >= 95)
+    is_short_drop_mandatory = field_pos >= 95
     is_short_drop_available = field_pos >= 95
+    
+    # If short-drop is mandatory, return it directly without prompting
+    if is_short_drop_mandatory:
+        print("\n  >> Short-Drop Punt (mandatory inside 5)")
+        print("     Defenders will get Free All-Out Kick Rush")
+        return (True, 0)
     
     print("\n  PUNT OPTIONS:")
     print("  " + "-" * 40)
