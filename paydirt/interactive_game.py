@@ -3113,6 +3113,10 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         if outcome.field_goal_made:
             print(f"  Score: {game.get_score_str()}")
 
+            # Check if game is over (e.g., FG ends modified sudden death)
+            if game.state.game_over:
+                break
+
             input("\n  Press Enter for kickoff...")
 
             # Kickoff after field goal - offer onside kick option
@@ -3196,6 +3200,10 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     print(f"  {description}")
 
             print(f"  Score: {game.get_score_str()}")
+
+            # In sudden death overtime, a touchdown ends the game immediately - skip kickoff
+            if game.state.game_over:
+                break
 
             input("\n  Press Enter for kickoff...")
 
