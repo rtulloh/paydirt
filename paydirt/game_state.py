@@ -145,6 +145,11 @@ class GameState:
         elif self.ball_position < 0:
             self.ball_position = 0
 
+        # Check for touchdown first (ball at or past goal line)
+        if self.ball_position >= 100:
+            # Touchdown - don't update yards_to_go, it will be reset after score
+            return True
+
         self.yards_to_go -= yards
 
         if self.yards_to_go <= 0:

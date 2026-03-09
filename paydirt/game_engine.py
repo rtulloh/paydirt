@@ -758,6 +758,17 @@ class PaydirtGameEngine:
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice
 
+                    # Add fumble return event to transaction for offense recovery rolls 17-19
+                    if txn:
+                        txn.add_event(create_return_event(
+                            event_type=EventType.FUMBLE_RETURN,
+                            return_roll=return_dice,
+                            return_desc=return_desc,
+                            return_yards=return_yards,
+                            chart_result=str(int_return_result),
+                            acting_team=off_team
+                        ))
+
                 # Check down/distance after recovery
                 yards_gained_to_spot = fumble_spot - ball_pos_before
 
@@ -3471,7 +3482,7 @@ class PaydirtGameEngine:
             self.state.switch_possession()
             
             # Check for return on recovery roll (like blocked FGs - rolls 37, 38, 39)
-            recovery_roll = random.randint(1, 36)
+            recovery_roll, recovery_desc = roll_chart_dice()
             touchdown = False
             
             if recovery_roll in [37, 38, 39]:
@@ -3484,7 +3495,7 @@ class PaydirtGameEngine:
                     touchdown = True
                     self._score_touchdown()
                     self.state.ball_position = 97
-                    description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}) - RETURN TD!"
+                    description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}) - RETURN TD! ({statistical_distance} yards)"
                 else:
                     return_yards = self._parse_return_yards(int_return_result, fumble_spot_defense)
                     new_position = fumble_spot_defense + return_yards
@@ -3495,13 +3506,13 @@ class PaydirtGameEngine:
                         touchdown = True
                         self._score_touchdown()
                         self.state.ball_position = 97
-                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
+                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD! ({statistical_distance} yards)"
                     else:
-                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards ({statistical_distance} yards)"
             else:
                 # No return - defense takes over at fumble spot
                 self.state.ball_position = fumble_spot_defense
-                description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()}"
+                description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()} ({statistical_distance} yards)"
             
             # Reset down and distance for defense (new possession)
             # Note: switch_possession already does this, but we need to ensure consistency

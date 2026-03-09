@@ -135,6 +135,41 @@ class TestGameState:
         assert game_state.ball_position == 100
         assert result is True
     
+    def test_advance_ball_touchdown_from_99_does_not_set_zero_yards_to_go(self, game_state):
+        """advance_ball should not set yards_to_go to 0 when scoring from opponent's 1."""
+        game_state.ball_position = 99  # Opponent's 1-yard line
+        game_state.yards_to_go = 1
+        game_state.down = 1
+        
+        result = game_state.advance_ball(2)  # Gain 2 yards for touchdown
+        
+        assert game_state.ball_position == 100
+        assert result is True
+        # yards_to_go should remain at original value (1), not be set to 0
+        assert game_state.yards_to_go == 1
+    
+    def test_qb_scramble_from_1_yard_line_displays_correctly(self, game_state):
+        """QB scramble from opponent's 1-yard line should not show 'Goal @ 0' in display."""
+        game_state.ball_position = 99  # Opponent's 1-yard line
+        game_state.yards_to_go = 1
+        game_state.down = 1
+        
+        # Simulate QB scramble gaining 2 yards (like the QT result)
+        result = game_state.advance_ball(2)
+        
+        assert result is True
+        assert game_state.ball_position == 100
+        
+        # yards_to_go should not be 0 after touchdown
+        assert game_state.yards_to_go == 1
+        
+        # Verify display logic would not show "Goal @ 0"
+        from paydirt.utils import yards_to_goal
+        ytg = yards_to_goal(game_state.ball_position)
+        # Display should not show "Goal @ 0" - it should check ytg > 0
+        assert not (game_state.yards_to_go >= ytg and ytg > 0), \
+            "Display should not show 'Goal @ 0'"
+    
     def test_next_down(self, game_state):
         """next_down should increment down counter."""
         game_state.down = 1

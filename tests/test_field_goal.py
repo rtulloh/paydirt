@@ -470,14 +470,40 @@ class TestFieldGoalFumble:
         # Mock FG result as fumbled snap
         with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
             mock_fg.return_value = create_fg_result(17, "F - 5", is_fumble=True)
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 20 (not in return range 37-39)
+                mock_dice.return_value = (20, "B2+W0+W0=20")
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
             # Should not mention return TD
             assert "return td" not in outcome.description.lower()
             assert outcome.touchdown is False
             # Should have ball position at defense's 39 (100 - 61 = 39)
             assert game.state.ball_position == 39, f"Expected 39 but got {game.state.ball_position}"
+
+    def test_fumbled_snap_uses_proper_dice_for_recovery(self, game):
+        """Fumble recovery should use roll_chart_dice() not random.randint()."""
+        game.state.ball_position = 50  # Own 50
+        game.state.is_home_possession = True
+        
+        # Mock FG result as fumbled snap
+        with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
+            mock_fg.return_value = create_fg_result(17, "F - 5", is_fumble=True)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # First call: recovery roll (e.g., 38 = defense gets return)
+                # Second call: return roll (if applicable)
+                mock_dice.side_effect = [
+                    (38, "B3+W2+W1=38"),  # Recovery roll 38 (in return range 37-39)
+                    (14, "B1+W4+W0=14"),  # Return roll
+                ]
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
+                
+                # Verify roll_chart_dice was called for recovery roll
+                assert mock_dice.call_count >= 1, "roll_chart_dice should be called for fumble recovery"
+                # Recovery roll was 38, which is in range 37-39, so should have return
+                assert "return" in outcome.description.lower() or "td" in outcome.description.lower()
 
 
 class TestFieldGoalPenaltyDecision:

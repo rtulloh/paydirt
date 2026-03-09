@@ -823,6 +823,107 @@ class TestFumbleActionLine:
         # Return yards should match what was calculated (20 based on chart lookup)
         assert ret_events[0].yards == 20
 
+    def test_offense_fumble_return_on_roll_18_creates_event(self, game):
+        """Offense recovery on roll 18 should create FUMBLE_RETURN event with actual yards."""
+        from paydirt.play_events import EventType
+        
+        game.state.ball_position = 26  # Own 26
+        game.state.is_home_possession = True
+        game.state.down = 2
+        game.state.yards_to_go = 7
+        
+        # Use run_play_with_penalty_procedure which creates transactions
+        with patch('paydirt.game_engine.resolve_play_with_penalties') as mock_resolve:
+            from paydirt.play_resolver import PenaltyChoice
+            mock_resolve.return_value = PenaltyChoice(
+                play_result=PlayResult(
+                    result_type=ResultType.FUMBLE,
+                    yards=10,  # Fumble at 36
+                    turnover=True,
+                    raw_result="F + 10",
+                    dice_roll=15,
+                ),
+                penalty_options=[],
+                offended_team="",
+            )
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 18 = offense recovers with special return
+                # Return roll 16 = TD (63 yards from spot 36 to opponent's 1)
+                mock_dice.side_effect = [
+                    (18, "B1+W8+W0=18"),  # Recovery roll
+                    (16, "B1+W6+W0=16"),  # Return roll (TD)
+                ]
+                
+                outcome = game.run_play_with_penalty_procedure(
+                    PlayType.MEDIUM_PASS, DefenseType.STANDARD
+                )
+        
+        # Should have a transaction with FUMBLE_RETURN event
+        assert outcome.transaction is not None
+        txn = outcome.transaction
+        
+        # Verify FUMBLE_RETURN event exists
+        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+        assert len(ret_events) == 1
+        # Return yards should be TD (64 from spot 36 to goal)
+        assert ret_events[0].yards == 64
+        
+        # Verify the fumble return yards are stored on result
+        assert outcome.result.fumble_return_yards == 64
+        assert outcome.result.fumble_return_dice == 16
+
+    def test_offense_fumble_return_on_roll_17_with_yardage(self, game):
+        """Offense recovery on roll 17 should get return yards from interception chart."""
+        from paydirt.play_events import EventType
+        
+        game.state.ball_position = 40  # Own 40
+        game.state.is_home_possession = True
+        game.state.down = 2
+        game.state.yards_to_go = 8
+        
+        # Use run_play_with_penalty_procedure which creates transactions
+        with patch('paydirt.game_engine.resolve_play_with_penalties') as mock_resolve:
+            from paydirt.play_resolver import PenaltyChoice
+            mock_resolve.return_value = PenaltyChoice(
+                play_result=PlayResult(
+                    result_type=ResultType.FUMBLE,
+                    yards=5,  # Fumble at 45
+                    turnover=True,
+                    raw_result="F + 5",
+                    dice_roll=15,
+                ),
+                penalty_options=[],
+                offended_team="",
+            )
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                # Recovery roll 17 = offense recovers with special return
+                # Return roll 14 = 20 yards
+                mock_dice.side_effect = [
+                    (17, "B1+W7+W0=17"),  # Recovery roll
+                    (14, "B1+W4+W0=14"),  # Return roll (20 yards)
+                ]
+                
+                outcome = game.run_play_with_penalty_procedure(
+                    PlayType.SHORT_PASS, DefenseType.STANDARD
+                )
+        
+        # Should have a transaction with FUMBLE_RETURN event
+        assert outcome.transaction is not None
+        txn = outcome.transaction
+        
+        # Verify FUMBLE_RETURN event exists
+        ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
+        assert len(ret_events) == 1
+        # Return yards should be 20 from the chart
+        assert ret_events[0].yards == 20
+        
+        # Ball should be at fumble_spot + return_yards = 45 + 20 = 65 (opponent's 35)
+        assert game.state.ball_position == 65
+        
+        # Verify the fumble return yards are stored on result
+        assert outcome.result.fumble_return_yards == 20
+        assert outcome.result.fumble_return_dice == 14
+
 
 class TestFumbleFieldPositionDisplay:
     """Tests for fumble field position formatting in action lines."""

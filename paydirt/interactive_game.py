@@ -200,7 +200,8 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
     # Down and distance string
     ytg = yards_to_goal(state.ball_position)
     # Show "& Goal @ X" when you need a touchdown to convert (yards_to_go >= yards to goal)
-    if state.yards_to_go >= ytg:
+    # But don't show "Goal @ 0" - that indicates the ball is already at/past the goal line
+    if state.yards_to_go >= ytg and ytg > 0:
         down_str = f"{state.down}{_ordinal(state.down)} & Goal @ {ytg}"
     else:
         down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
@@ -1917,6 +1918,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
             if recovery_roll is not None:
                 rec_result = "kept" if not outcome.turnover else "lost"
                 if outcome.turnover:
+                    extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
+                elif fumble_return > 0:
+                    # Offense recovery with special return (rolls 17, 18, 19)
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
                 else:
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\""
