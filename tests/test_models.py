@@ -170,6 +170,46 @@ class TestGameState:
         assert not (game_state.yards_to_go >= ytg and ytg > 0), \
             "Display should not show 'Goal @ 0'"
     
+    def test_field_position_str_uses_team_context(self):
+        """field_position_str should show position from possessing team's perspective."""
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.chart_loader import TeamChart, PeripheralData
+        from unittest.mock import MagicMock
+        
+        # Create mock charts
+        home_chart = TeamChart(
+            peripheral=PeripheralData(
+                year=1983, team_name="Home", team_nickname="Team",
+                power_rating=50, short_name="HOM"
+            ),
+            offense=MagicMock(), defense=MagicMock(), special_teams=MagicMock()
+        )
+        away_chart = TeamChart(
+            peripheral=PeripheralData(
+                year=1983, team_name="Away", team_nickname="Team",
+                power_rating=50, short_name="AWY"
+            ),
+            offense=MagicMock(), defense=MagicMock(), special_teams=MagicMock()
+        )
+        
+        game = PaydirtGameEngine(home_chart, away_chart)
+        
+        # Home team punts from opponent's 44 -> ball at 92 (their own 8)
+        game.state.ball_position = 92
+        game.state.is_home_possession = True
+        
+        # Should show "own 8" because home team has possession at their own 8-yard line
+        result = game.state.field_position_str()
+        assert "8" in result, f"Expected 'own 8' or 'HOM 8', got '{result}'"
+        
+        # After switching possession (punt received), should show opponent's perspective
+        game.state.switch_possession()
+        
+        # Now away team has ball at position 8 (their own 8)
+        # Should show "own 8" or "AWY 8" because away team is now on offense
+        result = game.state.field_position_str()
+        assert "8" in result, f"Expected 'own 8' or 'AWY 8', got '{result}'"
+    
     def test_next_down(self, game_state):
         """next_down should increment down counter."""
         game_state.down = 1

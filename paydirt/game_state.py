@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .chart_loader import TeamChart
-from .utils import format_field_position
+from .utils import format_field_position, format_field_position_with_team
 from .play_resolver import PlayType, DefenseType, PlayResult, PenaltyChoice
 from .play_events import PlayTransaction
 
@@ -92,8 +92,10 @@ class GameState:
         return self.away_stats if self.is_home_possession else self.home_stats
 
     def field_position_str(self) -> str:
-        """Get human-readable field position."""
-        return format_field_position(self.ball_position)
+        """Get human-readable field position with correct team context."""
+        off_team = self.possession_team.peripheral.short_name
+        def_team = self.defense_team.peripheral.short_name
+        return format_field_position_with_team(self.ball_position, off_team, def_team)
 
     def switch_possession(self):
         """Switch possession between teams."""
