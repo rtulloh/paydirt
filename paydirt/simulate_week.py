@@ -62,6 +62,28 @@ NFL_1983_WEEK_1_BALANCED = [
 ]
 
 
+# 1972 NFL Week 1 - Balanced schedule for 26 teams (13 games)
+# AFC has 13 teams (East: Dolphins, Jets, Patriots, Colts | Central: Steelers, Bengals, Browns, Oilers | West: Raiders, Chiefs, Chargers, Broncos)
+# NFC has 13 teams (East: Cowboys, Giants, Redskins, Eagles | Central, Packers, Bears, Lions | West: Vikings: 49ers, Rams, Cardinals, Falcons, Saints)
+NFL_1972_WEEK_1 = [
+    # AFC Games
+    ("Dolphins", "Patriots"),  # AFC East
+    ("Jets", "Colts"),  # AFC East
+    ("Steelers", "Browns"),  # AFC Central
+    ("Bengals", "Oilers"),  # AFC Central
+    ("Raiders", "Chiefs"),  # AFC West
+    ("Chargers", "Broncos"),  # AFC West
+    # NFC Games
+    ("Cowboys", "Giants"),  # NFC East
+    ("Redskins", "Eagles"),  # NFC East
+    ("Vikings", "Packers"),  # NFC Central
+    ("Bears", "Lions"),  # NFC Central
+    ("49ers", "Rams"),  # NFC West
+    ("Cardinals", "Falcons"),  # NFC West
+    ("Saints", "Bills"),  # Interconference (AFL East vs NFC)
+]
+
+
 def find_team_chart_path(team_name: str, charts: list) -> str:
     """Find the chart path for a team name."""
     team_lower = team_name.lower()
@@ -157,9 +179,10 @@ def simulate_week(year: int, week: int, verbose: bool = True):
     # Get schedule for the week
     if year == 1983 and week == 1:
         schedule = NFL_1983_WEEK_1_BALANCED
+    elif year == 1972 and week == 1:
+        schedule = NFL_1972_WEEK_1
     else:
         print(f"Error: No schedule defined for {year} Week {week}")
-        print("Currently only 1983 Week 1 is supported.")
         return
 
     # Load standings
