@@ -11,15 +11,23 @@ Teams with formula cells (Redskins, Eagles) need manual fix or .xlsx conversion.
 import xlrd
 import os
 import csv
+import argparse
 
-BASE_DIR = "/Users/rtulloh/Downloads/1983paydirtcompletedcharts"
-OUTPUT_DIR = "/Users/rtulloh/Downloads/paydirt/seasons/1983"
+BASE_DIR = "/Users/rtulloh/Downloads/1972teams"
+OUTPUT_DIR = "/Users/rtulloh/Downloads/1972"
 
 TEAM_MAPPING = {
     'FortyNiners': '49ers',
     'NYGiants': 'Giants',
     'NYJets ': 'Jets',
 }
+
+parser = argparse.ArgumentParser(description='Extract chart data from Excel files')
+parser.add_argument('-i', '--input', default=BASE_DIR, help='Input directory with .xls files')
+parser.add_argument('-o', '--output', default=OUTPUT_DIR, help='Output directory for CSV files')
+parser.add_argument('-t', '--team', help='Process specific team file (e.g., 197249ers.xls)')
+
+args = parser.parse_args()
 
 
 def format_cell_value(value, ctype):
@@ -186,7 +194,7 @@ def extract_offense_chart(file_path):
     return chart_data
 
 def extract_defense_chart(file_path):
-    """Extract defense chart from Excel file."""
+    """Extract defense and special teams charts from Excel file."""
     workbook = xlrd.open_workbook(file_path, formatting_info=True)
     sheet = workbook.sheet_by_name('DEFENSE')
     
@@ -290,7 +298,55 @@ def extract_defense_chart(file_path):
             elif is_black:
                 chart_data[key][dice_num] = 'BLACK'
     
-    return chart_data
+    # Extract special teams data from columns N-S and V (13-18, 21)
+    # Columns: N=Kickoff, O=Kickoff Return, P=Punt, Q=Punt Return, R=Int. Return, S=Field Goal, V=Extra Point
+    special_col_names = ['Kickoff', 'Kickoff Return', 'Punt', 'Punt Return', 'Int. Return', 'Field Goal', 'Extra Point']
+    special_col_map = {
+        'Kickoff': 13,
+        'Kickoff Return': 14,
+        'Punt': 15,
+        'Punt Return': 16,
+        'Int. Return': 17,
+        'Field Goal': 18,
+        'Extra Point': 21
+    }
+    
+    special_data = {}  # {dice_val: {col_name: value}}
+    
+    for row_idx in range(dice_row + 1, sheet.nrows):
+        # Stop when we hit empty rows (end of first special teams block)
+        dice_cell = sheet.cell(row_idx, 19)
+        if not dice_cell.value:
+            break  # Stop at first empty row
+        
+        # Get dice value from column 19 (index 19) for special teams
+        try:
+            dice_val = int(float(dice_cell.value))
+        except Exception:
+            continue
+        
+        if not (10 <= dice_val <= 39):
+            continue
+        
+        row_data = {}
+        for col_name, col_idx in special_col_map.items():
+            cell = sheet.cell(row_idx, col_idx)
+            cell_value = format_cell_value(cell.value, cell.ctype)
+            
+            is_black = is_black_cell(workbook, cell)
+            
+            if is_black and not cell_value:
+                cell_value = 'BLACK'
+            
+            if cell_value:
+                row_data[col_name] = cell_value
+            elif is_black:
+                row_data[col_name] = 'BLACK'
+        
+        if row_data:
+            special_data[dice_val] = row_data
+    
+    return chart_data, special_data
 
 def write_offense_csv(chart_data, output_path):
     """Write offense chart to CSV."""
@@ -321,33 +377,67 @@ def write_defense_csv(chart_data, output_path):
                 row.append(row_data.get(dice, ''))
             writer.writerow(row)
 
+def write_special_csv(chart_data, output_path):
+    """Write special teams chart to CSV."""
+    col_names = ['#', 'Kickoff', 'Kickoff Return', 'Punt', 'Punt Return', 'Int. Return', 'Field Goal', 'Extra Point']
+    
+    with open(output_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(col_names)
+        
+        for dice_val in sorted(chart_data.keys()):
+            row = [dice_val]
+            row_data = chart_data[dice_val]
+            for col_name in col_names[1:]:
+                row.append(row_data.get(col_name, ''))
+            writer.writerow(row)
+
 def process_team(excel_file):
     """Process a single team's Excel file."""
-    team_name = excel_file.replace('1983', '').replace('.xls', '')
+    # Extract team name - handle both 1983 and 1972 file naming conventions
+    team_name = excel_file.replace('.xls', '').replace('1983', '').replace('1972', '')
     team_folder = TEAM_MAPPING.get(team_name, team_name)
     
-    if team_folder == 'Jets':
+    # Additional mappings for 1972 files
+    if team_folder == '197249ers':
+        team_folder = '49ers'
+    elif team_folder == '1972Giants':
+        team_folder = 'Giants'
+    elif team_folder == '1972Jets':
         team_folder = 'Jets'
     
-    file_path = os.path.join(BASE_DIR, excel_file)
+    file_path = os.path.join(args.input, excel_file)
+    output_folder = os.path.join(args.output, team_folder)
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
     
     print(f"Processing {team_name} -> {team_folder}")
     
     # Extract offense (includes fumble R/L per dice roll from column Q)
     offense_data = extract_offense_chart(file_path)
-    offense_path = os.path.join(OUTPUT_DIR, team_folder, 'offense.csv')
+    offense_path = os.path.join(output_folder, 'offense.csv')
     write_offense_csv(offense_data, offense_path)
     print(f"  Wrote {len(offense_data)} offense rows")
     
-    # Extract defense
-    defense_data = extract_defense_chart(file_path)
-    defense_path = os.path.join(OUTPUT_DIR, team_folder, 'defense.csv')
+    # Extract defense and special teams
+    defense_data, special_data = extract_defense_chart(file_path)
+    defense_path = os.path.join(output_folder, 'defense.csv')
     write_defense_csv(defense_data, defense_path)
     print(f"  Wrote {len(defense_data)} defense rows")
+    
+    # Write special teams
+    special_path = os.path.join(output_folder, 'special.csv')
+    write_special_csv(special_data, special_path)
+    print(f"  Wrote {len(special_data)} special teams rows")
 
 def main():
     # Get all Excel files
-    excel_files = sorted([f for f in os.listdir(BASE_DIR) if f.endswith('.xls')])
+    if args.team:
+        excel_files = [args.team]
+    else:
+        excel_files = sorted([f for f in os.listdir(args.input) if f.endswith('.xls')])
+    
     print(f"Found {len(excel_files)} teams")
     
     for excel_file in excel_files:
