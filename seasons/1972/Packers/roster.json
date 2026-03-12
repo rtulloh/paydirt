@@ -1,0 +1,13 @@
+{
+  "team_name": "Green Bay Packers",
+  "qb": ["Scott Hunter", "Jerry Tagge", "Frank Patrick"],
+  "rb": ["John Brockington", "Bob Hudson", "MacArthur Lane", "Dave Kopay", "Perry Williams", "Ward Walsh"],
+  "wr": ["Carroll Dale", "Dave Davis", "Leland Glass", "Jon Staggers"],
+  "te": ["Len Garrett", "Pete Lammons", "Rich McGeorge"],
+  "ol": ["Ken Bowman", "Dick Himes", "Bill Hayhoe", "Kevin Hunt", "Bill Lueck", "Malcolm Snider", "Francis Peay", "Cal Withrow", "Keith Wortman"],
+  "dl": ["Bob Brown", "Gale Gillingham", "Mike McCoy", "Dave Pureifory", "Alden Roche", "Vern Vanoy", "Clarence Williams"],
+  "lb": ["Fred Carr", "Jim Carter", "Tommy Crutcher", "Larry Hefner", "Ray Nitschke", "Dave Robinson"],
+  "db": ["Willie Buchanon", "Ken Ellis", "Charlie Hall", "Jim Hill", "Bob Kroll", "Al Matthews", "Ike Thomas"],
+  "k": ["Chester Marcol"],
+  "p": ["Ron Widby"]
+}

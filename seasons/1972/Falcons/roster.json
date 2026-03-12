@@ -1,0 +1,13 @@
+{
+  "team_name": "Atlanta Falcons",
+  "qb": ["Bob Berry", "Pat Sullivan"],
+  "rb": ["Willie Belton", "Dave Hampton", "Art Malone", "Joe Profit", "Eddie Ray", "Ronnie Lamb"],
+  "wr": ["Ken Burrow", "Wes Chesson", "Ray Jarvis", "Todd Snyder"],
+  "te": ["Larry Mialik", "Jim Mitchell"],
+  "ol": ["Len Gotshalk", "George Kunz", "Andy Maurer", "Jim Miller", "Bill Sandeman", "Rosie Manning"],
+  "dl": ["Glen Condren", "Claude Humphrey", "Mike Lewis", "John Small", "Chuck Walker", "John Zook"],
+  "lb": ["Grady Allen", "Duane Benson", "Greg Brezina", "Don Hansen", "Noel Jenke", "Tommy Nobis"],
+  "db": ["Ray Brown", "Clarence Ellis", "Ray Easterling", "Willie Germany", "Tom Hayes", "Ken Reaves", "Tony Plummer", "Larry Shears"],
+  "k": ["Bill Bell"],
+  "p": ["John James"]
+}

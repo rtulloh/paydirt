@@ -1,0 +1,13 @@
+{
+  "team_name": "New York Giants",
+  "qb": ["Randy Johnson", "Norm Snead"],
+  "rb": ["Vin Clements", "Charlie Evans", "Bobby Duhon", "Ron Johnson", "Joe Orduna", "Rocky Thompson"],
+  "wr": ["Tom Gatewood", "Bob Grim", "Don Herrmann", "Rich Houston", "Joe Morrison", "Eldridge Small"],
+  "te": ["Rich Kotite", "Bob Tucker"],
+  "ol": ["Mark Ellison", "Dick Enderle", "Charlie Harper", "John Hill", "Bob Hyland", "Greg Larson", "Joe Taffoni", "Doug Van Horn", "Willie Young"],
+  "dl": ["Dan Goich", "Jack Gregory", "Larry Jacobson", "John Mendenhall", "Henry Reed", "Dave Tipton"],
+  "lb": ["Carter Campbell", "John Douglas", "Jimmy Files", "Ron Hornsby", "Pat Hughes"],
+  "db": ["Pete Athas", "Otto Brown", "Chuck Crist", "Carl Lockhart", "Willie Williams"],
+  "k": ["Pete Gogolak"],
+  "p": ["Tom Blanchard"]
+}

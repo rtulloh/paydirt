@@ -1,0 +1,13 @@
+{
+  "team_name": "Pittsburgh Steelers",
+  "qb": ["Terry Bradshaw", "Joe Gilliam", "Terry Hanratty"],
+  "rb": ["Franco Harris", "John Fuqua", "Rocky Bleier", "Warren Bankston", "Steve Davis", "Preston Pearson"],
+  "wr": ["Frank Lewis", "Ron Shanklin", "Dave Smith", "Al Young"],
+  "te": ["Larry Brown", "John McMakin"],
+  "ol": ["Sam Davis", "Gordon Gravelle", "Jon Kolb", "Gerry Mullins", "Bruce Van Dyke", "Mel Holmes", "Jim Clack", "Ray Mansfield"],
+  "dl": ["Joe Greene", "L.C. Greenwood", "Ernie Holmes", "Ben McGee", "Steve Furness", "Craig Hanneman", "Dwight White"],
+  "lb": ["Henry Davis", "Jack Ham", "Andy Russell", "Ed Bradley", "Brian Stenger", "George Webster", "Carl Winfrey"],
+  "db": ["Mel Blount", "Ralph Anderson", "Lee Calland", "John Dockery", "Glen Edwards", "Mike Wagner", "John Rowser"],
+  "k": ["Roy Gerela"],
+  "p": ["Bobby Walden"]
+}

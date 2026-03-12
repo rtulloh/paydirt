@@ -1,0 +1,13 @@
+{
+  "team_name": "Philadelphia Eagles",
+  "qb": ["Rick Arrington", "Pete Liske", "John Reaves"],
+  "rb": ["Tom Bailey", "Tony Baker", "Larry Crowe", "Ron James", "Tom Sullivan", "Larry Watkins"],
+  "wr": ["Harold Carmichael", "Ben Hawkins", "Harold Jackson", "Billy Walik"],
+  "te": ["Gary Ballman", "Clark Hoss", "Kent Kramer"],
+  "ol": ["Hank Allison", "Wade Key", "Tom Luken", "Wayne Mass", "Mark Nordquist", "Jimmie Skaggs", "Steve Smith", "Richard Stevens", "Jerry Sturm", "Vern Winfield"],
+  "dl": ["Houston Antwine", "Ernie Calloway", "Larry Estes", "Don Hultz", "Gary Pettigrew", "Mel Tom"],
+  "lb": ["Dick Absher", "Chuck Allen", "John Bunting", "Bill Cody", "Bob Creech", "Bill Overmyer", "Ron Porter", "John Sodaski", "Adrian Young", "Steve Zabel"],
+  "db": ["Kermit Alexander", "Jackie Allen", "Al Coleman", "Pat Gibbs", "Nate Ramsey", "Steve Preece", "Jim Thrower"],
+  "k": ["Tom Dempsey"],
+  "p": ["Bill Bradley", "Tom McNeill"]
+}

@@ -1,0 +1,13 @@
+{
+  "team_name": "New England Patriots",
+  "qb": ["Brian Dowling", "Jim Plunkett"],
+  "rb": ["Josh Ashton", "Carl Garrett", "Bob Gladieux", "Jack Maitland", "Henry Matthews", "John Tarver"],
+  "wr": ["Hubie Bryant", "Tom Reynolds", "Reggie Rucker", "Randy Vataha"],
+  "te": ["Tom Beer", "Bob Windsor"],
+  "ol": ["Sam Adams", "Bill Lenkaitis", "Mike Montler", "Tom Neville", "Jon Morris", "Bob Reynolds", "Len St. Jean"],
+  "dl": ["Julius Adams", "Ron Berger", "Rick Cash", "Halvor Hagen", "Dave Rowe", "Denny Wirgowski", "Jim White"],
+  "lb": ["Ron Acks", "Dick Blanchard", "Jim Cheyunski", "Ralph Cindrich", "Ron Kadziel", "Ed Weisacosky"],
+  "db": ["Ron Bolton", "Larry Carwell", "George Hoey", "Honor Jackson", "Art McMahon", "Johnny Outlaw", "Clarence Scott", "Rickie Harris"],
+  "k": ["Charlie Gogolak", "Mike Walker"],
+  "p": ["Pat Studstill"]
+}

@@ -1,0 +1,13 @@
+{
+  "team_name": "Dallas Cowboys",
+  "qb": ["Craig Morton", "Roger Staubach", "Dan Reeves"],
+  "rb": ["Walt Garrison", "Calvin Hill", "Robert Newhouse", "Mike Montgomery", "Bill Thomas"],
+  "wr": ["Lance Alworth", "Bob Hayes", "Billy Parks", "Ron Sellers"],
+  "te": ["Mike Ditka", "Jean Fugett", "Billy Truax"],
+  "ol": ["John Fitzgerald", "Ralph Neely", "John Niland", "Blaine Nye", "Rod Wallace", "Rayfield Wright", "Dave Manders"],
+  "dl": ["George Andrie", "Larry Cole", "Bill Gregory", "Jethro Pugh", "Pat Toomay", "Tody Smith"],
+  "lb": ["John Babinecz", "Ralph Coleman", "Dave Edwards", "Chuck Howley", "Lee Roy Jordan", "Mike Keller", "D.D. Lewis"],
+  "db": ["Herb Adderley", "Benny Barnes", "Cornell Green", "Cliff Harris", "Mel Renfro", "Mark Washington", "Charlie Waters"],
+  "k": ["Toni Fritsch"],
+  "p": ["Marv Bateman"]
+}

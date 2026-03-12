@@ -1,0 +1,13 @@
+{
+  "team_name": "Cleveland Browns",
+  "qb": ["Bill Nelsen", "Mike Phipps"],
+  "rb": ["Ken Brown", "Bo Cornell", "Doug Dieken", "Leroy Kelly", "Reece Morrison", "Bo Scott", "Hugh McKinnis"],
+  "wr": ["Charlie Brinkman", "Fair Hooker", "Billy LeFear", "Frank Pitts", "Gloster Richardson", "Paul Staroba"],
+  "te": ["Chip Glass", "Milt Morin"],
+  "ol": ["Joe Carollo", "Jim Copeland", "John Demarie", "Doug Dieken", "Gene Hickerson", "Fred Hoaglin", "Bob McKay", "Chris Morris", "Bubba Pena", "Craig Wycinski"],
+  "dl": ["Bob Briggs", "Fest Cotton", "Wes Grant", "Rich Jackson", "Walter Johnson", "Jerry Sherk", "Ron Snidow", "George Wright"],
+  "lb": ["Billy Andrews", "John Garlington", "Charlie Hall", "Jim Houston", "Rick Kingrea", "Dale Lindsey", "Mel Long"],
+  "db": ["Cliff Brooks", "Thom Darden", "Ben Davis", "Bobby Majors", "Clarence Scott", "Walt Sumner", "Mike Howell"],
+  "k": ["Don Cockroft", "George Hunt"],
+  "p": ["Don Cockroft"]
+}

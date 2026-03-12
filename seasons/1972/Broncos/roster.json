@@ -1,0 +1,13 @@
+{
+  "team_name": "Denver Broncos",
+  "qb": ["Charley Johnson", "Don Horn", "Steve Ramsey", "Mike Ernst"],
+  "rb": ["Bobby Anderson", "Joe Dawkins", "Floyd Little", "Fran Lynch", "Clem Turner"],
+  "wr": ["Dwight Harrison", "Jim Krieg", "Haven Moses", "Rod Sherman", "Jerry Simmons", "Billy Van Heusen"],
+  "te": ["Billy Masters", "Riley Odoms"],
+  "ol": ["Mike Current", "Lyle Alzado", "Bill Cottrell", "George Goeddeke", "Larron Jackson", "Larry Kaminski", "Tommy Lyons", "Bobby Maples", "Marv Montgomery", "Rick Sharp", "Mike Schnitker"],
+  "dl": ["Tom Domres", "Pete Duranko", "John Hoffman", "Rich Jackson", "Billy McKoy", "Paul Smith", "Lloyd Voss"],
+  "lb": ["Ken Criter", "Fred Forsberg", "Bob Geddes", "Tom Graham", "Chip Myrtle", "Don Parish", "Mike Simone"],
+  "db": ["Cornell Gordon", "Charlie Greer", "Leroy Mitchell", "Steve Preece", "George Saimes", "Billy Thompson", "Bill West", "Randy Montgomery"],
+  "k": ["Jim Turner"],
+  "p": ["Billy Van Heusen"]
+}

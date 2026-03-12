@@ -1,0 +1,13 @@
+{
+  "team_name": "Washington Redskins",
+  "qb": ["Sonny Jurgensen", "Billy Kilmer", "Sam Wyche"],
+  "rb": ["Larry Brown", "Charley Harraway", "Bob Brunet", "Mike Hull", "George Nock", "Herb Mul-Key", "Jeff Jordan"],
+  "wr": ["Roy Jefferson", "Charley Taylor", "Clifton McNeil", "Bill Malinchak"],
+  "te": ["Mack Alston", "Jerry Smith"],
+  "ol": ["George Burman", "Terry Hermeling", "Paul Laaveg", "Walt Rock", "Ray Schoenke", "John Wilbur", "Len Hauss"],
+  "dl": ["Verlon Biggs", "Bill Brundige", "Mike Fanucci", "Ron McDole", "Manny Sistrunk", "Diron Talbert", "Jimmie Jones"],
+  "lb": ["Chris Hanburger", "Jack Pardee", "Myron Pottios", "Harold McLinton", "Rusty Tillman"],
+  "db": ["Mike Bass", "Pat Fischer", "Speedy Duncan", "Brig Owens", "Richie Petitbon", "Jeff Severson", "Ted Vactor", "Alvin Haymond", "Jon Jaqua"],
+  "k": ["Curt Knight"],
+  "p": ["Mike Bragg"]
+}

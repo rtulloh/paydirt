@@ -1,0 +1,13 @@
+{
+  "team_name": "San Francisco 49ers",
+  "qb": ["John Brodie", "Steve Spurrier", "Joe Reed"],
+  "rb": ["Vic Washington", "Ken Willard", "Doug Cunningham", "Larry Schreiber", "John Isenbarger", "Jimmy Thomas"],
+  "wr": ["Terry Beasley", "Preston Riley", "Gene Washington", "Dick Witcher"],
+  "te": ["Ted Kwalick"],
+  "ol": ["Cas Banaszek", "Forrest Blue", "Elmer Collett", "Randy Beisler", "Woody Peoples", "Len Rohde", "Dave Olerich", "John Watson"],
+  "dl": ["Bill Belk", "Cedrick Hardman", "Tommy Hart", "Bob Hoskins", "Charlie Krueger", "Rolf Krueger", "Earl Edwards"],
+  "lb": ["Ed Beard", "Marty Huff", "Frank Nunley", "Skip Vanderbundt", "Dave Wilcox", "Ralph McGill", "Jim Sniadecki"],
+  "db": ["Johnny Fuller", "Jimmy Johnson", "Bruce Taylor", "Jim McCann", "Mel Phillips", "Windlan Hall", "Mike Simpson"],
+  "k": ["Bruce Gossett"],
+  "p": ["Jim McCann"]
+}

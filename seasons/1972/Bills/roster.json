@@ -1,0 +1,13 @@
+{
+  "team_name": "Buffalo Bills",
+  "qb": ["Dennis Shaw", "Mike Taliaferro", "Leo Hart"],
+  "rb": ["O.J. Simpson", "Jim Braxton", "Randy Jackson", "Wayne Patrick"],
+  "wr": ["Bob Chandler", "J.D. Hill", "Linzy Cole", "Haven Moses", "Dwight Harrison"],
+  "te": ["Ted Koy", "Jan White"],
+  "ol": ["Bill Adams", "Tom Beard", "Bob Christiansen", "Paul Costa", "Dave Foley", "Donnie Green", "Bob Penchion", "John Matlock", "Reggie McKenzie"],
+  "dl": ["Al Cowlings", "Don Croft", "Dick Cunningham", "Frank Cornish", "Jerry Patton", "Walt Patulski", "Louis Ross"],
+  "lb": ["Edgar Chandler", "Dale Farley", "Paul Guidry", "Ken Lee", "John Leypoldt", "Jeff Lyman", "Dick Palmer", "Andy Selfridge", "Mike Stratton"],
+  "db": ["Robert James", "Tony Greene", "John Pitts", "Maurice Tyler", "Alvin Wyatt", "Leon Garror", "John Saunders"],
+  "k": ["John Leypoldt"],
+  "p": ["Spike Jones"]
+}
