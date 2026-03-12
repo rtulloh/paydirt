@@ -136,29 +136,66 @@ def clear_screen():
 # format_time is now imported from utils
 
 
-def get_available_teams() -> list[tuple[str, str]]:
+def get_available_seasons() -> list[str]:
+    """Find all available season directories."""
+    seasons = []
+    seasons_path = Path('seasons')
+    if seasons_path.exists():
+        for season_dir in sorted(seasons_path.iterdir()):
+            if season_dir.is_dir() and season_dir.name.isdigit():
+                seasons.append(season_dir.name)
+    return seasons
+
+
+def select_season(prompt: str = "Select Season:") -> str:
+    """Let user select a season."""
+    seasons = get_available_seasons()
+    if not seasons:
+        print("No seasons found!")
+        raise SystemExit(1)
+
+    print(f"\n{prompt}")
+    print("-" * 50)
+    for i, season in enumerate(seasons, 1):
+        print(f"  {i}. {season}")
+
+    while True:
+        try:
+            choice = input("\nEnter season number: ").strip()
+            idx = int(choice) - 1
+            if 0 <= idx < len(seasons):
+                selected = seasons[idx]
+                print(f"Selected: {selected}")
+                return selected
+        except ValueError:
+            pass
+        print("Invalid choice. Please enter a number from the list.")
+
+
+def get_available_teams(season: Optional[str] = None) -> list[tuple[str, str]]:
     """Find all available team chart directories."""
     teams = []
     seasons_path = Path('seasons')
     if seasons_path.exists():
-        for season_dir in sorted(seasons_path.iterdir()):
-            if season_dir.is_dir():
+        season_dirs = [seasons_path / season] if season else sorted(seasons_path.iterdir())
+        for season_dir in season_dirs:
+            if season_dir.is_dir() and season_dir.name.isdigit():
                 for team_dir in sorted(season_dir.iterdir()):
                     if team_dir.is_dir():
-                        # Check for new format (offense.csv) or old format (OFFENSE-Table 1.csv)
                         offense_file_new = team_dir / 'offense.csv'
                         offense_file_old = team_dir / 'OFFENSE-Table 1.csv'
                         if offense_file_new.exists() or offense_file_old.exists():
-                            teams.append((str(team_dir), f"{season_dir.name} {team_dir.name}"))
+                            teams.append((str(team_dir), team_dir.name))
     return teams
 
 
 def select_team(prompt: str, exclude: Optional[str] = None) -> TeamChart:
     """Let user select a team from available teams."""
-    teams = get_available_teams()
+    selected_season = select_season("Select Season:")
+    teams = get_available_teams(selected_season)
 
     if not teams:
-        print("No team charts found in seasons/ directory!")
+        print(f"No team charts found in {selected_season} season!")
         raise SystemExit(1)
 
     print(f"\n{prompt}")
@@ -2649,11 +2686,11 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
     # Select teams
     print("Select your team:")
-    human_chart = select_team("Available Teams:")
+    human_chart = select_team("Select YOUR team:")
     human_name = human_chart.peripheral.short_name
 
     print("\nSelect your opponent:")
-    cpu_chart = select_team("Available Teams:", exclude=None)
+    cpu_chart = select_team("Select OPPONENT team:", exclude=None)
     cpu_name = cpu_chart.peripheral.short_name
 
     # Home/Away selection
