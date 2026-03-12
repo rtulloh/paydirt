@@ -326,8 +326,10 @@ def parse_result_string(result_str: str) -> PlayResult:
     - "QT" -> QB scramble time
     - "(3)" -> Defensive modifier, subtract 3 from offense result
     - "" or empty -> Incomplete pass / no result
+    - "INC" -> Incomplete pass (1972 format)
     """
-    if not result_str or result_str.strip() == "":
+    result_str = result_str.strip() if result_str else ""
+    if not result_str or result_str.upper() == "INC":
         return PlayResult(ResultType.INCOMPLETE, 0, "Incomplete", raw_result=result_str)
 
     result_str = result_str.strip()

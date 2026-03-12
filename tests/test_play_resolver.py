@@ -107,6 +107,20 @@ class TestParseResultString:
         assert result.yards == -4
         assert result.turnover is True
 
+    def test_parse_incomplete_inc(self):
+        """'INC' should be parsed as incomplete pass (1972 format)."""
+        result = parse_result_string("INC")
+        from paydirt.play_resolver import ResultType
+        assert result.result_type == ResultType.INCOMPLETE
+        assert result.yards == 0
+
+    def test_parse_incomplete_empty_string(self):
+        """Empty string should be parsed as incomplete pass."""
+        result = parse_result_string("")
+        from paydirt.play_resolver import ResultType
+        assert result.result_type == ResultType.INCOMPLETE
+        assert result.yards == 0
+
 
 class TestResolveFieldGoalWithPenalties:
     """Tests for resolve_field_goal_with_penalties function."""

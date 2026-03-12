@@ -8,7 +8,7 @@ import tempfile
 
 from paydirt.commentary import (
     TeamRoster, get_roster, load_roster_from_file,
-    Commentary, TEAM_ROSTERS
+    Commentary
 )
 from paydirt.play_resolver import PlayType, ResultType
 
@@ -126,11 +126,10 @@ class TestRosterLoading:
 class TestGetRoster:
     """Tests for the get_roster function."""
     
-    def test_get_roster_from_hardcoded(self):
-        """Should return hardcoded roster when no team_dir provided."""
-        roster = get_roster("1983 Chicago Bears")
-        assert "Walter Payton" in roster.rb
-        assert "Jim McMahon" in roster.qb
+    def test_get_roster_from_file(self):
+        """Should return roster from roster.json file when team_dir provided."""
+        roster = get_roster("1972 Miami Dolphins", team_dir="seasons/1972/Dolphins")
+        assert len(roster.rb) > 0
     
     def test_get_roster_unknown_team(self):
         """Should return empty roster for unknown team."""
@@ -151,53 +150,6 @@ class TestGetRoster:
             
             roster = get_roster("1983 Chicago Bears", team_dir=tmpdir)
             assert roster.qb == ["Custom QB"]  # From file, not hardcoded
-
-
-class TestHardcodedRosters:
-    """Tests for the hardcoded 1983 NFL rosters."""
-    
-    def test_all_28_teams_present(self):
-        """All 28 NFL teams from 1983 should have rosters."""
-        expected_teams = [
-            # AFC East
-            "1983 Miami Dolphins", "1983 New England Patriots", 
-            "1983 New York Jets", "1983 Buffalo Bills", "1983 Baltimore Colts",
-            # AFC Central
-            "1983 Pittsburgh Steelers", "1983 Cleveland Browns",
-            "1983 Cincinnati Bengals", "1983 Houston Oilers",
-            # AFC West
-            "1983 Los Angeles Raiders", "1983 Seattle Seahawks",
-            "1983 Denver Broncos", "1983 San Diego Chargers", "1983 Kansas City Chiefs",
-            # NFC East
-            "1983 Washington Redskins", "1983 Dallas Cowboys",
-            "1983 St. Louis Cardinals", "1983 Philadelphia Eagles", "1983 New York Giants",
-            # NFC Central
-            "1983 Chicago Bears", "1983 Detroit Lions",
-            "1983 Green Bay Packers", "1983 Minnesota Vikings", "1983 Tampa Bay Buccaneers",
-            # NFC West
-            "1983 San Francisco 49ers", "1983 Los Angeles Rams",
-            "1983 New Orleans Saints", "1983 Atlanta Falcons"
-        ]
-        
-        for team in expected_teams:
-            assert team in TEAM_ROSTERS, f"Missing roster for {team}"
-            roster = TEAM_ROSTERS[team]
-            assert len(roster.qb) > 0, f"{team} has no QBs"
-            assert len(roster.rb) > 0, f"{team} has no RBs"
-    
-    def test_notable_players_present(self):
-        """Notable 1983 players should be in their team rosters."""
-        # Check some famous players
-        assert "Dan Marino" in TEAM_ROSTERS["1983 Miami Dolphins"].qb
-        assert "Walter Payton" in TEAM_ROSTERS["1983 Chicago Bears"].rb
-        assert "Joe Montana" in TEAM_ROSTERS["1983 San Francisco 49ers"].qb
-        assert "Eric Dickerson" in TEAM_ROSTERS["1983 Los Angeles Rams"].rb
-        assert "John Elway" in TEAM_ROSTERS["1983 Denver Broncos"].qb
-        assert "Lawrence Taylor" in TEAM_ROSTERS["1983 New York Giants"].lb
-        assert "Marcus Allen" in TEAM_ROSTERS["1983 Los Angeles Raiders"].rb
-        assert "Tony Dorsett" in TEAM_ROSTERS["1983 Dallas Cowboys"].rb
-        assert "John Riggins" in TEAM_ROSTERS["1983 Washington Redskins"].rb
-        assert "Dan Fouts" in TEAM_ROSTERS["1983 San Diego Chargers"].qb
 
 
 class TestCommentary:
