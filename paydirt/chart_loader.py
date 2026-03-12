@@ -469,9 +469,11 @@ def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]
         if fg_val:
             special.field_goal[dice_roll] = fg_val
 
-        # Column 8 = Extra Point (Good/Missed) - empty = Good, non-empty = Missed
+        # Column 8 = Extra Point (Good/Missed)
+        # 1972 format: 1 = Good, 0 = No Good
+        # 1983 format: blank = Good, NG = No Good
         extra_point_val = get_cell(8)
-        if extra_point_val and extra_point_val.strip():
+        if extra_point_val and extra_point_val.strip() in ('0', 'NG'):
             special.extra_point_no_good.append(dice_roll)
 
         special_teams_roll += 1
@@ -687,8 +689,8 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
         if len(row) > 6 and row[6]:
             special.field_goal[dice_roll] = row[6]
         
-        # Extra Point: empty = Good, non-empty = Missed
-        if len(row) > 7 and row[7] and row[7].strip():
+        # Extra Point: 1972 format: 1 = Good, 0 = No Good; 1983 format: blank = Good, NG = No Good
+        if len(row) > 7 and row[7] and row[7].strip() in ('0', 'NG'):
             special.extra_point_no_good.append(dice_roll)
 
     return special
