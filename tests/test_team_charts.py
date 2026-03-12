@@ -398,6 +398,47 @@ class TestExtraPointChartLoading:
         assert 19 in chart.special_teams.extra_point_no_good
         assert 20 in chart.special_teams.extra_point_no_good
 
+    def test_1972_format_uses_zero_for_no_good(self):
+        """1972 format uses 0 for no good, 1 for good - should parse correctly."""
+        team_dir = Path('seasons/1972/Dolphins')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(team_dir)
+
+        # 1972 Dolphins should have roll 20 as no good (column has 0)
+        assert 20 in chart.special_teams.extra_point_no_good
+
+        # Other rolls should be good (not in no_good list)
+        assert 10 not in chart.special_teams.extra_point_no_good
+        assert 12 not in chart.special_teams.extra_point_no_good
+
+    def test_1972_format_all_teams_have_no_good_roll(self):
+        """All 1972 teams should have roll 20 as no good (era rule)."""
+        teams_dir = Path('seasons/1972')
+        if not teams_dir.exists():
+            pytest.skip("Test data not available")
+
+        for team_dir in sorted(teams_dir.iterdir()):
+            if team_dir.is_dir():
+                chart = load_team_chart(team_dir)
+                # In 1972 era, only roll 20 fails (boxcars)
+                assert 20 in chart.special_teams.extra_point_no_good, \
+                    f"{team_dir.name} should have roll 20 as no good"
+
+    def test_1983_format_uses_ng_for_no_good(self):
+        """1983 format uses NG for no good, blank for good - should parse correctly."""
+        team_dir = Path('seasons/1983/Jets')
+        if not team_dir.exists():
+            pytest.skip("Test data not available")
+
+        chart = load_team_chart(team_dir)
+
+        # 1983 Jets have roll 13 as no good (column has NG)
+        assert 13 in chart.special_teams.extra_point_no_good
+        # Roll 10 should be good (column is blank)
+        assert 10 not in chart.special_teams.extra_point_no_good
+
     def test_different_teams_have_different_no_good_rolls(self):
         """Different teams should have different extra point failure rolls."""
         teams_dir = Path('seasons/1983')
