@@ -91,6 +91,9 @@ class PlayResult:
     # Breakaway dice roll and yards (set when offense result is "B")
     breakaway_dice: int = 0
     breakaway_yards: int = 0
+    # QB scramble (QT) dice roll and yards (set when offense result is "QT")
+    qb_scramble_dice: int = 0
+    qb_scramble_yards: int = 0
     # Out of bounds marker (* or †) - affects clock in final minutes
     out_of_bounds: bool = False
 
@@ -840,6 +843,8 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         # QT result - roll again on QT column
         qt_roll, qt_desc = roll_chart_dice()
         qt_col = resolve_qb_scramble(offense_chart.offense, qt_roll)
+        result.qb_scramble_dice = qt_roll
+        result.qb_scramble_yards = qt_col.yards
         if qt_col.is_fumble:
             result.yards = qt_col.yards
             result.result_type = ResultType.FUMBLE
@@ -1315,6 +1320,8 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     if combined.use_qt_column:
         qt_roll, qt_desc = roll_chart_dice()
         qt_col = resolve_qb_scramble(offense_chart.offense, qt_roll)
+        play_result.qb_scramble_dice = qt_roll
+        play_result.qb_scramble_yards = qt_col.yards
         if qt_col.is_fumble:
             play_result.yards = qt_col.yards
             play_result.result_type = ResultType.FUMBLE

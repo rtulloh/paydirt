@@ -3,15 +3,16 @@ from pathlib import Path
 from paydirt.chart_loader import load_team_chart
 from paydirt.game_engine import PaydirtGameEngine
 
+PROJECT_ROOT = Path(__file__).parent.parent
+SEASONS_2026 = PROJECT_ROOT / "seasons" / "2026"
+
 @pytest.fixture
 def ironclads_team():
-    team_dir = str(Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads"))
-    return load_team_chart(team_dir)
+    return load_team_chart(str(SEASONS_2026 / "Ironclads"))
 
 @pytest.fixture
 def thunderhawks_team():
-    team_dir = str(Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks"))
-    return load_team_chart(team_dir)
+    return load_team_chart(str(SEASONS_2026 / "Thunderhawks"))
 
 
 def test_ironclads_metadata(ironclads_team):
@@ -29,8 +30,7 @@ def test_thunderhawks_metadata(thunderhawks_team):
 
 
 def test_ironclads_roster(ironclads_team):
-    # Roster is loaded separately from roster.json
-    roster_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/roster.json")
+    roster_file = SEASONS_2026 / "Ironclads" / "roster.json"
     assert roster_file.exists()
     
     import json
@@ -43,7 +43,7 @@ def test_ironclads_roster(ironclads_team):
 
 
 def test_thunderhawks_roster(thunderhawks_team):
-    roster_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/roster.json")
+    roster_file = SEASONS_2026 / "Thunderhawks" / "roster.json"
     assert roster_file.exists()
     
     import json
@@ -56,87 +56,62 @@ def test_thunderhawks_roster(thunderhawks_team):
 
 
 def test_ironclads_offense_csv_exists():
-    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/offense.csv")
+    offense_file = SEASONS_2026 / "Ironclads" / "offense.csv"
     assert offense_file.exists()
     with open(offense_file) as f:
-        content = f.read()
-        assert "BLACK" in content
+        assert "BLACK" in f.read()
 
 
 def test_thunderhawks_offense_csv_exists():
-    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/offense.csv")
+    offense_file = SEASONS_2026 / "Thunderhawks" / "offense.csv"
     assert offense_file.exists()
     with open(offense_file) as f:
-        content = f.read()
-        assert "BLACK" in content
+        assert "BLACK" in f.read()
 
 
 def test_ironclads_black_results_in_offense():
-    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/offense.csv")
+    offense_file = SEASONS_2026 / "Ironclads" / "offense.csv"
     with open(offense_file) as f:
         content = f.read()
-        
-    # Check that BLACK results are properly placed for incomplete passes
-    # Looking at the structure, BLACK should appear in passing columns where incomplete passes occur
     lines = content.split('\n')
-    # Line 15 should have BLACK results for incomplete passes
-    line15 = lines[14] if len(lines) > 14 else ""
-    assert "BLACK" in line15
-    
-    # Line 26 should also have BLACK results
-    line26 = lines[25] if len(lines) > 25 else ""
-    assert "BLACK" in line26
+    assert "BLACK" in lines[14]
+    assert "BLACK" in lines[25]
 
 
 def test_thunderhawks_black_results_in_offense():
-    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/offense.csv")
+    offense_file = SEASONS_2026 / "Thunderhawks" / "offense.csv"
     with open(offense_file) as f:
         content = f.read()
-        
     lines = content.split('\n')
-    # Check BLACK results placement - line starting with "22" has BLACK
-    line_with_black = lines[13] if len(lines) > 13 else ""
-    assert "BLACK" in line_with_black
+    assert "BLACK" in lines[13]
 
 
 def test_sample_teams_can_be_loaded():
-    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
+    ironclads_dir = SEASONS_2026 / "Ironclads"
+    thunderhawks_dir = SEASONS_2026 / "Thunderhawks"
     
     assert ironclads_dir.exists()
     assert thunderhawks_dir.exists()
     
-    # Test that team charts can be loaded
-    ironclads_team = load_team_chart(ironclads_dir)
-    thunderhawks_team = load_team_chart(thunderhawks_dir)
+    ironclads_team = load_team_chart(str(ironclads_dir))
+    thunderhawks_team = load_team_chart(str(thunderhawks_dir))
     
     assert ironclads_team is not None
     assert thunderhawks_team is not None
 
 
 def test_game_engine_with_sample_teams():
-    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
+    ironclads_team = load_team_chart(str(SEASONS_2026 / "Ironclads"))
+    thunderhawks_team = load_team_chart(str(SEASONS_2026 / "Thunderhawks"))
     
-    ironclads_team = load_team_chart(ironclads_dir)
-    thunderhawks_team = load_team_chart(thunderhawks_dir)
-    
-    # Test that game engine can be created with these teams
-    try:
-        game = PaydirtGameEngine(ironclads_team, thunderhawks_team)
-        assert game is not None
-    except Exception as e:
-        pytest.fail(f"Failed to create game engine with sample teams: {e}")
+    game = PaydirtGameEngine(ironclads_team, thunderhawks_team)
+    assert game is not None
 
 
 def test_team_metadata_consistency():
-    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
+    ironclads_team = load_team_chart(str(SEASONS_2026 / "Ironclads"))
+    thunderhawks_team = load_team_chart(str(SEASONS_2026 / "Thunderhawks"))
     
-    ironclads_team = load_team_chart(ironclads_dir)
-    thunderhawks_team = load_team_chart(thunderhawks_dir)
-    
-    # Test that metadata is properly loaded and accessible
     assert hasattr(ironclads_team, 'peripheral')
     assert hasattr(thunderhawks_team, 'peripheral')
     assert hasattr(ironclads_team, 'offense')
@@ -148,7 +123,6 @@ def test_team_metadata_consistency():
     assert hasattr(ironclads_team, 'team_dir')
     assert hasattr(thunderhawks_team, 'team_dir')
     
-    # Test that peripheral data has expected attributes
     assert hasattr(ironclads_team.peripheral, 'team_name')
     assert hasattr(ironclads_team.peripheral, 'short_name')
     assert hasattr(ironclads_team.peripheral, 'year')

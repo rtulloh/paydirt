@@ -1970,7 +1970,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 if b_dice:
                     breakaway_extra = f" | B:{b_dice}→{b_yards}"
             
-            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra})")
+            # Add QB scramble (QT) dice if this is a QT result
+            qt_extra = ""
+            if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
+                qt_dice = getattr(outcome.result, 'qb_scramble_dice', 0)
+                qt_yards = getattr(outcome.result, 'qb_scramble_yards', 0)
+                if qt_dice:
+                    qt_extra = f" | QT:{qt_dice}→{qt_yards}"
+            
+            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})")
 
         # Announce turnover on downs with expressive commentary and possession change
         if is_turnover_on_downs:
@@ -2646,7 +2654,9 @@ def _offer_record_to_standings(year: int, home_team: str, home_score: int,
         print(f"  To record later: python -m paydirt.standings add {year} \"{home_team}\" {home_score} \"{away_team}\" {away_score}{week_arg}")
 
 
-def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week: int = 0):
+def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week: int = 0,
+                         home_team: Optional[str] = None, away_team: Optional[str] = None,
+                         human_is_home: bool = True):
     """
     Main interactive game loop.
     
@@ -2684,35 +2694,138 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
     print("=" * 70)
     print()
 
-    # Select teams
-    print("Select your team:")
-    human_chart = select_team("Select YOUR team:")
-    human_name = human_chart.peripheral.short_name
-
-    print("\nSelect your opponent:")
-    cpu_chart = select_team("Select OPPONENT team:", exclude=None)
-    cpu_name = cpu_chart.peripheral.short_name
-
-    # Home/Away selection
-    print("\nDo you want to be Home or Away?")
-    print("  [H] Home (kick off first)")
-    print("  [A] Away (receive first)")
-    print("  [Enter] = Home (default)")
-
-    while True:
-        choice = input("\nYour choice: ").strip().upper()
-        if choice == '':
-            choice = 'H'
-        if choice in ['H', 'A']:
-            break
-        print("Enter H or A")
-
-    if choice == 'H':
-        away_chart, home_chart = cpu_chart, human_chart
-        human_is_home = True
+    # Select teams - either from command line or interactive prompt
+    if home_team or away_team:
+        # Load teams from command line arguments
+        from .chart_loader import find_team_charts, load_team_chart
+        from pathlib import Path
+        
+        # Find available teams
+        seasons_dir = "seasons"
+        if not Path(seasons_dir).exists():
+            script_dir = Path(__file__).parent.parent
+            seasons_dir = str(script_dir / "seasons")
+        
+        available_charts = find_team_charts(seasons_dir)
+        
+        # Create a lookup for team names
+        team_lookup = {}
+        for year, name, path in available_charts:
+            # Normalize name for matching
+            normalized = name.lower().replace(' ', '').replace("'", '')
+            team_lookup[normalized] = path
+            team_lookup[name.lower()] = path
+            # Also add just the city or nickname
+            parts = name.lower().split()
+            if len(parts) >= 2:
+                team_lookup[parts[-1]] = path  # last word (e.g., "cowboys")
+        
+        # Helper to find team path
+        def find_team_path(team_name: str) -> Optional[str]:
+            if not team_name:
+                return None
+            # Try exact path first
+            if Path(f"seasons/{team_name}").exists():
+                return f"seasons/{team_name}"
+            if Path(team_name).exists():
+                return team_name
+            # Try lookup
+            normalized = team_name.lower().replace(' ', '').replace("'", '')
+            if normalized in team_lookup:
+                return team_lookup[normalized]
+            if team_name.lower() in team_lookup:
+                return team_lookup[team_name.lower()]
+            # Fall back to searching
+            for year, name, path in available_charts:
+                if team_name.lower() in name.lower():
+                    return path
+            raise ValueError(f"Team not found: {team_name}")
+        
+        # Parse team positions from command line
+        # --away X means YOU play as X (away position)
+        # --home X means YOU play as X (home position)
+        # If both are specified, the FIRST one determines your team/position
+        human_team_path = None
+        cpu_team_path = None
+        
+        if away_team and not home_team:
+            # Only --away specified - you play that team (away)
+            human_team_path = find_team_path(away_team)
+            human_is_home = False  # Human is away
+            # Need to prompt for opponent
+            cpu_team_path = None
+        elif home_team and not away_team:
+            # Only --home specified - you play that team (home)
+            human_team_path = find_team_path(home_team)
+            human_is_home = True  # Human is home
+            # Need to prompt for opponent
+            cpu_team_path = None
+        elif home_team and away_team:
+            # Both specified - use human_is_home to determine which is your team
+            if human_is_home:
+                # You play at home - your team is the --home flag
+                human_team_path = find_team_path(home_team)
+                cpu_team_path = find_team_path(away_team)
+            else:
+                # You play away - your team is the --away flag
+                human_team_path = find_team_path(away_team)
+                cpu_team_path = find_team_path(home_team)
+        else:
+            # No teams specified - will prompt
+            pass  # human_is_home keeps its default value
+        
+        # Load the teams
+        human_chart = load_team_chart(human_team_path) if human_team_path else None
+        cpu_chart = load_team_chart(cpu_team_path) if cpu_team_path else None
+        
+        # If either team wasn't specified, prompt interactively
+        if not human_chart:
+            print("Select your team:")
+            human_chart = select_team("Select YOUR team:")
+        if not cpu_chart:
+            print("\nSelect your opponent:")
+            cpu_chart = select_team("Select OPPONENT team:", exclude=None)
+        
+        human_name = human_chart.peripheral.short_name
+        cpu_name = cpu_chart.peripheral.short_name
     else:
-        away_chart, home_chart = human_chart, cpu_chart
-        human_is_home = False
+        # Original interactive team selection
+        print("Select your team:")
+        human_chart = select_team("Select YOUR team:")
+        human_name = human_chart.peripheral.short_name
+
+        print("\nSelect your opponent:")
+        cpu_chart = select_team("Select OPPONENT team:", exclude=None)
+        cpu_name = cpu_chart.peripheral.short_name
+
+    # Home/Away selection - skip if specified via parameters
+    if home_team or away_team:
+        # Teams specified on command line - use human_is_home parameter (default True)
+        if human_is_home:
+            away_chart, home_chart = cpu_chart, human_chart
+        else:
+            away_chart, home_chart = human_chart, cpu_chart
+    else:
+        # Interactive team selection
+        print("\nDo you want to be Home or Away?")
+        print("  [H] Home (kick off first)")
+        print("  [A] Away (receive first)")
+        print("  [Enter] = Home (default)")
+
+        while True:
+            choice = input("\nYour choice: ").strip().upper()
+            if choice == '':
+                choice = 'H'
+            if choice in ['H', 'A']:
+                break
+            print("Enter H or A")
+
+        if choice == 'H':
+            away_chart, home_chart = cpu_chart, human_chart
+            human_is_home = True
+        else:
+            away_chart, home_chart = human_chart, cpu_chart
+            human_is_home = False
 
     # Create game
     game = PaydirtGameEngine(home_chart, away_chart)

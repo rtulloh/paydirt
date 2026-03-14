@@ -30,6 +30,9 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
     """
     state = engine.state
     
+    # Debug: Print the team paths being saved
+    print(f"  [DEBUG] Saving game - away: {state.away_chart.team_dir}, home: {state.home_chart.team_dir}")
+    
     # Build save data
     save_data = {
         "version": 1,
@@ -82,8 +85,20 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         ],
     }
     
-    with open(filepath, 'w') as f:
-        json.dump(save_data, f, indent=2)
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(save_data, f, indent=2)
+            f.flush()
+    except Exception as e:
+        print(f"  [ERROR] Failed to save game: {e}")
+        raise
+    
+    # Verify file was actually written
+    if os.path.exists(filepath):
+        file_mtime = os.path.getmtime(filepath)
+        print(f"  [DEBUG] Save file verified - size: {os.path.getsize(filepath)} bytes")
+    else:
+        print(f"  [ERROR] Save file not found after write!")
     
     return filepath
 
