@@ -111,11 +111,11 @@ def format_field_position(position: int, style: str = "verbose") -> str:
         >>> format_field_position(65, style="short")
         'opp 35'
     """
-    # Handle edge cases: position 0 = own 1, position 100 = opponent's 1 (end zone)
+    # Handle edge cases: position <= 0 = own end zone (safety), position >= 100 = end zone (touchdown)
     if position <= 0:
-        return "own 1" if style != "short" else "own 1"
+        return "own end zone" if style != "short" else "own EZ"
     elif position >= 100:
-        return "opponent's 1" if style != "short" else "opp 1"
+        return "end zone" if style != "short" else "EZ"
     elif position == 50:
         return "midfield"
     elif position < 50:
@@ -152,11 +152,11 @@ def format_field_position_with_team(position: int, off_team: str, def_team: str)
     off_abbrev = off_team.split()[0] if off_team else off_team
     def_abbrev = def_team.split()[0] if def_team else def_team
     
-    # Handle edge cases: position 0 = own 1, position 100 = opponent's 1 (end zone)
+    # Handle edge cases: position <= 0 = own end zone (safety), position >= 100 = end zone (touchdown)
     if position <= 0:
-        return f"{off_abbrev} 1"  # Own 1 yard line
+        return f"{off_abbrev} end zone"  # Safety
     elif position >= 100:
-        return f"{def_abbrev} 1"   # Opponent's 1 yard line (end zone)
+        return f"{def_abbrev} end zone"   # Touchdown
     elif position == 50:
         return "midfield"
     elif position < 50:
