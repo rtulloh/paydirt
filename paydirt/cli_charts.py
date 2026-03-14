@@ -240,10 +240,10 @@ def play_interactive_game(seasons_dir: str = "seasons"):
                     success = game.attempt_two_point(two_pt_play)
                     print("Two-point conversion GOOD!" if success else "Two-point conversion FAILED!")
                 else:
-                    success = game.attempt_extra_point()
+                    success, _ = game.attempt_extra_point()
                     print("Extra point GOOD!" if success else "Extra point NO GOOD!")
             else:
-                success = game.attempt_extra_point()
+                success, _ = game.attempt_extra_point()
                 print("Extra point GOOD!" if success else "Extra point NO GOOD!")
 
             print(f"\nScore: {game.get_score_str()}")
