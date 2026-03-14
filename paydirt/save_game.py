@@ -164,12 +164,21 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
         )
         for sp in save_data.get("scoring_plays", [])
     ]
-    
+
+    # Check for invalid ball positions that indicate unsaved scores
+    # ball_position >= 100 means a touchdown that wasn't processed
+    # ball_position <= 0 means a safety that wasn't processed
+    pending_score = None
+    if state.ball_position >= 100:
+        pending_score = "touchdown"
+    elif state.ball_position <= 0:
+        pending_score = "safety"
+
     # Return engine and human control settings
     human_is_away = save_data.get("human_is_away", True)
     human_is_home = save_data.get("human_is_home", False)
     
-    return engine, human_is_away, human_is_home
+    return engine, human_is_away, human_is_home, pending_score
 
 
 def get_save_info(filepath: str = DEFAULT_SAVE_FILE) -> Optional[dict]:

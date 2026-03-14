@@ -104,7 +104,7 @@ class TestLoadGame:
         result = load_game(temp_save_file)
         assert result is not None
         
-        loaded_game, human_is_away, human_is_home = result
+        loaded_game, human_is_away, human_is_home, _ = result
         
         assert loaded_game.state.home_score == 21
         assert loaded_game.state.away_score == 14
@@ -141,7 +141,7 @@ class TestLoadGame:
         save_game(game, filepath=temp_save_file)
         
         result = load_game(temp_save_file)
-        loaded_game, _, _ = result
+        loaded_game, _, _, _ = result
         
         assert len(loaded_game.state.scoring_plays) == 2
         
@@ -180,7 +180,7 @@ class TestLoadGame:
         save_game(game, filepath=temp_save_file)
         
         result = load_game(temp_save_file)
-        loaded_game, _, _ = result
+        loaded_game, _, _, _ = result
         
         assert loaded_game.state.home_stats.first_downs == 12
         assert loaded_game.state.home_stats.total_yards == 250

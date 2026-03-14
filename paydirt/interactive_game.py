@@ -3441,7 +3441,12 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         print("Failed to load save file.")
         return
     
-    game, human_is_away, human_is_home = result
+    # Handle pending score from save file (ball_position >= 100 or <= 0)
+    if len(result) == 4:
+        game, human_is_away, human_is_home, pending_score = result
+    else:
+        game, human_is_away, human_is_home = result
+        pending_score = None
     
     # Determine human's team
     if human_is_home:
@@ -3454,6 +3459,14 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     
     print("\n  Resuming game...")
     print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
+    
+    # Handle pending score from save file (ball_position >= 100 or <= 0)
+    if pending_score == "touchdown":
+        print("\n  *** Pending touchdown detected! Setting up kickoff... ***")
+        game.state.ball_position = 20  # Reset to valid position
+    elif pending_score == "safety":
+        print("\n  *** Pending safety detected! Setting up free kick... ***")
+        game.state.ball_position = 20  # Reset to valid position
     
     # Map difficulty to aggression value
     difficulty_map = {
