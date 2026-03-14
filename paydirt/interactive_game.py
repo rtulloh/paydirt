@@ -3348,7 +3348,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             print("\n" + "=" * 70)
             print("  AI OPPONENT ANALYSIS SUMMARY")
             print("=" * 70)
-            print(f"\n  Opponent (human) play tendencies:")
+            print("\n  Opponent (human) play tendencies:")
             print(f"    Total plays tracked: {total_plays}")
             print(f"    Run: {total_runs} ({run_pct:.0f}%)")
             print(f"    Pass: {total_passes} ({pass_pct:.0f}%)")
@@ -3441,12 +3441,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         print("Failed to load save file.")
         return
     
-    # Handle pending score from save file (ball_position >= 100 or <= 0)
-    if len(result) == 4:
-        game, human_is_away, human_is_home, pending_score = result
-    else:
-        game, human_is_away, human_is_home = result
-        pending_score = None
+    game, human_is_away, human_is_home, pending_score = result
     
     # Determine human's team
     if human_is_home:
@@ -3521,16 +3516,10 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         
         print(f"  Score: {game.get_score_str()}")
         
-        # After score, flip possession and set up for kickoff
-        game.state.is_home_possession = not game.state.is_home_possession
-        game.state.ball_position = 20
-        game.state.down = 1
-        game.state.yards_to_go = 10
-        
         input("\n  Press Enter for kickoff...")
         
-        # Kickoff - determine who kicks
-        kicking_home = game.state.is_home_possession  # The team with possession kicks off
+        # Kickoff - scoring team kicks off
+        kicking_home = scoring_team_is_home
         is_human_kicking = (kicking_home == human_is_home)
         
         onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
@@ -3566,23 +3555,28 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         print(f"  SAFETY! {scoring_team_name} scores! (+2 points)")
         print(f"  Score: {game.get_score_str()}")
         
-        # After safety, flip possession and set ball at 20 for receiving team
-        game.state.is_home_possession = not game.state.is_home_possession
-        game.state.ball_position = 20
-        game.state.down = 1
-        game.state.yards_to_go = 10
+        input("\n  Press Enter for free kick...")
         
-        input("\n  Press Enter to continue...")
+        # Free kick after safety - the team that gave up the safety kicks
+        # That team currently has possession (they were on offense)
+        kicking_home = game.state.is_home_possession
+        is_human_kicking = (kicking_home == human_is_home)
+        
+        if is_human_kicking:
+            print("\n  *** FREE KICK AFTER SAFETY ***")
+            print("  " + "-" * 40)
+            print("    [K] Kickoff from own 20 - DEFAULT")
+            print("    [P] Punt from own 20")
+            choice = input("\n  Your choice (K or P, Enter for kickoff): ").strip().upper()
+            use_punt = (choice == 'P')
+        else:
+            use_punt = False
+        
+        print("\n  FREE KICK")
+        print("  " + "-" * 40)
+        outcome = game.safety_free_kick(use_punt=use_punt)
+        print(f"  {outcome.description}")
     
-    # Map difficulty to aggression value
-    difficulty_map = {
-        'easy': 0.3,
-        'medium': 0.5,
-        'hard': 0.7
-    }
-    cpu_aggression = difficulty_map.get(difficulty, 0.5)
-    
-    # CPU AI already created earlier for pending score handling
     # Set the AI's team for analysis if in hard mode
     use_analysis = (difficulty == 'hard')
     if use_analysis:

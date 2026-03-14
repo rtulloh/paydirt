@@ -139,12 +139,13 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
     away_ai = ComputerAI(aggression=0.5)
     home_ai = ComputerAI(aggression=0.5)
 
-    # Opening kickoff
+    # Opening kickoff - home team kicks to start
+    opening_kicking_home = True
     print("=" * 70)
     print("  OPENING KICKOFF")
     print("=" * 70)
 
-    game.kickoff()
+    game.kickoff(kicking_home=opening_kicking_home)
     receiving_team = home_name if game.state.is_home_possession else away_name
     print(f"  {receiving_team} receives the kickoff")
     print(f"  Ball spotted at {game.state.field_position_str()}")
@@ -171,7 +172,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
                 print()
 
                 # Second half kickoff
-                game.kickoff()
+                game.kickoff(kicking_home=not opening_kicking_home)
                 receiving_team = home_name if state.is_home_possession else away_name
                 print(f"  {receiving_team} receives the second half kickoff")
                 print(f"  Ball spotted at {state.field_position_str()}")
@@ -232,27 +233,31 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
 
         # Display result
         if outcome.touchdown:
-            print(f"  >>> TOUCHDOWN {off_team}! <<<")
+            # Use current possession to determine who scored (handles defensive TDs)
+            scoring_team = home_name if state.is_home_possession else away_name
+            print(f"  >>> TOUCHDOWN {scoring_team}! <<<")
             # CPU kicks extra point (or goes for 2 in certain situations)
             success, description = game.attempt_extra_point()
             print(f"  {description}")
 
-            # Kickoff after score
-            game.kickoff()
+            # Kickoff after score - scoring team kicks
+            kicking_home = game.state.is_home_possession
+            game.kickoff(kicking_home=kicking_home)
             receiving_team = home_name if state.is_home_possession else away_name
             print(f"  {receiving_team} receives kickoff at {state.field_position_str()}")
 
         elif outcome.field_goal_made:
             print(f"  >>> FIELD GOAL {off_team}! <<<")
-            # Kickoff after field goal
-            game.kickoff()
+            # Kickoff after field goal - scoring team kicks
+            kicking_home = game.state.is_home_possession
+            game.kickoff(kicking_home=kicking_home)
             receiving_team = home_name if state.is_home_possession else away_name
             print(f"  {receiving_team} receives kickoff at {state.field_position_str()}")
 
         elif outcome.safety:
             print(f"  >>> SAFETY! {def_team} scores 2 points <<<")
-            # Safety kick
-            game.kickoff()
+            # Safety free kick from the 20
+            game.safety_free_kick()
             receiving_team = home_name if state.is_home_possession else away_name
             print(f"  {receiving_team} receives safety kick at {state.field_position_str()}")
 

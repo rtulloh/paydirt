@@ -5,12 +5,12 @@ from paydirt.game_engine import PaydirtGameEngine
 
 @pytest.fixture
 def ironclads_team():
-    team_dir = str(Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads"))
+    team_dir = str(Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads"))
     return load_team_chart(team_dir)
 
 @pytest.fixture
 def thunderhawks_team():
-    team_dir = str(Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks"))
+    team_dir = str(Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks"))
     return load_team_chart(team_dir)
 
 
@@ -30,7 +30,7 @@ def test_thunderhawks_metadata(thunderhawks_team):
 
 def test_ironclads_roster(ironclads_team):
     # Roster is loaded separately from roster.json
-    roster_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads/roster.json")
+    roster_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/roster.json")
     assert roster_file.exists()
     
     import json
@@ -43,7 +43,7 @@ def test_ironclads_roster(ironclads_team):
 
 
 def test_thunderhawks_roster(thunderhawks_team):
-    roster_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks/roster.json")
+    roster_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/roster.json")
     assert roster_file.exists()
     
     import json
@@ -56,7 +56,7 @@ def test_thunderhawks_roster(thunderhawks_team):
 
 
 def test_ironclads_offense_csv_exists():
-    offense_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads/offense.csv")
+    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/offense.csv")
     assert offense_file.exists()
     with open(offense_file) as f:
         content = f.read()
@@ -64,7 +64,7 @@ def test_ironclads_offense_csv_exists():
 
 
 def test_thunderhawks_offense_csv_exists():
-    offense_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks/offense.csv")
+    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/offense.csv")
     assert offense_file.exists()
     with open(offense_file) as f:
         content = f.read()
@@ -72,7 +72,7 @@ def test_thunderhawks_offense_csv_exists():
 
 
 def test_ironclads_black_results_in_offense():
-    offense_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads/offense.csv")
+    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads/offense.csv")
     with open(offense_file) as f:
         content = f.read()
         
@@ -89,7 +89,7 @@ def test_ironclads_black_results_in_offense():
 
 
 def test_thunderhawks_black_results_in_offense():
-    offense_file = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks/offense.csv")
+    offense_file = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks/offense.csv")
     with open(offense_file) as f:
         content = f.read()
         
@@ -100,8 +100,8 @@ def test_thunderhawks_black_results_in_offense():
 
 
 def test_sample_teams_can_be_loaded():
-    ironclads_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks")
+    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
+    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
     
     assert ironclads_dir.exists()
     assert thunderhawks_dir.exists()
@@ -115,8 +115,8 @@ def test_sample_teams_can_be_loaded():
 
 
 def test_game_engine_with_sample_teams():
-    ironclads_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks")
+    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
+    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
     
     ironclads_team = load_team_chart(ironclads_dir)
     thunderhawks_team = load_team_chart(thunderhawks_dir)
@@ -130,8 +130,8 @@ def test_game_engine_with_sample_teams():
 
 
 def test_team_metadata_consistency():
-    ironclads_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Ironclads")
-    thunderhawks_dir = Path("/Users/rtulloh/Downloads/paydirt/seasons/2026/Thunderhawks")
+    ironclads_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Ironclads")
+    thunderhawks_dir = Path("/Users/rtulloh/work/paydirt/seasons/2026/Thunderhawks")
     
     ironclads_team = load_team_chart(ironclads_dir)
     thunderhawks_team = load_team_chart(thunderhawks_dir)

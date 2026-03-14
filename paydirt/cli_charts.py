@@ -237,7 +237,7 @@ def play_interactive_game(seasons_dir: str = "seasons"):
                 print_play_menu()
                 two_pt_play = get_play_choice()
                 if two_pt_play and two_pt_play not in [PlayType.PUNT, PlayType.FIELD_GOAL]:
-                    success = game.attempt_two_point(two_pt_play)
+                    success, _def_pts, _desc = game.attempt_two_point(two_pt_play)
                     print("Two-point conversion GOOD!" if success else "Two-point conversion FAILED!")
                 else:
                     success, _ = game.attempt_extra_point()

@@ -111,8 +111,9 @@ def simulate_game(home_chart, away_chart, verbose: bool = False) -> tuple:
     if verbose:
         print(f"  Simulating: {away_name} @ {home_name}...", end=" ", flush=True)
 
-    # Opening kickoff
-    game.kickoff()
+    # Opening kickoff - home team kicks to start
+    opening_kicking_home = True
+    game.kickoff(kicking_home=opening_kicking_home)
 
     play_count = 0
     last_quarter = 1
@@ -124,7 +125,7 @@ def simulate_game(home_chart, away_chart, verbose: bool = False) -> tuple:
         if state.quarter != last_quarter:
             # Halftime kickoff
             if state.quarter == 3 and last_quarter == 2:
-                game.kickoff()
+                game.kickoff(kicking_home=not opening_kicking_home)
             last_quarter = state.quarter
 
         # Select plays
@@ -141,11 +142,11 @@ def simulate_game(home_chart, away_chart, verbose: bool = False) -> tuple:
         # Handle scoring
         if outcome.touchdown:
             game.attempt_extra_point()
-            game.kickoff()
+            game.kickoff(kicking_home=game.state.is_home_possession)
         elif outcome.field_goal_made:
-            game.kickoff()
+            game.kickoff(kicking_home=game.state.is_home_possession)
         elif outcome.safety:
-            game.kickoff()
+            game.safety_free_kick()
 
         play_count += 1
 
