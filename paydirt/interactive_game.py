@@ -3502,17 +3502,13 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 if def_points > 0:
                     print(f"  Defense scores {def_points} points on the return!")
             else:
-                success, def_points, description = game.attempt_extra_point()
+                success, description = game.attempt_extra_point()
                 print(f"\n  {description}")
-                if def_points > 0:
-                    print(f"  Defense scores {def_points} points on the return!")
         else:
             # CPU scored - auto kick extra point
-            success, def_points, description = game.attempt_extra_point()
+            success, description = game.attempt_extra_point()
             print(f"\n  {scoring_team_name} kicks the extra point...")
             print(f"  {description}")
-            if def_points > 0:
-                print(f"  Defense scores {def_points} points on the return!")
         
         print(f"  Score: {game.get_score_str()}")
         
