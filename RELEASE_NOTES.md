@@ -16,6 +16,10 @@ Fixed the `*` out-of-bounds marker being silently dropped at multiple levels of 
 ### QB Time (QT) Column Fumble Handling
 - **QT fumble results ignored**: `resolve_qb_scramble()` silently dropped fumble results like `"F - 8"`, `"F - 23"`, and `"F"` from the QT column by falling through `int()` parse to random yardage. Now correctly returns `ColumnResult` with `is_fumble=True` and proper yardage. Callers set `ResultType.FUMBLE` accordingly. **~50+ entries** affected across all teams.
 
+### Clock Management Fixes
+- **OOB designation (+) broken outside final minutes**: The `+` modifier (costs 5 yards, guarantees 10-sec play) was gated by `in_final_minutes` in `_use_time`, meaning it only worked in Q2 ≤2:00 and Q4 ≤5:00. In Q1/Q3, players paid 5 yards for zero clock benefit. Now forces exactly 10 seconds in all quarters. Natural `*` chart markers still respect the final-minutes gate per rules.
+- **No-huddle was purely cosmetic**: The no-huddle flag was toggled in the UI and printed but never passed to the game engine. Play timing always used `random.uniform(5, 40)` regardless. Added `no_huddle` parameter to `run_play`, `run_play_with_penalty_procedure`, and `_apply_play_result`. When active, uses `random.uniform(5, 20)`. Updated callers in `interactive_game.py` and `auto_game.py`.
+
 ### Code Improvements
 - **`ColumnResult` dataclass**: New dataclass in `play_resolver.py` for structured results from B and QT column resolution (yards, out_of_bounds, is_fumble).
 - **`_parse_column_value()` helper**: Shared parser for B/QT column entries handling plain integers, `*` OOB markers, and `F - X` fumble results.
@@ -34,7 +38,8 @@ Fixed the `*` out-of-bounds marker being silently dropped at multiple levels of 
 - **Priority chart penalties always win**: Added tests confirming PI, OFF, and DEF penalties take priority over all but penalty.
 
 ### Test Coverage
-- **1324 unit tests** passing
+- **1342 unit tests** passing
+- Added 18 tests for OOB designation and no-huddle clock management (`test_clock_management_fixes.py`)
 - Added 15 tests for all touchdown scoring paths via penalty procedure (`test_touchdown_all_paths.py`)
 - Added 11 tests for OOB deduction and QB_SCRAMBLE fixes in penalty path (`test_oob_penalty_procedure_path.py`)
 - Added 32 tests for `_parse_column_value`, `resolve_breakaway`, `resolve_qb_scramble` (`test_column_resolvers.py`)

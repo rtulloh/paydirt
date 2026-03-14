@@ -305,21 +305,64 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
 
     elif penalty_type == PenaltyType.OFFENSIVE_R:
         # OFF=R: 10† = 5 yards, 11-34 = 10 yards, 35-39 = 15 yards
-        # Same as normal but 10 is marked prior to change of possession
-        normal_result = roll_penalty_yardage(penalty_type)
-        normal_result.dice_roll = dice_roll
+        # Same ranges as normal table; † on roll 10 = prior to change of possession
+        if dice_roll == 10:
+            yards = 5
+            desc = f"Offensive penalty on return, 5 yards (Roll: {dice_desc})"
+        elif 11 <= dice_roll <= 34:
+            yards = 10
+            desc = f"Offensive penalty on return, 10 yards (Roll: {dice_desc})"
+        else:  # 35-39
+            yards = 15
+            desc = f"Offensive penalty on return, 15 yards (Roll: {dice_desc})"
         return NoHuddlePenaltyResult(
-            normal_penalty=normal_result,
-            description=normal_result.description
+            normal_penalty=PenaltyResult(
+                penalty_type=penalty_type,
+                yards=yards,
+                automatic_first_down=False,
+                mark_from_end_of_gain=False,
+                description=desc,
+                dice_roll=dice_roll,
+                raw_penalty_code=penalty_type.value
+            ),
+            description=desc
         )
 
     elif penalty_type == PenaltyType.DEFENSIVE_R:
-        # DEF=R: Same as normal with †† markers
-        normal_result = roll_penalty_yardage(penalty_type)
-        normal_result.dice_roll = dice_roll
+        # DEF=R: -- (10), 5Y (11-16††), 5X (17-19**), 15 (20-39**††)
+        # Same ranges as normal table; †† = mark from gain, ** = auto first down
+        if dice_roll == 10:
+            # No entry in table ("--") - use minimum 5 yards
+            yards = 5
+            auto_fd = False
+            mark_gain = True
+            desc = f"Defensive penalty on return, 5 yards (Roll: {dice_desc})"
+        elif 11 <= dice_roll <= 16:
+            yards = 5
+            auto_fd = False
+            mark_gain = True
+            desc = f"Defensive penalty on return, 5 yards (Roll: {dice_desc})"
+        elif 17 <= dice_roll <= 19:
+            yards = 5
+            auto_fd = True
+            mark_gain = True
+            desc = f"Defensive holding on return, 5 yards + auto first down (Roll: {dice_desc})"
+        else:  # 20-39
+            yards = 15
+            auto_fd = True
+            mark_gain = True
+            desc = f"Defensive personal foul on return, 15 yards + auto first down (Roll: {dice_desc})"
         return NoHuddlePenaltyResult(
-            normal_penalty=normal_result,
-            description=normal_result.description
+            normal_penalty=PenaltyResult(
+                penalty_type=penalty_type,
+                yards=yards,
+                automatic_first_down=auto_fd,
+                mark_from_end_of_gain=mark_gain,
+                description=desc,
+                dice_roll=dice_roll,
+                raw_penalty_code=penalty_type.value
+            ),
+            description=desc
         )
 
     # Fallback
