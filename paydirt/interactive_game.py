@@ -3456,6 +3456,15 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     
     away_chart = game.state.away_chart
     home_chart = game.state.home_chart
+
+    # Map difficulty to aggression value - needed for pending score handling
+    difficulty_map = {
+        'easy': 0.3,
+        'medium': 0.5,
+        'hard': 0.7
+    }
+    cpu_aggression = difficulty_map.get(difficulty, 0.5)
+    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=(difficulty == 'hard'))
     
     print("\n  Resuming game...")
     print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
@@ -3573,11 +3582,9 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     }
     cpu_aggression = difficulty_map.get(difficulty, 0.5)
     
-    # Create CPU AI - enable analysis in hard mode
+    # CPU AI already created earlier for pending score handling
+    # Set the AI's team for analysis if in hard mode
     use_analysis = (difficulty == 'hard')
-    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=use_analysis)
-    
-    # Set the AI's team for analysis
     if use_analysis:
         cpu_team_chart = home_chart if not human_is_home else away_chart
         cpu_ai.set_team(cpu_team_chart)
