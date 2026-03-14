@@ -321,15 +321,15 @@ def extract_defense_chart(file_path):
         'Punt Return': 16,
         'Int. Return': 17,
         'Field Goal': 18,
-        'Extra Point': 20  # Column U (20), not T (19)
+        'Extra Point': 19  # Column T - same as dice roll, check RED for NG
     }
     
     special_data = {}  # {dice_val: {col_name: value}}
     
     for row_idx in range(dice_row + 1, sheet.nrows):
         # Stop when we hit empty rows (end of first special teams block)
-        # Dice roll is in column S (index 18) for special teams
-        dice_cell = sheet.cell(row_idx, 18)
+        # Dice roll is in column T (index 19) for special teams
+        dice_cell = sheet.cell(row_idx, 19)
         if not dice_cell.value:
             break  # Stop at first empty row
         
