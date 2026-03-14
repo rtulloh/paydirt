@@ -584,7 +584,7 @@ paydirt/
 │       │   └── roster.json      # Player roster
 │       └── ...
 ├── standings/               # Season standings data (JSON)
-└── tests/                   # Unit tests (1342 tests)
+└── tests/                   # Unit tests (1348 tests)
 ```
 
 ---
