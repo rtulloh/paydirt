@@ -298,8 +298,8 @@ def extract_defense_chart(file_path):
             elif is_black:
                 chart_data[key][dice_num] = 'BLACK'
     
-    # Extract special teams data from columns N-S and V (13-18, 21)
-    # Columns: N=Kickoff, O=Kickoff Return, P=Punt, Q=Punt Return, R=Int. Return, S=Field Goal, V=Extra Point
+    # Extract special teams data from columns N-S and T (13-18, 19)
+    # Columns: N=Kickoff, O=Kickoff Return, P=Punt, Q=Punt Return, R=Int. Return, S=Field Goal, T=Extra Point
     special_col_names = ['Kickoff', 'Kickoff Return', 'Punt', 'Punt Return', 'Int. Return', 'Field Goal', 'Extra Point']
     special_col_map = {
         'Kickoff': 13,
@@ -308,7 +308,7 @@ def extract_defense_chart(file_path):
         'Punt Return': 16,
         'Int. Return': 17,
         'Field Goal': 18,
-        'Extra Point': 21
+        'Extra Point': 19
     }
     
     special_data = {}  # {dice_val: {col_name: value}}
