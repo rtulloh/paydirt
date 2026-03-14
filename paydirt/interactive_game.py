@@ -3461,12 +3461,109 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
     
     # Handle pending score from save file (ball_position >= 100 or <= 0)
+    # Need to process: add points, extra point, then kickoff
     if pending_score == "touchdown":
-        print("\n  *** Pending touchdown detected! Setting up kickoff... ***")
-        game.state.ball_position = 20  # Reset to valid position
+        print("\n  *** Pending touchdown detected! Processing score... ***")
+        
+        # Determine which team scored (the team with possession when ball crossed goal line)
+        scoring_team_is_home = game.state.is_home_possession
+        
+        # Add 6 points for touchdown
+        if scoring_team_is_home:
+            game.state.home_score += 6
+            scoring_team_name = game.state.home_chart.peripheral.short_name
+        else:
+            game.state.away_score += 6
+            scoring_team_name = game.state.away_chart.peripheral.short_name
+        
+        print(f"  {scoring_team_name} scores TOUCHDOWN! (+6 points)")
+        print(f"  Score: {game.state.away_score} - {game.state.home_score}")
+        
+        # Run extra point
+        # For simplicity, CPU teams auto-kick, humans get choice
+        team_year = game.state.home_chart.peripheral.year if scoring_team_is_home else game.state.away_chart.peripheral.year
+        two_point_allowed = team_year >= 1994
+        
+        if scoring_team_is_home == human_is_home:
+            # Human's team scored - let them choose
+            print("\n  *** POINT AFTER TOUCHDOWN ***")
+            print("  " + "-" * 40)
+            print("    [K] Kick extra point (1 point) - DEFAULT")
+            if two_point_allowed:
+                print("    [2] Go for 2-point conversion")
+            
+            choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
+            
+            if choice == '2' and two_point_allowed:
+                print("\n  Select play for 2-point conversion:")
+                play_type = get_human_offense_play_for_conversion(game)
+                success, def_points, description = game.attempt_two_point(play_type)
+                print(f"\n  {description}")
+                if def_points > 0:
+                    print(f"  Defense scores {def_points} points on the return!")
+            else:
+                success, description = game.attempt_extra_point()
+                print(f"\n  {description}")
+        else:
+            # CPU scored - auto kick extra point
+            success, description = game.attempt_extra_point()
+            print(f"\n  {scoring_team_name} kicks the extra point...")
+            print(f"  {description}")
+        
+        print(f"  Score: {game.get_score_str()}")
+        
+        # After score, flip possession and set up for kickoff
+        game.state.is_home_possession = not game.state.is_home_possession
+        game.state.ball_position = 20
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        input("\n  Press Enter for kickoff...")
+        
+        # Kickoff - determine who kicks
+        kicking_home = game.state.is_home_possession  # The team with possession kicks off
+        is_human_kicking = (kicking_home == human_is_home)
+        
+        onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
+        
+        if onside:
+            print("\n  ONSIDE KICK ATTEMPT!")
+            print("  " + "-" * 40)
+            outcome = game.onside_kick(kicking_home=kicking_home)
+        else:
+            print("\n  KICKOFF")
+            print("  " + "-" * 40)
+            outcome = game.kickoff(kicking_home=kicking_home)
+        
+        print(f"  {outcome.description}")
+        
+        # Continue game loop - don't start at the beginning
+        # Instead, jump to the play loop with updated state
+        
     elif pending_score == "safety":
-        print("\n  *** Pending safety detected! Setting up free kick... ***")
-        game.state.ball_position = 20  # Reset to valid position
+        print("\n  *** Pending safety detected! Processing score... ***")
+        
+        # Safety: offense team gives up points, defense gets ball
+        # The team WITHOUT possession scores 2 points
+        if game.state.is_home_possession:
+            # Home team had offense, so away team scores
+            game.state.away_score += 2
+            scoring_team_name = game.state.away_chart.peripheral.short_name
+        else:
+            # Away team had offense, so home team scores
+            game.state.home_score += 2
+            scoring_team_name = game.state.home_chart.peripheral.short_name
+        
+        print(f"  SAFETY! {scoring_team_name} scores! (+2 points)")
+        print(f"  Score: {game.get_score_str()}")
+        
+        # After safety, flip possession and set ball at 20 for receiving team
+        game.state.is_home_possession = not game.state.is_home_possession
+        game.state.ball_position = 20
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        
+        input("\n  Press Enter to continue...")
     
     # Map difficulty to aggression value
     difficulty_map = {
