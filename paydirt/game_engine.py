@@ -993,6 +993,9 @@ class PaydirtGameEngine:
 
         elif result.result_type == ResultType.PENALTY_OFFENSE:
             # Full Feature Method: Roll dice to determine actual penalty yardage
+            # Derive play_type string for no-huddle bad snap yardage
+            nh_play_type = "punt" if play_type == PlayType.PUNT else (
+                "field_goal" if play_type == PlayType.FIELD_GOAL else "normal")
             ball_pos_numeric = self.state.ball_position
             penalty_result, new_pos, new_down, new_ytg, got_first = resolve_penalty(
                 result.raw_result,
@@ -1000,22 +1003,36 @@ class PaydirtGameEngine:
                 yards_gained=0,  # No gain on penalty plays
                 is_return=False,
                 yards_to_go=self.state.yards_to_go,
-                down=self.state.down
+                down=self.state.down,
+                no_huddle=no_huddle,
+                play_type=nh_play_type
             )
-            self.state.offense_stats.penalties += 1
-            self.state.offense_stats.penalty_yards += penalty_result.yards
-            self.state.ball_position = new_pos
-            self.state.down = new_down
-            self.state.yards_to_go = new_ytg
-            # Update result description with penalty details
-            result.description = penalty_result.description
-            yards = -penalty_result.yards  # For outcome reporting
-            if self.state.ball_position <= 0:
-                safety = True
-                self._score_safety()
+
+            if penalty_result.is_bad_snap:
+                # No-huddle bad snap: convert penalty to fumble
+                fumble_yards = -penalty_result.fumble_yards  # Negative = behind LOS
+                result.description = penalty_result.description
+                turnover, touchdown, safety, first_down = self._handle_fumble(
+                    result, self.state.ball_position, fumble_yards,
+                    down_before, self.state.yards_to_go
+                )
+            else:
+                self.state.offense_stats.penalties += 1
+                self.state.offense_stats.penalty_yards += penalty_result.yards
+                self.state.ball_position = new_pos
+                self.state.down = new_down
+                self.state.yards_to_go = new_ytg
+                # Update result description with penalty details
+                result.description = penalty_result.description
+                yards = -penalty_result.yards  # For outcome reporting
+                if self.state.ball_position <= 0:
+                    safety = True
+                    self._score_safety()
 
         elif result.result_type == ResultType.PENALTY_DEFENSE:
             # Full Feature Method: Roll dice to determine actual penalty yardage
+            nh_play_type = "punt" if play_type == PlayType.PUNT else (
+                "field_goal" if play_type == PlayType.FIELD_GOAL else "normal")
             ball_pos_numeric = self.state.ball_position
             penalty_result, new_pos, new_down, new_ytg, got_first = resolve_penalty(
                 result.raw_result,
@@ -1023,22 +1040,35 @@ class PaydirtGameEngine:
                 yards_gained=0,  # No gain on penalty plays
                 is_return=False,
                 yards_to_go=self.state.yards_to_go,
-                down=self.state.down
+                down=self.state.down,
+                no_huddle=no_huddle,
+                play_type=nh_play_type
             )
-            self.state.defense_stats.penalties += 1
-            self.state.defense_stats.penalty_yards += penalty_result.yards
-            self.state.ball_position = new_pos
-            self.state.down = new_down
-            self.state.yards_to_go = new_ytg
-            first_down = got_first
-            # Update result description with penalty details
-            result.description = penalty_result.description
-            yards = penalty_result.yards  # For outcome reporting
 
-            # Check for untimed down rule: defensive penalty at 0:00 means extra play
-            if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                self.state.untimed_down_pending = True
-                result.description += " (Untimed down)"
+            if penalty_result.is_false_start:
+                # No-huddle false start: DEF penalty flipped to OFF 5
+                self.state.offense_stats.penalties += 1
+                self.state.offense_stats.penalty_yards += penalty_result.yards
+                self.state.ball_position = new_pos
+                self.state.down = new_down
+                self.state.yards_to_go = new_ytg
+                result.description = penalty_result.description
+                yards = -penalty_result.yards  # Offensive penalty = negative yards
+            else:
+                self.state.defense_stats.penalties += 1
+                self.state.defense_stats.penalty_yards += penalty_result.yards
+                self.state.ball_position = new_pos
+                self.state.down = new_down
+                self.state.yards_to_go = new_ytg
+                first_down = got_first
+                # Update result description with penalty details
+                result.description = penalty_result.description
+                yards = penalty_result.yards  # For outcome reporting
+
+                # Check for untimed down rule: defensive penalty at 0:00 means extra play
+                if self.state.time_remaining <= 0 and not self.state.is_overtime:
+                    self.state.untimed_down_pending = True
+                    result.description += " (Untimed down)"
 
         elif result.result_type == ResultType.PASS_INTERFERENCE:
             # PI is special: always automatic first down, can exceed half-distance

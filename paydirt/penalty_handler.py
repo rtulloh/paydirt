@@ -74,6 +74,9 @@ class PenaltyResult:
     description: str = ""
     dice_roll: int = 0
     raw_penalty_code: str = ""
+    is_bad_snap: bool = False  # No-huddle: OFF penalty becomes fumbled snap
+    fumble_yards: int = 0  # No-huddle bad snap: F-2, F-7, or F-13
+    is_false_start: bool = False  # No-huddle: DEF penalty becomes OFF 5, 0 seconds
 
 
 def roll_penalty_yardage(penalty_type: PenaltyType) -> PenaltyResult:
@@ -469,7 +472,8 @@ def calculate_penalty_spot(ball_position: int, yards_gained: int,
 def resolve_penalty(penalty_code: str, ball_position: int,
                     yards_gained: int = 0, is_return: bool = False,
                     yards_to_go: int = 10, down: int = 1,
-                    chart_yards: int = None, auto_first_down: bool = False) -> Tuple[PenaltyResult, int, int, int, bool]:
+                    chart_yards: int = None, auto_first_down: bool = False,
+                    no_huddle: bool = False, play_type: str = "normal") -> Tuple[PenaltyResult, int, int, int, bool]:
     """
     Fully resolve a penalty using the Full Feature Method.
     
@@ -482,6 +486,8 @@ def resolve_penalty(penalty_code: str, ball_position: int,
         down: Current down
         chart_yards: If provided, use this yardage instead of rolling (for explicit chart penalties like "DEF 15")
         auto_first_down: If True, penalty gives automatic first down (for explicit chart penalties with X modifier)
+        no_huddle: If True, use the No Huddle penalty chart (may produce bad snap or false start)
+        play_type: "punt", "field_goal", or "normal" - used for bad snap fumble yardage
     
     Returns:
         Tuple of (PenaltyResult, new_ball_position, new_down, new_yards_to_go, first_down)
@@ -513,6 +519,36 @@ def resolve_penalty(penalty_code: str, ball_position: int,
             dice_roll=0,
             raw_penalty_code=penalty_code
         )
+    elif no_huddle:
+        # No Huddle: use special penalty chart (may produce bad snap or false start)
+        nh_result = roll_no_huddle_penalty_yardage(penalty_type, play_type=play_type)
+
+        if nh_result.is_bad_snap:
+            # OFF penalty becomes fumbled snap - return immediately
+            penalty_result = PenaltyResult(
+                penalty_type=penalty_type,
+                yards=0,
+                description=nh_result.description,
+                dice_roll=0,
+                raw_penalty_code=penalty_code,
+                is_bad_snap=True,
+                fumble_yards=nh_result.fumble_yards
+            )
+            return penalty_result, ball_position, down, yards_to_go, False
+
+        if nh_result.is_false_start:
+            # DEF penalty becomes OFF 5 with 0 seconds elapsed
+            penalty_result = PenaltyResult(
+                penalty_type=PenaltyType.OFFENSIVE_S,
+                yards=5,
+                description=nh_result.description,
+                dice_roll=0,
+                raw_penalty_code=penalty_code,
+                is_false_start=True
+            )
+            is_offensive = True  # Flipped to offensive for position calc
+        else:
+            penalty_result = nh_result.normal_penalty
     else:
         # Roll for actual penalty yardage (Full Feature Method)
         penalty_result = roll_penalty_yardage(penalty_type)

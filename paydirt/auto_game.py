@@ -284,6 +284,11 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
             if outcome.first_down:
                 result_str += " - FIRST DOWN"
 
+            # Show penalty details if the play was a penalty
+            desc = outcome.description or ""
+            if "penalty" in desc.lower() or "BAD SNAP" in desc or "FALSE START" in desc:
+                result_str += f" [{desc}]"
+
             print(f"  {result_str}")
 
         # Handle penalty decisions for special teams (punt, field goal, kickoff)
