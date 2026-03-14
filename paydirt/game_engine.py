@@ -862,7 +862,8 @@ class PaydirtGameEngine:
                  out_of_bounds_designation: bool = False,
                  in_bounds_designation: bool = False,
                  punt_short_drop: bool = False,
-                 punt_coffin_corner_yards: int = 0) -> PlayOutcome:
+                 punt_coffin_corner_yards: int = 0,
+                 no_huddle: bool = False) -> PlayOutcome:
         """
         Execute an offensive play.
         
@@ -1138,14 +1139,27 @@ class PaydirtGameEngine:
             is_out_of_bounds = False  # Sacks can't go out of bounds
 
         # Out of Bounds designation guarantees 10-second play (but not on sacks)
+        # This bypasses the in_final_minutes gate in _use_time since the player
+        # explicitly paid 5 yards for the clock benefit
+        forced_10_sec = False
         if out_of_bounds_designation and result.result_type != ResultType.SACK:
             is_out_of_bounds = True
+            forced_10_sec = True
 
         # In Bounds designation forces clock to keep running
         if in_bounds_designation:
             is_out_of_bounds = False
+            forced_10_sec = False
 
-        self._use_time(random.uniform(5, 40), out_of_bounds=is_out_of_bounds)
+        # No huddle reduces play time from ~40 sec to ~20 sec
+        if forced_10_sec:
+            play_seconds = 10.0
+        elif no_huddle:
+            play_seconds = random.uniform(5, 20)
+        else:
+            play_seconds = random.uniform(5, 40)
+
+        self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 
         return outcome
 
@@ -1153,7 +1167,8 @@ class PaydirtGameEngine:
                                          out_of_bounds_designation: bool = False,
                                          in_bounds_designation: bool = False,
                                          punt_short_drop: bool = False,
-                                         punt_coffin_corner_yards: int = 0) -> PlayOutcome:
+                                         punt_coffin_corner_yards: int = 0,
+                                         no_huddle: bool = False) -> PlayOutcome:
         """
         Execute an offensive play with full penalty procedure per Paydirt rules.
         
@@ -1173,7 +1188,8 @@ class PaydirtGameEngine:
         if play_type in [PlayType.PUNT, PlayType.FIELD_GOAL, PlayType.QB_SNEAK,
                          PlayType.HAIL_MARY, PlayType.SPIKE_BALL, PlayType.QB_KNEEL]:
             return self.run_play(play_type, defense_type, out_of_bounds_designation, in_bounds_designation,
-                                 punt_short_drop=punt_short_drop, punt_coffin_corner_yards=punt_coffin_corner_yards)
+                                 punt_short_drop=punt_short_drop, punt_coffin_corner_yards=punt_coffin_corner_yards,
+                                 no_huddle=no_huddle)
 
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
@@ -1235,7 +1251,8 @@ class PaydirtGameEngine:
             return self._apply_play_result(
                 play_type, defense_type, penalty_choice.play_result,
                 field_pos_before, down_before, ball_pos_before, ytg_before,
-                out_of_bounds_designation, in_bounds_designation
+                out_of_bounds_designation, in_bounds_designation,
+                no_huddle=no_huddle
             )
 
     def apply_penalty_decision(self, outcome: PlayOutcome, accept_play: bool,
@@ -1382,7 +1399,8 @@ class PaydirtGameEngine:
     def _apply_play_result(self, play_type: PlayType, defense_type: DefenseType,
                            result: PlayResult, field_pos_before: str, down_before: int,
                            ball_pos_before: int, ytg_before: int,
-                           out_of_bounds_designation: bool, in_bounds_designation: bool) -> PlayOutcome:
+                           out_of_bounds_designation: bool, in_bounds_designation: bool,
+                           no_huddle: bool = False) -> PlayOutcome:
         """
         Apply a play result to the game state.
         
@@ -1550,12 +1568,27 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
         if result.result_type == ResultType.SACK:
             is_out_of_bounds = False  # Sacks can't go out of bounds
+
+        # Out of Bounds designation guarantees 10-second play (but not on sacks)
+        # This bypasses the in_final_minutes gate in _use_time since the player
+        # explicitly paid 5 yards for the clock benefit
+        forced_10_sec = False
         if out_of_bounds_designation and result.result_type != ResultType.SACK:
             is_out_of_bounds = True
+            forced_10_sec = True
         if in_bounds_designation:
             is_out_of_bounds = False
+            forced_10_sec = False
 
-        self._use_time(random.uniform(5, 40), out_of_bounds=is_out_of_bounds)
+        # No huddle reduces play time from ~40 sec to ~20 sec
+        if forced_10_sec:
+            play_seconds = 10.0
+        elif no_huddle:
+            play_seconds = random.uniform(5, 20)
+        else:
+            play_seconds = random.uniform(5, 40)
+
+        self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 
         return outcome
 

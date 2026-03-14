@@ -229,7 +229,8 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         outcome = game.run_play(play_type, def_type, 
                                 out_of_bounds_designation=use_oob,
                                 punt_short_drop=punt_short_drop,
-                                punt_coffin_corner_yards=punt_coffin_yards)
+                                punt_coffin_corner_yards=punt_coffin_yards,
+                                no_huddle=use_no_huddle)
 
         # Display result
         if outcome.touchdown:

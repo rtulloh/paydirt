@@ -3077,7 +3077,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                                                         out_of_bounds_designation=out_of_bounds,
                                                         in_bounds_designation=in_bounds,
                                                         punt_short_drop=punt_short_drop,
-                                                        punt_coffin_corner_yards=punt_coffin_corner_yards)
+                                                        punt_coffin_corner_yards=punt_coffin_corner_yards,
+                                                        no_huddle=no_huddle_mode)
 
         # Handle pending penalty decision if applicable
         if outcome.pending_penalty_decision and outcome.penalty_choice:
@@ -3786,7 +3787,8 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                                                         out_of_bounds_designation=out_of_bounds,
                                                         in_bounds_designation=in_bounds,
                                                         punt_short_drop=punt_short_drop,
-                                                        punt_coffin_corner_yards=punt_coffin_corner_yards)
+                                                        punt_coffin_corner_yards=punt_coffin_corner_yards,
+                                                        no_huddle=no_huddle_mode)
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
