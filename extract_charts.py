@@ -409,7 +409,11 @@ def write_special_csv(chart_data, output_path):
             row = [dice_val]
             row_data = chart_data[dice_val]
             for col_name in col_names[1:]:
-                row.append(row_data.get(col_name, ''))
+                val = row_data.get(col_name, '')
+                # For Extra Point, don't write the dice number if it's just a number (good PAT)
+                if col_name == 'Extra Point' and val and val.isdigit():
+                    val = ''
+                row.append(val)
             writer.writerow(row)
 
 def process_team(excel_file):
