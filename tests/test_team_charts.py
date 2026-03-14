@@ -392,17 +392,15 @@ class TestExtraPointChartLoading:
 
         chart = load_team_chart(team_dir)
 
-        # Bills have extra point failures on rolls 10, 19, 23, 30, 37 (per user input)
-        assert 10 in chart.special_teams.extra_point_no_good
+        # Bills have extra point failures on rolls 13, 18, 19, 20 (per user input)
+        assert 13 in chart.special_teams.extra_point_no_good
+        assert 18 in chart.special_teams.extra_point_no_good
         assert 19 in chart.special_teams.extra_point_no_good
-        assert 23 in chart.special_teams.extra_point_no_good
-        assert 30 in chart.special_teams.extra_point_no_good
-        assert 37 in chart.special_teams.extra_point_no_good
+        assert 20 in chart.special_teams.extra_point_no_good
         
         # Verify other rolls are NOT NG
-        assert 13 not in chart.special_teams.extra_point_no_good
-        assert 18 not in chart.special_teams.extra_point_no_good
-        assert 20 not in chart.special_teams.extra_point_no_good
+        assert 10 not in chart.special_teams.extra_point_no_good
+        assert 11 not in chart.special_teams.extra_point_no_good
 
     def test_1972_format_uses_zero_for_no_good(self):
         """1972 format uses 0 for no good, 1 for good - should parse correctly."""
