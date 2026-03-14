@@ -57,6 +57,16 @@ def main():
 
         while i < len(args):
             if args[i] in ['-d', '--difficulty']:
+                if i + 1 < len(args):
+                    difficulty = args[i + 1]
+                    if difficulty not in ['easy', 'medium', 'hard']:
+                        print(f"Error: -d/--difficulty must be easy, medium, or hard, got '{difficulty}'")
+                        return
+                    i += 2
+                else:
+                    print("Error: -d/--difficulty requires a value (easy, medium, or hard)")
+                    return
+            elif args[i] in ['--compact', '-c']:
                 compact = True
                 i += 1
             elif args[i] in ['--load', '-l']:

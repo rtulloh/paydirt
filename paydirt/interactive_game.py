@@ -1942,6 +1942,9 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         # Line 2: Dice details (condensed) - include turnover return info here
         def_row = def_match.group(3) if def_match else "?"
         extra_info = ""
+        breakaway_extra = ""
+        qt_extra = ""
+        
         if outcome.result.result_type == ResultType.INTERCEPTION:
             int_dice = getattr(outcome.result, 'int_return_dice', None)
             int_spot = getattr(outcome.result, 'int_spot', None)
@@ -1957,27 +1960,28 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                 if outcome.turnover:
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
                 elif fumble_return > 0:
-                    # Offense recovery with special return (rolls 17, 18, 19)
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\" | Ret:{fumble_return}"
                 else:
                     extra_info = f" | F@{fumble_spot} | R:{recovery_roll}→\"{rec_result}\""
-            
-            # Add breakaway dice if this is a breakaway play
-            breakaway_extra = ""
-            if outcome.result.result_type == ResultType.BREAKAWAY:
-                b_dice = getattr(outcome.result, 'breakaway_dice', 0)
-                b_yards = getattr(outcome.result, 'breakaway_yards', 0)
-                if b_dice:
-                    breakaway_extra = f" | B:{b_dice}→{b_yards}"
-            
-            # Add QB scramble (QT) dice if this is a QT result
-            qt_extra = ""
-            if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
-                qt_dice = getattr(outcome.result, 'qb_scramble_dice', 0)
-                qt_yards = getattr(outcome.result, 'qb_scramble_yards', 0)
-                if qt_dice:
-                    qt_extra = f" | QT:{qt_dice}→{qt_yards}"
-            
+        
+        # Add breakaway dice if this is a breakaway play
+        if outcome.result.result_type == ResultType.BREAKAWAY:
+            b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+            b_yards = getattr(outcome.result, 'breakaway_yards', 0)
+            if b_dice:
+                breakaway_extra = f" | B:{b_dice}→{b_yards}"
+        
+        # Add QB scramble (QT) dice if this is a QT result
+        if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
+            qt_dice = getattr(outcome.result, 'qb_scramble_dice', 0)
+            qt_yards = getattr(outcome.result, 'qb_scramble_yards', 0)
+            if qt_dice:
+                qt_extra = f" | QT:{qt_dice}→{qt_yards}"
+        
+        # Handle Hail Mary specially - only offense dice, no defense or priority chart
+        if play_type == PlayType.HAIL_MARY:
+            print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\")")
+        else:
             print(f"  (O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | D:{def_row}→\"{outcome.result.defense_modifier}\" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})")
 
         # Announce turnover on downs with expressive commentary and possession change

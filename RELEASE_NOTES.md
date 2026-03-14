@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### CLI Argument Parsing Fixes
+- **Difficulty flag `-d` broken**: The `-d`/`--difficulty` flag was incorrectly setting `compact = True` instead of reading the difficulty value. This caused hard mode to never activate (AI opponent analysis never showed). Fixed to properly parse `-d hard`, `-d medium`, `-d easy`.
+- **Compact flag `--compact` never parsed**: The `--compact` flag was never actually being parsed in the CLI argument handler. It accidentally worked before because the broken `-d` code was setting `compact = True` as a side effect. Added proper `--compact`/`-c` argument handling.
+
+### Hail Mary Dice Roll Display
+- **Missing dice roll details**: Hail Mary plays were not showing the offensive dice roll in the compact display. Fixed to show `(O:19→"Hail Mary 19")` format. Also fixed a logic bug where dice details were only displayed for fumble results - now displays for all result types.
+
 ### Touchdown Scoring Audit
 Comprehensive audit of all touchdown scoring paths in `run_play` and `_apply_play_result` to prevent missed touchdowns:
 - **QB_SCRAMBLE touchdown detection**: Fixed `_apply_play_result` (penalty procedure path) missing touchdown check when a QB scramble reached the end zone. The `run_play` path already had this check, but the penalty procedure path did not.
@@ -31,6 +38,7 @@ Fixed the `*` out-of-bounds marker being silently dropped at multiple levels of 
 - **Priority chart duplicate key**: Removed stale duplicate `(BREAKAWAY, BLACK)` entry in priority chart lookup table.
 
 ### Bug Fixes (Prior)
+- **Breakaway vs empty priority**: Fixed breakaway (B) vs empty defense result to set `use_breakaway=True` when priority is ADD. Without this, the breakaway column wasn't being used.
 - **Punt penalty decision**: Fixed bug where selecting "Keep return + yards" option on offensive punt penalties incorrectly applied the replay logic instead of keeping the return result. Added `penalty_index` parameter to distinguish between penalty options.
 - **Priority chart Oyl + Oyg**: Fixed priority chart to correctly ADD negative offense result (Oyl) with positive defense result (Oyg) per official rules. Example: -1 + 1 = 0 net yards (was incorrectly using -1).
 - **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart. Also fixed breakaway vs BLACK to be incomplete on passing plays.

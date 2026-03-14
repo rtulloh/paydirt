@@ -124,6 +124,13 @@ class TestBreakawayVsQT:
 
 class TestBreakawayNormalCases:
     """Tests for breakaway in normal (non-override) situations."""
+
+    def test_breakaway_vs_empty(self):
+        """Breakaway vs empty (GREEN_NUMBER with 0) should ADD per priority chart."""
+        result = apply_priority_chart("B", "")
+        
+        assert result.priority == PriorityResult.ADD
+        assert result.use_breakaway is True
     
     def test_breakaway_vs_positive_number(self):
         """Breakaway vs positive number (Oyg) should ADD per priority chart."""
@@ -485,6 +492,12 @@ class TestGreenNumberOffense:
 
 class TestWhiteNumberOffense:
     """Tests for WHITE_NUMBER (zero/neutral) offense results."""
+
+    def test_white_vs_empty(self):
+        """Breakaway vs positive number (Oyg) should ADD per priority chart."""
+        result = apply_priority_chart("3", "")
+        
+        assert result.priority == PriorityResult.ADD
     
     def test_white_vs_green(self):
         """White # vs Green # should ADD (no notion of GREEN in CSV, positive adds to zero)."""

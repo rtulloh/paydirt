@@ -8,7 +8,7 @@ have results that need to be reconciled.
 # +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
 # | OFF \ DEF |  Oyg   |  Oyl   | NO CHG | (#)  | (#)  | (TD) | QR | QT | BLACK | INT |
 # +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
-# | Oyg or B  |  ADD   |  ADD   |  Oyg   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
+# | Oyg or B  |  ADD   |  ADD   |yg OR B | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
 # +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
 # | Oyl       |  ADD   |  ADD   |  Oyl   | (#)  | (#)  | (TD) | QR | QT |  INC  | INT |
 # +-----------+--------+--------+--------+------+------+------+----+----+-------+-----+
@@ -427,6 +427,9 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         def_val = def_yards if def_yards is not None else 0
         final_yards = off_val + def_val
         description = f"Add: {off_val} + {def_val} = {final_yards}"
+        # Even with ADD priority, if offense was breakaway, use breakaway column
+        if off_cat == ResultCategory.BREAKAWAY:
+            use_breakaway = True
 
     elif priority == PriorityResult.OFFENSE:
         final_yards = off_yards if off_yards is not None else 0
