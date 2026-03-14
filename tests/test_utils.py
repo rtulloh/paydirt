@@ -119,6 +119,22 @@ class TestFormatFieldPosition:
     
     def test_short_style_midfield(self):
         assert format_field_position(50, style="short") == "midfield"
+    
+    def test_position_zero_displays_as_one(self):
+        """Position 0 (own goal line) should display as own 1."""
+        assert format_field_position(0) == "own 1"
+    
+    def test_position_100_is_end_zone(self):
+        """Position 100 (opponent's end zone) should display as opponent's 1."""
+        assert format_field_position(100) == "opponent's 1"
+    
+    def test_position_zero_short_style(self):
+        """Position 0 in short style should display as own 1."""
+        assert format_field_position(0, style="short") == "own 1"
+    
+    def test_position_100_short_style(self):
+        """Position 100 in short style should display as opp 1."""
+        assert format_field_position(100, style="short") == "opp 1"
 
 
 class TestFormatFieldPositionWithTeam:
@@ -137,6 +153,14 @@ class TestFormatFieldPositionWithTeam:
         """Should strip year suffix like '83 from team names."""
         assert format_field_position_with_team(35, "GB '83", "CHI '83") == "GB 35"
         assert format_field_position_with_team(65, "GB '83", "CHI '83") == "CHI 35"
+    
+    def test_position_zero_is_own_one(self):
+        """Position 0 (own goal line) should display as offense team 1."""
+        assert format_field_position_with_team(0, "GB", "CHI") == "GB 1"
+    
+    def test_position_100_is_end_zone(self):
+        """Position 100 (opponent's end zone) should display as defense team 1."""
+        assert format_field_position_with_team(100, "GB", "CHI") == "CHI 1"
 
 
 class TestParseFieldPosition:
