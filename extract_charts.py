@@ -58,6 +58,19 @@ def is_black_cell(workbook, cell):
         return False
 
 
+def is_red_cell(workbook, cell):
+    """Check if a cell has RED background (no good for extra point)."""
+    try:
+        xf = workbook.xf_list[cell.xf_index]
+        bg = xf.background
+        fill = bg.fill_pattern
+        fg_color_idx = bg.pattern_colour_index
+        # RED cell = solid fill with red foreground (color index 10 = red)
+        return fill == 1 and fg_color_idx == 10
+    except Exception:
+        return False
+
+
 def has_paren_format(workbook, cell):
     """Check if a cell has parentheses number format (displays values like (2))."""
     try:
@@ -308,14 +321,15 @@ def extract_defense_chart(file_path):
         'Punt Return': 16,
         'Int. Return': 17,
         'Field Goal': 18,
-        'Extra Point': 19
+        'Extra Point': 20  # Column U (20), not T (19)
     }
     
     special_data = {}  # {dice_val: {col_name: value}}
     
     for row_idx in range(dice_row + 1, sheet.nrows):
         # Stop when we hit empty rows (end of first special teams block)
-        dice_cell = sheet.cell(row_idx, 19)
+        # Dice roll is in column S (index 18) for special teams
+        dice_cell = sheet.cell(row_idx, 18)
         if not dice_cell.value:
             break  # Stop at first empty row
         
@@ -337,6 +351,12 @@ def extract_defense_chart(file_path):
             
             if is_black and not cell_value:
                 cell_value = 'BLACK'
+            
+            # Check for RED (no good) on Extra Point column
+            if col_name == 'Extra Point':
+                is_red = is_red_cell(workbook, cell)
+                if is_red:
+                    cell_value = 'NG'
             
             if cell_value:
                 row_data[col_name] = cell_value
