@@ -2,7 +2,26 @@
 
 ## Unreleased
 
-### Bug Fixes
+### Touchdown Scoring Audit
+Comprehensive audit of all touchdown scoring paths in `run_play` and `_apply_play_result` to prevent missed touchdowns:
+- **QB_SCRAMBLE touchdown detection**: Fixed `_apply_play_result` (penalty procedure path) missing touchdown check when a QB scramble reached the end zone. The `run_play` path already had this check, but the penalty procedure path did not.
+- **OOB 5-yard deduction in penalty path**: Fixed `_apply_play_result` missing the out-of-bounds designation 5-yard deduction that `run_play` already applied. Plays going through the penalty procedure path now correctly deduct 5 yards for OOB designation.
+
+### Out-of-Bounds (*) Chart Marker Fixes
+Fixed the `*` out-of-bounds marker being silently dropped at multiple levels of the play resolution pipeline:
+- **Priority chart OOB propagation**: The `*` marker on offense chart results (e.g., `"3*"`, `"9*"`) was stripped by `categorize_result()` and never propagated to `PlayResult`. Added `out_of_bounds` field to `CombinedResult` and detection logic in `apply_priority_chart()`. **~568 chart entries** across all 28 teams were affected.
+- **Breakaway (B) column OOB**: `resolve_breakaway()` silently dropped `*` markers (e.g., `"11*"`, `"32*"`) by falling through `int()` parse to random defaults. Now returns a `ColumnResult` with correct yardage and `out_of_bounds=True`. **~20+ entries** affected.
+- **QB Time (QT) column OOB**: `resolve_qb_scramble()` silently dropped `*` markers (e.g., `"3*"`, `"-6*"`) the same way. Now returns `ColumnResult` with correct yardage and `out_of_bounds=True`.
+
+### QB Time (QT) Column Fumble Handling
+- **QT fumble results ignored**: `resolve_qb_scramble()` silently dropped fumble results like `"F - 8"`, `"F - 23"`, and `"F"` from the QT column by falling through `int()` parse to random yardage. Now correctly returns `ColumnResult` with `is_fumble=True` and proper yardage. Callers set `ResultType.FUMBLE` accordingly. **~50+ entries** affected across all teams.
+
+### Code Improvements
+- **`ColumnResult` dataclass**: New dataclass in `play_resolver.py` for structured results from B and QT column resolution (yards, out_of_bounds, is_fumble).
+- **`_parse_column_value()` helper**: Shared parser for B/QT column entries handling plain integers, `*` OOB markers, and `F - X` fumble results.
+- **Priority chart duplicate key**: Removed stale duplicate `(BREAKAWAY, BLACK)` entry in priority chart lookup table.
+
+### Bug Fixes (Prior)
 - **Punt penalty decision**: Fixed bug where selecting "Keep return + yards" option on offensive punt penalties incorrectly applied the replay logic instead of keeping the return result. Added `penalty_index` parameter to distinguish between penalty options.
 - **Priority chart Oyl + Oyg**: Fixed priority chart to correctly ADD negative offense result (Oyl) with positive defense result (Oyg) per official rules. Example: -1 + 1 = 0 net yards (was incorrectly using -1).
 - **Priority chart Breakaway (B) + defense**: Fixed breakaway vs positive/negative results to ADD per official chart. Also fixed breakaway vs BLACK to be incomplete on passing plays.
@@ -15,7 +34,11 @@
 - **Priority chart penalties always win**: Added tests confirming PI, OFF, and DEF penalties take priority over all but penalty.
 
 ### Test Coverage
-- **1210 unit tests** passing
+- **1324 unit tests** passing
+- Added 15 tests for all touchdown scoring paths via penalty procedure (`test_touchdown_all_paths.py`)
+- Added 11 tests for OOB deduction and QB_SCRAMBLE fixes in penalty path (`test_oob_penalty_procedure_path.py`)
+- Added 32 tests for `_parse_column_value`, `resolve_breakaway`, `resolve_qb_scramble` (`test_column_resolvers.py`)
+- Added 18 tests for OOB marker propagation through priority chart (`test_oob_priority_chart.py`)
 - Added tests for penalty_index parameter in punt penalty handling
 - Added tests for RED_NUMBER + GREEN_NUMBER priority resolution
 - Added comprehensive tests for (TD) defense overriding all offense result types
