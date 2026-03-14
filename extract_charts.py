@@ -413,9 +413,6 @@ def write_special_csv(chart_data, output_path):
                 # For Extra Point, don't write the dice number if it's just a number (good PAT)
                 if col_name == 'Extra Point' and val and val.isdigit():
                     val = ''
-                # For Field Goal, skip 'NG' values (these indicate no good FG, not a yardage value)
-                if col_name == 'Field Goal' and val == 'NG':
-                    val = ''
                 row.append(val)
             writer.writerow(row)
 

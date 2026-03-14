@@ -1,6 +1,6 @@
 #,Kickoff,Kickoff Return,Punt,Punt Return,Int. Return,Field Goal,Extra Point
-10,72,28,30*,OFF 15,,,
-11,55,27,27*,18,-1,,
+10,72,28,30*,OFF 15,,NG,
+11,55,27,27*,18,-1,NG,
 12,63,41,31,13,3,17,
 13,66,11,53,OFF 15,TD,14,NG
 14,64,18,DEF 5,,,27,
