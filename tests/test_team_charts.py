@@ -318,7 +318,7 @@ class TestChartLoaderPeripheralFromOffense:
         
         chart = load_team_chart(team_dir)
         
-        assert chart.peripheral.short_name == "BIL '83"
+        assert chart.peripheral.short_name == "BUF '83"
     
     def test_load_team_disambiguates_ny_teams(self):
         """Chart loader should correctly distinguish Giants vs Jets."""
@@ -345,8 +345,8 @@ class TestChartLoaderPeripheralFromOffense:
         raiders = load_team_chart(raiders_dir)
         rams = load_team_chart(rams_dir)
         
-        assert raiders.peripheral.short_name == "LAR '83"
-        assert rams.peripheral.short_name == "LAN '83"
+        assert raiders.peripheral.short_name == "LV '83"
+        assert rams.peripheral.short_name == "LAR '83"
     
     def test_fumble_ranges_vary_by_team(self):
         """Different teams should have different fumble recovery ranges."""

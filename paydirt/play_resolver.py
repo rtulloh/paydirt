@@ -704,34 +704,76 @@ def get_defense_modifier(chart: DefenseChart, defense_type: DefenseType,
     return modifiers.get(play_column, "")
 
 
-def resolve_breakaway(chart: OffenseChart, dice_roll: int) -> int:
+@dataclass
+class ColumnResult:
+    """Result from resolving a B (breakaway) or QT (QB time) column entry."""
+    yards: int
+    out_of_bounds: bool = False
+    is_fumble: bool = False
+
+
+def _parse_column_value(raw: str) -> ColumnResult:
+    """
+    Parse a B or QT column value, handling:
+    - Plain integers: "15", "-8"
+    - OOB markers: "11*", "3*", "-6*", "*"
+    - Fumble results: "F - 8", "F + 3", "F"
+
+    Returns None if the value cannot be parsed.
+    """
+    raw = raw.strip()
+    if not raw:
+        return None
+
+    # Check for fumble (F, F - X, F + X)
+    fumble_match = re.match(r'^F\s*([+-]\s*\d+)?$', raw)
+    if fumble_match:
+        fumble_yards = 0
+        if fumble_match.group(1):
+            fumble_yards = int(fumble_match.group(1).replace(' ', ''))
+        return ColumnResult(yards=fumble_yards, is_fumble=True)
+
+    # Check for OOB marker (*)
+    oob = raw.endswith('*')
+    cleaned = raw.rstrip('*').strip()
+
+    # Bare "*" with no number = 0 yards OOB
+    if not cleaned:
+        return ColumnResult(yards=0, out_of_bounds=True)
+
+    try:
+        return ColumnResult(yards=int(cleaned), out_of_bounds=oob)
+    except ValueError:
+        return None
+
+
+def resolve_breakaway(chart: OffenseChart, dice_roll: int) -> ColumnResult:
     """
     Resolve a breakaway result using the B column.
-    Returns the yardage gained.
+    Returns a ColumnResult with yardage and out_of_bounds flag.
     """
     b_result = chart.breakaway.get(dice_roll, "")
     if b_result:
-        try:
-            return int(b_result)
-        except ValueError:
-            pass
+        parsed = _parse_column_value(b_result)
+        if parsed is not None:
+            return parsed
     # Default breakaway yardage if not found
-    return random.randint(15, 40)
+    return ColumnResult(yards=random.randint(15, 40))
 
 
-def resolve_qb_scramble(chart: OffenseChart, dice_roll: int) -> int:
+def resolve_qb_scramble(chart: OffenseChart, dice_roll: int) -> ColumnResult:
     """
     Resolve a QB scramble using the QT column.
-    Returns the yardage (positive = gain, negative = sack).
+    Handles yardage (positive = gain, negative = sack), OOB markers (*),
+    and fumble results (F, F - X, F + X).
     """
     qt_result = chart.qb_time.get(dice_roll, "")
     if qt_result:
-        try:
-            return int(qt_result)
-        except ValueError:
-            pass
+        parsed = _parse_column_value(qt_result)
+        if parsed is not None:
+            return parsed
     # Default scramble result
-    return random.randint(-5, 10)
+    return ColumnResult(yards=random.randint(-5, 10))
 
 
 def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
@@ -796,23 +838,31 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
     if combined.use_qt_column:
         # QT result - roll again on QT column
         qt_roll, qt_desc = roll_chart_dice()
-        qt_yards = resolve_qb_scramble(offense_chart.offense, qt_roll)
-        result.yards = qt_yards
-        result.result_type = ResultType.QB_SCRAMBLE if qt_yards >= 0 else ResultType.SACK
-        if qt_yards >= 0:
-            result.description = f"QB scrambles for {qt_yards} yards (QT roll: {qt_desc})"
+        qt_col = resolve_qb_scramble(offense_chart.offense, qt_roll)
+        if qt_col.is_fumble:
+            result.yards = qt_col.yards
+            result.result_type = ResultType.FUMBLE
+            result.out_of_bounds = False
+            result.description = f"QB scramble FUMBLE at {abs(qt_col.yards)} yards (QT roll: {qt_desc})"
         else:
-            result.description = f"QB SACKED for {abs(qt_yards)} yard loss (QT roll: {qt_desc})"
+            result.yards = qt_col.yards
+            result.out_of_bounds = qt_col.out_of_bounds
+            result.result_type = ResultType.QB_SCRAMBLE if qt_col.yards >= 0 else ResultType.SACK
+            if qt_col.yards >= 0:
+                result.description = f"QB scrambles for {qt_col.yards} yards (QT roll: {qt_desc})"
+            else:
+                result.description = f"QB SACKED for {abs(qt_col.yards)} yard loss (QT roll: {qt_desc})"
 
     elif combined.use_breakaway:
         # Breakaway - offense result was "B", roll on B column for yardage
         b_roll, b_desc = roll_chart_dice()
-        b_yards = resolve_breakaway(offense_chart.offense, b_roll)
-        result.yards = b_yards
+        b_col = resolve_breakaway(offense_chart.offense, b_roll)
+        result.yards = b_col.yards
+        result.out_of_bounds = b_col.out_of_bounds
         result.result_type = ResultType.BREAKAWAY
         result.breakaway_dice = b_roll
-        result.breakaway_yards = b_yards
-        result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
+        result.breakaway_yards = b_col.yards
+        result.description = f"BREAKAWAY! Roll {b_desc} = {b_col.yards} yards!"
 
     elif combined.is_turnover:
         if "INT" in off_result_str or "INT" in def_result_str:
@@ -1262,22 +1312,30 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     # Handle special priority outcomes (QT, Breakaway, etc.)
     if combined.use_qt_column:
         qt_roll, qt_desc = roll_chart_dice()
-        qt_yards = resolve_qb_scramble(offense_chart.offense, qt_roll)
-        play_result.yards = qt_yards
-        play_result.result_type = ResultType.QB_SCRAMBLE if qt_yards >= 0 else ResultType.SACK
-        if qt_yards >= 0:
-            play_result.description = f"QB scrambles for {qt_yards} yards (QT roll: {qt_desc})"
+        qt_col = resolve_qb_scramble(offense_chart.offense, qt_roll)
+        if qt_col.is_fumble:
+            play_result.yards = qt_col.yards
+            play_result.result_type = ResultType.FUMBLE
+            play_result.out_of_bounds = False
+            play_result.description = f"QB scramble FUMBLE at {abs(qt_col.yards)} yards (QT roll: {qt_desc})"
         else:
-            play_result.description = f"QB SACKED for {abs(qt_yards)} yard loss (QT roll: {qt_desc})"
+            play_result.yards = qt_col.yards
+            play_result.out_of_bounds = qt_col.out_of_bounds
+            play_result.result_type = ResultType.QB_SCRAMBLE if qt_col.yards >= 0 else ResultType.SACK
+            if qt_col.yards >= 0:
+                play_result.description = f"QB scrambles for {qt_col.yards} yards (QT roll: {qt_desc})"
+            else:
+                play_result.description = f"QB SACKED for {abs(qt_col.yards)} yard loss (QT roll: {qt_desc})"
 
     elif combined.use_breakaway:
         b_roll, b_desc = roll_chart_dice()
-        b_yards = resolve_breakaway(offense_chart.offense, b_roll)
-        play_result.yards = b_yards
+        b_col = resolve_breakaway(offense_chart.offense, b_roll)
+        play_result.yards = b_col.yards
+        play_result.out_of_bounds = b_col.out_of_bounds
         play_result.result_type = ResultType.BREAKAWAY
         play_result.breakaway_dice = b_roll
-        play_result.breakaway_yards = b_yards
-        play_result.description = f"BREAKAWAY! Roll {b_desc} = {b_yards} yards!"
+        play_result.breakaway_yards = b_col.yards
+        play_result.description = f"BREAKAWAY! Roll {b_desc} = {b_col.yards} yards!"
 
     elif combined.is_turnover:
         if "INT" in off_result_str or "INT" in def_result_str:

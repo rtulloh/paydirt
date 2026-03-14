@@ -319,7 +319,7 @@ def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     if not abbrev:
         abbrev = team_name[:3].upper() if team_name else 'UNK'
     
-    short_name = f"{abbrev} '{str(year)[2:]}"
+    short_name = abbrev
     
     peripheral = PeripheralData(
         year=year,
@@ -723,28 +723,14 @@ def load_team_chart(team_dir: str) -> TeamChart:
     else:
         raise FileNotFoundError(f"Chart files not found in {team_dir}. Expected: offense.csv, defense.csv, special.csv")
     
-    # Fix ambiguous short names using directory name or team.yaml metadata
-    # Directory names are unique (Giants, Jets, Raiders, Rams)
-    dir_name = team_path.name
-    dir_to_abbrev = {
-        'Giants': 'NYG',
-        'Jets': 'NYA',
-        'Raiders': 'LAR',
-        'Rams': 'LAN',
-    }
-    
-    # First try to load team metadata from team.yaml
+    # Load team metadata from team.yaml if available
     metadata = load_team_metadata(str(team_path))
     if metadata and metadata.short_name:
-        # Use the short_name from team.yaml
         peripheral.short_name = metadata.short_name
-    elif dir_name in dir_to_abbrev:
-        # Fall back to directory-based abbreviation
-        peripheral.short_name = f"{dir_to_abbrev[dir_name]} '{str(peripheral.year)[2:]}"
     
     # Also set team_nickname from directory name for clarity
     if peripheral.team_nickname == peripheral.team_name:
-        peripheral.team_nickname = dir_name
+        peripheral.team_nickname = team_path.name
 
     return TeamChart(
         peripheral=peripheral,

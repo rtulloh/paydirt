@@ -1395,6 +1395,35 @@ class PaydirtGameEngine:
         safety = False
         first_down = False
 
+        # Apply Out of Bounds designation penalty (-5 yards)
+        # Per rules: 5 yards subtracted AFTER combining offense/defense results
+        # NOT subtracted from: penalties, incomplete passes, TD results, or already out of bounds
+        if out_of_bounds_designation:
+            skip_oob_penalty = (
+                result.result_type in [ResultType.PENALTY_OFFENSE, ResultType.PENALTY_DEFENSE,
+                                       ResultType.PASS_INTERFERENCE, ResultType.INCOMPLETE,
+                                       ResultType.TOUCHDOWN] or
+                result.touchdown or
+                result.out_of_bounds
+            )
+            if not skip_oob_penalty and yards > 0:
+                yards = max(0, yards - 5)
+                result.description += " (Out of Bounds designation: -5 yards)"
+
+        # Apply In Bounds designation penalty (-5 yards)
+        if in_bounds_designation:
+            skip_ib_penalty = (
+                result.result_type in [ResultType.PENALTY_OFFENSE, ResultType.PENALTY_DEFENSE,
+                                       ResultType.PASS_INTERFERENCE, ResultType.INCOMPLETE,
+                                       ResultType.TOUCHDOWN] or
+                result.touchdown or
+                not result.out_of_bounds
+            )
+            if not skip_ib_penalty and yards > 0:
+                yards = max(0, yards - 5)
+                result.description += " (In Bounds designation: -5 yards)"
+                result.out_of_bounds = False
+
         # Build transaction for this play
         txn = PlayTransaction()
         off_team = self.state.possession_team.peripheral.short_name
@@ -1437,7 +1466,10 @@ class PaydirtGameEngine:
                 self.state.offense_stats.sacks += 1
                 self.state.offense_stats.sack_yards += abs(yards)
             first_down = self.state.advance_ball(yards)
-            if self.state.ball_position <= 0:
+            if self.state.ball_position >= 100:
+                touchdown = True
+                self._score_touchdown(play_type, yards)
+            elif self.state.ball_position <= 0:
                 safety = True
                 self._score_safety()
             elif not first_down:
