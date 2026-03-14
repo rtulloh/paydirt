@@ -19,19 +19,27 @@ Notes:
 NO HUDDLE OFFENSE PENALTY CHART:
 When using no huddle, penalties have different outcomes:
 
-                OFF=S           DEF=S               OFF=R   DEF=R
-5 yards         10-11 (FS*)     10-14 OFF 5         10†     --
-                12-29           15-24 DEF 5
-5Y yards        --              25-29††             --      11-16††
-5X yards        --              30-35**             --      17-19**
-10 yards        30-36           --                  11-34   --
-15 yards        37-39           36-39**††           35-39   20-39**††
-
-Notes:
-* No Penalty - Bad Snap (F-13 on punt, F-7 on FG, F-2 on all other plays)
-** Automatic first down
-† Prior to change of possession
-†† Marked from end of gain or previous spot (Offensive Player's Choice)
++----------------+----------------+----------------+----------+------------+
+| PENALTY        | OFF=S          | DEF=S          | OFF=R    | DEF=R      |
+| YARDAGE        |                |                |          |            |
++----------------+----------------+----------------+----------+------------+
+| 5 yards        | 10-11 (FS*)    | 10-14 OFF 5    | 10+      | --         |
+|                | 12-29          | 15-24 DEF 5    |          |            |
++----------------+----------------+----------------+----------+------------+
+| 5Y yards       | --             | 25-29++        | --       | 11-16++    |
++----------------+----------------+----------------+----------+------------+
+| 5X yards       | --             | 30-35**        | --       | 17-19**    |
++----------------+----------------+----------------+----------+------------+
+| 10 yards       | 30-36          | --             | 11-34    | --         |
++----------------+----------------+----------------+----------+------------+
+| 15 yards       | 37-39          | 36-39**++      | 35-39    | 20-39**++  |
++----------------+----------------+----------------+----------+------------+
+| Notes:                                                                   |
+| *   No Penalty - Bad Snap (F-13 punt, F-7 FG, F-2 all other plays)      |
+| **  Automatic first down                                                 |
+| +   Prior to the change of possession                                    |
+| ++  Marked from end of any gain or previous spot (Off. Player's Choice)  |
++--------------------------------------------------------------------------+
 
 MARKING OFF PENALTIES:
 - All penalties marked from PREVIOUS SPOT unless otherwise noted
@@ -191,9 +199,25 @@ def roll_no_huddle_penalty_yardage(penalty_type: PenaltyType,
     """
     Roll penalty yardage using the No Huddle Offense penalty chart.
     
-    No Huddle has special penalty conversions:
-    - OFF=S 10-11: Bad Snap (F-13 punt, F-7 FG, F-2 other)
-    - DEF=S 10-14: Becomes OFF 5 (false start, 0 seconds, no rerolls)
+    +----------------+----------------+----------------+----------+------------+
+    | PENALTY        | OFF=S          | DEF=S          | OFF=R    | DEF=R      |
+    | YARDAGE        |                |                |          |            |
+    +----------------+----------------+----------------+----------+------------+
+    | 5 yards        | 10-11 (FS*)    | 10-14 OFF 5    | 10+      | --         |
+    |                | 12-29          | 15-24 DEF 5    |          |            |
+    +----------------+----------------+----------------+----------+------------+
+    | 5Y yards       | --             | 25-29++        | --       | 11-16++    |
+    +----------------+----------------+----------------+----------+------------+
+    | 5X yards       | --             | 30-35**        | --       | 17-19**    |
+    +----------------+----------------+----------------+----------+------------+
+    | 10 yards       | 30-36          | --             | 11-34    | --         |
+    +----------------+----------------+----------------+----------+------------+
+    | 15 yards       | 37-39          | 36-39**++      | 35-39    | 20-39**++  |
+    +----------------+----------------+----------------+----------+------------+
+    *   No Penalty - Bad Snap (F-13 punt, F-7 FG, F-2 all other plays)
+    **  Automatic first down
+    +   Prior to the change of possession
+    ++  Marked from end of any gain or previous spot (Off. Player's Choice)
     
     Args:
         penalty_type: The type of penalty (OFF_S, DEF_S, OFF_R, DEF_R)
