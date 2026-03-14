@@ -832,6 +832,7 @@ def resolve_play(offense_chart: TeamChart, defense_chart: TeamChart,
         raw_result=off_result_str,
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
+        out_of_bounds=combined.out_of_bounds,
     )
 
     # Handle special priority outcomes
@@ -1307,6 +1308,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         raw_result=off_result_str,
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
+        out_of_bounds=combined.out_of_bounds,
     )
 
     # Handle special priority outcomes (QT, Breakaway, etc.)

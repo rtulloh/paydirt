@@ -308,7 +308,6 @@ PRIORITY_CHART = {
     # Per priority chart: Oyg or B + BLACK = INC
     (ResultCategory.BREAKAWAY, ResultCategory.BLACK): PriorityResult.BLACK,
     (ResultCategory.BREAKAWAY, ResultCategory.QT): PriorityResult.QT,
-    (ResultCategory.BREAKAWAY, ResultCategory.BLACK): PriorityResult.OFFENSE_WITH_B,
     (ResultCategory.BREAKAWAY, ResultCategory.INT): PriorityResult.INT,
     (ResultCategory.BREAKAWAY, ResultCategory.FUMBLE): PriorityResult.FUMBLE,
     (ResultCategory.BREAKAWAY, ResultCategory.PARENS_NUMBER): PriorityResult.PARENS,
@@ -352,6 +351,7 @@ class CombinedResult:
     description: str
     offense_result: str
     defense_result: str
+    out_of_bounds: bool = False
 
 
 def apply_priority_chart(offense_result: str, defense_result: str,
@@ -512,6 +512,10 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         final_yards = 0
         description = "Incomplete pass"
 
+    # Detect OOB marker (*) from the raw offense result string
+    # The * indicates the play ended out of bounds (affects clock management)
+    off_has_oob = '*' in offense_result if offense_result else False
+
     return CombinedResult(
         priority=priority,
         final_yards=final_yards,
@@ -523,4 +527,5 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         description=description,
         offense_result=offense_result,
         defense_result=defense_result,
+        out_of_bounds=off_has_oob,
     )
