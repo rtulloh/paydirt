@@ -74,7 +74,7 @@ def list_available_teams(charts: list) -> list:
     return sorted(teams)
 
 
-def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
+def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playoff: bool = False):
     """
     Run a CPU vs CPU game between two teams.
     
@@ -82,6 +82,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
         team1_spec: Away team - name (e.g., "Bears") or path (e.g., "seasons/1983/Bears")
         team2_spec: Home team - name (e.g., "Cowboys") or path (e.g., "seasons/1985/Cowboys")
         delay: Seconds to pause between plays (default 0.0)
+        is_playoff: If True, this is a playoff game
     """
     # Find team charts
     seasons_dir = "seasons"
@@ -134,6 +135,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0):
 
     # Create game engine
     game = PaydirtGameEngine(home_chart, away_chart)
+    game.state.is_playoff = is_playoff
 
     # Create AI for both teams
     away_ai = ComputerAI(aggression=0.5)

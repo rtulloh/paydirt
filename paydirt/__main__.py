@@ -1,13 +1,49 @@
 """
 Entry point for running the paydirt package as a module.
-Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | -auto team1 team2]
+Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home]
 """
 import sys
 
 def main():
     """Main entry point - choose between interactive, chart-based, or simple mode."""
-    # Check for --load flag to resume a saved game
-    if len(sys.argv) > 1 and sys.argv[1] in ['--load', '-l', 'load']:
+    # Check for --help or -h first
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print("PAYDIRT - Football Board Game Simulation")
+        print("=" * 50)
+        print("\nUsage:")
+        print("  python -m paydirt -p [options]               # Interactive game")
+        print("  python -m paydirt -a <away> <home> [opts]  # CPU vs CPU simulation")
+        print("  python -m paydirt --teams                   # List available teams")
+        print("  python -m paydirt --simulate                # Run season simulation")
+        print("  python -m paydirt -l [file]                 # Resume saved game")
+        print("\nPositional Arguments:")
+        print("  away-team          Away team (e.g., 2026/Ironclads)")
+        print("  home-team         Home team (e.g., 2026/Thunderhawks)")
+        print("\nCommands:")
+        print("  -p, --play        Interactive game")
+        print("  -a, --auto        CPU vs CPU simulation")
+        print("  -l, --load        Resume saved game")
+        print("  --teams           List available teams")
+        print("  --simulate        Run season simulation")
+        print("\nOptions:")
+        print("  -d, --difficulty  CPU difficulty (easy|medium|hard)")
+        print("  -c, --compact     Compact display")
+        print("  -h, --help        Show this help message")
+        print("  -H, --home <team>   Home team")
+        print("  -A, --away <team>   Away team")
+        print("  --playoff-game    Playoff game (no ties in OT)")
+        print("  -w, --week        Week number for standings")
+        print("  -r, --record      Record result to standings")
+        print("  -y, --year        Season year for simulation (e.g., 2026)")
+        print("\nNote: In interactive mode, the human player commands the first team listed.")
+        print("\nExamples:")
+        print("  python -m paydirt -p                   # menus to select teams")
+        print("  python -m paydirt -p -H 2026/Ironclads -A 2026/Thunderhawks  # you are Ironclads")
+        print("  python -m paydirt -p -H 2026/Thunderhawks -A 2026/Ironclads  # you are Thunderhawks")
+        print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks  # away @ home")
+        print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks --playoff-game")
+        return
+    if len(sys.argv) > 1 and sys.argv[1] in ['--load', 'load']:
         # Get optional save file path
         save_file = None
         if len(sys.argv) > 2 and not sys.argv[2].startswith('-'):
@@ -17,7 +53,28 @@ def main():
         resume_game(save_file)
         return
 
-    # Check for --play flag for interactive mode
+    # Check for --auto/-a flag for CPU vs CPU mode
+    if len(sys.argv) >= 2 and sys.argv[1] in ['--auto', '-a', 'auto']:
+        # Check for --playoff-game flag
+        is_playoff = '--playoff-game' in sys.argv or '--playoff' in sys.argv
+        
+        # Extract team specs (filter out flags)
+        team_args = [arg for arg in sys.argv[2:] if not arg.startswith('-')]
+        if len(team_args) >= 2:
+            team1_name = team_args[0]
+            team2_name = team_args[1]
+            from .auto_game import run_auto_game
+            run_auto_game(team1_name, team2_name, is_playoff=is_playoff)
+            return
+        else:
+            print("Usage: python -m paydirt --auto <away> <home> [--playoff-game]")
+            print("  or:   python -m paydirt -a <away> <home> [--playoff-game]")
+            print("\nExamples:")
+            print("  python -m paydirt --auto 2026/Ironclads 2026/Thunderhawks")
+            print("  python -m paydirt --auto 2026/Ironclads 2026/Thunderhawks --playoff-game")
+            return
+
+    # Check for --play/-p flag for interactive mode
     if len(sys.argv) > 1 and sys.argv[1] in ['--play', '-p', 'play']:
         # Parse optional flags
         difficulty = 'medium'  # default
@@ -28,13 +85,13 @@ def main():
         home_team = None
         away_team = None
         human_is_home = True  # default to human at home
-        user_specified_position = False  # Track if user specified --home or --away
+        is_playoff = False  # Track if this is a playoff game
 
         args = sys.argv[2:]
         i = 0
         # Check for --help first
-        if '--help' in args or '-h' in args:
-            print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]] [--week N] [--record] [--home team] [--away team] [--home-first | --away-first]")
+        if '--help' in args:
+            print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]] [--week N] [--record] [--home team] [--away team] [--playoff-game]")
             print("  Difficulty levels:")
             print("    easy   - CPU makes conservative decisions")
             print("    medium - Balanced CPU play calling (default)")
@@ -50,9 +107,9 @@ def main():
             print("    --home team - Your team (e.g., --home Chargers)")
             print("    --away team - Opponent team (e.g., --away Seahawks)")
             print("    Use team name or season/team (e.g., --home 1983/Chargers)")
-            print("  Position:")
-            print("    --home-first - You play at home (kick off first, default)")
-            print("    --away-first - You play away (receive first)")
+            print("    Note: The human player commands --home team")
+            print("  Playoff:")
+            print("    --playoff-game - This is a playoff game (affects overtime rules)")
             return
 
         while i < len(args):
@@ -90,27 +147,23 @@ def main():
                     return
             elif args[i] in ['--record', '-r']:
                 i += 1
-            elif args[i] in ['--home']:
+            elif args[i] in ['--home', '-H']:
                 if i + 1 < len(args):
                     home_team = args[i + 1]
                     i += 2
                 else:
                     print("Error: --home requires a team name")
                     return
-            elif args[i] in ['--away']:
+            elif args[i] in ['--away', '-A']:
                 if i + 1 < len(args):
                     away_team = args[i + 1]
                     i += 2
                 else:
                     print("Error: --away requires a team name")
                     return
-            elif args[i] in ['--home-first', '--home-is-human']:
-                # Human plays at home (receives second half) - default
-                human_is_home = True
-                i += 1
-            elif args[i] in ['--away-first', '--away-is-human']:
-                # Human plays away (receives opening kickoff)
-                human_is_home = False
+            elif args[i] in ['--playoff-game', '--playoff']:
+                # This is a playoff game
+                is_playoff = True
                 i += 1
             else:
                 i += 1
@@ -135,25 +188,7 @@ def main():
             from .interactive_game import run_interactive_game
             run_interactive_game(difficulty=difficulty, compact=compact, week=week, 
                                 home_team=home_team, away_team=away_team,
-                                human_is_home=human_is_home)
-        return
-
-    # Check for -auto flag for CPU vs CPU mode
-    if len(sys.argv) >= 4 and sys.argv[1] in ['--auto', '-auto', '-a', 'auto']:
-        team1_name = sys.argv[2]
-        team2_name = sys.argv[3]
-        from .auto_game import run_auto_game
-        run_auto_game(team1_name, team2_name)
-        return
-
-    # Show help if -auto with wrong args
-    if len(sys.argv) > 1 and sys.argv[1] in ['--auto', '-auto', '-a', 'auto']:
-        print("Usage: python -m paydirt -auto <team1> <team2>")
-        print("\nExamples:")
-        print("  python -m paydirt -auto Bears Cowboys              # Simple team names")
-        print("  python -m paydirt -auto 1983/Bears 1983/Cowboys    # With season")
-        print("  python -m paydirt -auto seasons/1983/Bears seasons/1985/Cowboys  # Full paths")
-        print("\nAvailable teams can be found in the seasons/ directory")
+                                human_is_home=human_is_home, is_playoff=is_playoff)
         return
 
     # Try chart-based mode first if team charts are available

@@ -589,3 +589,122 @@ class TestCheckUntimedDownForDefensivePenalty:
         # Should not add duplicate "(Untimed down)" to description
         assert result.count("(Untimed down)") == 0
         assert result.count("(Untimed down)") == 0
+
+
+class TestPlayoffFlag:
+    """Tests for the playoff game flag and its effect on overtime."""
+
+    @pytest.fixture
+    def game_1983(self):
+        """Create a 1983 game for testing playoff rules."""
+        home = load_team_chart("seasons/1983/Redskins")
+        away = load_team_chart("seasons/1983/Cowboys")
+        return PaydirtGameEngine(home, away)
+
+    def test_playoff_flag_defaults_to_false(self, game_1983):
+        """Game should default to non-playoff (regular season)."""
+        assert game_1983.state.is_playoff is False
+
+    def test_playoff_flag_can_be_set_true(self, game_1983):
+        """Playoff flag can be set to True for playoff games."""
+        game_1983.state.is_playoff = True
+        assert game_1983.state.is_playoff is True
+
+    def test_regular_season_tie_ends_in_tie(self, game_1983):
+        """Regular season game ends in tie after first OT period if no one scores."""
+        game_1983.state.is_overtime = True
+        game_1983.state.ot_period = 1
+        game_1983.state.home_score = 14
+        game_1983.state.away_score = 14
+        game_1983.state.is_playoff = False
+        game_1983.state.time_remaining = 0
+
+        game_1983._check_overtime_end()
+
+        assert game_1983.state.game_over is True
+
+    def test_playoff_tie_continues_to_second_ot(self, game_1983):
+        """Playoff game continues to second OT period when tied after first OT."""
+        game_1983.state.is_overtime = True
+        game_1983.state.ot_period = 1
+        game_1983.state.home_score = 14
+        game_1983.state.away_score = 14
+        game_1983.state.is_playoff = True
+        game_1983.state.time_remaining = 0
+
+        game_1983._check_overtime_end()
+
+        assert game_1983.state.game_over is False
+        assert game_1983.state.ot_period == 2
+        assert game_1983.state.time_remaining == 15.0
+
+    def test_playoff_tie_continues_to_third_ot(self, game_1983):
+        """Playoff game continues through multiple OT periods until someone scores."""
+        game_1983.state.is_overtime = True
+        game_1983.state.ot_period = 2
+        game_1983.state.home_score = 17
+        game_1983.state.away_score = 17
+        game_1983.state.is_playoff = True
+        game_1983.state.time_remaining = 0
+
+        game_1983._check_overtime_end()
+
+        assert game_1983.state.game_over is False
+        assert game_1983.state.ot_period == 3
+        assert game_1983.state.time_remaining == 15.0
+
+    def test_playoff_game_ends_when_scored(self, game_1983):
+        """Playoff game ends immediately when someone scores in OT (sudden death)."""
+        game_1983.state.is_overtime = True
+        game_1983.state.ot_period = 1
+        game_1983.state.home_score = 14
+        game_1983.state.away_score = 14
+        game_1983.state.is_playoff = True
+
+        result = game_1983.check_overtime_score(
+            scored=True,
+            was_touchdown=True,
+            scoring_team_is_home=True
+        )
+
+        assert result is True
+        assert game_1983.state.game_over is True
+
+    def test_playoff_second_ot_ends_when_scored(self, game_1983):
+        """Playoff game ends when scored in second OT period."""
+        game_1983.state.is_overtime = True
+        game_1983.state.ot_period = 2
+        game_1983.state.home_score = 20
+        game_1983.state.away_score = 17
+        game_1983.state.is_playoff = True
+
+        result = game_1983.check_overtime_score(
+            scored=True,
+            was_touchdown=False,
+            scoring_team_is_home=False
+        )
+
+        assert result is True
+        assert game_1983.state.game_over is True
+
+    def test_regular_season_ot_max_periods_is_one(self, game_1983):
+        """Regular season OT max periods should be 1."""
+        rules = get_overtime_rules(1983)
+        assert rules.get_max_periods(is_playoff=False) == 1
+
+    def test_playoff_ot_max_periods_unlimited(self, game_1983):
+        """Playoff OT max periods should be 0 (unlimited)."""
+        rules = get_overtime_rules(1983)
+        assert rules.get_max_periods(is_playoff=True) == 0
+
+    def test_playoff_flag_preserved_in_game_state(self, game_1983):
+        """Playoff flag should be preserved in game state throughout game."""
+        game_1983.state.is_playoff = True
+        assert game_1983.state.is_playoff is True
+
+        game_1983.kickoff(kicking_home=True)
+        assert game_1983.state.is_playoff is True
+
+        game_1983.state.quarter = 5
+        game_1983.state.is_overtime = True
+        assert game_1983.state.is_playoff is True

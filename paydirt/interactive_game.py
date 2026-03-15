@@ -2660,7 +2660,7 @@ def _offer_record_to_standings(year: int, home_team: str, home_score: int,
 
 def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week: int = 0,
                          home_team: Optional[str] = None, away_team: Optional[str] = None,
-                         human_is_home: bool = True):
+                         human_is_home: bool = True, is_playoff: bool = False):
     """
     Main interactive game loop.
     
@@ -2671,6 +2671,10 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                    - hard: CPU aggression 0.7 (aggressive, optimal)
         compact: If True, use compact display mode with less verbose output
         week: Week number for recording to standings (0 = auto-assign)
+        home_team: Home team name/path (optional)
+        away_team: Away team name/path (optional)
+        human_is_home: If True, human plays at home
+        is_playoff: If True, this is a playoff game
     """
     # Set global display mode
     global COMPACT_MODE, AI_HELPER_ENABLED
@@ -2833,6 +2837,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
     # Create game
     game = PaydirtGameEngine(home_chart, away_chart)
+    game.state.is_playoff = is_playoff
 
     clear_screen()
     print("=" * 70)
