@@ -1,4 +1,4 @@
-"""
+r"""
 Priority Chart for combining offensive and defensive results in Paydirt.
 
 The Priority Chart determines the final outcome when both offense and defense
