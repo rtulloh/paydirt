@@ -3608,13 +3608,35 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         # Determine which team scored (the team with possession when ball crossed goal line)
         scoring_team_is_home = game.state.is_home_possession
         
-        # Add 6 points for touchdown
+        # Add 6 points for touchdown AND log to scoring_plays
         if scoring_team_is_home:
             game.state.home_score += 6
             scoring_team_name = game.state.home_chart.peripheral.short_name
+            # Log TD to scoring_plays so it appears in the summary
+            from paydirt.game_state import ScoringPlay
+            game.state.scoring_plays.append(ScoringPlay(
+                quarter=game.state.quarter,
+                time_remaining=game.state.time_remaining,
+                team=scoring_team_name,
+                is_home_team=True,
+                play_type="TD",
+                description="Touchdown",
+                points=6
+            ))
         else:
             game.state.away_score += 6
             scoring_team_name = game.state.away_chart.peripheral.short_name
+            # Log TD to scoring_plays so it appears in the summary
+            from paydirt.game_state import ScoringPlay
+            game.state.scoring_plays.append(ScoringPlay(
+                quarter=game.state.quarter,
+                time_remaining=game.state.time_remaining,
+                team=scoring_team_name,
+                is_home_team=False,
+                play_type="TD",
+                description="Touchdown",
+                points=6
+            ))
         
         print(f"  {scoring_team_name} scores TOUCHDOWN! (+6 points)")
         print(f"  Score: {game.state.away_score} - {game.state.home_score}")
@@ -3683,10 +3705,32 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             # Home team had offense, so away team scores
             game.state.away_score += 2
             scoring_team_name = game.state.away_chart.peripheral.short_name
+            # Log safety to scoring_plays
+            from paydirt.game_state import ScoringPlay
+            game.state.scoring_plays.append(ScoringPlay(
+                quarter=game.state.quarter,
+                time_remaining=game.state.time_remaining,
+                team=scoring_team_name,
+                is_home_team=False,
+                play_type="Safety",
+                description="Safety",
+                points=2
+            ))
         else:
             # Away team had offense, so home team scores
             game.state.home_score += 2
             scoring_team_name = game.state.home_chart.peripheral.short_name
+            # Log safety to scoring_plays
+            from paydirt.game_state import ScoringPlay
+            game.state.scoring_plays.append(ScoringPlay(
+                quarter=game.state.quarter,
+                time_remaining=game.state.time_remaining,
+                team=scoring_team_name,
+                is_home_team=True,
+                play_type="Safety",
+                description="Safety",
+                points=2
+            ))
         
         print(f"  SAFETY! {scoring_team_name} scores! (+2 points)")
         print(f"  Score: {game.get_score_str()}")
