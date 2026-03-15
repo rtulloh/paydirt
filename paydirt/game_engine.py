@@ -1066,9 +1066,9 @@ class PaydirtGameEngine:
                 yards = penalty_result.yards  # For outcome reporting
 
                 # Check for untimed down rule: defensive penalty at 0:00 means extra play
-                if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                    self.state.untimed_down_pending = True
-                    result.description += " (Untimed down)"
+                result.description = self.check_untimed_down_for_defensive_penalty(
+                    result.description
+                )
 
         elif result.result_type == ResultType.PASS_INTERFERENCE:
             # PI is special: always automatic first down, can exceed half-distance
@@ -1096,9 +1096,9 @@ class PaydirtGameEngine:
             first_down = True
 
             # Check for untimed down rule: PI (defensive penalty) at 0:00 means extra play
-            if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                self.state.untimed_down_pending = True
-                result.description += " (Untimed down)"
+            result.description = self.check_untimed_down_for_defensive_penalty(
+                result.description
+            )
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
@@ -1346,9 +1346,9 @@ class PaydirtGameEngine:
                 yards = penalty_opt.yards
 
                 # Check for untimed down rule: PI (defensive penalty) at 0:00 means extra play
-                if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                    self.state.untimed_down_pending = True
-                    description += " (Untimed down)"
+                description = self.check_untimed_down_for_defensive_penalty(
+                    description
+                )
 
             elif penalty_opt.penalty_type == "OFF":
                 # Offensive penalty - defense was offended
@@ -1395,9 +1395,9 @@ class PaydirtGameEngine:
                 yards = penalty_result.yards
 
                 # Check for untimed down rule: defensive penalty at 0:00 means extra play
-                if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                    self.state.untimed_down_pending = True
-                    description += " (Untimed down)"
+                description = self.check_untimed_down_for_defensive_penalty(
+                    description
+                )
             else:
                 # Unknown penalty type
                 description = f"Penalty: {penalty_opt.description}"
@@ -1771,9 +1771,10 @@ class PaydirtGameEngine:
             self.state.defense_stats.penalty_yards += yards
             
             # Check for untimed down rule: defensive penalty at 0:00 means extra play
-            if self.state.time_remaining <= 0 and not self.state.is_overtime:
-                self.state.untimed_down_pending = True
-                result.description += " (Untimed down)"
+            # Per NFL rules: No quarter may end on an accepted defensive penalty
+            result.description = self.check_untimed_down_for_defensive_penalty(
+                result.description
+            )
 
         elif result.result_type == ResultType.YARDS:
             # Completion for yardage
@@ -1809,6 +1810,12 @@ class PaydirtGameEngine:
 
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 15))  # End of half play
+
+        # Check again after time is consumed - time might have run out during the play
+        # This catches the case where there was enough time before but it expired during play
+        outcome.description = self.check_untimed_down_for_defensive_penalty(
+            outcome.description
+        )
 
         return outcome
 
@@ -4287,6 +4294,53 @@ class PaydirtGameEngine:
             True if an untimed down must be played
         """
         return self.state.untimed_down_pending
+
+    def check_untimed_down_for_defensive_penalty(self, result_description: str) -> str:
+        """
+        Check if an untimed down should be applied for a defensive penalty.
+        
+        Per NFL Rule 4, Section 8, Article 2: A period must be extended for one 
+        untimed down if there is a defensive foul on a play in which time expires, 
+        regardless of whether that foul results in a new set of downs.
+        
+        Per NFL Rule 16 (Overtime Procedures): All rules that apply to the end of 
+        the fourth quarter regarding timing and extension of a period also apply to 
+        the end of an overtime period. This prevents a defender from, for example, 
+        tackling a receiver during a Hail Mary to force a tie as time expires.
+        
+        Args:
+            result_description: The current result description to potentially append to
+            
+        Returns:
+            Updated result description (with "(Untimed down)" appended if applicable)
+        """
+        if self.state.untimed_down_pending:
+            return result_description
+        
+        # Check if time is already at 0 OR might expire during the play
+        # Use 0.5 minutes (30 seconds) as threshold - if less time than typical play,
+        # we might need an untimed down
+        time_might_expire = self.state.time_remaining <= 0.5
+        
+        if self.state.time_remaining <= 0 or time_might_expire:
+            self.state.untimed_down_pending = True
+            return result_description + " (Untimed down)"
+            
+        return result_description
+            
+        if self.state.untimed_down_pending:
+            return result_description
+        
+        # Check if time is already at 0 OR might expire during the play
+        # Use 0.5 minutes (30 seconds) as threshold - if less time than typical play,
+        # we might need an untimed down
+        time_might_expire = self.state.time_remaining <= 0.5
+        
+        if self.state.time_remaining <= 0 or time_might_expire:
+            self.state.untimed_down_pending = True
+            return result_description + " (Untimed down)"
+            
+        return result_description
 
     def clear_untimed_down(self):
         """Clear the untimed down flag after the extra play is run."""

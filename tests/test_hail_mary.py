@@ -293,8 +293,13 @@ class TestHailMaryUntimedDown:
         assert outcome.first_down is True
         assert game.state.untimed_down_pending is False
     
-    def test_hail_mary_pi_in_overtime_no_untimed_down(self, game):
-        """Hail Mary PI in overtime at 0:00 should NOT set untimed_down_pending."""
+    def test_hail_mary_pi_in_overtime_sets_untimed_down(self, game):
+        """Hail Mary PI in overtime at 0:00 SHOULD set untimed_down_pending.
+        
+        Per NFL Rule 16 (Overtime Procedures), all rules for end of fourth quarter
+        apply to overtime. A defender shouldn't be able to force a tie by committing
+        a foul at 0:00 in overtime.
+        """
         game.state.ball_position = 50
         game.state.is_home_possession = True
         game.state.time_remaining = 0
@@ -306,4 +311,30 @@ class TestHailMaryUntimedDown:
             outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
         
         assert outcome.first_down is True
-        assert game.state.untimed_down_pending is False
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in outcome.description
+
+    def test_hail_mary_pi_first_down_at_end_of_quarter_sets_untimed_down(self, game):
+        """Hail Mary PI with first down when time runs out during play should set untimed_down_pending.
+        
+        This tests the scenario where there's a small amount of time (e.g., 1 second),
+        the play runs, time expires during the play, and PI gives the offense a first down.
+        Per NFL rules: No quarter may end on an accepted defensive penalty.
+        """
+        game.state.ball_position = 50
+        game.state.is_home_possession = True
+        game.state.time_remaining = 0.02  # ~1 second left
+        game.state.quarter = 2  # End of first half
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (39, "B3+W9+W0=39")  # PI result
+            
+            outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        
+        # Time should be exhausted after the play
+        assert game.state.time_remaining <= 0
+        # First down from PI
+        assert outcome.first_down is True
+        # Untimed down should be pending because the quarter cannot end on a defensive penalty
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in outcome.description

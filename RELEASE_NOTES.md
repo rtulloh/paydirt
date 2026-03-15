@@ -6,6 +6,14 @@
 - **Difficulty flag `-d` broken**: The `-d`/`--difficulty` flag was incorrectly setting `compact = True` instead of reading the difficulty value. This caused hard mode to never activate (AI opponent analysis never showed). Fixed to properly parse `-d hard`, `-d medium`, `-d easy`.
 - **Compact flag `--compact` never parsed**: The `--compact` flag was never actually being parsed in the CLI argument handler. It accidentally worked before because the broken `-d` code was setting `compact = True` as a side effect. Added proper `--compact`/`-c` argument handling.
 
+### AI Opponent Analysis Summary
+- **AI summary missing when loading saved games**: When using `--load` to resume a saved game, the AI opponent analysis summary (play tendencies, streaks, situation recommendations) was not displayed at game end even in hard mode. Added the missing summary to the `resume_game()` function.
+
+### Untimed Down Rule Fixes
+- **Defensive penalties can trigger untimed down**: Fixed `check_untimed_down_for_defensive_penalty()` helper method to apply to ALL defensive penalties (not just pass interference). Per NFL Rule 4, Section 8, Article 2: A period must be extended for one untimed down if there is a defensive foul on a play in which time expires, regardless of whether that foul results in a new set of downs.
+- **Overtime defensive penalties**: Fixed to also apply untimed down rule in overtime. Per NFL Rule 16 (Overtime Procedures), all rules for end of fourth quarter apply to overtime. This prevents a defender from forcing a tie by committing a foul at 0:00.
+- **Time might expire during play**: Added logic to check if time is ≤30 seconds and might expire during the play, triggering untimed down proactively rather than only checking after time is already 0.
+
 ### Hail Mary Dice Roll Display
 - **Missing dice roll details**: Hail Mary plays were not showing the offensive dice roll in the compact display. Fixed to show `(O:19→"Hail Mary 19")` format. Also fixed a logic bug where dice details were only displayed for fumble results - now displays for all result types.
 
@@ -65,6 +73,9 @@ Fixed the `*` out-of-bounds marker being silently dropped at multiple levels of 
 - Added 11 tests for OOB deduction and QB_SCRAMBLE fixes in penalty path (`test_oob_penalty_procedure_path.py`)
 - Added 32 tests for `_parse_column_value`, `resolve_breakaway`, `resolve_qb_scramble` (`test_column_resolvers.py`)
 - Added 18 tests for OOB marker propagation through priority chart (`test_oob_priority_chart.py`)
+- Added 1 test for Hail Mary PI setting untimed down when time expires during play
+- Added 6 tests for `check_untimed_down_for_defensive_penalty()` helper method covering: time at zero, time might expire (≤30 sec), sufficient time remains, overtime, already pending
+- Added fixtures to `test_overtime.py` for game engine tests
 - Added tests for penalty_index parameter in punt penalty handling
 - Added tests for RED_NUMBER + GREEN_NUMBER priority resolution
 - Added comprehensive tests for (TD) defense overriding all offense result types

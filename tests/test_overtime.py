@@ -10,6 +10,61 @@ from paydirt.overtime_rules import (
 )
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
+from paydirt.chart_loader import (
+    TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+)
+
+
+@pytest.fixture
+def mock_special_teams():
+    """Create mock special teams chart."""
+    return SpecialTeamsChart(
+        interception_return={10: "5"},
+        kickoff={},
+        kickoff_return={},
+        punt={},
+        punt_return={},
+        field_goal={},
+        extra_point_no_good=[],
+    )
+
+
+@pytest.fixture
+def mock_offense():
+    """Create mock offense chart."""
+    return OffenseChart(
+        line_plunge={10: "5"},
+    )
+
+
+@pytest.fixture
+def mock_team_chart(mock_offense, mock_special_teams):
+    """Create a mock team chart."""
+    return TeamChart(
+        peripheral=PeripheralData(
+            year=1983,
+            team_name="Test",
+            team_nickname="Team",
+            power_rating=50,
+            power_rating_variance=1,
+            base_yardage_factor=100,
+            reduced_yardage_factor=80,
+            fumble_recovered_range=(0, 0),
+            fumble_lost_range=(0, 0),
+            special_defense="",
+            short_name="TST '83",
+        ),
+        offense=mock_offense,
+        defense=DefenseChart(),
+        special_teams=mock_special_teams,
+        team_dir="",
+    )
+
+
+@pytest.fixture
+def game(mock_team_chart):
+    """Create a game with mock team charts."""
+    return PaydirtGameEngine(mock_team_chart, mock_team_chart)
 
 
 class TestOvertimeRulesByYear:
@@ -410,13 +465,16 @@ class TestUntimedDown:
         assert game.has_untimed_down() is False
     
     def test_untimed_down_not_set_in_overtime(self, game):
-        """Untimed down rule should not apply during overtime."""
+        """Untimed down starts as False in overtime (helper method sets it when needed).
+        
+        Note: The helper method DOES set untimed_down in overtime per Rule 16,
+        but initially the flag starts as False.
+        """
         game.state.time_remaining = 0
         game.state.is_overtime = True
         game.state.ot_period = 1
         
-        # The flag should not be set during OT
-        # (OT has different end-of-period rules)
+        # Initially untimed_down_pending is False
         assert game.state.untimed_down_pending is False
     
     def test_untimed_down_not_set_with_time_remaining(self, game):
@@ -455,3 +513,79 @@ class TestUntimedDown:
         # Quarter should now advance to 3
         assert game.state.quarter == 3
         assert game.state.time_remaining == 15.0  # Reset for new quarter
+
+
+class TestCheckUntimedDownForDefensivePenalty:
+    """Tests for the check_untimed_down_for_defensive_penalty helper method.
+    
+    Per NFL Rule 4, Section 8, Article 2: A period must be extended for one untimed 
+    down if there is a defensive foul on a play in which time expires, regardless of 
+    whether that foul results in a new set of downs.
+    
+    Per NFL Rule 16 (Overtime Procedures): All rules that apply to the end of the 
+    fourth quarter regarding timing and extension of a period also apply to the end 
+    of an overtime period.
+    """
+    
+    def test_sets_untimed_down_when_time_at_zero(self, game):
+        """Should set untimed down when time is 0 and defensive penalty occurs."""
+        game.state.time_remaining = 0
+        game.state.quarter = 2
+        game.state.is_overtime = False
+        
+        result = game.check_untimed_down_for_defensive_penalty("Penalty!")
+        
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in result
+    
+    def test_sets_untimed_down_when_time_might_expire(self, game):
+        """Should set untimed down when time is low (<=30 sec) and defensive penalty occurs."""
+        game.state.time_remaining = 0.4  # 24 seconds left
+        game.state.quarter = 2
+        game.state.is_overtime = False
+        
+        result = game.check_untimed_down_for_defensive_penalty("Defensive Offside!")
+        
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in result
+    
+    def test_does_not_set_untimed_down_when_sufficient_time_remains(self, game):
+        """Should not set untimed down if plenty of time remains (>30 sec)."""
+        game.state.time_remaining = 1.0  # 60 seconds left
+        game.state.quarter = 2
+        game.state.is_overtime = False
+        
+        result = game.check_untimed_down_for_defensive_penalty("Penalty!")
+        
+        assert game.state.untimed_down_pending is False
+        assert "(Untimed down)" not in result
+    
+    def test_sets_untimed_down_in_overtime(self, game):
+        """Should set untimed down during overtime per Rule 16.
+        
+        Per NFL Rule 16, all rules for end of fourth quarter apply to overtime.
+        A defender shouldn't be able to force a tie by committing a foul at 0:00.
+        """
+        game.state.time_remaining = 0
+        game.state.is_overtime = True
+        game.state.ot_period = 1
+        
+        result = game.check_untimed_down_for_defensive_penalty("Penalty!")
+        
+        assert game.state.untimed_down_pending is True
+        assert "(Untimed down)" in result
+    
+    def test_does_not_set_untimed_down_if_already_pending(self, game):
+        """Should not set untimed down again if already pending."""
+        game.state.time_remaining = 0
+        game.state.quarter = 2
+        game.state.is_overtime = False
+        game.state.untimed_down_pending = True  # Already pending
+        
+        result = game.check_untimed_down_for_defensive_penalty("Penalty!")
+        
+        # Should still be True, not set again
+        assert game.state.untimed_down_pending is True
+        # Should not add duplicate "(Untimed down)" to description
+        assert result.count("(Untimed down)") == 0
+        assert result.count("(Untimed down)") == 0
