@@ -95,10 +95,9 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
     
     # Verify file was actually written
     if os.path.exists(filepath):
-        file_mtime = os.path.getmtime(filepath)
         print(f"  [DEBUG] Save file verified - size: {os.path.getsize(filepath)} bytes")
     else:
-        print(f"  [ERROR] Save file not found after write!")
+        print("  [ERROR] Save file not found after write!")
     
     return filepath
 

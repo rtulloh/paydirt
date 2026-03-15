@@ -634,7 +634,6 @@ class TestAIOpponentAnalysis:
     def test_opponent_tracker_records_plays(self):
         """Opponent tracker should record plays when human is on offense."""
         from paydirt.computer_ai import ComputerAI
-        from paydirt.ai_analysis import PlayCategory
         
         ai = ComputerAI(aggression=0.7, use_analysis=True)
         

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .chart_loader import TeamChart
-from .utils import format_field_position, format_field_position_with_team
+from .utils import format_field_position_with_team
 from .play_resolver import PlayType, DefenseType, PlayResult, PenaltyChoice
 from .play_events import PlayTransaction
 
