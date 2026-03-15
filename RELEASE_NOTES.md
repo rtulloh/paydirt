@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Test Coverage Improvements
+- **Added 98 new CLI tests** bringing total to 1,586 tests:
+  - `test_cli_functions.py` (53 tests): Tests for `cli.py` module including screen clearing, header printing, scoreboard display, play/defense menus, user input handling, play result display, and team selection
+  - `test_cli_charts.py` (45 tests): Tests for `cli_charts.py` module covering chart-based CLI functions, demo functionality, and edge cases
+- **Coverage improvements**:
+  - `cli.py`: 0% → 68% (+68%)
+  - `cli_charts.py`: 0% → 57% (+57%)
+  - Overall project coverage: 57% → 59% (+2%)
+
 ### CLI Improvements
 - **Consistent short/long option format**: All CLI options now use double-dash format (`--option`) with single-letter shortcuts (`-o`). Updated help text to use consistent format:
   - Commands: `-p/--play`, `-a/--auto`, `-l/--load`

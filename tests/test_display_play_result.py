@@ -418,6 +418,106 @@ class TestCompactDisplayTurnoverReturns:
             ig.COMPACT_MODE = original_compact
 
 
+class TestFumbleReturnDiceDisplay:
+    """Tests for fumble return dice roll display in technical details line.
+    
+    Bug fix: Fumble return was showing Ret:99 but missing the dice roll.
+    Should show Ret:XX→YY format (e.g., Ret:38→99) to match INT return format.
+    """
+    
+    def test_fumble_return_td_shows_dice_roll(self):
+        """Fumble returned for TD should show the return dice roll (e.g., Ret:38→99)."""
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.play_events import PlayTransaction, PlayEvent, EventType
+        import paydirt.interactive_game as ig
+
+        home_chart = create_mock_chart("SF '83", "San Francisco 49ers")
+        away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        # ATL recovers fumble and returns it for TD - ATL is away team
+        game.state.is_home_possession = False
+        game.state.ball_position = 97  # ATL at SF 1
+
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            yards=-1,
+            description="FUMBLE - Loss! Returned for TD!",
+            dice_roll=16,
+            raw_result="F"
+        )
+        result.fumble_return_yards = 99
+        result.fumble_return_dice = 38
+        result.fumble_spot = 1
+        result.fumble_recovered = False
+
+        outcome = PlayOutcome(
+            play_type=PlayType.LINE_PLUNGE,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=-1,
+            turnover=True,
+            touchdown=True,
+            description="FUMBLE - Loss! RETURNED FOR TD!"
+        )
+
+        # Create transaction with fumble return event (like real game engine does)
+        txn = PlayTransaction(
+            events=[],
+            is_complete=True,
+            turnover=True,
+            touchdown=True,
+            yards_gained=-1,
+            possession_team="ATL '83"
+        )
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE,
+            description="Fumble",
+            yards=-1,
+            spot=1,
+            dice_roll=16,
+            dice_desc="F",
+            chart_result="F",
+            acting_team="ATL '83"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RECOVERY,
+            description="Defense recovered",
+            yards=-1,
+            dice_roll=38,
+            dice_desc="lost",
+            chart_result="lost",
+            acting_team="ATL '83"
+        ))
+        txn.add_event(PlayEvent(
+            event_type=EventType.FUMBLE_RETURN,
+            description="Returned for TOUCHDOWN!",
+            yards=99,
+            dice_roll=38,
+            dice_desc="38",
+            chart_result="99",
+            acting_team="ATL '83"
+        ))
+        outcome.transaction = txn
+
+        original_compact = ig.COMPACT_MODE
+        ig.COMPACT_MODE = True
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                display_play_result(game, outcome, PlayType.LINE_PLUNGE, DefenseType.STANDARD,
+                                    away_chart, offense_was_home=False)
+                output = mock_stdout.getvalue()
+
+            # Should show "Ret:38→99" format (dice roll followed by yards)
+            assert "Ret:38→99" in output, f"Expected 'Ret:38→99' in output: {output}"
+            assert "SCOOP AND SCORE" in output, f"Expected 'SCOOP AND SCORE' in output: {output}"
+            assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
+        finally:
+            ig.COMPACT_MODE = original_compact
+
+
 class TestPuntReturnFumbleDisplay:
     """Tests for punt return fumble display showing dice rolls."""
     

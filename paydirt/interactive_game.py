@@ -1799,7 +1799,8 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
                     if txn.turnover:
                         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                         ret_yards = ret_events[0].yards if ret_events else 0
-                        extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\" | Ret:{ret_yards}"
+                        ret_dice = ret_events[0].dice_roll if ret_events else 0
+                        extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\" | Ret:{ret_dice}→{ret_yards}"
                     else:
                         extra_info = f" | F@{fumble_event.spot} | R:{rec_event.dice_roll}→\"{rec_result}\""
 
