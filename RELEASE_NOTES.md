@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### CLI Improvements
+- **Consistent short/long option format**: All CLI options now use double-dash format (`--option`) with single-letter shortcuts (`-o`). Updated help text to use consistent format:
+  - Commands: `-p/--play`, `-a/--auto`, `-l/--load`
+  - Options: `-d/--difficulty`, `-c/--compact`, `-H/--home`, `-A/--away`, `-w/--week`, `-r/--record`, `-y/--year`
+- **Playoff game flag**: Added `--playoff-game` flag to mark games as playoff games. In playoff mode, overtime continues until a winner is determined (1983 postseason rules). Regular season games end in a tie after one 15-minute OT period.
+- **2026 sample teams**: Updated CLI help examples to use 2026 sample teams (Ironclads, Thunderhawks) instead of 1983 teams for the public beta.
+- **Help text improvements**: Added clarifying notes about human player controlling the team specified with `--home`.
+
+### Test Coverage
+- **1487 unit tests** passing
+- Added 31 new CLI tests covering all option permutations and invalid option handling
+- Added 10 playoff flag tests for overtime rules (`test_overtime.py::TestPlayoffFlag`)
+- Fixed test isolation issue with `COMPACT_MODE` global variable
+
 ### CLI Argument Parsing Fixes
 - **Difficulty flag `-d` broken**: The `-d`/`--difficulty` flag was incorrectly setting `compact = True` instead of reading the difficulty value. This caused hard mode to never activate (AI opponent analysis never showed). Fixed to properly parse `-d hard`, `-d medium`, `-d easy`.
 - **Compact flag `--compact` never parsed**: The `--compact` flag was never actually being parsed in the CLI argument handler. It accidentally worked before because the broken `-d` code was setting `compact = True` as a side effect. Added proper `--compact`/`-c` argument handling.
