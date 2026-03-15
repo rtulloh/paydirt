@@ -9,13 +9,15 @@ from typing import Optional
 
 from .game_engine import TeamStats, ScoringPlay, PaydirtGameEngine
 from .chart_loader import load_team_chart
+from .ai_save import save_ai_data
 
 
 DEFAULT_SAVE_FILE = "paydirt_save.json"
 
 
 def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
-              human_is_away: bool = True, human_is_home: bool = False) -> str:
+              human_is_away: bool = True, human_is_home: bool = False,
+              cpu_ai = None) -> str:
     """
     Save the current game state to a JSON file.
     
@@ -24,6 +26,7 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         filepath: Path to save file (default: paydirt_save.json)
         human_is_away: Whether human controls away team
         human_is_home: Whether human controls home team
+        cpu_ai: The computer AI object (for saving opponent model data)
     
     Returns:
         The filepath where the game was saved
@@ -98,6 +101,13 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         print(f"  [DEBUG] Save file verified - size: {os.path.getsize(filepath)} bytes")
     else:
         print("  [ERROR] Save file not found after write!")
+    
+    # Save AI opponent model data (if AI is enabled)
+    if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
+        save_dir = os.path.dirname(filepath) or "."
+        ai_filepath = save_ai_data(cpu_ai, state.away_chart.team_dir, state.home_chart.team_dir, save_dir)
+        if ai_filepath:
+            print(f"  [DEBUG] AI data saved to {ai_filepath}")
     
     return filepath
 

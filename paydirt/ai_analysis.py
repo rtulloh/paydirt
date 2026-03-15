@@ -711,6 +711,65 @@ class OpponentTendencyTracker:
             return "B"  # Short Yardage
         else:
             return "A"  # Standard
+    
+    def to_dict(self) -> dict:
+        """
+        Convert tracker state to JSON-serializable dict.
+        
+        Returns:
+            Dict with situation_plays, recent_plays, and situation_results
+        """
+        # Convert situation_plays: SituationType -> list[PlayCategory]
+        situation_plays_json = {}
+        for situation, plays in self.situation_plays.items():
+            situation_plays_json[situation.value] = [p.value for p in plays]
+        
+        # Convert recent_plays: list[PlayCategory]
+        recent_plays_json = [p.value for p in self.recent_plays]
+        
+        # Convert situation_results: SituationType -> PlayCategory -> list[int]
+        situation_results_json = {}
+        for situation, results in self.situation_results.items():
+            situation_results_json[situation.value] = {}
+            for category, yards_list in results.items():
+                situation_results_json[situation.value][category.value] = yards_list
+        
+        return {
+            "situation_plays": situation_plays_json,
+            "recent_plays": recent_plays_json,
+            "situation_results": situation_results_json,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'OpponentTendencyTracker':
+        """
+        Create tracker from JSON-serializable dict.
+        
+        Args:
+            data: Dict from to_dict()
+            
+        Returns:
+            New OpponentTendencyTracker instance with restored state
+        """
+        tracker = cls()
+        
+        # Restore situation_plays
+        for situation_str, plays in data.get("situation_plays", {}).items():
+            situation = SituationType(situation_str)
+            tracker.situation_plays[situation] = [PlayCategory(p) for p in plays]
+        
+        # Restore recent_plays
+        tracker.recent_plays = [PlayCategory(p) for p in data.get("recent_plays", [])]
+        
+        # Restore situation_results
+        for situation_str, results in data.get("situation_results", {}).items():
+            situation = SituationType(situation_str)
+            tracker.situation_results[situation] = {}
+            for category_str, yards_list in results.items():
+                category = PlayCategory(category_str)
+                tracker.situation_results[situation][category] = yards_list
+        
+        return tracker
 
 
 class OpponentModel:
@@ -764,6 +823,44 @@ class OpponentModel:
                             yards_gained: int, is_pass: bool = None):
         """Record an opponent's play for tendency tracking."""
         self.tracker.record_play(down, distance, play_type, yards_gained, is_pass)
+    
+    def to_dict(self) -> dict:
+        """
+        Convert opponent model to JSON-serializable dict.
+        
+        Returns:
+            Dict with tracker data and game state awareness
+        """
+        return {
+            "tracker": self.tracker.to_dict(),
+            "score_differential_history": self.score_differential_history,
+            "is_protecting_lead": self.is_protecting_lead,
+            "is_comeback_mode": self.is_comeback_mode,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'OpponentModel':
+        """
+        Create opponent model from JSON-serializable dict.
+        
+        Args:
+            data: Dict from to_dict()
+            
+        Returns:
+            New OpponentModel instance with restored state
+        """
+        model = cls()
+        
+        # Restore tracker
+        if "tracker" in data:
+            model.tracker = OpponentTendencyTracker.from_dict(data["tracker"])
+        
+        # Restore game state awareness
+        model.score_differential_history = data.get("score_differential_history", [])
+        model.is_protecting_lead = data.get("is_protecting_lead", False)
+        model.is_comeback_mode = data.get("is_comeback_mode", False)
+        
+        return model
 
 
 # ============================================================

@@ -26,6 +26,7 @@ from .utils import (
 from .play_events import EventType
 from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
 from .ai_analysis import create_easy_mode_helper
+from .ai_save import load_ai_data
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -3094,7 +3095,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
 
             # Check for save command (play_type is None)
             if play_type is None:
-                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                 print(f"\n  *** GAME SAVED to {filepath} ***")
                 print("  Use 'python -m paydirt --load' to resume")
                 continue
@@ -3145,7 +3146,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                     def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                     # Check for save command (def_type is None)
                     if def_type is None:
-                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                         print(f"\n  *** GAME SAVED to {filepath} ***")
                         print("  Use 'python -m paydirt --load' to resume")
                         continue
@@ -3156,7 +3157,7 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                 # Check for save command (def_type is None)
                 if def_type is None:
-                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                     print(f"\n  *** GAME SAVED to {filepath} ***")
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
@@ -3585,6 +3586,17 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
     cpu_aggression = difficulty_map.get(difficulty, 0.5)
     cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=(difficulty == 'hard'))
     
+    # Try to load AI opponent model data (for persistent learning)
+    save_dir = os.path.dirname(filepath) or "."
+    if cpu_ai.use_analysis:
+        loaded_opponent_model = load_ai_data(
+            game.state.away_chart.team_dir,
+            game.state.home_chart.team_dir,
+            save_dir
+        )
+        if loaded_opponent_model:
+            cpu_ai.opponent_model = loaded_opponent_model
+    
     print("\n  Resuming game...")
     print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
     
@@ -3823,7 +3835,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout = get_human_offense_play(game, no_huddle_mode, easy_mode_helper)
 
             if play_type is None:
-                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                 print(f"\n  *** GAME SAVED to {filepath} ***")
                 print("  Use 'python -m paydirt --load' to resume")
                 continue
@@ -3865,7 +3877,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                     print(f"\n  *** {cpu_team} is going for it on 4th and {game.state.yards_to_go}! ***")
                     def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
                     if def_type is None:
-                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                        filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                         print(f"\n  *** GAME SAVED to {filepath} ***")
                         print("  Use 'python -m paydirt --load' to resume")
                         continue
@@ -3877,7 +3889,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
                 cpu_punt_short_drop = False
                 cpu_punt_coffin_yards = 0
                 if def_type is None:
-                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home)
+                    filepath = save_game(game, human_is_away=not human_is_home, human_is_home=human_is_home, cpu_ai=cpu_ai)
                     print(f"\n  *** GAME SAVED to {filepath} ***")
                     print("  Use 'python -m paydirt --load' to resume")
                     continue
