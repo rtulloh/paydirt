@@ -37,13 +37,13 @@ def get_ai_filepath(away_team_path: str, home_team_path: str, save_dir: str = ".
     return os.path.join(save_dir, filename)
 
 
-def save_ai_data(engine, away_team_path: str, home_team_path: str, 
+def save_ai_data(cpu_ai, away_team_path: str, home_team_path: str, 
                  save_dir: str = ".") -> Optional[str]:
     """
     Save AI opponent model data to a team-pair specific file.
     
     Args:
-        engine: The game engine with cpu_ai
+        cpu_ai: The ComputerAI object with opponent_model
         away_team_path: Path to away team
         home_team_path: Path to home team  
         save_dir: Directory to store the AI data file
@@ -52,7 +52,6 @@ def save_ai_data(engine, away_team_path: str, home_team_path: str,
         The filepath where data was saved, or None if nothing to save
     """
     # Check if AI has opponent model
-    cpu_ai = getattr(engine, 'cpu_ai', None)
     if not cpu_ai or not cpu_ai.use_analysis or not cpu_ai.opponent_model:
         return None
     
