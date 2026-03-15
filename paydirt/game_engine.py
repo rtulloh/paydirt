@@ -69,6 +69,113 @@ class PaydirtGameEngine:
             return max(1, position // 2)
         return penalty_yards
 
+    def _handle_double_foul_penalty(self,
+                                     penalty_a_yards: int,
+                                     penalty_a_is_offensive: bool,
+                                     penalty_a_has_auto_fd: bool,
+                                     penalty_b_yards: int,
+                                     penalty_b_is_offensive: bool,
+                                     penalty_b_has_auto_fd: bool,
+                                     landing_spot: int,
+                                     punt_roll: int,
+                                     return_roll: int,
+                                     punt_result: str,
+                                     return_result: str) -> dict:
+        """
+        Handle double foul scenarios using NFL Rule 14-5-1 (the "5 vs 15" rule).
+        
+        When both teams commit fouls on a special teams play:
+        - If one foul is 5 yards and the other is 15 yards (and neither has auto first down):
+          Apply only the 15-yard penalty, disregard the 5-yard penalty
+        - Otherwise: Penalties offset, replay the down
+        
+        Args:
+            penalty_a_yards: Yardage of first penalty (from punt/kickoff chart)
+            penalty_a_is_offensive: True if first penalty is on offense (kicking team)
+            penalty_a_has_auto_fd: True if first penalty has auto first down (X modifier)
+            penalty_b_yards: Yardage of second penalty (from return chart)
+            penalty_b_is_offensive: True if second penalty is on offense (receiving team)
+            penalty_b_has_auto_fd: True if second penalty has auto first down
+            landing_spot: Field position where return started (for enforcement spot)
+            punt_roll: Dice roll for punt/kickoff chart
+            return_roll: Dice roll for return chart
+            punt_result: Raw result from punt/kickoff chart
+            return_result: Raw result from return chart
+            
+        Returns:
+            Dict with:
+            - 'action': 'apply_15' or 'offset'
+            - 'penalty_yards': Yards to apply (15 if action is 'apply_15', else 0)
+            - 'is_offensive': True if 15-yard penalty is on offense
+            - 'description': Log message with dice rolls
+            - 'final_position': Ball position after enforcement (if action is 'apply_15')
+        """
+        # Check for 5 vs 15 scenario
+        penalties = [(penalty_a_yards, penalty_a_is_offensive, penalty_a_has_auto_fd, punt_result),
+                     (penalty_b_yards, penalty_b_is_offensive, penalty_b_has_auto_fd, return_result)]
+        
+        yards_list = [p[0] for p in penalties]
+        has_auto_fd = any(p[2] for p in penalties)
+        
+        # Check if one is 5 and other is 15 (and neither has auto first down)
+        is_five_vs_fifteen = (5 in yards_list and 15 in yards_list and 
+                              yards_list.count(5) == 1 and yards_list.count(15) == 1 and
+                              not has_auto_fd)
+        
+        if is_five_vs_fifteen:
+            # Find the 15-yard penalty
+            fifteen_penalty = next(p for p in penalties if p[0] == 15)
+            _, is_offensive, _, result_str = fifteen_penalty
+            
+            # Determine which team committed which foul for logging
+            five_penalty = next(p for p in penalties if p[0] == 5)
+            five_yards, five_is_off, _, five_result = five_penalty
+            
+            # Team names for logging
+            kicking_team_foul = "OFF" if five_is_off else "DEF"
+            receiving_team_foul = "OFF" if is_offensive else "DEF"
+            
+            # Calculate enforcement from landing spot
+            # The 15-yard penalty is enforced against the team that committed it
+            if is_offensive:
+                # OFF penalty on receiving team - move ball back
+                new_position = landing_spot - 15
+            else:
+                # DEF penalty on kicking team - this shouldn't happen for 5 vs 15
+                # (DEF penalty on kicking team would be unusual)
+                new_position = landing_spot + 15
+            
+            # Apply half-the-distance if needed
+            if new_position < 1:
+                new_position = max(1, landing_spot // 2)
+            elif new_position > 99:
+                new_position = 99
+            
+            description = (f"P:{punt_roll}\u2192'{punt_result}' | R:{return_roll}\u2192'{return_result}' | "
+                          f"Penalty: {kicking_team_foul} 5-yard (Kicking Team) and {receiving_team_foul} 15-yard (Return Team). "
+                          f"Under NFL Rule 14-5-1, the 5-yard penalty is disregarded. "
+                          f"15 yards enforced from the catch. 1st and 10.")
+            
+            return {
+                'action': 'apply_15',
+                'penalty_yards': 15,
+                'is_offensive': is_offensive,
+                'description': description,
+                'final_position': new_position
+            }
+        else:
+            # Penalties offset
+            description = (f"P:{punt_roll}\u2192'{punt_result}' | R:{return_roll}\u2192'{return_result}' | "
+                          f"OFFSETTING PENALTIES: {punt_result} and {return_result}. Down replayed.")
+            
+            return {
+                'action': 'offset',
+                'penalty_yards': 0,
+                'is_offensive': False,
+                'description': description,
+                'final_position': landing_spot
+            }
+
     def _handle_return_penalty(self, return_result: str, return_chart: dict, 
                                 default_return: int = 20) -> tuple[int, int, bool, bool]:
         """
@@ -294,6 +401,10 @@ class PaydirtGameEngine:
         else:
             # Normal return
             landing_spot = 100 - (kickoff_spot + ko_yards)  # Where ball lands from receiver's perspective
+            
+            # Initialize penalty tracking for double foul check
+            ko_penalty_yards = 0
+            ko_is_offensive_penalty = False
 
             # Per VI-12-F: Handle end zone returns
             # landing_spot <= 0 means ball is in or beyond the end zone
@@ -333,9 +444,12 @@ class PaydirtGameEngine:
                         is_touchback = True
             else:
                 # Handle return with potential penalty using shared helper
+                return_penalty_yards = 0
+                return_is_offensive_penalty = False
+                
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
                     # Penalty on return - use helper to handle re-roll logic
-                    ret_yards, ko_penalty_yards, ko_is_offensive_penalty, needs_rekick = \
+                    ret_yards, return_penalty_yards, return_is_offensive_penalty, needs_rekick = \
                         self._handle_return_penalty(ret_result, 
                                                     receiving_chart.special_teams.kickoff_return, 
                                                     default_return=20)
@@ -343,8 +457,6 @@ class PaydirtGameEngine:
                         return self.kickoff(kicking_home=kicking_home)
                 else:
                     # Normal return - parse yardage
-                    ko_penalty_yards = 0
-                    ko_is_offensive_penalty = False
                     try:
                         ret_yards = int(ret_result) if ret_result else 20
                     except ValueError:
@@ -355,18 +467,69 @@ class PaydirtGameEngine:
                         else:
                             ret_yards = 20
 
+                # Check for double foul (both kickoff chart and return chart have penalties)
+                if ko_penalty_yards > 0 and return_penalty_yards > 0:
+                    # Use NFL Rule 14-5-1 to determine outcome
+                    double_foul_result = self._handle_double_foul_penalty(
+                        penalty_a_yards=ko_penalty_yards,
+                        penalty_a_is_offensive=ko_is_offensive_penalty,
+                        penalty_a_has_auto_fd=False,  # Kickoff penalties don't have X modifier
+                        penalty_b_yards=return_penalty_yards,
+                        penalty_b_is_offensive=return_is_offensive_penalty,
+                        penalty_b_has_auto_fd=False,  # Return penalties don't have X modifier
+                        landing_spot=landing_spot,
+                        punt_roll=dice_roll,
+                        return_roll=dice_roll,
+                        punt_result=ko_result,
+                        return_result=ret_result
+                    )
+                    
+                    if double_foul_result['action'] == 'offset':
+                        # Penalties offset - re-kick
+                        outcome = PlayOutcome(
+                            play_type=PlayType.KICKOFF,
+                            defense_type=DefenseType.STANDARD,
+                            result=parse_result_string(ko_result),
+                            yards_gained=0,
+                            field_position_before=f"Kickoff from {kickoff_spot}",
+                            field_position_after="pending",
+                            description=double_foul_result['description']
+                        )
+                        self.play_log.append(outcome)
+                        return outcome
+                    else:
+                        # Apply 15-yard penalty only - receiving team keeps possession
+                        self.state.is_home_possession = not kicking_home
+                        self.state.ball_position = clamp_ball_position(double_foul_result['final_position'])
+                        self.state.down = 1
+                        self.state.yards_to_go = 10
+                        
+                        outcome = PlayOutcome(
+                            play_type=PlayType.KICKOFF,
+                            defense_type=DefenseType.STANDARD,
+                            result=parse_result_string(ko_result),
+                            yards_gained=0,
+                            touchdown=False,
+                            field_position_before=f"Kickoff from {kickoff_spot}",
+                            field_position_after=self.state.field_position_str(),
+                            description=double_foul_result['description']
+                        )
+                        self.play_log.append(outcome)
+                        self._use_time(random.uniform(5, 15))
+                        return outcome
+
                 # Calculate return position: landing spot + return yards
                 return_position = landing_spot + ret_yards
 
                 # Apply penalty on top of return
-                if ko_penalty_yards > 0:
-                    if ko_is_offensive_penalty:
+                if return_penalty_yards > 0:
+                    if return_is_offensive_penalty:
                         # OFF penalty - subtract from return position with half-the-distance
-                        effective_penalty = self._apply_half_the_distance(return_position, ko_penalty_yards)
+                        effective_penalty = self._apply_half_the_distance(return_position, return_penalty_yards)
                         return_position -= effective_penalty
                     else:
                         # DEF penalty - add yards to return position
-                        return_position += ko_penalty_yards
+                        return_position += return_penalty_yards
 
                 if return_position > 100:
                     return_position = 100  # Touchdown
@@ -2503,6 +2666,61 @@ class PaydirtGameEngine:
         # Check for return touchdown first (before applying penalties)
         touchdown = False
         would_be_td = final_position >= 100
+
+        # Check for double foul (both punt chart and return chart have penalties)
+        if punt_penalty_yards > 0 and return_penalty_yards > 0:
+            # Use NFL Rule 14-5-1 to determine outcome
+            double_foul_result = self._handle_double_foul_penalty(
+                penalty_a_yards=punt_penalty_yards,
+                penalty_a_is_offensive=is_punt_offensive_penalty,
+                penalty_a_has_auto_fd=punt_penalty_auto_first_down,
+                penalty_b_yards=return_penalty_yards,
+                penalty_b_is_offensive=return_penalty_is_offensive,
+                penalty_b_has_auto_fd=False,  # Return penalties don't have X modifier
+                landing_spot=landing_spot,
+                punt_roll=punt_roll,
+                return_roll=return_roll,
+                punt_result=punt_result,
+                return_result=return_result
+            )
+            
+            if double_foul_result['action'] == 'offset':
+                # Penalties offset - replay the punt
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parse_result_string(punt_result),
+                    yards_gained=0,
+                    field_position_before=field_pos_before,
+                    field_position_after=self.state.field_position_str(),
+                    description=double_foul_result['description']
+                )
+                self.play_log.append(outcome)
+                return outcome
+            else:
+                # Apply 15-yard penalty only - receiving team keeps possession
+                self.state.switch_possession()
+                self.state.ball_position = clamp_ball_position(double_foul_result['final_position'])
+                self.state.down = 1
+                self.state.yards_to_go = 10
+                
+                parsed_result = parse_result_string(punt_result)
+                parsed_result.dice_roll = punt_roll
+                parsed_result.punt_return_dice = return_roll
+                
+                outcome = PlayOutcome(
+                    play_type=PlayType.PUNT,
+                    defense_type=DefenseType.STANDARD,
+                    result=parsed_result,
+                    yards_gained=punt_yards,
+                    touchdown=False,
+                    field_position_before=field_pos_before,
+                    field_position_after=self.state.field_position_str(),
+                    description=double_foul_result['description']
+                )
+                self.play_log.append(outcome)
+                self._use_time(random.uniform(5, 12))
+                return outcome
 
         # Combine punt penalty (from punt chart) and return penalty (from return chart)
         # Use return penalty if set, otherwise use punt penalty
