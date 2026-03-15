@@ -327,6 +327,69 @@ class PaydirtGameEngine:
                 if ko_yards is None:
                     ko_yards = 65  # Fallback
                 
+                # Check for double foul BEFORE offering penalty choice
+                # If there's also a penalty on the return, use 5 vs 15 rule instead
+                return_has_penalty = "OFF" in ret_result.upper() or "DEF" in ret_result.upper()
+                
+                if return_has_penalty:
+                    # Parse return penalty
+                    ret_penalty_match = re.search(r'(OFF|DEF)\s*(\d+)', ret_result.upper())
+                    if ret_penalty_match:
+                        return_penalty_yards = int(ret_penalty_match.group(2))
+                        return_is_offensive = ret_penalty_match.group(1) == "OFF"
+                        
+                        # Calculate landing spot first
+                        landing_spot = 100 - (kickoff_spot + ko_yards)
+                        
+                        # Check for double foul (5 vs 15)
+                        double_foul_result = self._handle_double_foul_penalty(
+                            penalty_a_yards=ko_penalty_yards,
+                            penalty_a_is_offensive=ko_is_offensive_penalty,
+                            penalty_a_has_auto_fd=False,
+                            penalty_b_yards=return_penalty_yards,
+                            penalty_b_is_offensive=return_is_offensive,
+                            penalty_b_has_auto_fd=False,
+                            landing_spot=landing_spot,
+                            punt_roll=dice_roll,
+                            return_roll=dice_roll,
+                            punt_result=ko_result,
+                            return_result=ret_result
+                        )
+                        
+                        if double_foul_result['action'] == 'offset':
+                            # Penalties offset - re-kick
+                            outcome = PlayOutcome(
+                                play_type=PlayType.KICKOFF,
+                                defense_type=DefenseType.STANDARD,
+                                result=parse_result_string(ko_result),
+                                yards_gained=0,
+                                field_position_before=f"Kickoff from {kickoff_spot}",
+                                field_position_after="pending",
+                                description=double_foul_result['description']
+                            )
+                            self.play_log.append(outcome)
+                            return outcome
+                        else:
+                            # Apply 15-yard penalty only - receiving team keeps possession
+                            self.state.is_home_possession = not kicking_home
+                            self.state.ball_position = clamp_ball_position(double_foul_result['final_position'])
+                            self.state.down = 1
+                            self.state.yards_to_go = 10
+                            
+                            outcome = PlayOutcome(
+                                play_type=PlayType.KICKOFF,
+                                defense_type=DefenseType.STANDARD,
+                                result=parse_result_string(ko_result),
+                                yards_gained=0,
+                                touchdown=False,
+                                field_position_before=f"Kickoff from {kickoff_spot}",
+                                field_position_after=self.state.field_position_str(),
+                                description=double_foul_result['description']
+                            )
+                            self.play_log.append(outcome)
+                            self._use_time(random.uniform(5, 15))
+                            return outcome
+                
                 # Store pending kickoff penalty state for choice
                 self._pending_kickoff_penalty_state = {
                     'kicking_home': kicking_home,
