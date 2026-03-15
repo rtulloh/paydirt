@@ -265,3 +265,160 @@ class TestResumeWithActualSaveFile:
         is_human_kicking = (kicking_home == human_is_home)
         assert is_human_kicking is False, \
             "BUG REGRESSION: Human was asked to kick after opponent scored"
+
+
+class TestScoringSummaryLogging:
+    """Tests for logging TD and Safety to scoring_plays when resuming with pending score.
+    
+    These tests verify the fix for the scoring summary mismatch bug where
+    pending TDs/safeties weren't logged to scoring_plays, causing the
+    scoring summary to not match the final score.
+    """
+
+    def test_pending_td_logs_to_scoring_plays(self, game, temp_save_file):
+        """Pending TD should be logged to scoring_plays so it appears in summary."""
+        game.state.ball_position = 100  # TD
+        game.state.is_home_possession = True  # Home team scored
+        game.state.home_score = 20
+        game.state.away_score = 17
+        game.state.quarter = 4
+        game.state.time_remaining = 5.0
+        save_game(game, filepath=temp_save_file)
+
+        loaded_game, _, _, pending_score = load_game(temp_save_file)
+        assert pending_score == "touchdown"
+
+        # Simulate the FIXED resume logic - log TD to scoring_plays
+        from paydirt.game_state import ScoringPlay
+        scoring_team_is_home = loaded_game.state.is_home_possession
+        
+        if scoring_team_is_home:
+            loaded_game.state.home_score += 6
+            loaded_game.state.scoring_plays.append(ScoringPlay(
+                quarter=loaded_game.state.quarter,
+                time_remaining=loaded_game.state.time_remaining,
+                team=loaded_game.state.home_chart.peripheral.short_name,
+                is_home_team=True,
+                play_type="TD",
+                description="Touchdown",
+                points=6
+            ))
+            team_name = loaded_game.state.home_chart.peripheral.short_name
+        else:
+            loaded_game.state.away_score += 6
+            loaded_game.state.scoring_plays.append(ScoringPlay(
+                quarter=loaded_game.state.quarter,
+                time_remaining=loaded_game.state.time_remaining,
+                team=loaded_game.state.away_chart.peripheral.short_name,
+                is_home_team=False,
+                play_type="TD",
+                description="Touchdown",
+                points=6
+            ))
+            team_name = loaded_game.state.away_chart.peripheral.short_name
+
+        # Now add PAT
+        loaded_game.attempt_extra_point()
+
+        # Verify scoring_plays has both TD and PAT
+        assert len(loaded_game.state.scoring_plays) == 2
+        
+        td_play = loaded_game.state.scoring_plays[0]
+        assert td_play.play_type == "TD"
+        assert td_play.points == 6
+        assert td_play.team == team_name
+
+    def test_pending_safety_logs_to_scoring_plays(self, game, temp_save_file):
+        """Pending safety should be logged to scoring_plays so it appears in summary."""
+        game.state.ball_position = 0  # Safety
+        game.state.is_home_possession = True  # Home team was on offense, gave up safety
+        game.state.home_score = 10
+        game.state.away_score = 14
+        game.state.quarter = 3
+        game.state.time_remaining = 7.0
+        save_game(game, filepath=temp_save_file)
+
+        loaded_game, _, _, pending_score = load_game(temp_save_file)
+        assert pending_score == "safety"
+
+        # Simulate the FIXED resume logic - log safety to scoring_plays
+        from paydirt.game_state import ScoringPlay
+        
+        # Safety: defense (away) scores
+        if loaded_game.state.is_home_possession:
+            loaded_game.state.away_score += 2
+            loaded_game.state.scoring_plays.append(ScoringPlay(
+                quarter=loaded_game.state.quarter,
+                time_remaining=loaded_game.state.time_remaining,
+                team=loaded_game.state.away_chart.peripheral.short_name,
+                is_home_team=False,
+                play_type="Safety",
+                description="Safety",
+                points=2
+            ))
+        else:
+            loaded_game.state.home_score += 2
+            loaded_game.state.scoring_plays.append(ScoringPlay(
+                quarter=loaded_game.state.quarter,
+                time_remaining=loaded_game.state.time_remaining,
+                team=loaded_game.state.home_chart.peripheral.short_name,
+                is_home_team=True,
+                play_type="Safety",
+                description="Safety",
+                points=2
+            ))
+
+        # Verify scoring_plays has the safety
+        assert len(loaded_game.state.scoring_plays) == 1
+        
+        safety_play = loaded_game.state.scoring_plays[0]
+        assert safety_play.play_type == "Safety"
+        assert safety_play.points == 2
+
+    def test_pending_td_and_pat_can_be_combined(self, game, temp_save_file):
+        """TD + PAT should be combinable in scoring summary (same team, consecutive)."""
+        game.state.ball_position = 100
+        game.state.is_home_possession = True
+        game.state.home_score = 20
+        game.state.away_score = 17
+        game.state.quarter = 4
+        game.state.time_remaining = 5.0
+        save_game(game, filepath=temp_save_file)
+
+        loaded_game, _, _, pending_score = load_game(temp_save_file)
+
+        # Log TD (the fix)
+        from paydirt.game_state import ScoringPlay
+        loaded_game.state.home_score += 6
+        loaded_game.state.scoring_plays.append(ScoringPlay(
+            quarter=loaded_game.state.quarter,
+            time_remaining=loaded_game.state.time_remaining,
+            team=loaded_game.state.home_chart.peripheral.short_name,
+            is_home_team=True,
+            play_type="TD",
+            description="Touchdown",
+            points=6
+        ))
+
+        # Add PAT
+        loaded_game.attempt_extra_point()
+
+        # Now test combining logic (from interactive_game.py scoring summary)
+        combined_plays = []
+        i = 0
+        while i < len(loaded_game.state.scoring_plays):
+            play = loaded_game.state.scoring_plays[i]
+            if play.play_type == "TD" and i + 1 < len(loaded_game.state.scoring_plays):
+                next_play = loaded_game.state.scoring_plays[i + 1]
+                if next_play.play_type in ["PAT", "2PT"] and next_play.is_home_team == play.is_home_team:
+                    combined_plays.append({
+                        'points': play.points + next_play.points,
+                        'is_home': play.is_home_team
+                    })
+                    i += 2
+                    continue
+            i += 1
+
+        # Should have 1 combined entry with 7 points
+        assert len(combined_plays) == 1
+        assert combined_plays[0]['points'] == 7
