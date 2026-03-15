@@ -500,14 +500,14 @@ class Test1983BearsDefenseChart:
 
         chart = load_team_chart(bears_dir)
 
-        # D-5: dice 4=2, dice 5=-1, dice 6=-1, dice 7=[TD], dice 8=[TD], dice 9=(3)
+        # D-5: dice 4=2, dice 5=-1, dice 6=-1, dice 7=(TD), dice 8=(TD), dice 9=(3)
         d5_modifiers = chart.defense.modifiers.get(('D', 5), {})
         
         assert d5_modifiers.get(4) == '2'
         assert d5_modifiers.get(5) == '-1'
         assert d5_modifiers.get(6) == '-1'
-        assert d5_modifiers.get(7) == '[TD]'
-        assert d5_modifiers.get(8) == '[TD]'
+        assert d5_modifiers.get(7) == '(TD)'
+        assert d5_modifiers.get(8) == '(TD)'
         assert d5_modifiers.get(9) == '(3)'
         # Empty columns should not be present
         assert 1 not in d5_modifiers
