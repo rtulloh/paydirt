@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Kickoff Penalty with Touchdown Fix
+- **DEF penalty on kickoff with TD**: Fixed a bug where a defensive penalty on the kickoff chart combined with a return touchdown was incorrectly asking the defense to choose between accepting the penalty or taking the result. Per football rules, when a defensive penalty on a kickoff return results in a touchdown, the touchdown should automatically count and the penalty yards should be applied to the next kickoff. The fix stores the penalty for the next kickoff when the return results in a touchdown.
+- Added unit test for this scenario in `test_kickoff_return.py::TestKickoffDiceDisplay::test_def_penalty_on_kickoff_chart_with_return_td`
+
 ### Test Coverage Improvements
 - **Added 98 new CLI tests** bringing total to 1,586 tests:
   - `test_cli_functions.py` (53 tests): Tests for `cli.py` module including screen clearing, header printing, scoreboard display, play/defense menus, user input handling, play result display, and team selection

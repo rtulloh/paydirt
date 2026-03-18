@@ -1559,13 +1559,20 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         statistical_distance = int(fg_distance_match.group(1)) if fg_distance_match else 0
         distance_to_goal = statistical_distance - 17 if statistical_distance > 17 else 0
 
+        # Check if FG was nullified by penalty with untimed down (half extended)
+        fg_nullified = "UNTIMED DOWN" in outcome.description.upper() or "HALF EXTENDED" in outcome.description.upper()
+
         if COMPACT_MODE:
             # Compact field goal display
-            if outcome.field_goal_made:
+            if outcome.field_goal_made and not fg_nullified:
                 print(f"► FG {statistical_distance} yards: GOOD! ({kicker})")
             elif "BLOCKED" in outcome.description.upper():
                 # Show full description for blocked kicks (includes recovery/return info)
                 print(f"► FG {statistical_distance} yards: {outcome.description}")
+            elif fg_nullified:
+                # Penalty accepted, half extended - show the penalty description instead
+                print(f"  {outcome.description}")
+                return
             else:
                 print(f"► FG {statistical_distance} yards: NO GOOD")
             print(f"  ({format_dice_roll(dice_roll, result=chart_result, style='verbose')} | Needed: {distance_to_goal} yds)")
@@ -1579,12 +1586,15 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print(f"  {format_dice_roll(dice_roll, result=chart_result, style='verbose')}")
         print(f"  Distance needed: {distance_to_goal} yards to goal line")
 
-        if outcome.field_goal_made:
+        if outcome.field_goal_made and not fg_nullified:
             print(f"\n  >> {kicker} kicks it... IT'S GOOD!")
             print("  >>> FIELD GOAL IS GOOD!")
         elif "BLOCKED" in outcome.description.upper():
             print(f"\n  >> BLOCKED! {outcome.description}")
         elif "FUMBLE" in outcome.description.upper():
+            print(f"\n  >> {outcome.description}")
+        elif fg_nullified:
+            # Penalty accepted, half extended - show the penalty description
             print(f"\n  >> {outcome.description}")
         else:
             # Miss - show what the kick achieved vs what was needed
@@ -2245,8 +2255,8 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             roll_parts.append(f"R:{return_roll}→\"{return_yards}\"")
         
         print(f"\n  ({' | '.join(roll_parts)})")
-    elif is_kickoff_penalty and hasattr(game, '_pending_kickoff_state'):
-        state = game._pending_kickoff_state
+    elif is_kickoff_penalty and hasattr(game, '_pending_kickoff_penalty_state'):
+        state = game._pending_kickoff_penalty_state
         kick_roll = state.get('kick_roll', 0)
         kick_result = state.get('kick_result', '')
         return_yards = state.get('return_yards', 0)

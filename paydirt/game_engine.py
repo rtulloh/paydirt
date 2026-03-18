@@ -2619,8 +2619,8 @@ class PaydirtGameEngine:
             else:
                 # No penalty - regular coffin corner
                 return_desc = "coffin corner - out of bounds"
-                self.state.ball_position = receiving_position
                 self.state.switch_possession()
+                self.state.ball_position = receiving_position
                 self.state.down = 1
                 self.state.yards_to_go = 10
                 
@@ -3389,6 +3389,10 @@ class PaydirtGameEngine:
             touchdown = return_position >= 100
             if touchdown:
                 self._score_touchdown()
+                # If there was a kickoff chart penalty that was declined, apply it to next kickoff
+                if ko_penalty_yards > 0:
+                    self.state.pending_kickoff_penalty_yards = ko_penalty_yards
+                    self.state.pending_kickoff_penalty_is_offense = ko_is_offensive_penalty
             
             kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
             
@@ -3572,6 +3576,14 @@ class PaydirtGameEngine:
                 new_position = max(1, ball_pos_before - penalty_yards)
                 self.state.ball_position = new_position
                 description = f"Offensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
+                
+                # Check if time has expired - if so, this creates an untimed down
+                # Per NFL rules: if offense commits penalty on FG as time expires and defense accepts,
+                # the half is extended for one untimed down
+                time_might_expire = self.state.time_remaining <= 0.5
+                if self.state.time_remaining <= 0 or time_might_expire:
+                    self.state.untimed_down_pending = True
+                    description += " (HALF EXTENDED - UNTIMED DOWN)"
             else:
                 # Defensive penalty - move forward, rekick (or auto first down)
                 new_position = min(99, ball_pos_before + penalty_yards)
@@ -3584,13 +3596,16 @@ class PaydirtGameEngine:
                 else:
                     description = f"Defensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
             
-            outcome.field_goal_made = False
             outcome.field_position_after = self.state.field_position_str()
             outcome.description = description
             outcome.pending_penalty_decision = False
         
         self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 10))
+        
+        # Only advance time if there's no untimed down pending
+        # (if untimed_down_pending is True, the half extends and clock stays at 0)
+        if not self.state.untimed_down_pending:
+            self._use_time(random.uniform(5, 10))
         
         return outcome
 

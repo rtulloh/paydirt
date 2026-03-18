@@ -362,3 +362,36 @@ class TestKickoffDiceDisplay:
             
             assert "(KO:10→" in outcome.description
             assert "| RT:10→" in outcome.description
+
+    def test_def_penalty_on_kickoff_chart_with_return_td(self, game):
+        """DEF penalty on kickoff chart with return TD - TD should count, penalty to next kickoff."""
+        # Both kickoff and return use the same dice roll
+        game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
+        game.state.home_chart.special_teams.kickoff[11] = "65"  # Re-roll result - 65 yards
+        # Return from same roll (10) should be TD
+        game.state.away_chart.special_teams.kickoff_return[10] = "100"  # 100 yard return = TD
+        
+        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [
+                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5 on kickoff, return "100"
+                (11, "B1+W0+W1=11"),  # Re-roll for yardage - 65
+            ]
+            
+            outcome = game.kickoff(kicking_home=True)
+            
+            # Should have pending decision
+            assert outcome.pending_penalty_decision is True
+            assert outcome.penalty_choice.offended_team == "defense"
+            
+            # Decline penalty - take kickoff result
+            # Kickoff 65 yards from 35 = lands at 0 (100 - 35 - 65)
+            # Return 100 yards from 0 = 0 + 100 = 100 (TD)
+            final_outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
+            
+            # TD was scored (ball at 99-100 depending on code)
+            assert game.state.ball_position >= 99
+            # Touchdown was recorded (away team scored)
+            assert game.state.away_score >= 6
+            # Penalty should be stored for next kickoff (THIS IS THE BUG - currently fails)
+            assert game.state.pending_kickoff_penalty_yards == 5
+            assert game.state.pending_kickoff_penalty_is_offense is False  # DEF penalty
