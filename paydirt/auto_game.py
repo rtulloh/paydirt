@@ -12,7 +12,7 @@ from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine
 from .computer_ai import ComputerAI
 from .interactive_game import display_box_score
-from .play_resolver import PlayType
+from .play_resolver import PlayType, ResultType
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -276,7 +276,17 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         else:
             # Normal play result
             yards = outcome.yards_gained
-            if yards > 0:
+            
+            # Check for special result types
+            if outcome.result.result_type == ResultType.BREAKAWAY:
+                result_str = f"BREAKAWAY! +{yards} yards"
+            elif outcome.result.result_type == ResultType.SACK:
+                result_str = f"SACKED -{abs(yards)} yards"
+            elif outcome.result.result_type == ResultType.FUMBLE:
+                result_str = "FUMBLE!"
+            elif outcome.result.result_type == ResultType.INCOMPLETE:
+                result_str = "Incomplete"
+            elif yards > 0:
                 result_str = f"Gain of {yards}"
             elif yards < 0:
                 result_str = f"Loss of {abs(yards)}"
@@ -292,6 +302,28 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
                 result_str += f" [{desc}]"
 
             print(f"  {result_str}")
+
+            # Show dice roll details for auditing (similar to compact mode)
+            def_mod = outcome.result.defense_modifier or ""
+            
+            # Build dice roll info string
+            dice_info = f"(O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | Def:→\"{def_mod}\")"
+            
+            # Add breakaway dice if this is a breakaway play
+            if outcome.result.result_type == ResultType.BREAKAWAY:
+                b_dice = getattr(outcome.result, 'breakaway_dice', 0)
+                b_yards = getattr(outcome.result, 'breakaway_yards', 0)
+                if b_dice:
+                    dice_info += f" | B:{b_dice}→{b_yards}"
+            
+            # Add QB scramble dice if applicable
+            if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
+                qt_dice = getattr(outcome.result, 'qb_scramble_dice', 0)
+                qt_yards = getattr(outcome.result, 'qb_scramble_yards', 0)
+                if qt_dice:
+                    dice_info += f" | QT:{qt_dice}→{qt_yards}"
+            
+            print(f"  {dice_info}")
 
         # Handle penalty decisions for special teams (punt, field goal, kickoff)
         if outcome.pending_penalty_decision and outcome.penalty_choice:

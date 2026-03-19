@@ -27,6 +27,7 @@ errors = []
 games_summary = []
 all_stats = []  # Store stats for each game
 clock_management_stats = []  # Track clock management usage
+breakaway_matches = []  # Track breakaway occurrences
 
 def parse_team_stats(output, team_name):
     """Parse team statistics from output."""
@@ -122,13 +123,20 @@ for away, home in matchups:
     print(f"{'='*70}")
     
     result = subprocess.run(
-        ['python3', '-m', 'paydirt', '-auto', f'1983/{away}', f'1983/{home}'],
+        ['python3', '-m', 'paydirt', '--auto', f'1983/{away}', f'1983/{home}'],
         capture_output=True,
         text=True,
         timeout=120
     )
     
     output = result.stdout + result.stderr
+    
+    # Check for breakaway plays
+    breakaway_pattern = re.compile(r'breakaway', re.IGNORECASE)
+    if breakaway_pattern.search(output):
+        for line_num, line in enumerate(output.split('\n'), 1):
+            if breakaway_pattern.search(line):
+                breakaway_matches.append(f"{away}@{home}:{line_num}: {line.strip()}")
     
     # Check for any Python errors first
     if 'Traceback' in output:
@@ -304,3 +312,12 @@ if clock_management_stats:
         for g in sorted(clock_management_stats, key=lambda x: x['no_huddle'] + x['oob'], reverse=True)[:5]:
             if g['no_huddle'] > 0 or g['oob'] > 0:
                 print(f"      {g['game']}: {g['no_huddle']} no-huddle, {g['oob']} OOB")
+
+# Print breakaway summary
+if breakaway_matches:
+    print("\n  BREAKAWAY PLAYS FOUND:")
+    print("  " + "-"*50)
+    for match in breakaway_matches:
+        print(f"    {match}")
+else:
+    print("\n  NO BREAKAWAY PLAYS FOUND in any game")

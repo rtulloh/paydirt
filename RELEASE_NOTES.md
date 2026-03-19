@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Auto Game Auditing Improvements
+- **Breakaway play detection in auto games**: Auto game mode now displays breakaway plays with dice roll details for auditing
+  - Shows `BREAKAWAY! +X yards` instead of just "Gain of X"
+  - Displays dice rolls: `(O:{dice}→"raw_result" | Def:→"modifier")`
+  - Shows breakaway dice: `| B:{b_dice}→{b_yards}`
+  - Shows QB scramble dice: `| QT:{qt_dice}→{qt_yards}`
+- **Breakaway tracking in test suite**: `run_all_games.py` now detects and reports breakaway plays across all matchups
+- **Special play type display**: Auto games now properly display SACK, FUMBLE, and INCOMPLETE plays
+- **Fixed `-auto` flag**: Changed to `--auto` to match CLI argument parser
+
 ### Kickoff Penalty with Touchdown Fix
 - **DEF penalty on kickoff with TD**: Fixed a bug where a defensive penalty on the kickoff chart combined with a return touchdown was incorrectly asking the defense to choose between accepting the penalty or taking the result. Per football rules, when a defensive penalty on a kickoff return results in a touchdown, the touchdown should automatically count and the penalty yards should be applied to the next kickoff. The fix stores the penalty for the next kickoff when the return results in a touchdown.
 - Added unit test for this scenario in `test_kickoff_return.py::TestKickoffDiceDisplay::test_def_penalty_on_kickoff_chart_with_return_td`
