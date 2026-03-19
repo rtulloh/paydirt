@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --field-green: #2d5a27;
+  --field-stripe: #3d7a37;
+  --yard-line: #ffffff;
+  --board-bg: #D2691E;
+  --panel-bg: #F5DEB3;
+  --panel-border: #8B4513;
+  --led-bg: #1a1a2e;
+  --led-red: #ff6b6b;
+  --led-blue: #4ecdc4;
+  --led-off: #333;
+  --dice-black: #1a1a1a;
+  --dice-white: #f0f0f0;
+  --dice-red: #cc0000;
+  --dice-green: #006600;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+}
+
+.font-scoreboard {
+  font-family: 'Orbitron', monospace;
+}
+
+.font-heading {
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+@layer components {
+  .board-panel {
+    @apply bg-panel-bg border-4 border-panel-border rounded-lg;
+    box-shadow: 
+      inset 0 2px 4px rgba(255,255,255,0.3),
+      inset 0 -2px 4px rgba(0,0,0,0.2),
+      4px 4px 8px rgba(0,0,0,0.3);
+  }
+  
+  .board-panel-header {
+    @apply bg-board-bg text-panel-bg font-heading font-bold text-lg px-4 py-2 rounded-t;
+    border-bottom: 3px solid var(--panel-border);
+  }
+  
+  .led-display {
+    @apply font-scoreboard bg-led-bg px-4 py-2 rounded;
+    text-shadow: 0 0 10px currentColor;
+  }
+  
+  .led-score {
+    @apply text-4xl font-bold;
+    color: var(--led-red);
+    text-shadow: 0 0 20px var(--led-red);
+  }
+  
+  .led-clock {
+    @apply text-2xl font-bold;
+    color: var(--led-blue);
+    text-shadow: 0 0 15px var(--led-blue);
+  }
+  
+  .dice {
+    @apply w-12 h-12 rounded-lg flex items-center justify-center font-bold text-xl;
+    box-shadow: 
+      inset 0 -4px 8px rgba(0,0,0,0.4),
+      inset 0 4px 8px rgba(255,255,255,0.2),
+      2px 2px 4px rgba(0,0,0,0.5);
+  }
+  
+  .dice-black {
+    @apply bg-gray-900 text-white;
+  }
+  
+  .dice-white {
+    @apply bg-gray-100 text-gray-900;
+  }
+  
+  .dice-red {
+    @apply bg-red-700 text-white;
+  }
+  
+  .dice-green {
+    @apply bg-green-700 text-white;
+  }
+  
+  .play-button {
+    @apply px-4 py-2 bg-gradient-to-b from-gray-200 to-gray-400 border-2 border-gray-500 rounded-lg font-bold;
+    @apply hover:from-gray-300 hover:to-gray-500;
+    @apply active:from-gray-400 active:to-gray-600;
+    @apply transition-all duration-150;
+    box-shadow: 0 4px 0 #333;
+  }
+  
+  .play-button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #333;
+  }
+  
+  .play-button-selected {
+    @apply bg-gradient-to-b from-yellow-300 to-yellow-500 border-yellow-600;
+    box-shadow: 0 4px 0 #996600;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 0.5s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+
+  .animate-dice-roll {
+    animation: diceRoll 0.3s ease-in-out infinite;
+  }
+
+  @keyframes diceRoll {
+    0% {
+      transform: translateX(0) translateY(0) rotate(0deg);
+    }
+    25% {
+      transform: translateX(-5px) translateY(-5px) rotate(90deg);
+    }
+    50% {
+      transform: translateX(5px) translateY(-3px) rotate(180deg);
+    }
+    75% {
+      transform: translateX(-3px) translateY(3px) rotate(270deg);
+    }
+    100% {
+      transform: translateX(0) translateY(0) rotate(360deg);
+    }
+  }
+
+  .animate-dice-settle {
+    animation: diceSettle 0.3s ease-out forwards;
+  }
+
+  @keyframes diceSettle {
+    0% {
+      transform: scale(1.1);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-dice-result {
+    animation: diceResult 0.5s ease-out;
+  }
+
+  @keyframes diceResult {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
