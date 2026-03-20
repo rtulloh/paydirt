@@ -32,6 +32,62 @@ A web-based browser game that recreates the classic Paydirt board game experienc
 │                                                             │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
 │  │ Scoreboard  │ │   Field     │ │   Play Selection    │  │
+│  │  (Fixed)    │ │  (Center)   │ │   (Bottom Panel)  │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │              Dice Display (Overlay/Modal)                ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+│                    Zustand Game Store                        │
+└─────────────────────────────┬───────────────────────────────┘
+                              │ REST API (Thin Wrapper)
+┌─────────────────────────────┴───────────────────────────────┐
+│                    FastAPI Backend                          │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  THIN API LAYER - No custom game logic                 ││
+│  │  - Forwards requests to game engine                    ││
+│  │  - Serializes/deserializes responses                   ││
+│  │  - Game state management (in-memory)                    ││
+│  └──────────────────────────┬──────────────────────────────┘│
+│                             │                               │
+│  ┌──────────────────────────┴──────────────────────────────┐│
+│  │  Paydirt Game Engine (SINGLE SOURCE OF TRUTH)          ││
+│  │                                                          ││
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────────┐  ││
+│  │  │game_engine │  │ computer_ai│  │ play_resolver  │  ││
+│  │  │    .py     │  │    .py     │  │      .py       │  ││
+│  │  └────────────┘  └────────────┘  └────────────────┘  ││
+│  │                                                          ││
+│  │  ALL game logic lives here - play resolution, penalties,││
+│  │  PAT decisions, clock management, overtime, etc.        ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Architecture Principles
+
+1. **Game Engine is Single Source of Truth**: All game logic MUST be in `game_engine.py`, `computer_ai.py`, or `play_resolver.py`. The CLI and web UI must behave identically.
+
+2. **Thin API Layer**: `routes.py` MUST NOT contain custom game logic. It only:
+   - Creates/manages game instances
+   - Forwards user inputs to engine methods
+   - Returns engine responses to frontend
+   - Serializes/deserializes data
+
+3. **Engine Methods as Interface**: The engine exposes methods for:
+   - `run_play()` - Execute a play
+   - `apply_decision()` - Apply user decisions (penalties, PAT choices, etc.)
+   - `get_pending_decision()` - Check if user input is needed
+   - `get_available_options()` - Get available choices
+
+4. **AI Integration**: `computer_ai.py` is called by the engine. No custom AI logic should exist in `routes.py`.
+┌─────────────────────────────────────────────────────────────┐
+│                     Browser (React)                          │
+│                                                             │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
+│  │ Scoreboard  │ │   Field     │ │   Play Selection    │  │
 │  │  (Fixed)    │ │  (Center)   │ │   (Bottom Panel)    │  │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘  │
 │                                                             │
@@ -301,6 +357,12 @@ A web-based browser game that recreates the classic Paydirt board game experienc
 
 ## API Specification
 
+### Design Principles
+
+1. **Engine-Driven**: Every endpoint forwards to a game engine method
+2. **Single Response Format**: All play results include `pending_decision` field
+3. **No Custom Logic**: Backend is a thin wrapper, all game rules in engine
+
 ### Endpoints
 
 | Endpoint | Method | Description |
@@ -310,7 +372,43 @@ A web-based browser game that recreates the classic Paydirt board game experienc
 | `/api/teams?season=X` | GET | List teams for a season |
 | `/api/game/new` | POST | Start a new game |
 | `/api/game/state/{id}` | GET | Get current game state |
-| `/api/game/play` | POST | Execute a play |
+| `/api/game/execute` | POST | Execute a play (offense + defense) |
+| `/api/game/decision` | POST | Apply a user decision (PAT, penalty, etc.) |
+
+### Response Format - Play Result
+
+All play execution returns a standardized response:
+
+```python
+class PlayResult:
+    result: str              # "breakaway", "incomplete", "touchdown", etc.
+    yards: int               # Yards gained/lost
+    description: str         # Human-readable description
+    turnover: bool           # INT or FUMBLE occurred
+    scoring: bool            # TD, FG, or Safety
+    touchdown: bool          # Touchdown scored
+    
+    # Decision handling
+    pending_decision: Optional[PendingDecision]  # If user needs to choose
+    decision_type: Optional[str]  # "penalty", "pat", "kickoff", etc.
+    
+    # State updates
+    new_ball_position: int
+    new_down: int
+    new_yards_to_go: int
+    new_score_home: int
+    new_score_away: int
+    possession_changed: bool
+    game_over: bool
+    quarter_changed: bool
+    half_changed: bool
+
+class PendingDecision:
+    type: str           # "penalty", "pat_kick", "pat_two_point", "onside_kick"
+    description: str     # Human-readable prompt
+    options: List[DecisionOption]  # Available choices
+    offended_team: str   # "offense" or "defense"
+```
 
 ### Request/Response Examples
 
@@ -338,7 +436,120 @@ A web-based browser game that recreates the classic Paydirt board game experienc
     "game_over": false
   }
 }
+
+# POST /api/game/execute
+{
+  "game_id": "game_1234",
+  "player_play": "1",      # Line Plunge
+  "cpu_play": "A"          # Standard defense
+}
+
+# Response (no decision needed)
+{
+  "result": "breakaway",
+  "yards": 15,
+  "description": "Line Plunge for 15 yards!",
+  "pending_decision": null,
+  ...
+}
+
+# Response (penalty - user must decide)
+{
+  "result": "penalty",
+  "yards": 5,
+  "description": "DEFENSIVE HOLDING - 5 yards",
+  "pending_decision": {
+    "type": "penalty",
+    "description": "Accept penalty or take play result?",
+    "options": [
+      {"key": "accept", "label": "Accept Penalty"},
+      {"key": "decline", "label": "Take Play Result (+5 yards, down counts)"}
+    ],
+    "offended_team": "offense"
+  },
+  ...
+}
+
+# POST /api/game/decision
+{
+  "game_id": "game_1234",
+  "decision_type": "penalty",
+  "choice": "accept"
+}
+
+# Response (touchdown - PAT decision)
+{
+  "result": "touchdown",
+  "yards": 0,
+  "description": "TOUCHDOWN!",
+  "pending_decision": {
+    "type": "pat",
+    "description": "Extra Point - Kick or Go for 2?",
+    "options": [
+      {"key": "kick", "label": "Kick XP (1 pt)"},
+      {"key": "two_point", "label": "Go for 2"}
+    ],
+    "offended_team": "offense",
+    "can_go_for_two": true  # Season supports 2-point conversion
+  },
+  ...
+}
 ```
+
+---
+
+## Architecture Refactoring (Current Phase)
+
+### Goal: Ensure CLI and Web UI are 100% Consistent
+
+The web UI should route ALL decisions through the existing game engine. When CLI behavior changes, web UI automatically inherits those changes.
+
+### Current Issues to Fix
+
+| Issue | Current Location | Should Be |
+|-------|-----------------|-----------|
+| PAT decisions (kick vs 2-point) | Custom logic in `routes.py` | Engine method |
+| Penalty decisions | Custom logic in `routes.py` | Engine method |
+| CPU AI for PAT choices | Duplicate in `routes.py` | `computer_ai.py` |
+| CPU 4th down decisions | Uses engine, but decision logic separate | Engine method |
+
+### Engine Methods Needed
+
+The game engine should expose methods that handle ALL game situations:
+
+```python
+class PaydirtGameEngine:
+    def run_play(self, offense_play, defense_play) -> PlayOutcome:
+        """Execute a play. Returns outcome with pending_decision if user input needed."""
+        
+    def apply_decision(self, decision_type: str, choice: any) -> PlayOutcome:
+        """Apply a user decision (penalty_accept, pat_choice, etc.)"""
+        
+    def get_pending_decision(self) -> Optional[PendingDecision]:
+        """Returns any pending decision the user needs to make."""
+        
+    def get_touchdown_pat_info(self) -> dict:
+        """Returns PAT info: can_go_for_two, cpu_should_go_for_two, etc."""
+```
+
+### Implementation Tasks
+
+- [x] Audit game engine methods for game logic coverage
+- [x] Add `get_touchdown_pat_info()` to engine
+- [x] Refactor PAT logic from `routes.py` → engine
+- [x] Refactor penalty decision logic from `routes.py` → engine
+- [x] Simplify `routes.py` to thin API wrapper
+- [x] Verify CLI and web UI use same engine methods
+- [ ] Update frontend to use new engine-driven flow (in progress)
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `paydirt/game_engine.py` | Add missing game logic methods |
+| `paydirt/computer_ai.py` | Ensure all AI logic is here |
+| `paydirt-web/backend/routes.py` | Remove custom game logic, use engine methods |
+| `paydirt-web/frontend/src/App.jsx` | Update to use new API flow |
 
 ---
 
@@ -479,7 +690,29 @@ A web-based browser game that recreates the classic Paydirt board game experienc
 
 ---
 
-### Phase 7: E2E Testing & Deployment
+### Phase 7: Engine Integration (Consistency)
+**Priority: HIGH - Ensures CLI and Web UI behave identically**
+
+**Tasks:**
+- [x] Audit game engine for missing methods
+- [x] Add `should_go_for_two()` to `ComputerAI`
+- [x] Add `get_touchdown_pat_info()` to game engine
+- [x] Refactor PAT logic from routes.py → engine
+- [x] Refactor penalty decisions from routes.py → engine  
+- [x] Simplify routes.py to thin API wrapper
+- [x] Verify CLI and Web UI use same engine methods
+- [x] **FIXED**: Use `run_play_with_penalty_procedure` instead of `run_play` for proper penalty handling
+- [ ] Verify CLI and Web UI behave identically (in progress)
+
+**Tests:**
+- [ ] All CLI behaviors work in Web UI
+- [ ] PAT decision flow matches CLI
+- [x] Penalty decision flow matches CLI (using correct engine method)
+- [ ] CPU AI decisions match CLI
+
+---
+
+### Phase 8: E2E Testing & Deployment
 **Duration: Day 12**
 
 **Tasks:**
@@ -634,6 +867,55 @@ npx playwright test
 | **Team Selection** | Dynamic from folder | Works for any seasons added to `seasons/` |
 | **Visual Style** | Retro board game | Matches the Paydirt aesthetic |
 | **Mobile Support** | Not in scope | Focus on desktop first |
+| **Game Logic Location** | Engine is source of truth | CLI and Web UI must be 100% consistent |
+| **Backend Role** | Thin API wrapper | No custom game logic in routes.py |
+| **AI Location** | computer_ai.py | All AI decisions centralized |
+
+---
+
+## Game Engine Responsibilities
+
+The `PaydirtGameEngine` class is the single source of truth for ALL game rules:
+
+### Required Engine Methods
+
+| Method | Purpose | Currently Exists? |
+|--------|---------|-------------------|
+| `run_play(offense, defense)` | Execute a play | Yes |
+| `apply_penalty_decision(outcome, accept)` | Handle penalty choice | Yes |
+| `attempt_extra_point()` | Kick PAT | Yes |
+| `attempt_two_point(play, defense)` | 2-point conversion | Yes |
+| `kickoff(kicking_home)` | Execute kickoff | Yes |
+| `onside_kick(kicking_home)` | Execute onside kick | Yes |
+| `select_offense(game)` | AI choose offense play | Yes (ComputerAI) |
+| `select_defense(game)` | AI choose defense | Yes (ComputerAI) |
+| `should_go_for_two(game)` | AI PAT decision | Yes (ComputerAI) |
+
+### Decision Flow
+
+```
+Frontend → /execute → run_play() → PlayOutcome
+                                      ↓
+                              pending_decision?
+                                      ↓
+                              Yes → Frontend shows choice
+                                      ↓
+                              User selects → /decision → apply_XXX()
+                                      ↓
+                              No → Continue game
+```
+
+---
+
+## Consistency Checklist
+
+When adding features to CLI, verify Web UI:
+
+- [ ] All new engine methods exposed via API
+- [ ] All new decision types handled in frontend
+- [ ] AI logic in `computer_ai.py`, not routes.py
+- [ ] Same test scenarios pass in CLI and Web UI
+- [ ] No hardcoded game rules in routes.py
 
 ---
 

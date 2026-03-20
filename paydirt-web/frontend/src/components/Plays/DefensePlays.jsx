@@ -6,6 +6,7 @@ const DEFENSIVE_FORMATIONS = [
   { key: 'C', name: 'Spread', description: 'Spread Defense' },
   { key: 'D', name: 'Short-P', description: 'Short Pass' },
   { key: 'E', name: 'Long-P', description: 'Long Pass' },
+  { key: 'F', name: 'Blitz', description: 'Blitz' },
 ]
 
 export function DefensePlays({ selectedPlay, onSelectPlay, disabled = false, isHumanTurn = true }) {
@@ -39,36 +40,29 @@ export function DefensePlays({ selectedPlay, onSelectPlay, disabled = false, isH
   }
 
   return (
-    <div className="board-panel" data-testid="defense-plays">
-      <div className="board-panel-header text-center py-1">
-        ⚔ SELECT DEFENSE ⚔
+    <div className="bg-panel-bg border-2 border-panel-border rounded-lg h-full flex flex-col" data-testid="defense-plays">
+      <div className="text-center py-0.5 text-[10px] font-bold text-panel-border">
+        YOUR DEFENSE
       </div>
       
-      <div className="p-3">
-        <div className="grid grid-cols-5 gap-1">
+      <div className="flex-1 p-0.5">
+        <div className="grid grid-cols-6 gap-0.5 h-full">
           {DEFENSIVE_FORMATIONS.map(formation => (
             <button
               key={formation.key}
               onClick={() => onSelectPlay(formation.key)}
               disabled={disabled || !isHumanTurn}
               className={`
-                play-button flex flex-col items-center justify-center w-full py-2
+                play-button flex flex-col items-center justify-center py-0.5
                 ${selectedPlay === formation.key ? 'play-button-selected' : ''}
                 ${disabled || !isHumanTurn ? 'opacity-50 cursor-not-allowed' : ''}
               `}
               data-testid={`defense-play-${formation.key.toLowerCase()}`}
             >
-              <span className="text-sm font-bold">{formation.key}</span>
-              <span className="text-xs">{formation.name}</span>
-              <span className="text-xs text-gray-600">{formation.description}</span>
+              <span className="font-bold text-[10px]">{formation.key}</span>
+              <span className="text-[8px]">{formation.name}</span>
             </button>
           ))}
-        </div>
-
-        <div className="mt-3 pt-2 border-t border-gray-300 text-center">
-          <p className="text-xs text-gray-500">
-            Press A, B, C, D, or E
-          </p>
         </div>
       </div>
     </div>

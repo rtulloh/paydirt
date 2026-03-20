@@ -14,12 +14,19 @@ from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
 from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.computer_ai import ComputerAI
+from paydirt.result_formatter import ResultFormatter
+from paydirt.commentary import load_roster_from_file
 
 router = APIRouter()
 
 SEASONS_DIR = Path(__file__).parent.parent.parent / 'seasons'
 
 games: Dict[str, Dict[str, Any]] = {}
+
+
+@router.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
 
 
 class Team(BaseModel):
@@ -31,12 +38,30 @@ class Team(BaseModel):
     state: Optional[str] = None
 
 
+class PenaltyOptionModel(BaseModel):
+    penalty_type: str
+    raw_result: str
+    yards: int
+    description: str
+    auto_first_down: bool = False
+    is_pass_interference: bool = False
+
+
+class PenaltyChoiceModel(BaseModel):
+    penalty_options: List[PenaltyOptionModel]
+    offended_team: str
+    offsetting: bool = False
+    is_pass_interference: bool = False
+    reroll_log: List[str] = []
+
+
 class PlayResult(BaseModel):
     result: str
     yards: int
     description: str
     turnover: bool = False
     scoring: bool = False
+    touchdown: bool = False
     new_ball_position: int
     new_down: int
     new_yards_to_go: int
@@ -46,6 +71,37 @@ class PlayResult(BaseModel):
     game_over: bool = False
     quarter_changed: bool = False
     half_changed: bool = False
+    pending_penalty_decision: bool = False
+    penalty_choice: Optional[PenaltyChoiceModel] = None
+    play_type: Optional[str] = None
+    
+    headline: Optional[str] = None
+    commentary: Optional[str] = None
+    big_play_factor: int = 0
+    big_play_type: str = "normal"
+    is_gain: bool = False
+    is_stuffed: bool = False
+    is_big_play: bool = False
+    is_explosive: bool = False
+    is_interception: bool = False
+    is_fumble: bool = False
+    is_first_down: bool = False
+    is_safety: bool = False
+    is_sack: bool = False
+    is_breakaway: bool = False
+
+
+class ExtraPointResponse(BaseModel):
+    success: bool
+    description: str
+    new_score_home: int
+    new_score_away: int
+
+
+class PATChoiceResponse(BaseModel):
+    can_go_for_two: bool
+    cpu_should_go_for_two: bool
+    scoring_team_is_player: bool
 
 
 class SeasonsResponse(BaseModel):
@@ -61,6 +117,7 @@ class NewGameRequest(BaseModel):
     season: str
     play_as_home: bool = True
     opponent_team: Optional[str] = None
+    difficulty: str = "medium"
 
 
 class GameStateResponse(BaseModel):
@@ -79,16 +136,22 @@ class GameStateResponse(BaseModel):
     home_timeouts: int = 3
     away_timeouts: int = 3
     player_offense: bool = True
+    difficulty: str = "medium"
+    human_team_id: Optional[str] = None
+    cpu_team_id: Optional[str] = None
+    human_is_home: Optional[bool] = None
 
 
 class NewGameResponse(BaseModel):
     game_id: str
     game_state: GameStateResponse
+    difficulty: str = "medium"
 
 
 class PlayRequest(BaseModel):
     game_id: str
     player_play: str
+    cpu_play: Optional[str] = None
 
 
 class CPUPlayResponse(BaseModel):
@@ -123,6 +186,9 @@ def load_team_info(season_dir: Path, team_id: str) -> Team:
 
 
 def game_state_to_response(game: Dict[str, Any]) -> GameStateResponse:
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    is_home_possession = game["engine"].state.is_home_possession
+    player_offense = human_is_home == is_home_possession
     return GameStateResponse(
         game_id=game["game_id"],
         home_team=game["home_team"],
@@ -131,14 +197,17 @@ def game_state_to_response(game: Dict[str, Any]) -> GameStateResponse:
         away_score=game["engine"].state.away_score,
         quarter=game["engine"].state.quarter,
         time_remaining=int(game["engine"].state.time_remaining * 60),
-        possession="home" if game["engine"].state.is_home_possession else "away",
+        possession="home" if is_home_possession else "away",
         ball_position=game["engine"].state.ball_position,
         down=game["engine"].state.down,
         yards_to_go=game["engine"].state.yards_to_go,
         game_over=game["engine"].state.game_over,
         home_timeouts=game["engine"].state.home_timeouts,
         away_timeouts=game["engine"].state.away_timeouts,
-        player_offense=game["player_offense"],
+        player_offense=player_offense,
+        human_team_id=game.get("player_team_id"),
+        cpu_team_id=game.get("cpu_team_id"),
+        human_is_home=human_is_home,
     )
 
 
@@ -212,19 +281,34 @@ async def new_game(request: NewGameRequest):
             raise HTTPException(status_code=404, detail=f"Opponent team '{request.opponent_team}' not found")
         if request.opponent_team == request.player_team:
             raise HTTPException(status_code=400, detail="Player team and opponent team cannot be the same")
-        cpu_team = request.opponent_team
+        player_team_id = request.player_team
+        cpu_team_id = request.opponent_team
+        player_is_home = request.play_as_home
+        human_plays_offense = random.choice([True, False])
+        if player_is_home:
+            home_id = player_team_id
+            away_id = cpu_team_id
+        else:
+            home_id = cpu_team_id
+            away_id = player_team_id
     else:
         cpu_teams = [t for t in available_teams if t != request.player_team]
         cpu_team = random.choice(cpu_teams) if cpu_teams else request.player_team
+        player_is_home = request.play_as_home
+        human_plays_offense = random.choice([True, False])
+        if player_is_home:
+            player_team_id = request.player_team
+            cpu_team_id = cpu_team
+            home_id = player_team_id
+            away_id = cpu_team_id
+        else:
+            player_team_id = cpu_team
+            cpu_team_id = request.player_team
+            home_id = cpu_team_id
+            away_id = player_team_id
     
-    player_is_home = request.play_as_home
-    player_offense = random.choice([True, False])
-    
-    player_team_id = request.player_team if player_is_home else cpu_team
-    cpu_team_id = cpu_team if player_is_home else request.player_team
-    
-    home_team = load_team_info(season_dir, player_team_id if player_is_home else cpu_team_id)
-    away_team = load_team_info(season_dir, cpu_team_id if player_is_home else player_team_id)
+    home_team = load_team_info(season_dir, home_id)
+    away_team = load_team_info(season_dir, away_id)
     
     home_chart = load_team_chart(str(season_dir / home_team.id))
     away_chart = load_team_chart(str(season_dir / away_team.id))
@@ -233,17 +317,22 @@ async def new_game(request: NewGameRequest):
     
     engine = PaydirtGameEngine(home_chart, away_chart)
     
+    difficulty = request.difficulty.lower() if request.difficulty else "medium"
+    difficulty_map = {'easy': 0.3, 'medium': 0.5, 'hard': 0.7}
+    cpu_aggression = difficulty_map.get(difficulty, 0.5)
+    
     game = {
         "game_id": game_id,
         "home_team": home_team,
         "away_team": away_team,
-        "player_offense": player_offense,
+        "human_plays_offense": human_plays_offense,
         "player_team_id": player_team_id,
         "cpu_team_id": cpu_team_id,
         "engine": engine,
-        "ai": ComputerAI(aggression=0.5),
+        "ai": ComputerAI(aggression=cpu_aggression),
         "created_at": datetime.now(),
         "season": request.season,
+        "difficulty": difficulty,
     }
     
     game["ai"].set_team(home_chart if home_team.id == cpu_team_id else away_chart)
@@ -253,6 +342,7 @@ async def new_game(request: NewGameRequest):
     return NewGameResponse(
         game_id=game_id,
         game_state=game_state_to_response(game),
+        difficulty=difficulty,
     )
 
 
@@ -262,6 +352,45 @@ async def get_game_state(game_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
     
     return game_state_to_response(games[game_id])
+
+
+class CoinTossRequest(BaseModel):
+    game_id: str
+    player_won: bool
+    player_kicks: bool
+    human_plays_offense: Optional[bool] = True
+
+
+@router.post("/api/game/coin-toss")
+async def process_coin_toss(request: CoinTossRequest):
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    # Update human's role based on coin toss choice
+    if request.human_plays_offense is not None:
+        game["human_plays_offense"] = request.human_plays_offense
+    
+    # Set possession based on coin toss result
+    # player_kicks = True means player kicks (opponent receives)
+    # player_kicks = False means player receives
+    # Extract team ID from home_chart.team_dir (e.g., "seasons/2026/TeamName" -> "TeamName")
+    home_team_id = engine.state.home_chart.team_dir.split('/')[-1]
+    human_is_home = home_team_id == game["player_team_id"]
+    
+    if request.player_kicks:
+        # Player kicks - opponent receives
+        engine.state.is_home_possession = not human_is_home
+    else:
+        # Player receives - player is on offense
+        engine.state.is_home_possession = human_is_home
+    
+    return {
+        "status": "ok",
+        "possession": "home" if engine.state.is_home_possession else "away",
+    }
 
 
 @router.post("/api/game/cpu-play", response_model=CPUPlayResponse)
@@ -274,7 +403,7 @@ async def get_cpu_play(request: PlayRequest):
     if game["engine"].state.game_over:
         raise HTTPException(status_code=400, detail="Game is over")
     
-    cpu_is_offense = not game["player_offense"]
+    cpu_is_offense = not game["human_plays_offense"]
     
     if cpu_is_offense:
         cpu_play_type = game["ai"].select_offense(game["engine"])
@@ -307,6 +436,56 @@ async def get_cpu_play(request: PlayRequest):
     return CPUPlayResponse(cpu_play=cpu_play)
 
 
+class CPUFourthDownResponse(BaseModel):
+    decision: str
+    play: Optional[str] = None
+
+
+@router.get("/api/game/cpu-4th-down-decision/{game_id}", response_model=CPUFourthDownResponse)
+async def get_cpu_4th_down_decision(game_id: str):
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    state = game["engine"].state
+    
+    # Determine CPU offense status based on current possession
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    is_home_possession = state.is_home_possession
+    player_is_on_offense = human_is_home == is_home_possession
+    cpu_is_offense = not player_is_on_offense
+    
+    if not (cpu_is_offense and state.down == 4):
+        return CPUFourthDownResponse(decision="none")
+    
+    play_map = {
+        PlayType.LINE_PLUNGE: "1",
+        PlayType.OFF_TACKLE: "2",
+        PlayType.END_RUN: "3",
+        PlayType.DRAW: "4",
+        PlayType.SCREEN: "5",
+        PlayType.SHORT_PASS: "6",
+        PlayType.MEDIUM_PASS: "7",
+        PlayType.LONG_PASS: "8",
+        PlayType.TE_SHORT_LONG: "9",
+        PlayType.QB_SNEAK: "Q",
+        PlayType.QB_KNEEL: "K",
+        PlayType.PUNT: "P",
+        PlayType.FIELD_GOAL: "F",
+        PlayType.SPIKE_BALL: "S",
+    }
+    
+    play, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
+    play_key = play_map.get(play, "1")
+    
+    if play == PlayType.PUNT:
+        return CPUFourthDownResponse(decision="punt", play="P")
+    elif play == PlayType.FIELD_GOAL:
+        return CPUFourthDownResponse(decision="field_goal", play="F")
+    else:
+        return CPUFourthDownResponse(decision="go_for_it", play=play_key)
+
+
 @router.post("/api/game/execute", response_model=ExecutePlayResponse)
 async def execute_play(request: PlayRequest):
     if request.game_id not in games:
@@ -319,25 +498,100 @@ async def execute_play(request: PlayRequest):
         raise HTTPException(status_code=400, detail="Game is over")
     
     player_play = request.player_play.upper()
-    player_offense = game["player_offense"]
+    player_offense = game["human_plays_offense"]
+    
+    cpu_play = request.cpu_play.upper() if request.cpu_play else None
     
     if player_offense:
         offense_play = get_play_type_from_key(player_play)
-        defense_play = get_defense_type_from_key("A")
+        if cpu_play:
+            defense_play = get_defense_type_from_key(cpu_play)
+        else:
+            defense_play = game["ai"].select_defense(engine)
     else:
-        offense_play = get_play_type_from_key("1")
+        if cpu_play:
+            offense_play = get_play_type_from_key(cpu_play)
+        else:
+            offense_play = game["ai"].select_offense(engine)
         defense_play = get_defense_type_from_key(player_play)
     
     quarter_before = engine.state.quarter
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
     
-    result = engine.run_play(offense_play, defense_play)
+    result = engine.run_play_with_penalty_procedure(offense_play, defense_play)
     
     quarter_changed = engine.state.quarter != quarter_before
     half_changed = quarter_before in [2, 4] and engine.state.quarter != quarter_before
     
     scoring = result.touchdown or result.field_goal_made or result.safety
+    
+    penalty_choice_model = None
+    if result.penalty_choice:
+        penalty_options = []
+        for opt in result.penalty_choice.penalty_options:
+            penalty_options.append(PenaltyOptionModel(
+                penalty_type=opt.penalty_type,
+                raw_result=opt.raw_result,
+                yards=opt.yards,
+                description=opt.description,
+                auto_first_down=opt.auto_first_down,
+                is_pass_interference=getattr(opt, 'is_pass_interference', False),
+            ))
+        penalty_choice_model = PenaltyChoiceModel(
+            penalty_options=penalty_options,
+            offended_team=result.penalty_choice.offended_team,
+            offsetting=result.penalty_choice.offsetting,
+            is_pass_interference=result.penalty_choice.is_pass_interference,
+            reroll_log=result.penalty_choice.reroll_log or [],
+        )
+    
+    offense_team = engine.state.possession_team.peripheral.short_name if hasattr(engine.state, 'possession_team') and engine.state.possession_team else "OFF"
+    defense_team = engine.state.defense_team.peripheral.short_name if hasattr(engine.state, 'defense_team') and engine.state.defense_team else "DEF"
+    
+    offense_roster = {}
+    defense_roster = {}
+    try:
+        if engine.state.possession_team and hasattr(engine.state.possession_team, 'team_dir'):
+            roster = load_roster_from_file(engine.state.possession_team.team_dir)
+            if roster:
+                offense_roster = {
+                    'qb': roster.qb,
+                    'rb': roster.rb,
+                    'wr': roster.wr,
+                    'te': roster.te,
+                    'ol': roster.ol,
+                    'dl': roster.dl,
+                    'lb': roster.lb,
+                    'db': roster.db,
+                    'k': roster.k,
+                    'p': roster.p,
+                    'kr': roster.kr,
+                }
+    except:
+        pass
+    try:
+        if engine.state.defense_team and hasattr(engine.state.defense_team, 'team_dir'):
+            roster = load_roster_from_file(engine.state.defense_team.team_dir)
+            if roster:
+                defense_roster = {
+                    'qb': roster.qb,
+                    'rb': roster.rb,
+                    'wr': roster.wr,
+                    'te': roster.te,
+                    'ol': roster.ol,
+                    'dl': roster.dl,
+                    'lb': roster.lb,
+                    'db': roster.db,
+                    'k': roster.k,
+                    'p': roster.p,
+                    'kr': roster.kr,
+                }
+    except:
+        pass
+    
+    formatter = ResultFormatter(offense_team, defense_team, offense_roster, defense_roster)
+    formatted = formatter.format(result)
     
     play_result = PlayResult(
         result=result.result.result_type.value,
@@ -345,6 +599,7 @@ async def execute_play(request: PlayRequest):
         description=result.description,
         turnover=result.turnover,
         scoring=scoring,
+        touchdown=result.touchdown,
         new_ball_position=engine.state.ball_position,
         new_down=engine.state.down,
         new_yards_to_go=engine.state.yards_to_go,
@@ -358,6 +613,23 @@ async def execute_play(request: PlayRequest):
         game_over=engine.state.game_over,
         quarter_changed=quarter_changed,
         half_changed=half_changed,
+        pending_penalty_decision=result.pending_penalty_decision,
+        penalty_choice=penalty_choice_model,
+        play_type=result.play_type.value if hasattr(result.play_type, 'value') else str(result.play_type),
+        headline=formatted.headline,
+        commentary=formatted.commentary,
+        big_play_factor=formatted.big_play_factor,
+        big_play_type=formatted.big_play_type,
+        is_gain=formatted.is_gain,
+        is_stuffed=formatted.is_stuffed,
+        is_big_play=formatted.is_big_play,
+        is_explosive=formatted.is_explosive,
+        is_interception=formatted.is_interception,
+        is_fumble=formatted.is_fumble,
+        is_first_down=formatted.is_first_down,
+        is_safety=formatted.is_safety,
+        is_sack=formatted.is_sack,
+        is_breakaway=formatted.is_breakaway,
     )
     
     return ExecutePlayResponse(
@@ -377,3 +649,225 @@ async def delete_game(game_id: str):
     
     del games[game_id]
     return {"status": "deleted", "game_id": game_id}
+
+
+@router.get("/api/game/pat-choice/{game_id}", response_model=PATChoiceResponse)
+async def get_pat_choice(game_id: str):
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    engine = game["engine"]
+    
+    pat_info = engine.get_touchdown_pat_info()
+    
+    human_is_home = game["home_team"].id == game["player_team_id"]
+    is_home_possession = engine.state.is_home_possession
+    scoring_team_is_player = (human_is_home and is_home_possession) or (not human_is_home and not is_home_possession)
+    
+    return PATChoiceResponse(
+        can_go_for_two=pat_info['can_go_for_two'],
+        cpu_should_go_for_two=pat_info['cpu_should_go_for_two'],
+        scoring_team_is_player=scoring_team_is_player
+    )
+
+
+@router.post("/api/game/extra-point", response_model=ExtraPointResponse)
+async def attempt_extra_point(request: PlayRequest):
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    success, description = engine.attempt_extra_point()
+    
+    return ExtraPointResponse(
+        success=success,
+        description=description,
+        new_score_home=engine.state.home_score,
+        new_score_away=engine.state.away_score,
+    )
+
+
+class KickoffRequest(BaseModel):
+    game_id: str
+    kickoff_spot: int = 35
+
+
+@router.post("/api/game/kickoff")
+async def perform_kickoff(request: KickoffRequest):
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    kicking_home = engine.state.is_home_possession
+    
+    result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
+    
+    scoring = result.touchdown or result.safety
+    possession_changed = True
+    
+    return ExecutePlayResponse(
+        player_play="KICKOFF",
+        cpu_play="KICKOFF",
+        dice_roll_offense=0,
+        dice_roll_defense=0,
+        result=PlayResult(
+            result=result.result.result_type.value if hasattr(result.result, 'result_type') else str(result.result),
+            yards=result.yards_gained,
+            description=result.description,
+            turnover=result.turnover,
+            scoring=scoring,
+            touchdown=result.touchdown,
+            new_ball_position=engine.state.ball_position,
+            new_down=engine.state.down,
+            new_yards_to_go=engine.state.yards_to_go,
+            new_score_home=engine.state.home_score,
+            new_score_away=engine.state.away_score,
+            possession_changed=possession_changed,
+            game_over=engine.state.game_over,
+            quarter_changed=False,
+            half_changed=False,
+            pending_penalty_decision=result.pending_penalty_decision,
+            penalty_choice=None,
+            play_type="kickoff",
+        ),
+        game_state=game_state_to_response(game),
+    )
+
+
+class TwoPointRequest(BaseModel):
+    game_id: str
+    offense_play: str
+    defense_play: str = "A"
+
+
+@router.post("/api/game/two-point", response_model=ExecutePlayResponse)
+async def attempt_two_point(request: TwoPointRequest):
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    offense_play = get_play_type_from_key(request.offense_play)
+    defense_play = get_defense_type_from_key(request.defense_play)
+    
+    success, defense_points, description = engine.attempt_two_point(offense_play, defense_play)
+    
+    return ExecutePlayResponse(
+        player_play=request.offense_play,
+        cpu_play="CPU",
+        dice_roll_offense=0,
+        dice_roll_defense=0,
+        result=PlayResult(
+            result="two_point_conversion",
+            yards=0,
+            description=description,
+            scoring=True,
+            touchdown=False,
+            new_ball_position=engine.state.ball_position,
+            new_down=engine.state.down,
+            new_yards_to_go=engine.state.yards_to_go,
+            new_score_home=engine.state.home_score,
+            new_score_away=engine.state.away_score,
+            possession_changed=True,
+            game_over=engine.state.game_over,
+        ),
+        game_state=game_state_to_response(game),
+    )
+
+
+class PenaltyDecisionRequest(BaseModel):
+    game_id: str
+    penalty_index: int
+    accept_penalty: bool
+
+
+@router.post("/api/game/penalty-decision", response_model=ExecutePlayResponse)
+async def apply_penalty_decision(request: PenaltyDecisionRequest):
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    outcome = getattr(engine, '_last_play_outcome', None)
+    if not outcome or not outcome.pending_penalty_decision:
+        raise HTTPException(status_code=400, detail="No pending penalty decision")
+    
+    player_offense = game["human_plays_offense"]
+    penalty_choice = outcome.penalty_choice
+    offended_is_offense = penalty_choice.offended_team == "offense"
+    
+    human_decides = (offended_is_offense and player_offense) or \
+                   (not offended_is_offense and not player_offense)
+    
+    if not human_decides:
+        accept_penalty = True
+    else:
+        accept_penalty = request.accept_penalty
+    
+    if outcome.play_type == PlayType.PUNT:
+        new_outcome = engine.apply_punt_penalty_decision(outcome, accept_penalty)
+    elif outcome.play_type == PlayType.FIELD_GOAL:
+        new_outcome = engine.apply_fg_penalty_decision(outcome, accept_play=not request.accept_penalty, penalty_index=request.penalty_index)
+    elif outcome.play_type == PlayType.KICKOFF:
+        new_outcome = engine.apply_kickoff_penalty_decision(outcome, accept_penalty)
+    else:
+        new_outcome = engine.apply_penalty_decision(outcome, accept_play=not request.accept_penalty, penalty_index=request.penalty_index)
+    
+    scoring = new_outcome.touchdown or new_outcome.field_goal_made or new_outcome.safety
+    
+    penalty_choice_model = None
+    if new_outcome.penalty_choice:
+        penalty_options = []
+        for opt in new_outcome.penalty_choice.penalty_options:
+            penalty_options.append(PenaltyOptionModel(
+                penalty_type=opt.penalty_type,
+                raw_result=opt.raw_result,
+                yards=opt.yards,
+                description=opt.description,
+                auto_first_down=opt.auto_first_down,
+                is_pass_interference=getattr(opt, 'is_pass_interference', False),
+            ))
+        penalty_choice_model = PenaltyChoiceModel(
+            penalty_options=penalty_options,
+            offended_team=new_outcome.penalty_choice.offended_team,
+            offsetting=new_outcome.penalty_choice.offsetting,
+            is_pass_interference=new_outcome.penalty_choice.is_pass_interference,
+            reroll_log=new_outcome.penalty_choice.reroll_log or [],
+        )
+    
+    play_result = PlayResult(
+        result=new_outcome.result.result_type.value if hasattr(new_outcome.result, 'result_type') else str(new_outcome.result),
+        yards=new_outcome.yards_gained,
+        description=new_outcome.description,
+        turnover=new_outcome.turnover,
+        scoring=scoring,
+        touchdown=new_outcome.touchdown,
+        new_ball_position=engine.state.ball_position,
+        new_down=engine.state.down,
+        new_yards_to_go=engine.state.yards_to_go,
+        new_score_home=engine.state.home_score,
+        new_score_away=engine.state.away_score,
+        possession_changed=new_outcome.turnover or scoring,
+        game_over=engine.state.game_over,
+        quarter_changed=False,
+        half_changed=False,
+        pending_penalty_decision=False,
+        penalty_choice=penalty_choice_model,
+        play_type=new_outcome.play_type.value if hasattr(new_outcome.play_type, 'value') else str(new_outcome.play_type),
+    )
+    
+    return ExecutePlayResponse(
+        player_play="PENALTY",
+        cpu_play="CPU",
+        dice_roll_offense=0,
+        dice_roll_defense=0,
+        result=play_result,
+        game_state=game_state_to_response(game),
+    )

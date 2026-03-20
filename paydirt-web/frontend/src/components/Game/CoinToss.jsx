@@ -1,28 +1,55 @@
 import { useState, useEffect } from 'react'
 
 export function CoinToss({ homeTeam, awayTeam, onComplete }) {
+  const [phase, setPhase] = useState('flip') // 'flip' -> 'call' -> 'result'
   const [flipping, setFlipping] = useState(true)
-  const [result, setResult] = useState(null)
+  const [coinResult, setCoinResult] = useState(null) // 'heads' or 'tails' (hidden until call is made)
+  const [playerCall, setPlayerCall] = useState(null) // 'heads' or 'tails'
+  const [playerChoice, setPlayerChoice] = useState(null) // 'receive' or 'kick'
   const [showResult, setShowResult] = useState(false)
 
+  // Start flipping the coin on mount
   useEffect(() => {
-    const flipDuration = 2000
     const timer = setTimeout(() => {
       setFlipping(false)
-      const heads = Math.random() > 0.5
-      setResult(heads ? 'heads' : 'tails')
-      setShowResult(true)
-    }, flipDuration)
+      // Generate the result but don't show it yet
+      setCoinResult(Math.random() > 0.5 ? 'heads' : 'tails')
+      setPhase('call')
+    }, 1500)
     return () => clearTimeout(timer)
   }, [])
 
-  const handleContinue = () => {
-    onComplete(result)
+  const handleCall = (call) => {
+    setPlayerCall(call)
+    setFlipping(true)
+    
+    // Now reveal the coin result
+    setTimeout(() => {
+      setFlipping(false)
+      setShowResult(true)
+      setPhase('result')
+    }, 1000)
   }
 
-  const teamReceiving = result === 'heads' ? 'home' : 'away'
-  const receivingTeam = teamReceiving === 'home' ? homeTeam : awayTeam
-  const kickingTeam = teamReceiving === 'home' ? awayTeam : homeTeam
+  const handleChoice = (choice) => {
+    setPlayerChoice(choice)
+    
+    // Determine possession based on choice
+    // If player receives, they get the ball; if they kick, opponent receives
+    const playerReceives = choice === 'receive'
+    const playerWonToss = playerCall === coinResult
+    
+    // If player won toss, they get their choice
+    // If player lost toss, opponent receives (CPU always chooses to receive in CLI)
+    onComplete({
+      coinResult,
+      playerCall,
+      playerWonToss,
+      playerReceives: playerWonToss ? playerReceives : !playerReceives,
+    })
+  }
+
+  const playerWonToss = playerCall === coinResult
 
   return (
     <div className="board-panel p-6 text-center" data-testid="coin-toss">
@@ -38,35 +65,86 @@ export function CoinToss({ homeTeam, awayTeam, onComplete }) {
           data-testid="coin"
         >
           <div className="text-4xl font-bold text-yellow-900">
-            {flipping ? '?' : result === 'heads' ? 'H' : 'T'}
+            {/* Show ? while flipping, or while waiting for call */}
+            {flipping || phase === 'flip' || phase === 'call' ? '?' : (coinResult === 'heads' ? 'H' : 'T')}
           </div>
         </div>
       </div>
 
-      {showResult && result && (
-        <div className="animate-fade-in">
-          <p className="text-lg text-gray-700 mb-2 capitalize">
-            It's {result}!
-          </p>
-          <p className="text-base text-gray-600 mb-2">
-            {receivingTeam?.short_name || receivingTeam?.name || 'Receiving Team'} ({teamReceiving === 'home' ? 'HOME' : 'AWAY'}) receives
-          </p>
-          <p className="text-sm text-gray-500 mb-4">
-            {kickingTeam?.short_name || kickingTeam?.name || 'Kicking Team'} ({teamReceiving === 'home' ? 'AWAY' : 'HOME'}) kicks off
-          </p>
+      {phase === 'flip' && (
+        <p className="text-gray-500 animate-pulse">Flipping coin...</p>
+      )}
 
-          <button
-            onClick={handleContinue}
-            className="play-button text-base px-6 py-3"
-            data-testid="coin-toss-continue"
-          >
-            CONTINUE
-          </button>
+      {phase === 'call' && (
+        <div className="animate-fade-in">
+          <p className="text-lg text-gray-700 mb-4">
+            The coin is in the air! Call it:
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => handleCall('heads')}
+              className="play-button text-base px-8 py-3 bg-green-600 hover:bg-green-700"
+              data-testid="choose-heads"
+            >
+              HEADS
+            </button>
+            <button
+              onClick={() => handleCall('tails')}
+              className="play-button text-base px-8 py-3 bg-blue-600 hover:bg-blue-700"
+              data-testid="choose-tails"
+            >
+              TAILS
+            </button>
+          </div>
         </div>
       )}
 
-      {flipping && (
-        <p className="text-gray-500 animate-pulse">Flipping...</p>
+      {phase === 'result' && (
+        <div className="animate-fade-in">
+          <p className="text-lg text-gray-700 mb-2 capitalize">
+            It's {coinResult}!
+          </p>
+          <p className={`text-base mb-4 font-bold ${playerWonToss ? 'text-green-600' : 'text-red-600'}`}>
+            {playerWonToss ? 'You won the toss!' : 'You lost the toss'}
+          </p>
+          
+          {playerWonToss ? (
+            <div>
+              <p className="text-base text-gray-700 mb-2">
+                Choose what to do:
+              </p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => handleChoice('receive')}
+                  className="play-button text-base px-6 py-3 bg-green-600 hover:bg-green-700"
+                  data-testid="choose-receive"
+                >
+                  RECEIVE
+                </button>
+                <button
+                  onClick={() => handleChoice('kick')}
+                  className="play-button text-base px-6 py-3 bg-blue-600 hover:bg-blue-700"
+                  data-testid="choose-kick"
+                >
+                  KICK OFF
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-base text-gray-600 mb-2">
+                {homeTeam?.short_name || 'OPPONENT'} elects to receive.
+              </p>
+              <button
+                onClick={() => handleChoice('kick')}
+                className="play-button text-base px-6 py-3"
+                data-testid="coin-toss-continue"
+              >
+                CONTINUE
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

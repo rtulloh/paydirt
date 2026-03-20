@@ -8,12 +8,12 @@ const DICE_COLORS = {
 }
 
 const PIP_PATTERNS = {
+  0: [],
   1: [[50, 50]],
   2: [[25, 25], [75, 75]],
   3: [[25, 25], [50, 50], [75, 75]],
   4: [[25, 25], [75, 25], [25, 75], [75, 75]],
   5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
-  6: [[25, 25], [75, 25], [25, 50], [75, 50], [25, 75], [75, 75]],
 }
 
 function Pip({ x, y, color }) {
@@ -61,6 +61,9 @@ export function DiceDisplay({
   offenseRoll, 
   defenseRoll, 
   result,
+  offensePlay,
+  defensePlay,
+  description,
   onAnimationComplete,
   isRolling = false,
 }) {
@@ -101,7 +104,7 @@ export function DiceDisplay({
     return () => timers.forEach(clearTimeout)
   }, [animationStarted, onAnimationComplete])
 
-  if (!isRolling && !showResult) {
+  if (!isRolling && !showResult && !description) {
     return null
   }
 
@@ -109,94 +112,63 @@ export function DiceDisplay({
   const defenseTotal = (defenseRoll?.red || 0) + (defenseRoll?.green || 0)
 
   return (
-    <div className="board-panel p-3" data-testid="dice-display">
-      <div className="text-center mb-2">
-        <h3 className="text-base font-heading font-bold text-gray-800">
-          DICE ROLL
-        </h3>
-      </div>
-
-      <div className="flex justify-center gap-6">
-        <div className="text-center">
-          <div className="text-xs font-bold text-gray-600 mb-1">OFFENSE</div>
-          <div className="flex justify-center gap-2 mb-1">
-            <Die 
-              value={offenseRoll?.black || 1} 
-              color="black" 
-              size="md"
-              animate={isRolling}
-              settled={showOffenseDice}
-              delay={0}
-            />
-            <Die 
-              value={offenseRoll?.white1 || 1} 
-              color="white" 
-              size="md"
-              animate={isRolling}
-              settled={showOffenseDice}
-              delay={100}
-            />
-            <Die 
-              value={offenseRoll?.white2 || 1} 
-              color="white" 
-              size="md"
-              animate={isRolling}
-              settled={showOffenseDice}
-              delay={200}
-            />
+    <div className="bg-gray-800 rounded-lg p-4" data-testid="dice-display">
+      <div className="flex justify-center gap-8 mb-2">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-bold text-blue-400 w-6">OFF</span>
+          <div className="flex gap-2">
+            <Die value={offenseRoll?.black || 1} color="black" size="md" animate={isRolling} settled={showOffenseDice} delay={0} />
+            <Die value={offenseRoll?.white1 || 1} color="white" size="md" animate={isRolling} settled={showOffenseDice} delay={100} />
+            <Die value={offenseRoll?.white2 || 1} color="white" size="md" animate={isRolling} settled={showOffenseDice} delay={200} />
           </div>
-          <div className={`text-base font-bold text-blue-600 transition-opacity duration-300 ${showTotals ? 'opacity-100' : 'opacity-0'}`}>
-            B{offenseRoll?.black}+W{offenseRoll?.white1}+W{offenseRoll?.white2}={offenseTotal}
-          </div>
+          <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-blue-400 w-8 text-center`}>{offenseTotal}</span>
         </div>
 
-        <div className="text-center">
-          <div className="text-xs font-bold text-gray-600 mb-1">DEFENSE</div>
-          <div className="flex justify-center gap-2 mb-1">
-            <Die 
-              value={defenseRoll?.red || 1} 
-              color="red" 
-              size="md"
-              animate={isRolling}
-              settled={showDefenseDice}
-              delay={400}
-            />
-            <Die 
-              value={defenseRoll?.green || 1} 
-              color="green" 
-              size="md"
-              animate={isRolling}
-              settled={showDefenseDice}
-              delay={500}
-            />
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-bold text-purple-400 w-6">DEF</span>
+          <div className="flex gap-2">
+            <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={showDefenseDice} delay={400} />
+            <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={showDefenseDice} delay={500} />
           </div>
-          <div className={`text-base font-bold text-purple-600 transition-opacity duration-300 ${showTotals ? 'opacity-100' : 'opacity-0'}`}>
-            R{defenseRoll?.red}+G{defenseRoll?.green}={defenseTotal}
-          </div>
+          <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-purple-400 w-8 text-center`}>{defenseTotal}</span>
         </div>
       </div>
+      
+      {description && (
+        <div className="text-center text-white text-sm mt-2 pt-2 border-t border-gray-700">
+          {description}
+        </div>
+      )}
     </div>
   )
 }
+
+const BLACK_DIE = [1, 1, 2, 2, 3, 3]
+const WHITE_DIE = [0, 1, 2, 3, 4, 5]
+const RED_DIE = [1, 1, 1, 2, 2, 3]
+const GREEN_DIE = [0, 0, 0, 0, 1, 2]
+
+const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)]
+const randomFromRange = (min, max) => min + Math.floor(Math.random() * (max - min + 1))
 
 export function DiceRoller({ onComplete }) {
   const [rolling, setRolling] = useState(true)
   const [values, setValues] = useState({
     black: 1,
-    white1: 1,
-    white2: 1,
+    white1: 0,
+    white2: 0,
     red: 1,
-    green: 1,
+    green: 0,
   })
 
   useEffect(() => {
     const interval = setInterval(() => {
       setValues({
-        black: Math.floor(Math.random() * 6) + 1,
-        white1: Math.floor(Math.random() * 6) + 1,
-        white2: Math.floor(Math.random() * 6) + 1,
-        red: Math.floor(Math.random() * 6) + 1,
-        green: Math.floor(Math.random() * 6) + 1,
+        black: randomFrom(BLACK_DIE),
+        white1: randomFrom(WHITE_DIE),
+        white2: randomFrom(WHITE_DIE),
+        red: randomFrom(RED_DIE),
+        green: randomFrom(GREEN_DIE),
       })
     }, 100)
 

@@ -2,42 +2,34 @@ import { useEffect, useCallback } from 'react'
 
 const OFFENSIVE_PLAYS = {
   RUNS: [
-    { key: '1', name: 'Ln-Plg', description: 'Line Plunge' },
-    { key: '2', name: 'O-Tkl', description: 'Off Tackle' },
-    { key: '3', name: 'End-Rn', description: 'End Run' },
-    { key: '4', name: 'Draw', description: 'Draw Play' },
+    { key: '1', name: 'Ln-Plg' },
+    { key: '2', name: 'O-Tkl' },
+    { key: '3', name: 'End-Rn' },
+    { key: '4', name: 'Draw' },
   ],
   PASSES: [
-    { key: '5', name: 'Screen', description: 'Screen Pass' },
-    { key: '6', name: 'Shrt', description: 'Short Pass' },
-    { key: '7', name: 'Med', description: 'Medium Pass' },
-    { key: '8', name: 'Long', description: 'Long Pass' },
-    { key: '9', name: 'TE/SL', description: 'TE/Sideline' },
+    { key: '5', name: 'Screen' },
+    { key: '6', name: 'Shrt' },
+    { key: '7', name: 'Med' },
+    { key: '8', name: 'Long' },
+    { key: '9', name: 'TE/SL' },
   ],
   SPECIAL: [
-    { key: 'Q', name: 'Sneak', description: 'QB Sneak' },
-    { key: 'K', name: 'Kneel', description: 'Kneel Down' },
-    { key: 'P', name: 'Punt', description: 'Punt' },
-    { key: 'F', name: 'FG', description: 'Field Goal' },
-    { key: 'S', name: 'Spike', description: 'Spike Ball' },
+    { key: 'Q', name: 'Sneak' },
+    { key: 'K', name: 'Kneel' },
+    { key: 'P', name: 'Punt' },
+    { key: 'F', name: 'FG' },
+    { key: 'S', name: 'Spike' },
   ],
 }
 
 export function OffensePlays({ selectedPlay, onSelectPlay, disabled = false, isHumanTurn = true }) {
   const handleKeyPress = useCallback((event) => {
     if (disabled || !isHumanTurn) return
-    
     const key = event.key.toUpperCase()
-    const allPlays = [
-      ...OFFENSIVE_PLAYS.RUNS,
-      ...OFFENSIVE_PLAYS.PASSES,
-      ...OFFENSIVE_PLAYS.SPECIAL,
-    ]
+    const allPlays = [...OFFENSIVE_PLAYS.RUNS, ...OFFENSIVE_PLAYS.PASSES, ...OFFENSIVE_PLAYS.SPECIAL]
     const play = allPlays.find(p => p.key === key)
-    
-    if (play) {
-      onSelectPlay(key)
-    }
+    if (play) onSelectPlay(key)
   }, [disabled, isHumanTurn, onSelectPlay])
 
   useEffect(() => {
@@ -45,69 +37,53 @@ export function OffensePlays({ selectedPlay, onSelectPlay, disabled = false, isH
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleKeyPress])
 
-  const renderPlayButton = (play, category) => (
+  const renderPlayButton = (play) => (
     <button
       key={play.key}
       onClick={() => onSelectPlay(play.key)}
       disabled={disabled || !isHumanTurn}
       className={`
-        play-button flex flex-col items-center justify-center w-full
-        ${selectedPlay === play.key ? 'play-button-selected' : ''}
-        ${disabled || !isHumanTurn ? 'opacity-50 cursor-not-allowed' : ''}
+        bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed
+        rounded-lg p-3 flex flex-col items-center justify-center transition-colors
+        ${selectedPlay === play.key ? 'ring-2 ring-yellow-400 bg-gray-600' : ''}
       `}
       data-testid={`offense-play-${play.key.toLowerCase()}`}
-      data-category={category}
     >
-      <span className="text-sm font-bold">{play.key}</span>
-      <span className="text-xs">{play.name}</span>
+      <span className="text-lg font-bold text-white">{play.key}</span>
+      <span className="text-xs text-gray-400">{play.name}</span>
     </button>
   )
 
   if (!isHumanTurn) {
     return (
-      <div className="board-panel" data-testid="offense-plays">
-        <div className="board-panel-header text-center">
-          ⚈ OFFENSE ⚈
-        </div>
-        <div className="p-4 text-center text-gray-500">
-          CPU is selecting...
-        </div>
+      <div className="bg-gray-800 rounded-lg p-4 text-center" data-testid="offense-plays">
+        <div className="text-gray-500">CPU selecting...</div>
       </div>
     )
   }
 
   return (
-    <div className="board-panel" data-testid="offense-plays">
-      <div className="board-panel-header text-center py-1">
-        ⚈ SELECT YOUR PLAY ⚈
-      </div>
+    <div className="bg-gray-800 rounded-lg p-4" data-testid="offense-plays">
+      <div className="text-sm text-gray-400 mb-3 font-medium">YOUR PLAY</div>
       
-      <div className="p-3">
-        <div className="grid grid-cols-4 gap-1 mb-2">
-          <div className="col-span-4 font-heading font-bold text-gray-700 text-center mb-1 text-xs">
-            RUNS
-          </div>
-          {OFFENSIVE_PLAYS.RUNS.map(play => renderPlayButton(play, 'runs'))}
+      <div className="mb-3">
+        <div className="text-[10px] text-gray-600 mb-1 uppercase">RUNS</div>
+        <div className="grid grid-cols-4 gap-2">
+          {OFFENSIVE_PLAYS.RUNS.map(renderPlayButton)}
         </div>
+      </div>
 
-        <div className="grid grid-cols-5 gap-1 mb-2">
-          <div className="col-span-5 font-heading font-bold text-gray-700 text-center mb-1 text-xs">
-            PASSES
-          </div>
-          {OFFENSIVE_PLAYS.PASSES.map(play => renderPlayButton(play, 'passes'))}
-        </div>
-
+      <div className="mb-3">
+        <div className="text-[10px] text-gray-600 mb-1 uppercase">PASSES</div>
         <div className="grid grid-cols-5 gap-1">
-          <div className="col-span-5 font-heading font-bold text-gray-700 text-center mb-1 text-xs">
-            SPECIAL
-          </div>
-          {OFFENSIVE_PLAYS.SPECIAL.map(play => renderPlayButton(play, 'special'))}
+          {OFFENSIVE_PLAYS.PASSES.map(renderPlayButton)}
         </div>
+      </div>
 
-        <div className="mt-3 pt-2 border-t border-gray-300 text-center">
-          <p className="text-xs text-gray-500">
-            Press 1-9, Q, K, P, F, or S
-          </p>
+      <div>
+        <div className="text-[10px] text-gray-600 mb-1 uppercase">SPECIAL</div>
+        <div className="grid grid-cols-5 gap-1">
+          {OFFENSIVE_PLAYS.SPECIAL.map(renderPlayButton)}
         </div>
       </div>
     </div>
