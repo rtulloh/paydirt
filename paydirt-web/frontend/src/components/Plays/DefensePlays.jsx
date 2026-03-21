@@ -11,7 +11,8 @@ const DEFENSIVE_FORMATIONS = [
 
 export function DefensePlays({ selectedPlay, onSelectPlay, disabled = false, isHumanTurn = true }) {
   const handleKeyPress = useCallback((event) => {
-    if (disabled || !isHumanTurn) return
+    // Ignore if disabled, not human's turn, or modifier keys are pressed (Ctrl/Cmd for copy/paste)
+    if (disabled || !isHumanTurn || event.ctrlKey || event.metaKey || event.altKey) return
     
     const key = event.key.toUpperCase()
     const formation = DEFENSIVE_FORMATIONS.find(f => f.key === key)

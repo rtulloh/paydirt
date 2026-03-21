@@ -36,7 +36,6 @@ const MenuPhase = ({ onNewGame }) => {
       .catch(err => {
         console.error('Failed to load replay:', err.message || err);
         alert('Failed to load replay: ' + (err.message || 'Unknown error') + '. Check console for details.');
-        // Don't auto-start new game - let user decide
       });
   };
   

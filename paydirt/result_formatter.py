@@ -7,7 +7,7 @@ No game logic here - purely formatting for display purposes.
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
-from .play_resolver import ResultType
+from .play_resolver import ResultType, PlayType
 from .game_state import PlayOutcome
 from .commentary import Commentary, TeamRoster
 
@@ -128,6 +128,16 @@ class ResultFormatter:
         if result.result_type == ResultType.PASS_INTERFERENCE:
             return f"PASS INTERFERENCE! +{yards} yds"
 
+        # Handle special teams plays
+        play_type = outcome.play_type
+        if isinstance(play_type, PlayType):
+            if play_type == PlayType.PUNT:
+                return f"Punt {yards} yards"
+            elif play_type == PlayType.FIELD_GOAL:
+                return f"Field goal attempt ({yards} yards)"
+            elif play_type == PlayType.KICKOFF:
+                return f"Kickoff {yards} yards"
+
         if yards > 0:
             return f"Gain of {yards}"
         elif yards < 0:
@@ -136,6 +146,15 @@ class ResultFormatter:
 
     def _get_commentary(self, outcome: PlayOutcome, result) -> str:
         """Generate colorful commentary from commentary.py system."""
+        
+        play_type = outcome.play_type
+        
+        # For special teams plays, don't generate run/pass commentary with player names
+        if isinstance(play_type, PlayType) and play_type in [
+            PlayType.PUNT, PlayType.FIELD_GOAL, PlayType.KICKOFF
+        ]:
+            return ""  # Let the description speak for itself
+        
         off_roster = TeamRoster(
             qb=self.offense_roster.get('qb', []),
             rb=self.offense_roster.get('rb', []),
@@ -166,6 +185,11 @@ class ResultFormatter:
         comm = Commentary(off_roster, def_roster,
                           self.offense_team, self.defense_team)
 
+        # For turnovers (fumbles, interceptions), don't generate commentary
+        # The core engine's description already has the complete, accurate story
+        if result.result_type in [ResultType.FUMBLE, ResultType.INTERCEPTION]:
+            return ""
+
         is_breakaway = (result.result_type == ResultType.BREAKAWAY)
 
         return comm.generate(
@@ -175,7 +199,8 @@ class ResultFormatter:
             is_first_down=outcome.first_down,
             is_touchdown=outcome.touchdown,
             is_breakaway=is_breakaway,
-            is_check_down=False
+            is_check_down=False,
+            offense_recovered_fumble=False
         )
 
     def _get_big_play_info(self, outcome: PlayOutcome, result) -> tuple:

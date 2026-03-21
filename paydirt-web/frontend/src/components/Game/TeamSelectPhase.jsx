@@ -12,7 +12,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const [difficulty, setDifficulty] = useState('medium');
   const [loading, setLoading] = useState(true);
 
-  const { setGameId, updateGameState, setIsKickoff } = useGameStore.getState();
+  const { setGameId, updateGameState, setIsKickoff, setCurrentSeason } = useGameStore.getState();
 
   useEffect(() => {
     fetch(`${API_BASE}/api/seasons`)
@@ -72,6 +72,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
         setGameId(data.game_id);
         updateGameState(data.game_state);
         setIsKickoff(true);
+        setCurrentSeason(selectedSeason);
         onTeamSelected({ playerTeam, opponentTeam, playerIsHome });
       })
       .catch(err => {

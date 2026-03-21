@@ -53,7 +53,7 @@ describe('PenaltyDecisionPanel', () => {
 
     it('shows offended team correctly', () => {
       render(<PenaltyDecisionPanel penaltyData={mockPenaltyData} onDecision={vi.fn()} />)
-      expect(screen.getByText(/OFFENSE committed penalty/i)).toBeInTheDocument()
+      expect(screen.getByText(/DEFENSE committed penalty/i)).toBeInTheDocument()
     })
 
     it('shows play result section', () => {

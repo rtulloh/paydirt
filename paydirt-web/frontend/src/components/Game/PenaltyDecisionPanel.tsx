@@ -50,9 +50,21 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
   const newYardsToGo = penaltyData.new_yards_to_go;
   const newBallPosition = penaltyData.new_ball_position;
 
-  const formatFieldPosition = (pos: number): string => {
+    const formatFieldPosition = (pos: number): string => {
     if (pos <= 50) return `OWN ${pos}`;
     return `OPP ${100 - pos}`;
+  };
+
+  const formatLOS = (pos: number): string => {
+    if (pos <= 50) return `OWN ${pos}`;
+    return `OPP ${100 - pos}`;
+  };
+
+  const formatDown = (down: number): string => {
+    if (down === 1) return '1st';
+    if (down === 2) return '2nd';
+    if (down === 3) return '3rd';
+    return `${down}th`;
   };
 
   const getPlayResultSummary = (): string => {
@@ -89,9 +101,9 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
         <>
           <div className="text-yellow-200 text-sm mb-4">
             {penalty_choice.offended_team === 'offense' 
-              ? 'OFFENSE committed penalty - Defense may accept or decline' 
+              ? 'DEFENSE committed penalty - Offense may accept or decline' 
               : penalty_choice.offended_team === 'defense'
-              ? 'DEFENSE committed penalty - Offense may accept or decline'
+              ? 'OFFENSE committed penalty - Defense may accept or decline'
               : 'Choose one:'}
           </div>
           
@@ -101,7 +113,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
               {getPlayResultSummary()}
             </div>
             <div className="text-gray-300 text-sm">
-              {newDown}th & {newYardsToGo}
+              {formatDown(newDown)} & {newYardsToGo} at {formatLOS(newBallPosition || 0)}
             </div>
             {turnover && (
               <div className="text-red-400 font-bold mt-1">TURNOVER ON DOWNS!</div>
@@ -152,7 +164,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
               onClick={() => onDecision?.(true, 0)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all"
             >
-              ACCEPT PLAY ({newDown}th & {newYardsToGo})
+              ACCEPT PLAY ({formatDown(newDown)} & {newYardsToGo} at {formatLOS(newBallPosition || 0)})
             </button>
           </div>
         </>

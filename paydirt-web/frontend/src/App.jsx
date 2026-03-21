@@ -93,7 +93,7 @@ const handleBackToMenu = () => {
 
 const handleCoinTossComplete = async (coinData) => {
   // Process coin toss result
-  const { updateGameState, setGamePhase, setIsKickoff, gameId } = useGameStore.getState();
+  const { updateGameState, setGamePhase, setIsKickoff, setPlayerOffense, setPossession, gameId } = useGameStore.getState();
   
   try {
     const res = await fetch(`${API_BASE}/api/game/coin-toss`, {
@@ -109,7 +109,8 @@ const handleCoinTossComplete = async (coinData) => {
     
     if (res.ok) {
       const data = await res.json();
-      updateGameState(data);
+      setPossession(data.possession);
+      setPlayerOffense(data.player_offense);
     }
   } catch (err) {
     console.error('Failed to process coin toss:', err);
@@ -146,11 +147,9 @@ const handleSaveGame = () => {
     humanTeamId: state.humanTeamId,
     cpuTeamId: state.cpuTeamId,
     playLog: state.playLog,
+    currentSeason: state.currentSeason,
   });
   
-  if (success) {
-    console.log('Game saved successfully');
-  }
 };
 
 const handleReturnToMenu = () => {

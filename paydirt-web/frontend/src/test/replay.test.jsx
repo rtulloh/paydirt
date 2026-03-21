@@ -179,6 +179,139 @@ describe('Replay Functionality', () => {
   })
 })
 
+describe('Kickoff After Score', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    
+    const storage = {}
+    global.localStorage = {
+      getItem: vi.fn((key) => storage[key] || null),
+      setItem: vi.fn((key, value) => { storage[key] = value }),
+      removeItem: vi.fn((key) => { delete storage[key] }),
+    }
+  })
+  
+  it('should set isKickoff true when loading replay with FG score', async () => {
+    // Mock fetch to return response with is_kickoff = true
+    global.fetch = vi.fn().mockImplementation(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        game_id: 'test_game_123',
+        game_state: {
+          is_kickoff: true,
+          home_score: 3,
+          away_score: 0,
+          quarter: 1,
+          time_remaining: 645,
+          possession: 'away',
+          ball_position: 35,
+          down: 1,
+          yards_to_go: 10,
+          game_over: false,
+          home_timeouts: 3,
+          away_timeouts: 3,
+          home_team: { id: 'Ironclads', name: 'Iron Mountain Ironclads', short_name: 'Iron' },
+          away_team: { id: 'Outlaws', name: 'Oklahoma Outlaws', short_name: 'Outl' },
+          human_team_id: 'Ironclads',
+          cpu_team_id: 'Outlaws',
+          human_is_home: true,
+          player_offense: false,
+        },
+      })
+    }))
+    
+    // Set localStorage with replay containing FG
+    const replayData = {
+      replay_data: {
+        season: '2026',
+        game_state: {
+          home_score: 3,
+          away_score: 0,
+        },
+        play_history: [
+          { description: 'Field goal GOOD! (22 yards)', headline: 'Field Goal' }
+        ]
+      }
+    }
+    localStorage.setItem('paydirt_replay', JSON.stringify(replayData))
+    
+    // Reset store state
+    useGameStore.setState({
+      gamePhase: 'menu',
+      gameId: null,
+      playLog: [],
+      isKickoff: false,
+    })
+    
+    // Load replay
+    await useGameStore.getState().loadReplay()
+    
+    // Check isKickoff is set to true from backend response
+    const state = useGameStore.getState()
+    expect(state.isKickoff).toBe(true)
+    expect(state.down).toBe(1)
+    expect(state.yardsToGo).toBe(10)
+    expect(state.ballPosition).toBe(35)
+  })
+  
+  it('should set isKickoff false when loading replay with no score', async () => {
+    global.fetch = vi.fn().mockImplementation(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        game_id: 'test_game_456',
+        game_state: {
+          is_kickoff: false,
+          home_score: 0,
+          away_score: 0,
+          quarter: 1,
+          time_remaining: 800,
+          possession: 'home',
+          ball_position: 30,
+          down: 2,
+          yards_to_go: 7,
+          game_over: false,
+          home_timeouts: 3,
+          away_timeouts: 3,
+          home_team: { id: 'Ironclads', name: 'Iron Mountain Ironclads', short_name: 'Iron' },
+          away_team: { id: 'Outlaws', name: 'Oklahoma Outlaws', short_name: 'Outl' },
+          human_team_id: 'Ironclads',
+          cpu_team_id: 'Outlaws',
+          human_is_home: true,
+          player_offense: true,
+        },
+      })
+    }))
+    
+    const replayData = {
+      replay_data: {
+        season: '2026',
+        game_state: {
+          home_score: 0,
+          away_score: 0,
+        },
+        play_history: [
+          { description: 'Run for 3 yards', headline: 'Gain of 3' }
+        ]
+      }
+    }
+    localStorage.setItem('paydirt_replay', JSON.stringify(replayData))
+    
+    useGameStore.setState({
+      gamePhase: 'menu',
+      gameId: null,
+      playLog: [],
+      isKickoff: true,  // Start with true to verify it gets set to false
+    })
+    
+    await useGameStore.getState().loadReplay()
+    
+    const state = useGameStore.getState()
+    expect(state.isKickoff).toBe(false)
+    expect(state.down).toBe(2)
+    expect(state.yardsToGo).toBe(7)
+  })
+})
+
 describe('Debug Mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()

@@ -243,6 +243,56 @@ class TestCommentary:
         assert comment is not None
         assert "fumble" in comment.lower() or "DAL '83" in comment
     
+    def test_fumble_defense_recovers_commentary(self, commentary):
+        """When defense recovers fumble, commentary should mention defense team."""
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.FUMBLE, yards=2,
+                offense_recovered_fumble=False
+            )
+            assert comment is not None
+            # Should mention defense team (DAL '83) as recovering
+            assert "DAL '83" in comment, \
+                f"Defense fumble recovery should mention defense team, got: {comment}"
+    
+    def test_fumble_offense_recovers_commentary(self, commentary):
+        """When offense recovers fumble, commentary should mention offense team."""
+        for _ in range(20):
+            comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.FUMBLE, yards=2,
+                offense_recovered_fumble=True
+            )
+            assert comment is not None
+            # Should mention offense team (SF '83) as recovering
+            assert "SF '83" in comment, \
+                f"Offense fumble recovery should mention offense team, got: {comment}"
+    
+    def test_fumble_offense_recovered_different_from_defense(self, commentary):
+        """Offense vs defense fumble recovery should produce different commentary."""
+        offense_comments = set()
+        defense_comments = set()
+        
+        for _ in range(50):
+            offense_comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.FUMBLE, yards=2,
+                offense_recovered_fumble=True
+            )
+            defense_comment = commentary.generate(
+                PlayType.LINE_PLUNGE, ResultType.FUMBLE, yards=2,
+                offense_recovered_fumble=False
+            )
+            offense_comments.add(offense_comment)
+            defense_comments.add(defense_comment)
+        
+        # Each set should have at least one comment mentioning the correct team
+        has_correct_offense_team = any("SF '83" in c for c in offense_comments)
+        has_correct_defense_team = any("DAL '83" in c for c in defense_comments)
+        
+        assert has_correct_offense_team, \
+            f"Offense recovery should mention offense team, got: {offense_comments}"
+        assert has_correct_defense_team, \
+            f"Defense recovery should mention defense team, got: {defense_comments}"
+    
     def test_penalty_offense_commentary(self, commentary):
         """Offensive penalty should generate appropriate commentary."""
         comment = commentary.generate(

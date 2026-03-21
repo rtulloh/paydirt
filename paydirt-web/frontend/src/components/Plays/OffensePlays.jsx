@@ -25,7 +25,8 @@ const OFFENSIVE_PLAYS = {
 
 export function OffensePlays({ selectedPlay, onSelectPlay, disabled = false, isHumanTurn = true }) {
   const handleKeyPress = useCallback((event) => {
-    if (disabled || !isHumanTurn) return
+    // Ignore if disabled, not human's turn, or modifier keys are pressed (Ctrl/Cmd for shortcuts)
+    if (disabled || !isHumanTurn || event.ctrlKey || event.metaKey || event.altKey) return
     const key = event.key.toUpperCase()
     const allPlays = [...OFFENSIVE_PLAYS.RUNS, ...OFFENSIVE_PLAYS.PASSES, ...OFFENSIVE_PLAYS.SPECIAL]
     const play = allPlays.find(p => p.key === key)

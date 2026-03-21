@@ -311,7 +311,8 @@ class Commentary:
     def generate(self, play_type: PlayType, result_type: ResultType,
                  yards: int, is_first_down: bool = False,
                  is_touchdown: bool = False, is_breakaway: bool = False,
-                 is_check_down: bool = False) -> str:
+                 is_check_down: bool = False,
+                 offense_recovered_fumble: bool = False) -> str:
         """Generate commentary for a play result.
         
         Args:
@@ -322,6 +323,7 @@ class Commentary:
             is_touchdown: Whether the play resulted in a touchdown
             is_breakaway: Whether this was a breakaway run
             is_check_down: Whether defense limited the gain (parentheses result)
+            offense_recovered_fumble: Whether offense recovered (True) or defense (False) for fumbles
         """
         lines = []
 
@@ -386,7 +388,8 @@ class Commentary:
 
         elif result_type == ResultType.FUMBLE:
             template = random.choice(FUMBLE_CALLS)
-            lines.append(template.format(team=self.def_name))
+            recovering_team = self.off_name if offense_recovered_fumble else self.def_name
+            lines.append(template.format(team=recovering_team))
 
         elif result_type == ResultType.SACK:
             template = random.choice(SACK_CALLS)

@@ -9,17 +9,44 @@ export function FootballField({
   awayTeamName = 'AWAY',
   yardsToGo = 10,
 }) {
+  // When possession is 'home', offense is home team, they drive LEFT to RIGHT
+  // When possession is 'away', offense is away team, they drive LEFT to RIGHT
+  // Ball position is always from offense perspective: 0 = own EZ, 100 = opponent's EZ
+  // So when home has possession: ball at 35 means 35 yards from home's end zone
+  // So when away has possession: ball at 35 means 35 yards from away's end zone
+  
+  // The field view should always show offense driving left-to-right
+  // Left end zone = offense's end zone, Right end zone = defense's end zone
+  
+  const isHomePossession = possession === 'home'
+  
+  // Calculate visual position: ballPosition is always from offense's perspective
+  // 0 = left end zone (offense's), 100 = right end zone (defense's)
+  // The field area (with yard lines) starts at ~8% and ends at ~92% 
+  // We scale ballPosition to fit in this visual area
+  const FIELD_START = 8;   // 8% from left edge (visual start of playing field)
+  const FIELD_END = 92;    // 92% from left edge (visual end of playing field)
+  
+  // Scale: ballPosition 0-100 maps to visual 8%-92%
+  const visualPosition = FIELD_START + (ballPosition / 100) * (FIELD_END - FIELD_START);
+  
   const ballStyle = useMemo(() => {
-    const percentage = (ballPosition / 100) * 100
-    return { left: `${percentage}%`, transform: 'translateX(-50%)' }
-  }, [ballPosition])
+    return { left: `${visualPosition}%`, transform: 'translateX(-50%)' }
+  }, [visualPosition])
 
+  // Scale first down position similarly
+  const firstDownRawPos = ballPosition + yardsToGo;
+  const firstDownVisualPos = Math.min(FIELD_END, Math.max(FIELD_START, 
+    FIELD_START + (firstDownRawPos / 100) * (FIELD_END - FIELD_START)
+  ));
+  
   const firstDownStyle = useMemo(() => {
-    const firstDownPos = Math.min(100, Math.max(0, ballPosition + yardsToGo))
-    const percentage = (firstDownPos / 100) * 100
-    return { left: `${percentage}%` }
-  }, [ballPosition, yardsToGo])
+    return { left: `${firstDownVisualPos}%` }
+  }, [firstDownVisualPos])
 
+  // Yard lines: 10, 20, 30, 40, 50 in middle, then mirrored on right side
+  // Left side (near offense): 10, 20, 30, 40, 50
+  // Right side (near defense): 50, 40, 30, 20, 10
   const yardLines = [
     { pos: 10, label: '10' },
     { pos: 20, label: '20' },
@@ -32,14 +59,25 @@ export function FootballField({
     { pos: 90, label: '10' },
   ]
 
+  // End zones: left is offense's EZ, right is defense's EZ
+  // When home has ball: left end zone = home, right = away
+  // When away has ball: left end zone = away, right = home
+  const leftEndzoneTeam = isHomePossession ? homeTeamName : awayTeamName
+  const rightEndzoneTeam = isHomePossession ? awayTeamName : homeTeamName
+  const leftEndzoneColor = isHomePossession ? homeEndzoneColor : awayEndzoneColor
+  const rightEndzoneColor = isHomePossession ? awayEndzoneColor : homeEndzoneColor
+
   return (
     <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-xl border-2 border-white bg-green-700" data-testid="football-field">
       
-      <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: homeEndzoneColor }}>
-        <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl' }}>{homeTeamName}</span>
+      {/* Left end zone (offense's end zone) */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: leftEndzoneColor }}>
+        <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl' }}>{leftEndzoneTeam}</span>
       </div>
-      <div className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: homeEndzoneColor }}>
-        <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{homeTeamName}</span>
+      
+      {/* Right end zone (defense's end zone) */}
+      <div className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: rightEndzoneColor }}>
+        <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{rightEndzoneTeam}</span>
       </div>
 
       <div className="absolute inset-0" style={{ left: '48px', right: '48px' }}>
@@ -52,16 +90,19 @@ export function FootballField({
           </div>
         ))}
         
-        <div 
-          className="absolute z-20"
-          style={{ left: firstDownStyle.left, top: 0, bottom: 0 }}
-        >
-          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-full bg-yellow-400 shadow-md rounded-full" />
-          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg border-2 border-yellow-500" />
-          <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-yellow-400 text-[9px] font-bold whitespace-nowrap bg-black/70 px-1 py-0.5 rounded">
-            1ST
+        {/* Hide first down marker when it's goal to go (yardsToGo >= ballPosition means at or past goal line) */}
+        {yardsToGo < ballPosition && (
+          <div 
+            className="absolute z-20"
+            style={{ left: firstDownStyle.left, top: 0, bottom: 0 }}
+          >
+            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-full bg-yellow-400 shadow-md rounded-full" />
+            <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg border-2 border-yellow-500" />
+            <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-yellow-400 text-[9px] font-bold whitespace-nowrap bg-black/70 px-1 py-0.5 rounded">
+              1ST
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div

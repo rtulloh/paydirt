@@ -21,12 +21,18 @@ const initialGameState = {
   gameOver: false,
   playResult: null,
   cpuFourthDownDecision: null,
+  showCpuDecision: false,
+  pendingDefensePlay: null,
+  pendingCpuFourthDown: null,
   pendingExtraPoint: null,
   canGoForTwo: false,
   pendingPenalty: null,
   difficulty: 'medium',
+  playLogVersion: 0,
   isKickoff: false,
   playLog: [],
+  currentSeason: '2026',
+  fieldPosition: '',
 }
 
 export const useGameStore = create((set, get) => ({
@@ -37,14 +43,22 @@ export const useGameStore = create((set, get) => ({
   setGamePhase: (phase) => set({ gamePhase: phase }),
   setGameId: (id) => set({ gameId: id }),
   setIsKickoff: (value) => set({ isKickoff: value }),
+  setCurrentSeason: (season) => set({ currentSeason: season }),
+  setPossession: (possession) => set({ possession: possession }),
+  setPlayerOffense: (offense) => set({ playerOffense: offense }),
   setPlayLog: (log) => set({ playLog: log }),
   addToPlayLog: (entry) => set((state) => ({ playLog: [...state.playLog, entry] })),
   
   setHumanPlay: (play) => set({ humanPlaySelected: play }),
   setCpuPlay: (play) => set({ cpuPlaySelected: play }),
   setPlayResult: (result) => set({ playResult: result }),
-  setCpuFourthDownDecision: (decision) => set({ cpuFourthDownDecision: decision }),
-  clearCpuFourthDownDecision: () => set({ cpuFourthDownDecision: null }),
+  setCpuFourthDownDecision: (decision) => set({ cpuFourthDownDecision: decision, showCpuDecision: true }),
+  clearCpuFourthDownDecision: () => set({ cpuFourthDownDecision: null, showCpuDecision: false }),
+  setShowCpuDecision: (show) => set({ showCpuDecision: show }),
+  setPendingDefensePlay: (play) => set({ pendingDefensePlay: play }),
+  clearPendingDefensePlay: () => set({ pendingDefensePlay: null }),
+  setPendingCpuFourthDown: (decision) => set({ pendingCpuFourthDown: decision }),
+  clearPendingCpuFourthDown: () => set({ pendingCpuFourthDown: null }),
   setPendingExtraPoint: (data) => set({ pendingExtraPoint: data, canGoForTwo: data?.canGoForTwo || false }),
   clearPendingExtraPoint: () => set({ pendingExtraPoint: null, canGoForTwo: false }),
   setPendingPenalty: (data) => set({ pendingPenalty: data }),
@@ -58,7 +72,11 @@ export const useGameStore = create((set, get) => ({
     // human_is_home comes from backend
     const human_is_home = state.human_is_home !== undefined ? state.human_is_home : state.humanIsHome
     
-    console.log('updateGameState - player_offense from backend:', state.player_offense, 'human_is_home:', human_is_home);
+    // is_kickoff comes from backend after a score
+    const isKickoff = state.is_kickoff || false
+    
+    // human_team_id comes from backend
+    const human_team_id = state.human_team_id || state.humanTeamId
     
     set({
       homeTeam: state.home_team,
@@ -69,13 +87,16 @@ export const useGameStore = create((set, get) => ({
       timeRemaining: state.time_remaining,
       possession: possession,
       ballPosition: state.ball_position,
+      fieldPosition: state.field_position || '',
       down: state.down,
       yardsToGo: state.yards_to_go,
       gameOver: state.game_over,
       homeTimeouts: state.home_timeouts,
       awayTimeouts: state.away_timeouts,
       humanIsHome: human_is_home,
+      humanTeamId: human_team_id,
       playerOffense: playerIsOnOffense,
+      isKickoff: isKickoff,
     })
   },
    
@@ -117,6 +138,7 @@ export const useGameStore = create((set, get) => ({
       playResult: null,
       gameOver: false,
       cpuFourthDownDecision: null,
+      currentSeason: gameData.currentSeason || '2026',
     })
   },
 
@@ -144,11 +166,11 @@ export const useGameStore = create((set, get) => ({
       cpuTeamId: gameData.cpuTeamId,
       playLog: gameData.playLog,
       savedAt: new Date().toISOString(),
+      currentSeason: gameData.currentSeason || '2026',
     };
     
     try {
       localStorage.setItem('paydirt_save', JSON.stringify(saveData));
-      console.log('Game saved successfully');
       return true;
     } catch (err) {
       console.error('Failed to save game:', err);
@@ -161,27 +183,81 @@ export const useGameStore = create((set, get) => ({
       const savedData = localStorage.getItem('paydirt_save');
       if (savedData) {
         const data = JSON.parse(savedData);
-        set({
-          gamePhase: 'playing',
-          gameId: data.gameId,
-          homeTeam: data.homeTeam,
-          awayTeam: data.awayTeam,
-          homeScore: data.homeScore,
-          awayScore: data.awayScore,
-          quarter: data.quarter,
-          timeRemaining: data.timeRemaining,
-          possession: data.possession,
-          ballPosition: data.ballPosition,
-          down: data.down,
-          yardsToGo: data.yardsToGo,
-          homeTimeouts: data.homeTimeouts,
-          awayTimeouts: data.awayTimeouts,
-          humanPlaysOffense: data.humanPlaysOffense,
-          humanTeamId: data.humanTeamId,
-          cpuTeamId: data.cpuTeamId,
-          playLog: data.playLog || [],
-          savedAt: data.savedAt,
-        });
+        
+        // Convert to replay format and use backend to create new game
+        const replayData = {
+          game_state: {
+            game_id: data.gameId,
+            home_team: data.homeTeam,
+            away_team: data.awayTeam,
+            home_score: data.homeScore,
+            away_score: data.awayScore,
+            quarter: data.quarter,
+            time_remaining: data.timeRemaining,
+            possession: data.possession,
+            ball_position: data.ballPosition,
+            down: data.down,
+            yards_to_go: data.yardsToGo,
+            game_over: data.gameOver || false,
+            home_timeouts: data.homeTimeouts,
+            away_timeouts: data.awayTimeouts,
+            player_offense: data.humanPlaysOffense,
+            human_team_id: data.humanTeamId,
+            cpu_team_id: data.cpuTeamId,
+            human_is_home: data.homeTeam?.id === data.humanTeamId,
+          },
+          play_history: data.playLog || [],
+          season: data.currentSeason || '2026',
+        };
+        
+        // Use the same fetch as loadReplay
+        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+        
+        fetch(`${apiBase}/api/game/load-replay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ replay_data: replayData }),
+        })
+          .then(res => {
+            console.log('load-replay response status:', res.status);
+            if (!res.ok) {
+              return res.text().then(text => {
+                console.error('load-replay error response:', text);
+                throw new Error('Failed to load game on backend: ' + text);
+              });
+            }
+            return res.json();
+          })
+          .then(backendData => {
+            set({
+              gamePhase: 'playing',
+              gameId: backendData.game_id,
+              homeTeam: backendData.game_state.home_team,
+              awayTeam: backendData.game_state.away_team,
+              homeScore: backendData.game_state.home_score,
+              awayScore: backendData.game_state.away_score,
+              quarter: backendData.game_state.quarter,
+              timeRemaining: backendData.game_state.time_remaining,
+              possession: backendData.game_state.possession,
+              ballPosition: backendData.game_state.ball_position,
+              down: backendData.game_state.down,
+              yardsToGo: backendData.game_state.yards_to_go,
+              homeTimeouts: backendData.game_state.home_timeouts,
+              awayTimeouts: backendData.game_state.away_timeouts,
+              humanPlaysOffense: backendData.game_state.player_offense,
+              humanTeamId: backendData.game_state.human_team_id,
+              cpuTeamId: backendData.game_state.cpu_team_id,
+              humanIsHome: backendData.game_state.human_is_home,
+              playerOffense: backendData.game_state.player_offense,
+              playLog: data.playLog || [],
+              isKickoff: backendData.game_state.is_kickoff,
+              currentSeason: data.currentSeason || '2026',
+            });
+          })
+          .catch(err => {
+            console.error('Failed to load game:', err);
+          });
+        
         return true;
       }
       return false;
@@ -231,6 +307,7 @@ export const useGameStore = create((set, get) => ({
         human_team_id: state.humanTeamId,
         cpu_team_id: state.cpuTeamId,
         human_is_home: state.humanIsHome,
+        season: state.currentSeason || '2026',
       },
       play_history: state.playLog,
     };
@@ -240,7 +317,6 @@ export const useGameStore = create((set, get) => ({
         replay_data: replayData,
         savedAt: new Date().toISOString(),
       }));
-      console.log('Replay saved:', replayData.game_state);
       return Promise.resolve(replayData);
     } catch (err) {
       console.error('Failed to save replay:', err);
@@ -256,16 +332,11 @@ export const useGameStore = create((set, get) => ({
         const replayData = replay.replay_data;
         
         if (!replayData || !replayData.game_state) {
-          console.error('Invalid replay data:', replay);
           throw new Error('Invalid replay data structure');
         }
         
         const gameState = replayData.game_state;
-        console.log('Loading replay:', gameState.quarter, 'Q, possession:', gameState.possession);
-        
-        // Call backend to create a new game with saved state
         const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-        console.log('Calling backend:', apiBase + '/api/game/load-replay');
         
         return fetch(`${apiBase}/api/game/load-replay`, {
           method: 'POST',
@@ -273,13 +344,10 @@ export const useGameStore = create((set, get) => ({
           body: JSON.stringify({ replay_data: replayData }),
         })
           .then(res => {
-            console.log('Backend response status:', res.status);
             if (!res.ok) throw new Error('Failed to load replay on backend');
             return res.json();
           })
           .then(data => {
-            console.log('Backend response data:', data);
-            // Update store with new game from backend
             set({
               gamePhase: 'playing',
               gameId: data.game_id,
@@ -300,7 +368,8 @@ export const useGameStore = create((set, get) => ({
               humanIsHome: data.game_state.human_is_home,
               playerOffense: data.game_state.player_offense,
               playLog: replayData.play_history || [],
-              isKickoff: false,
+              playLogVersion: (get().playLogVersion || 0) + 1, // Increment to trigger scroll
+              isKickoff: data.game_state.is_kickoff || false,
             });
             return data;
           });

@@ -7,6 +7,7 @@ import DefensePlays from '../Plays/DefensePlays';
 import PenaltyDecisionPanel from './PenaltyDecisionPanel';
 import PATChoicePanel from './PATChoicePanel';
 import CpuDecisionPanel from './CpuDecisionPanel';
+import PuntOptionsPanel from './PuntOptionsPanel';
 import PlayLogDisplay from './PlayLogDisplay';
 import GameControls from './GameControls.tsx';
 import { useGameStore } from '../../store/gameStore';
@@ -31,10 +32,12 @@ const PlayingPhase = () => {
     timeRemaining,
     possession,
     ballPosition,
+    fieldPosition,
     down,
     yardsToGo,
     homeTimeouts,
     awayTimeouts,
+    humanIsHome,
     playerOffense,
     humanPlaySelected,
     setHumanPlay,
@@ -42,6 +45,13 @@ const PlayingPhase = () => {
     setGamePhase,
     cpuFourthDownDecision,
     clearCpuFourthDownDecision,
+    setCpuFourthDownDecision,
+    pendingDefensePlay,
+    setPendingDefensePlay,
+    clearPendingDefensePlay,
+    pendingCpuFourthDown,
+    setPendingCpuFourthDown,
+    clearPendingCpuFourthDown,
     executing,
     lastResult,
     isRolling,
@@ -67,6 +77,8 @@ const PlayingPhase = () => {
   const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(false);
   const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(null);
   const [localExecuting, setLocalExecuting] = useState(false);
+  const [showPuntOptions, setShowPuntOptions] = useState(false);
+  const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
 
   // Auto-clear result banner for non-special plays after 2 seconds
   useEffect(() => {
@@ -84,6 +96,38 @@ const PlayingPhase = () => {
       }
     }
   }, [localLastResult, localExecuting, localShowPatChoice, localShowPenaltyChoice]);
+
+  // Check for 4th down CPU decision when player is on defense
+  useEffect(() => {
+    if (!gameId || localExecuting || isKickoff) return;
+    if (playerOffense) return;  // Player is on offense, no special handling needed
+    if (down !== 4) return;  // Not 4th down
+    if (pendingCpuFourthDown) return;  // Already awaiting CPU decision
+    
+    // Clear any previous CPU decision
+    clearPendingCpuFourthDown();
+    
+    // Call CPU 4th down decision
+    const checkCpuDecision = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/game/cpu-4th-down-decision/${gameId}`);
+        if (res.ok) {
+          const decision = await res.json();
+          if (decision.decision === 'go_for_it') {
+            // CPU going for it - player needs to pick defense
+            // Don't set pendingCpuFourthDown, let player pick defense
+          } else {
+            // CPU punts or kicks FG - set pending, show panel
+            setPendingCpuFourthDown(decision);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to get CPU 4th down decision:', err);
+      }
+    };
+    
+    checkCpuDecision();
+  }, [gameId, localExecuting, isKickoff, playerOffense, down, pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
 
   const handleKickoff = async () => {
     setLocalExecuting(true);
@@ -120,20 +164,8 @@ const PlayingPhase = () => {
       
       if (res.ok) {
         const data = await res.json();
-        console.log('=== KICKOFF RESULT ===');
-        console.log('player_offense:', data.game_state.player_offense);
-        console.log('possession:', data.game_state.possession);
-        console.log('human_is_home:', data.game_state.human_is_home);
-        console.log('human_team_id:', data.game_state.human_team_id);
-        console.log('home_team:', data.game_state.home_team?.id);
-        console.log('away_team:', data.game_state.away_team?.id);
         setLocalLastResult(data.result);
         updateGameState(data.game_state);
-        console.log('After updateGameState:');
-        console.log('  playerOffense from store:', useGameStore.getState().playerOffense);
-        console.log('  possession from store:', useGameStore.getState().possession);
-        console.log('  humanIsHome from store:', useGameStore.getState().humanIsHome);
-        console.log('=======================');
         setLocalIsRolling(false);
         setLocalExecuting(false);  // Enable play buttons after kickoff
         setIsKickoff(false);
@@ -156,6 +188,7 @@ const PlayingPhase = () => {
           yardsToGo: 10,
           ballPosition: 35,
           lineOfScrimmage: 35,
+          fieldPosition: '35 yard line', // Kickoff spot
           offenseTeam: kickingTeam,
           defenseTeam: receivingTeam,
           homeTeamAbbrev: homeTeam?.short_name || 'HOME',
@@ -177,6 +210,7 @@ const PlayingPhase = () => {
           description: data.result.description,
           yards: data.result.yards || 0,
           newPosition: data.game_state.ball_position,
+          newFieldPosition: data.game_state.field_position,
           scoreChange: data.result.touchdown ? `SCORE! ${data.game_state.home_score}-${data.game_state.away_score}` : null,
         });
         
@@ -297,6 +331,7 @@ const PlayingPhase = () => {
       humanTeamId: state.humanTeamId,
       cpuTeamId: state.cpuTeamId,
       playLog: state.playLog,
+      currentSeason: state.currentSeason,
     });
   };
 
@@ -316,35 +351,38 @@ const PlayingPhase = () => {
     }
   };
 
-  const executePlay = async (play) => {
+  const executePlay = async (play, cpuPlayOverride = null, puntOptions = null) => {
     if (!gameId || localExecuting) return;
     
     // Store state BEFORE the play for the log
     const prePlayDown = down;
     const prePlayYardsToGo = yardsToGo;
     const prePlayBallPosition = ballPosition;
+    const prePlayFieldPosition = fieldPosition; // Backend-calculated field position
     
     setLocalExecuting(true);
     setLocalLastResult(null);
     setLocalDiceResult(null);
     setLocalIsRolling(false);
     
-    let cpuPlayValue = null;
+    let cpuPlayValue = cpuPlayOverride;
     
     try {
-      // Get CPU's play choice
-      const cpuRes = await fetch(`${API_BASE}/api/game/cpu-play`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_id: gameId,
-          player_play: play,
-        })
-      });
-      
-      if (cpuRes.ok) {
-        const cpuData = await cpuRes.json();
-        cpuPlayValue = cpuData.cpu_play;
+      // Get CPU's play choice (unless already provided)
+      if (!cpuPlayValue) {
+        const cpuRes = await fetch(`${API_BASE}/api/game/cpu-play`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            game_id: gameId,
+            player_play: play,
+          })
+        });
+        
+        if (cpuRes.ok) {
+          const cpuData = await cpuRes.json();
+          cpuPlayValue = cpuData.cpu_play;
+        }
       }
       
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -374,13 +412,14 @@ const PlayingPhase = () => {
           game_id: gameId,
           player_play: play,
           cpu_play: cpuPlayValue,
+          short_drop: puntOptions?.short_drop || false,
+          coffin_corner_yards: puntOptions?.coffin_corner_yards || 0,
         })
       });
       
       if (res.ok) {
         const data = await res.json();
         
-        // Check if there's a penalty decision pending
         if (data.result && data.result.pending_penalty_decision && data.result.penalty_choice) {
           setLocalPendingPenaltyData(data.result);
           setLocalShowPenaltyChoice(true);
@@ -390,10 +429,7 @@ const PlayingPhase = () => {
         }
         
         setLocalLastResult(data.result);
-        console.log('Backend response player_offense:', data.game_state.player_offense);
-        console.log('Dice details from backend:', data.dice_details);
         updateGameState(data.game_state);
-        console.log('Store playerOffense after update:', useGameStore.getState().playerOffense);
         setLocalIsRolling(false);
         
         // Use dice from backend response - already calculated correctly
@@ -432,22 +468,26 @@ const PlayingPhase = () => {
           yardsToGo: prePlayYardsToGo,
           ballPosition: prePlayBallPosition,
           lineOfScrimmage: prePlayBallPosition,
+          fieldPosition: prePlayFieldPosition, // Pre-calculated by backend
           offenseTeam,
           defenseTeam,
           homeTeamAbbrev: homeAbbrev,
           awayTeamAbbrev: awayAbbrev,
           playerTeam: playerOffense ? offenseTeam : defenseTeam,
-          offensePlay: play,
-          defensePlay: cpuPlayValue,
+          offensePlay: cpuPlayValue,
+          defensePlay: play,
           offenseDice,
           defenseDice,
           description: data.result.description,
           headline: data.result.headline,
           yards: data.result.yards || 0,
           newPosition: data.game_state.ball_position,
+          newFieldPosition: data.game_state.field_position,
           scoreChange,
           turnover: data.result.turnover,
           bigPlayFactor: data.result.big_play_factor,
+          humanIsHome,
+          possession: data.game_state.possession,
         });
       }
     } catch (err) {
@@ -458,10 +498,109 @@ const PlayingPhase = () => {
   };
 
   const handleOffensePlay = (play) => {
+    // Check if it's a punt - show punt options panel
+    if (play === 'P' && playerOffense) {
+      setPendingPuntPlay(play);
+      setShowPuntOptions(true);
+      return;
+    }
     executePlay(play);
   };
 
+  const handlePuntOptions = (puntOptions) => {
+    setShowPuntOptions(false);
+    setPendingPuntPlay(null);
+    executePlay('P', null, puntOptions);
+  };
+
+  const handleCpuDecisionExecute = () => {
+    if (!cpuFourthDownDecision || !pendingDefensePlay) return;
+    
+    // Execute the CPU's chosen play (punt or FG) with user's defense
+    const cpuPlay = cpuFourthDownDecision.play;
+    
+    // Clear the decision state
+    clearCpuFourthDownDecision();
+    clearPendingDefensePlay();
+    
+    // Execute the play
+    executePlay(pendingDefensePlay, cpuPlay);
+  };
+
+  const handleCpuFourthDownExecute = () => {
+    if (!pendingCpuFourthDown) return;
+    
+    const decision = pendingCpuFourthDown;
+    const cpuPlay = decision.play;  // 'F' or 'P'
+    
+    // When CPU kicks, you're not picking a defense
+    // executePlay(play, cpuPlayOverride) where:
+    // - play = player's choice (offense or defense based on who's kicking)
+    // - cpuPlayOverride = CPU's choice
+    // Since CPU is kicking and you're on defense, pass CPU's play as first param with dummy defense
+    const playerPlay = 'A';  // Dummy - doesn't matter when CPU kicks
+    const cpuPlayOverride = cpuPlay;  // 'F' or 'P'
+    
+    // Log the CPU's decision
+    const offenseTeam = playerOffense 
+      ? (homeTeam?.short_name || 'HOME') 
+      : (awayTeam?.short_name || 'AWAY');
+    const defenseTeam = playerOffense 
+      ? (awayTeam?.short_name || 'AWAY') 
+      : (homeTeam?.short_name || 'HOME');
+    
+    addToPlayLog({
+      quarter,
+      timeRemaining,
+      down: 4,
+      yardsToGo: yardsToGo,
+      ballPosition,
+      fieldPosition,
+      offenseTeam,
+      defenseTeam,
+      homeTeamAbbrev: homeTeam?.short_name || 'HOME',
+      awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
+      playerTeam: playerOffense ? offenseTeam : defenseTeam,
+      offensePlay: cpuPlay,
+      defensePlay: 'A',  // Default, doesn't matter for punt/FG
+      description: `4th & ${yardsToGo} - CPU ${decision.decision === 'punt' ? 'punts' : 'kicks FG'}`,
+    });
+    
+    // Clear the pending state
+    clearPendingCpuFourthDown();
+    
+    // Execute the play - pass CPU's kick as offense play
+    executePlay(cpuPlayOverride, playerPlay);
+  };
+
   const handleDefensePlay = (play) => {
+    if (!gameId || localExecuting) return;
+    
+    // If CPU already decided to punt/FG on 4th down, don't let player pick defense
+    if (pendingCpuFourthDown) return;
+    
+    // On 4th down, need to check CPU decision first
+    if (down === 4) {
+      // Call CPU decision synchronously - don't allow play until we know the decision
+      fetch(`${API_BASE}/api/game/cpu-4th-down-decision/${gameId}`)
+        .then(res => res.json())
+        .then(decision => {
+          if (decision.decision === 'punt' || decision.decision === 'field_goal') {
+            // CPU decided to kick - show panel
+            setPendingCpuFourthDown(decision);
+          } else {
+            // CPU going for it - execute the play
+            executePlay(play);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to get CPU 4th down decision:', err);
+          // On error, just execute the play
+          executePlay(play);
+        });
+      return;
+    }
+    
     executePlay(play);
   };
 
@@ -492,6 +631,38 @@ const PlayingPhase = () => {
       if (res.ok) {
         const data = await res.json();
         updateGameState(data.game_state);
+        
+        // Log the penalty decision play
+        const offenseTeam = playerOffense 
+          ? (homeTeam?.short_name || 'HOME') 
+          : (awayTeam?.short_name || 'AWAY');
+        const defenseTeam = playerOffense 
+          ? (awayTeam?.short_name || 'AWAY') 
+          : (homeTeam?.short_name || 'HOME');
+        const homeAbbrev = homeTeam?.short_name || 'HOME';
+        const awayAbbrev = awayTeam?.short_name || 'AWAY';
+        
+        addToPlayLog({
+          quarter: data.game_state.quarter,
+          timeRemaining: data.game_state.time_remaining,
+          down: data.game_state.down,
+          yardsToGo: data.game_state.yards_to_go,
+          ballPosition: data.game_state.ball_position,
+          lineOfScrimmage: data.game_state.ball_position,
+          fieldPosition: data.game_state.field_position,
+          newFieldPosition: data.game_state.field_position,
+          offenseTeam,
+          defenseTeam,
+          homeTeamAbbrev: homeAbbrev,
+          awayTeamAbbrev: awayAbbrev,
+          playerTeam: playerOffense ? offenseTeam : defenseTeam,
+          offensePlay: 'PENALTY',
+          defensePlay: 'CPU',
+          description: data.result.description || 'Penalty decision',
+          yards: data.result.yards || 0,
+          newPosition: data.game_state.ball_position,
+          possession: data.game_state.possession,
+        });
       } else {
         const error = await res.text();
         console.error('Penalty decision failed:', res.status, error);
@@ -515,9 +686,11 @@ const PlayingPhase = () => {
         down={down}
         yardsToGo={yardsToGo}
         ballPosition={ballPosition}
+        fieldPosition={fieldPosition}
         possession={possession}
         homeTimeouts={homeTimeouts}
         awayTimeouts={awayTimeouts}
+        humanIsHome={humanIsHome}
       />
 
       <div className="flex-shrink-0 px-4 py-4">
@@ -535,7 +708,7 @@ const PlayingPhase = () => {
         <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
           <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
           <div className="text-lg text-blue-100 mb-4">
-            {playerOffense 
+            {possession === 'home'
               ? `${homeTeam?.short_name || 'HOME'} kicks off to ${awayTeam?.short_name || 'AWAY'}`
               : `${awayTeam?.short_name || 'AWAY'} kicks off to ${homeTeam?.short_name || 'HOME'}`
             }
@@ -581,9 +754,35 @@ const PlayingPhase = () => {
         <div className="px-4 pb-2">
           <CpuDecisionPanel 
             decision={cpuFourthDownDecision} 
-            onExecute={executePlay} 
+            onExecute={handleCpuDecisionExecute} 
             onCancel={() => {
               clearCpuFourthDownDecision();
+              clearPendingDefensePlay();
+            }}
+          />
+        </div>
+      )}
+
+      {pendingCpuFourthDown && !showCpuDecision && (
+        <div className="px-4 pb-2">
+          <CpuDecisionPanel 
+            decision={pendingCpuFourthDown} 
+            onExecute={handleCpuFourthDownExecute} 
+            onCancel={() => {
+              clearPendingCpuFourthDown();
+            }}
+          />
+        </div>
+      )}
+
+      {showPuntOptions && (
+        <div className="px-4 pb-2">
+          <PuntOptionsPanel 
+            ballPosition={ballPosition}
+            onSelect={handlePuntOptions}
+            onCancel={() => {
+              setShowPuntOptions(false);
+              setPendingPuntPlay(null);
             }}
           />
         </div>

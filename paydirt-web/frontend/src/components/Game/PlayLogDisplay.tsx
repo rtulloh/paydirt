@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react';
+
 interface DiceRoll {
   black?: number;
   white1?: number;
@@ -14,6 +16,8 @@ interface PlayLogEntry {
   yardsToGo?: number;
   ballPosition?: number;
   lineOfScrimmage?: number;
+  fieldPosition?: string;  // Pre-calculated by backend
+  newFieldPosition?: string;  // Post-play position pre-calculated by backend
   offenseTeam?: string;
   defenseTeam?: string;
   homeTeamAbbrev?: string;
@@ -28,6 +32,32 @@ interface PlayLogEntry {
   yards?: number;
   newPosition?: number;
   scoreChange?: string;
+  humanIsHome?: boolean;
+  possession?: 'home' | 'away';
+}
+
+function formatFieldPosition(pos: number | undefined, possession: 'home' | 'away' | undefined, homeAbbrev: string, awayAbbrev: string, humanIsHome: boolean | undefined): string {
+  if (pos === undefined || pos === null) return '';
+  
+  const hasBall = possession === 'home';
+  
+  if (hasBall) {
+    // Home team has the ball
+    if (pos <= 50) {
+      return `${homeAbbrev} ${pos}`;
+    } else {
+      return `${homeAbbrev} ${100 - pos}`;
+    }
+  } else {
+    // Away team has the ball
+    if (pos <= 50) {
+      // Ball on home side - away team at opponent's yard line
+      return `${awayAbbrev} ${100 - pos}`;
+    } else {
+      // Ball on away side - away team at their own yard line
+      return `${awayAbbrev} ${pos}`;
+    }
+  }
 }
 
 interface PlayLogDisplayProps {
@@ -36,10 +66,29 @@ interface PlayLogDisplayProps {
 }
 
 const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevLengthRef = useRef(plays?.length || 0);
+  
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    
+    const currentLength = plays?.length || 0;
+    
+    // Scroll to bottom when new plays are added
+    if (currentLength > prevLengthRef.current) {
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+    
+    prevLengthRef.current = currentLength;
+  }, [plays?.length]);
+  
   return (
     <div className="w-full">
       <div className="text-white font-bold mb-2">PLAY LOG</div>
-      <div className="h-64 overflow-y-auto border rounded p-2 space-y-1">
+      <div ref={scrollRef} className="h-64 overflow-y-auto border rounded p-2 space-y-1">
         {plays && plays.length > 0 ? plays.map((play, index) => (
           <div
             key={index}
@@ -58,7 +107,7 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
             
             <div className="text-xs text-yellow-400 mb-1">
               {play.down && play.yardsToGo ? 
-                `${play.down}&${play.yardsToGo} at ${play.homeTeamAbbrev}-${play.awayTeamAbbrev} ${play.lineOfScrimmage || ''}` : 
+                `${play.down}&${play.yardsToGo} at ${play.fieldPosition || formatFieldPosition(play.lineOfScrimmage, play.possession, play.homeTeamAbbrev || '', play.awayTeamAbbrev || '', play.humanIsHome)}` : 
                 '1st & 10'
               }
             </div>
@@ -91,7 +140,7 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
             
             {play.newPosition !== undefined && (
               <div className="text-xs text-gray-400">
-                New: {play.homeTeamAbbrev}-{play.awayTeamAbbrev} {play.newPosition}
+                New: {play.newFieldPosition || formatFieldPosition(play.newPosition, play.possession, play.homeTeamAbbrev || '', play.awayTeamAbbrev || '', play.humanIsHome)}
               </div>
             )}
             

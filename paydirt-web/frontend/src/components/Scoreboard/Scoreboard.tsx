@@ -19,6 +19,8 @@ interface ScoreboardProps {
   awayTimeouts?: number;
   possession?: 'home' | 'away';
   ballPosition?: number;
+  fieldPosition?: string;
+  humanIsHome?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -40,6 +42,8 @@ export function Scoreboard({
   awayTimeouts = 3,
   possession = 'home',
   ballPosition = 35,
+  fieldPosition = '',
+  humanIsHome = true,
 }: ScoreboardProps) {
   const homeAbbr = homeTeam?.abbreviation || homeTeam?.short_name || 'HOME'
   const awayAbbr = awayTeam?.abbreviation || awayTeam?.short_name || 'AWAY'
@@ -48,14 +52,6 @@ export function Scoreboard({
   const homeHasBall = possession === 'home'
   const ordinals = ['1st', '2nd', '3rd', '4th']
   const ordinal = ordinals[down - 1] || `${down}th`
-  
-  const formatFieldPosition = (pos: number, hasBall: boolean) => {
-    if (pos <= 50) {
-      return hasBall ? `OWN ${pos}` : `OPP ${100 - pos}`;
-    } else {
-      return hasBall ? `OPP ${100 - pos}` : `OWN ${pos}`;
-    }
-  }
 
   return (
     <div className="bg-gray-800 px-6 py-3" data-testid="scoreboard">
@@ -105,7 +101,8 @@ export function Scoreboard({
           <div className="text-center px-4 border-l border-gray-700">
             <div className="text-xs text-gray-500 mb-1">POS</div>
             <div className="text-lg font-bold text-yellow-400">
-              {formatFieldPosition(ballPosition, homeHasBall)}
+              {/* Always use fieldPosition from backend - it's pre-calculated correctly */}
+              {ballPosition <= 1 ? 'Goal' : fieldPosition}
             </div>
           </div>
 
