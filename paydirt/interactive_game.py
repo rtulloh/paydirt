@@ -15,7 +15,10 @@ from .play_resolver import (
     is_passing_play
 )
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
-from .computer_ai import ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense
+from .computer_ai import (
+    ComputerAI, computer_should_call_timeout_on_defense, computer_should_call_timeout_on_offense,
+    cpu_should_go_for_two, cpu_should_onside_kick, cpu_should_accept_penalty
+)
 from .penalty_handler import apply_half_distance_rule
 from .commentary import Commentary, get_roster
 from .utils import (
@@ -39,67 +42,14 @@ def analyze_team_strength(offense: OffenseChart) -> str:
     """
     Analyze a team's offensive chart to determine if they favor running or passing.
     
+    This is a wrapper function that delegates to ComputerAI.analyze_team_strength().
+    
     Returns:
         'run' if team is better at running
         'pass' if team is better at passing
         'balanced' if roughly equal
     """
-    def count_positive_results(chart_column: dict) -> int:
-        """Count results that are likely positive (yardage gains, breakaways)."""
-        positive = 0
-        for roll, result in chart_column.items():
-            if not result:
-                continue
-            result_str = str(result).upper()
-            # Skip penalties, fumbles, interceptions, sacks
-            if any(x in result_str for x in ['OFF', 'DEF', 'F ', 'F+', 'F-', 'INT', 'SK', 'BK']):
-                continue
-            # Count breakaways as very positive
-            if result_str.startswith('B'):
-                positive += 2
-                continue
-            # Try to parse as yardage
-            try:
-                # Handle variable yardage like "DS", "T1", etc.
-                if any(x in result_str for x in ['DS', 'T1', 'T2', 'T3', 'X']):
-                    positive += 1  # Variable yardage is generally positive
-                    continue
-                # Parse numeric yardage
-                yards = int(result_str.split()[0].replace('(', '').replace(')', ''))
-                if yards > 0:
-                    positive += 1
-            except (ValueError, IndexError):
-                pass
-        return positive
-
-    # Analyze running plays (Line Plunge, Off Tackle, End Run, Draw)
-    run_positive = (
-        count_positive_results(offense.line_plunge) +
-        count_positive_results(offense.off_tackle) +
-        count_positive_results(offense.end_run) +
-        count_positive_results(offense.draw)
-    )
-
-    # Analyze passing plays (Screen, Short Pass, Medium Pass, Long Pass, TE)
-    pass_positive = (
-        count_positive_results(offense.screen) +
-        count_positive_results(offense.short_pass) +
-        count_positive_results(offense.medium_pass) +
-        count_positive_results(offense.long_pass) +
-        count_positive_results(offense.te_short_long)
-    )
-
-    # Normalize by number of play types (4 run, 5 pass)
-    run_avg = run_positive / 4
-    pass_avg = pass_positive / 5
-
-    # Determine team tendency with a threshold
-    if run_avg > pass_avg * 1.15:
-        return 'run'
-    elif pass_avg > run_avg * 1.15:
-        return 'pass'
-    else:
-        return 'balanced'
+    return ComputerAI.analyze_team_strength(offense)
 
 
 # Play type display names and keys
@@ -1000,65 +950,6 @@ def get_human_offense_play_for_conversion(game: PaydirtGameEngine) -> PlayType:
         print("  Invalid choice. Enter a number 1-9.")
 
 
-def cpu_should_go_for_two(game: PaydirtGameEngine, ai: ComputerAI = None) -> bool:
-    """
-    Determine if CPU should go for 2-point conversion.
-    
-    Generally kicks extra point (default), but goes for 2 when:
-    - Late in game and need 2 points to tie/win
-    - Down by 2 (2-point makes it a tie)
-    - Down by 5 (TD + 2 = 8, makes it a 3-point game)
-    - Down by 8 or 9 (need 2 to have chance to tie with another TD)
-    - Up by 1 (2-point makes it a 3-point lead)
-    """
-    state = game.state
-
-    # Calculate score differential (positive = CPU winning)
-    if state.is_home_possession:
-        # CPU just scored as home team (TD already added)
-        score_diff = state.home_score - state.away_score
-    else:
-        # CPU just scored as away team
-        score_diff = state.away_score - state.home_score
-
-    # Note: TD (6 points) already added, so score_diff reflects post-TD score
-
-    # Late game situations (4th quarter, under 5 minutes)
-    late_game = state.quarter == 4 and state.time_remaining < 5.0
-
-    # Very late game (under 2 minutes)
-    very_late = state.quarter == 4 and state.time_remaining < 2.0
-
-    # Specific score situations where going for 2 makes sense
-    # After TD, if we're now:
-    # - Tied (score_diff == 0): Go for 2 to take lead
-    # - Down by 2: Go for 2 to tie
-    # - Up by 6: Kick to go up 7 (default)
-    # - Up by 1: Go for 2 to go up 3 (FG can't tie)
-    # - Down by 8: Go for 2 (need 2 TDs, both need 2-pt to tie)
-
-    if very_late:
-        # Very late - be aggressive
-        if score_diff == 0:
-            return True  # Go for 2 to take lead
-        if score_diff == -2:
-            return True  # Go for 2 to tie
-        if score_diff == 1:
-            return True  # Go for 2 to go up 3
-
-    if late_game:
-        # Late game - consider going for 2 in specific situations
-        if score_diff == -2:
-            return True  # Down by 2, go for 2 to tie
-        if score_diff == -8 or score_diff == -9:
-            return True  # Down by 8-9, need 2 to have chance
-        if score_diff == 1:
-            return True  # Up by 1, go for 2 to go up 3
-
-    # Default: kick the extra point
-    return False
-
-
 def get_kickoff_choice(game: PaydirtGameEngine, is_human_kicking: bool, ai: ComputerAI = None) -> bool:
     """
     Get kickoff choice - regular or onside.
@@ -1083,46 +974,6 @@ def get_kickoff_choice(game: PaydirtGameEngine, is_human_kicking: bool, ai: Comp
     else:
         # CPU decides - only attempt onside kick in desperation
         return cpu_should_onside_kick(game, ai)
-
-
-def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI = None) -> bool:
-    """
-    Determine if CPU should attempt an onside kick.
-    
-    Only attempts onside kick in desperation situations:
-    - 4th quarter, trailing, and running out of time
-    - Need the ball back to have a chance to win
-    """
-    state = game.state
-
-    # Calculate score differential (positive = CPU winning)
-    # Note: CPU is the kicking team here
-    if state.is_home_possession:
-        # Home team just scored and will kick
-        score_diff = state.home_score - state.away_score
-    else:
-        # Away team just scored and will kick
-        score_diff = state.away_score - state.home_score
-
-    # Only consider onside kick in 4th quarter when trailing
-    if state.quarter != 4:
-        return False
-
-    if score_diff >= 0:
-        return False  # Not trailing, no need for onside
-
-    # Desperation situations
-    time_left = state.time_remaining
-
-    # Under 2 minutes and trailing - definitely try onside
-    if time_left < 2.0 and score_diff < 0:
-        return True
-
-    # Under 5 minutes and trailing by more than one score
-    if time_left < 5.0 and score_diff <= -9:
-        return True
-
-    return False
 
 
 def _show_easy_mode_helper(helper, game: PaydirtGameEngine, is_offense: bool):
@@ -2535,75 +2386,12 @@ def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: 
             else:
                 print("  Invalid choice. Enter P for play or a penalty number.")
     else:
-        # CPU makes the decision - use simple logic
-        # Accept penalty if it's better for the offended team
-        play_yards = play_result.yards
-        play_turnover = play_result.turnover
-        play_td = play_result.touchdown
-
-        # If play resulted in turnover or negative yards, likely accept penalty
-        # If play resulted in TD, likely accept play
-        accept_play = True
-        best_penalty_idx = 0
-
-        # Handle FG plays specially - for FG, "play result" is FG good/no good
-        if is_fg_penalty:
-            if outcome.field_goal_made:
-                # FG was good - offense wants to accept play result
-                accept_play = True
-            else:
-                # FG was no good - offense wants penalty (first down or rekick)
-                best_penalty = filtered_penalties[0] if filtered_penalties else None
-                if best_penalty and offended_is_offense:
-                    accept_play = False  # Take the penalty (first down or better position)
-                else:
-                    accept_play = True  # Defense accepts the miss
-        elif is_punt_penalty or is_kickoff_penalty:
-            # For punt/kickoff penalties, evaluate the options
-            # Punt: OFF penalty = punting team foul, DEF penalty = receiving team foul
-            # Kickoff: OFF penalty = kicking team foul, DEF penalty = receiving team foul
-            best_penalty = filtered_penalties[0] if filtered_penalties else None
-            if best_penalty:
-                # For punt DEF penalty (receiving team foul), punting team can get first down
-                if best_penalty.auto_first_down:
-                    accept_play = False  # Take the first down
-                elif is_punt_penalty and offended_is_offense:
-                    # Receiving team offended by DEF penalty - keep result + yardage is usually better
-                    # unless replay gives better field position
-                    accept_play = False  # Accept penalty (keep result + yards or replay)
-                else:
-                    # Evaluate based on penalty yards vs play result
-                    accept_play = False  # Generally accept penalties on kicks
-            else:
-                accept_play = True  # No penalty to accept
-        elif play_td:
-            # Always accept TD
-            accept_play = True
-        elif play_turnover:
-            # Turnover occurred - who benefits?
-            if offended_is_offense:
-                # Offense is offended (defensive penalty) - offense wants penalty to undo turnover
-                accept_play = False
-            else:
-                # Defense is offended (offensive penalty) - defense WANTS the turnover!
-                accept_play = True
-        elif offended_is_offense:
-            # Offense is offended (defensive penalty)
-            # Accept penalty if it gives more yards or first down
-            best_penalty = filtered_penalties[0] if filtered_penalties else None
-            if best_penalty:
-                if best_penalty.auto_first_down:
-                    accept_play = False  # Take the first down
-                elif best_penalty.yards > play_yards:
-                    accept_play = False  # Penalty gives more yards
-        else:
-            # Defense is offended (offensive penalty)
-            # Accept penalty if play gained yards
-            if play_yards > 0:
-                accept_play = False  # Take back the yards
+        # CPU makes the decision - use centralized AI logic
+        accept_play, best_penalty_idx = cpu_should_accept_penalty(
+            outcome, is_human_offense, human_is_home
+        )
 
         # Get CPU team name for display
-        # If human is offense, CPU is defense; if human is defense, CPU is offense
         cpu_team = game.state.defense_team.peripheral.short_name if is_human_offense else game.state.possession_team.peripheral.short_name
 
         if accept_play:

@@ -871,3 +871,509 @@ class TestAIWithAnalysis:
         assert defense in [DefenseType.STANDARD, DefenseType.SHORT_YARDAGE, 
                          DefenseType.SPREAD, DefenseType.SHORT_PASS,
                          DefenseType.LONG_PASS, DefenseType.BLITZ]
+
+
+class TestShouldGoForTwo:
+    """Tests for should_go_for_two method."""
+
+    def test_kicks_extra_point_by_default(self, game, cpu_ai):
+        """CPU should kick extra point in normal situations."""
+        game.state.quarter = 2
+        game.state.time_remaining = 10.0
+        game.state.home_score = 7
+        game.state.away_score = 0
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is False
+
+    def test_goes_for_two_when_tied_very_late(self, game, cpu_ai):
+        """CPU should go for 2 when tied very late in game."""
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0  # Under 2 minutes
+        game.state.home_score = 14
+        game.state.away_score = 14  # Tied after TD
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is True
+
+    def test_goes_for_two_when_down_by_2_late(self, game, cpu_ai):
+        """CPU should go for 2 when down by 2 late in game."""
+        game.state.quarter = 4
+        game.state.time_remaining = 3.0  # Late game
+        game.state.home_score = 12
+        game.state.away_score = 14  # Down by 2
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is True
+
+    def test_goes_for_two_when_down_by_8_late(self, game, cpu_ai):
+        """CPU should go for 2 when down by 8 late in game."""
+        game.state.quarter = 4
+        game.state.time_remaining = 3.0
+        game.state.home_score = 13
+        game.state.away_score = 21  # Down by 8
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is True
+
+    def test_goes_for_two_when_down_by_9_late(self, game, cpu_ai):
+        """CPU should go for 2 when down by 9 late in game."""
+        game.state.quarter = 4
+        game.state.time_remaining = 4.0
+        game.state.home_score = 12
+        game.state.away_score = 21  # Down by 9
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is True
+
+    def test_goes_for_two_when_up_by_1_very_late(self, game, cpu_ai):
+        """CPU should go for 2 when up by 1 very late to go up 3."""
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0
+        game.state.home_score = 15
+        game.state.away_score = 14  # Up by 1
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is True
+
+    def test_kicks_when_up_big(self, game, cpu_ai):
+        """CPU should kick extra point when up big."""
+        game.state.quarter = 4
+        game.state.time_remaining = 3.0
+        game.state.home_score = 28
+        game.state.away_score = 7  # Up by 21
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is False
+
+    def test_kicks_in_q2_normal_game(self, game, cpu_ai):
+        """CPU should kick extra point in Q2 normal game."""
+        game.state.quarter = 2
+        game.state.time_remaining = 8.0
+        game.state.home_score = 14
+        game.state.away_score = 7
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_go_for_two(game)
+
+        assert result is False
+
+
+class TestShouldOnsideKick:
+    """Tests for should_onside_kick method."""
+
+    def test_no_onside_early_in_game(self, game, cpu_ai):
+        """CPU should not onside kick early in game."""
+        game.state.quarter = 2
+        game.state.time_remaining = 10.0
+        game.state.home_score = 7
+        game.state.away_score = 14  # Trailing
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is False
+
+    def test_no_onside_when_leading(self, game, cpu_ai):
+        """CPU should not onside kick when leading."""
+        game.state.quarter = 4
+        game.state.time_remaining = 1.0
+        game.state.home_score = 21
+        game.state.away_score = 14  # Leading
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is False
+
+    def test_onside_when_trailing_under_2_min(self, game, cpu_ai):
+        """CPU should onside kick when trailing and under 2 minutes."""
+        game.state.quarter = 4
+        game.state.time_remaining = 1.5
+        game.state.home_score = 21
+        game.state.away_score = 28  # Trailing
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is True
+
+    def test_onside_when_trailing_big_under_5_min(self, game, cpu_ai):
+        """CPU should onside kick when trailing big and under 5 minutes."""
+        game.state.quarter = 4
+        game.state.time_remaining = 4.0
+        game.state.home_score = 10
+        game.state.away_score = 21  # Down by 11
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is True
+
+    def test_no_onside_small_deficit_under_5_min(self, game, cpu_ai):
+        """CPU should not onside kick when trailing by small margin under 5 minutes."""
+        game.state.quarter = 4
+        game.state.time_remaining = 4.0
+        game.state.home_score = 17
+        game.state.away_score = 21  # Down by 4
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is False
+
+    def test_no_onside_in_q3(self, game, cpu_ai):
+        """CPU should not onside kick in Q3."""
+        game.state.quarter = 3
+        game.state.time_remaining = 5.0
+        game.state.home_score = 14
+        game.state.away_score = 21  # Trailing
+        game.state.is_home_possession = True
+
+        result = cpu_ai.should_onside_kick(game)
+
+        assert result is False
+
+
+class TestShouldAcceptPenalty:
+    """Tests for should_accept_penalty method."""
+
+    def test_accepts_touchdown(self, game, cpu_ai):
+        """CPU should accept touchdown."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = []
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = True
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is True
+
+    def test_accepts_penalty_on_turnover_when_offense_offended(self, game, cpu_ai):
+        """CPU should accept penalty to undo turnover when offense is offended."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock(), MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 10
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 5
+        outcome.penalty_choice.play_result.turnover = True
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_accepts_penalty_when_auto_first_down(self, game, cpu_ai):
+        """CPU should accept penalty when it gives automatic first down."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = True
+        outcome.penalty_choice.penalty_options[0].yards = 5
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 3
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_accepts_penalty_when_more_yards(self, game, cpu_ai):
+        """CPU should accept penalty when it gives more yards."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 15
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 3
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_defense_accepts_penalty_when_offense_gained_yards(self, game, cpu_ai):
+        """Defense should accept penalty when offense gained yards."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "defense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "OFF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 5
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 10
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=True, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_fg_made_accepts_play(self, game, cpu_ai):
+        """CPU should accept FG when field goal is made."""
+        from unittest.mock import MagicMock
+        from paydirt.play_resolver import PlayType
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = PlayType.FIELD_GOAL
+        outcome.field_goal_made = True
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is True
+
+    def test_fg_not_made_accepts_penalty(self, game, cpu_ai):
+        """CPU should accept penalty when FG is missed and offense is offended."""
+        from unittest.mock import MagicMock
+        from paydirt.play_resolver import PlayType
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 10
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = PlayType.FIELD_GOAL
+        outcome.field_goal_made = False
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_punt_penalty_with_auto_first_down(self, game, cpu_ai):
+        """CPU should accept punt penalty when it gives auto first down."""
+        from unittest.mock import MagicMock
+        from paydirt.play_resolver import PlayType
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = True
+        outcome.penalty_choice.penalty_options[0].yards = 5
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = PlayType.PUNT
+        outcome.field_goal_made = False
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_punt_penalty_offense_offended(self, game, cpu_ai):
+        """CPU should accept punt penalty when offense is offended."""
+        from unittest.mock import MagicMock
+        from paydirt.play_resolver import PlayType
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 5
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = PlayType.PUNT
+        outcome.field_goal_made = False
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_kickoff_penalty_accepts_penalty(self, game, cpu_ai):
+        """CPU should accept kickoff penalty generally."""
+        from unittest.mock import MagicMock
+        from paydirt.play_resolver import PlayType
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = [MagicMock()]
+        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
+        outcome.penalty_choice.penalty_options[0].auto_first_down = False
+        outcome.penalty_choice.penalty_options[0].yards = 5
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 0
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = PlayType.KICKOFF
+        outcome.field_goal_made = False
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is False
+
+    def test_no_penalties_defaults_to_accept_play(self, game, cpu_ai):
+        """CPU should default to accept play when no penalties available."""
+        from unittest.mock import MagicMock
+
+        outcome = MagicMock()
+        outcome.penalty_choice = MagicMock()
+        outcome.penalty_choice.offended_team = "offense"
+        outcome.penalty_choice.penalty_options = []
+        outcome.penalty_choice.play_result = MagicMock()
+        outcome.penalty_choice.play_result.yards = 5
+        outcome.penalty_choice.play_result.turnover = False
+        outcome.penalty_choice.play_result.touchdown = False
+        outcome.play_type = MagicMock()
+
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+
+        assert accept_play is True
+
+
+class TestAnalyzeTeamStrength:
+    """Tests for analyze_team_strength static method."""
+
+    def test_run_heavy_team(self):
+        """Team with good running charts should be identified as run-heavy."""
+        offense = OffenseChart(
+            line_plunge={10: "5", 15: "4", 20: "3", 25: "6", 30: "B"},
+            off_tackle={10: "6", 15: "5", 20: "4", 25: "7", 30: "8"},
+            end_run={10: "7", 15: "6", 20: "5", 25: "8", 30: "9"},
+            draw={10: "4", 15: "3", 20: "2", 25: "5", 30: "6"},
+            screen={10: "INC", 15: "INC", 20: "INT", 25: "3", 30: "4"},
+            short_pass={10: "INC", 15: "INC", 20: "INT", 25: "5", 30: "6"},
+            medium_pass={10: "INC", 15: "INC", 20: "INT", 25: "8", 30: "10"},
+            long_pass={10: "INC", 15: "INC", 20: "INT", 25: "15", 30: "20"},
+            te_short_long={10: "INC", 15: "INC", 20: "5", 25: "8", 30: "10"},
+        )
+
+        result = ComputerAI.analyze_team_strength(offense)
+
+        assert result == "run"
+
+    def test_pass_heavy_team(self):
+        """Team with good passing charts should be identified as pass-heavy."""
+        offense = OffenseChart(
+            line_plunge={10: "F", 15: "-2", 20: "0", 25: "1", 30: "2"},
+            off_tackle={10: "F", 15: "-1", 20: "0", 25: "2", 30: "3"},
+            end_run={10: "F", 15: "-2", 20: "1", 25: "2", 30: "3"},
+            draw={10: "F", 15: "-1", 20: "0", 25: "1", 30: "2"},
+            screen={10: "5", 15: "6", 20: "7", 25: "8", 30: "10"},
+            short_pass={10: "6", 15: "8", 20: "10", 25: "12", 30: "15"},
+            medium_pass={10: "10", 15: "12", 20: "15", 25: "20", 30: "25"},
+            long_pass={10: "15", 15: "20", 20: "25", 25: "30", 30: "TD"},
+            te_short_long={10: "8", 15: "10", 20: "12", 25: "15", 30: "18"},
+        )
+
+        result = ComputerAI.analyze_team_strength(offense)
+
+        assert result == "pass"
+
+    def test_balanced_team(self):
+        """Team with equal run/pass should be identified as balanced."""
+        offense = OffenseChart(
+            line_plunge={10: "3", 15: "4", 20: "5"},
+            off_tackle={10: "4", 15: "5", 20: "6"},
+            end_run={10: "5", 15: "6", 20: "7"},
+            draw={10: "3", 15: "4", 20: "5"},
+            screen={10: "4", 15: "5", 20: "6"},
+            short_pass={10: "5", 15: "6", 20: "7"},
+            medium_pass={10: "8", 15: "10", 20: "12"},
+            long_pass={10: "12", 15: "15", 20: "18"},
+            te_short_long={10: "6", 15: "8", 20: "10"},
+        )
+
+        result = ComputerAI.analyze_team_strength(offense)
+
+        assert result == "balanced"
+
+    def test_handles_variable_yardage(self):
+        """Should handle variable yardage results like DS, T1, etc."""
+        offense = OffenseChart(
+            line_plunge={10: "DS", 15: "T1", 20: "3"},
+            off_tackle={10: "4", 15: "5", 20: "6"},
+            end_run={10: "5", 15: "6", 20: "7"},
+            draw={10: "3", 15: "4", 20: "5"},
+            screen={10: "4", 15: "5", 20: "6"},
+            short_pass={10: "5", 15: "6", 20: "7"},
+            medium_pass={10: "8", 15: "10", 20: "12"},
+            long_pass={10: "12", 15: "15", 20: "18"},
+            te_short_long={10: "6", 15: "8", 20: "10"},
+        )
+
+        result = ComputerAI.analyze_team_strength(offense)
+
+        assert result in ["run", "pass", "balanced"]
+
+    def test_handles_breakaway(self):
+        """Should count breakaway results as very positive."""
+        offense = OffenseChart(
+            line_plunge={10: "B", 15: "B", 20: "B"},
+            off_tackle={10: "B", 15: "B", 20: "B"},
+            end_run={10: "1", 15: "2", 20: "3"},
+            draw={10: "1", 15: "2", 20: "3"},
+            screen={10: "INC", 15: "INC", 20: "INC"},
+            short_pass={10: "INC", 15: "INC", 20: "INC"},
+            medium_pass={10: "INC", 15: "INC", 20: "INC"},
+            long_pass={10: "INC", 15: "INC", 20: "INC"},
+            te_short_long={10: "INC", 15: "INC", 20: "INC"},
+        )
+
+        result = ComputerAI.analyze_team_strength(offense)
+
+        assert result == "run"
