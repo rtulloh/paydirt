@@ -101,8 +101,7 @@ export function Scoreboard({
           <div className="text-center px-4 border-l border-gray-700">
             <div className="text-xs text-gray-500 mb-1">POS</div>
             <div className="text-lg font-bold text-yellow-400">
-              {/* Always use fieldPosition from backend - it's pre-calculated correctly */}
-              {ballPosition <= 1 ? 'Goal' : fieldPosition}
+              {fieldPosition}
             </div>
           </div>
 
