@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Centralized CPU AI Decision Logic
+- **Centralized AI methods in `ComputerAI` class**: Moved CPU decision logic from `interactive_game.py` to `ComputerAI` class for better code organization:
+  - `ComputerAI.should_go_for_two()`: Determines when CPU should go for 2-point conversion
+  - `ComputerAI.should_onside_kick()`: Determines when CPU should attempt onside kick
+  - `ComputerAI.analyze_team_strength()` (static): Analyzes team chart for run/pass tendency
+  - `ComputerAI.should_accept_penalty()`: Decides whether CPU should accept play result or penalty
+- **Backward-compatible wrappers**: Added convenience functions (`cpu_should_go_for_two`, `cpu_should_onside_kick`, `cpu_should_accept_penalty`) for existing callers
+- **Test coverage improvements**: Added 30 new unit tests for moved methods; `computer_ai.py` coverage increased from 58% to 61%
+
 ### Auto Game Auditing Improvements
 - **Breakaway play detection in auto games**: Auto game mode now displays breakaway plays with dice roll details for auditing
   - Shows `BREAKAWAY! +X yards` instead of just "Gain of X"
@@ -17,7 +26,7 @@
 - Added unit test for this scenario in `test_kickoff_return.py::TestKickoffDiceDisplay::test_def_penalty_on_kickoff_chart_with_return_td`
 
 ### Test Coverage Improvements
-- **Added 98 new CLI tests** bringing total to 1,586 tests:
+- **Added 128 new tests** bringing total to 1,646 tests (78 new for CPU AI methods):
   - `test_cli_functions.py` (53 tests): Tests for `cli.py` module including screen clearing, header printing, scoreboard display, play/defense menus, user input handling, play result display, and team selection
   - `test_cli_charts.py` (45 tests): Tests for `cli_charts.py` module covering chart-based CLI functions, demo functionality, and edge cases
 - **Coverage improvements**:
