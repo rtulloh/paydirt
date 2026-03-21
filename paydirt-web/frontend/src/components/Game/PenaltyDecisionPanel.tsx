@@ -22,6 +22,9 @@ interface PenaltyData {
   touchdown?: boolean;
   pending_penalty_decision?: boolean;
   penalty_choice?: PenaltyChoice | null;
+  new_down?: number;
+  new_yards_to_go?: number;
+  new_ball_position?: number;
 }
 
 interface PenaltyDecisionPanelProps {
@@ -43,6 +46,27 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
   const yards = penaltyData.yards || 0;
   const turnover = penaltyData.turnover || false;
   const touchdown = penaltyData.touchdown || false;
+  const newDown = penaltyData.new_down;
+  const newYardsToGo = penaltyData.new_yards_to_go;
+  const newBallPosition = penaltyData.new_ball_position;
+
+  const formatFieldPosition = (pos: number): string => {
+    if (pos <= 50) return `OWN ${pos}`;
+    return `OPP ${100 - pos}`;
+  };
+
+  const getPlayResultSummary = (): string => {
+    if (turnover) {
+      return `TURNOVER at ${formatFieldPosition(newBallPosition || 0)}`;
+    }
+    if (touchdown) {
+      return 'TOUCHDOWN!';
+    }
+    if (yards > 0) {
+      return `+${yards} yards → ${formatFieldPosition(newBallPosition || 0)}`;
+    }
+    return `No gain → ${formatFieldPosition(newBallPosition || 0)}`;
+  };
   
   return (
     <div className="bg-yellow-700 rounded-lg px-4 py-4 text-center border-2 border-yellow-500">
@@ -64,23 +88,28 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
       ) : (
         <>
           <div className="text-yellow-200 text-sm mb-4">
-            {penalty_choice.offended_team?.toUpperCase() || 'UNKNOWN'} is offended - choose one:
+            {penalty_choice.offended_team === 'offense' 
+              ? 'OFFENSE committed penalty - Defense may accept or decline' 
+              : penalty_choice.offended_team === 'defense'
+              ? 'DEFENSE committed penalty - Offense may accept or decline'
+              : 'Choose one:'}
           </div>
           
           <div className="bg-gray-800 rounded-lg p-3 mb-4">
-            <div className="text-white text-sm mb-1">PLAY RESULT:</div>
-            <div className="text-white font-bold">
-              {yards > 0 ? `+${yards} yards` : 
-               yards < 0 ? `${yards} yards` : 
-               'No gain'}
+            <div className="text-white text-sm mb-1">ACCEPT PLAY RESULT:</div>
+            <div className="text-white font-bold text-lg">
+              {getPlayResultSummary()}
+            </div>
+            <div className="text-gray-300 text-sm">
+              {newDown}th & {newYardsToGo}
             </div>
             {turnover && (
-              <div className="text-red-400 text-sm">TURNOVER</div>
+              <div className="text-red-400 font-bold mt-1">TURNOVER ON DOWNS!</div>
             )}
             {touchdown && (
-              <div className="text-green-400 text-sm">TOUCHDOWN!</div>
+              <div className="text-green-400 font-bold mt-1">TOUCHDOWN!</div>
             )}
-            <div className="text-gray-400 text-xs mt-1">
+            <div className="text-gray-400 text-xs mt-2">
               Down counts if accepted
             </div>
           </div>
@@ -88,7 +117,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
           {penalty_choice.penalty_options && 
            penalty_choice.penalty_options.length > 0 && (
             <div className="mb-4">
-              <div className="text-white text-sm mb-2">PENALTY OPTIONS:</div>
+              <div className="text-white text-sm mb-2">ACCEPT PENALTY:</div>
               <div className="flex flex-col gap-2">
                 {penalty_choice.penalty_options.map((opt, idx) => (
                   <button
@@ -97,14 +126,19 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
                     className="px-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all text-left"
                   >
                     <div className="flex justify-between items-center">
-                      <span>{opt.description}</span>
+                      <span className="text-sm">{opt.description}</span>
                       <span className="text-sm">
                         {opt.auto_first_down && (
-                          <span className="text-yellow-300 ml-2">+AUTO 1ST</span>
+                          <span className="text-yellow-300 ml-2">AUTO 1ST</span>
                         )}
                       </span>
                     </div>
-                    <div className="text-red-200 text-xs">
+                    {opt.yards !== 0 && (
+                      <div className="text-red-200 text-xs mt-1">
+                        {opt.yards > 0 ? '+' : ''}{opt.yards} yards
+                      </div>
+                    )}
+                    <div className="text-gray-300 text-xs">
                       Down replayed if accepted
                     </div>
                   </button>
@@ -113,12 +147,12 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
             </div>
           )}
           
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col gap-2">
             <button
               onClick={() => onDecision?.(true, 0)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all"
             >
-              TAKE PLAY RESULT (DOWN COUNTS)
+              ACCEPT PLAY ({newDown}th & {newYardsToGo})
             </button>
           </div>
         </>
