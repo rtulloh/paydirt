@@ -20,15 +20,22 @@ export function FootballField({
   
   const isHomePossession = possession === 'home'
   
-  // Ball position maps directly: ballPosition 0-100 → visual position 0%-100%
-  const visualPosition = Math.max(1, Math.min(99, ballPosition));
+  // Ball position: 0 = left end zone, 100 = right end zone
+  // The playing field starts at ~8% (after 48px left end zone) and ends at ~92%
+  // So ballPosition 1 should be just past 8%, ballPosition 99 should be just before 92%
+  const FIELD_LEFT = 8;   // Left edge of playing field (% from left)
+  const FIELD_RIGHT = 92; // Right edge of playing field (% from left)
+  const FIELD_WIDTH = FIELD_RIGHT - FIELD_LEFT;
+  
+  // Scale ball position to fit within the playing field
+  const visualPosition = FIELD_LEFT + ((ballPosition / 100) * FIELD_WIDTH);
   
   const ballStyle = useMemo(() => {
     return { left: `${visualPosition}%`, transform: 'translateX(-50%)' }
   }, [visualPosition])
 
   // First down marker
-  const firstDownPos = ballPosition + yardsToGo;
+  const firstDownPos = FIELD_LEFT + (((ballPosition + yardsToGo) / 100) * FIELD_WIDTH);
   
   const firstDownStyle = useMemo(() => {
     return { left: `${firstDownPos}%` }
