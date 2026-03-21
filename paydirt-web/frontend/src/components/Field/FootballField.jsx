@@ -20,29 +20,19 @@ export function FootballField({
   
   const isHomePossession = possession === 'home'
   
-  // Calculate visual position: ballPosition is always from offense's perspective
-  // 0 = left end zone (offense's), 100 = right end zone (defense's)
-  // The field area (with yard lines) starts at ~8% and ends at ~92% 
-  // We scale ballPosition to fit in this visual area
-  const FIELD_START = 8;   // 8% from left edge (visual start of playing field)
-  const FIELD_END = 92;    // 92% from left edge (visual end of playing field)
-  
-  // Scale: ballPosition 0-100 maps to visual 8%-92%
-  const visualPosition = FIELD_START + (ballPosition / 100) * (FIELD_END - FIELD_START);
+  // Ball position maps directly: ballPosition 0-100 → visual position 0%-100%
+  const visualPosition = Math.max(1, Math.min(99, ballPosition));
   
   const ballStyle = useMemo(() => {
     return { left: `${visualPosition}%`, transform: 'translateX(-50%)' }
   }, [visualPosition])
 
-  // Scale first down position similarly
-  const firstDownRawPos = ballPosition + yardsToGo;
-  const firstDownVisualPos = Math.min(FIELD_END, Math.max(FIELD_START, 
-    FIELD_START + (firstDownRawPos / 100) * (FIELD_END - FIELD_START)
-  ));
+  // First down marker
+  const firstDownPos = ballPosition + yardsToGo;
   
   const firstDownStyle = useMemo(() => {
-    return { left: `${firstDownVisualPos}%` }
-  }, [firstDownVisualPos])
+    return { left: `${firstDownPos}%` }
+  }, [firstDownPos])
 
   // Yard lines: 10, 20, 30, 40, 50 in middle, then mirrored on right side
   // Left side (near offense): 10, 20, 30, 40, 50
