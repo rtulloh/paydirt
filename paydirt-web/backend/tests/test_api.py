@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from pathlib import Path
 import sys
@@ -71,7 +70,7 @@ def test_new_game():
     assert state["away_score"] == 0
     assert state["quarter"] == 1
     assert state["time_remaining"] == 900
-    assert state["game_over"] == False
+    assert not state["game_over"]
     assert state["down"] == 1
     assert state["yards_to_go"] == 10
     assert "home_timeouts" in state
@@ -177,7 +176,6 @@ def test_player_offense_reflects_possession():
     game_id = data["game_id"]
     
     initial_state = data["game_state"]
-    initial_possession = initial_state["possession"]
     initial_human_is_home = initial_state["human_is_home"]
     
     coin_toss_response = client.post("/api/game/coin-toss", json={
@@ -271,7 +269,7 @@ def test_new_game_with_opponent_team():
     assert "game_id" in data
     assert data["game_state"]["home_team"]["id"] == "Ironclads"
     assert data["game_state"]["away_team"]["id"] == "Thunderhawks"
-    assert data["game_state"]["human_is_home"] == True
+    assert data["game_state"]["human_is_home"]
 
 
 def test_new_game_away_team():
@@ -288,7 +286,7 @@ def test_new_game_away_team():
     # When playing away, opponent is home
     assert data["game_state"]["home_team"]["id"] == "Ironclads"
     assert data["game_state"]["away_team"]["id"] == "Thunderhawks"
-    assert data["game_state"]["human_is_home"] == False
+    assert not data["game_state"]["human_is_home"]
     # human_team_id should always be the player's actual team
     assert data["game_state"]["human_team_id"] == "Thunderhawks"
 
@@ -334,7 +332,7 @@ def test_cpu_fourth_down_decision_considers_current_possession():
         "game_id": game_id,
         "kickoff_spot": 35,
     })
-    kickoff_data = kickoff_resp.json()
+    assert kickoff_resp.status_code == 200
     
     # Get the game state to check possession
     state_resp = client.get(f"/api/game/state/{game_id}")
@@ -439,3 +437,89 @@ def test_execute_play_returns_updated_state():
 
 def test_cors_headers():
     pass  # CORS is configured in middleware but TestClient handles it differently
+
+
+def test_save_replay():
+    """Test saving a game replay."""
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    assert response.status_code == 200
+    data = response.json()
+    game_id = data["game_id"]
+    
+    save_response = client.post(f"/api/game/save-replay/{game_id}")
+    assert save_response.status_code == 200
+    save_data = save_response.json()
+    
+    assert "replay_id" in save_data
+    assert save_data["replay_id"].startswith("replay_")
+    assert "game_state" in save_data
+    assert "play_history" in save_data
+    assert "created_at" in save_data
+
+
+def test_save_replay_invalid_game():
+    """Test saving replay with invalid game ID."""
+    response = client.post("/api/game/save-replay/invalid_game_id")
+    assert response.status_code == 404
+
+
+def test_load_replay():
+    """Test loading a saved replay."""
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    assert response.status_code == 200
+    data = response.json()
+    game_id = data["game_id"]
+    
+    save_response = client.post(f"/api/game/save-replay/{game_id}")
+    save_data = save_response.json()
+    
+    load_request = {
+        "replay_data": {
+            "season": "2026",
+            "game_state": save_data["game_state"],
+            "play_history": save_data["play_history"],
+            "difficulty": "medium",
+        }
+    }
+    
+    load_response = client.post("/api/game/load-replay", json=load_request)
+    assert load_response.status_code == 200
+    load_data = load_response.json()
+    
+    assert "game_id" in load_data
+    assert "game_state" in load_data
+    assert load_data["game_id"] != game_id
+
+
+def test_load_replay_invalid_data():
+    """Test loading replay with invalid data."""
+    response = client.post("/api/game/load-replay", json={
+        "replay_data": {}
+    })
+    assert response.status_code == 400
+
+
+def test_debug_settings():
+    """Test getting and setting debug settings."""
+    get_response = client.get("/api/debug/settings")
+    assert get_response.status_code == 200
+    settings = get_response.json()
+    assert "deterministic_mode" in settings
+    assert "seed" in settings
+    
+    set_response = client.post("/api/debug/settings", json={
+        "deterministic_mode": True,
+        "seed": 42
+    })
+    assert set_response.status_code == 200
+    result = set_response.json()
+    assert result["deterministic_mode"] is True
+    assert result["seed"] == 42

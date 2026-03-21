@@ -1,4 +1,27 @@
-function formatTime(seconds) {
+interface Team {
+  id?: string;
+  name?: string;
+  short_name?: string;
+  abbreviation?: string;
+  team_color?: string;
+}
+
+interface ScoreboardProps {
+  homeTeam?: Team | null;
+  awayTeam?: Team | null;
+  homeScore?: number;
+  awayScore?: number;
+  quarter?: number;
+  timeRemaining?: number;
+  down?: number;
+  yardsToGo?: number;
+  homeTimeouts?: number;
+  awayTimeouts?: number;
+  possession?: 'home' | 'away';
+  ballPosition?: number;
+}
+
+function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
@@ -16,7 +39,8 @@ export function Scoreboard({
   homeTimeouts = 3,
   awayTimeouts = 3,
   possession = 'home',
-}) {
+  ballPosition = 35,
+}: ScoreboardProps) {
   const homeAbbr = homeTeam?.abbreviation || homeTeam?.short_name || 'HOME'
   const awayAbbr = awayTeam?.abbreviation || awayTeam?.short_name || 'AWAY'
   const homeName = homeTeam?.name || 'Home'
@@ -24,6 +48,14 @@ export function Scoreboard({
   const homeHasBall = possession === 'home'
   const ordinals = ['1st', '2nd', '3rd', '4th']
   const ordinal = ordinals[down - 1] || `${down}th`
+  
+  const formatFieldPosition = (pos: number, hasBall: boolean) => {
+    if (pos <= 50) {
+      return hasBall ? `OWN ${pos}` : `OPP ${100 - pos}`;
+    } else {
+      return hasBall ? `OPP ${100 - pos}` : `OWN ${pos}`;
+    }
+  }
 
   return (
     <div className="bg-gray-800 px-6 py-3" data-testid="scoreboard">
@@ -67,6 +99,13 @@ export function Scoreboard({
             <div className="text-xs text-gray-500 mb-1">DOWN & DIST</div>
             <div className="text-lg font-bold text-white">
               {ordinal} & {yardsToGo}
+            </div>
+          </div>
+
+          <div className="text-center px-4 border-l border-gray-700">
+            <div className="text-xs text-gray-500 mb-1">POS</div>
+            <div className="text-lg font-bold text-yellow-400">
+              {formatFieldPosition(ballPosition, homeHasBall)}
             </div>
           </div>
 

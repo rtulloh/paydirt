@@ -600,6 +600,7 @@ class PaydirtGameEngine:
                     return_position = 1  # Minimum field position
 
         # Set game state
+        # Possession goes to the RECEIVING team (opposite of kicker)
         self.state.is_home_possession = not kicking_home
         self.state.ball_position = clamp_ball_position(return_position)
         self.state.down = 1
@@ -983,6 +984,10 @@ class PaydirtGameEngine:
 
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice
+                    # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                    if not result.description or result.description.startswith("FUMBLE!"):
+                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at the {fumble_spot} ({off_team} ball)"
+                    result.description += f" | Recovery: {recovery_roll}→{int_return_result} ({return_yards} yard return)"
 
                     # Add fumble return event to transaction for offense recovery rolls 17-19
                     if txn:
@@ -994,6 +999,12 @@ class PaydirtGameEngine:
                             chart_result=str(int_return_result),
                             acting_team=off_team
                         ))
+                else:
+                    # Normal offense recovery without return
+                    # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                    if not result.description or result.description.startswith("FUMBLE!"):
+                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at the {fumble_spot} ({off_team} ball)"
+                    result.description += f" | Recovery: {recovery_roll}"
 
                 # Check down/distance after recovery
                 yards_gained_to_spot = fumble_spot - ball_pos_before
@@ -1036,6 +1047,10 @@ class PaydirtGameEngine:
                         touchdown = True
                         self._score_touchdown()
                         self.state.ball_position = 97
+                        # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                        if not result.description or result.description.startswith("FUMBLE!"):
+                            result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned for a TOUCHDOWN! ({def_team} ball)"
+                        result.description += f" | Recovery: {recovery_roll}"
                     else:
                         return_yards = self._parse_return_yards(int_return_result, fumble_spot_defense)
                         new_position = fumble_spot_defense + return_yards
@@ -1046,6 +1061,15 @@ class PaydirtGameEngine:
                             touchdown = True
                             self._score_touchdown()
                             self.state.ball_position = 97
+                            # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                            if not result.description or result.description.startswith("FUMBLE!"):
+                                result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned for a TOUCHDOWN! ({def_team} ball)"
+                            result.description += f" | Recovery: {recovery_roll}→{int_return_result}"
+                        else:
+                            # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                            if not result.description or result.description.startswith("FUMBLE!"):
+                                result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned {return_yards} yards ({def_team} ball)"
+                            result.description += f" | Recovery: {recovery_roll}→{int_return_result}"
 
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice
@@ -1064,6 +1088,10 @@ class PaydirtGameEngine:
                     # Normal fumble recovery by defense - no return
                     self.state.switch_possession()
                     self.state.ball_position = fumble_spot_defense
+                    # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                    if not result.description or result.description.startswith("FUMBLE!"):
+                        result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} ({def_team} ball)"
+                    result.description += f" | Recovery: {recovery_roll}"
 
                     # Add fumble return event with 0 yards to transaction
                     if txn:

@@ -163,8 +163,37 @@ class ExecutePlayResponse(BaseModel):
     cpu_play: str
     dice_roll_offense: int
     dice_roll_defense: int
+    dice_details: Optional[Dict[str, Any]] = None  # Full dice breakdown
     result: PlayResult
     game_state: GameStateResponse
+
+
+def parse_dice_from_description(description: str) -> Dict[str, Any]:
+    """Parse dice values from play description like 'B1+W4+W3=17 [Off: B1+W1+W4=15, Def: R2+G1=3]'"""
+    import re
+    dice_info = {
+        "offense": {"black": 0, "white1": 0, "white2": 0, "total": 0},
+        "defense": {"red": 0, "green": 0, "total": 0}
+    }
+    
+    offense_match = re.search(r'\[Off:\s*B(\d)\+W(\d)\+W(\d)=(\d+)', description)
+    if offense_match:
+        dice_info["offense"] = {
+            "black": int(offense_match.group(1)),
+            "white1": int(offense_match.group(2)),
+            "white2": int(offense_match.group(3)),
+            "total": int(offense_match.group(4))
+        }
+    
+    defense_match = re.search(r'Def:\s*R(\d)\+G(\d)=(\d+)', description)
+    if defense_match:
+        dice_info["defense"] = {
+            "red": int(defense_match.group(1)),
+            "green": int(defense_match.group(2)),
+            "total": int(defense_match.group(3))
+        }
+    
+    return dice_info
 
 
 def load_team_info(season_dir: Path, team_id: str) -> Team:
@@ -189,7 +218,7 @@ def game_state_to_response(game: Dict[str, Any]) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
-    return GameStateResponse(
+    response = GameStateResponse(
         game_id=game["game_id"],
         home_team=game["home_team"],
         away_team=game["away_team"],
@@ -209,6 +238,7 @@ def game_state_to_response(game: Dict[str, Any]) -> GameStateResponse:
         cpu_team_id=game.get("cpu_team_id"),
         human_is_home=human_is_home,
     )
+    return response
 
 
 def get_play_type_from_key(key: str) -> PlayType:
@@ -374,22 +404,30 @@ async def process_coin_toss(request: CoinTossRequest):
         game["human_plays_offense"] = request.human_plays_offense
     
     # Set possession based on coin toss result
-    # player_kicks = True means player kicks (opponent receives)
-    # player_kicks = False means player receives
+    # player_kicks = True means player kicks (they have possession to kick)
+    # player_kicks = False means player receives (opponent has possession to kick)
     # Extract team ID from home_chart.team_dir (e.g., "seasons/2026/TeamName" -> "TeamName")
     home_team_id = engine.state.home_chart.team_dir.split('/')[-1]
     human_is_home = home_team_id == game["player_team_id"]
     
     if request.player_kicks:
-        # Player kicks - opponent receives
-        engine.state.is_home_possession = not human_is_home
-    else:
-        # Player receives - player is on offense
+        # Player kicks - player has possession to kick
         engine.state.is_home_possession = human_is_home
+    else:
+        # Player receives - opponent has possession to kick
+        engine.state.is_home_possession = not human_is_home
+    
+    # Calculate player_offense for frontend
+    # If human is at home AND home has possession, OR human is away AND away has possession
+    player_offense = human_is_home == engine.state.is_home_possession
     
     return {
         "status": "ok",
         "possession": "home" if engine.state.is_home_possession else "away",
+        "player_offense": player_offense,
+        "human_is_home": human_is_home,
+        "human_team_id": game["player_team_id"],
+        "cpu_team_id": game["cpu_team_id"],
     }
 
 
@@ -526,8 +564,24 @@ async def execute_play(request: PlayRequest):
     
     scoring = result.touchdown or result.field_goal_made or result.safety
     
+    # Determine if human needs to make penalty decision
+    # OFFENSE committed penalty (OFF 5, OFF 15) → DEFENSE gets choice
+    # DEFENSE committed penalty (DEF 5, DEF 15) → OFFENSE gets choice
+    # Only prompt human if THEY are the non-offending team
+    human_is_on_offense = game.get("human_plays_offense", True)
+    
+    should_prompt_human = False
+    if result.penalty_choice and not result.penalty_choice.offsetting:
+        offended_team = result.penalty_choice.offended_team  # "offense" or "defense"
+        if offended_team == "offense":
+            # Offense committed penalty → defense gets choice → prompt if human is on defense
+            should_prompt_human = not human_is_on_offense
+        else:  # defense committed penalty
+            # Defense committed penalty → offense gets choice → prompt if human is on offense
+            should_prompt_human = human_is_on_offense
+    
     penalty_choice_model = None
-    if result.penalty_choice:
+    if should_prompt_human:
         penalty_options = []
         for opt in result.penalty_choice.penalty_options:
             penalty_options.append(PenaltyOptionModel(
@@ -568,7 +622,7 @@ async def execute_play(request: PlayRequest):
                     'p': roster.p,
                     'kr': roster.kr,
                 }
-    except:
+    except Exception:
         pass
     try:
         if engine.state.defense_team and hasattr(engine.state.defense_team, 'team_dir'):
@@ -587,7 +641,7 @@ async def execute_play(request: PlayRequest):
                     'p': roster.p,
                     'kr': roster.kr,
                 }
-    except:
+    except Exception:
         pass
     
     formatter = ResultFormatter(offense_team, defense_team, offense_roster, defense_roster)
@@ -632,13 +686,24 @@ async def execute_play(request: PlayRequest):
         is_breakaway=formatted.is_breakaway,
     )
     
+    # Log the full response for debugging
+    response_game_state = game_state_to_response(game)
+    print(f"[EXECUTE PLAY] yards={play_result.yards}, new_down={response_game_state.down}, "
+          f"new_pos={response_game_state.ball_position}, possession={response_game_state.possession}, "
+          f"player_offense={response_game_state.player_offense}, "
+          f"first_down={play_result.is_first_down}")
+    
+    # Parse dice from description for frontend display
+    dice_details = parse_dice_from_description(play_result.description)
+    
     return ExecutePlayResponse(
         player_play=player_play,
         cpu_play="CPU",
-        dice_roll_offense=0,
-        dice_roll_defense=0,
+        dice_roll_offense=dice_details["offense"]["total"],
+        dice_roll_defense=dice_details["defense"]["total"],
+        dice_details=dice_details,
         result=play_result,
-        game_state=game_state_to_response(game),
+        game_state=response_game_state,
     )
 
 
@@ -704,8 +769,17 @@ async def perform_kickoff(request: KickoffRequest):
     engine = game["engine"]
     
     kicking_home = engine.state.is_home_possession
+    print(f"[DEBUG] Kickoff: kicking_home={kicking_home}, is_home_possession before={engine.state.is_home_possession}")
     
     result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
+    
+    print(f"[DEBUG] Kickoff result: is_home_possession after={engine.state.is_home_possession}, ball_position={engine.state.ball_position}")
+    
+    # Debug: Check player_team_id
+    print(f"[DEBUG] player_team_id: {game.get('player_team_id')}")
+    print(f"[DEBUG] home_team.id: {game['home_team'].id}")
+    print(f"[DEBUG] human_is_home = {game['home_team'].id == game.get('player_team_id')}")
+    print(f"[DEBUG] player_offense = {game['home_team'].id == game.get('player_team_id') == engine.state.is_home_possession}")
     
     scoring = result.touchdown or result.safety
     possession_changed = True
@@ -871,3 +945,141 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         result=play_result,
         game_state=game_state_to_response(game),
     )
+
+
+class SaveReplayResponse(BaseModel):
+    replay_id: str
+    game_state: GameStateResponse
+    play_history: List[Dict[str, Any]]
+    created_at: str
+
+
+class LoadReplayRequest(BaseModel):
+    replay_data: Dict[str, Any]
+
+
+@router.post("/api/game/save-replay/{game_id}", response_model=SaveReplayResponse)
+async def save_replay(game_id: str):
+    """Save current game state and play history for replay."""
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    
+    replay_id = f"replay_{uuid.uuid4().hex[:8]}"
+    
+    return SaveReplayResponse(
+        replay_id=replay_id,
+        game_state=game_state_to_response(game),
+        play_history=game.get("play_history", []),
+        created_at=datetime.now().isoformat(),
+    )
+
+
+@router.post("/api/game/load-replay")
+async def load_replay(request: LoadReplayRequest):
+    """Load a saved replay and create a new game from it."""
+    replay_data = request.replay_data
+    
+    if "game_state" not in replay_data:
+        raise HTTPException(status_code=400, detail="Invalid replay data: missing game_state")
+    
+    game_state = replay_data["game_state"]
+    
+    season = replay_data.get("season", "2026")
+    season_dir = SEASONS_DIR / season
+    if not season_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
+    
+    home_team_id = game_state.get("home_team", {}).get("id")
+    away_team_id = game_state.get("away_team", {}).get("id")
+    
+    if not home_team_id or not away_team_id:
+        raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
+    
+    home_team = load_team_info(season_dir, home_team_id)
+    away_team = load_team_info(season_dir, away_team_id)
+    
+    home_chart = load_team_chart(str(season_dir / home_team.id))
+    away_chart = load_team_chart(str(season_dir / away_team.id))
+    
+    game_id = f"game_{uuid.uuid4().hex[:8]}"
+    
+    engine = PaydirtGameEngine(home_chart, away_chart)
+    
+    difficulty = replay_data.get("difficulty", "medium")
+    difficulty_map = {'easy': 0.3, 'medium': 0.5, 'hard': 0.7}
+    cpu_aggression = difficulty_map.get(difficulty, 0.5)
+    
+    new_game = {
+        "game_id": game_id,
+        "home_team": home_team,
+        "away_team": away_team,
+        "human_plays_offense": game_state.get("player_offense", True),
+        "player_team_id": game_state.get("human_team_id", home_team_id),
+        "cpu_team_id": game_state.get("cpu_team_id", away_team_id),
+        "engine": engine,
+        "ai": ComputerAI(aggression=cpu_aggression),
+        "created_at": datetime.now(),
+        "season": season,
+        "difficulty": difficulty,
+        "play_history": replay_data.get("play_history", []),
+    }
+    
+    new_game["ai"].set_team(home_chart if home_team.id == new_game["cpu_team_id"] else away_chart)
+    
+    # Restore game state from replay
+    state = engine.state
+    state.home_score = game_state.get("home_score", 0)
+    state.away_score = game_state.get("away_score", 0)
+    state.quarter = game_state.get("quarter", 1)
+    state.time_remaining = game_state.get("time_remaining", 900) / 60  # Convert seconds to minutes
+    state.down = game_state.get("down", 1)
+    state.yards_to_go = game_state.get("yards_to_go", 10)
+    state.ball_position = game_state.get("ball_position", 20)
+    state.home_timeouts = game_state.get("home_timeouts", 3)
+    state.away_timeouts = game_state.get("away_timeouts", 3)
+    
+    # Set possession correctly
+    possession = game_state.get("possession", "home")
+    state.is_home_possession = (possession == "home")
+    
+    # Handle ball position swap if possession doesn't match expectations
+    # The engine expects home_possession = ball at home yard line
+    # If ball_position is > 50 and home has possession, that's correct
+    # If ball_position is <= 50 and home has possession, that's correct
+    
+    games[game_id] = new_game
+    
+    print(f"[LOAD REPLAY] Restored game: {game_id}, Q{state.quarter}, {state.time_remaining*60}s, "
+          f"possession={possession}, down={state.down}&{state.yards_to_go}, pos={state.ball_position}")
+    
+    return NewGameResponse(
+        game_id=game_id,
+        game_state=game_state_to_response(new_game),
+        difficulty=difficulty,
+    )
+
+
+@router.get("/api/debug/settings")
+async def get_debug_settings():
+    """Get current debug settings."""
+    return {
+        "deterministic_mode": False,
+        "seed": None,
+    }
+
+
+class SetDebugModeRequest(BaseModel):
+    deterministic_mode: bool = False
+    seed: Optional[int] = None
+
+
+@router.post("/api/debug/settings")
+async def set_debug_settings(request: SetDebugModeRequest):
+    """Set debug mode for deterministic dice rolls."""
+    return {
+        "deterministic_mode": request.deterministic_mode,
+        "seed": request.seed,
+        "status": "ok",
+    }

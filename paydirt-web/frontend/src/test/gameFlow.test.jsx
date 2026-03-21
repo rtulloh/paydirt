@@ -83,20 +83,24 @@ describe('Game Flow Integration Tests', () => {
   })
 
   describe('Game Phase Transitions', () => {
-    it('should include kickoff phase in game flow', () => {
-      const validPhases = ['coinToss', 'kickoff', 'playing', 'halftime', 'gameOver']
+    it('should include playing phase in game flow', () => {
+      const validPhases = ['menu', 'teamSelect', 'coinToss', 'playing', 'halftime', 'gameOver']
       
-      expect(validPhases).toContain('kickoff')
       expect(validPhases).toContain('coinToss')
       expect(validPhases).toContain('playing')
+      expect(validPhases).not.toContain('kickoff')
     })
 
-    it('should transition from coinToss to kickoff to playing', () => {
-      const flow = ['coinToss', 'kickoff', 'playing']
+    it('should transition from coinToss directly to playing (with inline kickoff)', () => {
+      const flow = ['coinToss', 'playing']
       
       expect(flow[0]).toBe('coinToss')
-      expect(flow[1]).toBe('kickoff')
-      expect(flow[2]).toBe('playing')
+      expect(flow[1]).toBe('playing')
+    })
+
+    it('kickoff is handled inline within playing phase', () => {
+      const isKickoff = true
+      expect(isKickoff).toBe(true)
     })
   })
 

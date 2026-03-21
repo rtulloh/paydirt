@@ -108,8 +108,9 @@ export function DiceDisplay({
     return null
   }
 
-  const offenseTotal = (offenseRoll?.black || 0) + (offenseRoll?.white1 || 0) + (offenseRoll?.white2 || 0)
-  const defenseTotal = (defenseRoll?.red || 0) + (defenseRoll?.green || 0)
+  // Black/Red dice = 10s (B1=10, B2=20, B3=30)
+  const offenseTotal = ((offenseRoll?.black || 0) * 10) + (offenseRoll?.white1 || 0) + (offenseRoll?.white2 || 0)
+  const defenseTotal = ((defenseRoll?.red || 0) * 10) + (defenseRoll?.green || 0)
 
   return (
     <div className="bg-gray-800 rounded-lg p-4" data-testid="dice-display">

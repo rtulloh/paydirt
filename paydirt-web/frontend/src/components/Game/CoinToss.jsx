@@ -40,12 +40,13 @@ export function CoinToss({ homeTeam, awayTeam, onComplete }) {
     const playerWonToss = playerCall === coinResult
     
     // If player won toss, they get their choice
-    // If player lost toss, opponent receives (CPU always chooses to receive in CLI)
+    // If player lost toss, opponent receives (CPU always chooses to receive)
+    // So playerReceives is only true if player won AND chose to receive
     onComplete({
       coinResult,
       playerCall,
       playerWonToss,
-      playerReceives: playerWonToss ? playerReceives : !playerReceives,
+      playerReceives: playerWonToss && playerReceives,
     })
   }
 
