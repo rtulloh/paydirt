@@ -94,7 +94,7 @@ export function Scoreboard({
           <div className="text-center px-4 border-l border-gray-700">
             <div className="text-xs text-gray-500 mb-1">DOWN & DIST</div>
             <div className="text-lg font-bold text-white">
-              {ordinal} & {yardsToGo}
+              {ordinal} & {yardsToGo >= (100 - ballPosition) ? 'Goal' : yardsToGo}
             </div>
           </div>
 

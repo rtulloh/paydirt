@@ -25,14 +25,16 @@ interface PenaltyData {
   new_down?: number;
   new_yards_to_go?: number;
   new_ball_position?: number;
+  play_type?: string;
 }
 
 interface PenaltyDecisionPanelProps {
   penaltyData?: PenaltyData | null;
   onDecision?: (acceptPenalty: boolean, penaltyIndex: number) => void;
+  cpuIsOnDefense?: boolean;
 }
 
-const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelProps) => {
+const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false }: PenaltyDecisionPanelProps) => {
   if (!penaltyData) {
     return null;
   }
@@ -45,10 +47,15 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
 
   const yards = penaltyData.yards || 0;
   const turnover = penaltyData.turnover || false;
-  const touchdown = penaltyData.touchdown || false;
   const newDown = penaltyData.new_down;
   const newYardsToGo = penaltyData.new_yards_to_go;
   const newBallPosition = penaltyData.new_ball_position;
+
+    // Detect touchdown: engine may not flag TD for small gains near goal line.
+    // When pending_penalty_decision, new_ball_position is pre-play; if
+    // position + yards >= 100 the play result would score.
+    const isTouchdown = penaltyData.touchdown ||
+      (!turnover && (newBallPosition || 0) + yards >= 100);
 
     const formatFieldPosition = (pos: number): string => {
     if (pos <= 50) return `OWN ${pos}`;
@@ -71,14 +78,30 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
     if (turnover) {
       return `TURNOVER at ${formatFieldPosition(newBallPosition || 0)}`;
     }
-    if (touchdown) {
+    if (isTouchdown) {
       return 'TOUCHDOWN!';
     }
+
+    // Special plays: FG, punt, kickoff show play-specific text, not generic yardage
+    const playType = penaltyData.play_type || '';
+    if (playType === 'field_goal') {
+      return penaltyData.description || 'Field Goal attempt';
+    }
+    if (playType === 'punt') {
+      return penaltyData.description || 'Punt';
+    }
+    if (playType === 'kickoff') {
+      return penaltyData.description || 'Kickoff';
+    }
+
     if (yards > 0) {
       return `+${yards} yards → ${formatFieldPosition(newBallPosition || 0)}`;
     }
     return `No gain → ${formatFieldPosition(newBallPosition || 0)}`;
   };
+  
+  const isDefenseChoosing = penalty_choice.offended_team === 'defense';
+  const cpuDeciding = isDefenseChoosing && cpuIsOnDefense;
   
   return (
     <div className="bg-yellow-700 rounded-lg px-4 py-4 text-center border-2 border-yellow-500">
@@ -102,13 +125,17 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
           <div className="text-yellow-200 text-sm mb-4">
             {penalty_choice.offended_team === 'offense' 
               ? 'DEFENSE committed penalty - Offense may accept or decline' 
+              : cpuDeciding
+              ? 'OFFENSE committed penalty - CPU is deciding...'
               : penalty_choice.offended_team === 'defense'
-              ? 'OFFENSE committed penalty - Defense may accept or decline'
+              ? 'OFFENSE committed penalty - Your choice (Defense)'
               : 'Choose one:'}
           </div>
           
           <div className="bg-gray-800 rounded-lg p-3 mb-4">
-            <div className="text-white text-sm mb-1">ACCEPT PLAY RESULT:</div>
+            <div className="text-white text-sm mb-1">
+              {isDefenseChoosing ? 'DECLINE PENALTY (keep play result):' : 'ACCEPT PLAY RESULT:'}
+            </div>
             <div className="text-white font-bold text-lg">
               {getPlayResultSummary()}
             </div>
@@ -118,24 +145,29 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
             {turnover && (
               <div className="text-red-400 font-bold mt-1">TURNOVER ON DOWNS!</div>
             )}
-            {touchdown && (
+            {isTouchdown && (
               <div className="text-green-400 font-bold mt-1">TOUCHDOWN!</div>
             )}
             <div className="text-gray-400 text-xs mt-2">
-              Down counts if accepted
+              {isDefenseChoosing 
+                ? 'Offense keeps the gain, down counts' 
+                : 'Down counts if accepted'}
             </div>
           </div>
           
           {penalty_choice.penalty_options && 
            penalty_choice.penalty_options.length > 0 && (
             <div className="mb-4">
-              <div className="text-white text-sm mb-2">ACCEPT PENALTY:</div>
+              <div className="text-white text-sm mb-2">
+                {isDefenseChoosing ? 'ACCEPT PENALTY (replay down):' : 'ACCEPT PENALTY:'}
+              </div>
               <div className="flex flex-col gap-2">
                 {penalty_choice.penalty_options.map((opt, idx) => (
                   <button
                     key={idx}
-                    onClick={() => onDecision?.(false, idx)}
-                    className="px-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all text-left"
+                    onClick={() => onDecision?.(true, idx)}
+                    disabled={cpuDeciding}
+                    className={`px-4 py-3 rounded-lg font-bold text-left ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 transition-all'}`}
                   >
                     <div className="flex justify-between items-center">
                       <span className="text-sm">{opt.description}</span>
@@ -146,7 +178,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
                       </span>
                     </div>
                     {opt.yards !== 0 && (
-                      <div className="text-red-200 text-xs mt-1">
+                      <div className={`text-xs mt-1 ${cpuDeciding ? 'text-gray-500' : 'text-red-200'}`}>
                         {opt.yards > 0 ? '+' : ''}{opt.yards} yards
                       </div>
                     )}
@@ -161,10 +193,13 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision }: PenaltyDecisionPanelP
           
           <div className="mt-4 flex flex-col gap-2">
             <button
-              onClick={() => onDecision?.(true, 0)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all"
+              onClick={() => onDecision?.(false, 0)}
+              disabled={cpuDeciding}
+              className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 transition-all'}`}
             >
-              ACCEPT PLAY ({formatDown(newDown)} & {newYardsToGo} at {formatLOS(newBallPosition || 0)})
+              {isDefenseChoosing 
+                ? `DECLINE PENALTY (${formatDown(newDown)} & ${newYardsToGo} at ${formatLOS(newBallPosition || 0)})` 
+                : `ACCEPT PLAY (${formatDown(newDown)} & ${newYardsToGo} at ${formatLOS(newBallPosition || 0)})`}
             </button>
           </div>
         </>

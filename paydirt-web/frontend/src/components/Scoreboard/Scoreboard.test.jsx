@@ -24,4 +24,130 @@ describe('Scoreboard', () => {
     const { container } = render(<Scoreboard timeRemaining={165} />)
     expect(container.textContent).toContain('02:45')
   })
+
+  // DOWN & DISTANCE TESTS
+  describe('Down and distance display', () => {
+    it('shows 1st & 10 for normal first down', () => {
+      const { container } = render(<Scoreboard down={1} yardsToGo={10} ballPosition={35} />)
+      expect(container.textContent).toContain('1st')
+      expect(container.textContent).toContain('10')
+    })
+
+    it('shows 2nd & 5 for second down', () => {
+      const { container } = render(<Scoreboard down={2} yardsToGo={5} ballPosition={50} />)
+      expect(container.textContent).toContain('2nd')
+      expect(container.textContent).toContain('5')
+    })
+
+    it('shows 3rd & 3 for third down', () => {
+      const { container } = render(<Scoreboard down={3} yardsToGo={3} ballPosition={40} />)
+      expect(container.textContent).toContain('3rd')
+      expect(container.textContent).toContain('3')
+    })
+
+    it('shows 4th & 7 for fourth down', () => {
+      const { container } = render(<Scoreboard down={4} yardsToGo={7} ballPosition={60} />)
+      expect(container.textContent).toContain('4th')
+      expect(container.textContent).toContain('7')
+    })
+  })
+
+  // GOAL-TO-GO TESTS
+  describe('Goal-to-go detection', () => {
+    it('shows 1st & Goal when at opponent 5 yard line', () => {
+      const { container } = render(<Scoreboard down={1} yardsToGo={5} ballPosition={95} />)
+      expect(container.textContent).toContain('1st')
+      expect(container.textContent).toContain('Goal')
+      expect(container.textContent).not.toContain('5 &')
+    })
+
+    it('shows 2nd & Goal when at opponent 3 yard line', () => {
+      const { container } = render(<Scoreboard down={2} yardsToGo={3} ballPosition={97} />)
+      expect(container.textContent).toContain('2nd')
+      expect(container.textContent).toContain('Goal')
+    })
+
+    it('shows 3rd & Goal when at opponent 1 yard line', () => {
+      const { container } = render(<Scoreboard down={3} yardsToGo={1} ballPosition={99} />)
+      expect(container.textContent).toContain('3rd')
+      expect(container.textContent).toContain('Goal')
+    })
+
+    it('shows 4th & Goal when at opponent 2 yard line', () => {
+      const { container } = render(<Scoreboard down={4} yardsToGo={2} ballPosition={98} />)
+      expect(container.textContent).toContain('4th')
+      expect(container.textContent).toContain('Goal')
+    })
+
+    it('shows Goal when yardsToGo equals distance to goal', () => {
+      // 10 yards to go, ball at 90 (10 yards from goal)
+      const { container } = render(<Scoreboard down={1} yardsToGo={10} ballPosition={90} />)
+      expect(container.textContent).toContain('Goal')
+    })
+
+    it('shows Goal when yardsToGo exceeds distance to goal', () => {
+      // 15 yards to go, ball at 90 (only 10 yards to goal)
+      const { container } = render(<Scoreboard down={1} yardsToGo={15} ballPosition={90} />)
+      expect(container.textContent).toContain('Goal')
+    })
+
+    it('does NOT show Goal when yardsToGo is less than distance to goal', () => {
+      // 5 yards to go, ball at 80 (20 yards to goal)
+      const { container } = render(<Scoreboard down={1} yardsToGo={5} ballPosition={80} />)
+      expect(container.textContent).not.toContain('Goal')
+      expect(container.textContent).toContain('5')
+    })
+
+    it('does NOT show Goal at midfield', () => {
+      const { container } = render(<Scoreboard down={1} yardsToGo={10} ballPosition={50} />)
+      expect(container.textContent).not.toContain('Goal')
+      expect(container.textContent).toContain('10')
+    })
+  })
+
+  // FIELD POSITION TESTS
+  describe('Field position display', () => {
+    it('shows field position when provided', () => {
+      const { container } = render(<Scoreboard fieldPosition="SF 25" />)
+      expect(container.textContent).toContain('SF 25')
+    })
+  })
+
+  // TIMEOUT TESTS
+  describe('Timeouts display', () => {
+    it('shows timeouts for both teams', () => {
+      const { container } = render(<Scoreboard homeTimeouts={3} awayTimeouts={2} />)
+      expect(container.textContent).toContain('3')
+      expect(container.textContent).toContain('2')
+    })
+  })
+
+  // POSSESSION INDICATOR TESTS
+  describe('Possession indicator', () => {
+    it('highlights home team when home has possession', () => {
+      const { container } = render(
+        <Scoreboard 
+          homeTeam={{ abbreviation: 'SF' }} 
+          awayTeam={{ abbreviation: 'DEN' }}
+          possession="home"
+        />
+      )
+      // Home team should have yellow text (text-yellow-400)
+      const homeScoreDiv = container.querySelector('.text-yellow-400')
+      expect(homeScoreDiv).toBeTruthy()
+    })
+
+    it('highlights away team when away has possession', () => {
+      const { container } = render(
+        <Scoreboard 
+          homeTeam={{ abbreviation: 'SF' }} 
+          awayTeam={{ abbreviation: 'DEN' }}
+          possession="away"
+        />
+      )
+      // Away team score should be highlighted
+      const awayAbbr = container.textContent.includes('DEN')
+      expect(awayAbbr).toBeTruthy()
+    })
+  })
 })

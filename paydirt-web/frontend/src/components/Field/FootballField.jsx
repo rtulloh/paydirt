@@ -1,107 +1,124 @@
 import { useMemo } from 'react'
 
-export function FootballField({ 
-  ballPosition = 35, 
+export function FootballField({
+  ballPosition = 35,
   possession = 'home',
+  quarter = 1,
   homeEndzoneColor = '#8B0000',
   awayEndzoneColor = '#1E3A8A',
   homeTeamName = 'HOME',
   awayTeamName = 'AWAY',
   yardsToGo = 10,
 }) {
-  // When possession is 'home', offense is home team, they drive LEFT to RIGHT
-  // When possession is 'away', offense is away team, they drive LEFT to RIGHT
-  // Ball position is always from offense perspective: 0 = own EZ, 100 = opponent's EZ
-  // So when home has possession: ball at 35 means 35 yards from home's end zone
-  // So when away has possession: ball at 35 means 35 yards from away's end zone
-  
-  // The field view should always show offense driving left-to-right
-  // Left end zone = offense's end zone, Right end zone = defense's end zone
-  
+  // Single coordinate system for all field elements.
+  // Each yard = 0.84% of the container (100 yards = 84%).
+  // Each end zone = 10 yards = 8.4% of the container.
+  const END_ZONE = 8.4
+  const YARD = 0.84
+  const toPct = (yard) => END_ZONE + yard * YARD
+
+  // Track which endzone each team is attacking based on quarter
+  // Q1-Q2: HOME endzone on LEFT, AWAY endzone on RIGHT
+  // Q3-Q4: AWAY endzone on LEFT, HOME endzone on RIGHT (teams swap at halftime)
+  const homeOnLeft = quarter < 3
+
+  // Determine attack direction: RIGHT if possession matches homeOnLeft
+  // HOME in Q1-Q2: RIGHT (homeOnLeft=true, home=true → match → RIGHT)
+  // HOME in Q3-Q4: LEFT (homeOnLeft=false, home=true → no match → LEFT)
+  // AWAY in Q1-Q2: LEFT (homeOnLeft=true, home=false → no match → LEFT)
+  // AWAY in Q3-Q4: RIGHT (homeOnLeft=false, home=false → match → RIGHT)
   const isHomePossession = possession === 'home'
-  
-  // Ball position: 0 = left end zone, 100 = right end zone
-  // The playing field starts at ~8% (after 48px left end zone) and ends at ~92%
-  // So ballPosition 1 should be just past 8%, ballPosition 99 should be just before 92%
-  const FIELD_LEFT = 8;   // Left edge of playing field (% from left)
-  const FIELD_RIGHT = 92; // Right edge of playing field (% from left)
-  const FIELD_WIDTH = FIELD_RIGHT - FIELD_LEFT;
-  
-  // Scale ball position to fit within the playing field
-  const visualPosition = FIELD_LEFT + ((ballPosition / 100) * FIELD_WIDTH);
-  
-  const ballStyle = useMemo(() => {
-    return { left: `${visualPosition}%`, transform: 'translateX(-50%)' }
-  }, [visualPosition])
+  const attackingRight = homeOnLeft === isHomePossession
 
-  // First down marker
-  const firstDownPos = FIELD_LEFT + (((ballPosition + yardsToGo) / 100) * FIELD_WIDTH);
-  
-  const firstDownStyle = useMemo(() => {
-    return { left: `${firstDownPos}%` }
-  }, [firstDownPos])
+  // Convert ball position from "yards from own goal" to field coordinates
+  // ball_position is always measured from the possessing team's own goal
+  // We need to convert to distance from the LEFT endzone
+  const fieldBallPosition = isHomePossession
+    ? (homeOnLeft ? ballPosition : 100 - ballPosition)  // HOME goal on LEFT: use directly; on RIGHT: flip
+    : (homeOnLeft ? 100 - ballPosition : ballPosition)  // AWAY goal on RIGHT: flip; on LEFT: use directly
+  const ballPct = toPct(fieldBallPosition)
 
-  // Yard lines: 10, 20, 30, 40, 50 in middle, then mirrored on right side
-  // Left side (near offense): 10, 20, 30, 40, 50
-  // Right side (near defense): 50, 40, 30, 20, 10
+  const ballStyle = useMemo(() => ({
+    left: `${ballPct}%`,
+    // The SVG ellipse tip is 2 px from the right edge of the 40 px container
+    // (cx=20 + rx=18 = 38). 
+    // When attacking RIGHT: shift left so right tip sits on yard line
+    // When attacking LEFT: flip horizontally, then shift so left tip sits on yard line
+    transform: attackingRight
+      ? 'translateX(calc(-100% + 2px))'
+      : 'scaleX(-1)',
+  }), [ballPct, attackingRight])
+
+  // Convert first down yard line from "yards from own goal" to field coordinates
+  const firstDownYard = ballPosition + yardsToGo
+  const fieldFirstDownYard = possession === 'home'
+    ? (homeOnLeft ? firstDownYard : 100 - firstDownYard)
+    : (homeOnLeft ? 100 - firstDownYard : firstDownYard)
+  const firstDownPct = toPct(fieldFirstDownYard)
+
+  const firstDownStyle = useMemo(() => ({
+    left: `${firstDownPct}%`,
+  }), [firstDownPct])
+
   const yardLines = [
-    { pos: 10, label: '10' },
-    { pos: 20, label: '20' },
-    { pos: 30, label: '30' },
-    { pos: 40, label: '40' },
-    { pos: 50, label: '50' },
-    { pos: 60, label: '40' },
-    { pos: 70, label: '30' },
-    { pos: 80, label: '20' },
-    { pos: 90, label: '10' },
+    { yard: 10, label: '10' },
+    { yard: 20, label: '20' },
+    { yard: 30, label: '30' },
+    { yard: 40, label: '40' },
+    { yard: 50, label: '50' },
+    { yard: 60, label: '40' },
+    { yard: 70, label: '30' },
+    { yard: 80, label: '20' },
+    { yard: 90, label: '10' },
   ]
 
-  // End zones: left is offense's EZ, right is defense's EZ
-  // When home has ball: left end zone = home, right = away
-  // When away has ball: left end zone = away, right = home
-  const leftEndzoneTeam = isHomePossession ? homeTeamName : awayTeamName
-  const rightEndzoneTeam = isHomePossession ? awayTeamName : homeTeamName
-  const leftEndzoneColor = isHomePossession ? homeEndzoneColor : awayEndzoneColor
-  const rightEndzoneColor = isHomePossession ? awayEndzoneColor : homeEndzoneColor
+  // Endzones swap at halftime based on quarter
+  const leftEndzoneTeam = homeOnLeft ? homeTeamName : awayTeamName
+  const rightEndzoneTeam = homeOnLeft ? awayTeamName : homeTeamName
+  const leftEndzoneColor = homeOnLeft ? homeEndzoneColor : awayEndzoneColor
+  const rightEndzoneColor = homeOnLeft ? awayEndzoneColor : homeEndzoneColor
+
+  // First-down marker is hidden on goal-to-go
+  const isGoalToGo = yardsToGo >= (100 - ballPosition)
 
   return (
     <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-xl border-2 border-white bg-green-700" data-testid="football-field">
-      
-      {/* Left end zone (offense's end zone) */}
-      <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: leftEndzoneColor }}>
+
+      {/* Left end zone (offense) */}
+      <div className="absolute left-0 top-0 bottom-0 flex items-center justify-center" style={{ width: `${END_ZONE}%`, backgroundColor: leftEndzoneColor }}>
         <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl' }}>{leftEndzoneTeam}</span>
       </div>
-      
-      {/* Right end zone (defense's end zone) */}
-      <div className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center" style={{ backgroundColor: rightEndzoneColor }}>
+
+      {/* Right end zone (defense) */}
+      <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center" style={{ width: `${END_ZONE}%`, backgroundColor: rightEndzoneColor }}>
         <span className="text-white text-xs font-bold" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{rightEndzoneTeam}</span>
       </div>
 
-      <div className="absolute inset-0" style={{ left: '48px', right: '48px' }}>
-        {yardLines.map(({ pos, label }) => (
-          <div key={pos} className="absolute top-0 bottom-0" style={{ left: `${pos}%` }}>
-            <div className="w-0.5 h-full bg-white" />
-            <div className="absolute top-1 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold bg-black/30 px-0.5 rounded">
-              {label}
-            </div>
+      {/* Yard lines – all positioned in the same coordinate system as the ball */}
+      {yardLines.map(({ yard, label }) => (
+        <div key={yard} className="absolute top-0 bottom-0" style={{ left: `${toPct(yard)}%` }}>
+          <div className="w-0.5 h-full bg-white" />
+          <div className="absolute top-1 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold bg-black/30 px-0.5 rounded">
+            {label}
           </div>
-        ))}
-        
-        {/* Hide first down marker when it's goal to go (yardsToGo >= ballPosition means at or past goal line) */}
-        {yardsToGo < ballPosition && (
-          <div 
-            className="absolute z-20"
-            style={{ left: firstDownStyle.left, top: 0, bottom: 0 }}
-          >
-            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-full bg-yellow-400 shadow-md rounded-full" />
-            <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg border-2 border-yellow-500" />
-            <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-yellow-400 text-[9px] font-bold whitespace-nowrap bg-black/70 px-1 py-0.5 rounded">
-              1ST
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      ))}
 
+      {/* First-down marker */}
+      {!isGoalToGo && (
+        <div
+          className="absolute z-20"
+          style={{ left: firstDownStyle.left, top: 0, bottom: 0 }}
+        >
+          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-full bg-yellow-400 shadow-md rounded-full" />
+          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg border-2 border-yellow-500" />
+          <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-yellow-400 text-[9px] font-bold whitespace-nowrap bg-black/70 px-1 py-0.5 rounded">
+            1ST
+          </div>
+        </div>
+      )}
+
+      {/* Football */}
       <div
         className="absolute top-1/2 -translate-y-1/2 z-30"
         style={ballStyle}

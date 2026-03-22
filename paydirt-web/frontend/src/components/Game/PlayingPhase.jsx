@@ -11,6 +11,7 @@ import PuntOptionsPanel from './PuntOptionsPanel';
 import PlayLogDisplay from './PlayLogDisplay';
 import GameControls from './GameControls.tsx';
 import { useGameStore } from '../../store/gameStore';
+import { checkPendingPat, deriveKickoffTeams } from '../../utils/gameFlowLogic';
 import { API_BASE } from '../../config';
 
 const BLACK_DIE = [1, 1, 2, 2, 3, 3];
@@ -67,6 +68,8 @@ const PlayingPhase = () => {
     pendingPenaltyData,
     isKickoff,
     setIsKickoff,
+    pendingPat,
+    setPendingPat,
   } = store;
 
   const [localLastResult, setLocalLastResult] = useState(null);
@@ -74,6 +77,7 @@ const PlayingPhase = () => {
   const [localIsRolling, setLocalIsRolling] = useState(false);
   const [localShowPatChoice, setLocalShowPatChoice] = useState(false);
   const [localPatResult, setLocalPatResult] = useState(null);
+  const [scoringTeamIsPlayer, setScoringTeamIsPlayer] = useState(false);
   const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(false);
   const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(null);
   const [localExecuting, setLocalExecuting] = useState(false);
@@ -135,6 +139,10 @@ const PlayingPhase = () => {
     setLocalDiceResult(null);
     setLocalIsRolling(false);
     
+    // Clear any lingering CPU 4th down decision UI
+    clearCpuFourthDownDecision();
+    clearPendingCpuFourthDown();
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       setLocalIsRolling(true);
@@ -171,12 +179,10 @@ const PlayingPhase = () => {
         setIsKickoff(false);
         
         // Log the kickoff
-        const kickingTeam = data.game_state.possession === 'home' 
-          ? (homeTeam?.short_name || 'HOME') 
-          : (awayTeam?.short_name || 'AWAY');
-        const receivingTeam = data.game_state.possession === 'home' 
-          ? (awayTeam?.short_name || 'AWAY') 
-          : (homeTeam?.short_name || 'HOME');
+        // Uses shared deriveKickoffTeams — if this function is removed, tests will fail
+        const { kickingTeam, receivingTeam } = deriveKickoffTeams(
+          data.game_state.possession, homeTeam, awayTeam
+        );
         
         const offDice = localDiceResult?.offenseRoll;
         const defDice = localDiceResult?.defenseRoll;
@@ -233,25 +239,27 @@ const PlayingPhase = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game_id: gameId,
-          play: 'XP',
+          player_play: 'XP',
         })
       });
       if (res.ok) {
         const data = await res.json();
         setLocalPatResult({
           type: 'extra_point',
-          success: data.result.description.includes('GOOD'),
-          description: data.result.description,
+          success: data.success,
+          description: data.description,
         });
         updateGameState(data.game_state);
+        setIsKickoff(data.is_kickoff);
         await new Promise(r => setTimeout(r, 2000));
         setLocalPatResult(null);
+        setLocalShowPatChoice(false);
+        setLocalLastResult(null);
       }
     } catch (err) {
       console.error('Failed to attempt extra point:', err);
     } finally {
       setLocalExecuting(false);
-      setLocalShowPatChoice(false);
     }
   };
 
@@ -293,6 +301,64 @@ const PlayingPhase = () => {
   const handleCpuTwoPoint = async () => {
     // CPU two-point is auto-handled by backend
     setLocalShowPatChoice(false);
+  };
+
+  const handleCpuPatAuto = async (gid) => {
+    // CPU scored — auto-attempt extra point, show result then kickoff
+    try {
+      const res = await fetch(`${API_BASE}/api/game/extra-point`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game_id: gid,
+          player_play: 'XP',
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLocalPatResult({
+          type: 'extra_point',
+          success: data.success,
+          description: data.description,
+        });
+
+        // Add PAT to play log
+        addToPlayLog({
+          quarter: data.game_state.quarter,
+          timeRemaining: data.game_state.time_remaining,
+          down: 1,
+          yardsToGo: 10,
+          ballPosition: null,
+          lineOfScrimmage: null,
+          fieldPosition: null,
+          offenseTeam: playerOffense
+            ? (homeTeam?.short_name || 'HOME')
+            : (awayTeam?.short_name || 'AWAY'),
+          defenseTeam: playerOffense
+            ? (awayTeam?.short_name || 'AWAY')
+            : (homeTeam?.short_name || 'HOME'),
+          homeTeamAbbrev: homeTeam?.short_name || 'HOME',
+          awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
+          playerTeam: playerOffense
+            ? (homeTeam?.short_name || 'HOME')
+            : (awayTeam?.short_name || 'AWAY'),
+          offensePlay: 'XP',
+          defensePlay: '-',
+          description: data.description,
+          headline: data.success ? 'Extra Point GOOD' : 'Extra Point NO GOOD',
+          yards: 0,
+          scoreChange: data.success ? `SCORE! ${data.new_score_home}-${data.new_score_away}` : null,
+        });
+
+        updateGameState(data.game_state);
+        setIsKickoff(data.is_kickoff);
+        await new Promise(r => setTimeout(r, 2000));
+        setLocalPatResult(null);
+        setLocalLastResult(null);
+      }
+    } catch (err) {
+      console.error('Failed to auto-attempt CPU extra point:', err);
+    }
   };
 
   const handleNewGame = () => {
@@ -364,6 +430,10 @@ const PlayingPhase = () => {
     setLocalLastResult(null);
     setLocalDiceResult(null);
     setLocalIsRolling(false);
+    
+    // Clear any lingering CPU 4th down decision UI before executing a play
+    clearCpuFourthDownDecision();
+    clearPendingCpuFourthDown();
     
     let cpuPlayValue = cpuPlayOverride;
     
@@ -474,8 +544,8 @@ const PlayingPhase = () => {
           homeTeamAbbrev: homeAbbrev,
           awayTeamAbbrev: awayAbbrev,
           playerTeam: playerOffense ? offenseTeam : defenseTeam,
-          offensePlay: cpuPlayValue,
-          defensePlay: play,
+          offensePlay: playerOffense ? play : cpuPlayValue,
+          defensePlay: playerOffense ? cpuPlayValue : play,
           offenseDice,
           defenseDice,
           description: data.result.description,
@@ -489,6 +559,25 @@ const PlayingPhase = () => {
           humanIsHome,
           possession: data.game_state.possession,
         });
+        
+        // After a touchdown, show PAT choice instead of transitioning to kickoff
+        // Uses shared checkPendingPat — if this function is removed, tests will fail
+        const { isPendingPat, scoringTeamIsPlayer: scoringIsPlayer } = checkPendingPat(data.game_state);
+        if (isPendingPat) {
+          setScoringTeamIsPlayer(scoringIsPlayer);
+          
+          if (scoringIsPlayer) {
+            // Player scored — show PAT choice panel
+            setLocalShowPatChoice(true);
+            setLocalExecuting(false);
+            return;
+          } else {
+            // CPU scored — auto-attempt extra point
+            setLocalExecuting(false);
+            await handleCpuPatAuto(gameId);
+            return;
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to execute play:', err);
@@ -569,8 +658,10 @@ const PlayingPhase = () => {
     // Clear the pending state
     clearPendingCpuFourthDown();
     
-    // Execute the play - pass CPU's kick as offense play
-    executePlay(cpuPlayOverride, playerPlay);
+    // Execute the play
+    // play = player's defense ('A'), cpuPlayOverride = CPU's offense ('F' or 'P')
+    // Backend: player_play='A' → defense, cpu_play='F' → offense (FG)
+    executePlay(playerPlay, cpuPlayOverride);
   };
 
   const handleDefensePlay = (play) => {
@@ -697,8 +788,11 @@ const PlayingPhase = () => {
         <FootballField 
           ballPosition={ballPosition} 
           possession={possession}
+          quarter={quarter}
           homeEndzoneColor={homeTeam?.team_color || '#8B0000'}
+          awayEndzoneColor={awayTeam?.team_color || '#1E3A8A'}
           homeTeamName={homeTeam?.name || homeTeam?.abbreviation || 'HOME'}
+          awayTeamName={awayTeam?.name || awayTeam?.abbreviation || 'AWAY'}
           yardsToGo={yardsToGo}
         />
       </div>
@@ -791,9 +885,9 @@ const PlayingPhase = () => {
       {localShowPatChoice && (
         <div className="px-4 pb-2">
           <PATChoicePanel 
-            canGoForTwo={canGoForTwo} 
-            cpuShouldGoForTwo={cpuShouldGoForTwo} 
-            scoringTeamIsPlayer={false}
+            canGoForTwo={true}
+            cpuShouldGoForTwo={false}
+            scoringTeamIsPlayer={scoringTeamIsPlayer}
             onPatKick={handlePatKick}
             onPatTwoPoint={handlePatTwoPoint}
             onCpuPat={handleCpuPat}
@@ -820,7 +914,8 @@ const PlayingPhase = () => {
         <div className="px-4 pb-2">
           <PenaltyDecisionPanel 
             penaltyData={localPendingPenaltyData} 
-            onDecision={handlePenaltyDecision} 
+            onDecision={handlePenaltyDecision}
+            cpuIsOnDefense={playerOffense}
           />
         </div>
       )}
