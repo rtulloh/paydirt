@@ -160,6 +160,13 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
     while not game.state.game_over:
         state = game.state
 
+        # Handle untimed down: clear the flag after the extra play completes
+        # This allows _use_time() to advance the quarter on the next play
+        # Use < 0.0167 (1 second) threshold to catch tiny positive residuals
+        # from floating-point arithmetic that display as 0:00
+        if state.time_remaining < 0.0167 and game.has_untimed_down():
+            game.clear_untimed_down()
+
         # Check for quarter change
         if state.quarter != last_quarter:
             print("\n" + "=" * 70)
