@@ -16,6 +16,7 @@ from .play_resolver import PlayType, DefenseType
 from .game_engine import PaydirtGameEngine
 from .ai_analysis import TeamAnalyzer, OpponentModel
 from .chart_loader import OffenseChart
+from .season_rules import AIBehavior
 
 
 class ComputerAI:
@@ -30,16 +31,20 @@ class ComputerAI:
     - Uses chart analysis and opponent modeling in hard mode
     """
 
-    def __init__(self, aggression: float = 0.5, use_analysis: bool = False):
+    def __init__(self, aggression: float = 0.5, use_analysis: bool = False,
+                 ai_behavior: Optional[AIBehavior] = None):
         """
         Initialize AI with aggression level.
         
         Args:
             aggression: 0.0 = very conservative, 1.0 = very aggressive
             use_analysis: If True, use chart analysis and opponent modeling
+            ai_behavior: Era-specific AI behavior settings (pace-of-play, strategic
+                decisions). Defaults to conservative era settings if not provided.
         """
         self.aggression = aggression
         self.use_analysis = use_analysis
+        self.ai_behavior = ai_behavior if ai_behavior is not None else AIBehavior()
         self.last_mode = None  # Track current mode for logging
         
         # For opponent modeling (shared across offense and defense)
@@ -141,11 +146,11 @@ class ComputerAI:
         if down == 4:
             self.last_mode = "4th Down"
             play, punt_short_drop, punt_coffin_corner_yards = self._fourth_down_decision(game, ytg, field_pos, time_left, quarter, score_diff)
-            # Use OOB on passing plays in hurry-up 4th down situations
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
                 if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
-                    use_oob = True
+                    if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
+                        use_oob = True
             return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
@@ -153,9 +158,22 @@ class ComputerAI:
             self.last_mode = "Two-Minute Drill"
             play = self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
             use_no_huddle = True
-            # Use OOB designation on passing plays to guarantee clock stops
+            # Use OOB designation on passing plays based on aggression
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
-                use_oob = True
+                if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
+                    use_oob = True
+            # Spike ball: stop clock after a completion near end of game
+            spike_chance = self.ai_behavior.strategic.spike_ball_chance
+            if spike_chance > 0 and time_left < 1.0:
+                prev = game.play_log[-1] if game.play_log else None
+                is_prev_completion = (
+                    prev is not None and
+                    prev.result.result_type.value not in ("incomplete", "interception", "fumble") and
+                    prev.yards_gained > 0
+                )
+                if is_prev_completion and ytg >= 5 and random.random() < spike_chance:
+                    self.last_mode = "Spike Ball"
+                    return (PlayType.SPIKE_BALL, False, True, False, 0)
             return (play, use_oob, use_no_huddle, False, 0)  # No punt options in two-minute
 
         # Running Out Clock (time-critical - protecting lead)
@@ -192,15 +210,21 @@ class ComputerAI:
         # 3rd Down
         if down == 3:
             play = self._third_down_offense(ytg, field_pos)
-            return (play, use_oob, use_no_huddle, False, 0)
-
         # 2nd Down
-        if down == 2:
+        elif down == 2:
             play = self._second_down_offense(ytg)
-            return (play, use_oob, use_no_huddle, False, 0)
-
         # 1st Down - balanced attack
-        play = self._first_down_offense(field_pos)
+        else:
+            play = self._first_down_offense(field_pos)
+
+        # Apply chart analyzer suggestion if available (hard mode with analysis)
+        if self.team_analyzer and random.random() < 0.4:
+            suggestion = self._get_ai_play_suggestion(down, ytg)
+            if suggestion:
+                suggested_play = self._ai_play_to_play_type(suggestion)
+                if suggested_play:
+                    play = suggested_play
+
         return (play, use_oob, use_no_huddle, False, 0)
 
     def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> tuple:
@@ -553,52 +577,44 @@ class ComputerAI:
 
     def _is_two_minute_drill(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be in hurry-up mode."""
-        # End of half - try to score regardless of lead (unless huge lead)
-        # Even when leading, smart teams try to add points before halftime
+        tmd = self.ai_behavior.two_minute_drill
         if quarter == 2 and time_left < 2.0:
-            # Only skip hurry-up if leading by 14+ (comfortable cushion)
-            if score_diff < 14:
+            if score_diff < tmd.skip_when_leading_by:
                 return True
-        # End of game, trailing - be more aggressive based on deficit
         if quarter == 4 and score_diff < 0:
-            # Down by 2+ scores (9+) - hurry up with 8+ minutes left
-            if score_diff <= -9 and time_left < 8.0:
+            if score_diff <= -9 and time_left < tmd.q4_deficit_9_minutes:
                 return True
-            # Down by 1-2 scores - hurry up with 5+ minutes left
-            if score_diff <= -4 and time_left < 5.0:
+            if score_diff <= -4 and time_left < tmd.q4_deficit_4_minutes:
                 return True
-            # Down by any amount - hurry up with 4 minutes left
-            if time_left < 4.0:
+            if time_left < tmd.q4_always_minutes:
                 return True
-        # Way behind anytime in 4th quarter
         if quarter == 4 and score_diff <= -14:
             return True
         return False
 
     def _needs_hurry_up(self, time_left, quarter, score_diff) -> bool:
         """Check if we need to hurry (no-huddle, OOB designation)."""
-        # More aggressive than two-minute drill - use no-huddle earlier
+        hur = self.ai_behavior.hurry_up
         if quarter == 4 and score_diff < 0:
-            # Down by 2+ scores - no huddle with 10+ minutes left
-            if score_diff <= -9 and time_left < 10.0:
+            if score_diff <= -9 and time_left < hur.q4_deficit_9_minutes:
                 return True
-            # Down by 1 score - no huddle with 6+ minutes left
-            if score_diff <= -4 and time_left < 6.0:
+            if score_diff <= -4 and time_left < hur.q4_deficit_4_minutes:
                 return True
-            # Down by any amount - no huddle with 5 minutes left
-            if time_left < 5.0:
+            if time_left < hur.q4_any_minutes:
                 return True
-        # End of half trailing
         if quarter == 2 and time_left < 2.0 and score_diff < 0:
             return True
         return False
 
     def _should_run_clock(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be killing clock."""
-        # Leading in 4th quarter
+        clk = self.ai_behavior.clock_killing
         if quarter == 4 and score_diff > 0:
-            return True
-        # Big lead in 2nd half
+            if clk.clock_run_on_any_lead:
+                if time_left < clk.q4_any_lead_minutes:
+                    return True
+            if score_diff >= 14 and time_left < clk.q4_big_lead_minutes:
+                return True
         if quarter >= 3 and score_diff >= 14:
             return True
         return False

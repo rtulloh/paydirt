@@ -1234,14 +1234,14 @@ def get_human_defense_play(game: PaydirtGameEngine, easy_helper=None) -> tuple[D
 def computer_select_offense(game: PaydirtGameEngine, ai: ComputerAI = None) -> PlayType:
     """Computer AI selects an offensive play using situational intelligence."""
     if ai is None:
-        ai = ComputerAI(aggression=0.5)
+        ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
     return ai.select_offense(game)
 
 
 def computer_select_defense(game: PaydirtGameEngine, ai: ComputerAI = None) -> DefenseType:
     """Computer AI selects a defensive formation using situational intelligence."""
     if ai is None:
-        ai = ComputerAI(aggression=0.5)
+        ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
     return ai.select_defense(game)
 
 
@@ -2720,7 +2720,11 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
     # Create CPU AI for computer opponent decisions
     # Enable analysis/opponent modeling in hard mode
     use_analysis = (difficulty == 'hard')
-    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=use_analysis)
+    cpu_ai = ComputerAI(
+        aggression=cpu_aggression,
+        use_analysis=use_analysis,
+        ai_behavior=game.season_rules.ai_behavior,
+    )
     
     # Set the AI's team for analysis
     if use_analysis:
@@ -3380,7 +3384,11 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         'hard': 0.7
     }
     cpu_aggression = difficulty_map.get(difficulty, 0.5)
-    cpu_ai = ComputerAI(aggression=cpu_aggression, use_analysis=(difficulty == 'hard'))
+    cpu_ai = ComputerAI(
+        aggression=cpu_aggression,
+        use_analysis=(difficulty == 'hard'),
+        ai_behavior=game.season_rules.ai_behavior,
+    )
     
     # Try to load AI opponent model data (for persistent learning)
     save_dir = os.path.dirname(filepath) or "."

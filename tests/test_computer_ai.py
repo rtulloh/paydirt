@@ -8,6 +8,7 @@ from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+from paydirt.season_rules import AIBehavior, TwoMinuteDrill, HurryUp, ClockKilling, AIStrategic
 
 
 def create_mock_chart(short_name: str = "TEST", team_name: str = "Test Team") -> TeamChart:
@@ -36,8 +37,36 @@ def game():
 
 @pytest.fixture
 def cpu_ai():
-    """Create a CPU AI with default aggression."""
-    return ComputerAI(aggression=0.5)
+    """Create a CPU AI with default aggression and era behavior."""
+    return ComputerAI(
+        aggression=0.5,
+        ai_behavior=AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=8.0,   # Old hardcoded: < 8.0
+                q4_deficit_4_minutes=5.0,   # Old hardcoded: < 5.0
+                q4_always_minutes=4.0,       # Old hardcoded: < 4.0
+                skip_when_leading_by=14,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=10.0,  # Old hardcoded: < 10.0
+                q4_deficit_4_minutes=6.0,  # Old hardcoded: < 6.0
+                q4_any_minutes=5.0,         # Old hardcoded: < 5.0
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=4.0,
+                q4_big_lead_minutes=2.0,
+                clock_run_on_any_lead=True,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.25,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=1.0,  # Old hardcoded: always OOB on pass plays
+                fourth_down_aggression=0.7,
+            ),
+        ),
+    )
 
 
 class TestSelectOffenseFirstDown:

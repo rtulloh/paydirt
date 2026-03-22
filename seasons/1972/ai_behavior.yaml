@@ -1,0 +1,30 @@
+# AI behavior for the 1972 NFL season.
+# Era profile: conservative
+#
+# In 1972, no-huddle offense was virtually non-existent.
+# Teams managed clock through timeouts and conservative play-calling,
+# not pace-of-play aggression. Two-minute drills were rare and
+# teams protected leads by running the ball, not bleeding clock.
+
+two_minute_drill:
+  q2_hurry_when_trailing_by: 7      # Only hurry in Q2 if trailing by 7+ at < 2:00
+  q4_any_deficit_minutes: 2.0       # Only hurry when trailing by any amount at < 2:00
+  q4_deficit_9_minutes: 3.0         # Down 9+? Hurry at < 3:00
+  q4_deficit_4_minutes: 2.0         # Down 4+? Hurry at < 2:00
+  q4_always_minutes: 2.0             # Trailing by any? Hurry at < 2:00
+  skip_when_leading_by: 7            # Don't hurry in Q2 if leading by 7+
+
+hurry_up:
+  q4_deficit_9_minutes: 3.0         # No-huddle: down 9+ at < 3:00
+  q4_deficit_4_minutes: 2.0         # No-huddle: down 4+ at < 2:00
+  q4_any_minutes: 2.0               # No-huddle: trailing any at < 2:00
+
+clock_killing:
+  q4_any_lead_minutes: 3.0           # Bleed clock when leading any amount at < 3:00
+  clock_run_on_any_lead: false        # Conservative: don't bleed clock unless big lead
+
+strategic:
+  spike_ball_chance: 0.10           # 10% chance to spike after completion at < 1:00
+  timeout_after_incomplete: true      # Call timeout to stop clock after incompletions
+  oob_designation_aggression: 0.1  # Rarely use OOB designation (takes 5 yards)
+  fourth_down_aggression: 0.25       # Very conservative on 4th down

@@ -3,15 +3,56 @@ Season-specific rules loaded from YAML configuration files.
 
 Each season directory (seasons/YYYY/) should contain a YYYY.yaml file
 defining era-appropriate rules such as two-point conversion availability
-and overtime format.
+and overtime format. An optional ai_behavior.yaml file can customize
+CPU AI pace-of-play and strategic decisions for the era.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from .overtime_rules import OvertimeRules, OvertimeFormat
+
+
+@dataclass
+class TwoMinuteDrill:
+    q2_hurry_when_trailing_by: int = 7
+    q4_any_deficit_minutes: float = 2.0
+    q4_deficit_9_minutes: float = 3.0
+    q4_deficit_4_minutes: float = 2.0
+    q4_always_minutes: float = 2.0
+    skip_when_leading_by: int = 14
+
+
+@dataclass
+class HurryUp:
+    q4_deficit_9_minutes: float = 3.0
+    q4_deficit_4_minutes: float = 2.0
+    q4_any_minutes: float = 2.0
+
+
+@dataclass
+class ClockKilling:
+    q4_any_lead_minutes: float = 3.0
+    q4_big_lead_minutes: float = 2.0
+    clock_run_on_any_lead: bool = False
+
+
+@dataclass
+class AIStrategic:
+    spike_ball_chance: float = 0.10
+    timeout_after_incomplete: bool = True
+    oob_designation_aggression: float = 0.2
+    fourth_down_aggression: float = 0.5
+
+
+@dataclass
+class AIBehavior:
+    two_minute_drill: TwoMinuteDrill = field(default_factory=TwoMinuteDrill)
+    hurry_up: HurryUp = field(default_factory=HurryUp)
+    clock_killing: ClockKilling = field(default_factory=ClockKilling)
+    strategic: AIStrategic = field(default_factory=AIStrategic)
 
 
 @dataclass
@@ -33,6 +74,7 @@ class SeasonRules:
     season: int
     two_point_conversion: bool
     overtime: OvertimeConfig
+    ai_behavior: AIBehavior = field(default_factory=AIBehavior)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API consumption."""
@@ -49,7 +91,238 @@ class SeasonRules:
                 "can_end_in_tie_playoff": self.overtime.can_end_in_tie_playoff,
                 "coin_toss_winner_receives": self.overtime.coin_toss_winner_receives,
             },
+            "ai_behavior": {
+                "two_minute_drill": {
+                    "q2_hurry_when_trailing_by": self.ai_behavior.two_minute_drill.q2_hurry_when_trailing_by,
+                    "q4_any_deficit_minutes": self.ai_behavior.two_minute_drill.q4_any_deficit_minutes,
+                    "q4_deficit_9_minutes": self.ai_behavior.two_minute_drill.q4_deficit_9_minutes,
+                    "q4_deficit_4_minutes": self.ai_behavior.two_minute_drill.q4_deficit_4_minutes,
+                    "q4_always_minutes": self.ai_behavior.two_minute_drill.q4_always_minutes,
+                    "skip_when_leading_by": self.ai_behavior.two_minute_drill.skip_when_leading_by,
+                },
+                "hurry_up": {
+                    "q4_deficit_9_minutes": self.ai_behavior.hurry_up.q4_deficit_9_minutes,
+                    "q4_deficit_4_minutes": self.ai_behavior.hurry_up.q4_deficit_4_minutes,
+                    "q4_any_minutes": self.ai_behavior.hurry_up.q4_any_minutes,
+                },
+                "clock_killing": {
+                    "q4_any_lead_minutes": self.ai_behavior.clock_killing.q4_any_lead_minutes,
+                    "q4_big_lead_minutes": self.ai_behavior.clock_killing.q4_big_lead_minutes,
+                    "clock_run_on_any_lead": self.ai_behavior.clock_killing.clock_run_on_any_lead,
+                },
+                "strategic": {
+                    "spike_ball_chance": self.ai_behavior.strategic.spike_ball_chance,
+                    "timeout_after_incomplete": self.ai_behavior.strategic.timeout_after_incomplete,
+                    "oob_designation_aggression": self.ai_behavior.strategic.oob_designation_aggression,
+                    "fourth_down_aggression": self.ai_behavior.strategic.fourth_down_aggression,
+                },
+            },
         }
+
+
+def _era_ai_behavior(year: int) -> AIBehavior:
+    """
+    Return era-appropriate default AI behavior for a given year.
+
+    CPU AI pace-of-play and strategic decisions are calibrated to match
+    the norms of each football era. These defaults are used when no
+    ai_behavior.yaml file exists in the season directory.
+    """
+    if year < 1985:
+        profile = "conservative"
+    elif year < 2000:
+        profile = "moderate"
+    elif year < 2012:
+        profile = "aggressive"
+    else:
+        profile = "very_aggressive"
+
+    if profile == "conservative":
+        return AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=3.0,
+                q4_deficit_4_minutes=2.0,
+                q4_always_minutes=2.0,
+                skip_when_leading_by=7,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=3.0,
+                q4_deficit_4_minutes=2.0,
+                q4_any_minutes=2.0,
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=3.0,
+                q4_big_lead_minutes=2.0,
+                clock_run_on_any_lead=False,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.10,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=0.2,
+                fourth_down_aggression=0.3,
+            ),
+        )
+    elif profile == "moderate":
+        return AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=3.0,
+                q4_deficit_4_minutes=2.0,
+                q4_always_minutes=2.0,
+                skip_when_leading_by=10,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=4.0,
+                q4_deficit_4_minutes=3.0,
+                q4_any_minutes=2.0,
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=3.0,
+                q4_big_lead_minutes=2.0,
+                clock_run_on_any_lead=False,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.15,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=0.3,
+                fourth_down_aggression=0.4,
+            ),
+        )
+    elif profile == "aggressive":
+        return AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=4.0,
+                q4_deficit_4_minutes=3.0,
+                q4_always_minutes=2.0,
+                skip_when_leading_by=14,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=5.0,
+                q4_deficit_4_minutes=4.0,
+                q4_any_minutes=3.0,
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=4.0,
+                q4_big_lead_minutes=2.0,
+                clock_run_on_any_lead=True,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.20,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=0.5,
+                fourth_down_aggression=0.6,
+            ),
+        )
+    else:
+        return AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=4.0,
+                q4_deficit_4_minutes=3.0,
+                q4_always_minutes=3.0,
+                skip_when_leading_by=14,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=5.0,
+                q4_deficit_4_minutes=4.0,
+                q4_any_minutes=3.0,
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=4.0,
+                q4_big_lead_minutes=3.0,
+                clock_run_on_any_lead=True,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.25,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=0.6,
+                fourth_down_aggression=0.7,
+            ),
+        )
+
+
+def load_ai_behavior(season_dir: Path, year: int) -> AIBehavior:
+    """
+    Load AI behavior settings from an optional ai_behavior.yaml file.
+
+    If the file does not exist, era-appropriate defaults are returned.
+    Partial files are merged with defaults.
+
+    Args:
+        season_dir: Path to the season directory (e.g., seasons/1983)
+        year: The season year
+
+    Returns:
+        AIBehavior loaded from YAML or era defaults
+    """
+    season_dir = Path(season_dir)
+    yaml_path = season_dir / "ai_behavior.yaml"
+
+    if not yaml_path.exists():
+        return _era_ai_behavior(year)
+
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    if not data:
+        return _era_ai_behavior(year)
+
+    tmd = TwoMinuteDrill(
+        q2_hurry_when_trailing_by=int(data.get("two_minute_drill", {}).get(
+            "q2_hurry_when_trailing_by", 7)),
+        q4_any_deficit_minutes=float(data.get("two_minute_drill", {}).get(
+            "q4_any_deficit_minutes", 2.0)),
+        q4_deficit_9_minutes=float(data.get("two_minute_drill", {}).get(
+            "q4_deficit_9_minutes", 3.0)),
+        q4_deficit_4_minutes=float(data.get("two_minute_drill", {}).get(
+            "q4_deficit_4_minutes", 2.0)),
+        q4_always_minutes=float(data.get("two_minute_drill", {}).get(
+            "q4_always_minutes", 2.0)),
+        skip_when_leading_by=int(data.get("two_minute_drill", {}).get(
+            "skip_when_leading_by", 14)),
+    )
+
+    hur = HurryUp(
+        q4_deficit_9_minutes=float(data.get("hurry_up", {}).get(
+            "q4_deficit_9_minutes", 3.0)),
+        q4_deficit_4_minutes=float(data.get("hurry_up", {}).get(
+            "q4_deficit_4_minutes", 2.0)),
+        q4_any_minutes=float(data.get("hurry_up", {}).get(
+            "q4_any_minutes", 2.0)),
+    )
+
+    clk = ClockKilling(
+        q4_any_lead_minutes=float(data.get("clock_killing", {}).get(
+            "q4_any_lead_minutes", 3.0)),
+        q4_big_lead_minutes=float(data.get("clock_killing", {}).get(
+            "q4_big_lead_minutes", 2.0)),
+        clock_run_on_any_lead=bool(data.get("clock_killing", {}).get(
+            "clock_run_on_any_lead", False)),
+    )
+
+    stg = AIStrategic(
+        spike_ball_chance=float(data.get("strategic", {}).get(
+            "spike_ball_chance", 0.10)),
+        timeout_after_incomplete=bool(data.get("strategic", {}).get(
+            "timeout_after_incomplete", True)),
+        oob_designation_aggression=float(data.get("strategic", {}).get(
+            "oob_designation_aggression", 0.2)),
+        fourth_down_aggression=float(data.get("strategic", {}).get(
+            "fourth_down_aggression", 0.5)),
+    )
+
+    return AIBehavior(
+        two_minute_drill=tmd,
+        hurry_up=hur,
+        clock_killing=clk,
+        strategic=stg,
+    )
 
 
 def load_season_rules(season_dir: Path) -> SeasonRules:
@@ -93,10 +366,12 @@ def load_season_rules(season_dir: Path) -> SeasonRules:
     if not data:
         raise ValueError(f"Season rules file is empty: {yaml_path}")
 
-    return _parse_season_rules(data, year, yaml_path)
+    return _parse_season_rules(data, year, yaml_path, season_dir)
 
 
-def _parse_season_rules(data: dict[str, Any], year: int, yaml_path: Path) -> SeasonRules:
+def _parse_season_rules(
+    data: dict[str, Any], year: int, yaml_path: Path, season_dir: Path
+) -> SeasonRules:
     """Parse season rules from loaded YAML data."""
     # Validate season field
     yaml_season = data.get("season")
@@ -126,10 +401,10 @@ def _parse_season_rules(data: dict[str, Any], year: int, yaml_path: Path) -> Sea
         "can_end_in_tie_regular", "can_end_in_tie_playoff",
         "coin_toss_winner_receives",
     ]
-    for field in required_ot_fields:
-        if field not in ot_data:
+    for f in required_ot_fields:
+        if f not in ot_data:
             raise ValueError(
-                f"Missing required field 'overtime.{field}' in {yaml_path}"
+                f"Missing required field 'overtime.{f}' in {yaml_path}"
             )
 
     ot_format = ot_data["format"]
@@ -154,6 +429,7 @@ def _parse_season_rules(data: dict[str, Any], year: int, yaml_path: Path) -> Sea
         season=year,
         two_point_conversion=two_point,
         overtime=overtime,
+        ai_behavior=load_ai_behavior(season_dir, year),
     )
 
 
@@ -194,6 +470,11 @@ def scaffold_season_rules(year: int) -> str:
     - Modified sudden death introduced in 2010
     - Overtime period reduced to 10 minutes in 2017
 
+    CPU AI behavior defaults are handled by a separate ai_behavior.yaml
+    file (optional) in the season directory. Era-appropriate defaults are
+    used if the file is absent. See the ai_behavior.yaml schema in the
+    paydirt source for documentation.
+
     Args:
         year: The season year (e.g., 1972, 2026)
 
@@ -215,4 +496,8 @@ overtime:
   can_end_in_tie_regular: true
   can_end_in_tie_playoff: false
   coin_toss_winner_receives: true
+
+# NOTE: CPU AI behavior can be configured in seasons/{year}/ai_behavior.yaml
+# See paydirt/season_rules.py for the schema.
+# Era-appropriate defaults are used if ai_behavior.yaml is absent.
 """

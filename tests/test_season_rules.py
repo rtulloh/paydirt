@@ -15,6 +15,12 @@ from paydirt.season_rules import (
     load_season_rules,
     season_rules_to_overtime_rules,
     scaffold_season_rules,
+    load_ai_behavior,
+    AIBehavior,
+    TwoMinuteDrill,
+    HurryUp,
+    ClockKilling,
+    AIStrategic,
 )
 from paydirt.overtime_rules import OvertimeFormat, OvertimeRules
 
@@ -216,3 +222,115 @@ class TestSeasonRulesDataClasses:
         )
         assert rules.season == 2000
         assert rules.two_point_conversion is True
+        assert rules.ai_behavior is not None
+
+
+class TestAIDefaults:
+    """Tests for era-based AI behavior defaults."""
+
+    def test_missing_ai_yaml_returns_conservative_defaults(self, temp_season_dir):
+        """Missing ai_behavior.yaml should return era-appropriate defaults."""
+        year = int(temp_season_dir.name)
+        ai = load_ai_behavior(temp_season_dir, year)
+        assert isinstance(ai, AIBehavior)
+        # temp_season_dir is year 2000 = aggressive era (1999 < 2000 < 2012)
+        assert ai.hurry_up.q4_deficit_9_minutes == 5.0
+        assert ai.strategic.fourth_down_aggression == 0.6
+
+    def test_load_ai_behavior_with_yaml_overrides_defaults(self, temp_season_dir):
+        """Existing ai_behavior.yaml should override defaults."""
+        year = int(temp_season_dir.name)
+        yaml_path = temp_season_dir / "ai_behavior.yaml"
+        yaml_path.write_text("""
+two_minute_drill:
+  q4_any_deficit_minutes: 5.0
+hurry_up:
+  q4_deficit_9_minutes: 8.0
+clock_killing:
+  clock_run_on_any_lead: true
+strategic:
+  oob_designation_aggression: 0.9
+""")
+        ai = load_ai_behavior(temp_season_dir, year)
+        assert ai.two_minute_drill.q4_any_deficit_minutes == 5.0
+        assert ai.hurry_up.q4_deficit_9_minutes == 8.0
+        assert ai.clock_killing.clock_run_on_any_lead is True
+        assert ai.strategic.oob_designation_aggression == 0.9
+
+    def test_partial_ai_yaml_merges_with_defaults(self, temp_season_dir):
+        """Partial ai_behavior.yaml should merge with defaults."""
+        year = int(temp_season_dir.name)
+        yaml_path = temp_season_dir / "ai_behavior.yaml"
+        yaml_path.write_text("""
+hurry_up:
+  q4_deficit_9_minutes: 7.0
+""")
+        ai = load_ai_behavior(temp_season_dir, year)
+        assert ai.hurry_up.q4_deficit_9_minutes == 7.0
+        assert ai.two_minute_drill.q4_any_deficit_minutes == 2.0  # default
+        assert ai.clock_killing.clock_run_on_any_lead is False  # default
+
+    def test_empty_ai_yaml_returns_defaults(self, temp_season_dir):
+        """Empty ai_behavior.yaml should return era defaults."""
+        year = int(temp_season_dir.name)
+        yaml_path = temp_season_dir / "ai_behavior.yaml"
+        yaml_path.write_text("")
+        ai = load_ai_behavior(temp_season_dir, year)
+        assert isinstance(ai, AIBehavior)
+
+    def test_season_rules_includes_ai_behavior(self, temp_season_dir):
+        """SeasonRules should include ai_behavior field."""
+        yaml_path = temp_season_dir / f"{temp_season_dir.name}.yaml"
+        yaml_path.write_text(scaffold_season_rules(int(temp_season_dir.name)))
+        rules = load_season_rules(temp_season_dir)
+        assert rules.ai_behavior is not None
+        assert isinstance(rules.ai_behavior, AIBehavior)
+
+    def test_to_dict_includes_ai_behavior(self, temp_season_dir):
+        """SeasonRules.to_dict() should include ai_behavior."""
+        yaml_path = temp_season_dir / f"{temp_season_dir.name}.yaml"
+        yaml_path.write_text(scaffold_season_rules(int(temp_season_dir.name)))
+        rules = load_season_rules(temp_season_dir)
+        d = rules.to_dict()
+        assert "ai_behavior" in d
+        assert "two_minute_drill" in d["ai_behavior"]
+        assert "hurry_up" in d["ai_behavior"]
+        assert "clock_killing" in d["ai_behavior"]
+        assert "strategic" in d["ai_behavior"]
+
+    def test_conservative_defaults_pre_1985(self):
+        """Pre-1985 seasons should use conservative AI defaults."""
+        ai = AIBehavior()
+        assert ai.clock_killing.clock_run_on_any_lead is False
+        assert ai.strategic.oob_designation_aggression <= 0.3
+
+    def test_very_aggressive_defaults_post_2012(self):
+        """Post-2012 seasons should use very aggressive AI defaults."""
+        ai = AIBehavior(
+            two_minute_drill=TwoMinuteDrill(
+                q2_hurry_when_trailing_by=7,
+                q4_any_deficit_minutes=2.0,
+                q4_deficit_9_minutes=4.0,
+                q4_deficit_4_minutes=3.0,
+                q4_always_minutes=3.0,
+                skip_when_leading_by=14,
+            ),
+            hurry_up=HurryUp(
+                q4_deficit_9_minutes=5.0,
+                q4_deficit_4_minutes=4.0,
+                q4_any_minutes=3.0,
+            ),
+            clock_killing=ClockKilling(
+                q4_any_lead_minutes=4.0,
+                q4_big_lead_minutes=3.0,
+                clock_run_on_any_lead=True,
+            ),
+            strategic=AIStrategic(
+                spike_ball_chance=0.25,
+                timeout_after_incomplete=True,
+                oob_designation_aggression=0.6,
+                fourth_down_aggression=0.7,
+            ),
+        )
+        assert ai.clock_killing.clock_run_on_any_lead is True
+        assert ai.hurry_up.q4_deficit_9_minutes == 5.0

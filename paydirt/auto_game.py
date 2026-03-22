@@ -137,9 +137,9 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
     game = PaydirtGameEngine(home_chart, away_chart)
     game.state.is_playoff = is_playoff
 
-    # Create AI for both teams
-    away_ai = ComputerAI(aggression=0.5)
-    home_ai = ComputerAI(aggression=0.5)
+    # Create AI for both teams (home team's season rules govern AI behavior)
+    away_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
+    home_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
 
     # Opening kickoff - home team kicks to start
     opening_kicking_home = True

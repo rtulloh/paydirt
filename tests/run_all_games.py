@@ -174,15 +174,18 @@ for away, home in matchups:
             errors.append(f"{away}@{home}: Could not parse final score")
             print(f"  ERROR: Could not parse final score")
     
-    # Extract quarter scores from box score
+    # Extract quarter scores from FINAL STATISTICS section only
     lines = output.split('\n')
     teams_found = []
+    in_final_stats = False
     for i, line in enumerate(lines):
-        if 'TEAM' in line and '1Q' in line:
-            # Next lines contain the teams
+        if 'FINAL STATISTICS' in line:
+            in_final_stats = True
+            continue
+        if in_final_stats and 'TEAM' in line and '1Q' in line:
             for team_line in lines[i+1:i+5]:
                 m = re.search(
-                    rf"\|\s+{TEAM_PATTERN}\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\d+)\s+\|", 
+                    rf"\|\s+{TEAM_PATTERN}\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\d+)\s+\|",
                     team_line
                 )
                 if m:

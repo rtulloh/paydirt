@@ -1,0 +1,31 @@
+# AI behavior for the 2026 NFL season.
+# Era profile: very_aggressive
+#
+# Modern NFL: no-huddle and spread offense are mainstream.
+# Teams push pace aggressively and frequently use hurry-up in
+# a wide range of situations. OOB designations are common.
+# This file uses values close to the original hardcoded defaults.
+# Modify these values to tune CPU behavior.
+
+two_minute_drill:
+  q2_hurry_when_trailing_by: 7      # Only skip hurry in Q2 if leading by 14+
+  q4_any_deficit_minutes: 2.0       # Trailing any: hurry at < 2:00
+  q4_deficit_9_minutes: 4.0         # Down 9+: hurry at < 4:00
+  q4_deficit_4_minutes: 3.0         # Down 4+: hurry at < 3:00
+  q4_always_minutes: 3.0             # Trailing any: hurry at < 3:00
+  skip_when_leading_by: 14           # Skip hurry in Q2 if leading by 14+
+
+hurry_up:
+  q4_deficit_9_minutes: 5.0         # No-huddle: down 9+ at < 5:00
+  q4_deficit_4_minutes: 4.0         # No-huddle: down 4+ at < 4:00
+  q4_any_minutes: 3.0               # No-huddle: trailing any at < 3:00
+
+clock_killing:
+  q4_any_lead_minutes: 4.0           # Bleed clock when leading any amount at < 4:00
+  clock_run_on_any_lead: true          # Aggressive: bleed on any lead
+
+strategic:
+  spike_ball_chance: 0.25             # 25% chance to spike after completion at < 1:00
+  timeout_after_incomplete: true        # Call timeout after incompletions
+  oob_designation_aggression: 0.6    # Frequently use OOB designation on pass plays
+  fourth_down_aggression: 0.7         # Aggressive on 4th down

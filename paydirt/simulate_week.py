@@ -102,8 +102,8 @@ def simulate_game(home_chart, away_chart, verbose: bool = False) -> tuple:
     """
     game = PaydirtGameEngine(home_chart, away_chart)
 
-    home_ai = ComputerAI(aggression=0.5)
-    away_ai = ComputerAI(aggression=0.5)
+    home_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
+    away_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
 
     home_name = home_chart.peripheral.short_name
     away_name = away_chart.peripheral.short_name
