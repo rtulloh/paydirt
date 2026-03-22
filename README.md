@@ -129,6 +129,10 @@ Select your team, choose home or away, select CPU difficulty, and start playing!
 | `--week N` | Specify week number for standings |
 | `--load [file]` | Resume a saved game |
 | `-auto team1 team2` | Run CPU vs CPU simulation |
+| `--scaffold-season YEAR` | Generate season rules YAML file |
+| `--home team` | Your team (e.g., `--home 2026/Thunderhawks`) |
+| `--away team` | Opponent team (e.g., `--away 2026/Ironclads`) |
+| `--playoff-game` | Use playoff overtime rules (no ties) |
 
 ### CPU Difficulty Levels
 
@@ -297,9 +301,9 @@ On 4th down, you'll be asked:
 
 Choose your extra point attempt:
 - **[K] Kick** - Extra point (1 point, high success rate)
-- **[2] Two-point** - Conversion attempt (2 points, risky) - *Only available for 1994+ teams*
+- **[2] Two-point** - Conversion attempt (2 points, risky)
 
-**Note:** The 2-point conversion was introduced to the NFL in 1994. When playing with teams from earlier seasons (e.g., 1983), only the extra point kick option is available.
+**Note:** Whether the 2-point conversion is available depends on the season rules. Pre-1994 teams only have the extra point kick option. Rules are configured in `seasons/YYYY/YYYY.yaml` (see [Season Rules](#season-rules)).
 
 ### Kickoffs
 
@@ -459,38 +463,130 @@ When less than 40 seconds remain and you need one more play:
 - **Turnover on downs** if you fail to convert on 4th down
 - **Touchback** places ball at the 20-yard line
 
-## Available Teams
+## Available Seasons
 
-Teams are loaded from the `seasons/` directory. The 1983 season includes:
+Teams are loaded from the `seasons/` directory. Each season includes a rules YAML file and team subdirectories with chart data.
 
-| Team | Location |
+### 2026 Season
+
+A sample modern season with fictional teams for testing. Includes 2-point conversion and modern overtime rules.
+
+---
+
+## Season Rules
+
+Each season has a `YYYY.yaml` file in `seasons/YYYY/` that defines era-appropriate rules. The home team's season rules always apply, even in cross-season matchups.
+
+### Rules Configuration
+
+```yaml
+season: 2026
+two_point_conversion: true     # 2-point conversion available?
+overtime:
+  enabled: true
+  format: modified_sudden_death # sudden_death or modified_sudden_death
+  period_length_minutes: 10     # 15 (pre-2017) or 10 (2017+)
+  max_periods_regular: 1        # Max OT periods in regular season (0 = unlimited)
+  max_periods_playoff: 0        # Max OT periods in playoffs (0 = unlimited)
+  can_end_in_tie_regular: true
+  can_end_in_tie_playoff: false
+  coin_toss_winner_receives: true
+```
+
+### Key Rule Changes by Era
+
+| Era | Two-Point Conv | Overtime Format | OT Period |
+|-----|---------------|-----------------|-----------|
+| Pre-1994 | No | Sudden death | 15 min |
+| 1994-2009 | Yes | Sudden death | 15 min |
+| 2010-2016 | Yes | Modified sudden death | 15 min |
+| 2017+ | Yes | Modified sudden death | 10 min |
+
+### Creating a New Season
+
+Use the scaffold command to generate a starter YAML file:
+
+```bash
+# Generate rules with era-appropriate defaults
+python -m paydirt --scaffold-season 1995
+
+# Overwrite existing file
+python -m paydirt --scaffold-season 2026 --force
+```
+
+The scaffold auto-detects rules based on the year (2-point conversion, overtime format, period length).
+
+---
+
+## Importing Teams
+
+The `extract_charts.py` script imports team data from Excel files into the CSV format used by the game.
+
+### Requirements
+
+- **Input format**: Excel files (`.xls`) — one file per team
+- **Required Python package**: `xlrd` (for reading `.xls` files with formatting info)
+  ```bash
+  pip install xlrd==1.2.0
+  ```
+- **Sheet names**: Excel files must have `OFFENSE` and `DEFENSE` sheets
+
+### Usage
+
+```bash
+# Import all teams from a directory
+python extract_charts.py -i /path/to/excel/files -o seasons/2026
+
+# Import a single team
+python extract_charts.py -i /path/to/excel/files -o seasons/2026 -t TeamName.xls
+```
+
+### What It Does
+
+For each Excel file, the script creates a team subdirectory with three CSV files:
+
+| File | Contents |
 |------|----------|
-| Cardinals | St. Louis |
-| Bears | Chicago |
-| Broncos | Denver |
-| Browns | Cleveland |
-| Buccaneers | Tampa Bay |
-| Chargers | San Diego |
-| Chiefs | Kansas City |
-| Colts | Baltimore |
-| Cowboys | Dallas |
-| Dolphins | Miami |
-| Eagles | Philadelphia |
-| Falcons | Atlanta |
-| 49ers | San Francisco |
-| Giants | New York |
-| Jets | New York |
-| Lions | Detroit |
-| Oilers | Houston |
-| Packers | Green Bay |
-| Patriots | New England |
-| Raiders | Los Angeles |
-| Rams | Los Angeles |
-| Redskins | Washington |
-| Saints | New Orleans |
-| Seahawks | Seattle |
-| Steelers | Pittsburgh |
-| Vikings | Minnesota |
+| `offense.csv` | Offensive play charts (dice rolls 10-39, all play types) |
+| `defense.csv` | Defensive formation charts (formations A-F, sub-rows 1-5) |
+| `special.csv` | Special teams charts (kickoff, punt, FG, extra point) |
+
+The script also:
+- Identifies BLACK cells (incomplete passes) from cell background colors
+- Identifies RED cells (missed extra points) from cell background colors
+- Extracts fumble recovery/lost ranges from column Q
+- Handles parentheses number formats for defense chart values
+
+### After Importing
+
+After importing, you need to:
+
+1. **Create `team.yaml`** in the team directory with team metadata:
+   ```yaml
+   team_name: Metro City Thunderhawks
+   short_name: MCT
+   team_color: "#0066CC"
+   team_mascot: Thunderhawk
+   city: Metro City
+   state: IL
+   founded: 1983
+   history: "A balanced team with strong passing game and solid defense."
+   ```
+
+2. **Create `roster.json`** with player names for commentary:
+   ```json
+   {
+     "qb": "Bob Griese",
+     "rb": "Larry Csonka",
+     "wr": "Paul Warfield",
+     "k": "Garo Yepremian"
+   }
+   ```
+
+3. **Create the season rules file** if it doesn't exist:
+   ```bash
+   python -m paydirt --scaffold-season 2026
+   ```
 
 ---
 
@@ -538,22 +634,24 @@ python -m paydirt --play --week 1 --compact
 ### Viewing Standings
 ```bash
 # Show standings for a season
-python -m paydirt.standings show 1983
+python -m paydirt.standings show 2026
 
 # List all recorded games
-python -m paydirt.standings games 1983
+python -m paydirt.standings games 2026
 ```
 
 ### Managing Results
+
+Use `games` to see the numbered list of games, then reference the number with `edit` or `delete`:
 ```bash
-# Add a game manually
-python -m paydirt.standings add 1983 Redskins 28 Giants 21 --week 1
+# List all games (shows game numbers)
+python -m paydirt.standings games 2026
 
-# Edit a game result
-python -m paydirt.standings edit 1983 1 --home-score 31
+# Edit a game's score by its number (from the games list)
+python -m paydirt.standings edit 2026 1 --home-score 31
 
-# Delete a game
-python -m paydirt.standings delete 1983 1
+# Delete a game by its number (from the games list)
+python -m paydirt.standings delete 2026 1
 ```
 
 ---
@@ -565,9 +663,11 @@ paydirt/
 ├── paydirt/
 │   ├── __init__.py          # Package initialization
 │   ├── __main__.py          # Entry point for python -m paydirt
-│   ├── game_engine.py       # Main game engine
+│   ├── game_engine.py       # Main game engine (source of truth)
 │   ├── play_resolver.py     # Play types and result resolution
 │   ├── chart_loader.py      # Team chart CSV parsing
+│   ├── season_rules.py      # Season rules YAML loading/config
+│   ├── overtime_rules.py    # Overtime rules by era
 │   ├── penalty_handler.py   # Penalty resolution per official rules
 │   ├── computer_ai.py       # Computer opponent AI
 │   ├── interactive_game.py  # Interactive CLI game mode
@@ -576,15 +676,18 @@ paydirt/
 │   ├── standings.py         # Season standings tracking
 │   └── utils.py             # Shared utility functions
 ├── seasons/
-│   └── 1983/                # 1983 NFL season team data
-│       ├── TeamName/
-│       │   ├── offense.csv      # Offensive play charts
-│       │   ├── defense.csv      # Defensive play charts
-│       │   ├── special_teams.csv # Kicking/return charts
-│       │   └── roster.json      # Player roster
-│       └── ...
+│   ├── 2026/
+│   │   ├── 2026.yaml        # Season rules (2-pt, modified OT)
+│   │   └── TeamName/
+│   │       ├── offense.csv
+│   │       ├── defense.csv
+│   │       ├── special.csv
+│   │       ├── team.yaml    # Team metadata
+│   │       └── roster.json  # Player names
+│   └── ...
+├── extract_charts.py        # Import teams from Excel files
 ├── standings/               # Season standings data (JSON)
-└── tests/                   # Unit tests (1348 tests)
+└── tests/                   # Unit tests (1600+ tests)
 ```
 
 ---

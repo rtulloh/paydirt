@@ -384,8 +384,8 @@ class TestCPUTwoPointDecision:
 
 
 class TestTwoPointConversionEraRestriction:
-    """Tests for 2-point conversion era restriction (introduced in 1994)."""
-    
+    """Tests for 2-point conversion era restriction via season rules."""
+
     @pytest.fixture
     def game_1983(self):
         """Create a game with 1983 teams (pre-1994, no 2-point)."""
@@ -413,15 +413,15 @@ class TestTwoPointConversionEraRestriction:
             team_dir="",
         )
         return PaydirtGameEngine(chart, chart)
-    
+
     @pytest.fixture
-    def game_1994(self):
-        """Create a game with 1994 teams (2-point allowed)."""
+    def game_2026(self):
+        """Create a game with 2026 teams (2-point allowed)."""
         peripheral = PeripheralData(
-            year=1994,
+            year=2026,
             team_name="Test",
             team_nickname="Team",
-            short_name="TST '94",
+            short_name="TST '26",
             power_rating=50,
         )
         special_teams = SpecialTeamsChart(
@@ -441,52 +441,13 @@ class TestTwoPointConversionEraRestriction:
             team_dir="",
         )
         return PaydirtGameEngine(chart, chart)
-    
+
     def test_two_point_not_allowed_pre_1994(self, game_1983):
         """2-point conversion should not be available for pre-1994 teams."""
-        # The year check is in interactive_game.py, so we test the logic directly
-        team_year = game_1983.state.home_chart.peripheral.year
-        two_point_allowed = team_year >= 1994
-        
-        assert two_point_allowed is False
-        assert team_year == 1983
-    
-    def test_two_point_allowed_1994_and_later(self, game_1994):
-        """2-point conversion should be available for 1994+ teams."""
-        team_year = game_1994.state.home_chart.peripheral.year
-        two_point_allowed = team_year >= 1994
-        
-        assert two_point_allowed is True
-        assert team_year == 1994
-    
-    def test_two_point_allowed_modern_era(self):
+        assert game_1983.season_rules.two_point_conversion is False
+        assert game_1983.season_rules.season == 1983
+
+    def test_two_point_allowed_modern_era(self, game_2026):
         """2-point conversion should be available for modern teams."""
-        peripheral = PeripheralData(
-            year=2023,
-            team_name="Test",
-            team_nickname="Team",
-            short_name="TST '23",
-            power_rating=50,
-        )
-        special_teams = SpecialTeamsChart(
-            extra_point_no_good=[],
-            field_goal={},
-            punt={},
-            punt_return={},
-            kickoff={},
-            kickoff_return={},
-            interception_return={},
-        )
-        chart = TeamChart(
-            peripheral=peripheral,
-            offense=OffenseChart(),
-            defense=DefenseChart(),
-            special_teams=special_teams,
-            team_dir="",
-        )
-        game = PaydirtGameEngine(chart, chart)
-        
-        team_year = game.state.home_chart.peripheral.year
-        two_point_allowed = team_year >= 1994
-        
-        assert two_point_allowed is True
+        assert game_2026.season_rules.two_point_conversion is True
+        assert game_2026.season_rules.season == 2026

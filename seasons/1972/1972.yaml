@@ -1,0 +1,11 @@
+season: 1972
+two_point_conversion: false
+overtime:
+  enabled: true
+  format: sudden_death
+  period_length_minutes: 15
+  max_periods_regular: 1
+  max_periods_playoff: 0
+  can_end_in_tie_regular: true
+  can_end_in_tie_playoff: false
+  coin_toss_winner_receives: true

@@ -180,15 +180,98 @@ paydirt/
 ├── commentary.py        # Play-by-play commentary
 ├── save_game.py         # Save/load functionality
 ├── standings.py         # League standings
-├── overtime_rules.py    # Overtime handling
+├── season_rules.py      # Season rules YAML loading/config
+├── overtime_rules.py    # Overtime handling (legacy, used by season_rules)
 ├── play_events.py       # Play event tracking
 ├── simulate_week.py    # Season simulation
-└── utils.py            # Utility functions
+└── utils.py             # Utility functions
+
+extract_charts.py        # Import teams from Excel (.xls) files
+
+seasons/
+├── YYYY/
+│   ├── YYYY.yaml        # Season rules (2-pt conversion, overtime format)
+│   └── TeamName/
+│       ├── offense.csv
+│       ├── defense.csv
+│       ├── special.csv
+│       ├── team.yaml    # Team metadata
+│       └── roster.json  # Player names for commentary
 
 tests/
 ├── test_*.py           # Unit tests (50+ files, 1400+ tests)
 └── run_all_games.py    # Integration test runner
 ```
+
+## Season Rules
+
+Each season directory must have a `YYYY.yaml` file defining era-appropriate rules. The game engine loads these on startup and enforces them throughout the game.
+
+### Loading
+
+Season rules are loaded by the game engine in `__init__`:
+
+```python
+# paydirt/game_engine.py
+from .season_rules import load_season_rules
+
+# Home team's season directory determines rules (even in cross-season matchups)
+season_dir = Path(home_chart.team_dir).parent
+self.season_rules = load_season_rules(season_dir)
+```
+
+If no YAML file exists, `load_season_rules` raises `FileNotFoundError`. Use `python -m paydirt --scaffold-season YYYY` to generate starter files.
+
+### Rule Fields
+
+```yaml
+season: 1983
+two_point_conversion: false     # Is 2-point conversion available?
+overtime:
+  enabled: true
+  format: sudden_death          # sudden_death | modified_sudden_death
+  period_length_minutes: 15
+  max_periods_regular: 1
+  max_periods_playoff: 0
+  can_end_in_tie_regular: true
+  can_end_in_tie_playoff: false
+  coin_toss_winner_receives: true
+```
+
+### Accessing Rules
+
+```python
+# In game engine
+self.season_rules.two_point_conversion  # bool
+self.get_overtime_rules()               # -> OvertimeRules
+self.get_season_rules()                 # -> dict (for API)
+
+# In interactive_game.py
+game.season_rules.two_point_conversion  # replaces hardcoded year >= 1994 checks
+```
+
+### Web API
+
+```
+GET /api/season-rules?season=1983
+GET /api/game/pat-choice/{game_id}  # can_go_for_two from season rules
+```
+
+## Importing Teams
+
+Use `extract_charts.py` to import team data from Excel files (`.xls` format only). The script requires `xlrd==1.2.0` for reading Excel formatting (cell colors for incomplete passes, red extra points).
+
+```bash
+pip install xlrd==1.2.0
+
+# Import all teams
+python extract_charts.py -i /path/to/excel -o seasons/1983
+
+# Import single team
+python extract_charts.py -i /path/to/excel -o seasons/1983 -t TeamName.xls
+```
+
+After importing, create `team.yaml` and `roster.json` in the team directory, and ensure `seasons/YYYY/YYYY.yaml` exists.
 
 ## Key Dependencies
 

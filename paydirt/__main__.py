@@ -15,6 +15,7 @@ def main():
         print("  python -m paydirt -a <away> <home> [opts]  # CPU vs CPU simulation")
         print("  python -m paydirt --teams                   # List available teams")
         print("  python -m paydirt --simulate                # Run season simulation")
+        print("  python -m paydirt --scaffold-season <year>  # Create season rules YAML")
         print("  python -m paydirt -l [file]                 # Resume saved game")
         print("\nPositional Arguments:")
         print("  away-team          Away team (e.g., 2026/Ironclads)")
@@ -42,7 +43,38 @@ def main():
         print("  python -m paydirt -p -H 2026/Thunderhawks -A 2026/Ironclads  # you are Thunderhawks")
         print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks  # away @ home")
         print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks --playoff-game")
+        print("  python -m paydirt --scaffold-season 1995")
         return
+
+    # Check for --scaffold-season
+    if '--scaffold-season' in sys.argv:
+        idx = sys.argv.index('--scaffold-season')
+        force = '--force' in sys.argv
+        if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith('-'):
+            year_str = sys.argv[idx + 1]
+            try:
+                year = int(year_str)
+            except ValueError:
+                print(f"Error: --scaffold-season requires a year (integer), got '{year_str}'")
+                return
+            from pathlib import Path
+            from .season_rules import scaffold_season_rules
+            seasons_dir = Path(__file__).parent.parent / "seasons"
+            season_dir = seasons_dir / str(year)
+            yaml_path = season_dir / f"{year}.yaml"
+            if yaml_path.exists() and not force:
+                print(f"Error: {yaml_path} already exists. Use --force to overwrite.")
+                return
+            season_dir.mkdir(parents=True, exist_ok=True)
+            yaml_content = scaffold_season_rules(year)
+            yaml_path.write_text(yaml_content, encoding="utf-8")
+            print(f"Created {yaml_path}")
+            return
+        else:
+            print("Error: --scaffold-season requires a year argument")
+            print("Usage: python -m paydirt --scaffold-season <year> [--force]")
+            return
+
     if len(sys.argv) > 1 and sys.argv[1] in ['--load', 'load']:
         # Get optional save file path
         save_file = None

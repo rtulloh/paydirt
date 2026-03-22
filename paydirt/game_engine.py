@@ -17,7 +17,8 @@ from .penalty_handler import (
     resolve_penalty, resolve_pass_interference
 )
 from .commentary import get_roster
-from .overtime_rules import get_overtime_rules, OvertimeRules, OvertimeFormat
+from .overtime_rules import OvertimeRules, OvertimeFormat
+from .season_rules import SeasonRules, load_season_rules, season_rules_to_overtime_rules
 from .play_events import (
     PlayTransaction, EventType,
     create_chart_lookup_event, create_fumble_event, create_recovery_event,
@@ -39,12 +40,65 @@ class PaydirtGameEngine:
     def __init__(self, home_chart: TeamChart, away_chart: TeamChart):
         """
         Initialize a game between two teams.
-        
+
+        Season rules are loaded from the home team's season directory.
+        In cross-season matchups, the home team's era rules apply.
+
         Args:
             home_chart: Home team's chart
             away_chart: Away team's chart
         """
+        from pathlib import Path
+
         self.state = GameState(home_chart=home_chart, away_chart=away_chart)
+
+        # Load season rules from home team's season directory
+        # Derive season dir from team_dir (e.g., "seasons/1972/Dolphins" -> "seasons/1972")
+        season_dir = None
+
+        if home_chart.team_dir:
+            candidate = Path(home_chart.team_dir).parent
+            if candidate.exists() and candidate.is_dir():
+                season_dir = candidate
+
+        if season_dir is None:
+            # Fallback: try to find season directory using peripheral year
+            year = home_chart.peripheral.year
+            seasons_root = Path("seasons")
+            if not seasons_root.exists():
+                seasons_root = Path(__file__).parent.parent / "seasons"
+            candidate = seasons_root / str(year)
+            if candidate.exists() and candidate.is_dir():
+                season_dir = candidate
+
+        if season_dir is not None:
+            self.season_rules: SeasonRules = load_season_rules(season_dir)
+        else:
+            # Could not determine season directory (e.g., mock charts in tests)
+            # Generate fallback rules from peripheral year
+            from .season_rules import OvertimeConfig, OvertimeFormat
+            year = home_chart.peripheral.year
+            if not isinstance(year, int):
+                # Mock charts - use safe defaults
+                year = 2026
+            two_point = year >= 1994
+            ot_format = OvertimeFormat.MODIFIED_SUDDEN_DEATH if year >= 2010 else OvertimeFormat.SUDDEN_DEATH
+            period_length = 10.0 if year >= 2017 else 15.0
+            self.season_rules = SeasonRules(
+                season=year,
+                two_point_conversion=two_point,
+                overtime=OvertimeConfig(
+                    enabled=True,
+                    format=ot_format.value,
+                    period_length_minutes=period_length,
+                    max_periods_regular=1,
+                    max_periods_playoff=0,
+                    can_end_in_tie_regular=True,
+                    can_end_in_tie_playoff=False,
+                    coin_toss_winner_receives=True,
+                ),
+            )
+
         self.play_log: list[PlayOutcome] = []
 
     @classmethod
@@ -4490,8 +4544,7 @@ class PaydirtGameEngine:
             Description of the overtime start
         """
         # Get overtime rules for this season
-        year = self.state.home_chart.peripheral.year
-        rules = get_overtime_rules(year)
+        rules = self.get_overtime_rules()
 
         # Coin toss - visiting team calls
         if coin_toss_winner_is_home is None:
@@ -4529,8 +4582,7 @@ class PaydirtGameEngine:
 
     def _check_overtime_end(self):
         """Check if overtime period has ended and handle accordingly."""
-        year = self.state.home_chart.peripheral.year
-        rules = get_overtime_rules(year)
+        rules = self.get_overtime_rules()
 
         if self.state.home_score != self.state.away_score:
             # Someone scored - game over
@@ -4573,8 +4625,7 @@ class PaydirtGameEngine:
         if not self.state.is_overtime or not scored:
             return False
 
-        year = self.state.home_chart.peripheral.year
-        rules = get_overtime_rules(year)
+        rules = self.get_overtime_rules()
 
         if rules.format == OvertimeFormat.SUDDEN_DEATH:
             # Any score wins in sudden death
@@ -4604,8 +4655,16 @@ class PaydirtGameEngine:
 
     def get_overtime_rules(self) -> OvertimeRules:
         """Get the overtime rules for this game's season."""
-        year = self.state.home_chart.peripheral.year
-        return get_overtime_rules(year)
+        return season_rules_to_overtime_rules(self.season_rules)
+
+    def get_season_rules(self) -> dict:
+        """
+        Get season rules as a dictionary for API/UI consumption.
+
+        Returns:
+            Dict with season rule configuration
+        """
+        return self.season_rules.to_dict()
 
     def has_untimed_down(self) -> bool:
         """

@@ -3117,10 +3117,8 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             # Determine if human scored
             human_scored = (is_human_offense)
 
-            # Check if 2-point conversion is allowed (introduced in 1994)
-            # Use home team's year to determine era
-            team_year = game.state.home_chart.peripheral.year
-            two_point_allowed = team_year >= 1994
+            # Check if 2-point conversion is allowed per season rules
+            two_point_allowed = game.season_rules.two_point_conversion
 
             if human_scored:
                 if two_point_allowed:
@@ -3441,8 +3439,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         
         # Run extra point
         # For simplicity, CPU teams auto-kick, humans get choice
-        team_year = game.state.home_chart.peripheral.year if scoring_team_is_home else game.state.away_chart.peripheral.year
-        two_point_allowed = team_year >= 1994
+        two_point_allowed = game.season_rules.two_point_conversion
         
         if scoring_team_is_home == human_is_home:
             # Human's team scored - let them choose
@@ -3841,8 +3838,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
         # Handle scoring plays (TD, FG, safety) - simplified for resume
         if outcome.touchdown:
             human_scored = is_human_offense
-            team_year = game.state.home_chart.peripheral.year
-            two_point_allowed = team_year >= 1994
+            two_point_allowed = game.season_rules.two_point_conversion
 
             if human_scored:
                 if two_point_allowed:

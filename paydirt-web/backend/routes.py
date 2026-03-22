@@ -16,6 +16,7 @@ from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.computer_ai import ComputerAI, cpu_should_accept_penalty
 from paydirt.result_formatter import ResultFormatter
 from paydirt.commentary import load_roster_from_file
+from paydirt.season_rules import load_season_rules
 
 router = APIRouter()
 
@@ -96,6 +97,8 @@ class ExtraPointResponse(BaseModel):
     description: str
     new_score_home: int
     new_score_away: int
+    game_state: Dict[str, Any]
+    is_kickoff: bool = True
 
 
 class PATChoiceResponse(BaseModel):
@@ -142,6 +145,7 @@ class GameStateResponse(BaseModel):
     cpu_team_id: Optional[str] = None
     human_is_home: Optional[bool] = None
     is_kickoff: bool = False
+    pending_pat: bool = False
 
 
 class NewGameResponse(BaseModel):
@@ -243,6 +247,7 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> Ga
         cpu_team_id=game.get("cpu_team_id"),
         human_is_home=human_is_home,
         is_kickoff=is_kickoff,
+        pending_pat=game.get("pending_pat", False),
     )
     return response
 
@@ -300,6 +305,28 @@ async def get_teams(season: str):
             teams.append(load_team_info(season_dir, team_dir.name))
     
     return {"teams": teams}
+
+
+@router.get("/api/season-rules")
+async def get_season_rules(season: str):
+    """
+    Get season rules for a specific season.
+
+    Args:
+        season: Season year (e.g., "1972", "2026")
+    """
+    season_dir = SEASONS_DIR / season
+    if not season_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
+
+    try:
+        rules = load_season_rules(season_dir)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return rules.to_dict()
 
 
 @router.post("/api/game/new", response_model=NewGameResponse)
@@ -547,7 +574,11 @@ async def execute_play(request: PlayRequest):
         raise HTTPException(status_code=400, detail="Game is in kickoff position - use /api/game/kickoff endpoint")
     
     player_play = request.player_play.upper()
-    player_offense = game["human_plays_offense"]
+    # Determine if player's team is on offense based on CURRENT possession,
+    # not the static human_plays_offense flag (which is stale after turnovers/kickoffs)
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    is_home_possession = engine.state.is_home_possession
+    player_offense = (human_is_home == is_home_possession)
     
     cpu_play = request.cpu_play.upper() if request.cpu_play else None
     
@@ -600,7 +631,9 @@ async def execute_play(request: PlayRequest):
     off_team = home_abbrev if engine.state.is_home_possession else away_abbrev
     def_team = away_abbrev if engine.state.is_home_possession else home_abbrev
     pending_str = " [PENDING PENALTY]" if result.pending_penalty_decision else ""
-    print(f"[{off_team} vs {def_team}] OFF: {off_key} DEF: {def_key} @ {field_pos} | {result.description}{pending_str}")
+    scoring = result.touchdown or result.field_goal_made or result.safety
+    score_str = f" | HOME {engine.state.home_score} - AWAY {engine.state.away_score}" if scoring else ""
+    print(f"[{off_team} vs {def_team}] OFF: {off_key} DEF: {def_key} @ {field_pos} | {result.description}{pending_str}{score_str}")
     
     # Save result for penalty decision if needed
     if result.pending_penalty_decision:
@@ -611,10 +644,12 @@ async def execute_play(request: PlayRequest):
     
     scoring = result.touchdown or result.field_goal_made or result.safety
     
-    # After a score (touchdown, FG, or safety), set up for kickoff
-    # The scoring team kicks off, so possession switches and we reset for kickoff
-    if scoring and not engine.state.game_over:
-        engine.state.switch_possession()
+    # After a score, set up for kickoff.
+    # Scoring team keeps possession to kick off — DON'T switch possession here.
+    # The engine's kickoff() method handles the receiver getting the ball.
+    is_pending_pat = result.touchdown and not engine.state.game_over
+    game["pending_pat"] = is_pending_pat
+    if scoring and not engine.state.game_over and not is_pending_pat:
         engine.state.ball_position = 35
         engine.state.down = 1
         engine.state.yards_to_go = 10
@@ -673,6 +708,28 @@ async def execute_play(request: PlayRequest):
             result = engine.apply_kickoff_penalty_decision(result, accept_penalty)
         else:
             result = engine.apply_penalty_decision(result, accept_play=accept_play, penalty_index=penalty_index)
+        
+        # Log the CPU decision
+        decision_str = "ACCEPT PLAY" if accept_play else "ACCEPT PENALTY"
+        home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+        away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+        field_pos = engine.state.field_position_str()
+        off_team = home_abbrev if engine.state.is_home_possession else away_abbrev
+        def_team = away_abbrev if engine.state.is_home_possession else home_abbrev
+        print(f"[{off_team} vs {def_team}] CPU PENALTY DECISION: {decision_str} @ {field_pos} | {result.description}")
+        
+        # Recalculate scoring and pending_pat after penalty resolution
+        # The penalty may have changed the outcome (e.g., pushed ball into end zone for TD)
+        scoring = result.touchdown or result.field_goal_made or result.safety
+        is_pending_pat = result.touchdown and not engine.state.game_over
+        game["pending_pat"] = is_pending_pat
+        if scoring and not engine.state.game_over and not is_pending_pat:
+            engine.state.ball_position = 35
+            engine.state.down = 1
+            engine.state.yards_to_go = 10
+        
+        # CPU decided, so no pending decision for human
+        pending_penalty = False
     
     offense_team = engine.state.possession_team.peripheral.short_name if hasattr(engine.state, 'possession_team') and engine.state.possession_team else "OFF"
     defense_team = engine.state.defense_team.peripheral.short_name if hasattr(engine.state, 'defense_team') and engine.state.defense_team else "DEF"
@@ -741,7 +798,7 @@ async def execute_play(request: PlayRequest):
         game_over=engine.state.game_over,
         quarter_changed=quarter_changed,
         half_changed=half_changed,
-        pending_penalty_decision=result.pending_penalty_decision,
+        pending_penalty_decision=pending_penalty and result.pending_penalty_decision,
         penalty_choice=penalty_choice_model,
         play_type=result.play_type.value if hasattr(result.play_type, 'value') else str(result.play_type),
         headline=formatted.headline,
@@ -760,7 +817,7 @@ async def execute_play(request: PlayRequest):
         is_breakaway=formatted.is_breakaway,
     )
     
-    response_game_state = game_state_to_response(game, is_kickoff=scoring)
+    response_game_state = game_state_to_response(game, is_kickoff=scoring and not is_pending_pat)
     
     # Parse dice from description for frontend display
     dice_details = parse_dice_from_description(play_result.description)
@@ -793,15 +850,13 @@ async def get_pat_choice(game_id: str):
     game = games[game_id]
     engine = game["engine"]
     
-    pat_info = engine.get_touchdown_pat_info()
-    
     human_is_home = game["home_team"].id == game["player_team_id"]
     is_home_possession = engine.state.is_home_possession
     scoring_team_is_player = (human_is_home and is_home_possession) or (not human_is_home and not is_home_possession)
     
     return PATChoiceResponse(
-        can_go_for_two=pat_info['can_go_for_two'],
-        cpu_should_go_for_two=pat_info['cpu_should_go_for_two'],
+        can_go_for_two=engine.season_rules.two_point_conversion,
+        cpu_should_go_for_two=False,  # CPU defaults to XP
         scoring_team_is_player=scoring_team_is_player
     )
 
@@ -814,13 +869,31 @@ async def attempt_extra_point(request: PlayRequest):
     game = games[request.game_id]
     engine = game["engine"]
     
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    
     success, description = engine.attempt_extra_point()
+    
+    # Log PAT with result
+    scoring_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
+    result_str = "GOOD" if success else "NO GOOD"
+    print(f"[{scoring_abbrev}] EXTRA POINT: {result_str} | HOME {engine.state.home_score} - AWAY {engine.state.away_score}")
+    
+    # After PAT, set up for kickoff
+    # Scoring team keeps possession to kick off — DON'T switch possession here.
+    # The engine's kickoff() method handles the receiver getting the ball.
+    game["pending_pat"] = False
+    engine.state.ball_position = 35
+    engine.state.down = 1
+    engine.state.yards_to_go = 10
     
     return ExtraPointResponse(
         success=success,
         description=description,
         new_score_home=engine.state.home_score,
         new_score_away=engine.state.away_score,
+        game_state=game_state_to_response(game, is_kickoff=True).dict(),
+        is_kickoff=True,
     )
 
 
@@ -837,8 +910,17 @@ async def perform_kickoff(request: KickoffRequest):
     game = games[request.game_id]
     engine = game["engine"]
     
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    
     kicking_home = engine.state.is_home_possession
+    kicking_abbrev = home_abbrev if kicking_home else away_abbrev
     result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
+    
+    # Log kickoff with dice and result details
+    receiving_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
+    field_pos = engine.state.field_position_str()
+    print(f"[{kicking_abbrev} KO → {receiving_abbrev}] {result.description} @ {field_pos}")
     
     scoring = result.touchdown or result.safety
     possession_changed = True
@@ -874,7 +956,7 @@ async def perform_kickoff(request: KickoffRequest):
 
 class TwoPointRequest(BaseModel):
     game_id: str
-    offense_play: str
+    offense_play: str = "1"
     defense_play: str = "A"
 
 
@@ -886,14 +968,28 @@ async def attempt_two_point(request: TwoPointRequest):
     game = games[request.game_id]
     engine = game["engine"]
     
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    
     offense_play = get_play_type_from_key(request.offense_play)
     defense_play = get_defense_type_from_key(request.defense_play)
     
     success, defense_points, description = engine.attempt_two_point(offense_play, defense_play)
     
+    # Log two-point conversion
+    scoring_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
+    print(f"[{scoring_abbrev}] TWO-POINT: {description} | HOME {engine.state.home_score} - AWAY {engine.state.away_score}")
+    
+    # After two-point attempt, set up for kickoff
+    # Scoring team keeps possession to kick off — DON'T switch possession here.
+    game["pending_pat"] = False
+    engine.state.ball_position = 35
+    engine.state.down = 1
+    engine.state.yards_to_go = 10
+    
     return ExecutePlayResponse(
         player_play=request.offense_play,
-        cpu_play="CPU",
+        cpu_play=request.defense_play,
         dice_roll_offense=0,
         dice_roll_defense=0,
         result=PlayResult(
@@ -910,7 +1006,7 @@ async def attempt_two_point(request: TwoPointRequest):
             possession_changed=True,
             game_over=engine.state.game_over,
         ),
-        game_state=game_state_to_response(game),
+        game_state=game_state_to_response(game, is_kickoff=True),
     )
 
 
@@ -958,6 +1054,15 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         new_outcome = engine.apply_kickoff_penalty_decision(outcome, accept_penalty)
     else:
         new_outcome = engine.apply_penalty_decision(outcome, accept_play=accept_play, penalty_index=penalty_index)
+    
+    # Log penalty decision
+    decision_str = "ACCEPT PENALTY" if not accept_play else "ACCEPT PLAY"
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    field_pos = engine.state.field_position_str()
+    off_team = home_abbrev if engine.state.is_home_possession else away_abbrev
+    def_team = away_abbrev if engine.state.is_home_possession else home_abbrev
+    print(f"[{off_team} vs {def_team}] PENALTY DECISION: {decision_str} @ {field_pos} | {new_outcome.description}")
     
     scoring = new_outcome.touchdown or new_outcome.field_goal_made or new_outcome.safety
     
@@ -1140,6 +1245,7 @@ async def load_replay(request: LoadReplayRequest):
                                       saved_yards_to_go == 10)
     
     needs_kickoff_transition = False
+    has_pending_pat = False
     
     if play_history and not is_already_in_kickoff_position:
         last_play = play_history[-1]
@@ -1147,8 +1253,28 @@ async def load_replay(request: LoadReplayRequest):
         headline = last_play.get("headline", "").lower()
         
         if any(term in description or term in headline for term in 
-                ["field goal good", "touchdown", "safety"]):
+                ["field goal good", "safety"]):
             needs_kickoff_transition = True
+        elif "touchdown" in description or "touchdown" in headline:
+            # Check if a PAT was already attempted after this TD
+            last_score_idx = len(play_history) - 1
+            pat_found = False
+            for i in range(len(play_history) - 1, -1, -1):
+                desc = play_history[i].get("description", "").lower()
+                head = play_history[i].get("headline", "").lower()
+                if "touchdown" in desc or "touchdown" in head:
+                    last_score_idx = i
+                    break
+            # Check plays after the TD for a PAT attempt
+            for i in range(last_score_idx + 1, len(play_history)):
+                desc = play_history[i].get("description", "").lower()
+                if "extra point" in desc or "two-point" in desc or "2-point" in desc:
+                    pat_found = True
+                    break
+            if pat_found:
+                needs_kickoff_transition = True
+            else:
+                has_pending_pat = True
     
     if needs_kickoff_transition:
         state.switch_possession()
@@ -1158,6 +1284,7 @@ async def load_replay(request: LoadReplayRequest):
         possession = "home" if state.is_home_possession else "away"
     
     games[game_id] = new_game
+    new_game["pending_pat"] = has_pending_pat
     
     return NewGameResponse(
         game_id=game_id,

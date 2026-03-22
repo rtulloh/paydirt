@@ -362,17 +362,19 @@ def display_games(season: Season):
             games_by_week[game.week] = []
         games_by_week[game.week].append(game)
 
+    game_num = 1
     for week in sorted(games_by_week.keys()):
         print(f"\n  Week {week}")
-        print(f"  {'-' * 50}")
+        print(f"  {'-' * 56}")
         for game in games_by_week[week]:
             # Show winner in bold-ish format
             if game.home_score > game.away_score:
-                print(f"  {game.away_team:<15} {game.away_score:>3}  @  {game.home_team:<15} {game.home_score:>3} *")
+                print(f"  {game_num:>3}. {game.away_team:<15} {game.away_score:>3}  @  {game.home_team:<15} {game.home_score:>3} *")
             elif game.away_score > game.home_score:
-                print(f"  {game.away_team:<15} {game.away_score:>3} *@  {game.home_team:<15} {game.home_score:>3}")
+                print(f"  {game_num:>3}. {game.away_team:<15} {game.away_score:>3} *@  {game.home_team:<15} {game.home_score:>3}")
             else:
-                print(f"  {game.away_team:<15} {game.away_score:>3}  @  {game.home_team:<15} {game.home_score:>3}  (TIE)")
+                print(f"  {game_num:>3}. {game.away_team:<15} {game.away_score:>3}  @  {game.home_team:<15} {game.home_score:>3}  (TIE)")
+            game_num += 1
 
     print()
 
