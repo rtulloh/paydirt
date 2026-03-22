@@ -241,6 +241,21 @@ def load_team_info(season_dir: Path, team_id: str) -> Team:
 
 The core game engine (`paydirt/game_engine.py`) is the authoritative source of truth for all game decisions. All game logic, rules, and state management live in the core engine.
 
+**Important: Use core game tests as reference for UI behavior**
+
+The core game unit tests (`paydirt/tests/`) document how game rules should work. When implementing or debugging UI features, consult these tests to understand:
+- What data the engine returns for each play type
+- How penalties, turnovers, scoring, and special situations are handled
+- What fields are available in game state responses
+- Expected behavior for edge cases
+
+For example:
+- `tests/test_play_resolver.py` shows how play outcomes are calculated
+- `tests/test_game_engine.py` shows kickoff, scoring, and penalty handling
+- `tests/test_computer_ai.py` shows CPU decision logic
+
+The UI should respect and support everything the core engine provides.
+
 **What the frontend should do:**
 - Display game state as returned by the backend (which calls the core engine)
 - Present player choices when the engine indicates a decision is needed
