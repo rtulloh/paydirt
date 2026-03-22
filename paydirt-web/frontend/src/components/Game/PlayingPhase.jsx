@@ -562,9 +562,13 @@ const PlayingPhase = () => {
         
         // After a touchdown, show PAT choice instead of transitioning to kickoff
         // Uses shared checkPendingPat — if this function is removed, tests will fail
-        const { isPendingPat, scoringTeamIsPlayer: scoringIsPlayer } = checkPendingPat(data.game_state);
+        const { isPendingPat, scoringTeamIsPlayer: scoringIsPlayer, canGoForTwo: can2pt } = checkPendingPat(data.game_state);
         if (isPendingPat) {
           setScoringTeamIsPlayer(scoringIsPlayer);
+          // Update canGoForTwo in store based on season rules
+          if (can2pt !== undefined) {
+            store.setCanGoForTwo?.(can2pt);
+          }
           
           if (scoringIsPlayer) {
             // Player scored — show PAT choice panel
@@ -885,8 +889,8 @@ const PlayingPhase = () => {
       {localShowPatChoice && (
         <div className="px-4 pb-2">
           <PATChoicePanel 
-            canGoForTwo={true}
-            cpuShouldGoForTwo={false}
+            canGoForTwo={canGoForTwo}
+            cpuShouldGoForTwo={cpuShouldGoForTwo}
             scoringTeamIsPlayer={scoringTeamIsPlayer}
             onPatKick={handlePatKick}
             onPatTwoPoint={handlePatTwoPoint}

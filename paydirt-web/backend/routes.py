@@ -146,6 +146,7 @@ class GameStateResponse(BaseModel):
     human_is_home: Optional[bool] = None
     is_kickoff: bool = False
     pending_pat: bool = False
+    can_go_for_two: bool = False
 
 
 class NewGameResponse(BaseModel):
@@ -222,10 +223,57 @@ def load_team_info(season_dir: Path, team_id: str) -> Team:
     return Team(**team_info)
 
 
+def _calculate_post_play_state(
+    ball_position: int,
+    down: int,
+    yards_to_go: int,
+    play_result,
+) -> dict:
+    """
+    Calculate the post-play down/distance/position for a pending penalty decision.
+    
+    When a penalty occurs, the engine state is NOT updated. This function calculates
+    what the state WOULD BE if the offended team accepts the play result (declines penalty).
+    """
+    yards_gained = play_result.yards if hasattr(play_result, 'yards') else 0
+    turnover = play_result.turnover if hasattr(play_result, 'turnover') else False
+    touchdown = play_result.touchdown if hasattr(play_result, 'touchdown') else False
+    
+    # Calculate new ball position
+    new_ball_position = ball_position + yards_gained
+    if new_ball_position > 100:
+        new_ball_position = 100
+    elif new_ball_position < 0:
+        new_ball_position = 0
+    
+    # Check for first down (yards >= yards_to_go)
+    if yards_gained >= yards_to_go:
+        return {
+            "new_ball_position": new_ball_position,
+            "new_down": 1,
+            "new_yards_to_go": min(10, 100 - new_ball_position),
+            "turnover": turnover,
+        }
+    else:
+        return {
+            "new_ball_position": new_ball_position,
+            "new_down": down + 1,
+            "new_yards_to_go": yards_to_go - yards_gained,
+            "turnover": turnover,
+        }
+
+
 def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
+    pending_pat = game.get("pending_pat", False)
+    
+    # Get can_go_for_two from season rules if PAT is pending
+    can_go_for_two = False
+    if pending_pat and hasattr(game["engine"], "season_rules"):
+        can_go_for_two = game["engine"].season_rules.two_point_conversion
+    
     response = GameStateResponse(
         game_id=game["game_id"],
         home_team=game["home_team"],
@@ -247,7 +295,8 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> Ga
         cpu_team_id=game.get("cpu_team_id"),
         human_is_home=human_is_home,
         is_kickoff=is_kickoff,
-        pending_pat=game.get("pending_pat", False),
+        pending_pat=pending_pat,
+        can_go_for_two=can_go_for_two,
     )
     return response
 
@@ -778,16 +827,34 @@ async def execute_play(request: PlayRequest):
     formatter = ResultFormatter(offense_team, defense_team, offense_roster, defense_roster)
     formatted = formatter.format(result)
     
+    # Calculate correct post-play state for penalty decision panel
+    if pending_penalty and result.pending_penalty_decision and result.penalty_choice:
+        post_state = _calculate_post_play_state(
+            engine.state.ball_position,
+            engine.state.down,
+            engine.state.yards_to_go,
+            result.penalty_choice.play_result,
+        )
+        post_ball_position = post_state["new_ball_position"]
+        post_down = post_state["new_down"]
+        post_yards_to_go = post_state["new_yards_to_go"]
+        post_turnover = post_state["turnover"]
+    else:
+        post_ball_position = engine.state.ball_position
+        post_down = engine.state.down
+        post_yards_to_go = engine.state.yards_to_go
+        post_turnover = result.turnover
+
     play_result = PlayResult(
         result=result.result.result_type.value,
         yards=result.yards_gained,
         description=result.description,
-        turnover=result.turnover,
+        turnover=post_turnover,
         scoring=scoring,
         touchdown=result.touchdown,
-        new_ball_position=engine.state.ball_position,
-        new_down=engine.state.down,
-        new_yards_to_go=engine.state.yards_to_go,
+        new_ball_position=post_ball_position,
+        new_down=post_down,
+        new_yards_to_go=post_yards_to_go,
         new_score_home=engine.state.home_score,
         new_score_away=engine.state.away_score,
         possession_changed=(
