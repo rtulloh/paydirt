@@ -202,6 +202,18 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                 : `ACCEPT PLAY (${formatDown(newDown)} & ${newYardsToGo} at ${formatLOS(newBallPosition || 0)})`}
             </button>
           </div>
+          
+          {/* Show reroll log if available */}
+          {penalty_choice.reroll_log && penalty_choice.reroll_log.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-700">
+              <div className="text-gray-500 text-xs mb-1">Penalty Reroll Log:</div>
+              <div className="text-gray-400 text-xs space-y-1">
+                {penalty_choice.reroll_log.map((log, idx) => (
+                  <div key={idx}>{log}</div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -12,54 +12,57 @@ function formatFieldPosition(position) {
 }
 
 export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onComplete }) {
-  const [phase, setPhase] = useState('rolling')
-  const [isRolling, setIsRolling] = useState(true)
+  const [phase, setPhase] = useState('choice')  // 'choice', 'rolling', 'result'
+  const [isRolling, setIsRolling] = useState(false)
   const [diceResult, setDiceResult] = useState(null)
   const [kickoffResult, setKickoffResult] = useState(null)
   const [gameState, setGameState] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isOnside, setIsOnside] = useState(false)
 
-  useEffect(() => {
-    const rollTimer = setTimeout(() => {
-      setIsRolling(false)
+  const performKickoff = async (onside = false) => {
+    setIsOnside(onside)
+    setPhase('rolling')
+    setIsRolling(true)
+    setLoading(true)
+    setError(null)
+
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/game/kickoff`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game_id: gameId,
+          kickoff_spot: isOnside ? 35 : 35,  // Onside kick still from 35
+          onside: onside,
+        })
+      })
       
-      const fetchKickoff = async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/game/kickoff`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              game_id: gameId,
-              kickoff_spot: 35,
-            })
-          })
-          
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`)
-          }
-          
-          const data = await res.json()
-          
-          setDiceResult({
-            offense: data.dice_roll_offense || 0,
-            defense: data.dice_roll_defense || 0,
-          })
-          setKickoffResult(data.result)
-          setGameState(data.game_state)
-          setPhase('result')
-        } catch (err) {
-          console.error('Failed to fetch kickoff:', err)
-          setError(err.message)
-          setLoading(false)
-        }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
       }
       
-      fetchKickoff()
-    }, 2000)
-    
-    return () => clearTimeout(rollTimer)
-  }, [gameId])
+      const data = await res.json()
+      
+      setDiceResult({
+        offense: data.dice_roll_offense || 0,
+        defense: data.dice_roll_defense || 0,
+      })
+      setKickoffResult(data.result)
+      setGameState(data.game_state)
+      setIsRolling(false)
+      setLoading(false)
+      setPhase('result')
+    } catch (err) {
+      console.error('Failed to fetch kickoff:', err)
+      setError(err.message)
+      setLoading(false)
+      setIsRolling(false)
+    }
+  }
 
   const handleContinue = () => {
     onComplete(gameState)
@@ -71,25 +74,52 @@ export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onCompl
   return (
     <div className="board-panel p-6 text-center">
       <h2 className="text-2xl font-heading font-bold mb-4 text-gray-800">
-        OPENING KICKOFF
+        {isOnside ? 'ONSIDE KICK' : 'KICKOFF'}
       </h2>
       
       <p className="text-lg text-gray-700 mb-4">
         {(kickingTeam?.short_name || kickingTeam?.name || 'Team')} kicks off to {(receivingTeam?.short_name || receivingTeam?.name || 'Team')}
       </p>
 
-      <div className="flex justify-center gap-4 mb-6">
-        <div className="bg-gray-800 rounded-lg p-4 w-20 h-20 flex items-center justify-center">
-          <span className={`text-4xl font-bold text-white ${isRolling ? 'animate-pulse' : ''}`}>
-            {isRolling ? '?' : (diceResult?.offense || '?')}
-          </span>
+      {/* Choice phase - let player choose kickoff type */}
+      {phase === 'choice' && (
+        <div className="mb-6">
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => performKickoff(false)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all"
+            >
+              KICKOFF
+            </button>
+            <button
+              onClick={() => performKickoff(true)}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all"
+              title="Risky - recover on roll 13-20"
+            >
+              ONSIDE KICK
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            Onside kick: Low chance to recover (13-20 on dice)
+          </p>
         </div>
-        <div className="bg-gray-800 rounded-lg p-4 w-20 h-20 flex items-center justify-center">
-          <span className={`text-4xl font-bold text-white ${isRolling ? 'animate-pulse' : ''}`}>
-            {isRolling ? '?' : (diceResult?.defense || '?')}
-          </span>
+      )}
+
+      {/* Rolling phase - show dice animation */}
+      {phase === 'rolling' && (
+        <div className="flex justify-center gap-4 mb-6">
+          <div className="bg-gray-800 rounded-lg p-4 w-20 h-20 flex items-center justify-center">
+            <span className={`text-4xl font-bold text-white ${isRolling ? 'animate-pulse' : ''}`}>
+              {isRolling ? '?' : (diceResult?.offense || '?')}
+            </span>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 w-20 h-20 flex items-center justify-center">
+            <span className={`text-4xl font-bold text-white ${isRolling ? 'animate-pulse' : ''}`}>
+              {isRolling ? '?' : (diceResult?.defense || '?')}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <div className="bg-red-100 border border-red-400 rounded-lg p-4 mb-4">
@@ -103,6 +133,7 @@ export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onCompl
         </div>
       )}
 
+      {/* Result phase */}
       {phase === 'result' && kickoffResult && (
         <div className="animate-fade-in">
           <div className="bg-gray-100 rounded-lg p-4 mb-4">
@@ -113,7 +144,7 @@ export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onCompl
             {kickoffResult.touchdown 
               ? 'TOUCHDOWN!'
               : kickoffResult.turnover 
-                ? 'Turnover!'
+                ? 'ONSIDE KICK RECOVERED!'
                 : gameState 
                   ? `Ball placed at the ${formatFieldPosition(gameState.ball_position)}`
                   : kickoffResult.yards > 0 
@@ -129,12 +160,6 @@ export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onCompl
             CONTINUE
           </button>
         </div>
-      )}
-
-      {phase === 'rolling' && !error && (
-        <p className="text-gray-500 animate-pulse">
-          {loading ? 'Processing...' : 'Rolling...'}
-        </p>
       )}
     </div>
   )

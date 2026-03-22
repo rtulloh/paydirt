@@ -147,6 +147,10 @@ class GameStateResponse(BaseModel):
     is_kickoff: bool = False
     pending_pat: bool = False
     can_go_for_two: bool = False
+    is_overtime: bool = False
+    ot_period: int = 0
+    home_stats: Optional[Dict[str, int]] = None
+    away_stats: Optional[Dict[str, int]] = None
 
 
 class NewGameResponse(BaseModel):
@@ -274,6 +278,28 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> Ga
     if pending_pat and hasattr(game["engine"], "season_rules"):
         can_go_for_two = game["engine"].season_rules.two_point_conversion
     
+    # Get team stats if available
+    home_stats = None
+    away_stats = None
+    try:
+        engine = game["engine"]
+        if hasattr(engine.state, 'home_stats') and engine.state.home_stats:
+            home_stats = {
+                "total_yards": engine.state.home_stats.total_yards,
+                "rushing_yards": engine.state.home_stats.rushing_yards,
+                "turnovers": engine.state.home_stats.turnovers,
+                "penalties": engine.state.home_stats.penalties,
+            }
+        if hasattr(engine.state, 'away_stats') and engine.state.away_stats:
+            away_stats = {
+                "total_yards": engine.state.away_stats.total_yards,
+                "rushing_yards": engine.state.away_stats.rushing_yards,
+                "turnovers": engine.state.away_stats.turnovers,
+                "penalties": engine.state.away_stats.penalties,
+            }
+    except Exception:
+        pass
+    
     response = GameStateResponse(
         game_id=game["game_id"],
         home_team=game["home_team"],
@@ -297,6 +323,10 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> Ga
         is_kickoff=is_kickoff,
         pending_pat=pending_pat,
         can_go_for_two=can_go_for_two,
+        is_overtime=game["engine"].state.is_overtime,
+        ot_period=game["engine"].state.ot_period,
+        home_stats=home_stats,
+        away_stats=away_stats,
     )
     return response
 
@@ -696,10 +726,15 @@ async def execute_play(request: PlayRequest):
     # After a score, set up for kickoff.
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     # The engine's kickoff() method handles the receiver getting the ball.
+    # Note: After a safety, the kickoff is from the 20 yard line, not 35
     is_pending_pat = result.touchdown and not engine.state.game_over
     game["pending_pat"] = is_pending_pat
     if scoring and not engine.state.game_over and not is_pending_pat:
-        engine.state.ball_position = 35
+        # Safety free kick is from 20, normal kickoff is from 35
+        if result.safety:
+            engine.state.ball_position = 20
+        else:
+            engine.state.ball_position = 35
         engine.state.down = 1
         engine.state.yards_to_go = 10
     
@@ -909,6 +944,98 @@ async def delete_game(game_id: str):
     return {"status": "deleted", "game_id": game_id}
 
 
+@router.post("/api/game/timeout")
+async def call_timeout(request: PlayRequest):
+    """
+    Call a timeout for the current team.
+    
+    The timeout reduces the play time to ~10 seconds instead of normal play time,
+    and is charged to the team calling it.
+    """
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    
+    # Determine which team is calling the timeout
+    is_home_timeout = human_is_home
+    
+    # Check if timeout is available
+    if is_home_timeout:
+        if engine.state.home_timeouts <= 0:
+            raise HTTPException(status_code=400, detail="No timeouts remaining")
+    else:
+        if engine.state.away_timeouts <= 0:
+            raise HTTPException(status_code=400, detail="No timeouts remaining")
+    
+    # Use the timeout
+    success = engine.state.use_timeout(is_home_timeout)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to use timeout")
+    
+    # Apply clock adjustment (10 seconds for timeout)
+    # The timeout stops the clock, so only ~10 seconds run off
+    timeout_seconds = 0.167  # 10 seconds in minutes
+    engine.state.time_remaining = max(0, engine.state.time_remaining - timeout_seconds)
+    
+    # Log the timeout
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    team_abbrev = home_abbrev if is_home_timeout else away_abbrev
+    print(f"[{team_abbrev}] TIMEOUT called | Remaining: {engine.state.home_timeouts if is_home_timeout else engine.state.away_timeouts}")
+    
+    return {
+        "success": True,
+        "home_timeouts": engine.state.home_timeouts,
+        "away_timeouts": engine.state.away_timeouts,
+        "time_remaining": int(engine.state.time_remaining * 60),
+        "game_state": game_state_to_response(game).dict()
+    }
+
+
+@router.post("/api/game/overtime/start")
+async def start_overtime(request: PlayRequest):
+    """
+    Start overtime period.
+    
+    This should be called when the game is tied at the end of regulation.
+    The engine will handle the coin toss and set up for kickoff.
+    """
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[request.game_id]
+    engine = game["engine"]
+    
+    # Check if game is actually tied
+    if engine.state.home_score != engine.state.away_score:
+        raise HTTPException(status_code=400, detail="Game is not tied")
+    
+    # Check if game is already in overtime
+    if engine.state.is_overtime:
+        raise HTTPException(status_code=400, detail="Game is already in overtime")
+    
+    # Start overtime - coin toss winner receives
+    description = engine.start_overtime()
+    
+    # Log the overtime start
+    home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
+    away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
+    print(f"[{home_abbrev} vs {away_abbrev}] OVERTIME START | {description}")
+    
+    return {
+        "success": True,
+        "description": description,
+        "is_overtime": True,
+        "ot_period": 1,
+        "is_kickoff": True,
+        "game_state": game_state_to_response(game, is_kickoff=True).dict()
+    }
+
+
 @router.get("/api/game/pat-choice/{game_id}", response_model=PATChoiceResponse)
 async def get_pat_choice(game_id: str):
     if game_id not in games:
@@ -921,9 +1048,18 @@ async def get_pat_choice(game_id: str):
     is_home_possession = engine.state.is_home_possession
     scoring_team_is_player = (human_is_home and is_home_possession) or (not human_is_home and not is_home_possession)
     
+    # Use the CPU decision logic to determine if CPU would go for 2
+    # This helps the UI show what the CPU would do
+    cpu_should_go_for_two = False
+    try:
+        from paydirt.computer_ai import cpu_should_go_for_two as cpu_2pt_func
+        cpu_should_go_for_two = cpu_2pt_func(engine)
+    except Exception:
+        pass  # Default to False if AI module not available
+    
     return PATChoiceResponse(
         can_go_for_two=engine.season_rules.two_point_conversion,
-        cpu_should_go_for_two=False,  # CPU defaults to XP
+        cpu_should_go_for_two=cpu_should_go_for_two,
         scoring_team_is_player=scoring_team_is_player
     )
 

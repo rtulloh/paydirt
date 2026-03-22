@@ -172,6 +172,16 @@ const PlayingPhase = () => {
       
       if (res.ok) {
         const data = await res.json();
+        
+        // Check for pending penalty decision on kickoff
+        if (data.result && data.result.pending_penalty_decision && data.result.penalty_choice) {
+          setLocalPendingPenaltyData(data.result);
+          setLocalShowPenaltyChoice(true);
+          setLocalIsRolling(false);
+          setLocalExecuting(false);
+          return;
+        }
+        
         setLocalLastResult(data.result);
         updateGameState(data.game_state);
         setLocalIsRolling(false);
@@ -769,6 +779,52 @@ const PlayingPhase = () => {
     }
   };
 
+  const handleCallTimeout = async () => {
+    if (!gameId || localExecuting) return;
+    
+    // Check if human has timeouts
+    const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts;
+    if (humanTimeouts <= 0) return;
+    
+    setLocalExecuting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/game/timeout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        updateGameState(data.game_state);
+        // Log the timeout
+        const teamAbbr = humanIsHome ? (homeTeam?.abbreviation || 'HOME') : (awayTeam?.abbreviation || 'AWAY');
+        addToPlayLog({
+          quarter: data.game_state.quarter,
+          timeRemaining: data.game_state.time_remaining,
+          down: down,
+          yardsToGo: yardsToGo,
+          ballPosition: ballPosition,
+          offenseTeam: teamAbbr,
+          defenseTeam: '',
+          playerTeam: teamAbbr,
+          offensePlay: 'TO',
+          defensePlay: '-',
+          description: `${teamAbbr} calls timeout`,
+          yards: 0,
+          turnover: false,
+        });
+      } else {
+        const error = await res.text();
+        console.error('Timeout failed:', res.status, error);
+      }
+    } catch (err) {
+      console.error('Failed to call timeout:', err);
+    } finally {
+      setLocalExecuting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900">
       <Scoreboard
@@ -786,6 +842,10 @@ const PlayingPhase = () => {
         homeTimeouts={homeTimeouts}
         awayTimeouts={awayTimeouts}
         humanIsHome={humanIsHome}
+        onCallTimeout={handleCallTimeout}
+        canCallTimeout={!localExecuting && !localShowPatChoice && !localShowPenaltyChoice}
+        isOvertime={isOvertime || false}
+        otPeriod={otPeriod || 0}
       />
 
       <div className="flex-shrink-0 px-4 py-4">
@@ -840,6 +900,9 @@ const PlayingPhase = () => {
             localLastResult.big_play_factor >= 1 ? 'bg-yellow-700' :
             'bg-gray-800'
           }`}>
+            {localLastResult.is_first_down && (
+              <div className="text-green-400 font-bold text-lg mb-1">FIRST DOWN!</div>
+            )}
             <div className="text-white font-bold text-lg">{localLastResult.headline || localLastResult.description}</div>
             {localLastResult.commentary && (
               <div className="text-white/80 text-sm mt-1">{localLastResult.commentary}</div>
