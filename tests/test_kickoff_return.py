@@ -386,7 +386,7 @@ class TestKickoffDiceDisplay:
             # Decline penalty - take kickoff result
             # Kickoff 65 yards from 35 = lands at 0 (100 - 35 - 65)
             # Return 100 yards from 0 = 0 + 100 = 100 (TD)
-            final_outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
+            game.apply_kickoff_penalty_decision(outcome, accept_penalty=False)
             
             # TD was scored (ball at 99-100 depending on code)
             assert game.state.ball_position >= 99

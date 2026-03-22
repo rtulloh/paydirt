@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Era-Based AI Behavior Configuration
+CPU clock management thresholds are now configurable per season via `ai_behavior.yaml` files, replacing hardcoded modern NFL values applied to historical simulations.
+
+- **`ai_behavior.yaml` per season**: New YAML files in `seasons/YYYY/` directories configure CPU urgency:
+  - `TwoMinuteDrill`: when to enter 2-min mode (Q2 trailing, Q4 any deficit)
+  - `HurryUp`: when to use no-huddle offense
+  - `ClockKilling`: when to bleed clock while leading
+  - `AIStrategic`: spike ball chance, OOB designation aggression, 4th-down aggression
+- **Era profiles**: Four presets (conservative pre-1985, moderate 1985-1999, aggressive 2000-2011, very_aggressive 2012+) used as defaults when YAML is absent
+- **Cross-era support**: CPU team's season settings apply; `seasons/1972/`, `seasons/1983/`, `seasons/2026/` have explicit YAML files
+- **Refactored thresholds**: `ComputerAI._is_two_minute_drill`, `_needs_hurry_up`, `_should_run_clock` now read from config instead of hardcoded values
+- **New behaviors**: Probabilistic spike ball (`spike_ball_chance`), probabilistic OOB designation (`oob_designation_aggression`), `clock_run_on_any_lead` flag gates QB kneel behavior
+- **Chart analyzer fix**: Added 40% override chance in standard 1st/2nd/3rd down situations — the analyzer existed but was never called
+- **Test coverage**: `result_formatter.py`: 69%→97%, `simulate_week.py`: 0%→27%, `season_rules.py`: +8 new tests, `test_simulate_week.py`: 12 new tests
+
+### run_all_games.py Quarter Parse Fix
+Fixed quarter score parsing to read `FINAL STATISTICS` instead of the mid-game Q1 box score. All 14 games now correctly report quarter breakdowns.
+
 ### Centralized CPU AI Decision Logic
 - **Centralized AI methods in `ComputerAI` class**: Moved CPU decision logic from `interactive_game.py` to `ComputerAI` class for better code organization:
   - `ComputerAI.should_go_for_two()`: Determines when CPU should go for 2-point conversion
@@ -43,7 +61,7 @@
 - **Help text improvements**: Added clarifying notes about human player controlling the team specified with `--home`.
 
 ### Test Coverage
-- **1487 unit tests** passing
+- **1756 unit tests** passing
 - Added 31 new CLI tests covering all option permutations and invalid option handling
 - Added 10 playoff flag tests for overtime rules (`test_overtime.py::TestPlayoffFlag`)
 - Fixed test isolation issue with `COMPACT_MODE` global variable

@@ -4,10 +4,9 @@ Tests for AI data persistence (save/load opponent model).
 import json
 import os
 import tempfile
-import pytest
 
 from paydirt.ai_save import get_ai_filepath, save_ai_data, load_ai_data
-from paydirt.ai_analysis import OpponentModel, OpponentTendencyTracker, PlayCategory, SituationType
+from paydirt.ai_analysis import OpponentModel
 
 
 class MockCpuAI:
@@ -189,7 +188,7 @@ class TestRoundTrip:
             
             # Verify game state
             assert loaded_model.score_differential_history == [3, -7, 10]
-            assert loaded_model.is_protecting_lead == True
+            assert loaded_model.is_protecting_lead
             
             # Verify tendency data exists
             t1 = loaded_model.tracker.get_tendency(1, 10)
