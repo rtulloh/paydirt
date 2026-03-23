@@ -1108,11 +1108,11 @@ class ComputerAI:
             best_penalty = filtered_penalties[0] if filtered_penalties else None
             if best_penalty:
                 if best_penalty.auto_first_down:
-                    accept_play = False
-                elif is_punt_penalty and offended_is_offense:
-                    accept_play = False
+                    accept_play = False  # Accept penalty for automatic first down
+                elif (is_punt_penalty or is_kickoff_penalty) and offended_is_offense:
+                    accept_play = False  # Decline penalty when offense is offended (kickoffs and punts)
                 else:
-                    accept_play = False
+                    accept_play = True  # Accept penalty, decline the result
             else:
                 accept_play = True
         elif play_td:
