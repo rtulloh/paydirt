@@ -42,6 +42,21 @@ describe('DiceDisplay', () => {
     expect(greenDice.length).toBe(1)
   })
 
+  it('hides defense dice when hideDefenseDice is true', () => {
+    render(
+      <DiceDisplay
+        isRolling={true}
+        offenseRoll={{ black: 1, white1: 4, white2: 3 }}
+        defenseRoll={{ red: 2, green: 1 }}
+        hideDefenseDice={true}
+      />
+    )
+    const redDice = screen.queryAllByTestId('die-red')
+    const greenDice = screen.queryAllByTestId('die-green')
+    expect(redDice.length).toBe(0)
+    expect(greenDice.length).toBe(0)
+  })
+
   it('does not render when not rolling and no result', () => {
     render(<DiceDisplay isRolling={false} />)
     expect(screen.queryByTestId('dice-display')).toBeNull()

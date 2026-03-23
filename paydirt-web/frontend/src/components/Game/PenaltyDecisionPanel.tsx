@@ -117,10 +117,17 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
       return penaltyData.description || 'Kickoff';
     }
 
+    // Calculate the actual new position based on play result
+    // newBallPosition is the position AFTER penalty application, but we want position AFTER play
+    const playStartPos = penaltyData.line_of_scrimmage || 50;
+    const actualNewPos = Math.min(100, playStartPos + yards);
+
     if (yards > 0) {
-      return `+${yards} yards → ${formatFieldPosition(newBallPosition || 0)}`;
+      return `+${yards} yards → ${formatFieldPosition(actualNewPos)}`;
+    } else if (yards < 0) {
+      return `${yards} yards → ${formatFieldPosition(actualNewPos)}`;
     }
-    return `No gain → ${formatFieldPosition(newBallPosition || 0)}`;
+    return `No gain → ${formatFieldPosition(playStartPos)}`;
   };
   
   const isDefenseChoosing = penalty_choice.offended_team === 'defense';

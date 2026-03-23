@@ -88,6 +88,7 @@ const PlayingPhase = () => {
   const [localExecuting, setLocalExecuting] = useState(false);
   const [showPuntOptions, setShowPuntOptions] = useState(false);
   const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
+  const [isKickPlay, setIsKickPlay] = useState(false);
 
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
@@ -186,6 +187,7 @@ const PlayingPhase = () => {
     setLocalLastResult(null);
     setLocalDiceResult(null);
     setLocalIsRolling(false);
+    setIsKickPlay(true);
     
     // Clear any lingering CPU 4th down decision UI
     clearCpuFourthDownDecision();
@@ -484,6 +486,11 @@ const PlayingPhase = () => {
     const prePlayBallPosition = ballPosition;
     const prePlayFieldPosition = fieldPosition; // Backend-calculated field position
     
+    // Check if this is a kick play (P=punt, F=field goal, K=kickoff)
+    const isKick = ['P', 'F', 'K'].includes(play.toUpperCase()) || 
+                   ['P', 'F'].includes(cpuPlayOverride?.toUpperCase());
+    setIsKickPlay(isKick);
+    
     setLocalExecuting(true);
     setLocalLastResult(null);
     setLocalDiceResult(null);
@@ -544,6 +551,15 @@ const PlayingPhase = () => {
           coffin_corner_yards: puntOptions?.coffin_corner_yards || 0,
         })
       });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Execute play error:', res.status, errorText);
+        alert('Execute play failed: ' + errorText);
+        setLocalIsRolling(false);
+        setLocalExecuting(false);
+        return;
+      }
       
       if (res.ok) {
         const data = await res.json();
@@ -937,7 +953,8 @@ const PlayingPhase = () => {
             defenseRoll={localDiceResult?.defenseRoll}
             result={localDiceResult?.result}
             isRolling={localIsRolling}
-            onAnimationComplete={() => {}}
+            onAnimationComplete={() => { setIsKickPlay(false); }}
+            hideDefenseDice={isKickPlay}
           />
         </div>
       )}

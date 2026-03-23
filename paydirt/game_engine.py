@@ -1617,13 +1617,25 @@ class PaydirtGameEngine:
             # Accept the play result - down counts
             # Use original offense result if defense committed penalty
             play_result = penalty_choice.play_result
+            # If offense_yards is set and different from yards, use offense_yards
+            # This handles the case where priority chart returned penalty yards
             if play_result.offense_yards != 0 and play_result.offense_yards != play_result.yards:
-                # Defense committed penalty - use original offense result
-                # Parse the raw_result to get the original PlayResult
-                from .play_resolver import parse_result_string
-                play_result = parse_result_string(play_result.raw_result)
-                # Preserve dice roll info
-                play_result.dice_roll = penalty_choice.play_result.dice_roll
+                # Defense committed penalty - use original offense yards
+                # Create a new PlayResult with the correct yardage
+                from .play_resolver import ResultType
+                original_yards = play_result.offense_yards
+                play_result = play_result.__class__(
+                    result_type=ResultType.YARDS,
+                    yards=original_yards,
+                    description=f"Play result stands: {original_yards} yards",
+                    turnover=play_result.turnover,
+                    touchdown=play_result.touchdown,
+                    raw_result=play_result.raw_result,
+                    dice_roll=play_result.dice_roll,
+                    defense_modifier=play_result.defense_modifier,
+                    out_of_bounds=play_result.out_of_bounds,
+                    offense_yards=original_yards,
+                )
             
             return self._apply_play_result(
                 outcome.play_type, outcome.defense_type, play_result,

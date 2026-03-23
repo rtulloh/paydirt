@@ -66,6 +66,7 @@ export function DiceDisplay({
   description,
   onAnimationComplete,
   isRolling = false,
+  hideDefenseDice = false,
 }) {
   const [showOffenseDice, setShowOffenseDice] = useState(false)
   const [showDefenseDice, setShowDefenseDice] = useState(false)
@@ -125,14 +126,16 @@ export function DiceDisplay({
           <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-blue-400 w-8 text-center`}>{offenseTotal}</span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-purple-400 w-6">DEF</span>
-          <div className="flex gap-2">
-            <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={showDefenseDice} delay={400} />
-            <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={showDefenseDice} delay={500} />
+        {!hideDefenseDice && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-purple-400 w-6">DEF</span>
+            <div className="flex gap-2">
+              <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={showDefenseDice} delay={400} />
+              <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={showDefenseDice} delay={500} />
+            </div>
+            <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-purple-400 w-8 text-center`}>{defenseTotal}</span>
           </div>
-          <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-purple-400 w-8 text-center`}>{defenseTotal}</span>
-        </div>
+        )}
       </div>
       
       {description && (
