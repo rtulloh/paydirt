@@ -26,7 +26,7 @@ function Pip({ x, y, color }) {
   )
 }
 
-function Die({ value, color, size = 'md', animate, settled, delay = 0 }) {
+function Die({ value, color, size = 'md', animate, settled }) {
   const colorClass = DICE_COLORS[color] || DICE_COLORS.white
   const sizeClass = size === 'lg' ? 'w-16 h-16' : size === 'sm' ? 'w-10 h-10' : 'w-12 h-12'
   const pipSizeClass = size === 'lg' ? 'w-3 h-3' : size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2'
@@ -38,14 +38,8 @@ function Die({ value, color, size = 'md', animate, settled, delay = 0 }) {
       className={`
         relative ${sizeClass} rounded-lg ${colorClass.bg} ${colorClass.border} border-2
         flex items-center justify-center
-        ${animate && !settled ? 'animate-dice-roll' : ''}
-        ${settled ? 'animate-dice-settle' : 'opacity-0'}
-        transition-opacity duration-300
+        ${animate ? 'animate-dice-roll' : 'animate-dice-settle'}
       `}
-      style={{ 
-        animationDelay: settled ? `${delay}ms` : '0ms',
-        transitionDelay: settled ? `${delay}ms` : '0ms',
-      }}
       data-testid={`die-${color}`}
     >
       <div className={`relative w-full h-full ${pipSizeClass}`}>
@@ -68,46 +62,9 @@ export function DiceDisplay({
   isRolling = false,
   hideDefenseDice = false,
 }) {
-  const [showOffenseDice, setShowOffenseDice] = useState(false)
-  const [showDefenseDice, setShowDefenseDice] = useState(false)
-  const [showTotals, setShowTotals] = useState(false)
-  const [showResult, setShowResult] = useState(false)
-  const [animationStarted, setAnimationStarted] = useState(false)
-
-  const resetAnimation = useCallback(() => {
-    setShowOffenseDice(false)
-    setShowDefenseDice(false)
-    setShowTotals(false)
-    setShowResult(false)
-    setAnimationStarted(false)
-  }, [])
-
-  useEffect(() => {
-    if (isRolling && !animationStarted) {
-      resetAnimation()
-      setAnimationStarted(true)
-    }
-  }, [isRolling, animationStarted, resetAnimation])
-
-  useEffect(() => {
-    if (!animationStarted) return
-
-    const timers = []
-
-    timers.push(setTimeout(() => setShowOffenseDice(true), 200))
-    timers.push(setTimeout(() => setShowDefenseDice(true), 600))
-    timers.push(setTimeout(() => setShowTotals(true), 1000))
-    timers.push(setTimeout(() => setShowResult(true), 1200))
-    timers.push(setTimeout(() => {
-      if (onAnimationComplete) onAnimationComplete()
-    }, 1500))
-
-    return () => timers.forEach(clearTimeout)
-  }, [animationStarted, onAnimationComplete])
-
-  if (!isRolling && !showResult && !description) {
-    return null
-  }
+  // Simplified: dice are either all visible (settled) or all rolling
+  // No staggered animation - prevents jitter
+  const settled = !isRolling
 
   // Black/Red dice = 10s (B1=10, B2=20, B3=30)
   const offenseTotal = ((offenseRoll?.black || 0) * 10) + (offenseRoll?.white1 || 0) + (offenseRoll?.white2 || 0)
@@ -119,21 +76,21 @@ export function DiceDisplay({
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-blue-400 w-6">OFF</span>
           <div className="flex gap-2">
-            <Die value={offenseRoll?.black || 1} color="black" size="md" animate={isRolling} settled={showOffenseDice} delay={0} />
-            <Die value={offenseRoll?.white1 || 1} color="white" size="md" animate={isRolling} settled={showOffenseDice} delay={100} />
-            <Die value={offenseRoll?.white2 || 1} color="white" size="md" animate={isRolling} settled={showOffenseDice} delay={200} />
+            <Die value={offenseRoll?.black || 1} color="black" size="md" animate={isRolling} settled={settled} delay={0} />
+            <Die value={offenseRoll?.white1 || 1} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
+            <Die value={offenseRoll?.white2 || 1} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
           </div>
-          <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-blue-400 w-8 text-center`}>{offenseTotal}</span>
+          <span className={`text-lg font-bold text-blue-400 w-8 text-center`}>{offenseTotal}</span>
         </div>
 
         {!hideDefenseDice && (
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-purple-400 w-6">DEF</span>
             <div className="flex gap-2">
-              <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={showDefenseDice} delay={400} />
-              <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={showDefenseDice} delay={500} />
+              <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={settled} delay={0} />
+              <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={settled} delay={0} />
             </div>
-            <span className={`text-lg font-bold ${showTotals ? 'opacity-100' : 'opacity-0'} text-purple-400 w-8 text-center`}>{defenseTotal}</span>
+            <span className={`text-lg font-bold text-purple-400 w-8 text-center`}>{defenseTotal}</span>
           </div>
         )}
       </div>

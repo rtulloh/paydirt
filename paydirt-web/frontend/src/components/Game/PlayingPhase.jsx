@@ -927,135 +927,150 @@ const PlayingPhase = () => {
         />
       </div>
 
-      {/* Inline Kickoff Banner - More Prominent */}
-      {isKickoff && !localExecuting && !localLastResult && (
-        <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
-          <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
-          <div className="text-lg text-blue-100 mb-4">
-            {possession === 'home'
-              ? `${homeTeam?.short_name || 'HOME'} kicks off to ${awayTeam?.short_name || 'AWAY'}`
-              : `${awayTeam?.short_name || 'AWAY'} kicks off to ${homeTeam?.short_name || 'HOME'}`
-            }
-          </div>
-          <button
-            onClick={handleKickoff}
-            className="px-10 py-4 bg-white text-blue-700 rounded-lg font-bold text-xl hover:bg-blue-100 transition-all shadow-md"
-          >
-            KICK OFF
-          </button>
-        </div>
-      )}
-
-      {(localIsRolling || localDiceResult) && (
-        <div className="px-4 pb-2">
-          <DiceDisplay
-            offenseRoll={localDiceResult?.offenseRoll}
-            defenseRoll={localDiceResult?.defenseRoll}
-            result={localDiceResult?.result}
-            isRolling={localIsRolling}
-            onAnimationComplete={() => { setIsKickPlay(false); }}
-            hideDefenseDice={isKickPlay}
-          />
-        </div>
-      )}
-
-      {localLastResult && (
-        <div className="px-4 pb-2">
-          <div className={`rounded-lg px-4 py-2 text-center ${
-            localLastResult.big_play_factor >= 3 ? 'bg-red-700' :
-            localLastResult.big_play_factor >= 2 ? 'bg-orange-700' :
-            localLastResult.big_play_factor >= 1 ? 'bg-yellow-700' :
-            'bg-gray-800'
-          }`}>
-            {localLastResult.is_first_down && (
-              <div className="text-green-400 font-bold text-lg mb-1">FIRST DOWN!</div>
-            )}
-            <div className="text-white font-bold text-lg">{localLastResult.headline || localLastResult.description}</div>
-            {localLastResult.commentary && (
-              <div className="text-white/80 text-sm mt-1">{localLastResult.commentary}</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showCpuDecision && cpuFourthDownDecision && (
-        <div className="px-4 pb-2">
-          <CpuDecisionPanel 
-            decision={cpuFourthDownDecision} 
-            onExecute={handleCpuDecisionExecute} 
-            onCancel={() => {
-              clearCpuFourthDownDecision();
-              clearPendingDefensePlay();
-            }}
-          />
-        </div>
-      )}
-
-      {pendingCpuFourthDown && !showCpuDecision && (
-        <div className="px-4 pb-2">
-          <CpuDecisionPanel 
-            decision={pendingCpuFourthDown} 
-            onExecute={handleCpuFourthDownExecute} 
-            onCancel={() => {
-              clearPendingCpuFourthDown();
-            }}
-          />
-        </div>
-      )}
-
-      {showPuntOptions && (
-        <div className="px-4 pb-2">
-          <PuntOptionsPanel 
-            ballPosition={ballPosition}
-            onSelect={handlePuntOptions}
-            onCancel={() => {
-              setShowPuntOptions(false);
-              setPendingPuntPlay(null);
-            }}
-          />
-        </div>
-      )}
-
-      {localShowPatChoice && (
-        <div className="px-4 pb-2">
-          <PATChoicePanel 
-            canGoForTwo={canGoForTwo}
-            cpuShouldGoForTwo={cpuShouldGoForTwo}
-            scoringTeamIsPlayer={scoringTeamIsPlayer}
-            onPatKick={handlePatKick}
-            onPatTwoPoint={handlePatTwoPoint}
-            onCpuPat={handleCpuPat}
-            onCpuTwoPoint={handleCpuTwoPoint}
-          />
-        </div>
-      )}
-
-      {localPatResult && (
-        <div className="px-4 pb-2">
-          <div className={`rounded-lg px-4 py-4 text-center ${localPatResult.success ? 'bg-green-700' : 'bg-red-700'}`}>
-            <div className="text-xl font-bold text-white">
-              {localPatResult.type === 'two_point' ? 'TWO-POINT CONVERSION' : 'EXTRA POINT'}
+      {/* Fixed-height container for info panels - prevents layout shifts */}
+      <div className="flex-shrink-0 min-h-[140px]">
+        {/* Inline Kickoff Banner - More Prominent */}
+        {isKickoff && !localExecuting && !localLastResult && (
+          <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
+            <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
+            <div className="text-lg text-blue-100 mb-4">
+              {possession === 'home'
+                ? `${homeTeam?.short_name || 'HOME'} kicks off to ${awayTeam?.short_name || 'AWAY'}`
+                : `${awayTeam?.short_name || 'AWAY'} kicks off to ${homeTeam?.short_name || 'HOME'}`
+              }
             </div>
-            <div className="text-2xl font-bold text-white mt-2">
-              {localPatResult.success ? 'GOOD!' : 'NO GOOD!'}
-            </div>
-            <div className="text-white mt-1">{localPatResult.description}</div>
+            <button
+              onClick={handleKickoff}
+              className="px-10 py-4 bg-white text-blue-700 rounded-lg font-bold text-xl hover:bg-blue-100 transition-all shadow-md"
+            >
+              KICK OFF
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {localShowPenaltyChoice && localPendingPenaltyData && (
-        <div className="px-4 pb-2">
-          <PenaltyDecisionPanel 
-            penaltyData={localPendingPenaltyData} 
-            onDecision={handlePenaltyDecision}
-            cpuIsOnDefense={playerOffense}
-          />
+        {/* Dice Display - always reserve space */}
+        <div className="px-4 pb-2 min-h-[80px] flex items-center justify-center">
+          {(localIsRolling || localDiceResult) ? (
+            <DiceDisplay
+              offenseRoll={localDiceResult?.offenseRoll}
+              defenseRoll={localDiceResult?.defenseRoll}
+              result={localDiceResult?.result}
+              isRolling={localIsRolling}
+              onAnimationComplete={() => { setIsKickPlay(false); }}
+              hideDefenseDice={isKickPlay}
+            />
+          ) : (
+            <div className="h-[80px] flex items-center justify-center text-gray-500 text-sm">
+              {/* Placeholder to reserve space */}
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* Result Banner */}
+        {localLastResult && (
+          <div className="px-4 pb-2">
+            <div className={`rounded-lg px-4 py-2 text-center ${
+              localLastResult.big_play_factor >= 3 ? 'bg-red-700' :
+              localLastResult.big_play_factor >= 2 ? 'bg-orange-700' :
+              localLastResult.big_play_factor >= 1 ? 'bg-yellow-700' :
+              'bg-gray-800'
+            }`}>
+              {localLastResult.is_first_down && (
+                <div className="text-green-400 font-bold text-lg mb-1">FIRST DOWN!</div>
+              )}
+              <div className="text-white font-bold text-lg">{localLastResult.headline || localLastResult.description}</div>
+              {localLastResult.commentary && (
+                <div className="text-white/80 text-sm mt-1">{localLastResult.commentary}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CPU Decision Panel */}
+        {showCpuDecision && cpuFourthDownDecision && (
+          <div className="px-4 pb-2">
+            <CpuDecisionPanel 
+              decision={cpuFourthDownDecision} 
+              onExecute={handleCpuDecisionExecute} 
+              onCancel={() => {
+                clearCpuFourthDownDecision();
+                clearPendingDefensePlay();
+              }}
+            />
+          </div>
+        )}
+
+        {pendingCpuFourthDown && !showCpuDecision && (
+          <div className="px-4 pb-2">
+            <CpuDecisionPanel 
+              decision={pendingCpuFourthDown} 
+              onExecute={handleCpuFourthDownExecute} 
+              onCancel={() => {
+                clearPendingCpuFourthDown();
+              }}
+            />
+          </div>
+        )}
+
+        {/* Punt Options Panel */}
+        {showPuntOptions && (
+          <div className="px-4 pb-2">
+            <PuntOptionsPanel 
+              ballPosition={ballPosition}
+              onSelect={handlePuntOptions}
+              onCancel={() => {
+                setShowPuntOptions(false);
+                setPendingPuntPlay(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* PAT Choice Panel */}
+        {localShowPatChoice && (
+          <div className="px-4 pb-2">
+            <PATChoicePanel 
+              canGoForTwo={canGoForTwo}
+              cpuShouldGoForTwo={cpuShouldGoForTwo}
+              scoringTeamIsPlayer={scoringTeamIsPlayer}
+              onPatKick={handlePatKick}
+              onPatTwoPoint={handlePatTwoPoint}
+              onCpuPat={handleCpuPat}
+              onCpuTwoPoint={handleCpuTwoPoint}
+            />
+          </div>
+        )}
+
+        {/* PAT Result */}
+        {localPatResult && (
+          <div className="px-4 pb-2">
+            <div className={`rounded-lg px-4 py-4 text-center ${localPatResult.success ? 'bg-green-700' : 'bg-red-700'}`}>
+              <div className="text-xl font-bold text-white">
+                {localPatResult.type === 'two_point' ? 'TWO-POINT CONVERSION' : 'EXTRA POINT'}
+              </div>
+              <div className="text-2xl font-bold text-white mt-2">
+                {localPatResult.success ? 'GOOD!' : 'NO GOOD!'}
+              </div>
+              <div className="text-white mt-1">{localPatResult.description}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Penalty Decision Panel */}
+        {localShowPenaltyChoice && localPendingPenaltyData && (
+          <div className="px-4 pb-2">
+            <PenaltyDecisionPanel 
+              penaltyData={localPendingPenaltyData} 
+              onDecision={handlePenaltyDecision}
+              cpuIsOnDefense={playerOffense}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Play Selector - fixed position, stays in same place */}
+      <div className="flex-shrink-0 px-4 pb-4">
+        <div className="grid grid-cols-2 gap-4">
           {/* Show offense plays when player is on offense, defense plays when player is on defense */}
           {playerOffense ? (
             <OffensePlays
