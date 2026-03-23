@@ -2043,6 +2043,62 @@ def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_bef
         print(f"\n  *** TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
 
 
+def should_apply_timeout_after_play(outcome, play_seconds: float) -> tuple[bool, str]:
+    """
+    Check if timeout modifier should be applied after seeing play result.
+    
+    Per Paydirt rules, a timeout is wasteful if:
+    - Play was incomplete (clock already stopped)
+    - Play went out of bounds (clock already at 10 sec)
+    - Play_seconds <= 10 (no time would be saved)
+    
+    Args:
+        outcome: PlayOutcome from the executed play
+        play_seconds: Actual seconds used by the play
+        
+    Returns:
+        Tuple of (should_apply, message_if_skipped)
+    """
+    from .play_resolver import ResultType
+    
+    if outcome.result.result_type == ResultType.INCOMPLETE:
+        return False, "[Timeout SKIPPED - play was incomplete, clock already stopped]"
+    
+    if outcome.result.out_of_bounds:
+        return False, "[Timeout SKIPPED - play went out of bounds, clock already at 10 sec]"
+    
+    if play_seconds <= 10:
+        return False, "[Timeout SKIPPED - no time would be saved]"
+    
+    return True, ""
+
+
+def should_apply_spike_after_play(outcome, play_seconds: float) -> tuple[bool, str]:
+    """
+    Check if spike modifier should be applied after seeing play result.
+    
+    Per Paydirt rules, a spike is wasteful if:
+    - Play was incomplete (clock already stopped)
+    - Play_seconds <= 3 (no meaningful time would be saved)
+    
+    Args:
+        outcome: PlayOutcome from the executed play
+        play_seconds: Actual seconds used by the play
+        
+    Returns:
+        Tuple of (should_apply, message_if_skipped)
+    """
+    from .play_resolver import ResultType
+    
+    if outcome.result.result_type == ResultType.INCOMPLETE:
+        return False, "[Spike SKIPPED - clock already stopped]"
+    
+    if play_seconds <= 3:
+        return False, "[Spike SKIPPED - no time would be saved]"
+    
+    return True, ""
+
+
 def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: bool,
                             human_is_home: bool):
     """
@@ -3060,28 +3116,43 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
         # Human timeout (offense or defense)
         # Skip timeout if touchdown scored - clock stops anyway and timeout is wasted
         if call_timeout and not outcome.touchdown:
-            if game.state.use_timeout(human_is_home):
-                _apply_timeout(game, time_before_play, quarter_before_play)
+            play_seconds = time_before_play - game.state.time_remaining
+            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
+            if should_apply:
+                if game.state.use_timeout(human_is_home):
+                    _apply_timeout(game, time_before_play, quarter_before_play)
+            else:
+                print(f"  {skip_msg}")
         
         # CPU timeout when on defense (human is on offense)
         # CPU calls timeout to stop clock when trailing late in game
         # Skip if turnover occurred - possession changed, timeout logic doesn't apply
         # Skip if penalty applied - clock already stopped after penalty
         elif is_human_offense and not outcome.turnover and not outcome.penalty_applied and computer_should_call_timeout_on_defense(game):
-            cpu_is_home = not human_is_home
-            if game.state.use_timeout(cpu_is_home):
-                cpu_team = game.state.defense_team.peripheral.short_name
-                _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
+            play_seconds = time_before_play - game.state.time_remaining
+            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
+            if should_apply:
+                cpu_is_home = not human_is_home
+                if game.state.use_timeout(cpu_is_home):
+                    cpu_team = game.state.defense_team.peripheral.short_name
+                    _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
+            else:
+                print(f"  {skip_msg}")
         
         # CPU timeout when on offense (human is on defense)
         # CPU calls timeout to preserve clock at end of half/game
         # Skip if turnover occurred - possession changed, timeout logic doesn't apply
         # Skip if penalty applied - clock already stopped after penalty
         elif not is_human_offense and not outcome.turnover and not outcome.penalty_applied and computer_should_call_timeout_on_offense(game):
-            cpu_is_home = not human_is_home
-            if game.state.use_timeout(cpu_is_home):
-                cpu_team = game.state.possession_team.peripheral.short_name
-                _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
+            play_seconds = time_before_play - game.state.time_remaining
+            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
+            if should_apply:
+                cpu_is_home = not human_is_home
+                if game.state.use_timeout(cpu_is_home):
+                    cpu_team = game.state.possession_team.peripheral.short_name
+                    _apply_timeout(game, time_before_play, quarter_before_play, cpu_team)
+            else:
+                print(f"  {skip_msg}")
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:
@@ -3801,8 +3872,13 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
             print("=" * 70)
 
         if call_timeout and not outcome.touchdown:
-            if game.state.use_timeout(human_is_home):
-                _apply_timeout(game, time_before_play, quarter_before_play)
+            play_seconds = time_before_play - game.state.time_remaining
+            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
+            if should_apply:
+                if game.state.use_timeout(human_is_home):
+                    _apply_timeout(game, time_before_play, quarter_before_play)
+            else:
+                print(f"  {skip_msg}")
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:

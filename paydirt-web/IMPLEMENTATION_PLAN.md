@@ -668,25 +668,25 @@ class PaydirtGameEngine:
 **Duration: Days 10-11**
 
 **Tasks:**
+- [x] Play-by-play log
+- [x] Timeout functionality
+- [x] Special teams (punt, FG, kickoff)
+- [x] Halftime / game over screens
 - [ ] Ball movement animation on field
 - [ ] Scoreboard flash effects on score change
-- [ ] Play-by-play log
-- [ ] Timeout functionality
-- [ ] Special teams (punt, FG, kickoff)
-- [ ] Halftime / game over screens
 - [ ] Sound effects for TDs, turnovers, etc.
 
 **Tests:**
+- [x] Timeout decrements counter
+- [x] Punt executes correctly
+- [x] Field goal distance calculation
+- [x] Kickoff with touchback
+- [x] Halftime transitions correctly
+- [x] Game over shows final score
+- [x] Play-by-play entries added
 - [ ] Ball animates to correct position
 - [ ] Ball stops at boundary (0 or 100)
 - [ ] Score flash animation triggers
-- [ ] Timeout decrements counter
-- [ ] Punt executes correctly
-- [ ] Field goal distance calculation
-- [ ] Kickoff with touchback
-- [ ] Halftime transitions correctly
-- [ ] Game over shows final score
-- [ ] Play-by-play entries added
 
 ---
 

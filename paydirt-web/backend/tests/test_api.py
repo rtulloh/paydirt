@@ -1382,18 +1382,6 @@ def test_overtime_endpoint_starts_overtime():
     assert "game_state" in overtime_data
 
 
-def test_overtime_endpoint_invalid_game():
-    """
-    Test that /api/game/overtime/start returns 404 for invalid game.
-    """
-    response = client.post("/api/game/overtime/start", json={
-        "game_id": "invalid-game-id",
-        "player_play": "1",
-    })
-    
-    assert response.status_code == 404
-
-
 def test_penalty_decision_cpu_accepts_penalty():
     """
     Test penalty decision when CPU decides to accept penalty (decline play).

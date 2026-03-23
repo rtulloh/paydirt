@@ -61,7 +61,6 @@ def cpu_ai():
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.25,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=1.0,  # Old hardcoded: always OOB on pass plays
                 fourth_down_aggression=0.7,
             ),

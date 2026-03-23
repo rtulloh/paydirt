@@ -154,4 +154,44 @@ describe('Scoreboard', () => {
       expect(awayAbbr).toBeTruthy()
     })
   })
+
+  // FLASH EFFECT TESTS
+  describe('Score flash effects', () => {
+    it('applies flash class when homeScoreFlash is true', () => {
+      const { container } = render(
+        <Scoreboard 
+          homeScore={21} 
+          awayScore={17}
+          homeScoreFlash={true}
+        />
+      )
+      const flashElement = container.querySelector('.animate-pulse')
+      expect(flashElement).toBeTruthy()
+    })
+
+    it('applies flash class when awayScoreFlash is true', () => {
+      const { container } = render(
+        <Scoreboard 
+          homeScore={21} 
+          awayScore={17}
+          awayScoreFlash={true}
+        />
+      )
+      const flashElement = container.querySelector('.animate-pulse')
+      expect(flashElement).toBeTruthy()
+    })
+
+    it('does not apply flash class when both flash props are false', () => {
+      const { container } = render(
+        <Scoreboard 
+          homeScore={21} 
+          awayScore={17}
+          homeScoreFlash={false}
+          awayScoreFlash={false}
+        />
+      )
+      const flashElement = container.querySelector('.animate-pulse')
+      expect(flashElement).toBeNull()
+    })
+  })
 })

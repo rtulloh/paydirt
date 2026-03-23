@@ -42,7 +42,6 @@ class ClockKilling:
 @dataclass
 class AIStrategic:
     spike_ball_chance: float = 0.10
-    timeout_after_incomplete: bool = True
     oob_designation_aggression: float = 0.2
     fourth_down_aggression: float = 0.5
 
@@ -112,7 +111,6 @@ class SeasonRules:
                 },
                 "strategic": {
                     "spike_ball_chance": self.ai_behavior.strategic.spike_ball_chance,
-                    "timeout_after_incomplete": self.ai_behavior.strategic.timeout_after_incomplete,
                     "oob_designation_aggression": self.ai_behavior.strategic.oob_designation_aggression,
                     "fourth_down_aggression": self.ai_behavior.strategic.fourth_down_aggression,
                 },
@@ -159,7 +157,6 @@ def _era_ai_behavior(year: int) -> AIBehavior:
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.10,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=0.2,
                 fourth_down_aggression=0.3,
             ),
@@ -186,7 +183,6 @@ def _era_ai_behavior(year: int) -> AIBehavior:
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.15,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=0.3,
                 fourth_down_aggression=0.4,
             ),
@@ -213,7 +209,6 @@ def _era_ai_behavior(year: int) -> AIBehavior:
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.20,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=0.5,
                 fourth_down_aggression=0.6,
             ),
@@ -240,7 +235,6 @@ def _era_ai_behavior(year: int) -> AIBehavior:
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.25,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=0.6,
                 fourth_down_aggression=0.7,
             ),
@@ -309,8 +303,6 @@ def load_ai_behavior(season_dir: Path, year: int) -> AIBehavior:
     stg = AIStrategic(
         spike_ball_chance=float(data.get("strategic", {}).get(
             "spike_ball_chance", 0.10)),
-        timeout_after_incomplete=bool(data.get("strategic", {}).get(
-            "timeout_after_incomplete", True)),
         oob_designation_aggression=float(data.get("strategic", {}).get(
             "oob_designation_aggression", 0.2)),
         fourth_down_aggression=float(data.get("strategic", {}).get(

@@ -327,7 +327,6 @@ hurry_up:
             ),
             strategic=AIStrategic(
                 spike_ball_chance=0.25,
-                timeout_after_incomplete=True,
                 oob_designation_aggression=0.6,
                 fourth_down_aggression=0.7,
             ),

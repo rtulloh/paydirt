@@ -47,6 +47,8 @@ export function FootballField({
     transform: attackingRight
       ? 'translateX(calc(-100% + 2px))'
       : 'scaleX(-1)',
+    // Smooth animation for ball movement
+    transition: 'left 0.6s ease-out',
   }), [ballPct, attackingRight])
 
   // Convert first down yard line from "yards from own goal" to field coordinates
@@ -58,6 +60,8 @@ export function FootballField({
 
   const firstDownStyle = useMemo(() => ({
     left: `${firstDownPct}%`,
+    // Smooth animation for first-down marker movement
+    transition: 'left 0.6s ease-out',
   }), [firstDownPct])
 
   const yardLines = [

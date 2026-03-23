@@ -25,6 +25,8 @@ interface ScoreboardProps {
   canCallTimeout?: boolean;
   isOvertime?: boolean;
   otPeriod?: number;
+  homeScoreFlash?: boolean;
+  awayScoreFlash?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -52,6 +54,8 @@ export function Scoreboard({
   canCallTimeout = false,
   isOvertime = false,
   otPeriod = 0,
+  homeScoreFlash = false,
+  awayScoreFlash = false,
 }: ScoreboardProps) {
   const homeAbbr = homeTeam?.abbreviation || homeTeam?.short_name || 'HOME'
   const awayAbbr = awayTeam?.abbreviation || awayTeam?.short_name || 'AWAY'
@@ -77,7 +81,7 @@ export function Scoreboard({
               {homeAbbr}
             </div>
             <div className="text-xs text-gray-500 mb-1">{homeName}</div>
-            <div className={`text-2xl font-bold ${homeHasBall ? 'text-yellow-400' : 'text-gray-600'}`}>
+            <div className={`text-2xl font-bold ${homeHasBall ? 'text-yellow-400' : 'text-gray-600'} ${homeScoreFlash ? 'animate-pulse bg-yellow-500/30 rounded px-2' : ''}`}>
               {homeScore}
             </div>
           </div>
@@ -87,7 +91,7 @@ export function Scoreboard({
               {awayAbbr}
             </div>
             <div className="text-xs text-gray-500 mb-1">{awayName}</div>
-            <div className={`text-2xl font-bold ${!homeHasBall ? 'text-yellow-400' : 'text-gray-600'}`}>
+            <div className={`text-2xl font-bold ${!homeHasBall ? 'text-yellow-400' : 'text-gray-600'} ${awayScoreFlash ? 'animate-pulse bg-yellow-500/30 rounded px-2' : ''}`}>
               {awayScore}
             </div>
           </div>

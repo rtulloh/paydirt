@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Scoreboard from '../Scoreboard/Scoreboard';
 import FootballField from '../Field/FootballField';
 import DiceDisplay from '../Dice/DiceDisplay';
@@ -82,6 +82,9 @@ const PlayingPhase = () => {
   const [scoringTeamIsPlayer, setScoringTeamIsPlayer] = useState(false);
   const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(false);
   const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(null);
+  const [homeScoreFlash, setHomeScoreFlash] = useState(false);
+  const [awayScoreFlash, setAwayScoreFlash] = useState(false);
+  const prevScoresRef = useRef({ homeScore: undefined, awayScore: undefined });
   const [localExecuting, setLocalExecuting] = useState(false);
   const [showPuntOptions, setShowPuntOptions] = useState(false);
   const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
@@ -149,6 +152,34 @@ const PlayingPhase = () => {
     
     checkCpuDecision();
   }, [gameId, localExecuting, isKickoff, playerOffense, down, pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
+
+  // Flash scoreboard when home team scores
+  useEffect(() => {
+    if (homeScoreFlash) {
+      const timer = setTimeout(() => setHomeScoreFlash(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [homeScoreFlash]);
+
+  // Flash scoreboard when away team scores
+  useEffect(() => {
+    if (awayScoreFlash) {
+      const timer = setTimeout(() => setAwayScoreFlash(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [awayScoreFlash]);
+
+  // Track score changes to trigger flash effects
+  useEffect(() => {
+    const prevScores = prevScoresRef.current;
+    if (prevScores.homeScore !== undefined && homeScore > prevScores.homeScore) {
+      setHomeScoreFlash(true);
+    }
+    if (prevScores.awayScore !== undefined && awayScore > prevScores.awayScore) {
+      setAwayScoreFlash(true);
+    }
+    prevScoresRef.current = { homeScore, awayScore };
+  }, [homeScore, awayScore]);
 
   const handleKickoff = async () => {
     setLocalExecuting(true);
@@ -863,6 +894,8 @@ const PlayingPhase = () => {
         canCallTimeout={!localExecuting && !localShowPatChoice && !localShowPenaltyChoice}
         isOvertime={isOvertime || false}
         otPeriod={otPeriod || 0}
+        homeScoreFlash={homeScoreFlash}
+        awayScoreFlash={awayScoreFlash}
       />
 
       <div className="flex-shrink-0 px-4 py-4">

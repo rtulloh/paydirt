@@ -316,4 +316,14 @@ describe('FootballField', () => {
       expect(ball.style.transform).toBe('scaleX(-1)')
     })
   })
+
+  // ANIMATION TESTS
+  describe('Ball movement animation', () => {
+    it('has transition style for smooth ball movement', () => {
+      render(<FootballField ballPosition={35} quarter={1} />)
+      const ball = screen.getByTestId('ball-marker')
+      expect(ball.style.transition).toContain('left')
+      expect(ball.style.transition).toContain('0.6s')
+    })
+  })
 })
