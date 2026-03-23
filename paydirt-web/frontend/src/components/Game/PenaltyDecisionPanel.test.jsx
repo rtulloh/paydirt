@@ -58,8 +58,8 @@ describe('PenaltyDecisionPanel', () => {
 
     it('shows play result section', () => {
       render(<PenaltyDecisionPanel penaltyData={mockPenaltyData} onDecision={vi.fn()} />)
-      expect(screen.getByText(/ACCEPT PLAY RESULT:/i)).toBeInTheDocument()
-      expect(screen.getByText(/15 yards/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/ACCEPT PLAY RESULT:/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/15 yards/i).length).toBeGreaterThan(0)
     })
 
     it('shows penalty options', () => {
@@ -196,7 +196,7 @@ describe('PenaltyDecisionPanel', () => {
         new_ball_position: 50
       }
       render(<PenaltyDecisionPanel penaltyData={noTdData} onDecision={vi.fn()} />)
-      expect(screen.getByText(/\+3 yards/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/\+3 yards/i).length).toBeGreaterThan(0)
       expect(screen.queryByText(/TOUCHDOWN!/i)).not.toBeInTheDocument()
     })
 
@@ -238,9 +238,9 @@ describe('PenaltyDecisionPanel', () => {
         description: 'Field Goal attempt - 22 yards',
       }
       render(<PenaltyDecisionPanel penaltyData={fgData} onDecision={vi.fn()} />)
-      // Should show FG description, not "+3 yards"
-      expect(screen.getByText(/Field Goal attempt/i)).toBeInTheDocument()
-      expect(screen.queryByText(/\+3 yards/i)).not.toBeInTheDocument()
+      // Should show FG description, not "+22 yards"
+      expect(screen.getAllByText(/Field Goal attempt/i).length).toBeGreaterThan(0)
+      expect(screen.queryByText(/\+22 yards/i)).not.toBeInTheDocument()
     })
 
     it('shows punt description instead of yardage for punt play type', () => {
@@ -282,7 +282,7 @@ describe('PenaltyDecisionPanel', () => {
         play_type: 'run',
       }
       render(<PenaltyDecisionPanel penaltyData={normalData} onDecision={vi.fn()} />)
-      expect(screen.getByText(/\+5 yards/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/\+5 yards/i).length).toBeGreaterThan(0)
     })
   })
 

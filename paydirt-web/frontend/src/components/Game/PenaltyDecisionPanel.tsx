@@ -62,16 +62,39 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
     return `OPP ${100 - pos}`;
   };
 
-  const formatLOS = (pos: number): string => {
-    if (pos <= 50) return `OWN ${pos}`;
-    return `OPP ${100 - pos}`;
-  };
-
   const formatDown = (down: number): string => {
     if (down === 1) return '1st';
     if (down === 2) return '2nd';
     if (down === 3) return '3rd';
     return `${down}th`;
+  };
+
+  const getPenaltyResult = (opt: PenaltyOption): { down: number; yardsToGo: number; ballPos: number } => {
+    const penaltyYards = opt.yards || 0;
+    const startingPos = newBallPosition || 50;
+    const newPos = Math.max(0, Math.min(100, startingPos - penaltyYards));
+    const gained = penaltyYards;
+    
+    let down = 1;
+    let yardsToGo = 10;
+    
+    if (opt.auto_first_down) {
+      down = 1;
+      yardsToGo = 10;
+    } else if (gained >= (newYardsToGo || 10)) {
+      down = 1;
+      yardsToGo = 10;
+    } else {
+      down = (newDown || 1) + 1;
+      yardsToGo = (newYardsToGo || 10) - gained;
+    }
+    
+    return { down, yardsToGo: Math.max(1, yardsToGo), ballPos: newPos };
+  };
+
+  const formatPenaltyChoice = (opt: PenaltyOption): string => {
+    const result = getPenaltyResult(opt);
+    return `${formatDown(result.down)} & ${result.yardsToGo} at ${formatFieldPosition(result.ballPos)}`;
   };
 
   const getPlayResultSummary = (): string => {
@@ -168,14 +191,14 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                     className={`px-4 py-3 rounded-lg font-bold text-left ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 transition-all'}`}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">[{idx + 1}] {opt.description}</span>
+                      <span className="text-sm">[{idx + 2}] {opt.description}</span>
                       {opt.auto_first_down && (
                         <span className="text-yellow-300 text-sm ml-2">AUTO 1ST</span>
                       )}
                     </div>
                     {opt.yards !== 0 && (
                       <div className={`text-xs mt-1 ${cpuDeciding ? 'text-gray-500' : 'text-red-200'}`}>
-                        {opt.yards > 0 ? '+' : ''}{opt.yards} yards
+                        {opt.yards > 0 ? '+' : ''}{opt.yards} yards → {formatPenaltyChoice(opt)}
                       </div>
                     )}
                   </button>
@@ -202,7 +225,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                 disabled={cpuDeciding}
                 className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 transition-all'}`}
               >
-                [1] ACCEPT PLAY RESULT
+                [1] ACCEPT PLAY RESULT: {getPlayResultSummary()}
               </button>
             )}
           </div>
