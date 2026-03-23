@@ -1275,6 +1275,7 @@ class SaveReplayResponse(BaseModel):
     game_state: GameStateResponse
     play_history: List[Dict[str, Any]]
     created_at: str
+    season: str
 
 
 class LoadReplayRequest(BaseModel):
@@ -1296,6 +1297,7 @@ async def save_replay(game_id: str):
         game_state=game_state_to_response(game),
         play_history=game.get("play_history", []),
         created_at=datetime.now().isoformat(),
+        season=game.get("season", "1983"),
     )
 
 
@@ -1316,7 +1318,8 @@ async def load_replay(request: LoadReplayRequest):
         raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
     
     # Try to detect season from replay data, or find it by looking for team
-    season = replay_data.get("season")
+    # Check: replay_data.season (new format) -> game_state.season (legacy format) -> search by team
+    season = replay_data.get("season") or game_state.get("season")
     
     def find_season_for_team(team_id):
         """Find the first season that contains this team."""

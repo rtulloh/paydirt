@@ -566,6 +566,40 @@ def test_load_replay():
     assert load_data["game_id"] != game_id
 
 
+def test_load_replay_season_from_game_state():
+    """Test that season is detected from game_state when not in replay_data."""
+    # Create a game with a specific season
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    assert response.status_code == 200
+    data = response.json()
+    game_id = data["game_id"]
+    
+    # Save the replay
+    save_response = client.post(f"/api/game/save-replay/{game_id}")
+    save_data = save_response.json()
+    
+    # Load without specifying season at top level (simulating old replay format)
+    # But season is present in game_state (legacy format)
+    load_request = {
+        "replay_data": {
+            # Note: no "season" here at top level
+            "game_state": {
+                **save_data["game_state"],
+                "season": "2026"  # season is in game_state (legacy format)
+            },
+            "play_history": save_data["play_history"],
+            "difficulty": "medium",
+        }
+    }
+    
+    load_response = client.post("/api/game/load-replay", json=load_request)
+    assert load_response.status_code == 200, f"Failed to load replay: {load_response.json()}"
+
+
 def test_load_replay_invalid_data():
     """Test loading replay with invalid data."""
     response = client.post("/api/game/load-replay", json={
