@@ -22,24 +22,24 @@ describe('KickoffPlay', () => {
 
   it('renders the kickoff screen', async () => {
     render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={vi.fn()} />)
-    expect(screen.getByText('OPENING KICKOFF')).toBeDefined()
+    expect(screen.getByText('ONSIDE KICK')).toBeDefined()
     expect(screen.getByText(/kicks off to/)).toBeDefined()
   })
 
-  it('shows rolling dice animation initially', async () => {
+  it('shows kickoff choice buttons initially', async () => {
     render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={vi.fn()} />)
     
-    // Should show question marks initially while rolling
-    const diceElements = screen.getAllByText('?')
-    expect(diceElements.length).toBe(2)
-    
-    // Should show rolling message
-    expect(screen.getByText(/Rolling|Rolling...|Processing/)).toBeDefined()
+    // Should show KICKOFF and ONSIDE KICK buttons initially
+    expect(screen.getByRole('button', { name: 'KICKOFF' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'ONSIDE KICK' })).toBeDefined()
   })
 
   it('fetches kickoff result and displays it', async () => {
     const onComplete = vi.fn()
     
+    render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={onComplete} />)
+    
+    // Set up mock before clicking
     mockFetch({
       result: {
         description: 'Kickoff 65 yards, returned to the 20 yard line.',
@@ -56,9 +56,10 @@ describe('KickoffPlay', () => {
       dice_roll_defense: 20,
     })
     
-    render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={onComplete} />)
+    // Click the KICKOFF button
+    fireEvent.click(screen.getByRole('button', { name: 'KICKOFF' }))
     
-    // Wait for the result to appear (component has 2s delay + fetch)
+    // Wait for the result to appear (component has 1.5s delay + fetch)
     await waitFor(() => {
       expect(screen.getByText(/Kickoff 65 yards/)).toBeDefined()
     }, { timeout: 10000 })
@@ -97,6 +98,9 @@ describe('KickoffPlay', () => {
   it('calls onComplete when continue is clicked', async () => {
     const onComplete = vi.fn()
     
+    render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={onComplete} />)
+    
+    // Set up mock before clicking the button
     mockFetch({
       result: {
         description: 'Ball placed at the 25 yard line.',
@@ -113,7 +117,8 @@ describe('KickoffPlay', () => {
       dice_roll_defense: 25,
     })
     
-    render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={onComplete} />)
+    // Click the KICKOFF button (not ONSIDE KICK)
+    fireEvent.click(screen.getByRole('button', { name: 'KICKOFF' }))
     
     await waitFor(() => {
       expect(screen.getByText('CONTINUE')).toBeDefined()
@@ -151,6 +156,6 @@ describe('KickoffPlay', () => {
     render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={true} gameId="test123" onComplete={onComplete} />)
     
     // Component should render without crashing
-    expect(screen.getByText('OPENING KICKOFF')).toBeDefined()
+    expect(screen.getByText('ONSIDE KICK')).toBeDefined()
   })
 })

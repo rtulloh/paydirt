@@ -26,6 +26,7 @@ const initialGameState = {
   pendingCpuFourthDown: null,
   pendingExtraPoint: null,
   canGoForTwo: false,
+  pendingPat: false,
   pendingPenalty: null,
   difficulty: 'medium',
   playLogVersion: 0,
@@ -33,6 +34,8 @@ const initialGameState = {
   playLog: [],
   currentSeason: '2026',
   fieldPosition: '',
+  isOvertime: false,
+  otPeriod: 0,
 }
 
 export const useGameStore = create((set, get) => ({
@@ -43,6 +46,7 @@ export const useGameStore = create((set, get) => ({
   setGamePhase: (phase) => set({ gamePhase: phase }),
   setGameId: (id) => set({ gameId: id }),
   setIsKickoff: (value) => set({ isKickoff: value }),
+  setPendingPat: (value) => set({ pendingPat: value }),
   setCurrentSeason: (season) => set({ currentSeason: season }),
   setPossession: (possession) => set({ possession: possession }),
   setPlayerOffense: (offense) => set({ playerOffense: offense }),
@@ -75,6 +79,13 @@ export const useGameStore = create((set, get) => ({
     // is_kickoff comes from backend after a score
     const isKickoff = state.is_kickoff || false
     
+    // pending_pat comes from backend after a touchdown
+    const pendingPat = state.pending_pat || false
+    
+    // overtime state
+    const isOvertime = state.is_overtime || false
+    const otPeriod = state.ot_period || 0
+    
     // human_team_id comes from backend
     const human_team_id = state.human_team_id || state.humanTeamId
     
@@ -97,6 +108,9 @@ export const useGameStore = create((set, get) => ({
       humanTeamId: human_team_id,
       playerOffense: playerIsOnOffense,
       isKickoff: isKickoff,
+      pendingPat: pendingPat,
+      isOvertime: isOvertime,
+      otPeriod: otPeriod,
     })
   },
    
@@ -166,6 +180,7 @@ export const useGameStore = create((set, get) => ({
       humanTeamId: gameData.humanTeamId,
       cpuTeamId: gameData.cpuTeamId,
       playLog: gameData.playLog,
+      pendingPat: gameData.pendingPat || false,
       savedAt: new Date().toISOString(),
       currentSeason: gameData.currentSeason || '2026',
     };
@@ -206,6 +221,7 @@ export const useGameStore = create((set, get) => ({
             human_team_id: data.humanTeamId,
             cpu_team_id: data.cpuTeamId,
             human_is_home: data.homeTeam?.id === data.humanTeamId,
+            pending_pat: data.pendingPat || false,
           },
           play_history: data.playLog || [],
           season: data.currentSeason || '2026',
@@ -251,9 +267,10 @@ export const useGameStore = create((set, get) => ({
               cpuTeamId: backendData.game_state.cpu_team_id,
               humanIsHome: backendData.game_state.human_is_home,
               playerOffense: backendData.game_state.player_offense,
-              playLog: data.playLog || [],
+              playLog: replayData.play_history || [],
               isKickoff: backendData.game_state.is_kickoff,
-              currentSeason: data.currentSeason || '2026',
+              pendingPat: backendData.game_state.pending_pat || false,
+              currentSeason: replayData.season || '2026',
             });
           })
           .catch(err => {
@@ -309,6 +326,7 @@ export const useGameStore = create((set, get) => ({
         human_team_id: state.humanTeamId,
         cpu_team_id: state.cpuTeamId,
         human_is_home: state.humanIsHome,
+        pending_pat: state.pendingPat || false,
         season: state.currentSeason || '2026',
       },
       play_history: state.playLog,
@@ -373,6 +391,7 @@ export const useGameStore = create((set, get) => ({
               playLog: replayData.play_history || [],
               playLogVersion: (get().playLogVersion || 0) + 1, // Increment to trigger scroll
               isKickoff: data.game_state.is_kickoff || false,
+              pendingPat: data.game_state.pending_pat || false,
             });
             return data;
           });

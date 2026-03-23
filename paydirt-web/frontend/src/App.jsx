@@ -147,6 +147,7 @@ const handleSaveGame = () => {
     humanTeamId: state.humanTeamId,
     cpuTeamId: state.cpuTeamId,
     playLog: state.playLog,
+    pendingPat: state.pendingPat,
     currentSeason: state.currentSeason,
   });
   

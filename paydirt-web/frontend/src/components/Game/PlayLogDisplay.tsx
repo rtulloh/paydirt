@@ -68,18 +68,26 @@ interface PlayLogDisplayProps {
 const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(plays?.length || 0);
+  const initialScrollDone = useRef(false);
   
+  // Scroll to bottom when:
+  // 1. Component first mounts with existing plays (loading from save)
+  // 2. New plays are added
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
     
     const currentLength = plays?.length || 0;
     
-    // Scroll to bottom when new plays are added
-    if (currentLength > prevLengthRef.current) {
+    // Scroll on initial load OR when plays are added
+    if ((currentLength > 0 && !initialScrollDone.current) || 
+        (currentLength > prevLengthRef.current)) {
       requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
       });
+      initialScrollDone.current = true;
     }
     
     prevLengthRef.current = currentLength;

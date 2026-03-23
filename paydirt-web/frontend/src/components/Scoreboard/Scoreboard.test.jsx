@@ -115,9 +115,13 @@ describe('Scoreboard', () => {
 
   // TIMEOUT TESTS
   describe('Timeouts display', () => {
-    it('shows timeouts for both teams', () => {
-      const { container } = render(<Scoreboard homeTimeouts={3} awayTimeouts={2} />)
+    it('shows timeouts for human team (home)', () => {
+      const { container } = render(<Scoreboard homeTimeouts={3} awayTimeouts={2} humanIsHome={true} />)
       expect(container.textContent).toContain('3')
+    })
+    
+    it('shows timeouts for human team (away)', () => {
+      const { container } = render(<Scoreboard homeTimeouts={3} awayTimeouts={2} humanIsHome={false} />)
       expect(container.textContent).toContain('2')
     })
   })

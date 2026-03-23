@@ -1,12 +1,13 @@
 {
-  "team_name": "Harbor Bay Ironclads",
-  "year": 2024,
-  "players": {
-    "QB": "Ryan Mitchell",
-    "RB": "Darius Brown",
-    "WR1": "Andre Jackson",
-    "WR2": "Kyle Peterson",
-    "TE": "Michael Torres",
-    "K": "Sam Rodriguez"
-  }
+  "team_name": "Chicago Bears",
+  "qb": ["Jim McMahon"],
+  "rb": ["Walter Payton", "Matt Suhey"],
+  "wr": ["Willie Gault", "Dennis McKinnon", "Alvin Garrett", "Lemuel Stinson"],
+  "te": ["Otis Wilson", "Keith Van Horne"],
+  "ol": ["Jimbo Covert", "Mark Bortz", "Jay Hilgenberg", "Tom Thayer", "Keith Van Horne"],
+  "dl": ["Richard Dent", "Dan Hampton", "William Perry", "Steve McMichael"],
+  "lb": ["Mike Singletary", "Wilber Marshall", "Otis Wilson"],
+  "db": ["Gary Fencik", "Dave Duerson", "Vestee Jackson", "Mike Richardson"],
+  "k": ["Kevin Butler"],
+  "p": ["Rohn Stark"]
 }

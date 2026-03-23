@@ -25,7 +25,16 @@ export function PlayLog({ entries }) {
   const [isOpen, setIsOpen] = useState(false)
   const scrollRef = useRef(null)
   const prevEntriesLength = useRef(entries.length)
-  
+  const hasAutoOpened = useRef(false)
+
+  // Auto-open log when entries are loaded (e.g. from a saved game)
+  useEffect(() => {
+    if (entries.length > 0 && !hasAutoOpened.current) {
+      setIsOpen(true)
+      hasAutoOpened.current = true
+    }
+  }, [entries.length])
+
   // Auto-scroll to bottom when new entries are added
   useEffect(() => {
     // Only scroll if we're open AND a new entry was added

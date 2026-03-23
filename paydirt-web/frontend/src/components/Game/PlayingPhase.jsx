@@ -70,6 +70,8 @@ const PlayingPhase = () => {
     setIsKickoff,
     pendingPat,
     setPendingPat,
+    isOvertime,
+    otPeriod,
   } = store;
 
   const [localLastResult, setLocalLastResult] = useState(null);
@@ -83,6 +85,21 @@ const PlayingPhase = () => {
   const [localExecuting, setLocalExecuting] = useState(false);
   const [showPuntOptions, setShowPuntOptions] = useState(false);
   const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
+
+  // Sync pendingPat from store to local state to show PAT panel
+  // Only show if player scored (CPU auto-handles their own PAT)
+  useEffect(() => {
+    if (pendingPat && !localShowPatChoice) {
+      // Check if scoring team is the player (not CPU)
+      // When player is on offense and pendingPat, they scored
+      // When player is on defense and pendingPat, CPU scored (auto-handled)
+      const playerScored = playerOffense; // If player has ball, they scored
+      if (playerScored) {
+        setLocalShowPatChoice(true);
+        setScoringTeamIsPlayer(true); // Player scored, so they should see PAT options
+      }
+    }
+  }, [pendingPat, localShowPatChoice, playerOffense]);
 
   // Auto-clear result banner for non-special plays after 2 seconds
   useEffect(() => {
@@ -989,6 +1006,7 @@ const PlayingPhase = () => {
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Show offense plays when player is on offense, defense plays when player is on defense */}
           {playerOffense ? (
             <OffensePlays
               selectedPlay={humanPlaySelected}
@@ -1042,13 +1060,15 @@ const PlayingPhase = () => {
         <div className="flex gap-2">
           <button
             onClick={handleSaveReplay}
-            className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm"
+            disabled={isKickoff || pendingPat || pendingPenaltyData}
+            className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SAVE REPLAY
           </button>
           <button
             onClick={handleSaveGame}
-            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600"
+            disabled={isKickoff || pendingPat || pendingPenaltyData}
+            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SAVE GAME
           </button>

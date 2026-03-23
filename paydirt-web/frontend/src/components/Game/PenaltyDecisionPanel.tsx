@@ -104,7 +104,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
   const cpuDeciding = isDefenseChoosing && cpuIsOnDefense;
   
   return (
-    <div className="bg-yellow-700 rounded-lg px-4 py-4 text-center border-2 border-yellow-500">
+<div className="bg-yellow-700 rounded-lg px-4 py-4 text-center border-2 border-yellow-500">
       <div className="text-xl font-bold text-white mb-3">PENALTY ON THE PLAY!</div>
       
       {penalty_choice.offsetting ? (
@@ -122,44 +122,42 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
         </div>
       ) : (
         <>
-          <div className="text-yellow-200 text-sm mb-4">
-            {penalty_choice.offended_team === 'offense' 
-              ? 'DEFENSE committed penalty - Offense may accept or decline' 
-              : cpuDeciding
-              ? 'OFFENSE committed penalty - CPU is deciding...'
-              : penalty_choice.offended_team === 'defense'
+          {/* Choice header - shows who is deciding */}
+          <div className="text-yellow-200 text-sm mb-3">
+            {cpuDeciding 
+              ? 'CPU is deciding...'
+              : isDefenseChoosing 
               ? 'OFFENSE committed penalty - Your choice (Defense)'
-              : 'Choose one:'}
+              : 'DEFENSE committed penalty - Your choice (Offense)'}
           </div>
           
           <div className="bg-gray-800 rounded-lg p-3 mb-4">
-            <div className="text-white text-sm mb-1">
-              {isDefenseChoosing ? 'DECLINE PENALTY (keep play result):' : 'ACCEPT PLAY RESULT:'}
+            {/* Play Result section */}
+            <div className="text-white text-sm mb-2 font-bold">
+              {isDefenseChoosing 
+                ? 'Play Result (if DECLINED, down counts):' 
+                : 'ACCEPT PLAY RESULT:'}
             </div>
-            <div className="text-white font-bold text-lg">
-              {getPlayResultSummary()}
+            <div className="text-white font-bold text-lg mb-1">
+              {penaltyData.description || getPlayResultSummary()}
             </div>
             <div className="text-gray-300 text-sm">
-              {formatDown(newDown)} & {newYardsToGo} at {formatLOS(newBallPosition || 0)}
+              {formatDown(newDown)} & {newYardsToGo}
             </div>
             {turnover && (
-              <div className="text-red-400 font-bold mt-1">TURNOVER ON DOWNS!</div>
+              <div className="text-red-400 font-bold mt-1">TURNOVER!</div>
             )}
             {isTouchdown && (
               <div className="text-green-400 font-bold mt-1">TOUCHDOWN!</div>
             )}
-            <div className="text-gray-400 text-xs mt-2">
-              {isDefenseChoosing 
-                ? 'Offense keeps the gain, down counts' 
-                : 'Down counts if accepted'}
-            </div>
           </div>
           
+          {/* Penalty Options */}
           {penalty_choice.penalty_options && 
            penalty_choice.penalty_options.length > 0 && (
             <div className="mb-4">
-              <div className="text-white text-sm mb-2">
-                {isDefenseChoosing ? 'ACCEPT PENALTY (replay down):' : 'ACCEPT PENALTY:'}
+              <div className="text-yellow-200 text-sm mb-2 font-bold">
+                Penalty Options ({penalty_choice.offended_team === 'offense' ? 'DEFENSE' : 'OFFENSE'} is offended):
               </div>
               <div className="flex flex-col gap-2">
                 {penalty_choice.penalty_options.map((opt, idx) => (
@@ -170,37 +168,43 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                     className={`px-4 py-3 rounded-lg font-bold text-left ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 transition-all'}`}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">{opt.description}</span>
-                      <span className="text-sm">
-                        {opt.auto_first_down && (
-                          <span className="text-yellow-300 ml-2">AUTO 1ST</span>
-                        )}
-                      </span>
+                      <span className="text-sm">[{idx + 1}] {opt.description}</span>
+                      {opt.auto_first_down && (
+                        <span className="text-yellow-300 text-sm ml-2">AUTO 1ST</span>
+                      )}
                     </div>
                     {opt.yards !== 0 && (
                       <div className={`text-xs mt-1 ${cpuDeciding ? 'text-gray-500' : 'text-red-200'}`}>
                         {opt.yards > 0 ? '+' : ''}{opt.yards} yards
                       </div>
                     )}
-                    <div className="text-gray-300 text-xs">
-                      Down replayed if accepted
-                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
           
-          <div className="mt-4 flex flex-col gap-2">
-            <button
-              onClick={() => onDecision?.(false, 0)}
-              disabled={cpuDeciding}
-              className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 transition-all'}`}
-            >
-              {isDefenseChoosing 
-                ? `DECLINE PENALTY (${formatDown(newDown)} & ${newYardsToGo} at ${formatLOS(newBallPosition || 0)})` 
-                : `ACCEPT PLAY (${formatDown(newDown)} & ${newYardsToGo} at ${formatLOS(newBallPosition || 0)})`}
-            </button>
+          <div className="flex flex-col gap-2">
+            {/* When DEFENSE is choosing - show DECLINE option */}
+            {isDefenseChoosing && (
+              <button
+                onClick={() => onDecision?.(false, 0)}
+                disabled={cpuDeciding}
+                className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 transition-all'}`}
+              >
+                [1] DECLINE PENALTY - Keep play result
+              </button>
+            )}
+            {/* When OFFENSE is choosing - show ACCEPT option */}
+            {!isDefenseChoosing && (
+              <button
+                onClick={() => onDecision?.(false, 0)}
+                disabled={cpuDeciding}
+                className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 transition-all'}`}
+              >
+                [1] ACCEPT PLAY RESULT
+              </button>
+            )}
           </div>
           
           {/* Show reroll log if available */}

@@ -4,12 +4,12 @@ import pytest
 import sys
 from pathlib import Path
 
+from paydirt.play_resolver import PlayResult, ResultType
+
 # Add parent directories to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(backend_dir.parent.parent))
-
-from paydirt.play_resolver import PlayResult, ResultType
 
 
 def _calculate_post_play_state(
@@ -26,7 +26,6 @@ def _calculate_post_play_state(
     """
     yards_gained = play_result.yards if hasattr(play_result, 'yards') else 0
     turnover = play_result.turnover if hasattr(play_result, 'turnover') else False
-    touchdown = play_result.touchdown if hasattr(play_result, 'touchdown') else False
     
     # Calculate new ball position
     new_ball_position = ball_position + yards_gained
