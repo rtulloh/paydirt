@@ -10,7 +10,7 @@ from enum import Enum
 from typing import List, Optional
 
 from .chart_loader import TeamChart, OffenseChart, DefenseChart
-from .priority_chart import apply_priority_chart
+from .priority_chart import apply_priority_chart, categorize_result
 from .play_events import (
     PlayTransaction, create_chart_lookup_event, create_fumble_event,
     create_recovery_event
@@ -96,6 +96,8 @@ class PlayResult:
     qb_scramble_yards: int = 0
     # Out of bounds marker (* or †) - affects clock in final minutes
     out_of_bounds: bool = False
+    # Original offense yards before penalty (used when defense commits penalty)
+    offense_yards: int = 0
 
 
 @dataclass
@@ -1315,6 +1317,13 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
         defense_modifier=def_result_str,
         out_of_bounds=combined.out_of_bounds,
     )
+    
+    # Store original offense yards before penalty override
+    # When defense commits a penalty, priority chart returns penalty yards as final_yards
+    # but we need the original offense result for "accept play" (decline penalty) option
+    off_category, off_yards = categorize_result(off_result_str)
+    if off_yards is not None and off_yards != 0:
+        play_result.offense_yards = off_yards
 
     # Handle special priority outcomes (QT, Breakaway, etc.)
     if combined.use_qt_column:

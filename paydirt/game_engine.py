@@ -1615,9 +1615,18 @@ class PaydirtGameEngine:
 
         if accept_play:
             # Accept the play result - down counts
-            # Apply the play result to game state
+            # Use original offense result if defense committed penalty
+            play_result = penalty_choice.play_result
+            if play_result.offense_yards != 0 and play_result.offense_yards != play_result.yards:
+                # Defense committed penalty - use original offense result
+                # Parse the raw_result to get the original PlayResult
+                from .play_resolver import parse_result_string
+                play_result = parse_result_string(play_result.raw_result)
+                # Preserve dice roll info
+                play_result.dice_roll = penalty_choice.play_result.dice_roll
+            
             return self._apply_play_result(
-                outcome.play_type, outcome.defense_type, penalty_choice.play_result,
+                outcome.play_type, outcome.defense_type, play_result,
                 field_pos_before, down_before, self.state.ball_position, self.state.yards_to_go,
                 out_of_bounds_designation=False, in_bounds_designation=False
             )
