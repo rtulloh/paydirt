@@ -215,7 +215,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                 disabled={cpuDeciding}
                 className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 transition-all'}`}
               >
-                [1] DECLINE PENALTY - Keep play result
+                [1] REJECT PENALTY - Keep {getPlayResultSummary()}
               </button>
             )}
             {/* When OFFENSE is choosing - show ACCEPT option */}
@@ -225,7 +225,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                 disabled={cpuDeciding}
                 className={`px-6 py-3 rounded-lg font-bold ${cpuDeciding ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 transition-all'}`}
               >
-                [1] ACCEPT PLAY RESULT: {getPlayResultSummary()}
+                [1] TAKE YARDAGE - Keep {getPlayResultSummary()}
               </button>
             )}
           </div>

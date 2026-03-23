@@ -1207,14 +1207,15 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
     else:
         new_outcome = engine.apply_penalty_decision(outcome, accept_play=accept_play, penalty_index=penalty_index)
     
-    # Log penalty decision
+    # Debug logging for penalty decision
     decision_str = "ACCEPT PENALTY" if not accept_play else "ACCEPT PLAY"
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
     field_pos = engine.state.field_position_str()
     off_team = home_abbrev if engine.state.is_home_possession else away_abbrev
     def_team = away_abbrev if engine.state.is_home_possession else home_abbrev
-    print(f"[{off_team} vs {def_team}] PENALTY DECISION: {decision_str} @ {field_pos} | {new_outcome.description}")
+    print(f"[{off_team} vs {def_team}] PENALTY DECISION: {decision_str} @ {field_pos} | yards_gained={new_outcome.yards_gained} | {new_outcome.description}")
+    print(f"  DEBUG: accept_play={accept_play}, penalty_index={penalty_index}, play_result_yards={outcome.penalty_choice.play_result.yards if outcome.penalty_choice and outcome.penalty_choice.play_result else 'N/A'}")
     
     scoring = new_outcome.touchdown or new_outcome.field_goal_made or new_outcome.safety
     
