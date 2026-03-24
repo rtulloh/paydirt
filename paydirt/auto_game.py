@@ -208,10 +208,6 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         print(f"\n  Q{state.quarter} {minutes}:{seconds:02d} | {away_name} {state.away_score} - {home_name} {state.home_score}")
         print(f"  {off_team} ball at {state.field_position_str()} | {state.down}&{state.yards_to_go}")
 
-        # Save time before play for spike modifier
-        time_before_play = state.time_remaining
-        quarter_before_play = state.quarter
-
         # CPU selects plays with clock management
         play_type, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, use_spike = off_ai.select_offense_with_clock_management(game)
         def_type = def_ai.select_defense(game)
@@ -240,21 +236,17 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
 
         print(f"  {off_team}: {play_name} vs {def_name}")
 
-        # Run the play with OOB designation and punt options if applicable
-        outcome = game.run_play(play_type, def_type,
-                                out_of_bounds_designation=use_oob,
-                                punt_short_drop=punt_short_drop,
-                                punt_coffin_corner_yards=punt_coffin_yards,
-                                no_huddle=use_no_huddle)
+        # Run the play with OOB designation, punt options, and spike modifier
+        outcome = game.run_play_with_penalty_procedure(play_type, def_type,
+                                                        out_of_bounds_designation=use_oob,
+                                                        punt_short_drop=punt_short_drop,
+                                                        punt_coffin_corner_yards=punt_coffin_yards,
+                                                        no_huddle=use_no_huddle,
+                                                        call_spike=use_spike)
 
-        # Apply spike modifier if called
-        if use_spike and not outcome.touchdown and not outcome.turnover:
-            from .interactive_game import should_apply_spike_after_play, _apply_spike
-            play_seconds = (time_before_play - state.time_remaining) * 60  # Convert minutes to seconds
-            should_apply, skip_msg = should_apply_spike_after_play(outcome, play_seconds)
-            if should_apply:
-                _apply_spike(game, time_before_play, quarter_before_play)
-                print("  [SPIKE: Clock stopped]")
+        # Display spike result if applied
+        if outcome.spike_used:
+            print("  [SPIKE: Clock stopped]")
 
         # Display result
         if outcome.touchdown:

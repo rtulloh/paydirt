@@ -270,6 +270,40 @@ Offensive plays can have modifiers appended to affect clock behavior. Modifiers 
 | Timeout | `7T` | Stops clock after play (uses timeout) | Uses timeout |
 | Spike | `7S` | Spikes ball after play to stop clock | Uses a down |
 
+### Simplified API
+
+All modifiers are now handled by the core game engine through `run_play_with_penalty_procedure()`. The API accepts `call_spike` and `call_timeout` parameters:
+
+```python
+def run_play_with_penalty_procedure(
+    self,
+    play_type: PlayType,
+    defense_type: DefenseType,
+    out_of_bounds_designation: bool = False,  # + modifier
+    in_bounds_designation: bool = False,      # - modifier
+    no_huddle: bool = False,
+    call_spike: bool = False,                 # S modifier
+    call_timeout: bool = False                # T modifier
+) -> PlayOutcome:
+```
+
+The engine internally:
+1. Executes the play
+2. Checks if modifier should apply (based on outcome)
+3. Adjusts clock accordingly
+4. Sets `outcome.spike_used` or `outcome.timeout_used` flags
+
+**Example (web backend):**
+```python
+result = engine.run_play_with_penalty_procedure(
+    offense_play, defense_play,
+    out_of_bounds_designation=request.out_of_bounds,
+    call_spike=request.call_spike,
+    call_timeout=request.call_timeout
+)
+# Result has spike_used/timeout_used flags set
+```
+
 ### Spike Modifier Implementation
 
 The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop the clock, then kick a field goal.
@@ -282,8 +316,8 @@ The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop 
 
 **Code locations:**
 - Modifier parsing: `interactive_game.py:_get_human_offense_play_compact()` lines ~475-485
-- Spike application: `interactive_game.py:_apply_spike()` function
-- Skip conditions: `interactive_game.py:should_apply_spike_after_play()`
+- Spike application: `game_engine.py:_apply_spike()` method
+- Skip conditions: `game_engine.py:_should_apply_spike_after_play()` method
 
 **Example scenario (20 seconds left, need FG):**
 1. Call `7S` (Medium Pass + Spike)
@@ -295,7 +329,7 @@ The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop 
 
 Multiple modifiers can be combined:
 - `7+S` = Medium Pass + Out of Bounds + Spike
-- `7ST` = Medium Pass + Spike + Timeout (both applied if beneficial)
+- `7ST` = Medium Pass + Spike + Timeout (timeout takes precedence)
 
 ## Importing Teams
 

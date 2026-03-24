@@ -2031,161 +2031,6 @@ def display_play_result(game: PaydirtGameEngine, outcome, play_type: PlayType,
         print("  " + "=" * 50)
 
 
-def _apply_timeout(game: PaydirtGameEngine, time_before_play: float, quarter_before_play: int,
-                   team_name: str = None):
-    """
-    Apply timeout clock adjustment after a play.
-    
-    With a timeout, the play only uses 10 seconds (0.167 minutes) instead of
-    the normal play time. If the quarter advanced during the play, revert it
-    since the timeout preserves time.
-    
-    Args:
-        game: The game engine
-        time_before_play: Time remaining before the play started (used for quarter-end logic)
-        quarter_before_play: Quarter number before the play started
-        team_name: Optional team name for display (None = human timeout)
-    """
-    # Timeout means exactly 10 seconds elapse, not the random play time
-    # Reset to time_before_play and use exactly 10 seconds
-    timeout_seconds = 0.167  # 10 seconds
-    
-    time_after_timeout = time_before_play - timeout_seconds
-    # Clamp to 0 if less than 1 second remains
-    if time_after_timeout < 0.0167:
-        time_after_timeout = 0
-    game.state.time_remaining = time_after_timeout
-    
-    # If quarter advanced during the play but timeout preserves time, revert quarter
-    if game.state.quarter > quarter_before_play and time_after_timeout > 0:
-        game.state.quarter = quarter_before_play
-    
-    # Ensure quarter doesn't end prematurely if there was time for the play
-    if time_before_play > 0 and game.state.quarter <= 4:
-        game.state.game_over = False
-
-    # Format time for display
-    mins = int(game.state.time_remaining)
-    secs = int((game.state.time_remaining % 1) * 60)
-
-    if team_name:
-        print(f"\n  *** {team_name} TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
-    else:
-        print(f"\n  *** TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
-
-
-def _apply_spike(game: PaydirtGameEngine, time_before_play: float, quarter_before_play: int):
-    """
-    Apply spike clock adjustment after a play.
-    
-    Per Paydirt rules, spike + previous play = 20 seconds total.
-    If the play used more than 17 seconds, rewind the clock so the
-    play effectively used 17 seconds, then add 3 seconds for the spike.
-    Total: 20 seconds maximum.
-    
-    This allows the two-minute drill: run a play, spike to stop the clock,
-    then kick a field goal - all within 20 seconds.
-    
-    Args:
-        game: The game engine
-        time_before_play: Time remaining before the play started
-        quarter_before_play: Quarter number before the play started
-    """
-    # Spike + play should total 20 seconds max
-    # Play gets 17 seconds, spike gets 3 seconds
-    max_spike_combo_seconds = 0.333  # 20 seconds (17 for play + 3 for spike)
-    spike_seconds = 0.05  # ~3 seconds for the spike itself
-    
-    # Calculate how much time the play actually used
-    play_used_seconds = time_before_play - game.state.time_remaining
-    
-    # If the play used more than 17 seconds, cap it
-    play_max_seconds = 0.283  # 17 seconds
-    
-    if play_used_seconds > play_max_seconds:
-        # Rewind: set time to time_before_play - 17 seconds
-        time_after_spike = time_before_play - max_spike_combo_seconds
-    else:
-        # Play used 17 seconds or less, just add spike time
-        time_after_spike = game.state.time_remaining - spike_seconds
-    
-    # Clamp to 0 if less than 1 second remains
-    if time_after_spike < 0.0167:
-        time_after_spike = 0
-    
-    game.state.time_remaining = time_after_spike
-
-    # If quarter advanced during the play but spike preserves time, revert quarter
-    if game.state.quarter > quarter_before_play and time_after_spike > 0:
-        game.state.quarter = quarter_before_play
-
-    # Ensure quarter doesn't end prematurely if there was time for the play
-    if time_before_play > 0 and game.state.quarter <= 4:
-        game.state.game_over = False
-
-    # Format time for display
-    mins = int(game.state.time_remaining)
-    secs = int((game.state.time_remaining % 1) * 60)
-
-    print(f"\n  *** SPIKE - Clock stops at {mins}:{secs:02d} ***")
-
-
-def should_apply_timeout_after_play(outcome, play_seconds: float) -> tuple[bool, str]:
-    """
-    Check if timeout modifier should be applied after seeing play result.
-    
-    Per Paydirt rules, a timeout is wasteful if:
-    - Play was incomplete (clock already stopped)
-    - Play went out of bounds (clock already at 10 sec)
-    - Play_seconds <= 10 (no time would be saved)
-    
-    Args:
-        outcome: PlayOutcome from the executed play
-        play_seconds: Actual seconds used by the play
-        
-    Returns:
-        Tuple of (should_apply, message_if_skipped)
-    """
-    from .play_resolver import ResultType
-    
-    if outcome.result.result_type == ResultType.INCOMPLETE:
-        return False, "[Timeout SKIPPED - play was incomplete, clock already stopped]"
-    
-    if outcome.result.out_of_bounds:
-        return False, "[Timeout SKIPPED - play went out of bounds, clock already at 10 sec]"
-    
-    if play_seconds <= 10:
-        return False, "[Timeout SKIPPED - no time would be saved]"
-    
-    return True, ""
-
-
-def should_apply_spike_after_play(outcome, play_seconds: float) -> tuple[bool, str]:
-    """
-    Check if spike modifier should be applied after seeing play result.
-    
-    Per Paydirt rules, a spike is wasteful if:
-    - Play was incomplete (clock already stopped)
-    - Play_seconds <= 3 (no meaningful time would be saved)
-    
-    Args:
-        outcome: PlayOutcome from the executed play
-        play_seconds: Actual seconds used by the play
-        
-    Returns:
-        Tuple of (should_apply, message_if_skipped)
-    """
-    from .play_resolver import ResultType
-    
-    if outcome.result.result_type == ResultType.INCOMPLETE:
-        return False, "[Spike SKIPPED - clock already stopped]"
-    
-    if play_seconds <= 3:
-        return False, "[Spike SKIPPED - no time would be saved]"
-    
-    return True, ""
-
-
 def handle_penalty_decision(game: PaydirtGameEngine, outcome, is_human_offense: bool,
                             human_is_home: bool):
     """
@@ -3125,7 +2970,6 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
         time_before_play = game.state.time_remaining
-        quarter_before_play = game.state.quarter
         offense_was_home = game.state.is_home_possession
         two_min_warning_before = game.state.two_minute_warning_called
 
@@ -3139,18 +2983,53 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             punt_short_drop = cpu_punt_short_drop
             punt_coffin_corner_yards = cpu_punt_coffin_yards
 
+        # Determine if CPU should call timeout (when CPU is on offense)
+        cpu_call_timeout = False
+        if not is_human_offense and cpu_ai:
+            from .computer_ai import computer_should_call_timeout_on_offense
+            cpu_call_timeout = computer_should_call_timeout_on_offense(game)
+
         outcome = game.run_play_with_penalty_procedure(play_type, def_type,
                                                         out_of_bounds_designation=out_of_bounds,
                                                         in_bounds_designation=in_bounds,
                                                         punt_short_drop=punt_short_drop,
                                                         punt_coffin_corner_yards=punt_coffin_corner_yards,
-                                                        no_huddle=no_huddle_mode)
+                                                        no_huddle=no_huddle_mode,
+                                                        call_spike=call_spike,
+                                                        call_timeout=call_timeout or cpu_call_timeout)
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
-        
+
+        # Display modifier results
+        if outcome.timeout_used:
+            mins = int(game.state.time_remaining)
+            secs = int((game.state.time_remaining % 1) * 60)
+            team_name = "CPU" if cpu_call_timeout else None
+            if team_name:
+                print(f"\n  *** {team_name} TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
+            else:
+                print(f"\n  *** TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
+        elif (call_timeout or cpu_call_timeout) and not outcome.touchdown:
+            # Timeout was called but skipped (incomplete, OOB, or short play)
+            play_seconds = (time_before_play - game.state.time_remaining) * 60
+            _, skip_msg = game._should_apply_timeout_after_play(outcome, play_seconds)
+            if skip_msg:
+                print(f"  {skip_msg}")
+
+        if outcome.spike_used:
+            mins = int(game.state.time_remaining)
+            secs = int((game.state.time_remaining % 1) * 60)
+            print(f"\n  *** SPIKE - Clock stops at {mins}:{secs:02d} ***")
+        elif call_spike and not outcome.touchdown:
+            # Spike was called but skipped (incomplete or short play)
+            play_seconds = (time_before_play - game.state.time_remaining) * 60
+            _, skip_msg = game._should_apply_spike_after_play(outcome, play_seconds)
+            if skip_msg:
+                print(f"  {skip_msg}")
+
         # Record opponent play for tendency tracking (if AI is using analysis)
         if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
             if is_human_offense:
@@ -3173,24 +3052,6 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
             print("  *** TWO-MINUTE WARNING ***")
             print(f"  Official timeout - 2:00 remaining in the {quarter_name}")
             print("=" * 70)
-
-        if call_timeout and not outcome.touchdown:
-            play_seconds = time_before_play - game.state.time_remaining
-            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
-            if should_apply:
-                if game.state.use_timeout(human_is_home):
-                    _apply_timeout(game, time_before_play, quarter_before_play)
-            else:
-                print(f"  {skip_msg}")
-
-        # Process spike if called (reduces play time to max 20 sec total with spike)
-        # Skip if touchdown scored (clock stops anyway)
-        # Skip if turnover occurred - possession changed, spike doesn't help
-        if call_spike and not outcome.touchdown and not outcome.turnover:
-            play_seconds = time_before_play - game.state.time_remaining
-            should_apply, skip_msg = should_apply_spike_after_play(outcome, play_seconds)
-            if should_apply:
-                _apply_spike(game, time_before_play, quarter_before_play)
 
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:
