@@ -78,6 +78,15 @@ class TestFullGameSimulation:
                 assert response.status_code == 200
                 continue
 
+            # Check for kickoff position - after a score
+            if state.get("is_kickoff"):
+                response = client.post("/api/game/kickoff", json={
+                    "game_id": game_id,
+                    "kickoff_spot": 35,
+                })
+                assert response.status_code == 200
+                continue
+
             # Check for pending penalty decision
             if state.get("pending_penalty_decision"):
                 penalties += 1

@@ -1492,13 +1492,13 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
             forced_10_sec = False
 
-        # No huddle reduces play time from ~40 sec to ~20 sec
+        # No huddle reduces play time from ~35 sec to ~20 sec
         if forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
-            play_seconds = random.uniform(5, 20)
+            play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(5, 40)
+            play_seconds = random.uniform(25, 45)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 
@@ -1754,7 +1754,7 @@ class PaydirtGameEngine:
             )
 
             self.play_log.append(final_outcome)
-            self._use_time(random.uniform(5, 40))
+            self._use_time(random.uniform(25, 45))
 
             return final_outcome
 
@@ -1942,13 +1942,13 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
             forced_10_sec = False
 
-        # No huddle reduces play time from ~40 sec to ~20 sec
+        # No huddle reduces play time from ~35 sec to ~20 sec
         if forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
-            play_seconds = random.uniform(5, 20)
+            play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(5, 40)
+            play_seconds = random.uniform(25, 45)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 

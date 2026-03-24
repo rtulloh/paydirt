@@ -265,11 +265,14 @@ def _calculate_post_play_state(
         }
 
 
-def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> GameStateResponse:
+def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
     pending_pat = game.get("pending_pat", False)
+    # Use stored is_kickoff if not explicitly provided
+    if is_kickoff is None:
+        is_kickoff = game.get("is_kickoff", False)
     
     # Get can_go_for_two from season rules if PAT is pending
     can_go_for_two = False
@@ -764,6 +767,7 @@ async def execute_play(request: PlayRequest):
             engine.state.ball_position = 35
         engine.state.down = 1
         engine.state.yards_to_go = 10
+        game["is_kickoff"] = True  # Mark that kickoff is needed
     
     # Determine if human needs to make penalty decision
     # offended_team indicates who is "offended" by the penalty (who benefited)
@@ -847,6 +851,7 @@ async def execute_play(request: PlayRequest):
             engine.state.ball_position = 35
             engine.state.down = 1
             engine.state.yards_to_go = 10
+            game["is_kickoff"] = True  # Mark that kickoff is needed
         
         # CPU decided, so no pending decision for human
         pending_penalty = False
@@ -1049,6 +1054,7 @@ async def attempt_extra_point(request: PlayRequest):
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     # The engine's kickoff() method handles the receiver getting the ball.
     game["pending_pat"] = False
+    game["is_kickoff"] = True  # Mark that kickoff is needed
     engine.state.ball_position = 35
     engine.state.down = 1
     engine.state.yards_to_go = 10
@@ -1075,6 +1081,9 @@ async def perform_kickoff(request: KickoffRequest):
     
     game = games[request.game_id]
     engine = game["engine"]
+    
+    # Clear the kickoff flag - we're performing the kickoff now
+    game["is_kickoff"] = False
     
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
