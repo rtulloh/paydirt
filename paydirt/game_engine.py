@@ -3256,8 +3256,8 @@ class PaydirtGameEngine:
                 )
                 
                 self.play_log.append(new_outcome)
-                self._use_time(random.uniform(5, 12))
-                
+                self._use_time(random.uniform(25, 45))
+
                 return new_outcome
             else:
                 # Option 1: Replay punt from LOS - penalty yards (kicking team pushed back)
@@ -3266,16 +3266,16 @@ class PaydirtGameEngine:
                 new_pos = original_pos - penalty_yards
                 if new_pos < 1:
                     new_pos = 1
-                
+
                 self.state.ball_position = new_pos
                 self.state.down = 4  # Still 4th down, replay the punt
                 self.state.yards_to_go = 10 + penalty_yards  # Yards to go increased
-                
+
                 del self._pending_punt_state
-                
+
                 description = f"Receiving team accepts penalty: OFF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
-                
-                return PlayOutcome(
+
+                new_outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
                     defense_type=DefenseType.STANDARD,
                     result=outcome.result,
@@ -3286,6 +3286,11 @@ class PaydirtGameEngine:
                     description=description,
                     penalty_applied=True
                 )
+
+                self.play_log.append(new_outcome)
+                self._use_time(random.uniform(25, 45))
+
+                return new_outcome
         else:
             # DEF penalty - receiving team committed foul, kicking team decides
             if accept_penalty:
@@ -3315,8 +3320,8 @@ class PaydirtGameEngine:
                     description = f"Kicking team accepts penalty: DEF {penalty_yards}. 4th and {self.state.yards_to_go} at {self.state.field_position_str()}."
                 
                 del self._pending_punt_state
-                
-                return PlayOutcome(
+
+                new_outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
                     defense_type=DefenseType.STANDARD,
                     result=outcome.result,
@@ -3328,6 +3333,11 @@ class PaydirtGameEngine:
                     description=description,
                     penalty_applied=True
                 )
+
+                self.play_log.append(new_outcome)
+                self._use_time(random.uniform(25, 45))
+
+                return new_outcome
             else:
                 # Decline penalty - take punt result as-is
                 final_position = state['final_position']
@@ -3368,8 +3378,8 @@ class PaydirtGameEngine:
                 )
                 
                 self.play_log.append(new_outcome)
-                self._use_time(random.uniform(5, 12))
-                
+                self._use_time(random.uniform(25, 45))
+
                 return new_outcome
 
     def apply_kickoff_penalty_decision(self, outcome: PlayOutcome, accept_penalty: bool) -> PlayOutcome:
@@ -3523,8 +3533,8 @@ class PaydirtGameEngine:
             )
             
             self.play_log.append(new_outcome)
-            self._use_time(random.uniform(5, 15))
-            
+            self._use_time(random.uniform(25, 45))
+
             return new_outcome
 
     def _evaluate_field_goal_result(self, fg_result: str, distance_to_goal: int,
@@ -3711,7 +3721,7 @@ class PaydirtGameEngine:
         # Only advance time if there's no untimed down pending
         # (if untimed_down_pending is True, the half extends and clock stays at 0)
         if not self.state.untimed_down_pending:
-            self._use_time(random.uniform(5, 10))
+            self._use_time(random.uniform(25, 45))
         
         return outcome
 
