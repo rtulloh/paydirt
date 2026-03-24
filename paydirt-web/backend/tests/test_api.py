@@ -225,6 +225,58 @@ def test_player_offense_after_kickoff():
     assert state["player_offense"] == expected_player_offense
 
 
+def test_kickoff_returns_dice_details():
+    """Test that kickoff returns dice details for frontend display."""
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    data = response.json()
+    game_id = data["game_id"]
+    
+    client.post("/api/game/coin-toss", json={
+        "game_id": game_id,
+        "player_won": True,
+        "player_kicks": False,
+        "human_plays_offense": True,
+    })
+    
+    kickoff_response = client.post("/api/game/kickoff", json={
+        "game_id": game_id,
+        "kickoff_spot": 35,
+    })
+    assert kickoff_response.status_code == 200
+    kickoff_data = kickoff_response.json()
+    
+    # Verify dice_details is present and has valid values
+    assert "dice_details" in kickoff_data
+    dice_details = kickoff_data["dice_details"]
+    
+    # Kickoff uses 2d6 (black + white1) - range 10-39
+    assert "offense" in dice_details
+    assert "defense" in dice_details
+    
+    # Kickoff dice should be valid range
+    assert 10 <= dice_details["offense"]["black"] <= 39
+    assert dice_details["offense"]["white1"] == 0
+    assert dice_details["offense"]["white2"] == 0
+    assert dice_details["offense"]["total"] == dice_details["offense"]["black"]
+    
+    # Defense dice same as kickoff roll
+    assert dice_details["defense"]["red"] == dice_details["offense"]["black"]
+    assert dice_details["defense"]["green"] == 0
+    assert dice_details["defense"]["total"] == dice_details["defense"]["red"]
+    
+    # dice_roll_offense and dice_roll_defense should also be set
+    assert kickoff_data["dice_roll_offense"] == dice_details["offense"]["total"]
+    assert kickoff_data["dice_roll_defense"] == dice_details["defense"]["total"]
+    
+    # Result should have a description with the dice info
+    assert "description" in kickoff_data["result"]
+    assert "KO:" in kickoff_data["result"]["description"]
+
+
 def test_possession_changes_after_score():
     """Test that player_offense correctly reflects possession after a touchdown."""
     response = client.post("/api/game/new", json={
