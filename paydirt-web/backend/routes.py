@@ -630,7 +630,7 @@ async def get_cpu_4th_down_decision(game_id: str):
         PlayType.SPIKE_BALL: "S",
     }
     
-    play, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
+    play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
     play_key = play_map.get(play, "1")
     
     if play == PlayType.PUNT:
@@ -675,7 +675,7 @@ async def execute_play(request: PlayRequest):
     else:
         # CPU on offense - check for 4th down decision if no cpu_play provided
         if engine.state.down == 4 and not cpu_play:
-            play, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
+            play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
             play_map = {
                 PlayType.LINE_PLUNGE: "1", PlayType.OFF_TACKLE: "2", PlayType.END_RUN: "3",
                 PlayType.DRAW: "4", PlayType.SCREEN: "5", PlayType.SHORT_PASS: "6",

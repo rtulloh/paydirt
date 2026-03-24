@@ -411,7 +411,7 @@ class TestClockManagement:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         assert use_no_huddle is True
 
@@ -429,7 +429,7 @@ class TestClockManagement:
         # Run multiple times to get passing plays
         oob_count = 0
         for _ in range(20):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                 if use_oob:
                     oob_count += 1
@@ -448,7 +448,7 @@ class TestClockManagement:
         game.state.home_score = 10
         game.state.away_score = 20  # Trailing by 10
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should be in hurry-up mode
         assert use_no_huddle is True
@@ -464,7 +464,7 @@ class TestClockManagement:
         game.state.home_score = 21
         game.state.away_score = 14  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should NOT be in hurry-up mode when leading
         assert use_no_huddle is False
@@ -484,7 +484,7 @@ class TestClockManagement:
         # Run multiple times
         running_plays = 0
         for _ in range(20):
-            play, _, _, _, _ = cpu_ai.select_offense_with_clock_management(game)
+            play, _, _, _, _, _ = cpu_ai.select_offense_with_clock_management(game)
             if play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]:
                 running_plays += 1
 
@@ -511,7 +511,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 21
         game.state.away_score = 17  # Leading by 4
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should be in two-minute drill mode, not red zone
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -537,7 +537,7 @@ class TestEndOfHalfClockManagement:
         oob_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                 pass_count += 1
                 if use_oob:
@@ -563,7 +563,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 10  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should be in two-minute drill, not clock killing
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -583,7 +583,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 20  # Trailing by 3
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should be in two-minute drill
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -604,7 +604,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 14
         game.state.away_score = 14  # Tied
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Should be in two-minute drill mode, not goal line
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -628,7 +628,7 @@ class TestEndOfHalfClockManagement:
         # Run multiple times - should never get LONG_PASS from goal line
         long_pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
             if play == PlayType.LONG_PASS:
                 long_pass_count += 1
 
@@ -654,7 +654,7 @@ class TestEndOfHalfClockManagement:
         long_pass_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = cpu_ai.select_offense_with_clock_management(game)
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                 pass_count += 1
                 if play == PlayType.LONG_PASS:
@@ -684,7 +684,7 @@ class TestCPUPuntOptions:
         short_drop_count = 0
         for _ in range(20):
             cpu_ai.aggression = 0.2  # Conservative
-            play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+            play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
             if play == PlayType.PUNT and punt_short_drop:
                 short_drop_count += 1
 
@@ -706,7 +706,7 @@ class TestCPUPuntOptions:
         coffin_corner_count = 0
         for _ in range(30):
             cpu_ai.aggression = 0.8  # Aggressive
-            play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+            play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
             if play == PlayType.PUNT and punt_coffin >= 15:
                 coffin_corner_count += 1
 
@@ -722,7 +722,7 @@ class TestCPUPuntOptions:
         game.state.time_remaining = 10.0
         game.state.is_home_possession = True
 
-        play, _, _, punt_short_drop, punt_coffin = cpu_ai.select_offense_with_clock_management(game)
+        play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
 
         # Punt options should be False/0 on 1st down (not a punt situation)
         assert punt_short_drop is False
@@ -829,7 +829,7 @@ class TestEndOfHalfFieldGoal:
         game.state.time_remaining = 6 / 60.0
         game.state.is_home_possession = True
 
-        play, _, no_huddle, _, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, _, no_huddle, _, _, _ = cpu_ai.select_offense_with_clock_management(game)
         assert play == PlayType.FIELD_GOAL
         assert no_huddle is True
 

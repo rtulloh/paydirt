@@ -257,6 +257,46 @@ GET /api/season-rules?season=1983
 GET /api/game/pat-choice/{game_id}  # can_go_for_two from season rules
 ```
 
+## Play Modifiers
+
+Offensive plays can have modifiers appended to affect clock behavior. Modifiers are parsed in `_get_human_offense_play_compact()` and `get_human_offense_play()` in `interactive_game.py`.
+
+### Available Modifiers
+
+| Modifier | Syntax | Effect | Cost |
+|----------|--------|--------|------|
+| Out of Bounds | `7+` | Guarantees 10-sec play in final minutes | 5 yards |
+| In Bounds | `7-` | Forces clock to keep running | 5 yards |
+| Timeout | `7T` | Stops clock after play (uses timeout) | Uses timeout |
+| Spike | `7S` | Spikes ball after play to stop clock | Uses a down |
+
+### Spike Modifier Implementation
+
+The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop the clock, then kick a field goal.
+
+**Key mechanics:**
+- Play + spike time is capped at 20 seconds total
+- If play would have taken >17 seconds, it's reduced to 17, then 3 seconds for spike
+- Only applies when clock is running (skipped after incomplete, OOB, or turnover)
+- Does NOT advance down (play already did that)
+
+**Code locations:**
+- Modifier parsing: `interactive_game.py:_get_human_offense_play_compact()` lines ~475-485
+- Spike application: `interactive_game.py:_apply_spike()` function
+- Skip conditions: `interactive_game.py:should_apply_spike_after_play()`
+
+**Example scenario (20 seconds left, need FG):**
+1. Call `7S` (Medium Pass + Spike)
+2. Pass completes for 5 yards (uses ~25 sec normally)
+3. Spike modifier caps play at 17 sec + 3 sec spike = 20 sec total
+4. Time remaining: 0 sec → game ends, OR if play was fast enough, time for FG
+
+### Modifiers Combined
+
+Multiple modifiers can be combined:
+- `7+S` = Medium Pass + Out of Bounds + Spike
+- `7ST` = Medium Pass + Spike + Timeout (both applied if beneficial)
+
 ## Importing Teams
 
 Use `extract_charts.py` to import team data from Excel files (`.xls` format only). The script requires `xlrd==1.2.0` for reading Excel formatting (cell colors for incomplete passes, red extra points).
