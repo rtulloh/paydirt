@@ -1620,9 +1620,12 @@ class PaydirtGameEngine:
             # Accept the play result - down counts
             # Use original offense result if defense committed penalty
             play_result = penalty_choice.play_result
-            # If offense_yards is set and different from yards, use offense_yards
-            # This handles the case where priority chart returned penalty yards
-            if play_result.offense_yards != 0 and play_result.offense_yards != play_result.yards:
+            # When defense commits a penalty (DEF X), the priority chart returns penalty yards
+            # as final_yards, but offense_yards stores the original offense result.
+            # Check if defense_modifier indicates a defensive penalty was committed.
+            defense_mod = play_result.defense_modifier or ""
+            has_def_penalty = defense_mod.startswith("DEF")
+            if has_def_penalty and play_result.offense_yards != play_result.yards:
                 # Defense committed penalty - use original offense yards
                 # Create a new PlayResult with the correct yardage
                 from .play_resolver import ResultType
