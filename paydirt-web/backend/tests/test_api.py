@@ -1468,7 +1468,7 @@ def test_load_replay_sets_pending_pat_when_ball_in_endzone():
     load_data = load_response.json()
     
     # Check that pending_pat is True because ball is in end zone
-    assert load_data["game_state"]["pending_pat"] == True
+    assert load_data["game_state"]["pending_pat"]
 
 
 def test_penalty_decision_sets_pending_pat_on_touchdown():
@@ -1517,7 +1517,7 @@ def test_penalty_decision_sets_pending_pat_on_touchdown():
                     penalty_result = penalty_response.json()
                     # If ball position >= 100, pending_pat should be True
                     if penalty_result["game_state"]["ball_position"] >= 100:
-                        assert penalty_result["game_state"]["pending_pat"] == True
+                        assert penalty_result["game_state"]["pending_pat"]
                         found_pending = True
                         break
         

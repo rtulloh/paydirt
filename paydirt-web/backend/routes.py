@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 import random
 import uuid
+import re
 from datetime import datetime
 
 import sys
