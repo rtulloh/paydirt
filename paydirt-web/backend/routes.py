@@ -1252,7 +1252,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         accept_penalty = not accept_play
     
     if outcome.play_type == PlayType.PUNT:
-        new_outcome = engine.apply_punt_penalty_decision(outcome, accept_penalty)
+        new_outcome = engine.apply_punt_penalty_decision(outcome, accept_penalty, penalty_index)
     elif outcome.play_type == PlayType.FIELD_GOAL:
         new_outcome = engine.apply_fg_penalty_decision(outcome, accept_play=accept_play, penalty_index=penalty_index)
     elif outcome.play_type == PlayType.KICKOFF:

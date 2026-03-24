@@ -4,12 +4,12 @@ import pytest
 import sys
 from pathlib import Path
 
-from paydirt.play_resolver import PlayResult, ResultType
-
 # Add parent directories to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(backend_dir.parent.parent))
+
+from paydirt.play_resolver import PlayResult, ResultType
 
 
 def _calculate_post_play_state(
@@ -213,6 +213,195 @@ class TestCalculatePostPlayState:
         
         assert result["turnover"] is True
         assert result["new_ball_position"] == 55
+
+
+class TestPuntPenaltyDecision:
+    """Tests for punt penalty decision with penalty_index parameter."""
+
+    def test_punt_penalty_keep_return_gives_possession(self):
+        """
+        When receiving team selects 'keep return + penalty yards', they should
+        get possession with first down, not another punt.
+        
+        This tests the fix for the bug where penalty_index was not being passed
+        to apply_punt_penalty_decision, causing all decisions to default to
+        'replay punt' (index 0).
+        """
+        from unittest.mock import MagicMock
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.game_state import PlayOutcome
+        from paydirt.models import PlayType, DefenseType
+        from paydirt.play_resolver import PlayResult, ResultType, PenaltyChoice, PenaltyOption
+
+        # Create mock charts
+        home_chart = MagicMock()
+        home_chart.peripheral.team_name = "Home"
+        home_chart.peripheral.short_name = "HOM"
+        away_chart = MagicMock()
+        away_chart.peripheral.team_name = "Away"
+        away_chart.peripheral.short_name = "AWY"
+
+        engine = PaydirtGameEngine(home_chart, away_chart)
+        
+        # Set up pending punt state (simulating a punt that happened)
+        engine._pending_punt_state = {
+            'ball_position': 50,
+            'final_position': 35,  # Punt returned to own 35
+            'punt_yards': 35,
+            'return_yards': 15,
+            'punt_penalty_yards': 5,
+            'is_offensive_penalty': True,  # Kicking team committed foul
+            'field_pos_before': "MIDFIELD",
+            'ytg_before': 10,
+        }
+        
+        # Create outcome with penalty choice
+        penalty_options = [
+            PenaltyOption(
+                penalty_type="OFF 5X",
+                raw_result="REPLAY_PUNT",
+                yards=5,
+                description="Replay punt from own 30",
+                auto_first_down=False
+            ),
+            PenaltyOption(
+                penalty_type="OFF 5",
+                raw_result="KEEP_RETURN",
+                yards=5,
+                description="Keep return + 5 yards to own 40",
+                auto_first_down=True
+            ),
+        ]
+        
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.NORMAL,
+            result=PlayResult(ResultType.YARDS, 35, "Punt 35 yards, returned 15 yards"),
+            yards_gained=35,
+            pending_penalty_decision=True,
+            penalty_choice=PenaltyChoice(
+                play_result=PlayResult(ResultType.YARDS, 35, "Punt 35 yards"),
+                penalty_options=penalty_options,
+                offended_team="defense",
+                offsetting=False,
+                is_pass_interference=False,
+                reroll_log=[]
+            ),
+            field_position_before="MIDFIELD",
+            field_position_after="OWN 35",
+            description="Punt 35 yards, returned 15 yards to own 35"
+        )
+        
+        # Test with penalty_index=1 (keep return option)
+        # This simulates what routes.py should do when user selects option [3]
+        result = engine.apply_punt_penalty_decision(
+            outcome, 
+            accept_penalty=False,  # Decline penalty, keep play result
+            penalty_index=1  # Keep return + yards option
+        )
+        
+        # Verify possession switched to receiving team
+        assert engine.state.is_home_possession == True  # Home was receiving
+        assert engine.state.down == 1
+        assert engine.state.yards_to_go == 10
+        
+        # Verify ball position is at return position + penalty yards
+        # final_position (35) + penalty_yards (5) = 40
+        # But we need to account for which team's perspective
+        # The receiving team (home) should have ball at their 40
+        assert engine.state.ball_position == 40
+        
+        # Verify it's NOT a punt (should be first down, not 4th down)
+        assert engine.state.down == 1
+        # Team abbreviation is HOM (from mock), not SF
+        assert result.description == "Receiving team keeps result + 5 yards to HOM 40."
+        
+    def test_punt_penalty_replay_punt_keeps_punting(self):
+        """
+        When receiving team selects 'replay punt', the kicking team should
+        re-punt from a new position (LOS - penalty yards).
+        """
+        from unittest.mock import MagicMock
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.game_state import PlayOutcome
+        from paydirt.models import PlayType, DefenseType
+        from paydirt.play_resolver import PlayResult, ResultType, PenaltyChoice, PenaltyOption
+
+        home_chart = MagicMock()
+        home_chart.peripheral.team_name = "Home"
+        home_chart.peripheral.short_name = "HOM"
+        away_chart = MagicMock()
+        away_chart.peripheral.team_name = "Away"
+        away_chart.peripheral.short_name = "AWY"
+
+        engine = PaydirtGameEngine(home_chart, away_chart)
+        
+        # Set the current game state ball position (where the punt occurred)
+        engine.state.ball_position = 45  # Kicking team at their 45
+        engine.state.is_home_possession = True  # Home is kicking (offense)
+        
+        engine._pending_punt_state = {
+            'ball_position': 45,  # Kicking team at 45
+            'final_position': 20,
+            'punt_yards': 25,
+            'return_yards': 10,
+            'punt_penalty_yards': 5,
+            'is_offensive_penalty': True,
+            'field_pos_before': "OWN 45",
+            'ytg_before': 10,
+        }
+        
+        penalty_options = [
+            PenaltyOption(
+                penalty_type="OFF 5",
+                raw_result="REPLAY_PUNT",
+                yards=5,
+                description="Replay punt from own 40",
+                auto_first_down=False
+            ),
+            PenaltyOption(
+                penalty_type="OFF 5",
+                raw_result="KEEP_RETURN",
+                yards=5,
+                description="Keep return + 5 yards",
+                auto_first_down=True
+            ),
+        ]
+        
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.NORMAL,
+            result=PlayResult(ResultType.YARDS, 25, "Punt 25 yards"),
+            yards_gained=25,
+            pending_penalty_decision=True,
+            penalty_choice=PenaltyChoice(
+                play_result=PlayResult(ResultType.YARDS, 25, "Punt 25 yards"),
+                penalty_options=penalty_options,
+                offended_team="defense",
+                offsetting=False,
+                is_pass_interference=False,
+                reroll_log=[]
+            ),
+            field_position_before="OPP 45",
+            field_position_after="OWN 20",
+            description="Punt 25 yards"
+        )
+        
+        # Test with penalty_index=0 (replay punt option)
+        result = engine.apply_punt_penalty_decision(
+            outcome, 
+            accept_penalty=False,
+            penalty_index=0  # Replay punt option
+        )
+        
+        # Verify ball moved back by penalty yards for kicking team
+        # Original position 45 - 5 = 40
+        assert engine.state.ball_position == 40
+        assert engine.state.down == 4  # Still 4th down
+        assert engine.state.yards_to_go == 15  # 10 + 5 penalty yards
+        
+        # Verify it says "punt replayed"
+        assert "Punt replayed" in result.description
 
 
 if __name__ == "__main__":

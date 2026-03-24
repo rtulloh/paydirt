@@ -276,10 +276,10 @@ class TestNaturalOOBMarkerStillGated:
 # No-huddle reduces play time
 # ---------------------------------------------------------------------------
 class TestNoHuddleReducesPlayTime:
-    """No-huddle should reduce play time from ~40 sec to ~20 sec."""
+    """No-huddle should reduce play time from ~35 sec to ~20 sec."""
 
     def test_no_huddle_reduces_time_via_run_play(self, game):
-        """No-huddle through run_play should use random.uniform(5, 20)."""
+        """No-huddle through run_play should use random.uniform(15, 25)."""
         game.state.quarter = 1
         game.state.time_remaining = 10.0
         game.state.ball_position = 50
@@ -292,15 +292,15 @@ class TestNoHuddleReducesPlayTime:
                 game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
                               no_huddle=True)
 
-        # Verify random.uniform was called with (5, 20) range
-        mock_rand.assert_called_with(5, 20)
+        # Verify random.uniform was called with (15, 25) range
+        mock_rand.assert_called_with(15, 25)
 
         time_used_min = 10.0 - game.state.time_remaining
         time_used_sec = time_used_min * 60
         assert time_used_sec == pytest.approx(15.0, abs=0.1)
 
     def test_normal_play_uses_full_range(self, game):
-        """Without no-huddle, play time should use random.uniform(5, 40)."""
+        """Without no-huddle, play time should use random.uniform(25, 45)."""
         game.state.quarter = 1
         game.state.time_remaining = 10.0
         game.state.ball_position = 50
@@ -313,7 +313,7 @@ class TestNoHuddleReducesPlayTime:
                 game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
                               no_huddle=False)
 
-        mock_rand.assert_called_with(5, 40)
+        mock_rand.assert_called_with(25, 45)
 
     def test_no_huddle_penalty_procedure_path(self, game):
         """No-huddle through _apply_play_result should also reduce time."""
@@ -333,7 +333,7 @@ class TestNoHuddleReducesPlayTime:
                 no_huddle=True,
             )
 
-        mock_rand.assert_called_with(5, 20)
+        mock_rand.assert_called_with(15, 25)
 
     def test_no_huddle_default_false_in_apply_play_result(self, game):
         """_apply_play_result defaults no_huddle=False (backwards compatible)."""
@@ -352,7 +352,7 @@ class TestNoHuddleReducesPlayTime:
                 out_of_bounds_designation=False, in_bounds_designation=False,
             )
 
-        mock_rand.assert_called_with(5, 40)
+        mock_rand.assert_called_with(25, 45)
 
 
 # ---------------------------------------------------------------------------
@@ -394,8 +394,8 @@ class TestOOBDesignationOverridesNoHuddle:
                               out_of_bounds_designation=True,
                               no_huddle=True)
 
-        # Sack ignores OOB designation, falls through to no_huddle range
-        mock_rand.assert_called_with(5, 20)
+        # Sack ignores OOB designation, falls through to no_huddle range (15, 25)
+        mock_rand.assert_called_with(15, 25)
 
 
 # ---------------------------------------------------------------------------
