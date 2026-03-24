@@ -114,7 +114,7 @@ const PlayingPhase = () => {
       if (!isSpecial) {
         const timer = setTimeout(() => {
           setLocalLastResult(null);
-          setLocalDiceResult(null);
+          // Don't clear dice - keep them visible for aesthetics
           setHumanPlay(null);
         }, 2000);
         return () => clearTimeout(timer);
@@ -196,20 +196,25 @@ const PlayingPhase = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       setLocalIsRolling(true);
-      setLocalDiceResult({
-        offenseRoll: {
-          black: randomFrom(BLACK_DIE),
-          white1: randomFrom(WHITE_DIE),
-          white2: randomFrom(WHITE_DIE),
-        },
-        defenseRoll: {
-          red: randomFrom(RED_DIE),
-          green: randomFrom(GREEN_DIE),
-        },
-        result: 0,
-      });
+      
+      // Kickoff dice animation - update values every 100ms for rolling effect
+      const rollInterval = setInterval(() => {
+        setLocalDiceResult({
+          offenseRoll: {
+            black: randomFrom(BLACK_DIE),
+            white1: randomFrom(WHITE_DIE),
+            white2: randomFrom(WHITE_DIE),
+          },
+          defenseRoll: {
+            red: randomFrom(RED_DIE),
+            green: randomFrom(GREEN_DIE),
+          },
+          result: 0,
+        });
+      }, 100);
       
       await new Promise(resolve => setTimeout(resolve, 1500));
+      clearInterval(rollInterval);
       
       const res = await fetch(`${API_BASE}/api/game/kickoff`, {
         method: 'POST',
@@ -238,14 +243,24 @@ const PlayingPhase = () => {
         setLocalExecuting(false);  // Enable play buttons after kickoff
         setIsKickoff(false);
         
+        // Use actual dice from backend response
+        const offDice = data.dice_details?.offense;
+        const defDice = data.dice_details?.defense;
+        
+        // Update local dice result to show actual dice from backend
+        if (offDice || defDice) {
+          setLocalDiceResult({
+            offenseRoll: offDice,
+            defenseRoll: defDice,
+            result: data.result.yards || 0,
+          });
+        }
+        
         // Log the kickoff
         // Uses shared deriveKickoffTeams — if this function is removed, tests will fail
         const { kickingTeam, receivingTeam } = deriveKickoffTeams(
           data.game_state.possession, homeTeam, awayTeam
         );
-        
-        const offDice = localDiceResult?.offenseRoll;
-        const defDice = localDiceResult?.defenseRoll;
         
         addToPlayLog({
           quarter: data.game_state.quarter,
@@ -266,12 +281,12 @@ const PlayingPhase = () => {
             black: offDice.black,
             white1: offDice.white1,
             white2: offDice.white2,
-            total: offDice.black + offDice.white1 + offDice.white2
+            total: offDice.total
           } : null,
           defenseDice: defDice ? {
             red: defDice.red,
             green: defDice.green,
-            total: defDice.red + defDice.green
+            total: defDice.total
           } : null,
           description: data.result.description,
           yards: data.result.yards || 0,
@@ -522,22 +537,25 @@ const PlayingPhase = () => {
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Roll dice animation
+      // Roll dice animation - update values every 100ms for rolling effect
       setLocalIsRolling(true);
-      setLocalDiceResult({
-        offenseRoll: {
-          black: randomFrom(BLACK_DIE),
-          white1: randomFrom(WHITE_DIE),
-          white2: randomFrom(WHITE_DIE),
-        },
-        defenseRoll: {
-          red: randomFrom(RED_DIE),
-          green: randomFrom(GREEN_DIE),
-        },
-        result: 0,
-      });
+      const rollInterval = setInterval(() => {
+        setLocalDiceResult({
+          offenseRoll: {
+            black: randomFrom(BLACK_DIE),
+            white1: randomFrom(WHITE_DIE),
+            white2: randomFrom(WHITE_DIE),
+          },
+          defenseRoll: {
+            red: randomFrom(RED_DIE),
+            green: randomFrom(GREEN_DIE),
+          },
+          result: 0,
+        });
+      }, 100);
       
       await new Promise(resolve => setTimeout(resolve, 1500));
+      clearInterval(rollInterval);
       
       // Execute the play
       const res = await fetch(`${API_BASE}/api/game/execute`, {
@@ -590,6 +608,15 @@ const PlayingPhase = () => {
           green: defDice.green,
           total: defDice.total
         } : null;
+        
+        // Update local dice result to show actual dice from backend
+        if (offenseDice || defenseDice) {
+          setLocalDiceResult({
+            offenseRoll: offenseDice,
+            defenseRoll: defenseDice,
+            result: data.result.yards || 0,
+          });
+        }
         
         // Log the play with BEFORE state for down/distance, AFTER state for position
         const offenseTeam = playerOffense 

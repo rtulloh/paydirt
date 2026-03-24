@@ -364,7 +364,12 @@ export const useGameStore = create((set, get) => ({
           body: JSON.stringify({ replay_data: replayData }),
         })
           .then(res => {
-            if (!res.ok) throw new Error('Failed to load replay on backend');
+            if (!res.ok) {
+              return res.text().then(text => {
+                console.error('Load replay error response:', text);
+                throw new Error('Failed to load replay: ' + text);
+              });
+            }
             return res.json();
           })
           .then(data => {
@@ -389,7 +394,7 @@ export const useGameStore = create((set, get) => ({
               humanIsHome: data.game_state.human_is_home,
               playerOffense: data.game_state.player_offense,
               playLog: replayData.play_history || [],
-              playLogVersion: (get().playLogVersion || 0) + 1, // Increment to trigger scroll
+              playLogVersion: (get().playLogVersion || 0) + 1,
               isKickoff: data.game_state.is_kickoff || false,
               pendingPat: data.game_state.pending_pat || false,
             });
@@ -398,7 +403,6 @@ export const useGameStore = create((set, get) => ({
       }
       return Promise.reject(new Error('No saved replay found'));
     } catch (err) {
-      console.error('Failed to load replay:', err);
       return Promise.reject(err);
     }
   },

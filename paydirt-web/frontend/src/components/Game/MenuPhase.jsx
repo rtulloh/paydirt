@@ -4,7 +4,13 @@ import { useGameStore } from '../../store/gameStore';
 const MenuPhase = ({ onNewGame }) => {
   const [hasSavedGame, setHasSavedGame] = useState(false);
   const [hasSavedReplay, setHasSavedReplay] = useState(false);
-  const { reset, loadGame, loadReplay, clearReplay, setGamePhase } = useGameStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const { reset, loadGame, loadReplay, clearReplay, setGamePhase, gamePhase } = useGameStore();
+  
+  // If gamePhase is not 'menu', don't render MenuPhase
+  if (gamePhase !== 'menu' && !isLoading) {
+    return null;
+  }
   
   useEffect(() => {
     try {
@@ -29,6 +35,7 @@ const MenuPhase = ({ onNewGame }) => {
   };
   
   const handleLoadReplay = () => {
+    setIsLoading(true);
     loadReplay()
       .then(() => {
         // State is already updated in store, App will re-render
@@ -36,6 +43,7 @@ const MenuPhase = ({ onNewGame }) => {
       .catch(err => {
         console.error('Failed to load replay:', err.message || err);
         alert('Failed to load replay: ' + (err.message || 'Unknown error') + '. Check console for details.');
+        setIsLoading(false);
       });
   };
   

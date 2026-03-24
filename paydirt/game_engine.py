@@ -683,6 +683,9 @@ class PaydirtGameEngine:
 
         dice_line = f"(KO:{dice_roll}→\"{ko_result}\" | RT:{dice_roll}→\"{actual_return}\")"
         
+        # Store dice roll in result for frontend
+        ret_parsed.dice_roll = dice_roll
+        
         # Use "Safety free kick" for kicks from own 20
         kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
 
