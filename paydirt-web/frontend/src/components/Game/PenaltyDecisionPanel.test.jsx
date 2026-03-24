@@ -70,7 +70,7 @@ describe('PenaltyDecisionPanel', () => {
 
     it('shows accept play button', () => {
       render(<PenaltyDecisionPanel penaltyData={mockPenaltyData} onDecision={vi.fn()} />)
-      expect(screen.getByRole('button', { name: /ACCEPT PLAY/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /TAKE YARDAGE/i })).toBeInTheDocument()
     })
   })
 
@@ -87,10 +87,10 @@ describe('PenaltyDecisionPanel', () => {
       const onDecision = vi.fn()
       render(<PenaltyDecisionPanel penaltyData={mockPenaltyData} onDecision={onDecision} />)
       
-      const acceptPlayButton = screen.getByRole('button', { name: /ACCEPT PLAY/i })
+      const acceptPlayButton = screen.getByRole('button', { name: /TAKE YARDAGE/i })
       fireEvent.click(acceptPlayButton)
       
-      // ACCEPT PLAY means decline penalty = accept=false
+      // TAKE YARDAGE means decline penalty = accept=false
       expect(onDecision).toHaveBeenCalledWith(false, 0)
     })
 
@@ -262,7 +262,7 @@ describe('PenaltyDecisionPanel', () => {
         description: 'Punt 40 yards, fair catch',
       }
       render(<PenaltyDecisionPanel penaltyData={puntData} onDecision={vi.fn()} />)
-      expect(screen.getByText(/Punt 40 yards/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/Punt 40 yards/i).length).toBeGreaterThan(0)
       expect(screen.queryByText(/\+40 yards/i)).not.toBeInTheDocument()
     })
 
@@ -345,7 +345,7 @@ describe('PenaltyDecisionPanel', () => {
           cpuIsOnDefense={true}
         />
       )
-      const acceptButton = screen.getByRole('button', { name: /DECLINE PENALTY/i })
+      const acceptButton = screen.getByRole('button', { name: /REJECT PENALTY/i })
       expect(acceptButton).toBeDisabled()
     })
 
@@ -425,10 +425,10 @@ describe('PenaltyDecisionPanel', () => {
       
       render(<PenaltyDecisionPanel penaltyData={penaltyData} onDecision={onDecision} />)
       
-      const acceptPlayButton = screen.getByRole('button', { name: /ACCEPT PLAY/i })
+      const acceptPlayButton = screen.getByRole('button', { name: /TAKE YARDAGE/i })
       fireEvent.click(acceptPlayButton)
       
-      // DECLINE PENALTY / ACCEPT PLAY should call onDecision(false, 0)
+      // TAKE YARDAGE means accept play result = accept=false
       expect(onDecision).toHaveBeenCalledWith(false, 0)
     })
 
@@ -451,11 +451,11 @@ describe('PenaltyDecisionPanel', () => {
       }
       
       render(<PenaltyDecisionPanel penaltyData={defensePenaltyData} onDecision={onDecision} />)
-      
-      // Defense declining penalty = accepting play
-      const declineButton = screen.getByRole('button', { name: /DECLINE PENALTY/i })
+
+      // Defense rejecting penalty = accepting play
+      const declineButton = screen.getByRole('button', { name: /REJECT PENALTY/i })
       fireEvent.click(declineButton)
-      
+
       expect(onDecision).toHaveBeenCalledWith(false, 0)
     })
 

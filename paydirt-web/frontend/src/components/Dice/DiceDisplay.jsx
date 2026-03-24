@@ -66,6 +66,11 @@ export function DiceDisplay({
   // No staggered animation - prevents jitter
   const settled = !isRolling
 
+  // Don't render if not rolling and no dice data
+  if (!isRolling && !offenseRoll && !defenseRoll) {
+    return null
+  }
+
   // Black/Red dice = 10s (B1=10, B2=20, B3=30)
   const offenseTotal = ((offenseRoll?.black || 0) * 10) + (offenseRoll?.white1 || 0) + (offenseRoll?.white2 || 0)
   const defenseTotal = ((defenseRoll?.red || 0) * 10) + (defenseRoll?.green || 0)
