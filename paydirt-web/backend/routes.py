@@ -150,6 +150,7 @@ class GameStateResponse(BaseModel):
     ot_period: int = 0
     home_stats: Optional[Dict[str, int]] = None
     away_stats: Optional[Dict[str, int]] = None
+    season: str = "1983"  # Season year for replay saving
 
 
 class NewGameResponse(BaseModel):
@@ -164,6 +165,7 @@ class PlayRequest(BaseModel):
     cpu_play: Optional[str] = None
     short_drop: bool = False
     coffin_corner_yards: int = 0
+    no_huddle: bool = False  # Mode, not a one-play modifier
 
 
 class CPUPlayResponse(BaseModel):
@@ -328,6 +330,7 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> Gam
         ot_period=game["engine"].state.ot_period,
         home_stats=home_stats,
         away_stats=away_stats,
+        season=game.get("season", "1983"),
     )
     return response
 
@@ -361,6 +364,48 @@ def get_defense_type_from_key(key: str) -> DefenseType:
         "E": DefenseType.LONG_PASS,
     }
     return defense_map.get(key.upper(), DefenseType.STANDARD)
+
+
+def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
+    """
+    Parse play string with modifiers (e.g., '7S' -> PlayType.MEDIUM_PASS with spike modifier).
+    
+    Modifiers:
+        + : out-of-bounds designation
+        - : in-bounds designation
+        T : timeout after play
+        S : spike after play
+    
+    Returns:
+        Tuple of (PlayType, dict with modifier flags)
+    """
+    # Extract base play (first character)
+    if not play_string:
+        raise ValueError("Play string cannot be empty")
+    
+    base_play = play_string[0].upper()
+    modifiers = play_string[1:].upper()
+    
+    # Parse modifiers
+    out_of_bounds = '+' in modifiers
+    in_bounds = '-' in modifiers
+    call_timeout = 'T' in modifiers
+    call_spike = 'S' in modifiers
+    
+    # Remove modifiers from string to get clean play type
+    clean_play = play_string.replace('+', '').replace('-', '').replace('T', '').replace('S', '').strip()
+    
+    # If clean_play is empty, use base_play (should be a single character)
+    play_char = clean_play[0] if clean_play else base_play
+    
+    play_type = get_play_type_from_key(play_char)
+    
+    return play_type, {
+        'call_spike': call_spike,
+        'call_timeout': call_timeout,
+        'out_of_bounds': out_of_bounds,
+        'in_bounds': in_bounds
+    }
 
 
 @router.get("/api/seasons", response_model=SeasonsResponse)
@@ -666,8 +711,21 @@ async def execute_play(request: PlayRequest):
     
     cpu_play = request.cpu_play.upper() if request.cpu_play else None
     
+    # Initialize modifier flags
+    call_spike = False
+    call_timeout = False
+    out_of_bounds = False
+    in_bounds = False
+    no_huddle = request.no_huddle
+    
     if player_offense:
-        offense_play = get_play_type_from_key(player_play)
+        # Parse player_play for modifiers (e.g., '7S' -> medium pass with spike)
+        offense_play, modifiers = parse_play_with_modifiers(player_play)
+        call_spike = modifiers['call_spike']
+        call_timeout = modifiers['call_timeout']
+        out_of_bounds = modifiers['out_of_bounds']
+        in_bounds = modifiers['in_bounds']
+        
         if cpu_play:
             defense_play = get_defense_type_from_key(cpu_play)
         else:
@@ -698,6 +756,7 @@ async def execute_play(request: PlayRequest):
     
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
+    quarter_before = engine.state.quarter
     
     # Map play types to display keys for logging
     offense_key_map = {
@@ -722,6 +781,11 @@ async def execute_play(request: PlayRequest):
     
     result = engine.run_play_with_penalty_procedure(
         offense_play, defense_play,
+        out_of_bounds_designation=out_of_bounds,
+        in_bounds_designation=in_bounds,
+        no_huddle=no_huddle,
+        call_spike=call_spike,
+        call_timeout=call_timeout,
         punt_short_drop=request.short_drop,
         punt_coffin_corner_yards=request.coffin_corner_yards
     )
@@ -774,17 +838,20 @@ async def execute_play(request: PlayRequest):
     # OFFENSE committed penalty (OFF 5, OFF 15) → DEFENSE gets choice → prompt only if human is on DEFENSE
     # DEFENSE committed penalty (DEF 5, DEF 15) → OFFENSE gets choice → prompt only if human is on OFFENSE
     # HUMAN gets prompted if their team is NOT the one that committed the penalty
-    human_is_on_offense = game.get("human_plays_offense", True)
+    # Use player_offense (current possession) instead of stale human_plays_offense flag
+    human_is_on_offense = player_offense
     
     should_prompt_human = False
     pending_penalty = False
     if result.penalty_choice and not result.penalty_choice.offsetting:
         offended_team = result.penalty_choice.offended_team  # "offense" or "defense"
         
-        # The offended team gets to choose (the team that was wronged by the penalty)
-        # If offended_team is "offense", offense committed the penalty? NO!
-        # offended_team is the team that GETS TO CHOOSE (was wronged)
-        # So if offended_team == "offense", the offense was wronged (defense committed penalty)
+        # DEBUG: Log all penalty decision info
+        print(f"DEBUG PENALTY: player_offense={player_offense}, human_is_home={game.get('human_is_home')}")
+        print(f"DEBUG PENALTY: is_home_possession={engine.state.is_home_possession}")
+        print(f"DEBUG PENALTY: human_is_on_offense={human_is_on_offense}")
+        print(f"DEBUG PENALTY: offended_team={offended_team}")
+        print(f"DEBUG PENALTY: penalty_options={[o.raw_result for o in result.penalty_choice.penalty_options]}")
         
         # Human should be prompted if human is on the offended team (gets to choose)
         if offended_team == "offense":
@@ -794,6 +861,7 @@ async def execute_play(request: PlayRequest):
             # Offense committed penalty → defense gets choice
             should_prompt_human = not human_is_on_offense
         
+        print(f"DEBUG PENALTY: should_prompt_human={should_prompt_human}")
         pending_penalty = True
     
     penalty_choice_model = None
@@ -893,8 +961,8 @@ async def execute_play(request: PlayRequest):
             new_score_away=engine.state.away_score,
             possession_changed=result.turnover or engine.state.home_score != home_score_before or engine.state.away_score != away_score_before,
             game_over=engine.state.game_over,
-            quarter_changed=False,
-            half_changed=False,
+            quarter_changed=engine.state.quarter != quarter_before,
+            half_changed=quarter_before == 2 and engine.state.quarter == 3,
             pending_penalty_decision=pending_penalty and result.pending_penalty_decision,
             penalty_choice=penalty_choice_model,
             play_type=result.play_type.value if hasattr(result.play_type, 'value') else str(result.play_type),
@@ -1382,24 +1450,24 @@ async def load_replay(request: LoadReplayRequest):
     if not home_team_id or not away_team_id:
         raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
     
-    def find_season_for_team(team_id):
-        """Find the first season that contains this team."""
+    def find_season_for_teams(home_id, away_id):
+        """Find a season that contains BOTH teams."""
         for season_dir in sorted(SEASONS_DIR.iterdir()):
-            if season_dir.is_dir() and (season_dir / team_id).exists():
+            if season_dir.is_dir() and (season_dir / home_id).exists() and (season_dir / away_id).exists():
                 return season_dir.name
         return None
     
     # Check: replay_data.season (new format) -> game_state.season (legacy format) -> search by team
     season = replay_data.get("season") or game_state.get("season")
     
-    # Validate that the season actually contains the teams, if not, detect from teams
+    # Validate that the season actually contains BOTH teams, if not, detect from teams
     if season:
         season_dir = SEASONS_DIR / season
-        if not season_dir.exists() or not (season_dir / home_team_id).exists():
+        if not season_dir.exists() or not (season_dir / home_team_id).exists() or not (season_dir / away_team_id).exists():
             season = None  # Invalid season, will detect from teams
     
     if not season:
-        season = find_season_for_team(home_team_id)
+        season = find_season_for_teams(home_team_id, away_team_id)
     if not season:
         raise HTTPException(status_code=400, detail="Could not determine season for team. Please start a new game.")
     
@@ -1457,7 +1525,7 @@ async def load_replay(request: LoadReplayRequest):
     possession = game_state.get("possession", "home")
     state.is_home_possession = (possession == "home")
     
-    # Check if this game needs kickoff transition after a score
+    # Check if this game needs kickoff transition after a score or halftime
     # If the last play was a TD/FG/safety but game state wasn't set up for kickoff,
     # we need to fix it (this was a bug in the original code)
     play_history = replay_data.get("play_history", [])
@@ -1466,16 +1534,25 @@ async def load_replay(request: LoadReplayRequest):
     saved_ball_position = game_state.get("ball_position", 20)
     saved_down = game_state.get("down", 1)
     saved_yards_to_go = game_state.get("yards_to_go", 10)
+    saved_quarter = game_state.get("quarter", 1)
+    saved_time = game_state.get("time_remaining", 0)
     is_already_in_kickoff_position = (saved_ball_position == 35 and 
                                       saved_down == 1 and 
                                       saved_yards_to_go == 10)
     
-    needs_kickoff_transition = False
+    # Check if this is start of 2nd half (Q3, 15:00, kickoff position)
+    is_halftime_kickoff = (saved_quarter == 3 and 
+                           saved_time == 900 and 
+                           saved_ball_position == 35 and
+                           saved_down == 1 and 
+                           saved_yards_to_go == 10)
+    
+    needs_kickoff_transition = is_halftime_kickoff
     # Check for explicit pending_pat flag from frontend save
     explicit_pending_pat = game_state.get("pending_pat", False)
     has_pending_pat = explicit_pending_pat
     
-    if play_history and len(play_history) > 0 and not is_already_in_kickoff_position and not explicit_pending_pat:
+    if play_history and len(play_history) > 0 and not is_already_in_kickoff_position and not explicit_pending_pat and not is_halftime_kickoff:
         last_play = play_history[-1]
         if last_play is None:
             last_play = {}

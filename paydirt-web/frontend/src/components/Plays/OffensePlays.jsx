@@ -19,7 +19,6 @@ const OFFENSIVE_PLAYS = {
     { key: 'K', name: 'Kneel' },
     { key: 'P', name: 'Punt' },
     { key: 'F', name: 'FG' },
-    { key: 'S', name: 'Spike' },
   ],
 }
 
