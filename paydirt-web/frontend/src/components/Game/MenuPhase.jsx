@@ -6,12 +6,7 @@ const MenuPhase = ({ onNewGame }) => {
   const [hasSavedReplay, setHasSavedReplay] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { reset, loadGame, loadReplay, clearReplay, setGamePhase, gamePhase } = useGameStore();
-  
-  // If gamePhase is not 'menu', don't render MenuPhase
-  if (gamePhase !== 'menu' && !isLoading) {
-    return null;
-  }
-  
+
   useEffect(() => {
     try {
       setHasSavedGame(localStorage.getItem('paydirt_save') !== null);
@@ -21,6 +16,11 @@ const MenuPhase = ({ onNewGame }) => {
       setHasSavedReplay(false);
     }
   }, []);
+
+  // If gamePhase is not 'menu', don't render MenuPhase (after all hooks)
+  if (gamePhase !== 'menu' && !isLoading) {
+    return null;
+  }
   
   const handleNewGame = () => {
     reset();

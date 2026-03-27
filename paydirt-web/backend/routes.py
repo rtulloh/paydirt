@@ -386,17 +386,14 @@ def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
     base_play = play_string[0].upper()
     modifiers = play_string[1:].upper()
     
-    # Parse modifiers
+    # Parse modifiers (only from suffix, not from base play)
     out_of_bounds = '+' in modifiers
     in_bounds = '-' in modifiers
     call_timeout = 'T' in modifiers
     call_spike = 'S' in modifiers
     
-    # Remove modifiers from string to get clean play type
-    clean_play = play_string.replace('+', '').replace('-', '').replace('T', '').replace('S', '').strip()
-    
-    # If clean_play is empty, use base_play (should be a single character)
-    play_char = clean_play[0] if clean_play else base_play
+    # Base play is the first character (could be 'S' for spike ball play)
+    play_char = base_play
     
     play_type = get_play_type_from_key(play_char)
     
@@ -846,12 +843,10 @@ async def execute_play(request: PlayRequest):
     if result.penalty_choice and not result.penalty_choice.offsetting:
         offended_team = result.penalty_choice.offended_team  # "offense" or "defense"
         
-        # DEBUG: Log all penalty decision info
-        print(f"DEBUG PENALTY: player_offense={player_offense}, human_is_home={game.get('human_is_home')}")
-        print(f"DEBUG PENALTY: is_home_possession={engine.state.is_home_possession}")
-        print(f"DEBUG PENALTY: human_is_on_offense={human_is_on_offense}")
-        print(f"DEBUG PENALTY: offended_team={offended_team}")
-        print(f"DEBUG PENALTY: penalty_options={[o.raw_result for o in result.penalty_choice.penalty_options]}")
+        # The offended team gets to choose (the team that was wronged by the penalty)
+        # If offended_team is "offense", offense committed the penalty? NO!
+        # offended_team is the team that GETS TO CHOOSE (was wronged)
+        # So if offended_team == "offense", the offense was wronged (defense committed penalty)
         
         # Human should be prompted if human is on the offended team (gets to choose)
         if offended_team == "offense":
@@ -861,7 +856,6 @@ async def execute_play(request: PlayRequest):
             # Offense committed penalty → defense gets choice
             should_prompt_human = not human_is_on_offense
         
-        print(f"DEBUG PENALTY: should_prompt_human={should_prompt_human}")
         pending_penalty = True
     
     penalty_choice_model = None

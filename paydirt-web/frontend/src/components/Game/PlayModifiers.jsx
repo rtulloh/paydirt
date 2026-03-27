@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
 const PlayModifiers = ({ selectedPlay, onModifierChange }) => {
@@ -18,15 +18,15 @@ const PlayModifiers = ({ selectedPlay, onModifierChange }) => {
   const isHumanOffense = possession === (humanIsHome ? 'home' : 'away');
   const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts;
 
-  // Determine if spike should be disabled
-  const isSpikeDisabled = () => {
+  // Memoize spike disabled state to avoid stale closures in keyboard handler
+  const spikeDisabled = useMemo(() => {
     if (!isHumanOffense) return true;
     if (down >= 3) return true; // 3rd or 4th down
     // Disable for special plays (punt, field goal, kneel)
     const specialPlays = ['P', 'F', 'K', 'S'];
     if (selectedPlay && specialPlays.includes(selectedPlay.toUpperCase())) return true;
     return false;
-  };
+  }, [isHumanOffense, down, selectedPlay]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -44,7 +44,7 @@ const PlayModifiers = ({ selectedPlay, onModifierChange }) => {
       } else if (key === 'O' && isHumanOffense) {
         setModifier('+');
         onModifierChange && onModifierChange('+');
-      } else if (key === 'S' && isHumanOffense && !isSpikeDisabled()) {
+      } else if (key === 'S' && isHumanOffense && !spikeDisabled) {
         setModifier('S');
         onModifierChange && onModifierChange('S');
       } else if (key === '0') {
@@ -55,7 +55,7 @@ const PlayModifiers = ({ selectedPlay, onModifierChange }) => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isHumanOffense, isSpikeDisabled(), toggleNoHuddleMode, setModifier, onModifierChange]);
+  }, [isHumanOffense, spikeDisabled, toggleNoHuddleMode, setModifier, onModifierChange]);
 
   // Only show when player is on offense
   if (!isHumanOffense) return null;
@@ -135,10 +135,10 @@ const PlayModifiers = ({ selectedPlay, onModifierChange }) => {
                 setModifier('S');
                 onModifierChange && onModifierChange('S');
               }}
-              disabled={isSpikeDisabled()}
+              disabled={spikeDisabled}
               className="w-3 h-3 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <span className={isSpikeDisabled() ? 'text-gray-600' : 'text-gray-300'}>
+            <span className={spikeDisabled ? 'text-gray-600' : 'text-gray-300'}>
               Spike[S]
             </span>
           </label>
