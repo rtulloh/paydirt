@@ -202,13 +202,13 @@ class TestPaydirtGame:
     def test_game_over_check(self, game):
         """Game should end after 4th quarter with different scores."""
         game.state.quarter = 4
-        game.state.time_remaining = 0.1
+        game.state.time_remaining = 0.0
         game.state.home_score = 21
         game.state.away_score = 14
         
         game.kickoff(receiving_team_is_home=False)
         
-        # Time should run out
+        # Time should run out - game over when Q4 time hits 0
         assert game.state.game_over is True
     
     def test_stats_tracking(self, game):

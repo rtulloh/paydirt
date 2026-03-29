@@ -2,7 +2,6 @@
 Command-line interface for Paydirt using actual team charts.
 """
 import sys
-from pathlib import Path
 from typing import Optional
 from .packaging import get_seasons_path
 

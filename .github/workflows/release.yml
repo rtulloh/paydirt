@@ -42,6 +42,12 @@ jobs:
           python -c "import os; print('Files in dist:', os.listdir('dist'))"
           echo "Build complete"
       
+      - name: Install NSIS
+        if: matrix.os == 'windows-latest'
+        uses: repolevedavaj/install-nsis@v1.0.1
+        with:
+          nsis-version: '3.10'
+      
       - name: Create Windows installer
         if: matrix.os == 'windows-latest'
         uses: joncloud/makensis-action@v4

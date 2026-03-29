@@ -7,7 +7,6 @@ Usage:
 """
 
 import argparse
-from pathlib import Path
 from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
