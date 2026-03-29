@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "metadata": {
+    "away_team_path": "seasons/1983/Patriots",
+    "home_team_path": "seasons/1983/Steelers",
+    "created_at": "2026-03-29T18:09:37.260348",
+    "last_updated": "2026-03-29T18:09:37.260401"
+  },
+  "opponent_model": {
+    "tracker": {
+      "situation_plays": {
+        "second_long": [
+          "run",
+          "run",
+          "run",
+          "run",
+          "run"
+        ],
+        "third_long": [
+          "pass",
+          "pass",
+          "run",
+          "pass"
+        ],
+        "fourth_long": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "first_down": [
+          "run",
+          "run",
+          "run",
+          "run",
+          "run",
+          "pass",
+          "run",
+          "pass",
+          "run"
+        ],
+        "third_short": [
+          "run"
+        ]
+      },
+      "recent_plays": [
+        "run",
+        "run",
+        "run",
+        "run",
+        "run",
+        "pass",
+        "run",
+        "pass",
+        "pass",
+        "run"
+      ],
+      "situation_results": {}
+    },
+    "score_differential_history": [],
+    "is_protecting_lead": false,
+    "is_comeback_mode": false
+  }
+}

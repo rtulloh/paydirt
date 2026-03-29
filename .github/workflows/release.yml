@@ -48,8 +48,7 @@ jobs:
           npm install --legacy-peer-deps
           npm run build
           cd ../backend
-          mkdir -p web_static
-          cp -r ../frontend/dist/* web_static/
+          rm -rf web_static && cp -r ../frontend/dist web_static
       
       - name: Install dependencies
         run: |
