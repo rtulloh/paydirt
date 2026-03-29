@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paydirt-macos-arm64
-          path: dist/*.dmg
+          path: dist/Paydirt-*.dmg
           if-no-files-found: error
 
       - name: Upload macOS Intel artifact
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paydirt-macos-intel
-          path: dist/*.dmg
+          path: dist/Paydirt-*.dmg
           if-no-files-found: error
 
   release:

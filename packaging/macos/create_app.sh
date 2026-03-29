@@ -59,9 +59,10 @@ DMG_TEMP=$(mktemp -d)
 cp -r "${APP_BUNDLE}" "${DMG_TEMP}/"
 cp "LICENSE" "${DMG_TEMP}/"
 
-# Create DMG
+# Create DMG (strip 'v' prefix from version if present)
+VERSION_STRIPVED=$(echo "${VERSION}" | sed 's/^v//')
 create-dmg \
-  --volname "${APP_NAME} ${VERSION}" \
+  --volname "${APP_NAME} ${VERSION_STRIPVED}" \
   --window-pos 200 120 \
   --window-size 800 400 \
   --icon-size 100 \
@@ -69,7 +70,7 @@ create-dmg \
   --hide-extension "${APP_NAME}.app" \
   --app-drop-link 600 185 \
   --no-internet-enable \
-  "dist/${APP_NAME}-${VERSION}.dmg" \
+  "dist/${APP_NAME}-${VERSION_STRIPVED}.dmg" \
   "${DMG_TEMP}"
 
 # Clean up
