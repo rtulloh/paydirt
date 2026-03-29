@@ -48,6 +48,12 @@ jobs:
         with:
           script-file: packaging/windows/installer.nsi
       
+      - name: Create macOS DMG
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install create-dmg
+          ./packaging/macos/create_app.sh
+      
       - name: Upload warning file
         if: failure()
         uses: actions/upload-artifact@v4
