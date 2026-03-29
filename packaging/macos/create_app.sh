@@ -61,6 +61,8 @@ cp "LICENSE" "${DMG_TEMP}/"
 
 # Create DMG (strip 'v' prefix from version if present)
 VERSION_STRIPVED=$(echo "${VERSION}" | sed 's/^v//')
+ARCH=$(uname -m)
+DMG_NAME="${APP_NAME}-${VERSION_STRIPVED}-${ARCH}.dmg"
 create-dmg \
   --volname "${APP_NAME} ${VERSION_STRIPVED}" \
   --window-pos 200 120 \
@@ -70,7 +72,7 @@ create-dmg \
   --hide-extension "${APP_NAME}.app" \
   --app-drop-link 600 185 \
   --no-internet-enable \
-  "dist/${APP_NAME}-${VERSION_STRIPVED}.dmg" \
+  "dist/${DMG_NAME}" \
   "${DMG_TEMP}"
 
 # Clean up

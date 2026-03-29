@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paydirt-macos-arm64
-          path: dist/Paydirt-*.dmg
+          path: dist/Paydirt-*-arm64.dmg
           if-no-files-found: error
 
       - name: Upload macOS Intel artifact
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paydirt-macos-intel
-          path: dist/Paydirt-*.dmg
+          path: dist/Paydirt-*-x86_64.dmg
           if-no-files-found: error
 
   release:
@@ -158,7 +158,8 @@ jobs:
             ## Downloads by Architecture
             
             ### macOS
-            - **Paydirt-1.0.0-beta.29.dmg** - For macOS (ARM64/Intel)
+            - **Paydirt-1.0.0-beta.30-arm64.dmg** - For Apple Silicon Macs (M1, M2, M3, M4)
+            - **Paydirt-1.0.0-beta.30-x86_64.dmg** - For Intel Macs
             
             ### Windows
             - **paydirt.exe** - Portable executable
