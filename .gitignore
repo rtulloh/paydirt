@@ -58,3 +58,7 @@ standings_data/
 Thumbs.db
 node_modules/
 *.log
+
+# Historical season data (kept locally for development, not in repository)
+seasons/1972/
+seasons/1983/
