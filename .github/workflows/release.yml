@@ -42,6 +42,14 @@ jobs:
           ls -la dist/
           echo "Build complete"
       
+      - name: Upload warning file
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warnings-${{ matrix.artifact }}
+          path: build/*/warn-*.txt
+          if-no-files-found: ignore
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
