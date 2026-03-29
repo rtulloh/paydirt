@@ -54,6 +54,13 @@ jobs:
           brew install create-dmg
           ./packaging/macos/create_app.sh
       
+      - name: Create Linux AppImage
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget imagemagick
+          ./packaging/linux/create_appimage.sh
+      
       - name: Upload warning file
         if: failure()
         uses: actions/upload-artifact@v4
