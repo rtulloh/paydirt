@@ -37,7 +37,7 @@ jobs:
       
       - name: Build executable
         run: |
-          pyinstaller paydirt.spec --clean --debug=all --log-level=DEBUG
+          pyinstaller paydirt.spec --clean
           echo "Build output:"
           ls -la dist/
           echo "Build complete"
