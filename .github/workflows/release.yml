@@ -39,7 +39,7 @@ jobs:
         run: |
           pyinstaller paydirt.spec --clean
           echo "Build output:"
-          ls -la dist/
+          python -c "import os; print('Files in dist:', os.listdir('dist'))"
           echo "Build complete"
       
       - name: Upload warning file
