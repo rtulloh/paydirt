@@ -10,7 +10,6 @@ from paydirt.interactive_game import (
     cpu_should_onside_kick,
     computer_select_offense,
     computer_select_defense,
-    _apply_timeout,
 )
 from paydirt.utils import format_time
 from paydirt.game_engine import PaydirtGameEngine
@@ -329,31 +328,31 @@ class TestComputerSelectDefense:
 
 
 class TestApplyTimeout:
-    """Tests for _apply_timeout function."""
-    
+    """Tests for _apply_timeout method on game engine."""
+
     def test_reduces_time_by_10_seconds(self, game):
         """Timeout should reduce time to 10 seconds for the play."""
         game.state.time_remaining = 5.0  # 5 minutes
         game.state.quarter = 2
         time_before = 5.0
         quarter_before = 2
-        
-        _apply_timeout(game, time_before, quarter_before)
-        
+
+        game._apply_timeout(time_before, quarter_before)
+
         # Should be time_before - 0.167 (10 seconds)
         assert abs(game.state.time_remaining - 4.833) < 0.01
-    
+
     def test_does_not_go_negative(self, game):
         """Time should not go negative."""
         game.state.time_remaining = 0.1  # 6 seconds
         game.state.quarter = 2
         time_before = 0.1
         quarter_before = 2
-        
-        _apply_timeout(game, time_before, quarter_before)
-        
+
+        game._apply_timeout(time_before, quarter_before)
+
         assert game.state.time_remaining == 0
-    
+
     def test_prevents_premature_game_over(self, game):
         """Should prevent game from ending prematurely."""
         game.state.time_remaining = 0.2
@@ -361,20 +360,20 @@ class TestApplyTimeout:
         game.state.game_over = True
         time_before = 0.2
         quarter_before = 4
-        
-        _apply_timeout(game, time_before, quarter_before)
-        
+
+        game._apply_timeout(time_before, quarter_before)
+
         assert game.state.game_over is False
-    
+
     def test_reverts_quarter_if_timeout_preserves_time(self, game):
         """Timeout should revert quarter advancement if time is preserved."""
         game.state.time_remaining = 15.0  # Quarter advanced, time reset
         game.state.quarter = 3  # Advanced to Q3
         time_before = 0.26  # Had 0:16 before play
         quarter_before = 2  # Was Q2 before play
-        
-        _apply_timeout(game, time_before, quarter_before)
-        
+
+        game._apply_timeout(time_before, quarter_before)
+
         # Should revert to Q2 with time preserved
         assert game.state.quarter == 2
         assert abs(game.state.time_remaining - 0.093) < 0.01  # 0.26 - 0.167

@@ -1322,7 +1322,7 @@ def resolve_play_with_penalties(offense_chart: TeamChart, defense_chart: Defense
     # When defense commits a penalty, priority chart returns penalty yards as final_yards
     # but we need the original offense result for "accept play" (decline penalty) option
     off_category, off_yards = categorize_result(off_result_str)
-    if off_yards is not None and off_yards != 0:
+    if off_yards is not None:
         play_result.offense_yards = off_yards
 
     # Handle special priority outcomes (QT, Breakaway, etc.)

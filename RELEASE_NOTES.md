@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Spike Ball as Play Modifier
+Spike ball now works as a **modifier** (like `+` for out-of-bounds and `T` for timeout) instead of only as a standalone play. This enables the classic two-minute drill: run a play, spike to stop the clock, then kick a field goal.
+
+- **New modifier `S`**: Append to any offensive play (e.g., `7S` = Medium Pass + Spike)
+- **Time savings**: Spike + previous play = 20 seconds maximum (17 sec for play + 3 sec for spike)
+- **Clock stops**: Spike reduces play time and adds 3 seconds, allowing time for a field goal
+- **Strategic constraint**: Only useful on 1st/2nd down (spiking on 3rd wastes the down)
+- **Smart skip**: Spike is skipped after incomplete passes (clock already stopped) or short plays (<3 sec)
+- **Combined modifiers**: `7ST` = Medium Pass + Spike + Timeout, `7+S` = Pass + OOB + Spike
+- **CPU AI support**: Computer opponent uses spike modifier in two-minute drill situations
+- **Help text updated**: Added spike modifier to play selection menu
+
+**Example scenario** (20 seconds left, need FG):
+1. Call `7S` (Medium Pass + Spike)
+2. Pass completes for 5 yards (uses ~25 sec normally)
+3. Spike modifier caps play at 17 sec + 3 sec spike = 20 sec total
+4. Time remaining for field goal attempt
+
+### Bug Fix: auto_game.py spike execution
+Fixed a bug in auto-game mode where spike execution was always skipped because `play_seconds` was calculated in minutes but the check expected seconds. Now correctly converts to seconds before checking.
+
+### Test Coverage
+- Added 14 new tests in `test_spike_modifier.py` for spike modifier functionality
+- Updated `test_computer_ai.py` to handle 6-tuple return from `select_offense_with_clock_management`
+- Updated `run_all_games.py` to track spike usage statistics
+- **1770 tests passing**, 64% code coverage
+
+### Documentation
+- Updated `AGENTS.md` with Play Modifiers section documenting spike, timeout, OOB, and in-bounds modifiers
+
+---
+
+## Unreleased (continued)
+
 ### Era-Based AI Behavior Configuration
 CPU clock management thresholds are now configurable per season via `ai_behavior.yaml` files, replacing hardcoded modern NFL values applied to historical simulations.
 

@@ -59,7 +59,7 @@ class ComputerAI:
     def select_offense(self, game: PaydirtGameEngine) -> PlayType:
         """
         Select an offensive play based on game situation.
-        
+
         Decision factors:
         1. Down and distance
         2. Field position
@@ -68,7 +68,7 @@ class ComputerAI:
         5. Quarter
         6. Team chart analysis (if use_analysis=True)
         """
-        play_type, _, _, _, _ = self.select_offense_with_clock_management(game)
+        play_type, _, _, _, _, _ = self.select_offense_with_clock_management(game)
         return play_type
 
     def _get_ai_play_suggestion(self, down: int, distance: int):
@@ -106,9 +106,10 @@ class ComputerAI:
     def select_offense_with_clock_management(self, game: PaydirtGameEngine) -> tuple:
         """
         Select an offensive play with clock management options.
-        
+
         Returns:
-            tuple: (PlayType, out_of_bounds: bool, no_huddle: bool)
+            tuple: (PlayType, out_of_bounds: bool, no_huddle: bool, 
+                    punt_short_drop: bool, punt_coffin_corner_yards: int, call_spike: bool)
         """
         state = game.state
         down = state.down
@@ -122,10 +123,11 @@ class ComputerAI:
             score_diff = state.home_score - state.away_score
         else:
             score_diff = state.away_score - state.home_score
-        
+
         # Clock management flags
         use_oob = False
         use_no_huddle = False
+        use_spike = False
 
         # ============================================================
         # SPECIAL SITUATIONS - Time-based checks FIRST (most important)
@@ -140,7 +142,7 @@ class ComputerAI:
             if fg_distance <= 47 and fg_helps:  # Makeable range (~65%+ in 1983)
                 self.last_mode = "End-of-Half FG"
                 use_no_huddle = True
-                return (PlayType.FIELD_GOAL, use_oob, use_no_huddle, False, 0)
+                return (PlayType.FIELD_GOAL, use_oob, use_no_huddle, False, 0, False)
 
         # 4th Down Decision
         if down == 4:
@@ -151,7 +153,7 @@ class ComputerAI:
                 if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                     if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
                         use_oob = True
-            return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards)
+            return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards, False)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
         if self._is_two_minute_drill(time_left, quarter, score_diff):
@@ -162,9 +164,10 @@ class ComputerAI:
             if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
                 if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
                     use_oob = True
-            # Spike ball: stop clock after a completion near end of game
+            # Spike modifier: add spike to stop clock after play (only on 1st/2nd down, not 3rd)
+            # On 3rd down, spiking wastes the down and we need to punt/kick on 4th
             spike_chance = self.ai_behavior.strategic.spike_ball_chance
-            if spike_chance > 0 and time_left < 1.0:
+            if spike_chance > 0 and time_left < 1.0 and down <= 2:
                 prev = game.play_log[-1] if game.play_log else None
                 is_prev_completion = (
                     prev is not None and
@@ -172,15 +175,15 @@ class ComputerAI:
                     prev.yards_gained > 0
                 )
                 if is_prev_completion and ytg >= 5 and random.random() < spike_chance:
-                    self.last_mode = "Spike Ball"
-                    return (PlayType.SPIKE_BALL, False, True, False, 0)
-            return (play, use_oob, use_no_huddle, False, 0)  # No punt options in two-minute
+                    self.last_mode = "Play + Spike"
+                    use_spike = True
+            return (play, use_oob, use_no_huddle, False, 0, use_spike)
 
         # Running Out Clock (time-critical - protecting lead)
         if self._should_run_clock(time_left, quarter, score_diff):
             self.last_mode = "Clock Killing"
             play = self._clock_killing_offense(down, ytg, time_left, field_pos)
-            return (play, False, False, False, 0)  # No hurry, let clock run - no punt options
+            return (play, False, False, False, 0, False)  # No hurry, let clock run - no punt options
 
         # ============================================================
         # FIELD-POSITION BASED SITUATIONS
@@ -192,7 +195,7 @@ class ComputerAI:
             play = self._goal_line_offense(ytg)
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
-            return (play, use_oob, use_no_huddle, False, 0)
+            return (play, use_oob, use_no_huddle, False, 0, False)
 
         # Red Zone (inside 20)
         if field_pos >= 80:
@@ -200,7 +203,7 @@ class ComputerAI:
             play = self._red_zone_offense(down, ytg)
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
-            return (play, use_oob, use_no_huddle, False, 0)
+            return (play, use_oob, use_no_huddle, False, 0, False)
 
         # ============================================================
         # STANDARD SITUATIONS
@@ -225,7 +228,7 @@ class ComputerAI:
                 if suggested_play:
                     play = suggested_play
 
-        return (play, use_oob, use_no_huddle, False, 0)
+        return (play, use_oob, use_no_huddle, False, 0, False)
 
     def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> tuple:
         """

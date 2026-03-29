@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 import random
 import uuid
+import re
 from datetime import datetime
 
 import sys
@@ -149,6 +150,7 @@ class GameStateResponse(BaseModel):
     ot_period: int = 0
     home_stats: Optional[Dict[str, int]] = None
     away_stats: Optional[Dict[str, int]] = None
+    season: str = "1983"  # Season year for replay saving
 
 
 class NewGameResponse(BaseModel):
@@ -163,6 +165,7 @@ class PlayRequest(BaseModel):
     cpu_play: Optional[str] = None
     short_drop: bool = False
     coffin_corner_yards: int = 0
+    no_huddle: bool = False  # Mode, not a one-play modifier
 
 
 class CPUPlayResponse(BaseModel):
@@ -264,11 +267,14 @@ def _calculate_post_play_state(
         }
 
 
-def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> GameStateResponse:
+def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
     pending_pat = game.get("pending_pat", False)
+    # Use stored is_kickoff if not explicitly provided
+    if is_kickoff is None:
+        is_kickoff = game.get("is_kickoff", False)
     
     # Get can_go_for_two from season rules if PAT is pending
     can_go_for_two = False
@@ -324,6 +330,7 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = False) -> Ga
         ot_period=game["engine"].state.ot_period,
         home_stats=home_stats,
         away_stats=away_stats,
+        season=game.get("season", "1983"),
     )
     return response
 
@@ -357,6 +364,45 @@ def get_defense_type_from_key(key: str) -> DefenseType:
         "E": DefenseType.LONG_PASS,
     }
     return defense_map.get(key.upper(), DefenseType.STANDARD)
+
+
+def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
+    """
+    Parse play string with modifiers (e.g., '7S' -> PlayType.MEDIUM_PASS with spike modifier).
+    
+    Modifiers:
+        + : out-of-bounds designation
+        - : in-bounds designation
+        T : timeout after play
+        S : spike after play
+    
+    Returns:
+        Tuple of (PlayType, dict with modifier flags)
+    """
+    # Extract base play (first character)
+    if not play_string:
+        raise ValueError("Play string cannot be empty")
+    
+    base_play = play_string[0].upper()
+    modifiers = play_string[1:].upper()
+    
+    # Parse modifiers (only from suffix, not from base play)
+    out_of_bounds = '+' in modifiers
+    in_bounds = '-' in modifiers
+    call_timeout = 'T' in modifiers
+    call_spike = 'S' in modifiers
+    
+    # Base play is the first character (could be 'S' for spike ball play)
+    play_char = base_play
+    
+    play_type = get_play_type_from_key(play_char)
+    
+    return play_type, {
+        'call_spike': call_spike,
+        'call_timeout': call_timeout,
+        'out_of_bounds': out_of_bounds,
+        'in_bounds': in_bounds
+    }
 
 
 @router.get("/api/seasons", response_model=SeasonsResponse)
@@ -626,7 +672,7 @@ async def get_cpu_4th_down_decision(game_id: str):
         PlayType.SPIKE_BALL: "S",
     }
     
-    play, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
+    play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
     play_key = play_map.get(play, "1")
     
     if play == PlayType.PUNT:
@@ -662,8 +708,21 @@ async def execute_play(request: PlayRequest):
     
     cpu_play = request.cpu_play.upper() if request.cpu_play else None
     
+    # Initialize modifier flags
+    call_spike = False
+    call_timeout = False
+    out_of_bounds = False
+    in_bounds = False
+    no_huddle = request.no_huddle
+    
     if player_offense:
-        offense_play = get_play_type_from_key(player_play)
+        # Parse player_play for modifiers (e.g., '7S' -> medium pass with spike)
+        offense_play, modifiers = parse_play_with_modifiers(player_play)
+        call_spike = modifiers['call_spike']
+        call_timeout = modifiers['call_timeout']
+        out_of_bounds = modifiers['out_of_bounds']
+        in_bounds = modifiers['in_bounds']
+        
         if cpu_play:
             defense_play = get_defense_type_from_key(cpu_play)
         else:
@@ -671,7 +730,7 @@ async def execute_play(request: PlayRequest):
     else:
         # CPU on offense - check for 4th down decision if no cpu_play provided
         if engine.state.down == 4 and not cpu_play:
-            play, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
+            play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
             play_map = {
                 PlayType.LINE_PLUNGE: "1", PlayType.OFF_TACKLE: "2", PlayType.END_RUN: "3",
                 PlayType.DRAW: "4", PlayType.SCREEN: "5", PlayType.SHORT_PASS: "6",
@@ -694,6 +753,7 @@ async def execute_play(request: PlayRequest):
     
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
+    quarter_before = engine.state.quarter
     
     # Map play types to display keys for logging
     offense_key_map = {
@@ -718,6 +778,11 @@ async def execute_play(request: PlayRequest):
     
     result = engine.run_play_with_penalty_procedure(
         offense_play, defense_play,
+        out_of_bounds_designation=out_of_bounds,
+        in_bounds_designation=in_bounds,
+        no_huddle=no_huddle,
+        call_spike=call_spike,
+        call_timeout=call_timeout,
         punt_short_drop=request.short_drop,
         punt_coffin_corner_yards=request.coffin_corner_yards
     )
@@ -763,31 +828,34 @@ async def execute_play(request: PlayRequest):
             engine.state.ball_position = 35
         engine.state.down = 1
         engine.state.yards_to_go = 10
+        game["is_kickoff"] = True  # Mark that kickoff is needed
     
     # Determine if human needs to make penalty decision
     # offended_team indicates who is "offended" by the penalty (who benefited)
     # OFFENSE committed penalty (OFF 5, OFF 15) → DEFENSE gets choice → prompt only if human is on DEFENSE
     # DEFENSE committed penalty (DEF 5, DEF 15) → OFFENSE gets choice → prompt only if human is on OFFENSE
     # HUMAN gets prompted if their team is NOT the one that committed the penalty
-    human_is_on_offense = game.get("human_plays_offense", True)
+    # Use player_offense (current possession) instead of stale human_plays_offense flag
+    human_is_on_offense = player_offense
     
     should_prompt_human = False
     pending_penalty = False
     if result.penalty_choice and not result.penalty_choice.offsetting:
         offended_team = result.penalty_choice.offended_team  # "offense" or "defense"
         
-        # Check if HUMAN's team committed the penalty
-        if offended_team == "offense":
-            # Offense committed penalty → defense gets choice
-            # Human committed if human is on offense
-            human_committed_penalty = human_is_on_offense
-        else:
-            # Defense committed penalty → offense gets choice
-            # Human committed if human is on defense (not on offense)
-            human_committed_penalty = not human_is_on_offense
+        # The offended team gets to choose (the team that was wronged by the penalty)
+        # If offended_team is "offense", offense committed the penalty? NO!
+        # offended_team is the team that GETS TO CHOOSE (was wronged)
+        # So if offended_team == "offense", the offense was wronged (defense committed penalty)
         
-        # Human is prompted only if their team did NOT commit the penalty
-        should_prompt_human = not human_committed_penalty
+        # Human should be prompted if human is on the offended team (gets to choose)
+        if offended_team == "offense":
+            # Defense committed penalty → offense gets choice
+            should_prompt_human = human_is_on_offense
+        else:
+            # Offense committed penalty → defense gets choice
+            should_prompt_human = not human_is_on_offense
+        
         pending_penalty = True
     
     penalty_choice_model = None
@@ -845,6 +913,7 @@ async def execute_play(request: PlayRequest):
             engine.state.ball_position = 35
             engine.state.down = 1
             engine.state.yards_to_go = 10
+            game["is_kickoff"] = True  # Mark that kickoff is needed
         
         # CPU decided, so no pending decision for human
         pending_penalty = False
@@ -853,6 +922,18 @@ async def execute_play(request: PlayRequest):
     
     # Parse dice from description for frontend display
     dice_details = parse_dice_from_description(result.description)
+    
+    # If description didn't have dice pattern, decompose from dice_roll
+    # This handles cases like punts where description doesn't include [Off: B1+W4+W3=17, Def: R2+G1=3]
+    if dice_details["offense"]["total"] == 0 and hasattr(result.result, 'dice_roll') and result.result.dice_roll > 0:
+        total = result.result.dice_roll
+        black = total // 10  # Tens digit (1, 2, or 3)
+        ones = total % 10     # Ones digit (0-9)
+        white1 = min(5, ones)
+        white2 = ones - white1
+        dice_details["offense"] = {"black": black, "white1": white1, "white2": white2, "total": total}
+        # Defense uses same dice roll
+        dice_details["defense"] = {"red": black, "green": white1, "total": total}
     
     return ExecutePlayResponse(
         player_play=player_play,
@@ -874,8 +955,8 @@ async def execute_play(request: PlayRequest):
             new_score_away=engine.state.away_score,
             possession_changed=result.turnover or engine.state.home_score != home_score_before or engine.state.away_score != away_score_before,
             game_over=engine.state.game_over,
-            quarter_changed=False,
-            half_changed=False,
+            quarter_changed=engine.state.quarter != quarter_before,
+            half_changed=quarter_before == 2 and engine.state.quarter == 3,
             pending_penalty_decision=pending_penalty and result.pending_penalty_decision,
             penalty_choice=penalty_choice_model,
             play_type=result.play_type.value if hasattr(result.play_type, 'value') else str(result.play_type),
@@ -1035,6 +1116,7 @@ async def attempt_extra_point(request: PlayRequest):
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     # The engine's kickoff() method handles the receiver getting the ball.
     game["pending_pat"] = False
+    game["is_kickoff"] = True  # Mark that kickoff is needed
     engine.state.ball_position = 35
     engine.state.down = 1
     engine.state.yards_to_go = 10
@@ -1062,6 +1144,9 @@ async def perform_kickoff(request: KickoffRequest):
     game = games[request.game_id]
     engine = game["engine"]
     
+    # Clear the kickoff flag - we're performing the kickoff now
+    game["is_kickoff"] = False
+    
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
     
@@ -1077,11 +1162,41 @@ async def perform_kickoff(request: KickoffRequest):
     scoring = result.touchdown or result.safety
     possession_changed = True
     
+    # Get dice roll from result - decompose into display dice
+    # Kickoff roll is 10-39, decompose into: black (tens) + white1 + white2 (ones)
+    ko_value = result.result.dice_roll if hasattr(result.result, 'dice_roll') else 0
+    if ko_value > 0:
+        black_value = ko_value // 10  # Tens digit (1, 2, or 3)
+        ones_digit = ko_value % 10    # Ones digit (0-9)
+        # Split ones digit between two white dice (each 0-5)
+        white1_value = min(5, ones_digit)
+        white2_value = ones_digit - white1_value
+    else:
+        # Fallback: parse from description
+        ko_match = re.search(r'KO:(\d+)', result.description)
+        if ko_match:
+            ko_value = int(ko_match.group(1))
+            black_value = ko_value // 10
+            ones_digit = ko_value % 10
+            white1_value = min(5, ones_digit)
+            white2_value = ones_digit - white1_value
+        else:
+            ko_value, black_value, white1_value, white2_value = 0, 0, 0, 0
+    
+    kickoff_dice = {"black": black_value, "white1": white1_value, "white2": white2_value, "total": ko_value}
+    return_dice = {"red": black_value, "green": white1_value, "total": ko_value}
+    
+    dice_details = {
+        "offense": kickoff_dice,
+        "defense": return_dice
+    }
+    
     return ExecutePlayResponse(
         player_play="KICKOFF",
         cpu_play="KICKOFF",
-        dice_roll_offense=0,
-        dice_roll_defense=0,
+        dice_roll_offense=kickoff_dice["total"],
+        dice_roll_defense=return_dice["total"],
+        dice_details=dice_details,
         result=PlayResult(
             result=result.result.result_type.value if hasattr(result.result, 'result_type') else str(result.result),
             yards=result.yards_gained,
@@ -1199,7 +1314,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         accept_penalty = not accept_play
     
     if outcome.play_type == PlayType.PUNT:
-        new_outcome = engine.apply_punt_penalty_decision(outcome, accept_penalty)
+        new_outcome = engine.apply_punt_penalty_decision(outcome, accept_penalty, penalty_index)
     elif outcome.play_type == PlayType.FIELD_GOAL:
         new_outcome = engine.apply_fg_penalty_decision(outcome, accept_play=accept_play, penalty_index=penalty_index)
     elif outcome.play_type == PlayType.KICKOFF:
@@ -1215,9 +1330,15 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
     off_team = home_abbrev if engine.state.is_home_possession else away_abbrev
     def_team = away_abbrev if engine.state.is_home_possession else home_abbrev
     print(f"[{off_team} vs {def_team}] PENALTY DECISION: {decision_str} @ {field_pos} | yards_gained={new_outcome.yards_gained} | {new_outcome.description}")
-    print(f"  DEBUG: accept_play={accept_play}, penalty_index={penalty_index}, play_result_yards={outcome.penalty_choice.play_result.yards if outcome.penalty_choice and outcome.penalty_choice.play_result else 'N/A'}")
+    
+    # Check for touchdown based on ball position (in case engine didn't detect it)
+    if engine.state.ball_position >= 100 and not new_outcome.turnover:
+        new_outcome.touchdown = True
+        engine.state.ball_position = 100
     
     scoring = new_outcome.touchdown or new_outcome.field_goal_made or new_outcome.safety
+    is_pending_pat = new_outcome.touchdown and not engine.state.game_over
+    game["pending_pat"] = is_pending_pat
     
     penalty_choice_model = None
     if new_outcome.penalty_choice:
@@ -1266,7 +1387,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         dice_roll_offense=0,
         dice_roll_defense=0,
         result=play_result,
-        game_state=game_state_to_response(game),
+        game_state=game_state_to_response(game, is_kickoff=scoring and not is_pending_pat),
     )
 
 
@@ -1314,24 +1435,35 @@ async def load_replay(request: LoadReplayRequest):
     home_team_id = game_state.get("home_team", {}).get("id")
     away_team_id = game_state.get("away_team", {}).get("id")
     
+    # Also handle case where home_team/away_team is just a string ID
+    if not home_team_id:
+        home_team_id = game_state.get("home_team") if isinstance(game_state.get("home_team"), str) else None
+    if not away_team_id:
+        away_team_id = game_state.get("away_team") if isinstance(game_state.get("away_team"), str) else None
+    
     if not home_team_id or not away_team_id:
         raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
     
-    # Try to detect season from replay data, or find it by looking for team
-    # Check: replay_data.season (new format) -> game_state.season (legacy format) -> search by team
-    season = replay_data.get("season") or game_state.get("season")
-    
-    def find_season_for_team(team_id):
-        """Find the first season that contains this team."""
+    def find_season_for_teams(home_id, away_id):
+        """Find a season that contains BOTH teams."""
         for season_dir in sorted(SEASONS_DIR.iterdir()):
-            if season_dir.is_dir() and (season_dir / team_id).exists():
+            if season_dir.is_dir() and (season_dir / home_id).exists() and (season_dir / away_id).exists():
                 return season_dir.name
         return None
     
+    # Check: replay_data.season (new format) -> game_state.season (legacy format) -> search by team
+    season = replay_data.get("season") or game_state.get("season")
+    
+    # Validate that the season actually contains BOTH teams, if not, detect from teams
+    if season:
+        season_dir = SEASONS_DIR / season
+        if not season_dir.exists() or not (season_dir / home_team_id).exists() or not (season_dir / away_team_id).exists():
+            season = None  # Invalid season, will detect from teams
+    
     if not season:
-        season = find_season_for_team(home_team_id)
-        if not season:
-            raise HTTPException(status_code=400, detail="Could not determine season for team. Please start a new game.")
+        season = find_season_for_teams(home_team_id, away_team_id)
+    if not season:
+        raise HTTPException(status_code=400, detail="Could not determine season for team. Please start a new game.")
     
     season_dir = SEASONS_DIR / season
     if not season_dir.exists():
@@ -1387,7 +1519,7 @@ async def load_replay(request: LoadReplayRequest):
     possession = game_state.get("possession", "home")
     state.is_home_possession = (possession == "home")
     
-    # Check if this game needs kickoff transition after a score
+    # Check if this game needs kickoff transition after a score or halftime
     # If the last play was a TD/FG/safety but game state wasn't set up for kickoff,
     # we need to fix it (this was a bug in the original code)
     play_history = replay_data.get("play_history", [])
@@ -1396,16 +1528,25 @@ async def load_replay(request: LoadReplayRequest):
     saved_ball_position = game_state.get("ball_position", 20)
     saved_down = game_state.get("down", 1)
     saved_yards_to_go = game_state.get("yards_to_go", 10)
+    saved_quarter = game_state.get("quarter", 1)
+    saved_time = game_state.get("time_remaining", 0)
     is_already_in_kickoff_position = (saved_ball_position == 35 and 
                                       saved_down == 1 and 
                                       saved_yards_to_go == 10)
     
-    needs_kickoff_transition = False
+    # Check if this is start of 2nd half (Q3, 15:00, kickoff position)
+    is_halftime_kickoff = (saved_quarter == 3 and 
+                           saved_time == 900 and 
+                           saved_ball_position == 35 and
+                           saved_down == 1 and 
+                           saved_yards_to_go == 10)
+    
+    needs_kickoff_transition = is_halftime_kickoff
     # Check for explicit pending_pat flag from frontend save
     explicit_pending_pat = game_state.get("pending_pat", False)
     has_pending_pat = explicit_pending_pat
     
-    if play_history and len(play_history) > 0 and not is_already_in_kickoff_position and not explicit_pending_pat:
+    if play_history and len(play_history) > 0 and not is_already_in_kickoff_position and not explicit_pending_pat and not is_halftime_kickoff:
         last_play = play_history[-1]
         if last_play is None:
             last_play = {}
@@ -1448,7 +1589,13 @@ async def load_replay(request: LoadReplayRequest):
     games[game_id] = new_game
     new_game["pending_pat"] = has_pending_pat
     
-    print(f"[DEBUG] load-replay: pending_pat={has_pending_pat}")
+    # Handle pending penalty decision - we can't reconstruct the PlayOutcome
+    # so we check if ball is in end zone (TD) and handle accordingly
+    if state.ball_position >= 100:
+        # Ball is in end zone - this was a touchdown
+        state.ball_position = 100
+        has_pending_pat = True
+        new_game["pending_pat"] = True
     
     return NewGameResponse(
         game_id=game_id,

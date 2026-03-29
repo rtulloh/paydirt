@@ -222,14 +222,20 @@ for away, home in matchups:
     no_huddle_count = output.count("NO-HUDDLE offense!")
     oob_count = output.count("OUT OF BOUNDS DESIGNATION")
     two_min_drill_count = output.count("[Two-Minute Drill]")
+    spike_count = output.count("SPIKE:")
+    spike_modifier_count = output.count("[SPIKE: Will stop clock after play]")
+    play_spike_count = output.count("[SPIKE: Clock stopped]")
     clock_management_stats.append({
         'game': f"{away}@{home}",
         'no_huddle': no_huddle_count,
         'oob': oob_count,
         'two_min_drill': two_min_drill_count,
+        'spike': spike_count,
+        'spike_modifier': spike_modifier_count,
+        'play_spike': play_spike_count,
     })
-    if no_huddle_count > 0 or oob_count > 0:
-        print(f"  Clock Mgmt: {no_huddle_count} no-huddle, {oob_count} OOB designations, {two_min_drill_count} 2-min drill plays")
+    if no_huddle_count > 0 or oob_count > 0 or spike_count > 0:
+        print(f"  Clock Mgmt: {no_huddle_count} no-huddle, {oob_count} OOB, {two_min_drill_count} 2-min drill, {spike_modifier_count} spikes")
 
 print(f"\n{'='*70}")
 print(f"  SUMMARY: {len(matchups)} games played")
@@ -302,19 +308,26 @@ if clock_management_stats:
     total_no_huddle = sum(g['no_huddle'] for g in clock_management_stats)
     total_oob = sum(g['oob'] for g in clock_management_stats)
     total_two_min = sum(g['two_min_drill'] for g in clock_management_stats)
+    total_spike = sum(g['spike'] for g in clock_management_stats)
+    total_spike_modifier = sum(g['spike_modifier'] for g in clock_management_stats)
+    total_play_spike = sum(g['play_spike'] for g in clock_management_stats)
     games_with_clock_mgmt = sum(1 for g in clock_management_stats if g['no_huddle'] > 0 or g['oob'] > 0)
-    
+    games_with_spike = sum(1 for g in clock_management_stats if g['spike_modifier'] > 0)
+
     print(f"    Games with clock management: {games_with_clock_mgmt}/{len(clock_management_stats)}")
     print(f"    Total no-huddle plays:       {total_no_huddle}")
     print(f"    Total OOB designations:      {total_oob}")
     print(f"    Total two-minute drill plays: {total_two_min}")
-    
+    print(f"    Games with spike modifier:   {games_with_spike}/{len(clock_management_stats)}")
+    print(f"    Total spike calls:           {total_spike_modifier}")
+    print(f"    Total spike executions:      {total_play_spike}")
+
     # Show games with most clock management
     if games_with_clock_mgmt > 0:
         print("\n    Games with clock management activity:")
         for g in sorted(clock_management_stats, key=lambda x: x['no_huddle'] + x['oob'], reverse=True)[:5]:
-            if g['no_huddle'] > 0 or g['oob'] > 0:
-                print(f"      {g['game']}: {g['no_huddle']} no-huddle, {g['oob']} OOB")
+            if g['no_huddle'] > 0 or g['oob'] > 0 or g.get('spike_modifier', 0) > 0:
+                print(f"      {g['game']}: {g['no_huddle']} no-huddle, {g['oob']} OOB, {g.get('spike_modifier', 0)} spikes")
 
 # Print breakaway summary
 if breakaway_matches:

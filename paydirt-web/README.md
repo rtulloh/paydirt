@@ -29,10 +29,16 @@ npm install
 
 ### 3. Start the Application
 
+**Mac/Linux:**
 ```bash
-# Start both services
 cd paydirt-web
 ./start.sh
+```
+
+**Windows:**
+```batch
+cd paydirt-web
+start.bat
 ```
 
 Or run each service separately:
@@ -62,13 +68,17 @@ paydirt-web/
 │   └── requirements.txt
 ├── frontend/          # React frontend
 │   ├── src/
-│   │   ├── components/  # UI components
-│   │   ├── store/       # Zustand state
-│   │   ├── styles/      # Tailwind CSS
-│   │   └── App.jsx      # Main app
+│   │   ├── components/Game/  # Game UI components
+│   │   │   ├── PlayingPhase.jsx    # Main gameplay
+│   │   │   ├── PlayModifiers.jsx   # No-huddle, timeout, OOB, spike
+│   │   │   ├── Halftime.jsx        # Halftime screen
+│   │   │   └── ...
+│   │   ├── store/       # Zustand state management
+│   │   └── styles/      # Tailwind CSS
 │   ├── package.json
 │   └── vite.config.js
-└── start.sh          # Launch script
+├── start.sh           # Launch script (Mac/Linux)
+└── start.bat          # Launch script (Windows)
 ```
 
 ## Running Tests
@@ -94,7 +104,16 @@ pytest
 
 ## Development Status
 
-**Phase 1 Complete**: Project setup, basic UI, and API structure.
-- Frontend tests: 8/8 passing
-- Backend API: Routes defined, needs Python 3.12+
-- Next: Phase 2 - Static UI components (Field, Scoreboard, Play Selection)
+**Core Features Complete:**
+- Full game engine with all play types
+- CPU AI opponent with difficulty levels
+- Season/team support (1972, 1983, 2026)
+- Replay save/load functionality
+- Play modifiers: No-huddle, Timeout, Out-of-Bounds, Spike
+
+**Play Modifiers:**
+- **No-huddle mode**: Persists until possession change
+- **Timeout (T)**: Stops clock after play (uses timeout)
+- **Out-of-Bounds (+)**: Guarantees 10-sec play in final minutes (costs 5 yards)
+- **In-Bounds (-)**: Forces clock to keep running (costs 5 yards)
+- **Spike (S)**: Spikes ball to stop clock (uses a down)

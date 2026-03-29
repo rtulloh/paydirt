@@ -683,6 +683,9 @@ class PaydirtGameEngine:
 
         dice_line = f"(KO:{dice_roll}→\"{ko_result}\" | RT:{dice_roll}→\"{actual_return}\")"
         
+        # Store dice roll in result for frontend
+        ret_parsed.dice_roll = dice_roll
+        
         # Use "Safety free kick" for kicks from own 20
         kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
 
@@ -1489,13 +1492,13 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
             forced_10_sec = False
 
-        # No huddle reduces play time from ~40 sec to ~20 sec
+        # No huddle reduces play time from ~35 sec to ~20 sec
         if forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
-            play_seconds = random.uniform(5, 20)
+            play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(5, 40)
+            play_seconds = random.uniform(25, 45)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 
@@ -1506,15 +1509,21 @@ class PaydirtGameEngine:
                                          in_bounds_designation: bool = False,
                                          punt_short_drop: bool = False,
                                          punt_coffin_corner_yards: int = 0,
-                                         no_huddle: bool = False) -> PlayOutcome:
+                                         no_huddle: bool = False,
+                                         call_spike: bool = False,
+                                         call_timeout: bool = False) -> PlayOutcome:
         """
         Execute an offensive play with full penalty procedure per Paydirt rules.
-        
+
         PENALTY PROCEDURE:
         i. When a penalty occurs, offense rerolls (defense keeps original)
         ii. Offended team chooses: play result (down counts) OR penalty (down replayed)
         iii. If PI, no rerolls - defensive result cancelled, incomplete pass
-        
+
+        POST-PLAY MODIFIERS:
+        - call_spike: If True, apply spike modifier after play (caps play + spike at 20 sec)
+        - call_timeout: If True, apply timeout after play (reduces play time to 10 sec)
+
         Returns:
             PlayOutcome with penalty_choice populated if a penalty occurred.
             If pending_penalty_decision is True, caller must call apply_penalty_decision().
@@ -1528,6 +1537,10 @@ class PaydirtGameEngine:
             return self.run_play(play_type, defense_type, out_of_bounds_designation, in_bounds_designation,
                                  punt_short_drop=punt_short_drop, punt_coffin_corner_yards=punt_coffin_corner_yards,
                                  no_huddle=no_huddle)
+
+        # Capture time before play for spike/timeout calculations
+        time_before_play = self.state.time_remaining
+        quarter_before_play = self.state.quarter
 
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
@@ -1586,12 +1599,30 @@ class PaydirtGameEngine:
             # No penalties - process normally using existing run_play logic
             # Restore state and call run_play (which will re-roll, but that's acceptable)
             # Actually, we should use the result we already have
-            return self._apply_play_result(
+            outcome = self._apply_play_result(
                 play_type, defense_type, penalty_choice.play_result,
                 field_pos_before, down_before, ball_pos_before, ytg_before,
                 out_of_bounds_designation, in_bounds_designation,
                 no_huddle=no_huddle
             )
+
+            # Apply post-play modifiers (timeout or spike)
+            # Note: Only one modifier should be applied - timeout takes precedence
+            if call_timeout and not outcome.touchdown and not outcome.turnover:
+                play_seconds = (time_before_play - self.state.time_remaining) * 60
+                should_apply, _ = self._should_apply_timeout_after_play(outcome, play_seconds)
+                if should_apply:
+                    self._apply_timeout(time_before_play, quarter_before_play)
+                    outcome.timeout_used = True
+
+            elif call_spike and not outcome.touchdown and not outcome.turnover:
+                play_seconds = (time_before_play - self.state.time_remaining) * 60
+                should_apply, _ = self._should_apply_spike_after_play(outcome, play_seconds)
+                if should_apply:
+                    self._apply_spike(time_before_play, quarter_before_play)
+                    outcome.spike_used = True
+
+            return outcome
 
     def apply_penalty_decision(self, outcome: PlayOutcome, accept_play: bool,
                                 penalty_index: int = 0) -> PlayOutcome:
@@ -1617,9 +1648,12 @@ class PaydirtGameEngine:
             # Accept the play result - down counts
             # Use original offense result if defense committed penalty
             play_result = penalty_choice.play_result
-            # If offense_yards is set and different from yards, use offense_yards
-            # This handles the case where priority chart returned penalty yards
-            if play_result.offense_yards != 0 and play_result.offense_yards != play_result.yards:
+            # When defense commits a penalty (DEF X), the priority chart returns penalty yards
+            # as final_yards, but offense_yards stores the original offense result.
+            # Check if defense_modifier indicates a defensive penalty was committed.
+            defense_mod = play_result.defense_modifier or ""
+            has_def_penalty = defense_mod.startswith("DEF")
+            if has_def_penalty and play_result.offense_yards != play_result.yards:
                 # Defense committed penalty - use original offense yards
                 # Create a new PlayResult with the correct yardage
                 from .play_resolver import ResultType
@@ -1751,7 +1785,7 @@ class PaydirtGameEngine:
             )
 
             self.play_log.append(final_outcome)
-            self._use_time(random.uniform(5, 40))
+            self._use_time(random.uniform(25, 45))
 
             return final_outcome
 
@@ -1939,13 +1973,13 @@ class PaydirtGameEngine:
             is_out_of_bounds = False
             forced_10_sec = False
 
-        # No huddle reduces play time from ~40 sec to ~20 sec
+        # No huddle reduces play time from ~35 sec to ~20 sec
         if forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
-            play_seconds = random.uniform(5, 20)
+            play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(5, 40)
+            play_seconds = random.uniform(25, 45)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
 
@@ -2040,6 +2074,134 @@ class PaydirtGameEngine:
         self._use_time(random.uniform(5, 25))
 
         return outcome
+
+    def _should_apply_timeout_after_play(self, outcome, play_seconds: float) -> tuple[bool, str]:
+        """
+        Check if timeout modifier should be applied after seeing play result.
+
+        Per Paydirt rules, a timeout is wasteful if:
+        - Play was incomplete (clock already stopped)
+        - Play went out of bounds (clock already at 10 sec)
+        - Play_seconds <= 10 (no time would be saved)
+
+        Args:
+            outcome: PlayOutcome from the executed play
+            play_seconds: Actual seconds used by the play
+
+        Returns:
+            Tuple of (should_apply, message_if_skipped)
+        """
+        if outcome.result.result_type == ResultType.INCOMPLETE:
+            return False, "[Timeout SKIPPED - play was incomplete, clock already stopped]"
+
+        if outcome.result.out_of_bounds:
+            return False, "[Timeout SKIPPED - play went out of bounds, clock already at 10 sec]"
+
+        if play_seconds <= 10:
+            return False, "[Timeout SKIPPED - no time would be saved]"
+
+        return True, ""
+
+    def _should_apply_spike_after_play(self, outcome, play_seconds: float) -> tuple[bool, str]:
+        """
+        Check if spike modifier should be applied after seeing play result.
+
+        Per Paydirt rules, a spike is wasteful if:
+        - Play was incomplete (clock already stopped)
+        - Play_seconds <= 3 (no meaningful time would be saved)
+
+        Args:
+            outcome: PlayOutcome from the executed play
+            play_seconds: Actual seconds used by the play
+
+        Returns:
+            Tuple of (should_apply, message_if_skipped)
+        """
+        if outcome.result.result_type == ResultType.INCOMPLETE:
+            return False, "[Spike SKIPPED - clock already stopped]"
+
+        if play_seconds <= 3:
+            return False, "[Spike SKIPPED - no time would be saved]"
+
+        return True, ""
+
+    def _apply_timeout(self, time_before_play: float, quarter_before_play: int):
+        """
+        Apply timeout clock adjustment after a play.
+
+        With a timeout, the play only uses 10 seconds (0.167 minutes) instead of
+        the normal play time. If the quarter advanced during the play, revert it
+        since the timeout preserves time.
+
+        Args:
+            time_before_play: Time remaining before the play started
+            quarter_before_play: Quarter number before the play started
+        """
+        # Timeout means exactly 10 seconds elapse, not the random play time
+        # Reset to time_before_play and use exactly 10 seconds
+        timeout_seconds = 0.167  # 10 seconds
+
+        time_after_timeout = time_before_play - timeout_seconds
+        # Clamp to 0 if less than 1 second remains
+        if time_after_timeout < 0.0167:
+            time_after_timeout = 0
+        self.state.time_remaining = time_after_timeout
+
+        # If quarter advanced during the play but timeout preserves time, revert quarter
+        if self.state.quarter > quarter_before_play and time_after_timeout > 0:
+            self.state.quarter = quarter_before_play
+
+        # Ensure quarter doesn't end prematurely if there was time for the play
+        if time_before_play > 0 and self.state.quarter <= 4:
+            self.state.game_over = False
+
+    def _apply_spike(self, time_before_play: float, quarter_before_play: int):
+        """
+        Apply spike clock adjustment after a play.
+
+        Per Paydirt rules, spike + previous play = 20 seconds total.
+        If the play used more than 17 seconds, rewind the clock so the
+        play effectively used 17 seconds, then add 3 seconds for the spike.
+        Total: 20 seconds maximum.
+
+        This allows the two-minute drill: run a play, spike to stop the clock,
+        then kick a field goal - all within 20 seconds.
+
+        Args:
+            time_before_play: Time remaining before the play started
+            quarter_before_play: Quarter number before the play started
+        """
+        # Spike + play should total 20 seconds max
+        # Play gets 17 seconds, spike gets 3 seconds
+        max_spike_combo_seconds = 0.333  # 20 seconds (17 for play + 3 for spike)
+        spike_seconds = 0.05  # ~3 seconds for the spike itself
+
+        # Calculate how much time the play actually used
+        play_used_seconds = time_before_play - self.state.time_remaining
+
+        # If the play used more than 17 seconds, cap it
+        play_max_seconds = 0.283  # 17 seconds
+
+        if play_used_seconds > play_max_seconds:
+            # Rewind: set time to time_before_play - 20 seconds
+            time_after_spike = time_before_play - max_spike_combo_seconds
+        else:
+            # Play used 17 seconds or less, just add spike time
+            time_after_spike = self.state.time_remaining - spike_seconds
+
+        # Clamp to 0 if less than 1 second remains
+        if time_after_spike < 0.0167:
+            time_after_spike = 0
+
+        self.state.time_remaining = time_after_spike
+
+        # If quarter advanced during the play but spike preserves time, revert quarter
+        if self.state.quarter > quarter_before_play and time_after_spike > 0:
+            self.state.quarter = quarter_before_play
+
+        # Ensure quarter doesn't end prematurely if there was time for the play
+        if time_before_play > 0 and self.state.quarter <= 4:
+            self.state.game_over = False
 
     def _handle_hail_mary(self) -> PlayOutcome:
         """
@@ -3253,8 +3415,8 @@ class PaydirtGameEngine:
                 )
                 
                 self.play_log.append(new_outcome)
-                self._use_time(random.uniform(5, 12))
-                
+                self._use_time(random.uniform(25, 45))
+
                 return new_outcome
             else:
                 # Option 1: Replay punt from LOS - penalty yards (kicking team pushed back)
@@ -3263,16 +3425,16 @@ class PaydirtGameEngine:
                 new_pos = original_pos - penalty_yards
                 if new_pos < 1:
                     new_pos = 1
-                
+
                 self.state.ball_position = new_pos
                 self.state.down = 4  # Still 4th down, replay the punt
                 self.state.yards_to_go = 10 + penalty_yards  # Yards to go increased
-                
+
                 del self._pending_punt_state
-                
+
                 description = f"Receiving team accepts penalty: OFF {penalty_yards}. Punt replayed from {self.state.field_position_str()}."
-                
-                return PlayOutcome(
+
+                new_outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
                     defense_type=DefenseType.STANDARD,
                     result=outcome.result,
@@ -3283,6 +3445,11 @@ class PaydirtGameEngine:
                     description=description,
                     penalty_applied=True
                 )
+
+                self.play_log.append(new_outcome)
+                self._use_time(random.uniform(25, 45))
+
+                return new_outcome
         else:
             # DEF penalty - receiving team committed foul, kicking team decides
             if accept_penalty:
@@ -3312,8 +3479,8 @@ class PaydirtGameEngine:
                     description = f"Kicking team accepts penalty: DEF {penalty_yards}. 4th and {self.state.yards_to_go} at {self.state.field_position_str()}."
                 
                 del self._pending_punt_state
-                
-                return PlayOutcome(
+
+                new_outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
                     defense_type=DefenseType.STANDARD,
                     result=outcome.result,
@@ -3325,6 +3492,11 @@ class PaydirtGameEngine:
                     description=description,
                     penalty_applied=True
                 )
+
+                self.play_log.append(new_outcome)
+                self._use_time(random.uniform(25, 45))
+
+                return new_outcome
             else:
                 # Decline penalty - take punt result as-is
                 final_position = state['final_position']
@@ -3365,8 +3537,8 @@ class PaydirtGameEngine:
                 )
                 
                 self.play_log.append(new_outcome)
-                self._use_time(random.uniform(5, 12))
-                
+                self._use_time(random.uniform(25, 45))
+
                 return new_outcome
 
     def apply_kickoff_penalty_decision(self, outcome: PlayOutcome, accept_penalty: bool) -> PlayOutcome:
@@ -3520,8 +3692,8 @@ class PaydirtGameEngine:
             )
             
             self.play_log.append(new_outcome)
-            self._use_time(random.uniform(5, 15))
-            
+            self._use_time(random.uniform(25, 45))
+
             return new_outcome
 
     def _evaluate_field_goal_result(self, fg_result: str, distance_to_goal: int,
@@ -3708,7 +3880,7 @@ class PaydirtGameEngine:
         # Only advance time if there's no untimed down pending
         # (if untimed_down_pending is True, the half extends and clock stays at 0)
         if not self.state.untimed_down_pending:
-            self._use_time(random.uniform(5, 10))
+            self._use_time(random.uniform(25, 45))
         
         return outcome
 

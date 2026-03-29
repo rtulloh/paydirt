@@ -8,8 +8,10 @@ import PenaltyDecisionPanel from './PenaltyDecisionPanel';
 import PATChoicePanel from './PATChoicePanel';
 import CpuDecisionPanel from './CpuDecisionPanel';
 import PuntOptionsPanel from './PuntOptionsPanel';
+import PlayModifiers from './PlayModifiers';
 import PlayLogDisplay from './PlayLogDisplay';
 import GameControls from './GameControls.tsx';
+import Halftime from './Halftime';
 import { useGameStore } from '../../store/gameStore';
 import { checkPendingPat, deriveKickoffTeams } from '../../utils/gameFlowLogic';
 import { API_BASE } from '../../config';
@@ -72,6 +74,9 @@ const PlayingPhase = () => {
     setPendingPat,
     isOvertime,
     otPeriod,
+    selectedModifier,
+    noHuddleMode,
+    clearModifiers,
   } = store;
 
   const [localLastResult, setLocalLastResult] = useState(null);
@@ -89,6 +94,8 @@ const PlayingPhase = () => {
   const [showPuntOptions, setShowPuntOptions] = useState(false);
   const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
   const [isKickPlay, setIsKickPlay] = useState(false);
+  const [cpuGoingForIt, setCpuGoingForIt] = useState(false);
+  const [showHalftime, setShowHalftime] = useState(false);
 
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
@@ -114,7 +121,7 @@ const PlayingPhase = () => {
       if (!isSpecial) {
         const timer = setTimeout(() => {
           setLocalLastResult(null);
-          setLocalDiceResult(null);
+          // Don't clear dice - keep them visible for aesthetics
           setHumanPlay(null);
         }, 2000);
         return () => clearTimeout(timer);
@@ -140,10 +147,12 @@ const PlayingPhase = () => {
           const decision = await res.json();
           if (decision.decision === 'go_for_it') {
             // CPU going for it - player needs to pick defense
+            setCpuGoingForIt(true);
             // Don't set pendingCpuFourthDown, let player pick defense
           } else {
             // CPU punts or kicks FG - set pending, show panel
             setPendingCpuFourthDown(decision);
+            setCpuGoingForIt(false);
           }
         }
       } catch (err) {
@@ -152,7 +161,22 @@ const PlayingPhase = () => {
     };
     
     checkCpuDecision();
-  }, [gameId, localExecuting, isKickoff, playerOffense, down, pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
+  }, [gameId, localExecuting, isKickoff, playerOffense, down, pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown, setCpuGoingForIt]);
+
+  // Clear cpuGoingForIt when down changes away from 4th, possession changes, kickoff, halftime, or game over
+  useEffect(() => {
+    if (down !== 4 || playerOffense || isKickoff || showHalftime || gameOver) {
+      setCpuGoingForIt(false);
+    }
+  }, [down, playerOffense, isKickoff, showHalftime, gameOver]);
+
+  // Clear CPU fourth down states during kickoff/halftime/game over
+  useEffect(() => {
+    if (isKickoff || showHalftime || gameOver) {
+      clearCpuFourthDownDecision();
+      clearPendingCpuFourthDown();
+    }
+  }, [isKickoff, showHalftime, gameOver, clearCpuFourthDownDecision, clearPendingCpuFourthDown]);
 
   // Flash scoreboard when home team scores
   useEffect(() => {
@@ -196,20 +220,25 @@ const PlayingPhase = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       setLocalIsRolling(true);
-      setLocalDiceResult({
-        offenseRoll: {
-          black: randomFrom(BLACK_DIE),
-          white1: randomFrom(WHITE_DIE),
-          white2: randomFrom(WHITE_DIE),
-        },
-        defenseRoll: {
-          red: randomFrom(RED_DIE),
-          green: randomFrom(GREEN_DIE),
-        },
-        result: 0,
-      });
+      
+      // Kickoff dice animation - update values every 100ms for rolling effect
+      const rollInterval = setInterval(() => {
+        setLocalDiceResult({
+          offenseRoll: {
+            black: randomFrom(BLACK_DIE),
+            white1: randomFrom(WHITE_DIE),
+            white2: randomFrom(WHITE_DIE),
+          },
+          defenseRoll: {
+            red: randomFrom(RED_DIE),
+            green: randomFrom(GREEN_DIE),
+          },
+          result: 0,
+        });
+      }, 100);
       
       await new Promise(resolve => setTimeout(resolve, 1500));
+      clearInterval(rollInterval);
       
       const res = await fetch(`${API_BASE}/api/game/kickoff`, {
         method: 'POST',
@@ -238,14 +267,24 @@ const PlayingPhase = () => {
         setLocalExecuting(false);  // Enable play buttons after kickoff
         setIsKickoff(false);
         
+        // Use actual dice from backend response
+        const offDice = data.dice_details?.offense;
+        const defDice = data.dice_details?.defense;
+        
+        // Update local dice result to show actual dice from backend
+        if (offDice || defDice) {
+          setLocalDiceResult({
+            offenseRoll: offDice,
+            defenseRoll: defDice,
+            result: data.result.yards || 0,
+          });
+        }
+        
         // Log the kickoff
         // Uses shared deriveKickoffTeams — if this function is removed, tests will fail
         const { kickingTeam, receivingTeam } = deriveKickoffTeams(
           data.game_state.possession, homeTeam, awayTeam
         );
-        
-        const offDice = localDiceResult?.offenseRoll;
-        const defDice = localDiceResult?.defenseRoll;
         
         addToPlayLog({
           quarter: data.game_state.quarter,
@@ -266,12 +305,12 @@ const PlayingPhase = () => {
             black: offDice.black,
             white1: offDice.white1,
             white2: offDice.white2,
-            total: offDice.black + offDice.white1 + offDice.white2
+            total: offDice.total
           } : null,
           defenseDice: defDice ? {
             red: defDice.red,
             green: defDice.green,
-            total: defDice.red + defDice.green
+            total: defDice.total
           } : null,
           description: data.result.description,
           yards: data.result.yards || 0,
@@ -487,7 +526,8 @@ const PlayingPhase = () => {
     const prePlayFieldPosition = fieldPosition; // Backend-calculated field position
     
     // Check if this is a kick play (P=punt, F=field goal, K=kickoff)
-    const isKick = ['P', 'F', 'K'].includes(play.toUpperCase()) || 
+    // Only check offensive plays for kicks - defensive plays like 'F' (blitz) are not kicks
+    const isKick = playerOffense && ['P', 'F', 'K'].includes(play.toUpperCase()) ||
                    ['P', 'F'].includes(cpuPlayOverride?.toUpperCase());
     setIsKickPlay(isKick);
     
@@ -522,22 +562,25 @@ const PlayingPhase = () => {
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Roll dice animation
+      // Roll dice animation - update values every 100ms for rolling effect
       setLocalIsRolling(true);
-      setLocalDiceResult({
-        offenseRoll: {
-          black: randomFrom(BLACK_DIE),
-          white1: randomFrom(WHITE_DIE),
-          white2: randomFrom(WHITE_DIE),
-        },
-        defenseRoll: {
-          red: randomFrom(RED_DIE),
-          green: randomFrom(GREEN_DIE),
-        },
-        result: 0,
-      });
+      const rollInterval = setInterval(() => {
+        setLocalDiceResult({
+          offenseRoll: {
+            black: randomFrom(BLACK_DIE),
+            white1: randomFrom(WHITE_DIE),
+            white2: randomFrom(WHITE_DIE),
+          },
+          defenseRoll: {
+            red: randomFrom(RED_DIE),
+            green: randomFrom(GREEN_DIE),
+          },
+          result: 0,
+        });
+      }, 100);
       
       await new Promise(resolve => setTimeout(resolve, 1500));
+      clearInterval(rollInterval);
       
       // Execute the play
       const res = await fetch(`${API_BASE}/api/game/execute`, {
@@ -545,10 +588,11 @@ const PlayingPhase = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game_id: gameId,
-          player_play: play,
+          player_play: selectedModifier ? play + selectedModifier : play,
           cpu_play: cpuPlayValue,
           short_drop: puntOptions?.short_drop || false,
           coffin_corner_yards: puntOptions?.coffin_corner_yards || 0,
+          no_huddle: noHuddleMode,
         })
       });
       
@@ -574,6 +618,7 @@ const PlayingPhase = () => {
         
         setLocalLastResult(data.result);
         updateGameState(data.game_state);
+        clearModifiers(); // Clear one-play modifiers after successful play
         setLocalIsRolling(false);
         
         // Use dice from backend response - already calculated correctly
@@ -590,6 +635,15 @@ const PlayingPhase = () => {
           green: defDice.green,
           total: defDice.total
         } : null;
+        
+        // Update local dice result to show actual dice from backend
+        if (offenseDice || defenseDice) {
+          setLocalDiceResult({
+            offenseRoll: offenseDice,
+            defenseRoll: defenseDice,
+            result: data.result.yards || 0,
+          });
+        }
         
         // Log the play with BEFORE state for down/distance, AFTER state for position
         const offenseTeam = playerOffense 
@@ -655,6 +709,13 @@ const PlayingPhase = () => {
             await handleCpuPatAuto(gameId);
             return;
           }
+        }
+
+        // Check for halftime
+        if (data.result.half_changed) {
+          setShowHalftime(true);
+          setLocalExecuting(false);
+          return;
         }
       }
     } catch (err) {
@@ -777,6 +838,9 @@ const PlayingPhase = () => {
     // Always dismiss the modal first
     setLocalShowPenaltyChoice(false);
     setLocalPendingPenaltyData(null);
+    // Clear any CPU fourth down decision states
+    clearCpuFourthDownDecision();
+    clearPendingCpuFourthDown();
     
     if (!gameId) {
       console.error('No game ID for penalty decision');
@@ -929,8 +993,23 @@ const PlayingPhase = () => {
 
       {/* Fixed-height container for info panels - prevents layout shifts */}
       <div className="flex-shrink-0 min-h-[140px]">
+        {/* Halftime Screen */}
+        {showHalftime && (
+          <Halftime
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            homeScore={homeScore}
+            awayScore={awayScore}
+            quarter={quarter}
+            onContinue={() => {
+              setShowHalftime(false);
+              setIsKickoff(true);
+            }}
+          />
+        )}
+
         {/* Inline Kickoff Banner - More Prominent */}
-        {isKickoff && !localExecuting && !localLastResult && (
+        {isKickoff && !localExecuting && !localLastResult && !showHalftime && (
           <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
             <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
             <div className="text-lg text-blue-100 mb-4">
@@ -1069,9 +1148,9 @@ const PlayingPhase = () => {
       </div>
 
       {/* Play Selector - fixed position, stays in same place */}
-      <div className="flex-shrink-0 px-4 pb-4">
+      <div className="flex-shrink-0 px-4 pb-2">
         <div className="grid grid-cols-2 gap-4">
-          {/* Show offense plays when player is on offense, defense plays when player is on defense */}
+          {/* Left column: offense/defense plays */}
           {playerOffense ? (
             <OffensePlays
               selectedPlay={humanPlaySelected}
@@ -1080,15 +1159,34 @@ const PlayingPhase = () => {
               disabled={localExecuting}
             />
           ) : (
-            <DefensePlays
-              selectedPlay={humanPlaySelected}
-              onSelectPlay={handleDefensePlay}
-              isHumanTurn={true}
-              disabled={localExecuting}
-            />
+            <div>
+              {cpuGoingForIt && (
+                <div className="mb-2 px-4 py-2 bg-yellow-600 rounded text-white font-bold text-center animate-pulse">
+                  CPU IS GOING FOR IT!
+                </div>
+              )}
+              <DefensePlays
+                selectedPlay={humanPlaySelected}
+                onSelectPlay={handleDefensePlay}
+                isHumanTurn={true}
+                disabled={localExecuting}
+              />
+            </div>
           )}
           
-          <PlayLogDisplay plays={playLog} onPlayClick={() => {}} />
+          {/* Right column: modifiers (when on offense) + play log */}
+          <div className="flex flex-col gap-2">
+            {playerOffense && (
+              <PlayModifiers 
+                selectedPlay={humanPlaySelected}
+                onModifierChange={(modifier) => {
+                  // Modifier state is already managed in store via PlayModifiers
+                  // This callback can be used for additional logic if needed
+                }}
+              />
+            )}
+            <PlayLogDisplay plays={playLog} onPlayClick={() => {}} />
+          </div>
         </div>
       </div>
 

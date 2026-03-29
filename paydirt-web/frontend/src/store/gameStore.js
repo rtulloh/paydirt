@@ -32,10 +32,12 @@ const initialGameState = {
   playLogVersion: 0,
   isKickoff: false,
   playLog: [],
-  currentSeason: '2026',
+  currentSeason: '1983',
   fieldPosition: '',
   isOvertime: false,
   otPeriod: 0,
+  noHuddleMode: false,
+  selectedModifier: null, // 'T', '+', 'S', or null
 }
 
 export const useGameStore = create((set, get) => ({
@@ -68,6 +70,12 @@ export const useGameStore = create((set, get) => ({
   setPendingPenalty: (data) => set({ pendingPenalty: data }),
   clearPendingPenalty: () => set({ pendingPenalty: null }),
   
+  // Play modifier actions
+  toggleNoHuddleMode: () => set((state) => ({ noHuddleMode: !state.noHuddleMode })),
+  setNoHuddleMode: (value) => set({ noHuddleMode: value }),
+  setModifier: (modifier) => set({ selectedModifier: modifier }),
+  clearModifiers: () => set({ selectedModifier: null }),
+  
   updateGameState: (state) => {
     const possession = state.possession
     // Backend sends player_offense, not human_plays_offense
@@ -88,6 +96,10 @@ export const useGameStore = create((set, get) => ({
     
     // human_team_id comes from backend
     const human_team_id = state.human_team_id || state.humanTeamId
+    
+    // Check if possession changed to reset no-huddle mode
+    const currentPossession = get().possession
+    const possessionChanged = currentPossession && currentPossession !== possession
     
     set({
       homeTeam: state.home_team,
@@ -111,6 +123,10 @@ export const useGameStore = create((set, get) => ({
       pendingPat: pendingPat,
       isOvertime: isOvertime,
       otPeriod: otPeriod,
+      // Reset no-huddle mode on possession change
+      noHuddleMode: possessionChanged ? false : get().noHuddleMode,
+      // Update season from backend if provided
+      currentSeason: state.season || get().currentSeason,
     })
   },
    
@@ -153,7 +169,7 @@ export const useGameStore = create((set, get) => ({
       playResult: null,
       gameOver: false,
       cpuFourthDownDecision: null,
-      currentSeason: gameData.currentSeason || '2026',
+      currentSeason: gameData.season || gameData.currentSeason || '1983',
     })
   },
 
@@ -182,7 +198,7 @@ export const useGameStore = create((set, get) => ({
       playLog: gameData.playLog,
       pendingPat: gameData.pendingPat || false,
       savedAt: new Date().toISOString(),
-      currentSeason: gameData.currentSeason || '2026',
+      currentSeason: gameData.currentSeason || get().currentSeason || '1983',
     };
     
     try {
@@ -270,7 +286,7 @@ export const useGameStore = create((set, get) => ({
               playLog: replayData.play_history || [],
               isKickoff: backendData.game_state.is_kickoff,
               pendingPat: backendData.game_state.pending_pat || false,
-              currentSeason: replayData.season || '2026',
+              currentSeason: backendData.game_state.season || replayData.season || '1983',
             });
           })
           .catch(err => {
@@ -364,7 +380,12 @@ export const useGameStore = create((set, get) => ({
           body: JSON.stringify({ replay_data: replayData }),
         })
           .then(res => {
-            if (!res.ok) throw new Error('Failed to load replay on backend');
+            if (!res.ok) {
+              return res.text().then(text => {
+                console.error('Load replay error response:', text);
+                throw new Error('Failed to load replay: ' + text);
+              });
+            }
             return res.json();
           })
           .then(data => {
@@ -389,16 +410,16 @@ export const useGameStore = create((set, get) => ({
               humanIsHome: data.game_state.human_is_home,
               playerOffense: data.game_state.player_offense,
               playLog: replayData.play_history || [],
-              playLogVersion: (get().playLogVersion || 0) + 1, // Increment to trigger scroll
+              playLogVersion: (get().playLogVersion || 0) + 1,
               isKickoff: data.game_state.is_kickoff || false,
               pendingPat: data.game_state.pending_pat || false,
+              currentSeason: data.game_state.season || replayData.season || '1983',
             });
             return data;
           });
       }
       return Promise.reject(new Error('No saved replay found'));
     } catch (err) {
-      console.error('Failed to load replay:', err);
       return Promise.reject(err);
     }
   },

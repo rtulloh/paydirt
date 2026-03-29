@@ -209,7 +209,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         print(f"  {off_team} ball at {state.field_position_str()} | {state.down}&{state.yards_to_go}")
 
         # CPU selects plays with clock management
-        play_type, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards = off_ai.select_offense_with_clock_management(game)
+        play_type, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, use_spike = off_ai.select_offense_with_clock_management(game)
         def_type = def_ai.select_defense(game)
 
         play_name = play_type.value.replace('_', ' ').title()
@@ -224,7 +224,9 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
             print(f"  {off_team} in NO-HUDDLE offense!")
         if use_oob:
             print("  [OUT OF BOUNDS DESIGNATION]")
-        
+        if use_spike:
+            print("  [SPIKE: Will stop clock after play]")
+
         # Show punt options
         if play_type == PlayType.PUNT:
             if punt_short_drop:
@@ -234,12 +236,17 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
 
         print(f"  {off_team}: {play_name} vs {def_name}")
 
-        # Run the play with OOB designation and punt options if applicable
-        outcome = game.run_play(play_type, def_type, 
-                                out_of_bounds_designation=use_oob,
-                                punt_short_drop=punt_short_drop,
-                                punt_coffin_corner_yards=punt_coffin_yards,
-                                no_huddle=use_no_huddle)
+        # Run the play with OOB designation, punt options, and spike modifier
+        outcome = game.run_play_with_penalty_procedure(play_type, def_type,
+                                                        out_of_bounds_designation=use_oob,
+                                                        punt_short_drop=punt_short_drop,
+                                                        punt_coffin_corner_yards=punt_coffin_yards,
+                                                        no_huddle=use_no_huddle,
+                                                        call_spike=use_spike)
+
+        # Display spike result if applied
+        if outcome.spike_used:
+            print("  [SPIKE: Clock stopped]")
 
         # Display result
         if outcome.touchdown:

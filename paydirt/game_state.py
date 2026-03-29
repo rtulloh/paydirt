@@ -195,3 +195,6 @@ class PlayOutcome:
     penalty_applied: bool = False
     # Transaction-based event chain (new architecture)
     transaction: Optional[PlayTransaction] = None
+    # Post-play modifiers applied
+    spike_used: bool = False
+    timeout_used: bool = False

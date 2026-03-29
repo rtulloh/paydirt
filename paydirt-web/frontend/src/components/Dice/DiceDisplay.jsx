@@ -31,7 +31,8 @@ function Die({ value, color, size = 'md', animate, settled }) {
   const sizeClass = size === 'lg' ? 'w-16 h-16' : size === 'sm' ? 'w-10 h-10' : 'w-12 h-12'
   const pipSizeClass = size === 'lg' ? 'w-3 h-3' : size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2'
   
-  const pips = PIP_PATTERNS[value] || PIP_PATTERNS[1]
+  // Use nullish coalescing to handle 0 correctly (empty array is falsy!)
+  const pips = PIP_PATTERNS[value] ?? PIP_PATTERNS[1]
   
   return (
     <div
@@ -66,9 +67,16 @@ export function DiceDisplay({
   // No staggered animation - prevents jitter
   const settled = !isRolling
 
-  // Black/Red dice = 10s (B1=10, B2=20, B3=30)
-  const offenseTotal = ((offenseRoll?.black || 0) * 10) + (offenseRoll?.white1 || 0) + (offenseRoll?.white2 || 0)
-  const defenseTotal = ((defenseRoll?.red || 0) * 10) + (defenseRoll?.green || 0)
+  // Don't render if not rolling and no dice data
+  if (!isRolling && !offenseRoll && !defenseRoll) {
+    return null
+  }
+
+  // Use total from backend if available, otherwise calculate
+  // For kickoffs, black IS the total (10-39), not a die face
+  // For regular plays, black is a die face (1-3) that needs to be multiplied by 10
+  const offenseTotal = offenseRoll?.total ?? ((offenseRoll?.black ?? 0) * 10 + (offenseRoll?.white1 ?? 0) + (offenseRoll?.white2 ?? 0))
+  const defenseTotal = defenseRoll?.total ?? ((defenseRoll?.red ?? 0) * 10 + (defenseRoll?.green ?? 0))
 
   return (
     <div className="bg-gray-800 rounded-lg p-4" data-testid="dice-display">
@@ -76,9 +84,9 @@ export function DiceDisplay({
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-blue-400 w-6">OFF</span>
           <div className="flex gap-2">
-            <Die value={offenseRoll?.black || 1} color="black" size="md" animate={isRolling} settled={settled} delay={0} />
-            <Die value={offenseRoll?.white1 || 1} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
-            <Die value={offenseRoll?.white2 || 1} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
+            <Die value={offenseRoll?.black ?? 0} color="black" size="md" animate={isRolling} settled={settled} delay={0} />
+            <Die value={offenseRoll?.white1 ?? 0} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
+            <Die value={offenseRoll?.white2 ?? 0} color="white" size="md" animate={isRolling} settled={settled} delay={0} />
           </div>
           <span className={`text-lg font-bold text-blue-400 w-8 text-center`}>{offenseTotal}</span>
         </div>
@@ -87,8 +95,8 @@ export function DiceDisplay({
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-purple-400 w-6">DEF</span>
             <div className="flex gap-2">
-              <Die value={defenseRoll?.red || 1} color="red" size="md" animate={isRolling} settled={settled} delay={0} />
-              <Die value={defenseRoll?.green || 1} color="green" size="md" animate={isRolling} settled={settled} delay={0} />
+              <Die value={defenseRoll?.red ?? 0} color="red" size="md" animate={isRolling} settled={settled} delay={0} />
+              <Die value={defenseRoll?.green ?? 0} color="green" size="md" animate={isRolling} settled={settled} delay={0} />
             </div>
             <span className={`text-lg font-bold text-purple-400 w-8 text-center`}>{defenseTotal}</span>
           </div>
