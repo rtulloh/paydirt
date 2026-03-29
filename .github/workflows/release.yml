@@ -151,16 +151,16 @@ jobs:
             artifacts/paydirt-linux/Paydirt-x86_64.AppImage
             artifacts/paydirt-windows/paydirt.exe
             artifacts/paydirt-windows/PaydirtSetup.exe
-            artifacts/paydirt-macos-arm64/Paydirt-1.0.0-beta.32-arm64.dmg
-            artifacts/paydirt-macos-intel/Paydirt-1.0.0-beta.32-x86_64.dmg
+            artifacts/paydirt-macos-arm64/Paydirt-1.0.0-beta.34-arm64.dmg
+            artifacts/paydirt-macos-intel/Paydirt-1.0.0-beta.34-x86_64.dmg
           draft: false
           prerelease: true
           body: |
             ## Downloads by Architecture
             
             ### macOS
-            - **Paydirt-1.0.0-beta.32-arm64.dmg** - Apple Silicon (M1, M2, M3, M4)
-            - **Paydirt-1.0.0-beta.32-x86_64.dmg** - Intel Mac
+            - **Paydirt-1.0.0-beta.34-arm64.dmg** - Apple Silicon (M1, M2, M3, M4)
+            - **Paydirt-1.0.0-beta.34-x86_64.dmg** - Intel Mac
             
             ### Windows
             - **paydirt.exe** - Portable executable
@@ -168,4 +168,9 @@ jobs:
             
             ### Linux
             - **Paydirt-x86_64.AppImage** - AppImage for Linux
+            
+            ## macOS Installation Note
+            If you see "Paydirt is damaged and can't be opened":
+            - Option 1: Right-click the app → Open → Click "Open" in the dialog
+            - Option 2: Run in Terminal: `xattr -cr "/Applications/Paydirt.app"`
           token: ${{ secrets.GITHUB_TOKEN }}
