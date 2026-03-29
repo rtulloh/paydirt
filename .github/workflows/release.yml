@@ -38,7 +38,7 @@ jobs:
       - name: Build frontend
         run: |
           cd paydirt-web/frontend
-          npm ci
+          npm install --legacy-peer-deps
           npm run build
           cd ../backend
           mkdir -p web_static
