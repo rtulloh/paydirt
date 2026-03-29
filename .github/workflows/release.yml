@@ -152,12 +152,13 @@ jobs:
             artifacts/paydirt-windows/*
             artifacts/paydirt-macos-arm64/*
             artifacts/paydirt-macos-intel/*
+          draft: false
+          prerelease: true
           body: |
             ## Downloads by Architecture
             
             ### macOS
-            - **paydirt-macos-arm64.dmg** - For Apple Silicon Macs (M1, M2, M3, M4)
-            - **paydirt-macos-intel.dmg** - For Intel Macs
+            - **Paydirt-1.0.0-beta.29.dmg** - For macOS (ARM64/Intel)
             
             ### Windows
             - **paydirt.exe** - Portable executable
@@ -165,3 +166,4 @@ jobs:
             
             ### Linux
             - **Paydirt-x86_64.AppImage** - AppImage for Linux x86_64
+          token: ${{ secrets.GITHUB_TOKEN }}
