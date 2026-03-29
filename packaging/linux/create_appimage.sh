@@ -82,7 +82,13 @@ chmod +x linuxdeploy-x86_64.AppImage
 echo "Running linuxdeploy..."
 ./linuxdeploy-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage
 
-# Move AppImage to dist
-mv "${APP_NAME}-${VERSION}-x86_64.AppImage" "dist/"
-
-echo "Created AppImage: dist/${APP_NAME}-${VERSION}-x86_64.AppImage"
+# Move AppImage to dist (linuxdeploy outputs without the 'v' prefix)
+APPIMAGE_NAME=$(ls Paydirt-*-x86_64.AppImage 2>/dev/null | head -1)
+if [ -n "${APPIMAGE_NAME}" ]; then
+    mv "${APPIMAGE_NAME}" "dist/"
+    echo "Created AppImage: dist/${APPIMAGE_NAME}"
+else
+    echo "ERROR: Could not find created AppImage"
+    ls -la *.AppImage 2>/dev/null || true
+    exit 1
+fi
