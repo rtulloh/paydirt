@@ -43,21 +43,30 @@ img.save('${ICON_FILE}')
 " 2>/dev/null || echo "Warning: Could not create icon (PIL not installed)"
 fi
 
-# Download linuxdeploy if not present (use specific version, not continuous)
-# Use no-fuse version to avoid FUSE dependency issues
-if [ ! -f "./linuxdeploy-no-fuse-x86_64.AppImage" ]; then
-    echo "Downloading linuxdeploy (no-fuse version)..."
-    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/2024-11-10/linuxdeploy-no-fuse-x86_64.AppImage -o linuxdeploy-no-fuse-x86_64.AppImage
-    chmod +x linuxdeploy-no-fuse-x86_64.AppImage
+# Download linuxdeploy if not present
+# Use the continuous build which should always be available
+if [ ! -f "./linuxdeploy-x86_64.AppImage" ]; then
+    echo "Downloading linuxdeploy..."
+    curl -fSL "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" -o linuxdeploy-x86_64.AppImage || {
+        echo "Failed to download linuxdeploy, trying alternative URL..."
+        curl -fSL "https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-x86_64.AppImage" -o linuxdeploy-x86_64.AppImage
+    }
+    chmod +x linuxdeploy-x86_64.AppImage
+fi
+
+# Verify the file is valid
+file linuxdeploy-x86_64.AppImage || true
+if ! head -c 2 linuxdeploy-x86_64.AppImage | grep -q $'\x7fELF'; then
+    echo "Warning: Downloaded file may not be a valid ELF executable"
+    cat linuxdeploy-x86_64.AppImage | head -c 200
 fi
 
 # Make it executable
-chmod +x linuxdeploy-no-fuse-x86_64.AppImage
+chmod +x linuxdeploy-x86_64.AppImage
 
 # Run linuxdeploy to bundle and create AppImage
-# Use --install-deps to bundle libraries
 echo "Running linuxdeploy..."
-./linuxdeploy-no-fuse-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage --install-deps
+./linuxdeploy-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage
 
 # Move AppImage to dist
 mv "${APP_NAME}-${VERSION}-x86_64.AppImage" "dist/"
