@@ -44,15 +44,20 @@ img.save('${ICON_FILE}')
 fi
 
 # Download linuxdeploy if not present (use specific version, not continuous)
-if [ ! -f "./linuxdeploy" ]; then
-    echo "Downloading linuxdeploy..."
-    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/2024-11-10/linuxdeploy-x86_64.AppImage -o linuxdeploy-x86_64.AppImage
-    chmod +x linuxdeploy-x86_64.AppImage
+# Use no-fuse version to avoid FUSE dependency issues
+if [ ! -f "./linuxdeploy-no-fuse-x86_64.AppImage" ]; then
+    echo "Downloading linuxdeploy (no-fuse version)..."
+    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/2024-11-10/linuxdeploy-no-fuse-x86_64.AppImage -o linuxdeploy-no-fuse-x86_64.AppImage
+    chmod +x linuxdeploy-no-fuse-x86_64.AppImage
 fi
 
+# Make it executable
+chmod +x linuxdeploy-no-fuse-x86_64.AppImage
+
 # Run linuxdeploy to bundle and create AppImage
+# Use --install-deps to bundle libraries
 echo "Running linuxdeploy..."
-./linuxdeploy-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage
+./linuxdeploy-no-fuse-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage --install-deps
 
 # Move AppImage to dist
 mv "${APP_NAME}-${VERSION}-x86_64.AppImage" "dist/"
