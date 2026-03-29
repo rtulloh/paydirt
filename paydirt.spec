@@ -11,11 +11,11 @@ datas = [
 ]
 
 a = Analysis(
-    ['paydirt/__main__.py'],
+    ['paydirt_runner.py'],
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=[],
+    hiddenimports=['yaml', 'pkg_resources'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -30,8 +30,10 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='paydirt',
     debug=False,
     bootloader_ignore_signals=False,
@@ -43,14 +45,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='paydirt',
+    onefile=True,
 )
