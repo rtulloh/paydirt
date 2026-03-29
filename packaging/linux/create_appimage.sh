@@ -43,16 +43,16 @@ img.save('${ICON_FILE}')
 " 2>/dev/null || echo "Warning: Could not create icon (PIL not installed)"
 fi
 
-# Download linuxdeploy if not present
-if ! command -v linuxdeploy &> /dev/null; then
-    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -o linuxdeploy-x86_64.AppImage
+# Download linuxdeploy if not present (use specific version, not continuous)
+if [ ! -f "./linuxdeploy" ]; then
+    echo "Downloading linuxdeploy..."
+    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/2024-11-10/linuxdeploy-x86_64.AppImage -o linuxdeploy-x86_64.AppImage
     chmod +x linuxdeploy-x86_64.AppImage
-    sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
 fi
 
 # Run linuxdeploy to bundle and create AppImage
-# Use --desktop-file to specify the desktop file location
-linuxdeploy --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage 2>&1
+echo "Running linuxdeploy..."
+./linuxdeploy-x86_64.AppImage --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage
 
 # Move AppImage to dist
 mv "${APP_NAME}-${VERSION}-x86_64.AppImage" "dist/"
