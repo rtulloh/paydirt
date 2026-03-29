@@ -4,6 +4,7 @@ Command-line interface for Paydirt using actual team charts.
 import sys
 from pathlib import Path
 from typing import Optional
+from .packaging import get_seasons_path
 
 from .chart_loader import load_team_chart, find_team_charts
 from .game_engine import PaydirtGameEngine, PlayOutcome
@@ -169,8 +170,10 @@ def select_team(seasons_dir: str, prompt: str) -> str:
         print("Invalid choice. Please enter a valid team number.")
 
 
-def play_interactive_game(seasons_dir: str = "seasons"):
+def play_interactive_game(seasons_dir: Optional[str] = None):
     """Run an interactive game using team charts."""
+    if seasons_dir is None:
+        seasons_dir = str(get_seasons_path())
     clear_screen()
     print_header()
 
@@ -278,8 +281,10 @@ def play_interactive_game(seasons_dir: str = "seasons"):
     print(f"  First Downs: {game.state.home_stats.first_downs}")
 
 
-def quick_demo(seasons_dir: str = "seasons"):
+def quick_demo(seasons_dir: Optional[str] = None):
     """Run a quick demo showing the chart system."""
+    if seasons_dir is None:
+        seasons_dir = str(get_seasons_path())
     print_header()
 
     charts = find_team_charts(seasons_dir)
@@ -327,11 +332,7 @@ def quick_demo(seasons_dir: str = "seasons"):
 def main():
     """Main entry point."""
     # Determine seasons directory
-    seasons_dir = "seasons"
-    if not Path(seasons_dir).exists():
-        # Try relative to script location
-        script_dir = Path(__file__).parent.parent
-        seasons_dir = str(script_dir / "seasons")
+    seasons_dir = str(get_seasons_path())
 
     print_header()
 

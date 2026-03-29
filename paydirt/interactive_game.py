@@ -2494,13 +2494,11 @@ def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week
     if home_team or away_team:
         # Load teams from command line arguments
         from .chart_loader import find_team_charts, load_team_chart
+        from .packaging import get_seasons_path
         from pathlib import Path
         
         # Find available teams
-        seasons_dir = "seasons"
-        if not Path(seasons_dir).exists():
-            script_dir = Path(__file__).parent.parent
-            seasons_dir = str(script_dir / "seasons")
+        seasons_dir = str(get_seasons_path())
         
         available_charts = find_team_charts(seasons_dir)
         

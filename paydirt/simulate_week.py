@@ -8,6 +8,7 @@ Usage:
 
 import argparse
 from pathlib import Path
+from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine
@@ -164,9 +165,7 @@ def simulate_week(year: int, week: int, verbose: bool = True):
     """Simulate a full week of NFL games."""
 
     # Find team charts
-    seasons_dir = Path(__file__).parent.parent / "seasons"
-    if not seasons_dir.exists():
-        seasons_dir = Path("seasons")
+    seasons_dir = get_seasons_path()
 
     charts = find_team_charts(str(seasons_dir))
 

@@ -4,6 +4,7 @@ Game engine that uses actual Paydirt team charts.
 import random
 import re
 from typing import Optional
+from .packaging import get_seasons_path
 
 from .chart_loader import TeamChart, load_team_chart
 from .utils import clamp_ball_position, format_field_position
@@ -64,9 +65,7 @@ class PaydirtGameEngine:
         if season_dir is None:
             # Fallback: try to find season directory using peripheral year
             year = home_chart.peripheral.year
-            seasons_root = Path("seasons")
-            if not seasons_root.exists():
-                seasons_root = Path(__file__).parent.parent / "seasons"
+            seasons_root = get_seasons_path()
             candidate = seasons_root / str(year)
             if candidate.exists() and candidate.is_dir():
                 season_dir = candidate

@@ -3,6 +3,7 @@ Entry point for running the paydirt package as a module.
 Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home]
 """
 import sys
+from .packaging import get_seasons_path
 
 def main():
     """Main entry point - choose between interactive, chart-based, or simple mode."""
@@ -59,7 +60,7 @@ def main():
                 return
             from pathlib import Path
             from .season_rules import scaffold_season_rules
-            seasons_dir = Path(__file__).parent.parent / "seasons"
+            seasons_dir = get_seasons_path()
             season_dir = seasons_dir / str(year)
             yaml_path = season_dir / f"{year}.yaml"
             if yaml_path.exists() and not force:
@@ -228,11 +229,8 @@ def main():
         from .chart_loader import find_team_charts
         from pathlib import Path
 
-        # Check for team charts
-        seasons_dir = "seasons"
-        if not Path(seasons_dir).exists():
-            script_dir = Path(__file__).parent.parent
-            seasons_dir = str(script_dir / "seasons")
+        # Determine seasons directory using packaging helper
+        seasons_dir = str(get_seasons_path())
 
         charts = find_team_charts(seasons_dir)
 

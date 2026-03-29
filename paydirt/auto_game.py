@@ -7,6 +7,7 @@ Usage:
 """
 import time
 from pathlib import Path
+from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine
@@ -85,10 +86,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         is_playoff: If True, this is a playoff game
     """
     # Find team charts
-    seasons_dir = "seasons"
-    if not Path(seasons_dir).exists():
-        script_dir = Path(__file__).parent.parent
-        seasons_dir = str(script_dir / "seasons")
+    seasons_dir = str(get_seasons_path())
 
     charts = find_team_charts(seasons_dir)
 
