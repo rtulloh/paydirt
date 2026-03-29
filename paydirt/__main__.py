@@ -1,12 +1,131 @@
 """
 Entry point for running the paydirt package as a module.
-Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home]
+Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home | --web [--port PORT]]
 """
 import sys
+import os
+import webbrowser
+import threading
+import time
 from .packaging import get_seasons_path
 
+
+def get_web_static_path():
+    """Get the path to web static files (works both in development and bundled)."""
+    if getattr(sys, 'frozen', False):
+        # Running as bundled executable
+        if hasattr(sys, '_MEIPASS'):
+            # PyInstaller
+            return os.path.join(sys._MEIPASS, 'web_static')
+        else:
+            # cx_Freeze or similar
+            return os.path.join(os.path.dirname(sys.executable), 'web_static')
+    else:
+        # Running in development
+        return os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend', 'web_static')
+
+
+def start_web_server(port=8000, open_browser=True):
+    """Start the web server in a separate thread."""
+    def run_server():
+        try:
+            import uvicorn
+        except ImportError:
+            print("Error: uvicorn not installed. Install with: pip install uvicorn")
+            return
+        
+        # Import the FastAPI app
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend'))
+        
+        # Import and configure the app to serve static files
+        from fastapi.responses import FileResponse
+        from fastapi import Request
+        
+        # Import the existing app
+        import main as web_main
+        
+        app = web_main.app
+        
+        # Add static file serving
+        web_static_path = get_web_static_path()
+        
+        # Create a catch-all route to serve index.html for SPA
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str, request: Request):
+            # Check if the file exists in web_static
+            file_path = os.path.join(web_static_path, full_path)
+            if os.path.isfile(file_path):
+                return FileResponse(file_path)
+            # Otherwise serve index.html for SPA routing
+            index_path = os.path.join(web_static_path, 'index.html')
+            if os.path.isfile(index_path):
+                return FileResponse(index_path)
+            return {"detail": "Not found"}
+        
+        # Also serve root
+        @app.get("/")
+        async def serve_root():
+            index_path = os.path.join(web_static_path, 'index.html')
+            if os.path.isfile(index_path):
+                return FileResponse(index_path)
+            return {"detail": "Web interface not found. Please run 'python -m paydirt' to use CLI mode."}
+        
+        # Start uvicorn
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=port,
+            log_level="info"
+        )
+        server = uvicorn.Server(config)
+        server.run()
+    
+    # Start server in a thread
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    
+    # Wait a moment for server to start
+    time.sleep(2)
+    
+    url = f"http://127.0.0.1:{port}"
+    print("\n🎮 Starting Paydirt Web Interface...")
+    print(f"   Open {url} in your browser\n")
+    
+    if open_browser:
+        webbrowser.open(url)
+    
+    return server_thread
+
+
 def main():
-    """Main entry point - choose between interactive, chart-based, or simple mode."""
+    """Main entry point - choose between interactive, chart-based, web, or simple mode."""
+    # Check for --web flag first
+    if '--web' in sys.argv or '-w' in sys.argv:
+        port = 8000
+        open_browser = True
+        
+        # Parse --web options
+        web_args = [a for a in sys.argv[1:] if a not in ['--web', '-w']]
+        for i, arg in enumerate(web_args):
+            if arg == '--port' and i + 1 < len(web_args):
+                try:
+                    port = int(web_args[i + 1])
+                except ValueError:
+                    print(f"Error: --port requires a number, got '{web_args[i + 1]}'")
+                    return
+            elif arg == '--no-browser':
+                open_browser = False
+        
+        start_web_server(port=port, open_browser=open_browser)
+        
+        # Keep the main thread alive
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nShutting down web server...")
+        return
+    
     # Check for --help or -h first
     if '--help' in sys.argv or '-h' in sys.argv:
         print("PAYDIRT - Football Board Game Simulation")
@@ -14,6 +133,7 @@ def main():
         print("\nUsage:")
         print("  python -m paydirt -p [options]               # Interactive game")
         print("  python -m paydirt -a <away> <home> [opts]  # CPU vs CPU simulation")
+        print("  python -m paydirt --web [--port PORT]       # Web interface (browser)")
         print("  python -m paydirt --teams                   # List available teams")
         print("  python -m paydirt --simulate                # Run season simulation")
         print("  python -m paydirt --scaffold-season <year>  # Create season rules YAML")
@@ -24,6 +144,7 @@ def main():
         print("\nCommands:")
         print("  -p, --play        Interactive game")
         print("  -a, --auto        CPU vs CPU simulation")
+        print("  --web             Web interface (browser)")
         print("  -l, --load        Resume saved game")
         print("  --teams           List available teams")
         print("  --simulate        Run season simulation")
@@ -34,6 +155,9 @@ def main():
         print("  -H, --home <team>   Home team")
         print("  -A, --away <team>   Away team")
         print("  --playoff-game    Playoff game (no ties in OT)")
+        print("  --web             Launch web interface")
+        print("  --port <port>     Port for web server (default: 8000)")
+        print("  --no-browser      Don't open browser automatically")
         print("  -w, --week        Week number for standings")
         print("  -r, --record      Record result to standings")
         print("  -y, --year        Season year for simulation (e.g., 2026)")
