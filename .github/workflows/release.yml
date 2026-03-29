@@ -42,6 +42,12 @@ jobs:
           python -c "import os; print('Files in dist:', os.listdir('dist'))"
           echo "Build complete"
       
+      - name: Create Windows installer
+        if: matrix.os == 'windows-latest'
+        uses: joncloud/makensis-action@v4
+        with:
+          script-file: packaging/windows/installer.nsi
+      
       - name: Upload warning file
         if: failure()
         uses: actions/upload-artifact@v4
