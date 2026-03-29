@@ -37,7 +37,10 @@ jobs:
       
       - name: Build executable
         run: |
-          pyinstaller paydirt.spec --onefile --clean
+          pyinstaller paydirt.spec --onefile --clean --debug=all --log-level=DEBUG
+          echo "Build output:"
+          ls -la dist/
+          echo "Build complete"
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
