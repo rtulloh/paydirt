@@ -43,12 +43,23 @@ jobs:
           node-version: '20'
       
       - name: Build frontend
+        if: matrix.os != 'windows-latest'
         run: |
           cd paydirt-web/frontend
           npm install --legacy-peer-deps
           npm run build
           cd ../backend
           rm -rf web_static && cp -r ../frontend/dist web_static
+
+      - name: Build frontend (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd paydirt-web/frontend
+          npm install --legacy-peer-deps
+          npm run build
+          cd ../backend
+          Remove-Item -Recurse -Force web_static -ErrorAction SilentlyContinue
+          Copy-Item -Recurse ../frontend/dist web_static
       
       - name: Install dependencies
         run: |
