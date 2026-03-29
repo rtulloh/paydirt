@@ -11,22 +11,26 @@ datas = [
     ('paydirt-web/backend/web_static', 'web_static'),
 ]
 
+from PyInstaller.utils.hooks import collect_all
+
+# Collect all uvicorn dependencies
+datas_uvicorn, binaries_uvicorn, hiddenimports_uvicorn = collect_all('uvicorn')
+datas_fastapi, binaries_fastapi, hiddenimports_fastapi = collect_all('fastapi')
+datas_starlette, binaries_starlette, hiddenimports_starlette = collect_all('starlette')
+datas_pydantic, binaries_pydantic, hiddenimports_pydantic = collect_all('pydantic')
+
+# Combine all collected data
+all_datas = datas + datas_uvicorn + datas_fastapi + datas_starlette + datas_pydantic
+all_binaries = binaries_uvicorn + binaries_fastapi + binaries_starlette + binaries_pydantic
+all_hiddenimports = hiddenimports_uvicorn + hiddenimports_fastapi + hiddenimports_starlette + hiddenimports_pydantic
+
 a = Analysis(
     ['paydirt_runner.py'],
     pathex=[],
-    binaries=[],
-    datas=datas,
-    hiddenimports=[
+    binaries=all_binaries,
+    datas=all_datas,
+    hiddenimports=all_hiddenimports + [
         'yaml', 'pkg_resources', 'msvcrt', 'winreg', '_winapi', 'nt', 'typing_extensions',
-        # Web dependencies
-        'uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops._autointerval',
-        'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto',
-        'uvicorn.protocols.websockets', 'uvicorn.protocols.websockets.auto',
-        'uvicorn.lifespan', 'uvicorn.lifespan.on',
-        'fastapi', 'fastapi.middleware', 'fastapi.middleware.cors',
-        'starlette', 'starlette.middleware', 'starlette.middleware.cors',
-        'starlette.responses', 'starlette.routing',
-        'pydantic', 'pydantic.main', 'pydantic.fields',
         'python_multipart',
         'wsproto', 'wsproto.extensions', 'wsproto.frame',
         'httptools', 'httptools.parser', 'httptools.parser.http_parser',

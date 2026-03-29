@@ -9,6 +9,12 @@ import threading
 import time
 from .packaging import get_seasons_path
 
+# Pre-import uvicorn for PyInstaller bundling
+try:
+    import uvicorn
+except ImportError as e:
+    print(f"Warning: uvicorn not available: {e}")
+
 
 def get_web_static_path():
     """Get the path to web static files (works both in development and bundled)."""
@@ -28,10 +34,12 @@ def get_web_static_path():
 def start_web_server(port=8000, open_browser=True):
     """Start the web server in a separate thread."""
     def run_server():
+        global uvicorn
         try:
             import uvicorn
-        except ImportError:
-            print("Error: uvicorn not installed. Install with: pip install uvicorn")
+        except ImportError as e:
+            print(f"Error: uvicorn not installed. Install with: pip install uvicorn")
+            print(f"Details: {e}")
             return
         
         # Import the FastAPI app
