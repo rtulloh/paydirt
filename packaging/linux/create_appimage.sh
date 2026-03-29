@@ -18,36 +18,41 @@ chmod +x "${APP_DIR}/usr/bin/${EXECUTABLE}"
 # Copy LICENSE
 cp "LICENSE" "${APP_DIR}/"
 
-# Create desktop file
-cat > "${APP_DIR}/${APP_NAME}.desktop" <<EOF
+# Create desktop file in correct location
+cat > "${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" <<EOF
 [Desktop Entry]
 Name=${APP_NAME}
+Comment=A Python simulation of the classic Paydirt football board game
 Exec=${EXECUTABLE}
 Icon=${APP_NAME}
+Terminal=true
 Type=Application
-Categories=Game;
+Categories=Game;Sports;
 EOF
 
-# Create a simple icon (placeholder)
-# If we have an icon file, copy it; otherwise create a dummy
+# Create a simple icon if not present
 ICON_FILE="${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
 if [ -f "packaging/linux/icon.png" ]; then
     cp "packaging/linux/icon.png" "${ICON_FILE}"
-else
-    # Create a 1x1 pixel PNG as placeholder (not great but works)
-    convert -size 256x256 xc:blue "${ICON_FILE}" 2>/dev/null || \
-    echo "No icon created (ImageMagick not installed)"
+elif ! [ -f "${ICON_FILE}" ]; then
+    # Create a simple 256x256 blue PNG using Python if available
+    python3 -c "
+from PIL import Image
+img = Image.new('RGB', (256, 256), color='#1e40af')
+img.save('${ICON_FILE}')
+" 2>/dev/null || echo "Warning: Could not create icon (PIL not installed)"
 fi
 
 # Download linuxdeploy if not present
 if ! command -v linuxdeploy &> /dev/null; then
-    wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+    curl -sSL https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -o linuxdeploy-x86_64.AppImage
     chmod +x linuxdeploy-x86_64.AppImage
     sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
 fi
 
 # Run linuxdeploy to bundle and create AppImage
-linuxdeploy --appdir "${APP_DIR}" --output appimage
+# Use --desktop-file to specify the desktop file location
+linuxdeploy --appdir "${APP_DIR}" --desktop-file="${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" --output appimage 2>&1
 
 # Move AppImage to dist
 mv "${APP_NAME}-${VERSION}-x86_64.AppImage" "dist/"

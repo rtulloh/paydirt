@@ -58,7 +58,6 @@ def main():
             except ValueError:
                 print(f"Error: --scaffold-season requires a year (integer), got '{year_str}'")
                 return
-            from pathlib import Path
             from .season_rules import scaffold_season_rules
             seasons_dir = get_seasons_path()
             season_dir = seasons_dir / str(year)
@@ -227,7 +226,6 @@ def main():
     # Try chart-based mode first if team charts are available
     try:
         from .chart_loader import find_team_charts
-        from pathlib import Path
 
         # Determine seasons directory using packaging helper
         seasons_dir = str(get_seasons_path())

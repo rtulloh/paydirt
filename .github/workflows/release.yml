@@ -58,7 +58,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget imagemagick
+          sudo apt-get install -y imagemagick
           ./packaging/linux/create_appimage.sh
       
       - name: Upload warning file
