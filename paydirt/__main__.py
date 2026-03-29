@@ -48,6 +48,8 @@ def start_web_server(port=8000, open_browser=True):
         
         # Add static file serving
         web_static_path = get_web_static_path()
+        print(f"Web static path: {web_static_path}")
+        print(f"Web static exists: {os.path.exists(web_static_path)}")
         
         # Create a catch-all route to serve index.html for SPA
         @app.get("/{full_path:path}")
@@ -60,6 +62,7 @@ def start_web_server(port=8000, open_browser=True):
             index_path = os.path.join(web_static_path, 'index.html')
             if os.path.isfile(index_path):
                 return FileResponse(index_path)
+            print(f"Not found: {full_path}, looking in {web_static_path}")
             return {"detail": "Not found"}
         
         # Also serve root
