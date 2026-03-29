@@ -706,6 +706,47 @@ This Python implementation faithfully recreates the original game mechanics incl
 
 ---
 
+## Building Standalone Executables
+
+To create standalone executables for Windows, macOS, and Linux, you need:
+
+1. **Python 3.12 or 3.13** (PyInstaller does not yet support Python 3.15)
+2. **PyInstaller** (`pip install pyinstaller`)
+3. **Platform-specific tools**: NSIS (Windows), create-dmacOS), linuxdeploy (Linux)
+
+### Quick Start
+
+```bash
+# Install compatible Python version (e.g., 3.12)
+# Create virtual environment
+python3.12 -m venv packaging_env
+source packaging_env/bin/activate
+
+# Install PyInstaller
+pip install pyinstaller
+
+# Build executable
+pyinstaller paydirt.spec --onefile --clean
+```
+
+### Automated Builds
+
+The repository includes a GitHub Actions workflow (`.github/workflows/release.yml`) that builds executables for all platforms. Trigger a release by pushing a version tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### Code Signing
+
+For distribution, you'll need code signing certificates. Add them as GitHub repository secrets:
+- `WINDOWS_CERTIFICATE` (base64-encoded .p12)
+- `MACOS_CERTIFICATE` (base64-encoded .p12)
+- `GPG_PRIVATE_KEY` (for Linux AppImage)
+
+See the workflow file for details.
+
 ## License
 
 This is a fan-made implementation for educational purposes. Paydirt is a trademark of its respective owners.
