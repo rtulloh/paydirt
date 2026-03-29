@@ -75,7 +75,7 @@ jobs:
           & 'C:\Program Files (x86)\NSIS\makensis.exe' packaging/windows/installer.nsi
       
       - name: Create macOS DMG
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-26-intel'
         run: |
           brew install create-dmg
           ./packaging/macos/create_app.sh
