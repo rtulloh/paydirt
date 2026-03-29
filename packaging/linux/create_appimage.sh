@@ -6,10 +6,16 @@ EXECUTABLE="paydirt"
 VERSION="${GITHUB_REF_NAME:-1.0.0}"
 APP_DIR="${APP_NAME}.AppDir"
 
-# Create AppDir structure
+# Create AppDir structure with all required icon directories
 mkdir -p "${APP_DIR}/usr/bin"
 mkdir -p "${APP_DIR}/usr/share/applications"
+mkdir -p "${APP_DIR}/usr/share/icons/hicolor/16x16/apps"
+mkdir -p "${APP_DIR}/usr/share/icons/hicolor/32x32/apps"
+mkdir -p "${APP_DIR}/usr/share/icons/hicolor/64x64/apps"
+mkdir -p "${APP_DIR}/usr/share/icons/hicolor/128x128/apps"
 mkdir -p "${APP_DIR}/usr/share/icons/hicolor/256x256/apps"
+mkdir -p "${APP_DIR}/usr/share/icons/hicolor/scalable/apps"
+mkdir -p "${APP_DIR}/usr/share/pixmaps"
 
 # Copy executable
 cp "dist/${EXECUTABLE}" "${APP_DIR}/usr/bin/"
@@ -31,16 +37,28 @@ Categories=Game;Sports;
 EOF
 
 # Create a simple icon if not present
-ICON_FILE="${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
+# Create icon in all required sizes
 if [ -f "packaging/linux/icon.png" ]; then
-    cp "packaging/linux/icon.png" "${ICON_FILE}"
-elif ! [ -f "${ICON_FILE}" ]; then
-    # Create a simple 256x256 blue PNG using Python if available
-    python3 -c "
-from PIL import Image
-img = Image.new('RGB', (256, 256), color='#1e40af')
-img.save('${ICON_FILE}')
-" 2>/dev/null || echo "Warning: Could not create icon (PIL not installed)"
+    cp "packaging/linux/icon.png" "${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
+    cp "packaging/linux/icon.png" "${APP_DIR}/usr/share/pixmaps/${APP_NAME}.png"
+else
+    echo "Creating default icon..."
+    # Create a simple 256x256 blue PNG using imagemagick convert
+    convert -size 256x256 xc:'#1e40af' "${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
+    convert -size 256x256 xc:'#1e40af' "${APP_DIR}/usr/share/pixmaps/${APP_NAME}.png"
+    # Create smaller sizes
+    for size in 16 32 64 128; do
+        convert -size ${size}x${size} xc:'#1e40af' "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/${APP_NAME}.png"
+    done
+    # Create scalable version (just copy the 256)
+    cp "${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png" "${APP_DIR}/usr/share/icons/hicolor/scalable/apps/${APP_NAME}.png"
+fi
+
+# Verify icon exists
+ICON_FILE="${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
+if [ ! -f "${ICON_FILE}" ]; then
+    echo "Error: Failed to create icon"
+    exit 1
 fi
 
 # Download linuxdeploy if not present
@@ -56,10 +74,6 @@ fi
 
 # Verify the file is valid
 file linuxdeploy-x86_64.AppImage || true
-if ! head -c 2 linuxdeploy-x86_64.AppImage | grep -q $'\x7fELF'; then
-    echo "Warning: Downloaded file may not be a valid ELF executable"
-    cat linuxdeploy-x86_64.AppImage | head -c 200
-fi
 
 # Make it executable
 chmod +x linuxdeploy-x86_64.AppImage
