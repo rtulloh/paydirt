@@ -99,6 +99,17 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
+    # If no arguments (e.g., double-clicked app), default to web mode
+    if len(sys.argv) == 1:
+        print("Starting Paydirt Web Interface...")
+        start_web_server(port=8000, open_browser=True)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nShutting down...")
+        return
+    
     # Check for --web flag first
     if '--web' in sys.argv or '-w' in sys.argv:
         port = 8000
