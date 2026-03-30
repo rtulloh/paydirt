@@ -463,8 +463,8 @@ def _extract_team_name(team_id: str, season: str) -> str:
 @router.post("/api/game/new", response_model=NewGameResponse)
 async def new_game(request: NewGameRequest):
     # Extract team names from 'season/team' format if present
-    player_team = _extract_team_name(player_team, request.season)
-    opponent_team = _extract_team_name(opponent_team, request.season) if opponent_team else None
+    player_team = _extract_team_name(request.player_team, request.season)
+    opponent_team = _extract_team_name(request.opponent_team, request.season) if request.opponent_team else None
     
     season_dir = SEASONS_DIR / request.season
     if not season_dir.exists():
