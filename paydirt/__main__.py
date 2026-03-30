@@ -82,6 +82,22 @@ def start_web_server(port=8000, open_browser=True):
                         seasons.append(d.name)
             return {"seasons": seasons, "path": str(seasons_path)}
         
+        # List teams for a season
+        @app.get("/api/teams")
+        @app.get("/api/teams/{season}")
+        async def list_teams(season: str = "2026"):
+            teams = []
+            season_path = seasons_path / season
+            if season_path.exists():
+                for d in sorted(season_path.iterdir()):
+                    if d.is_dir() and not d.name.startswith('.'):
+                        teams.append({
+                            "id": f"{season}/{d.name}",
+                            "name": d.name,
+                            "season": season,
+                        })
+            return {"teams": teams, "season": season}
+        
         # Root - serve index.html
         @app.get("/")
         async def root():
