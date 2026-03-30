@@ -75,12 +75,14 @@ jobs:
       
       - name: Install NSIS
         if: matrix.os == 'windows-latest'
+        continue-on-error: true
         run: |
           choco install nsis -y
         shell: pwsh
       
       - name: Create Windows installer
         if: matrix.os == 'windows-latest'
+        continue-on-error: true
         run: |
           & 'C:\Program Files (x86)\NSIS\makensis.exe' packaging/windows/installer.nsi
       
