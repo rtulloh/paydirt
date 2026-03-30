@@ -451,23 +451,36 @@ async def get_season_rules(season: str):
     return rules.to_dict()
 
 
+def _extract_team_name(team_id: str, season: str) -> str:
+    """Extract team name from 'season/team' format or return as-is."""
+    if '/' in team_id:
+        parts = team_id.split('/')
+        if len(parts) == 2 and parts[0] == season:
+            return parts[1]
+    return team_id
+
+
 @router.post("/api/game/new", response_model=NewGameResponse)
 async def new_game(request: NewGameRequest):
+    # Extract team names from 'season/team' format if present
+    player_team = _extract_team_name(player_team, request.season)
+    opponent_team = _extract_team_name(opponent_team, request.season) if opponent_team else None
+    
     season_dir = SEASONS_DIR / request.season
     if not season_dir.exists():
         raise HTTPException(status_code=404, detail=f"Season '{request.season}' not found")
     
     available_teams = [d.name for d in season_dir.iterdir() if d.is_dir()]
-    if request.player_team not in available_teams:
-        raise HTTPException(status_code=404, detail=f"Team '{request.player_team}' not found in season '{request.season}'")
+    if player_team not in available_teams:
+        raise HTTPException(status_code=404, detail=f"Team '{player_team}' not found in season '{request.season}'")
     
-    if request.opponent_team:
-        if request.opponent_team not in available_teams:
-            raise HTTPException(status_code=404, detail=f"Opponent team '{request.opponent_team}' not found")
-        if request.opponent_team == request.player_team:
+    if opponent_team:
+        if opponent_team not in available_teams:
+            raise HTTPException(status_code=404, detail=f"Opponent team '{opponent_team}' not found")
+        if opponent_team == player_team:
             raise HTTPException(status_code=400, detail="Player team and opponent team cannot be the same")
-        player_team_id = request.player_team
-        cpu_team_id = request.opponent_team
+        player_team_id = player_team
+        cpu_team_id = opponent_team
         player_is_home = request.play_as_home
         human_plays_offense = random.choice([True, False])
         if player_is_home:
@@ -477,18 +490,18 @@ async def new_game(request: NewGameRequest):
             home_id = cpu_team_id
             away_id = player_team_id
     else:
-        cpu_teams = [t for t in available_teams if t != request.player_team]
-        cpu_team = random.choice(cpu_teams) if cpu_teams else request.player_team
+        cpu_teams = [t for t in available_teams if t != player_team]
+        cpu_team = random.choice(cpu_teams) if cpu_teams else player_team
         player_is_home = request.play_as_home
         human_plays_offense = random.choice([True, False])
         if player_is_home:
-            player_team_id = request.player_team
+            player_team_id = player_team
             cpu_team_id = cpu_team
             home_id = player_team_id
             away_id = cpu_team_id
         else:
             player_team_id = cpu_team
-            cpu_team_id = request.player_team
+            cpu_team_id = player_team
             home_id = cpu_team_id
             away_id = player_team_id
     

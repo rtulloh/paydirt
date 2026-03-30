@@ -96,7 +96,7 @@ def start_web_server(port=8000, open_browser=True):
                             seasons.append(d.name)
                 return {"seasons": seasons}
         
-        # Override /api/teams to return correct format (just team name, not "season/team")
+        # Override /api/teams to return format frontend expects (season/team)
         @app.get("/api/teams")
         @app.get("/api/teams/{season}")
         async def list_teams(season: str = "2026"):
@@ -106,7 +106,7 @@ def start_web_server(port=8000, open_browser=True):
                 for d in sorted(season_path.iterdir()):
                     if d.is_dir() and not d.name.startswith('.'):
                         teams.append({
-                            "id": d.name,  # Just team name, not "season/team"
+                            "id": f"{season}/{d.name}",  # season/team format
                             "name": d.name,
                             "season": season,
                         })
