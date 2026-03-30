@@ -15,10 +15,12 @@ Build a statistical model of the team's strengths/weaknesses by analyzing their 
 
 ### 1.1 Offense Chart Analysis
 
-Parse the offense CSV and calculate for each die roll (2-12):
+Parse the offense CSV and calculate for each die roll (10-39):
 
 ```
-For each die roll:
+For each die roll (10-39):
+  - Black die (tens): 1,1,2,2,3,3 → gives 10, 20, or 30
+  - White dice (ones): two dice 0-4 each, sum capped at 9
   - Count plays by type (run vs pass)
   - Calculate % runs vs % passes
   - Calculate average yards per play type
@@ -28,7 +30,7 @@ For each die roll:
 **Data Structure**:
 ```python
 class OffenseAnalysis:
-    die_roll_stats: dict[int, RollStats]  # 2-12
+    die_roll_stats: dict[int, RollStats]  # 10-39
     
     # Aggregated by down/distance
     downs_and_distances: dict[tuple[int, int], DownDistanceStats]
@@ -65,6 +67,8 @@ def calculate_success_rate(play_type, down, distance, chart_data):
     
     return success_count / len(valid_outcomes) if valid_outcomes else 0
 ```
+
+Note: Paydirt uses special chart dice (Black + White dice) for offense rolls (10-39), not standard 6-sided dice.
 
 ---
 
