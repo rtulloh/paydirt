@@ -65,3 +65,4 @@ node_modules/
 # Historical season data (kept locally for development, not in repository)
 seasons/1972/
 seasons/1983/
+.venv310/
