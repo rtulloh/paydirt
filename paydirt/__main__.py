@@ -168,21 +168,23 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
-    sys.stderr.write(f"DEBUG main: sys.argv={sys.argv}, frozen={getattr(sys, 'frozen', False)}\n")
-    
-    # For bundled app (double-clicked), always start web mode
-    # For development, check CLI args
+    # For bundled app: if no CLI args, start web mode; if CLI args present, run CLI
     if getattr(sys, 'frozen', False):
-        # Bundled app - start web mode
-        sys.stderr.write("DEBUG: Starting web mode for bundled app\n")
-        print("Starting Paydirt Web Interface...")
-        start_web_server(port=8000, open_browser=True)
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-        return
+        # Bundled app - check if CLI args are present
+        cli_args = ['--play', '-p', '--auto', '-a', '--teams', '--simulate', '--scaffold-season', '-l', '--load']
+        has_cli_arg = any(arg in sys.argv for arg in cli_args)
+        
+        if not has_cli_arg:
+            # No CLI args - start web mode
+            print("Starting Paydirt Web Interface...")
+            start_web_server(port=8000, open_browser=True)
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("\nShutting down...")
+            return
+        # Has CLI args - fall through to CLI mode
     
     # Development mode - check CLI args
     if len(sys.argv) == 1:
