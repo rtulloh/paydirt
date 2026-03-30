@@ -64,17 +64,18 @@ def start_web_server(port=8000, open_browser=True):
         # Try to load full backend routes
         routes_loaded = False
         try:
-            backend_path = os.path.join(os.path.dirname(__file__), '..', '..', 'paydirt-web', 'backend')
-            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-                backend_path = os.path.join(sys._MEIPASS, 'paydirt-web', 'backend')
-            
-            sys.stderr.write(f"DEBUG: Looking for routes.py in: {backend_path}\n")
-            if os.path.exists(backend_path):
-                sys.stderr.write(f"DEBUG: Contents: {os.listdir(backend_path)}\n")
-            else:
-                sys.stderr.write(f"DEBUG: Backend path does not exist!\n")
-            
+            # Both dev and bundled mode use the same path structure
+            backend_path = os.path.join(sys._MEIPASS if getattr(sys, 'frozen', False) else 
+                                        os.path.dirname(os.path.dirname(__file__)),
+                                        'paydirt-web', 'backend')
             routes_file = os.path.join(backend_path, 'routes.py')
+            
+            # Debug: print paths
+            print(f"DEBUG: frozen={getattr(sys, 'frozen', False)}", flush=True)
+            print(f"DEBUG: backend_path={backend_path}", flush=True)
+            print(f"DEBUG: routes_file={routes_file}", flush=True)
+            print(f"DEBUG: exists={os.path.exists(routes_file)}", flush=True)
+            
             if os.path.exists(routes_file):
                 # Add backend path to sys.path
                 if backend_path not in sys.path:
@@ -86,15 +87,13 @@ def start_web_server(port=8000, open_browser=True):
                 # Include router from routes
                 if hasattr(backend_routes, 'router'):
                     app.include_router(backend_routes.router)
-                    sys.stderr.write(f"DEBUG: Loaded routes from {routes_file}\n")
                     routes_loaded = True
                 else:
                     raise Exception("routes.py has no router")
             else:
                 raise Exception(f"routes.py not found at {routes_file}")
         except Exception as e:
-            sys.stderr.write(f"DEBUG: Failed to load routes: {e}\n")
-            # Fallback to basic endpoints
+            pass  # Fall back to basic endpoints
             @app.get("/api/seasons")
             async def list_seasons():
                 seasons = []
@@ -171,7 +170,7 @@ def main():
     # For bundled app: if no CLI args, start web mode; if CLI args present, run CLI
     if getattr(sys, 'frozen', False):
         # Bundled app - check if CLI args are present
-        cli_args = ['--play', '-p', '--auto', '-a', '--teams', '--simulate', '--scaffold-season', '-l', '--load']
+        cli_args = ['--play', '-p', '--auto', '-a', '--teams', '--simulate', '--scaffold-season', '-l', '--load', '--help', '-h']
         has_cli_arg = any(arg in sys.argv for arg in cli_args)
         
         if not has_cli_arg:
@@ -287,13 +286,30 @@ def main():
             return
 
     if len(sys.argv) > 1 and sys.argv[1] in ['--load', 'load']:
+        from .interactive_game import resume_game
+        
         # Get optional save file path
-        save_file = None
+        save_file = "paydirt_save.json"
         if len(sys.argv) > 2 and not sys.argv[2].startswith('-'):
             save_file = sys.argv[2]
         
-        from .interactive_game import resume_game
-        resume_game(save_file)
+        # Parse additional options
+        difficulty = 'medium'
+        compact = False
+        week = 0
+        
+        for i, arg in enumerate(sys.argv[2:], start=2):
+            if arg in ['-d', '--difficulty'] and i + 1 < len(sys.argv):
+                difficulty = sys.argv[i + 1]
+            elif arg in ['--compact', '-c']:
+                compact = True
+            elif arg in ['--week', '-w'] and i + 1 < len(sys.argv):
+                try:
+                    week = int(sys.argv[i + 1])
+                except ValueError:
+                    pass
+        
+        resume_game(save_file=save_file, difficulty=difficulty, compact=compact, week=week)
         return
 
     # Check for --auto/-a flag for CPU vs CPU mode
@@ -426,12 +442,27 @@ def main():
         if load_save:
             from .interactive_game import resume_game
             save_file_arg = save_file if save_file else "paydirt_save.json"
-            resume_game(save_file_arg, difficulty=difficulty, compact=compact, week=week)
+            resume_game(save_file=save_file_arg, difficulty=difficulty, compact=compact, week=week)
         else:
             from .interactive_game import run_interactive_game
             run_interactive_game(difficulty=difficulty, compact=compact, week=week, 
                                 home_team=home_team, away_team=away_team,
                                 human_is_home=human_is_home, is_playoff=is_playoff)
+        return
+
+    # Handle --teams flag
+    if '--teams' in sys.argv:
+        from .chart_loader import find_team_charts
+        seasons_dir = str(get_seasons_path())
+        charts = find_team_charts(seasons_dir)
+        
+        print("Available teams:")
+        current_season = None
+        for year, name, path in sorted(charts):
+            if year != current_season:
+                current_season = year
+                print(f"\n{year}:")
+            print(f"  {name}")
         return
 
     # Try chart-based mode first if team charts are available
