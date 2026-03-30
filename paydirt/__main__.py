@@ -57,13 +57,30 @@ def start_web_server(port=8000, open_browser=True):
             allow_headers=["*"],
         )
         
-        # Get web static path
+        # Get paths
         web_static_path = get_web_static_path()
+        seasons_path = get_seasons_path()
         
         # Health check
         @app.get("/api/health")
         async def health():
-            return {"status": "ok", "web_static": web_static_path, "exists": os.path.exists(web_static_path)}
+            return {
+                "status": "ok",
+                "web_static": web_static_path,
+                "web_static_exists": os.path.exists(web_static_path),
+                "seasons": seasons_path,
+                "seasons_exists": os.path.exists(seasons_path),
+            }
+        
+        # List seasons
+        @app.get("/api/seasons")
+        async def list_seasons():
+            seasons = []
+            if seasons_path.exists():
+                for d in sorted(seasons_path.iterdir()):
+                    if d.is_dir() and not d.name.startswith('.'):
+                        seasons.append(d.name)
+            return {"seasons": seasons, "path": str(seasons_path)}
         
         # Root - serve index.html
         @app.get("/")
