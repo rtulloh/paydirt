@@ -62,10 +62,17 @@ def start_web_server(port=8000, open_browser=True):
         seasons_path = get_seasons_path()
         
         # Try to load full backend routes
+        routes_loaded = False
         try:
             backend_path = os.path.join(os.path.dirname(__file__), '..', '..', 'paydirt-web', 'backend')
             if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
                 backend_path = os.path.join(sys._MEIPASS, 'paydirt-web', 'backend')
+            
+            sys.stderr.write(f"DEBUG: Looking for routes.py in: {backend_path}\n")
+            if os.path.exists(backend_path):
+                sys.stderr.write(f"DEBUG: Contents: {os.listdir(backend_path)}\n")
+            else:
+                sys.stderr.write(f"DEBUG: Backend path does not exist!\n")
             
             routes_file = os.path.join(backend_path, 'routes.py')
             if os.path.exists(routes_file):
@@ -79,13 +86,14 @@ def start_web_server(port=8000, open_browser=True):
                 # Include router from routes
                 if hasattr(backend_routes, 'router'):
                     app.include_router(backend_routes.router)
-                    print(f"Loaded routes from {routes_file}")
+                    sys.stderr.write(f"DEBUG: Loaded routes from {routes_file}\n")
+                    routes_loaded = True
                 else:
                     raise Exception("routes.py has no router")
             else:
                 raise Exception(f"routes.py not found at {routes_file}")
         except Exception as e:
-            print(f"Failed to load routes: {e}")
+            sys.stderr.write(f"DEBUG: Failed to load routes: {e}\n")
             # Fallback to basic endpoints
             @app.get("/api/seasons")
             async def list_seasons():
@@ -160,8 +168,13 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
-    # If no arguments (e.g., double-clicked app), default to web mode
-    if len(sys.argv) == 1:
+    sys.stderr.write(f"DEBUG main: sys.argv={sys.argv}, frozen={getattr(sys, 'frozen', False)}\n")
+    
+    # For bundled app (double-clicked), always start web mode
+    # For development, check CLI args
+    if getattr(sys, 'frozen', False):
+        # Bundled app - start web mode
+        sys.stderr.write("DEBUG: Starting web mode for bundled app\n")
         print("Starting Paydirt Web Interface...")
         start_web_server(port=8000, open_browser=True)
         try:
@@ -171,8 +184,8 @@ def main():
             print("\nShutting down...")
         return
     
-    # Check for --web flag first
-    if '--web' in sys.argv or '-w' in sys.argv:
+    # Development mode - check CLI args
+    if len(sys.argv) == 1:
         port = 8000
         open_browser = True
         
