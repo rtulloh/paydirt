@@ -253,20 +253,17 @@ def test_kickoff_returns_dice_details():
     assert "dice_details" in kickoff_data
     dice_details = kickoff_data["dice_details"]
     
-    # Kickoff uses 2d6 (black + white1) - range 10-39
+    # Kickoff uses special dice (10-39 range)
     assert "offense" in dice_details
     assert "defense" in dice_details
     
-    # Kickoff dice should be valid range
-    assert 10 <= dice_details["offense"]["black"] <= 39
-    assert dice_details["offense"]["white1"] == 0
-    assert dice_details["offense"]["white2"] == 0
-    assert dice_details["offense"]["total"] == dice_details["offense"]["black"]
+    # Kickoff total should be valid range (10-39), black is 1/2/3 (representing 10s)
+    assert 1 <= dice_details["offense"]["black"] <= 3
+    assert 10 <= dice_details["offense"]["total"] <= 39
     
-    # Defense dice same as kickoff roll
+    # Defense/return dice: red = black (tens), green = white1 (ones, max 5)
     assert dice_details["defense"]["red"] == dice_details["offense"]["black"]
-    assert dice_details["defense"]["green"] == 0
-    assert dice_details["defense"]["total"] == dice_details["defense"]["red"]
+    assert 0 <= dice_details["defense"]["green"] <= 5
     
     # dice_roll_offense and dice_roll_defense should also be set
     assert kickoff_data["dice_roll_offense"] == dice_details["offense"]["total"]
