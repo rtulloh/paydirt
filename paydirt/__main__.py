@@ -132,17 +132,13 @@ def start_web_server(port=8000, open_browser=True):
                 return FileResponse(index_path)
             return {"error": "Web files not found"}
         
-        # Static files
-        @app.get("/{path:path}")
-        async def serve_static(path: str):
-            file_path = os.path.join(web_static_path, path)
-            if os.path.isfile(file_path):
-                return FileResponse(file_path)
-            # Fallback to index.html for SPA
-            index_path = os.path.join(web_static_path, 'index.html')
-            if os.path.isfile(index_path):
-                return FileResponse(index_path)
-            return {"error": f"Not found: {path}"}
+        # Static files - only serve specific static file patterns, NOT /api/* paths
+        from fastapi.staticfiles import StaticFiles
+        
+        # Mount assets directory
+        assets_path = os.path.join(web_static_path, 'assets')
+        if os.path.isdir(assets_path):
+            app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
         
         # Start uvicorn
         config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="info")
