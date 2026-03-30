@@ -61,28 +61,42 @@ def start_web_server(port=8000, open_browser=True):
         web_static_path = get_web_static_path()
         seasons_path = get_seasons_path()
         
-        # Health check
-        @app.get("/api/health")
-        async def health():
-            return {
-                "status": "ok",
-                "web_static": web_static_path,
-                "web_static_exists": os.path.exists(web_static_path),
-                "seasons": seasons_path,
-                "seasons_exists": os.path.exists(seasons_path),
-            }
+        # Try to load full backend routes
+        try:
+            backend_path = os.path.join(os.path.dirname(__file__), '..', '..', 'paydirt-web', 'backend')
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                backend_path = os.path.join(sys._MEIPASS, 'paydirt-web', 'backend')
+            
+            routes_file = os.path.join(backend_path, 'routes.py')
+            if os.path.exists(routes_file):
+                # Add backend path to sys.path
+                if backend_path not in sys.path:
+                    sys.path.insert(0, backend_path)
+                
+                # Import routes module
+                import routes as backend_routes
+                
+                # Include router from routes
+                if hasattr(backend_routes, 'router'):
+                    app.include_router(backend_routes.router)
+                    print(f"Loaded routes from {routes_file}")
+                else:
+                    raise Exception("routes.py has no router")
+            else:
+                raise Exception(f"routes.py not found at {routes_file}")
+        except Exception as e:
+            print(f"Failed to load routes: {e}")
+            # Fallback to basic endpoints
+            @app.get("/api/seasons")
+            async def list_seasons():
+                seasons = []
+                if seasons_path.exists():
+                    for d in sorted(seasons_path.iterdir()):
+                        if d.is_dir() and not d.name.startswith('.'):
+                            seasons.append(d.name)
+                return {"seasons": seasons}
         
-        # List seasons
-        @app.get("/api/seasons")
-        async def list_seasons():
-            seasons = []
-            if seasons_path.exists():
-                for d in sorted(seasons_path.iterdir()):
-                    if d.is_dir() and not d.name.startswith('.'):
-                        seasons.append(d.name)
-            return {"seasons": seasons, "path": str(seasons_path)}
-        
-        # List teams for a season
+        # Override /api/teams to return correct format (just team name, not "season/team")
         @app.get("/api/teams")
         @app.get("/api/teams/{season}")
         async def list_teams(season: str = "2026"):
@@ -92,11 +106,16 @@ def start_web_server(port=8000, open_browser=True):
                 for d in sorted(season_path.iterdir()):
                     if d.is_dir() and not d.name.startswith('.'):
                         teams.append({
-                            "id": f"{season}/{d.name}",
+                            "id": d.name,  # Just team name, not "season/team"
                             "name": d.name,
                             "season": season,
                         })
             return {"teams": teams, "season": season}
+        
+        # Health check
+        @app.get("/api/health")
+        async def health():
+            return {"status": "ok"}
         
         # Root - serve index.html
         @app.get("/")
