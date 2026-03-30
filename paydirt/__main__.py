@@ -60,8 +60,14 @@ def start_web_server(port=8000, open_browser=True):
         from fastapi.responses import FileResponse
         from fastapi import Request
         
-        # Import the existing app
-        import main as web_main
+        # Import the existing app using importlib
+        import importlib.util
+        main_file = os.path.join(backend_path, 'main.py')
+        print(f"Loading main.py from: {main_file}")
+        
+        spec = importlib.util.spec_from_file_location("main", main_file)
+        web_main = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(web_main)
         
         app = web_main.app
         
