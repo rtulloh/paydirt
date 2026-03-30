@@ -42,8 +42,19 @@ def start_web_server(port=8000, open_browser=True):
             print(f"Details: {e}")
             return
         
-        # Import the FastAPI app
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend'))
+        # Find the backend path - either in development or bundled
+        if getattr(sys, 'frozen', False):
+            # Running as bundled executable
+            if hasattr(sys, '_MEIPASS'):
+                backend_path = os.path.join(sys._MEIPASS, 'paydirt-web', 'backend')
+            else:
+                backend_path = os.path.join(os.path.dirname(sys.executable), 'paydirt-web', 'backend')
+        else:
+            # Running in development
+            backend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend')
+        
+        print(f"Backend path: {backend_path}")
+        sys.path.insert(0, backend_path)
         
         # Import and configure the app to serve static files
         from fastapi.responses import FileResponse
