@@ -64,6 +64,9 @@ def start_web_server(port=8000, open_browser=True):
         import importlib.util
         main_file = os.path.join(backend_path, 'main.py')
         print(f"Loading main.py from: {main_file}")
+        print(f"main.py exists: {os.path.exists(main_file)}")
+        print(f"Is file: {os.path.isfile(main_file)}")
+        print(f"List backend dir: {os.listdir(backend_path)}")
         
         spec = importlib.util.spec_from_file_location("main", main_file)
         web_main = importlib.util.module_from_spec(spec)
