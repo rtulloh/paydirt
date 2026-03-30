@@ -33,81 +33,60 @@ def get_web_static_path():
 
 def start_web_server(port=8000, open_browser=True):
     """Start the web server in a separate thread."""
+    
     def run_server():
         global uvicorn
         try:
             import uvicorn
         except ImportError as e:
-            print(f"Error: uvicorn not installed. Install with: pip install uvicorn")
-            print(f"Details: {e}")
+            print(f"Error: uvicorn not available: {e}")
             return
         
-        # Find the backend path - either in development or bundled
-        if getattr(sys, 'frozen', False):
-            # Running as bundled executable
-            if hasattr(sys, '_MEIPASS'):
-                backend_path = os.path.join(sys._MEIPASS, 'paydirt-web', 'backend')
-            else:
-                backend_path = os.path.join(os.path.dirname(sys.executable), 'paydirt-web', 'backend')
-        else:
-            # Running in development
-            backend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend')
-        
-        print(f"Backend path: {backend_path}")
-        sys.path.insert(0, backend_path)
-        
-        # Import and configure the app to serve static files
+        # Import FastAPI
+        from fastapi import FastAPI
+        from fastapi.middleware.cors import CORSMiddleware
         from fastapi.responses import FileResponse
-        from fastapi import Request
         
-        # Import the existing app using importlib
-        import importlib.util
-        main_file = os.path.join(backend_path, 'main.py')
-        print(f"Loading main.py from: {main_file}")
-        print(f"main.py exists: {os.path.exists(main_file)}")
-        print(f"Is file: {os.path.isfile(main_file)}")
-        print(f"List backend dir: {os.listdir(backend_path)}")
+        # Create app
+        app = FastAPI(title="Paydirt Web API", version="1.0.0")
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         
-        spec = importlib.util.spec_from_file_location("main", main_file)
-        web_main = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(web_main)
-        
-        app = web_main.app
-        
-        # Add static file serving
+        # Get web static path
         web_static_path = get_web_static_path()
-        print(f"Web static path: {web_static_path}")
-        print(f"Web static exists: {os.path.exists(web_static_path)}")
         
-        # Create a catch-all route to serve index.html for SPA
-        @app.get("/{full_path:path}")
-        async def serve_spa(full_path: str, request: Request):
-            # Check if the file exists in web_static
-            file_path = os.path.join(web_static_path, full_path)
+        # Health check
+        @app.get("/api/health")
+        async def health():
+            return {"status": "ok", "web_static": web_static_path, "exists": os.path.exists(web_static_path)}
+        
+        # Root - serve index.html
+        @app.get("/")
+        async def root():
+            index_path = os.path.join(web_static_path, 'index.html')
+            if os.path.isfile(index_path):
+                return FileResponse(index_path)
+            return {"error": "Web files not found"}
+        
+        # Static files
+        @app.get("/{path:path}")
+        async def serve_static(path: str):
+            file_path = os.path.join(web_static_path, path)
             if os.path.isfile(file_path):
                 return FileResponse(file_path)
-            # Otherwise serve index.html for SPA routing
+            # Fallback to index.html for SPA
             index_path = os.path.join(web_static_path, 'index.html')
             if os.path.isfile(index_path):
                 return FileResponse(index_path)
-            print(f"Not found: {full_path}, looking in {web_static_path}")
-            return {"detail": "Not found"}
-        
-        # Also serve root
-        @app.get("/")
-        async def serve_root():
-            index_path = os.path.join(web_static_path, 'index.html')
-            if os.path.isfile(index_path):
-                return FileResponse(index_path)
-            return {"detail": "Web interface not found. Please run 'python -m paydirt' to use CLI mode."}
+            return {"error": f"Not found: {path}"}
         
         # Start uvicorn
-        config = uvicorn.Config(
-            app,
-            host="127.0.0.1",
-            port=port,
-            log_level="info"
-        )
+        config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="info")
         server = uvicorn.Server(config)
         server.run()
     
@@ -115,12 +94,11 @@ def start_web_server(port=8000, open_browser=True):
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
     
-    # Wait a moment for server to start
+    # Wait for server
     time.sleep(2)
     
     url = f"http://127.0.0.1:{port}"
-    print("\n🎮 Starting Paydirt Web Interface...")
-    print(f"   Open {url} in your browser\n")
+    print(f"\nWeb UI: {url}\n")
     
     if open_browser:
         webbrowser.open(url)
@@ -130,23 +108,19 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
-    # If no arguments (e.g., double-clicked app), show help
+    # If no arguments (e.g., double-clicked app), default to web mode
     if len(sys.argv) == 1:
-        print("PAYDIRT - Football Board Game Simulation")
-        print("=" * 50)
-        print("\nUsage:")
-        print("  python -m paydirt -p              # Interactive game")
-        print("  python -m paydirt -a <away> <home> # CPU vs CPU")
-        print("  python -m paydirt --teams          # List teams")
-        print("  python -m paydirt --web            # Web mode (development only)")
-        print("\nRun 'python -m paydirt --help' for more options")
+        print("Starting Paydirt Web Interface...")
+        start_web_server(port=8000, open_browser=True)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nShutting down...")
         return
     
     # Check for --web flag first
     if '--web' in sys.argv or '-w' in sys.argv:
-        print("Error: --web mode is only available in development, not in bundled app.")
-        print("Use 'python -m paydirt' for CLI mode.")
-        return
         port = 8000
         open_browser = True
         
