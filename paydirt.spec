@@ -9,10 +9,6 @@ datas = [
     ('LICENSE', '.'),
     # Include web static files
     ('paydirt-web/backend/web_static', 'web_static'),
-    # Include web backend code
-    ('paydirt-web/backend/main.py', 'paydirt-web/backend/main.py'),
-    ('paydirt-web/backend/routes.py', 'paydirt-web/backend/routes.py'),
-    ('paydirt-web/backend/__init__.py', 'paydirt-web/backend/__init__.py'),
 ]
 
 from PyInstaller.utils.hooks import collect_all

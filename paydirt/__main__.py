@@ -130,19 +130,23 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
-    # If no arguments (e.g., double-clicked app), default to web mode
+    # If no arguments (e.g., double-clicked app), show help
     if len(sys.argv) == 1:
-        print("Starting Paydirt Web Interface...")
-        start_web_server(port=8000, open_browser=True)
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("\nShutting down...")
+        print("PAYDIRT - Football Board Game Simulation")
+        print("=" * 50)
+        print("\nUsage:")
+        print("  python -m paydirt -p              # Interactive game")
+        print("  python -m paydirt -a <away> <home> # CPU vs CPU")
+        print("  python -m paydirt --teams          # List teams")
+        print("  python -m paydirt --web            # Web mode (development only)")
+        print("\nRun 'python -m paydirt --help' for more options")
         return
     
     # Check for --web flag first
     if '--web' in sys.argv or '-w' in sys.argv:
+        print("Error: --web mode is only available in development, not in bundled app.")
+        print("Use 'python -m paydirt' for CLI mode.")
+        return
         port = 8000
         open_browser = True
         
