@@ -182,6 +182,11 @@ class PlayRequest(BaseModel):
     no_huddle: bool = False  # Mode, not a one-play modifier
 
 
+class GameIdRequest(BaseModel):
+    """Simple request model for endpoints that only need game_id."""
+    game_id: str
+
+
 class CPUPlayResponse(BaseModel):
     cpu_play: str
 
@@ -1122,7 +1127,7 @@ async def get_pat_choice(game_id: str):
 
 
 @router.post("/api/game/extra-point", response_model=ExtraPointResponse)
-async def attempt_extra_point(request: PlayRequest):
+async def attempt_extra_point(request: GameIdRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
