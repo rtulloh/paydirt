@@ -619,7 +619,7 @@ async def process_coin_toss(request: CoinTossRequest):
 
 
 @router.post("/api/game/cpu-play", response_model=CPUPlayResponse)
-async def get_cpu_play(request: PlayRequest):
+async def get_cpu_play(request: GameIdRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
@@ -1007,7 +1007,7 @@ async def delete_game(game_id: str):
 
 
 @router.post("/api/game/timeout")
-async def call_timeout(request: PlayRequest):
+async def call_timeout(request: GameIdRequest):
     """
     Call a timeout for the current team.
     
@@ -1059,7 +1059,7 @@ async def call_timeout(request: PlayRequest):
 
 
 @router.post("/api/game/overtime/start")
-async def start_overtime(request: PlayRequest):
+async def start_overtime(request: GameIdRequest):
     """
     Start overtime period.
     
