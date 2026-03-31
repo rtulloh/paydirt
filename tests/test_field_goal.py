@@ -448,8 +448,11 @@ class TestFieldGoalFumble:
         # Mock FG result as fumbled snap with -7 yards - use the actual result from chart lookup
         with patch('paydirt.game_engine.resolve_field_goal_with_penalties') as mock_fg:
             mock_fg.return_value = create_fg_result(17, "F - 7", is_fumble=True)
-            
-            outcome = game.run_play(PlayType.FIELD_GOAL, None)
+            # Mock the fumble recovery dice roll to be outside the return TD range (37-39)
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                mock_dice.return_value = (20, "B2+W0+W0=20")  # Not in 37-39 range
+                
+                outcome = game.run_play(PlayType.FIELD_GOAL, None)
             
             # Check the raw_result in the outcome to verify our mock is being used
             assert outcome.result.raw_result == "F - 7", f"Expected 'F - 7' but got {outcome.result.raw_result}"
