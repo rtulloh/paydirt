@@ -1611,3 +1611,151 @@ def test_load_replay_season_detection_from_teams():
     load_response = client.post("/api/game/load-replay", json=load_request)
     # Should succeed by detecting season from teams
     assert load_response.status_code == 200
+
+
+# =============================================================================
+# Tests for GameIdRequest endpoints (packaging fixes - beta.63/64)
+# =============================================================================
+
+def test_extra_point_only_requires_game_id():
+    """Test that extra-point endpoint works with just game_id (no player_play required)."""
+    # Create game
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    game_id = response.json()["game_id"]
+    
+    # Call extra-point with only game_id
+    ep_response = client.post("/api/game/extra-point", json={
+        "game_id": game_id,
+    })
+    
+    # Should succeed (200) not fail with 422 validation error
+    assert ep_response.status_code == 200
+    data = ep_response.json()
+    assert "success" in data
+    assert "description" in data
+
+
+def test_cpu_play_only_requires_game_id():
+    """Test that cpu-play endpoint works with just game_id (no player_play required)."""
+    # Create game
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    game_id = response.json()["game_id"]
+    
+    # Call cpu-play with only game_id
+    cpu_response = client.post("/api/game/cpu-play", json={
+        "game_id": game_id,
+    })
+    
+    # Should succeed (200) not fail with 422 validation error
+    assert cpu_response.status_code == 200
+    data = cpu_response.json()
+    assert "cpu_play" in data
+
+
+def test_timeout_only_requires_game_id():
+    """Test that timeout endpoint works with just game_id (no player_play required)."""
+    # Create game
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    game_id = response.json()["game_id"]
+    
+    # Call timeout with only game_id
+    timeout_response = client.post("/api/game/timeout", json={
+        "game_id": game_id,
+    })
+    
+    # Should succeed (200) not fail with 422 validation error
+    assert timeout_response.status_code == 200
+    data = timeout_response.json()
+    assert "success" in data
+
+
+def test_overtime_start_only_requires_game_id():
+    """Test that overtime/start endpoint works with just game_id (no player_play required)."""
+    # Create game
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    game_id = response.json()["game_id"]
+    
+    # Call overtime/start with only game_id
+    ot_response = client.post("/api/game/overtime/start", json={
+        "game_id": game_id,
+    })
+    
+    # Should succeed (200) not fail with 422 validation error
+    assert ot_response.status_code == 200
+    data = ot_response.json()
+    assert "success" in data
+
+
+def test_extra_point_rejects_missing_game_id():
+    """Test that extra-point returns 422 when game_id is missing."""
+    response = client.post("/api/game/extra-point", json={})
+    assert response.status_code == 422
+
+
+def test_cpu_play_rejects_missing_game_id():
+    """Test that cpu-play returns 422 when game_id is missing."""
+    response = client.post("/api/game/cpu-play", json={})
+    assert response.status_code == 422
+
+
+def test_timeout_rejects_missing_game_id():
+    """Test that timeout returns 422 when game_id is missing."""
+    response = client.post("/api/game/timeout", json={})
+    assert response.status_code == 422
+
+
+def test_overtime_start_rejects_missing_game_id():
+    """Test that overtime/start returns 422 when game_id is missing."""
+    response = client.post("/api/game/overtime/start", json={})
+    assert response.status_code == 422
+
+
+# =============================================================================
+# Tests for SEASONS_DIR detection (packaging fixes - beta.62)
+# =============================================================================
+
+def test_seasons_dir_finds_2026_season():
+    """Test that SEASONS_DIR is correctly configured to find seasons."""
+    response = client.get("/api/seasons")
+    assert response.status_code == 200
+    data = response.json()
+    assert "2026" in data["seasons"]
+
+
+def test_seasons_dir_finds_teams_in_season():
+    """Test that SEASONS_DIR allows finding teams within a season."""
+    response = client.get("/api/teams?season=2026")
+    assert response.status_code == 200
+    data = response.json()
+    team_ids = [t["id"] for t in data["teams"]]
+    assert "Ironclads" in team_ids
+    assert "Thunderhawks" in team_ids
+
+
+def test_game_new_can_load_team_charts():
+    """Test that new game can load team charts from SEASONS_DIR."""
+    response = client.post("/api/game/new", json={
+        "player_team": "Ironclads",
+        "season": "2026",
+        "play_as_home": True,
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "game_id" in data
+    assert data["game_state"]["home_team"]["id"] == "Ironclads"
