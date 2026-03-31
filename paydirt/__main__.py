@@ -93,7 +93,10 @@ def start_web_server(port=8000, open_browser=True):
             else:
                 raise Exception(f"routes.py not found at {routes_file}")
         except Exception as e:
-            pass  # Fall back to basic endpoints
+            print(f"ERROR loading routes.py: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            # Fall back to basic endpoints
             @app.get("/api/seasons")
             async def list_seasons():
                 seasons = []
