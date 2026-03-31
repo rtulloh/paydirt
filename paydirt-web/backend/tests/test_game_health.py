@@ -118,8 +118,8 @@ def _run_game(cpu_controls_both: bool = True) -> tuple[int, int, int]:
                           If False, human controls offense only.
     """
     response = client.post('/api/game/new', json={
-        'player_team': '49ers',
-        'season': '1983',
+        'player_team': 'Ironclads',
+        'season': '2026',
         'play_as_home': True,
     })
     game_id = response.json()['game_id']
@@ -249,8 +249,8 @@ class TestClockHealth:
     def test_time_decreases_during_play(self):
         """Time should decrease as plays are run."""
         response = client.post('/api/game/new', json={
-            'player_team': '49ers',
-            'season': '1983',
+            'player_team': 'Ironclads',
+            'season': '2026',
             'play_as_home': True,
         })
         game_id = response.json()['game_id']

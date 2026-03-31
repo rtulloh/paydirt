@@ -11,12 +11,12 @@ client = TestClient(app)
 class TestFullGameSimulation:
     """Test complete game flow from start to finish."""
 
-    def test_complete_game_49ers_vs_bears_1983(self):
-        """Simulate a complete game between 49ers and Bears from 1983."""
+    def test_complete_game_ironclads_vs_thunderhawks_2026(self):
+        """Simulate a complete game between Ironclads and Thunderhawks from 2026."""
         # 1. Create new game
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         assert response.status_code == 200
@@ -161,8 +161,8 @@ class TestFullGameSimulation:
         """Test penalty decision that results in touchdown."""
         # Create game
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -233,8 +233,8 @@ class TestFullGameSimulation:
         """Test saving and loading a game replay."""
         # Create and play a game
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -293,10 +293,10 @@ class TestFullGameSimulation:
 
     def test_season_rules_enforcement(self):
         """Test that season rules are properly enforced."""
-        # Test 1983 season (no 2-point conversion)
+        # Test 2026 season (allows 2-point conversion)
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         assert response.status_code == 200
@@ -306,7 +306,7 @@ class TestFullGameSimulation:
         pat_response = client.get(f"/api/game/pat-choice/{game_id}")
         assert pat_response.status_code == 200
         pat_data = pat_response.json()
-        assert not pat_data.get("can_go_for_two"), "1983 should not allow 2-point conversion"
+        assert pat_data.get("can_go_for_two"), "2026 should allow 2-point conversion"
 
         # Cleanup
         client.delete(f"/api/game/{game_id}")
@@ -314,8 +314,8 @@ class TestFullGameSimulation:
     def test_overtime_flow(self):
         """Test overtime game flow."""
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -334,8 +334,8 @@ class TestFullGameSimulation:
     def test_timeout_usage(self):
         """Test calling timeouts."""
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -384,8 +384,8 @@ class TestEdgeCases:
     def test_clock_decreases_through_game(self):
         """Verify game clock decreases properly through plays."""
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -473,8 +473,8 @@ class TestEdgeCases:
     def test_game_ends_after_four_quarters(self):
         """Verify game ends after Q4 time expires."""
         response = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         game_id = response.json()["game_id"]
@@ -540,7 +540,7 @@ class TestEdgeCases:
         """Test creating game with invalid team."""
         response = client.post("/api/game/new", json={
             "player_team": "InvalidTeam",
-            "season": "1983",
+            "season": "2026",
             "play_as_home": True,
         })
         # Should either fail or use default
@@ -549,16 +549,16 @@ class TestEdgeCases:
     def test_duplicate_game_creation(self):
         """Test creating multiple games."""
         response1 = client.post("/api/game/new", json={
-            "player_team": "49ers",
-            "season": "1983",
+            "player_team": "Ironclads",
+            "season": "2026",
             "play_as_home": True,
         })
         assert response1.status_code == 200
         game_id1 = response1.json()["game_id"]
 
         response2 = client.post("/api/game/new", json={
-            "player_team": "Bears",
-            "season": "1983",
+            "player_team": "Thunderhawks",
+            "season": "2026",
             "play_as_home": True,
         })
         assert response2.status_code == 200

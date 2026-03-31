@@ -11,8 +11,8 @@ from paydirt.ai_analysis import (
 
 @pytest.fixture
 def bears_chart():
-    """Load Bears team chart for testing."""
-    return load_team_chart(Path('seasons/1983/Bears'))
+    """Load team chart for testing (using 2026 Ironclads)."""
+    return load_team_chart(Path('seasons/2026/Ironclads'))
 
 
 class TestPlayOutcomeParsing:
@@ -125,11 +125,11 @@ class TestMultipleTeams:
     """Tests analyzing multiple teams."""
     
     @pytest.mark.parametrize("team_name", [
-        "Bears", "49ers", "Cowboys", "Dolphins", "Raiders"
+        "Ironclads", "Thunderhawks"
     ])
     def test_analyze_different_teams(self, team_name):
         """Should work for different teams."""
-        chart_path = Path(f"seasons/1983/{team_name}")
+        chart_path = Path(f"seasons/2026/{team_name}")
         if not chart_path.exists():
             pytest.skip(f"Team {team_name} not found")
         
@@ -272,7 +272,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         assert helper is not None
@@ -284,7 +284,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         suggestions = helper.suggest_offense_plays(3, 7, 3)
@@ -301,7 +301,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         defense = helper.suggest_defense(3, 7)
@@ -314,7 +314,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         # Normal situation
@@ -331,7 +331,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         explanation = helper.explain_play("Screen", 3, 7)
@@ -345,7 +345,7 @@ class TestEasyModeHelper:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         # Not enough data - should be empty
@@ -362,7 +362,7 @@ class TestBreakawayExclusion:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         suggestions = helper.suggest_offense_plays(1, 10, 10)
@@ -376,7 +376,7 @@ class TestBreakawayExclusion:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         stats = analyzer.analyze_play_type('B')
         
@@ -395,7 +395,7 @@ class TestBreakawayExclusion:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         
         # Check that other plays don't count B as valid
@@ -415,7 +415,7 @@ class TestPlayOutcomeBreakaway:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         
         outcome = analyzer._parse_result('B')
@@ -429,7 +429,7 @@ class TestPlayOutcomeBreakaway:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         
         outcome = analyzer._parse_result('B')
@@ -442,7 +442,7 @@ class TestPlayOutcomeBreakaway:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         
         # Analyze a play type that has B results (check some columns)
@@ -460,7 +460,7 @@ class TestPlayOutcomeBreakaway:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         analyzer = OffenseAnalyzer(bears.offense)
         stats = analyzer.analyze_play_type('B')
         
@@ -473,7 +473,7 @@ class TestPlayOutcomeBreakaway:
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
         
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path('seasons/2026/Ironclads'))
         helper = create_easy_mode_helper(bears)
         
         # Test various down and distance situations

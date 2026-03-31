@@ -5,12 +5,21 @@ import json
 import os
 import pytest
 import tempfile
+from pathlib import Path
 
 from paydirt.commentary import (
     TeamRoster, get_roster, load_roster_from_file,
     Commentary
 )
 from paydirt.play_resolver import PlayType, ResultType
+
+# Check if 1972/Dolphins season data exists
+_seasons_dir = Path(__file__).parent.parent / 'seasons'
+_has_1972_dolphins = (_seasons_dir / '1972' / 'Dolphins').exists()
+requires_1972_dolphins = pytest.mark.skipif(
+    not _has_1972_dolphins,
+    reason="1972/Dolphins season data not available"
+)
 
 
 class TestTeamRoster:
@@ -126,6 +135,7 @@ class TestRosterLoading:
 class TestGetRoster:
     """Tests for the get_roster function."""
     
+    @requires_1972_dolphins
     def test_get_roster_from_file(self):
         """Should return roster from roster.json file when team_dir provided."""
         roster = get_roster("1972 Miami Dolphins", team_dir="seasons/1972/Dolphins")

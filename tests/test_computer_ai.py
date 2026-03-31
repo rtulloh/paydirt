@@ -1,7 +1,9 @@
 """
 Tests for computer AI offensive and defensive play selection.
 """
+import os
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI
@@ -9,6 +11,14 @@ from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.season_rules import AIBehavior, TwoMinuteDrill, HurryUp, ClockKilling, AIStrategic
+
+# Check if 1983/Bears season data exists
+_seasons_dir = Path(__file__).parent.parent / 'seasons'
+_has_1983_bears = (_seasons_dir / '1983' / 'Bears').exists()
+requires_1983_bears = pytest.mark.skipif(
+    not _has_1983_bears,
+    reason="1983/Bears season data not available"
+)
 
 
 def create_mock_chart(short_name: str = "TEST", team_name: str = "Test Team") -> TeamChart:
@@ -861,6 +871,7 @@ class TestAIWithAnalysis:
         assert ai.use_analysis is False
         assert ai.opponent_model is None
     
+    @requires_1983_bears
     def test_ai_set_team(self):
         """AI can have team set for chart analysis."""
         from pathlib import Path
@@ -872,6 +883,7 @@ class TestAIWithAnalysis:
         
         assert ai.team_analyzer is not None
     
+    @requires_1983_bears
     def test_defense_uses_opponent_model(self):
         """Defense selection uses opponent model when enabled."""
         from pathlib import Path

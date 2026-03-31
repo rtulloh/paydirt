@@ -18,7 +18,57 @@ from paydirt.play_resolver import (
     resolve_play_with_penalties
 )
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
-from paydirt.chart_loader import load_team_chart
+from paydirt.chart_loader import (
+    TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+)
+
+
+# Module-level mock fixtures for tests that don't need real chart data
+@pytest.fixture
+def mock_special_teams():
+    """Create mock special teams chart."""
+    return SpecialTeamsChart(
+        interception_return={10: "5"},
+        kickoff={},
+        kickoff_return={},
+        punt={},
+        punt_return={},
+        field_goal={},
+        extra_point_no_good=[],
+    )
+
+
+@pytest.fixture
+def mock_offense():
+    """Create mock offense chart."""
+    return OffenseChart(
+        line_plunge={10: "5"},
+        off_tackle={10: "4"},
+    )
+
+
+@pytest.fixture
+def mock_team_chart(mock_offense, mock_special_teams):
+    """Create a mock team chart with year=1983 for fallback rules."""
+    return TeamChart(
+        peripheral=PeripheralData(
+            year=1983,
+            team_name="Test",
+            team_nickname="Team",
+            power_rating=50,
+            power_rating_variance=1,
+            base_yardage_factor=100,
+            reduced_yardage_factor=80,
+            fumble_recovered_range=(0, 0),
+            fumble_lost_range=(0, 0),
+            special_defense="",
+            short_name="TST '83",
+        ),
+        offense=mock_offense,
+        defense=DefenseChart(),
+        special_teams=mock_special_teams,
+        team_dir="",
+    )
 
 
 class TestIsPenaltyResult:
@@ -118,11 +168,9 @@ class TestResolvePlayWithPenalties:
     """Tests for the resolve_play_with_penalties function."""
     
     @pytest.fixture
-    def team_charts(self):
-        """Load team charts for testing."""
-        home = load_team_chart("seasons/1983/Redskins")
-        away = load_team_chart("seasons/1983/Cowboys")
-        return home, away
+    def team_charts(self, mock_team_chart):
+        """Use mock team charts for testing (results are mocked anyway)."""
+        return mock_team_chart, mock_team_chart
     
     def test_no_penalty_returns_play_result(self, team_charts):
         """When no penalty occurs, should return normal play result."""
@@ -251,11 +299,9 @@ class TestGameEnginePenaltyProcedure:
     """Tests for the game engine penalty procedure methods."""
     
     @pytest.fixture
-    def game(self):
-        """Create a game for testing."""
-        home = load_team_chart("seasons/1983/Redskins")
-        away = load_team_chart("seasons/1983/Cowboys")
-        return PaydirtGameEngine(home, away)
+    def game(self, mock_team_chart):
+        """Create a game using mock charts (year=1983 for fallback rules)."""
+        return PaydirtGameEngine(mock_team_chart, mock_team_chart)
     
     def test_run_play_with_penalty_procedure_no_penalty(self, game):
         """Normal play without penalty should work like run_play."""
@@ -393,11 +439,9 @@ class TestPenaltyAppliedFlag:
     """Tests for the penalty_applied flag on PlayOutcome."""
     
     @pytest.fixture
-    def game(self):
-        """Create a game for testing."""
-        home = load_team_chart("seasons/1983/Redskins")
-        away = load_team_chart("seasons/1983/Cowboys")
-        return PaydirtGameEngine(home, away)
+    def game(self, mock_team_chart):
+        """Create a game using mock charts (year=1983 for fallback rules)."""
+        return PaydirtGameEngine(mock_team_chart, mock_team_chart)
     
     def test_penalty_applied_false_by_default(self, game):
         """PlayOutcome should have penalty_applied=False by default."""
@@ -1032,16 +1076,9 @@ class TestPenaltyChoiceTransaction:
     """Tests for transaction building in resolve_play_with_penalties."""
     
     @pytest.fixture
-    def game_engine(self):
-        """Create a game engine for testing."""
-        from pathlib import Path
-        from paydirt.game_engine import PaydirtGameEngine
-        from paydirt.chart_loader import load_team_chart
-        
-        seasons_dir = Path(__file__).parent.parent / "seasons"
-        home_chart = load_team_chart(seasons_dir / "1983" / "49ers")
-        away_chart = load_team_chart(seasons_dir / "1983" / "Cowboys")
-        return PaydirtGameEngine(home_chart, away_chart)
+    def game_engine(self, mock_team_chart):
+        """Create a game engine using mock charts (year=1983 for fallback rules)."""
+        return PaydirtGameEngine(mock_team_chart, mock_team_chart)
     
     def test_penalty_choice_has_transaction(self, game_engine):
         """PenaltyChoice should include a transaction with play events."""

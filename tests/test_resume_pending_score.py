@@ -9,6 +9,7 @@ scoring team.
 import os
 import json
 import tempfile
+from pathlib import Path
 import pytest
 
 from paydirt.save_game import save_game, load_game
@@ -16,11 +17,20 @@ from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
 
 
+# Check if 1972 season data exists for skipif markers
+_seasons_dir = Path(__file__).parent.parent / 'seasons'
+_has_1972_jets = (_seasons_dir / '1972' / 'Jets').exists()
+requires_1972_jets = pytest.mark.skipif(
+    not _has_1972_jets,
+    reason="1972/Jets season data not available"
+)
+
+
 @pytest.fixture
 def game():
-    """Create a game engine with real team charts (away=Jets, home=Bills)."""
-    home_chart = load_team_chart("seasons/1972/Bills")
-    away_chart = load_team_chart("seasons/1972/Jets")
+    """Create a game engine with real 2026 team charts (save/load needs valid paths)."""
+    home_chart = load_team_chart("seasons/2026/Ironclads")
+    away_chart = load_team_chart("seasons/2026/Thunderhawks")
     return PaydirtGameEngine(home_chart, away_chart)
 
 
@@ -198,12 +208,12 @@ class TestResumeWithActualSaveFile:
     """Test using the actual save file format from the reported bug."""
 
     def test_pending_td_from_save_data(self, temp_save_file):
-        """Reproduce the exact bug: Jets @ Bills, BUF has pending TD at ball_position=100."""
+        """Reproduce the exact bug: away @ home, home has pending TD at ball_position=100."""
         save_data = {
             "version": 1,
             "saved_at": "2026-03-13T19:55:46.865616",
-            "away_team_path": "seasons/1972/Jets",
-            "home_team_path": "seasons/1972/Bills",
+            "away_team_path": "seasons/2026/Thunderhawks",
+            "home_team_path": "seasons/2026/Ironclads",
             "human_is_away": True,
             "human_is_home": False,
             "home_score": 17,
@@ -245,7 +255,7 @@ class TestResumeWithActualSaveFile:
         assert human_is_away is True
         assert human_is_home is False
 
-        # BUF (home) has possession at ball_position=100 → BUF scored
+        # Home (Ironclads) has possession at ball_position=100 → home scored
         scoring_team_is_home = loaded_game.state.is_home_possession
         assert scoring_team_is_home is True
 
@@ -254,10 +264,10 @@ class TestResumeWithActualSaveFile:
         loaded_game.attempt_extra_point()
 
         # Scoring team kicks
-        kicking_home = scoring_team_is_home  # True → BUF kicks
+        kicking_home = scoring_team_is_home  # True → home kicks
         loaded_game.kickoff(kicking_home=kicking_home)
 
-        # Jets (away/human) should receive, NOT kick
+        # Away (Thunderhawks/human) should receive, NOT kick
         assert loaded_game.state.is_home_possession is False, \
             "BUG REGRESSION: Jets (human) kicked instead of receiving after BUF TD"
 

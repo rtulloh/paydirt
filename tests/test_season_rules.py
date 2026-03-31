@@ -41,9 +41,25 @@ def temp_season_dir():
     shutil.rmtree(tmp)
 
 
+# Check if season data exists for skipif markers
+_seasons_dir = Path(__file__).parent.parent / 'seasons'
+_has_1972_season = (_seasons_dir / '1972' / '1972.yaml').exists()
+_has_1983_season = (_seasons_dir / '1983' / '1983.yaml').exists()
+
+requires_1972_season = pytest.mark.skipif(
+    not _has_1972_season,
+    reason="1972 season rules not available"
+)
+requires_1983_season = pytest.mark.skipif(
+    not _has_1983_season,
+    reason="1983 season rules not available"
+)
+
+
 class TestLoadSeasonRules:
     """Tests for loading season rules from YAML files."""
 
+    @requires_1972_season
     def test_load_1972_rules(self, seasons_dir):
         """1972 season: no 2-point conversion, sudden death OT."""
         rules = load_season_rules(seasons_dir / "1972")
@@ -54,6 +70,7 @@ class TestLoadSeasonRules:
         assert rules.overtime.max_periods_regular == 1
         assert rules.overtime.can_end_in_tie_regular is True
 
+    @requires_1983_season
     def test_load_1983_rules(self, seasons_dir):
         """1983 season: same rules as 1972."""
         rules = load_season_rules(seasons_dir / "1983")
@@ -118,6 +135,7 @@ class TestLoadSeasonRules:
 class TestSeasonRulesToDict:
     """Tests for SeasonRules.to_dict() method."""
 
+    @requires_1972_season
     def test_to_dict_returns_correct_structure(self, seasons_dir):
         """to_dict should return properly structured dictionary."""
         rules = load_season_rules(seasons_dir / "1972")
@@ -132,6 +150,7 @@ class TestSeasonRulesToDict:
 class TestSeasonRulesToOvertimeRules:
     """Tests for converting SeasonRules to OvertimeRules."""
 
+    @requires_1972_season
     def test_sudden_death_conversion(self, seasons_dir):
         """Sudden death season should convert to SUDDEN_DEATH format."""
         rules = load_season_rules(seasons_dir / "1972")

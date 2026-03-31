@@ -8,14 +8,16 @@ import pytest
 
 from paydirt.save_game import save_game, load_game, get_save_info
 from paydirt.game_engine import PaydirtGameEngine, ScoringPlay
-from paydirt.chart_loader import load_team_chart
+from paydirt.chart_loader import (
+    load_team_chart
+)
 
 
 @pytest.fixture
 def game():
-    """Create a game engine with real team charts."""
-    home_chart = load_team_chart("seasons/1983/Redskins")
-    away_chart = load_team_chart("seasons/1983/49ers")
+    """Create a game engine with real 2026 team charts (save/load needs valid paths)."""
+    home_chart = load_team_chart("seasons/2026/Ironclads")
+    away_chart = load_team_chart("seasons/2026/Thunderhawks")
     return PaydirtGameEngine(home_chart, away_chart)
 
 

@@ -2,7 +2,18 @@
 Tests for interactive_game.py functions that don't require user input.
 """
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+# Skipif markers for tests requiring specific seasons
+requires_1972_season = pytest.mark.skipif(
+    not Path("seasons/1972").exists(),
+    reason="1972 season data not available"
+)
+requires_1983_season = pytest.mark.skipif(
+    not Path("seasons/1983").exists(),
+    reason="1983 season data not available"
+)
 
 from paydirt.interactive_game import (
     analyze_team_strength,
@@ -470,8 +481,8 @@ class TestDisplayPlayResultOffsettingPenalties:
         from paydirt.play_resolver import PlayType, DefenseType
         
         # Load real teams for integration test
-        home = load_team_chart('seasons/1983/steelers')
-        away = load_team_chart('seasons/1983/broncos')
+        home = load_team_chart('seasons/2026/Ironclads')
+        away = load_team_chart('seasons/2026/Thunderhawks')
         
         game = PaydirtGameEngine(home, away)
         game.state.ball_position = 50
@@ -565,9 +576,8 @@ class TestAIHelperZKey:
         """Easy mode should create easy_helper."""
         from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
-        from pathlib import Path
         
-        chart = load_team_chart(Path('seasons/1983/Bears'))
+        chart = load_team_chart('seasons/2026/Ironclads')
         
         # In easy mode, easy_helper is created
         easy_helper = create_easy_mode_helper(chart)
@@ -756,6 +766,8 @@ class TestGetAvailableTeams:
             assert isinstance(teams[0], tuple)
             assert len(teams[0]) == 2
 
+    @requires_1972_season
+    @requires_1983_season
     def test_with_season_filter(self):
         """Should return only teams from the specified season."""
         from paydirt.interactive_game import get_available_teams
@@ -772,6 +784,7 @@ class TestGetAvailableTeams:
         for path, name in teams_1983:
             assert "1983" in path
 
+    @requires_1972_season
     def test_team_names_do_not_include_season(self):
         """Team names should not include the season prefix (it's shown separately now)."""
         from paydirt.interactive_game import get_available_teams
