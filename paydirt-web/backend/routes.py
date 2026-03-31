@@ -6,10 +6,26 @@ import yaml
 import random
 import uuid
 import re
+import os
 from datetime import datetime
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# Handle both development and bundled (PyInstaller) environments
+if getattr(sys, 'frozen', False):
+    # Running as bundled executable
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller
+        _base_path = Path(sys._MEIPASS)
+    else:
+        # cx_Freeze or similar
+        _base_path = Path(os.path.dirname(sys.executable))
+    SEASONS_DIR = _base_path / 'seasons'
+    sys.path.insert(0, str(_base_path))
+else:
+    # Running in development
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    SEASONS_DIR = Path(__file__).parent.parent.parent / 'seasons'
 
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
@@ -18,8 +34,6 @@ from paydirt.computer_ai import ComputerAI, cpu_should_accept_penalty
 from paydirt.season_rules import load_season_rules
 
 router = APIRouter()
-
-SEASONS_DIR = Path(__file__).parent.parent.parent / 'seasons'
 
 games: Dict[str, Dict[str, Any]] = {}
 
