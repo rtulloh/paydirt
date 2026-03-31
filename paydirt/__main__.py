@@ -77,17 +77,34 @@ def start_web_server(port=8000, open_browser=True):
             print(f"DEBUG: exists={os.path.exists(routes_file)}", flush=True)
             
             if os.path.exists(routes_file):
-                # Add backend path to sys.path
+                # PyInstaller bundles files into directories, so routes.py might be
+                # at routes.py/routes.py - check for that case
+                actual_routes_file = routes_file
+                if os.path.isdir(routes_file):
+                    actual_routes_file = os.path.join(routes_file, 'routes.py')
+                
+                print(f"DEBUG: actual_routes_file={actual_routes_file}", flush=True)
+                print(f"DEBUG: actual_exists={os.path.exists(actual_routes_file)}", flush=True)
+                
+                # Add backend path to sys.path for routes.py's own imports
                 if backend_path not in sys.path:
                     sys.path.insert(0, backend_path)
+                # Also add the parent directories for paydirt imports
+                paydirt_root = os.path.dirname(os.path.dirname(actual_routes_file))
+                if paydirt_root not in sys.path:
+                    sys.path.insert(0, paydirt_root)
                 
-                # Import routes module
-                import routes as backend_routes
+                # Use importlib to load from file path directly
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("routes", actual_routes_file)
+                backend_routes = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(backend_routes)
                 
                 # Include router from routes
                 if hasattr(backend_routes, 'router'):
                     app.include_router(backend_routes.router)
                     routes_loaded = True
+                    print(f"DEBUG: routes loaded successfully!", flush=True)
                 else:
                     raise Exception("routes.py has no router")
             else:
