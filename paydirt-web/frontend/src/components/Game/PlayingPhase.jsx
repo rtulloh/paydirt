@@ -77,6 +77,7 @@ const PlayingPhase = () => {
     selectedModifier,
     noHuddleMode,
     clearModifiers,
+    gameOver,
   } = store;
 
   const [localLastResult, setLocalLastResult] = useState(null);
