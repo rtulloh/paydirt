@@ -2913,10 +2913,10 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
         if call_timeout and not outcome.touchdown:
             play_seconds = time_before_play - game.state.time_remaining
-            should_apply, skip_msg = should_apply_timeout_after_play(outcome, play_seconds)
+            should_apply, skip_msg = game._should_apply_timeout_after_play(outcome, play_seconds)
             if should_apply:
                 if game.state.use_timeout(human_is_home):
-                    _apply_timeout(game, time_before_play, quarter_before_play)
+                    game._apply_timeout(time_before_play, quarter_before_play)
             else:
                 print(f"  {skip_msg}")
 
@@ -3103,7 +3103,7 @@ def resume_game(save_file: str = None, difficulty: str = 'medium', compact: bool
 
 
 if __name__ == "__main__":
-    run_interactive_game()
+    run_interactive_game()  # noqa: F821
 
 
 def run_interactive_game(difficulty: str = 'medium', compact: bool = False, week: int = 0,

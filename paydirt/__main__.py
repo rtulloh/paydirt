@@ -11,7 +11,7 @@ from .packaging import get_seasons_path
 
 # Pre-import uvicorn for PyInstaller bundling
 try:
-    import uvicorn
+    import uvicorn  # noqa: F401
 except ImportError as e:
     print(f"Warning: uvicorn not available: {e}")
 
@@ -62,7 +62,6 @@ def start_web_server(port=8000, open_browser=True):
         seasons_path = get_seasons_path()
         
         # Try to load full backend routes
-        routes_loaded = False
         try:
             # Both dev and bundled mode use the same path structure
             backend_path = os.path.join(sys._MEIPASS if getattr(sys, 'frozen', False) else 
@@ -94,7 +93,6 @@ def start_web_server(port=8000, open_browser=True):
                 # Include router from routes
                 if hasattr(backend_routes, 'router'):
                     app.include_router(backend_routes.router)
-                    routes_loaded = True
                 else:
                     raise Exception("routes.py has no router")
             else:
