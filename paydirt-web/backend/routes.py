@@ -888,13 +888,11 @@ async def execute_play(request: PlayRequest):
     is_pending_pat = result.touchdown and not engine.state.game_over
     game["pending_pat"] = is_pending_pat
 
-    # After a TD, clean up engine state (ball_position is at 100 from the engine)
+    # After a TD, set up for PAT attempt using engine method
     if result.touchdown and not engine.state.game_over:
-        engine.state.ball_position = 98  # PAT spot (2 yards from goal)
-        engine.state.down = 1
-        engine.state.yards_to_go = 2
+        engine.setup_for_pat()
     elif result.touchdown and engine.state.game_over:
-        engine.state.ball_position = 35  # Game-ending TD: reset for consistency
+        engine.setup_for_kickoff()  # Game-ending TD: reset for consistency
 
     # Save pre-reset ball position for TD/SF responses (before we set up for kickoff)
     pre_kickoff_ball_position = None
@@ -902,13 +900,8 @@ async def execute_play(request: PlayRequest):
         pre_kickoff_ball_position = engine.state.ball_position
 
     if scoring and not engine.state.game_over and not is_pending_pat:
-        # Safety free kick is from 20, normal kickoff is from 35
-        if result.safety:
-            engine.state.ball_position = 20
-        else:
-            engine.state.ball_position = 35
-        engine.state.down = 1
-        engine.state.yards_to_go = 10
+        # Set up for kickoff using engine method (safety free kick is from 20)
+        engine.setup_for_kickoff(from_safety=result.safety)
         game["is_kickoff"] = True  # Mark that kickoff is needed
 
     # Determine if human needs to make penalty decision
@@ -999,9 +992,7 @@ async def execute_play(request: PlayRequest):
         is_pending_pat = result.touchdown and not engine.state.game_over
         game["pending_pat"] = is_pending_pat
         if scoring and not engine.state.game_over and not is_pending_pat:
-            engine.state.ball_position = 35
-            engine.state.down = 1
-            engine.state.yards_to_go = 10
+            engine.setup_for_kickoff(from_safety=result.safety)
             game["is_kickoff"] = True  # Mark that kickoff is needed
 
         # CPU decided, so no pending decision for human
@@ -1223,14 +1214,12 @@ async def attempt_extra_point(request: GameIdRequest):
         f"[{scoring_abbrev}] EXTRA POINT: {result_str} | HOME {engine.state.home_score} - AWAY {engine.state.away_score}"
     )
 
-    # After PAT, set up for kickoff
+    # After PAT, set up for kickoff using engine method
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     # The engine's kickoff() method handles the receiver getting the ball.
     game["pending_pat"] = False
     game["is_kickoff"] = True  # Mark that kickoff is needed
-    engine.state.ball_position = 35
-    engine.state.down = 1
-    engine.state.yards_to_go = 10
+    engine.setup_for_kickoff()
 
     return ExtraPointResponse(
         success=success,
@@ -1364,12 +1353,10 @@ async def attempt_two_point(request: TwoPointRequest):
         f"[{scoring_abbrev}] TWO-POINT: {description} | HOME {engine.state.home_score} - AWAY {engine.state.away_score}"
     )
 
-    # After two-point attempt, set up for kickoff
+    # After two-point attempt, set up for kickoff using engine method
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     game["pending_pat"] = False
-    engine.state.ball_position = 35
-    engine.state.down = 1
-    engine.state.yards_to_go = 10
+    engine.setup_for_kickoff()
 
     return ExecutePlayResponse(
         player_play=request.offense_play,

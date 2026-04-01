@@ -8,11 +8,18 @@ Official rules:
     If result places ball at/beyond goal line = GOOD.
     If defense returns turnover to/beyond opponent's goal line = 2 points for defense.
 """
+
 import pytest
 from unittest.mock import patch, MagicMock
 
 from paydirt.game_engine import PaydirtGameEngine, GameState
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+from paydirt.chart_loader import (
+    TeamChart,
+    PeripheralData,
+    OffenseChart,
+    DefenseChart,
+    SpecialTeamsChart,
+)
 from paydirt.play_resolver import PlayType
 from paydirt.interactive_game import cpu_should_go_for_two
 
@@ -67,127 +74,127 @@ def game(mock_team_chart):
 
 class TestExtraPoint:
     """Tests for extra point (1-point conversion by kick)."""
-    
+
     def test_extra_point_good_white_box(self, game):
         """Extra point should be good when roll is in WHITE box."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
+
         # Roll 15 is not in no_good list, so it's GOOD
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+        with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (15, "B1+W2+W3=15")
-            
+
             success, description = game.attempt_extra_point()
-            
+
             assert success is True
             assert "good" in description.lower()
             assert game.state.home_score == initial_score + 1
-    
+
     def test_extra_point_no_good_red_box(self, game):
         """Extra point should be no good when roll is in RED box."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
+
         # Roll 10 is in no_good list (blocked/wide/short/fumble)
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+        with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (10, "B1+W0+W0=10")
-            
+
             success, description = game.attempt_extra_point()
-            
+
             assert success is False
             assert "no good" in description.lower()
             assert game.state.home_score == initial_score  # No points added
-    
+
     def test_extra_point_away_team(self, game):
         """Extra point should add to away team score when they have possession."""
         game.state.is_home_possession = False
         initial_score = game.state.away_score
-        
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+
+        with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (20, "B2+W3+W5=20")
-            
+
             success, description = game.attempt_extra_point()
-            
+
             assert success is True
             assert game.state.away_score == initial_score + 1
-    
+
     def test_extra_point_roll_in_description(self, game):
         """Description should include the dice roll."""
         game.state.is_home_possession = True
-        
-        with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+
+        with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (25, "B2+W4+W4=25")
-            
+
             success, description = game.attempt_extra_point()
-            
+
             assert "25" in description
 
 
 class TestTwoPointConversion:
     """Tests for two-point conversion."""
-    
+
     def test_two_point_good_with_sufficient_yards(self, game):
         """Two-point conversion should be good when play gains 2+ yards."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
+
         # Mock a play that gains 3 yards (enough for 2-point conversion)
-        with patch.object(game, 'run_play') as mock_play:
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 3
             mock_outcome.turnover = False
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.LINE_PLUNGE)
-            
+
             assert success is True
             assert def_points == 0
             assert "good" in description.lower()
             assert game.state.home_score == initial_score + 2
-    
+
     def test_two_point_good_with_exactly_2_yards(self, game):
         """Two-point conversion should be good when play gains exactly 2 yards."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 2
             mock_outcome.turnover = False
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
-            
+
             assert success is True
             assert game.state.home_score == initial_score + 2
-    
+
     def test_two_point_no_good_insufficient_yards(self, game):
         """Two-point conversion should fail when play gains less than 2 yards."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 1
             mock_outcome.turnover = False
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.LINE_PLUNGE)
-            
+
             assert success is False
             assert def_points == 0
             assert "no good" in description.lower()
             assert game.state.home_score == initial_score  # No points added
-    
+
     def test_two_point_no_good_on_turnover(self, game):
         """Two-point conversion should fail on turnover (without return TD)."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 0
             mock_outcome.turnover = True
@@ -195,63 +202,63 @@ class TestTwoPointConversion:
             mock_play.return_value = mock_outcome
             # Ball position after turnover is not at goal line
             game.state.ball_position = 50
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
-            
+
             assert success is False
             assert "turnover" in description.lower()
             assert game.state.home_score == initial_score
-    
+
     def test_two_point_good_on_touchdown(self, game):
         """Two-point conversion should be good when play results in touchdown."""
         game.state.is_home_possession = True
         initial_score = game.state.home_score
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 5
             mock_outcome.turnover = False
             mock_outcome.touchdown = True
             mock_play.return_value = mock_outcome
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
-            
+
             assert success is True
             assert game.state.home_score == initial_score + 2
-    
+
     def test_two_point_away_team(self, game):
         """Two-point conversion should add to away team score when they have possession."""
         game.state.is_home_possession = False
         initial_score = game.state.away_score
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 3
             mock_outcome.turnover = False
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
-            
+
             success, def_points, description = game.attempt_two_point(PlayType.LINE_PLUNGE)
-            
+
             assert success is True
             assert game.state.away_score == initial_score + 2
-    
+
     def test_two_point_state_restored_after_attempt(self, game):
         """Game state should be restored after two-point attempt."""
         game.state.ball_position = 25
         game.state.down = 3
         game.state.yards_to_go = 7
         game.state.is_home_possession = True
-        
-        with patch.object(game, 'run_play') as mock_play:
+
+        with patch.object(game, "run_play") as mock_play:
             mock_outcome = MagicMock()
             mock_outcome.yards_gained = 1
             mock_outcome.turnover = False
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
-            
+
             game.attempt_two_point(PlayType.LINE_PLUNGE)
-            
+
             # State should be restored
             assert game.state.ball_position == 25
             assert game.state.down == 3
@@ -260,13 +267,13 @@ class TestTwoPointConversion:
 
 class TestDefensiveTwoPointReturn:
     """Tests for defensive two-point return on turnover."""
-    
+
     def test_defense_scores_on_interception_return(self, game):
         """Defense should get 2 points if they return turnover for TD."""
         game.state.is_home_possession = True  # Home team on offense
         initial_home = game.state.home_score
         initial_away = game.state.away_score
-        
+
         def mock_run_play_with_return(*args, **kwargs):
             """Mock that simulates turnover with return TD."""
             mock_outcome = MagicMock()
@@ -276,23 +283,23 @@ class TestDefensiveTwoPointReturn:
             # Simulate defense returning it all the way
             game.state.ball_position = 100
             return mock_outcome
-        
-        with patch.object(game, 'run_play', side_effect=mock_run_play_with_return):
+
+        with patch.object(game, "run_play", side_effect=mock_run_play_with_return):
             success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
-            
+
             assert success is False  # Offense didn't score
             assert def_points == 2
             assert "defense" in description.lower()
             # Away team (defense) should get 2 points
             assert game.state.away_score == initial_away + 2
             assert game.state.home_score == initial_home  # No change
-    
+
     def test_defense_scores_when_away_on_offense(self, game):
         """Home team defense should get 2 points on return TD."""
         game.state.is_home_possession = False  # Away team on offense
         initial_home = game.state.home_score
         initial_away = game.state.away_score
-        
+
         def mock_run_play_with_return(*args, **kwargs):
             """Mock that simulates turnover with return TD."""
             mock_outcome = MagicMock()
@@ -302,10 +309,10 @@ class TestDefensiveTwoPointReturn:
             # Simulate defense returning it all the way
             game.state.ball_position = 100
             return mock_outcome
-        
-        with patch.object(game, 'run_play', side_effect=mock_run_play_with_return):
+
+        with patch.object(game, "run_play", side_effect=mock_run_play_with_return):
             success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
-            
+
             assert success is False
             assert def_points == 2
             # Home team (defense) should get 2 points
@@ -315,7 +322,7 @@ class TestDefensiveTwoPointReturn:
 
 class TestCPUTwoPointDecision:
     """Tests for CPU decision to go for 2-point conversion."""
-    
+
     @pytest.fixture
     def mock_game(self):
         """Create a mock game for testing."""
@@ -327,59 +334,59 @@ class TestCPUTwoPointDecision:
         game.state.home_score = 14
         game.state.away_score = 14
         return game
-    
+
     def test_kicks_by_default_early_game(self, mock_game):
         """Should kick extra point by default in early game."""
         mock_game.state.quarter = 2
         mock_game.state.time_remaining = 10.0
         mock_game.state.home_score = 13  # Just scored TD, now up by 6
         mock_game.state.away_score = 7
-        
+
         assert cpu_should_go_for_two(mock_game) is False
-    
+
     def test_goes_for_two_when_tied_very_late(self, mock_game):
         """Should go for 2 when tied very late in game."""
         mock_game.state.home_score = 14  # Tied after TD
         mock_game.state.away_score = 14
-        
+
         assert cpu_should_go_for_two(mock_game) is True
-    
+
     def test_goes_for_two_when_down_by_2_late(self, mock_game):
         """Should go for 2 when down by 2 late in game."""
         mock_game.state.home_score = 12  # Down by 2 after TD
         mock_game.state.away_score = 14
         mock_game.state.time_remaining = 3.0  # Late game
-        
+
         assert cpu_should_go_for_two(mock_game) is True
-    
+
     def test_goes_for_two_when_up_by_1_very_late(self, mock_game):
         """Should go for 2 when up by 1 very late to go up by 3."""
         mock_game.state.home_score = 15  # Up by 1 after TD
         mock_game.state.away_score = 14
-        
+
         assert cpu_should_go_for_two(mock_game) is True
-    
+
     def test_goes_for_two_when_down_by_8_late(self, mock_game):
         """Should go for 2 when down by 8 late (need 2 TDs with 2-pt each)."""
         mock_game.state.home_score = 6  # Down by 8 after TD
         mock_game.state.away_score = 14
         mock_game.state.time_remaining = 3.0  # Late game
-        
+
         assert cpu_should_go_for_two(mock_game) is True
-    
+
     def test_kicks_when_up_by_6_late(self, mock_game):
         """Should kick when up by 6 late (go up by 7)."""
         mock_game.state.home_score = 20  # Up by 6 after TD
         mock_game.state.away_score = 14
         mock_game.state.time_remaining = 3.0
-        
+
         assert cpu_should_go_for_two(mock_game) is False
-    
+
     def test_kicks_when_up_big(self, mock_game):
         """Should kick when up big."""
         mock_game.state.home_score = 28  # Up by 14 after TD
         mock_game.state.away_score = 14
-        
+
         assert cpu_should_go_for_two(mock_game) is False
 
 
@@ -451,3 +458,133 @@ class TestTwoPointConversionEraRestriction:
         """2-point conversion should be available for modern teams."""
         assert game_2026.season_rules.two_point_conversion is True
         assert game_2026.season_rules.season == 2026
+
+
+class TestSetupForPat:
+    """Tests for the setup_for_pat engine method."""
+
+    @pytest.fixture
+    def mock_team_chart(self):
+        """Create a mock team chart."""
+        return TeamChart(
+            peripheral=PeripheralData(
+                year=2026,
+                team_name="Test",
+                team_nickname="Team",
+                short_name="TST",
+                power_rating=50,
+            ),
+            offense=OffenseChart(),
+            defense=DefenseChart(),
+            special_teams=SpecialTeamsChart(
+                extra_point_no_good=[],
+                field_goal={},
+                punt={},
+                punt_return={},
+                kickoff={},
+                kickoff_return={},
+                interception_return={},
+            ),
+            team_dir="",
+        )
+
+    @pytest.fixture
+    def game(self, mock_team_chart):
+        """Create a game with mock team charts."""
+        return PaydirtGameEngine(mock_team_chart, mock_team_chart)
+
+    def test_setup_for_pat_sets_ball_position(self, game):
+        """setup_for_pat should set ball at 2-yard line (position 98)."""
+        game.state.ball_position = 100  # Simulate TD at goal line
+        game.setup_for_pat()
+        assert game.state.ball_position == 98
+
+    def test_setup_for_pat_sets_down(self, game):
+        """setup_for_pat should set down to 1."""
+        game.state.down = 4  # Simulate TD on 4th down
+        game.setup_for_pat()
+        assert game.state.down == 1
+
+    def test_setup_for_pat_sets_yards_to_go(self, game):
+        """setup_for_pat should set yards_to_go to 2."""
+        game.state.yards_to_go = 10
+        game.setup_for_pat()
+        assert game.state.yards_to_go == 2
+
+    def test_setup_for_pat_preserves_possession(self, game):
+        """setup_for_pat should not change possession."""
+        game.state.is_home_possession = True
+        game.setup_for_pat()
+        assert game.state.is_home_possession is True
+
+        game.state.is_home_possession = False
+        game.setup_for_pat()
+        assert game.state.is_home_possession is False
+
+
+class TestSetupForKickoff:
+    """Tests for the setup_for_kickoff engine method."""
+
+    @pytest.fixture
+    def mock_team_chart(self):
+        """Create a mock team chart."""
+        return TeamChart(
+            peripheral=PeripheralData(
+                year=2026,
+                team_name="Test",
+                team_nickname="Team",
+                short_name="TST",
+                power_rating=50,
+            ),
+            offense=OffenseChart(),
+            defense=DefenseChart(),
+            special_teams=SpecialTeamsChart(
+                extra_point_no_good=[],
+                field_goal={},
+                punt={},
+                punt_return={},
+                kickoff={},
+                kickoff_return={},
+                interception_return={},
+            ),
+            team_dir="",
+        )
+
+    @pytest.fixture
+    def game(self, mock_team_chart):
+        """Create a game with mock team charts."""
+        return PaydirtGameEngine(mock_team_chart, mock_team_chart)
+
+    def test_setup_for_kickoff_normal_sets_ball_at_35(self, game):
+        """setup_for_kickoff should set ball at 35 for normal kickoff."""
+        game.state.ball_position = 98
+        game.setup_for_kickoff()
+        assert game.state.ball_position == 35
+
+    def test_setup_for_kickoff_safety_sets_ball_at_20(self, game):
+        """setup_for_kickoff with from_safety=True should set ball at 20."""
+        game.state.ball_position = 98
+        game.setup_for_kickoff(from_safety=True)
+        assert game.state.ball_position == 20
+
+    def test_setup_for_kickoff_sets_down(self, game):
+        """setup_for_kickoff should set down to 1."""
+        game.state.down = 4
+        game.setup_for_kickoff()
+        assert game.state.down == 1
+
+    def test_setup_for_kickoff_sets_yards_to_go(self, game):
+        """setup_for_kickoff should set yards_to_go to 10."""
+        game.state.yards_to_go = 2
+        game.setup_for_kickoff()
+        assert game.state.yards_to_go == 10
+
+    def test_setup_for_kickoff_preserves_possession(self, game):
+        """setup_for_kickoff should not change possession."""
+        game.state.is_home_possession = True
+        game.setup_for_kickoff()
+        assert game.state.is_home_possession is True
+
+        game.state.is_home_possession = False
+        game.setup_for_kickoff()
+        assert game.state.is_home_possession is False
