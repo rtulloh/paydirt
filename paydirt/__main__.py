@@ -70,21 +70,12 @@ def start_web_server(port=8000, open_browser=True):
                                         'paydirt-web', 'backend')
             routes_file = os.path.join(backend_path, 'routes.py')
             
-            # Debug: print paths
-            print(f"DEBUG: frozen={getattr(sys, 'frozen', False)}", flush=True)
-            print(f"DEBUG: backend_path={backend_path}", flush=True)
-            print(f"DEBUG: routes_file={routes_file}", flush=True)
-            print(f"DEBUG: exists={os.path.exists(routes_file)}", flush=True)
-            
             if os.path.exists(routes_file):
                 # PyInstaller bundles files into directories, so routes.py might be
                 # at routes.py/routes.py - check for that case
                 actual_routes_file = routes_file
                 if os.path.isdir(routes_file):
                     actual_routes_file = os.path.join(routes_file, 'routes.py')
-                
-                print(f"DEBUG: actual_routes_file={actual_routes_file}", flush=True)
-                print(f"DEBUG: actual_exists={os.path.exists(actual_routes_file)}", flush=True)
                 
                 # Add backend path to sys.path for routes.py's own imports
                 if backend_path not in sys.path:
@@ -104,7 +95,6 @@ def start_web_server(port=8000, open_browser=True):
                 if hasattr(backend_routes, 'router'):
                     app.include_router(backend_routes.router)
                     routes_loaded = True
-                    print(f"DEBUG: routes loaded successfully!", flush=True)
                 else:
                     raise Exception("routes.py has no router")
             else:
