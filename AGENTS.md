@@ -366,3 +366,19 @@ python -m paydirt --simulate
 # List available teams
 python -m paydirt --teams
 ```
+
+## Releases and Tagging
+
+When creating releases:
+
+- **Always increment tag numbers** - Don't delete and recreate tags. If a build fails, fix the issue and create the next tag number (e.g., if `v1.0.0-beta.70` fails, push the fix and create `v1.0.0-beta.71`)
+- **Tags are immutable history** - Deleting tags can cause confusion with existing references and breaks the audit trail
+- **CI runs on tag push** - The release workflow (`.github/workflows/release.yml`) triggers on `v*` tags
+
+```bash
+# Get the latest tag
+git tag --list 'v*' | sort -V | tail -1
+
+# Create and push a new tag (always increment, never reuse)
+git tag v1.0.0-beta.71 && git push origin v1.0.0-beta.71
+```
