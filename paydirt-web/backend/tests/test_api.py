@@ -2115,3 +2115,83 @@ def test_get_seasons_sorted_descending():
         # Convert to integers for comparison
         season_ints = [int(s) for s in seasons]
         assert season_ints == sorted(season_ints, reverse=True)
+
+
+# Tests for /api/guide endpoint
+
+
+def test_get_guide_returns_content():
+    """Test that /api/guide returns guide content."""
+    response = client.get("/api/guide")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "content" in data
+    assert "title" in data
+    assert data["title"] == "Paydirt User Guide"
+    assert len(data["content"]) > 0
+
+
+def test_get_guide_contains_expected_sections():
+    """Test that guide contains expected user-facing sections."""
+    response = client.get("/api/guide")
+    assert response.status_code == 200
+    data = response.json()
+
+    content = data["content"]
+    # Should contain user-facing sections
+    assert "## Download & Install" in content
+    assert "## How to Play" in content
+    assert "## Time Management" in content
+    assert "## Strategy Tips" in content
+
+
+def test_get_guide_excludes_developer_sections():
+    """Test that guide excludes developer-only sections."""
+    response = client.get("/api/guide")
+    assert response.status_code == 200
+    data = response.json()
+
+    content = data["content"]
+    # Should NOT contain developer-only sections
+    assert "## Project Structure" not in content
+    assert "## Building Standalone Executables" not in content
+    assert "## Code Signing" not in content
+
+
+def test_filter_readme_helper():
+    """Test the _filter_readme_for_guide helper function."""
+    from routes import _filter_readme_for_guide
+
+    test_content = """# Test README
+
+## User Section
+This should stay.
+
+## Project Structure
+This should be removed.
+More stuff to remove.
+
+## Another User Section
+This should stay too.
+
+## Building Standalone Executables
+This should be removed.
+Including code signing info.
+
+## License
+Final section should stay.
+"""
+
+    filtered = _filter_readme_for_guide(test_content)
+
+    assert "## User Section" in filtered
+    assert "This should stay." in filtered
+    assert "## Another User Section" in filtered
+    assert "This should stay too." in filtered
+    assert "## License" in filtered
+
+    assert "## Project Structure" not in filtered
+    assert "This should be removed." not in filtered
+    assert "## Building Standalone Executables" not in filtered
+    assert "Including code signing info." not in filtered

@@ -46,6 +46,80 @@ async def health_check():
     return {"status": "ok"}
 
 
+def _get_readme_path() -> Optional[Path]:
+    """
+    Get the path to README.md.
+
+    In bundled mode, README.md is in the same directory as other bundled files.
+    In development mode, it's in the project root.
+    """
+    if getattr(sys, "frozen", False):
+        # Bundled mode - README is in _MEIPASS or executable directory
+        if hasattr(sys, "_MEIPASS"):
+            readme_path = Path(sys._MEIPASS) / "README.md"
+        else:
+            readme_path = Path(os.path.dirname(sys.executable)) / "README.md"
+    else:
+        # Development mode - README is in project root
+        readme_path = Path(__file__).parent.parent.parent / "README.md"
+
+    return readme_path if readme_path.exists() else None
+
+
+def _filter_readme_for_guide(content: str) -> str:
+    """
+    Filter README.md content to remove developer-only sections.
+
+    Removes:
+    - Project Structure section
+    - Building Standalone Executables section (includes Code Signing)
+    """
+    lines = content.split("\n")
+    filtered_lines = []
+    skip_until_next_h2 = False
+    sections_to_skip = ["## Project Structure", "## Building Standalone Executables"]
+
+    for line in lines:
+        # Check if we hit a section to skip
+        if any(line.startswith(section) for section in sections_to_skip):
+            skip_until_next_h2 = True
+            continue
+
+        # Check if we hit a new H2 section (stop skipping)
+        if skip_until_next_h2 and line.startswith("## "):
+            skip_until_next_h2 = False
+
+        # Add line if we're not skipping
+        if not skip_until_next_h2:
+            filtered_lines.append(line)
+
+    return "\n".join(filtered_lines)
+
+
+class GuideResponse(BaseModel):
+    content: str
+    title: str = "Paydirt User Guide"
+
+
+@router.get("/api/guide", response_model=GuideResponse)
+async def get_guide():
+    """
+    Get the user guide content (filtered README.md).
+
+    Returns the README.md content with developer-only sections removed.
+    """
+    readme_path = _get_readme_path()
+    if readme_path is None:
+        raise HTTPException(status_code=404, detail="Guide not available")
+
+    try:
+        content = readme_path.read_text(encoding="utf-8")
+        filtered_content = _filter_readme_for_guide(content)
+        return GuideResponse(content=filtered_content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading guide: {str(e)}")
+
+
 class Team(BaseModel):
     id: str
     name: str
