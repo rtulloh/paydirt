@@ -8,7 +8,7 @@ import os
 import webbrowser
 import threading
 import time
-from .packaging import get_seasons_path, get_all_season_paths
+from .packaging import get_all_season_paths, get_seasons_path
 
 # Pre-import uvicorn for PyInstaller bundling
 try:
@@ -62,7 +62,6 @@ def start_web_server(port=8000, open_browser=True):
 
         # Get paths
         web_static_path = get_web_static_path()
-        seasons_path = get_seasons_path()
 
         # Try to load full backend routes
         try:
