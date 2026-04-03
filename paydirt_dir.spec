@@ -5,8 +5,9 @@ block_cipher = None
 # Include only the 2026 season directory
 datas = [
     ('seasons/2026', 'seasons/2026'),
-    # Include the MIT LICENSE file
+    # Include the MIT LICENSE and README files
     ('LICENSE', '.'),
+    ('README.md', '.'),
 ]
 
 a = Analysis(

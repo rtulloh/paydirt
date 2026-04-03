@@ -2,10 +2,11 @@
 
 block_cipher = None
 
-# Include seasons, LICENSE, and web static files
+# Include seasons, LICENSE, README, and web static files
 datas = [
     ('seasons/2026', 'seasons/2026'),
     ('LICENSE', '.'),
+    ('README.md', '.'),
     # Include web static files
     ('paydirt-web/backend/web_static', 'web_static'),
     # Include web backend code
