@@ -386,6 +386,95 @@ A sample modern season with fictional teams for testing. Includes 2-point conver
 
 ---
 
+## Adding Your Own Seasons
+
+You can add your own season data to Paydirt. The application looks for seasons in two locations:
+
+1. **Built-in seasons** - Bundled with the application
+2. **User seasons directory** - Your custom seasons (takes precedence over built-in)
+
+### User Seasons Directory Location
+
+The user seasons directory location depends on your operating system:
+
+| Platform | Directory Path |
+|----------|---------------|
+| **macOS** | `~/Library/Application Support/Paydirt/seasons/` |
+| **Windows** | `%LOCALAPPDATA%\Paydirt\seasons\` |
+| **Linux** | `~/.local/share/Paydirt/seasons/` |
+
+### Adding a Season
+
+1. **Create the user seasons directory** if it doesn't exist:
+
+   **macOS/Linux:**
+   ```bash
+   mkdir -p ~/Library/Application\ Support/Paydirt/seasons/    # macOS
+   mkdir -p ~/.local/share/Paydirt/seasons/                    # Linux
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Paydirt\seasons"
+   ```
+
+2. **Create a season folder** (e.g., `1983/`) inside the seasons directory
+
+3. **Add required files** for each team:
+   - `offense.csv` - Offensive play charts
+   - `defense.csv` - Defensive formation charts
+   - `special.csv` - Special teams charts
+
+4. **Add optional team metadata**:
+   - `team.yaml` - Team name, colors, location
+   - `roster.json` - Player names for commentary
+
+5. **Create the season rules file** (`1983.yaml`) in the season directory
+
+### Season Directory Structure
+
+```
+seasons/
+└── 1983/
+    ├── 1983.yaml           # Season rules (required)
+    └── Dolphins/
+        ├── offense.csv     # Required
+        ├── defense.csv     # Required
+        ├── special.csv     # Required
+        ├── team.yaml       # Optional: team metadata
+        └── roster.json     # Optional: player names
+```
+
+### Example team.yaml
+
+```yaml
+team_name: Miami Dolphins
+short_name: MIA
+team_color: "#008E97"
+team_mascot: Dolphin
+city: Miami
+state: FL
+founded: 1966
+history: "The perfect season team of 1972."
+```
+
+### Example roster.json
+
+```json
+{
+  "qb": "Dan Marino",
+  "rb": "Tony Nathan",
+  "wr": "Mark Clayton",
+  "k": "Uwe von Schamann"
+}
+```
+
+### Importing from Excel Files
+
+If you have team data in Excel format (`.xls`), use the `extract_charts.py` script to convert it. See [Importing Teams](#importing-teams) for details.
+
+---
+
 ## Season Rules
 
 Each season has a `YYYY.yaml` file in `seasons/YYYY/` that defines era-appropriate rules. The home team's season rules always apply, even in cross-season matchups.
