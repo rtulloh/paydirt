@@ -2,10 +2,9 @@
 
 block_cipher = None
 
-# Include only the 2026 season and samples directories
+# Include only the 2026 season directory
 datas = [
     ('seasons/2026', 'seasons/2026'),
-    ('seasons/samples', 'seasons/samples'),
     # Include the MIT LICENSE file
     ('LICENSE', '.'),
 ]

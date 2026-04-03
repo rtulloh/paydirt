@@ -5,7 +5,7 @@ a = Analysis(
     ['paydirt/__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[('seasons/2026', 'seasons/2026'), ('seasons/samples', 'seasons/samples'), ('LICENSE', '.')],
+    datas=[('seasons/2026', 'seasons/2026'), ('LICENSE', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
