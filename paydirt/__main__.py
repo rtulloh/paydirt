@@ -8,7 +8,7 @@ import os
 import webbrowser
 import threading
 import time
-from .packaging import get_seasons_path
+from .packaging import get_seasons_path, get_all_season_paths
 
 # Pre-import uvicorn for PyInstaller bundling
 try:
@@ -114,30 +114,35 @@ def start_web_server(port=8000, open_browser=True):
             # Fall back to basic endpoints
             @app.get("/api/seasons")
             async def list_seasons():
-                seasons = []
-                if seasons_path.exists():
-                    for d in sorted(seasons_path.iterdir()):
-                        # Only include directories with numeric names (valid season years)
-                        if d.is_dir() and d.name.isdigit():
-                            seasons.append(d.name)
-                return {"seasons": seasons}
+                # Collect seasons from all paths (user seasons + built-in)
+                seasons_set = set()
+                for path in get_all_season_paths():
+                    if path.exists():
+                        for d in path.iterdir():
+                            # Only include directories with numeric names (valid season years)
+                            if d.is_dir() and d.name.isdigit():
+                                seasons_set.add(d.name)
+                return {"seasons": sorted(seasons_set, reverse=True)}
 
         # Override /api/teams to return format frontend expects (season/team)
         @app.get("/api/teams")
         @app.get("/api/teams/{season}")
         async def list_teams(season: str = "2026"):
             teams = []
-            season_path = seasons_path / season
-            if season_path.exists():
-                for d in sorted(season_path.iterdir()):
-                    if d.is_dir() and not d.name.startswith("."):
-                        teams.append(
-                            {
-                                "id": f"{season}/{d.name}",  # season/team format
-                                "name": d.name,
-                                "season": season,
-                            }
-                        )
+            # Search all season paths for the requested season
+            for seasons_base in get_all_season_paths():
+                season_path = seasons_base / season
+                if season_path.exists():
+                    for d in sorted(season_path.iterdir()):
+                        if d.is_dir() and not d.name.startswith("."):
+                            teams.append(
+                                {
+                                    "id": f"{season}/{d.name}",  # season/team format
+                                    "name": d.name,
+                                    "season": season,
+                                }
+                            )
+                    break  # Found the season, stop searching
             return {"teams": teams, "season": season}
 
         # Health check

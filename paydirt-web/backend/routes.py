@@ -20,12 +20,15 @@ if getattr(sys, "frozen", False):
     else:
         # cx_Freeze or similar
         _base_path = Path(os.path.dirname(sys.executable))
-    SEASONS_DIR = _base_path / "seasons"
     sys.path.insert(0, str(_base_path))
 else:
     # Running in development
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    SEASONS_DIR = Path(__file__).parent.parent.parent / "seasons"
+
+from paydirt.packaging import get_all_season_paths, get_builtin_seasons_path
+
+# For backwards compatibility - SEASONS_DIR points to built-in seasons
+SEASONS_DIR = get_builtin_seasons_path()
 
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
@@ -426,21 +429,46 @@ def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
     }
 
 
+def _find_season_dir(season: str) -> Optional[Path]:
+    """
+    Find the directory for a season across all season paths.
+
+    User seasons take precedence over built-in seasons.
+
+    Args:
+        season: Season year (e.g., "2026")
+
+    Returns:
+        Path to season directory, or None if not found
+    """
+    for seasons_path in get_all_season_paths():
+        season_dir = seasons_path / season
+        if season_dir.exists() and season_dir.is_dir():
+            return season_dir
+    return None
+
+
 @router.get("/api/seasons", response_model=SeasonsResponse)
 async def get_seasons():
-    if not SEASONS_DIR.exists():
-        return {"seasons": []}
+    # Collect seasons from all paths (user seasons + built-in)
+    # Use a set to avoid duplicates, user paths come first so they take precedence
+    seasons_set = set()
 
-    # Only include directories with numeric names (valid season years)
-    seasons = [d.name for d in SEASONS_DIR.iterdir() if d.is_dir() and d.name.isdigit()]
-    seasons.sort(reverse=True)
+    for seasons_path in get_all_season_paths():
+        if seasons_path.exists():
+            for d in seasons_path.iterdir():
+                # Only include directories with numeric names (valid season years)
+                if d.is_dir() and d.name.isdigit():
+                    seasons_set.add(d.name)
+
+    seasons = sorted(seasons_set, reverse=True)
     return {"seasons": seasons}
 
 
 @router.get("/api/teams", response_model=TeamsResponse)
 async def get_teams(season: str):
-    season_dir = SEASONS_DIR / season
-    if not season_dir.exists():
+    season_dir = _find_season_dir(season)
+    if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
 
     teams = []
@@ -459,8 +487,8 @@ async def get_season_rules(season: str):
     Args:
         season: Season year (e.g., "1972", "2026")
     """
-    season_dir = SEASONS_DIR / season
-    if not season_dir.exists():
+    season_dir = _find_season_dir(season)
+    if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
 
     try:
@@ -490,8 +518,8 @@ async def new_game(request: NewGameRequest):
         _extract_team_name(request.opponent_team, request.season) if request.opponent_team else None
     )
 
-    season_dir = SEASONS_DIR / request.season
-    if not season_dir.exists():
+    season_dir = _find_season_dir(request.season)
+    if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{request.season}' not found")
 
     available_teams = [d.name for d in season_dir.iterdir() if d.is_dir()]
@@ -1567,14 +1595,17 @@ async def load_replay(request: LoadReplayRequest):
         raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
 
     def find_season_for_teams(home_id, away_id):
-        """Find a season that contains BOTH teams."""
-        for season_dir in sorted(SEASONS_DIR.iterdir()):
-            if (
-                season_dir.is_dir()
-                and (season_dir / home_id).exists()
-                and (season_dir / away_id).exists()
-            ):
-                return season_dir.name
+        """Find a season that contains BOTH teams (searches all season paths)."""
+        for seasons_path in get_all_season_paths():
+            if not seasons_path.exists():
+                continue
+            for season_dir in sorted(seasons_path.iterdir()):
+                if (
+                    season_dir.is_dir()
+                    and (season_dir / home_id).exists()
+                    and (season_dir / away_id).exists()
+                ):
+                    return season_dir.name
         return None
 
     # Check: replay_data.season (new format) -> game_state.season (legacy format) -> search by team
@@ -1582,9 +1613,9 @@ async def load_replay(request: LoadReplayRequest):
 
     # Validate that the season actually contains BOTH teams, if not, detect from teams
     if season:
-        season_dir = SEASONS_DIR / season
+        season_dir = _find_season_dir(season)
         if (
-            not season_dir.exists()
+            season_dir is None
             or not (season_dir / home_team_id).exists()
             or not (season_dir / away_team_id).exists()
         ):
@@ -1597,8 +1628,8 @@ async def load_replay(request: LoadReplayRequest):
             status_code=400, detail="Could not determine season for team. Please start a new game."
         )
 
-    season_dir = SEASONS_DIR / season
-    if not season_dir.exists():
+    season_dir = _find_season_dir(season)
+    if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
 
     if not (season_dir / home_team_id).exists():
