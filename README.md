@@ -2,122 +2,35 @@
 
 A Python implementation of the classic Paydirt football board game, originally published by Avalon Hill.
 
-## Prerequisites
+## Download & Install
 
-This project requires **Python 3.9 or higher**. Follow the instructions below for your operating system.
+### Pre-built Releases (Recommended)
 
-### macOS
+Download the latest release from the [GitHub Releases](https://github.com/rtulloh/paydirt/releases) page:
 
-macOS comes with Python pre-installed, but it may be an older version. To install the latest Python:
+| Platform | File |
+|----------|------|
+| **macOS (Apple Silicon)** | `Paydirt-X.X.X-arm64.dmg` (M1, M2, M3, M4) |
+| **macOS (Intel)** | `Paydirt-X.X.X-x86_64.dmg` |
+| **Windows** | `PaydirtSetup.exe` (installer) or `paydirt.exe` (portable) |
+| **Linux** | `Paydirt-x86_64.AppImage` |
 
-**Option 1: Using Homebrew (recommended)**
-```bash
-# Install Homebrew if you don't have it
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+#### macOS Installation Note
+If you see "Paydirt is damaged and can't be opened":
+- **Option 1**: Right-click the app → Open → Click "Open" in the dialog
+- **Option 2**: Run in Terminal: `xattr -cr "/Applications/Paydirt.app"`
 
-# Install Python
-brew install python
+### Python Installation (Manual)
 
-# Verify installation
-python3 --version
-```
-
-**Option 2: Download from python.org**
-1. Visit [python.org/downloads](https://www.python.org/downloads/)
-2. Download the macOS installer
-3. Run the installer and follow the prompts
-
-### Linux
-
-Most Linux distributions include Python. To install or update:
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update
-sudo apt install python3 python3-pip
-
-# Verify installation
-python3 --version
-```
-
-**Fedora:**
-```bash
-sudo dnf install python3 python3-pip
-
-# Verify installation
-python3 --version
-```
-
-**Arch Linux:**
-```bash
-sudo pacman -S python python-pip
-
-# Verify installation
-python3 --version
-```
-
-### Windows
-
-**Option 1: Microsoft Store (easiest)**
-1. Open the Microsoft Store
-2. Search for "Python 3.12" (or latest version)
-3. Click "Get" to install
-
-**Option 2: Download from python.org**
-1. Visit [python.org/downloads](https://www.python.org/downloads/)
-2. Download the Windows installer
-3. **Important:** Check "Add Python to PATH" during installation
-4. Run the installer and follow the prompts
-
-**Verify installation:**
-```cmd
-python --version
-```
-
-### Verify Your Installation
-
-After installing, verify Python is working:
-```bash
-# macOS/Linux
-python3 --version
-
-# Windows
-python --version
-```
-
-You should see output like `Python 3.12.x` (or higher).
-
----
-
-## Overview
-
-Paydirt is a football simulation game where you select an NFL team and call plays against a computer opponent. The outcome of each play is determined by dice rolls and team-specific charts that reflect each team's real-world strengths and weaknesses.
-
-## Quick Start
+If you prefer to run from source or a pre-built executable isn't available for your platform:
 
 ```bash
+# Clone or download this repository
 cd paydirt
 
 # Interactive game (Human vs CPU)
 python -m paydirt
-
-# Interactive game with difficulty setting
-python -m paydirt --play -d hard
-
-# Compact display mode (recommended)
-python -m paydirt --play --compact
-
-# Specify week for standings
-python -m paydirt --play --week 1 --compact
-
-# Resume a saved game
-python -m paydirt --play --load --compact
-
-# Auto game (CPU vs CPU) - great for testing
-python -m paydirt -auto Bears Cowboys
 ```
-
-Select your team, choose home or away, select CPU difficulty, and start playing!
 
 ### Command Line Options
 
