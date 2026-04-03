@@ -1,6 +1,7 @@
 """
 Tests for computer AI offensive and defensive play selection.
 """
+
 import os
 import pytest
 from pathlib import Path
@@ -9,15 +10,20 @@ from unittest.mock import MagicMock
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType, DefenseType
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+from paydirt.chart_loader import (
+    TeamChart,
+    PeripheralData,
+    OffenseChart,
+    DefenseChart,
+    SpecialTeamsChart,
+)
 from paydirt.season_rules import AIBehavior, TwoMinuteDrill, HurryUp, ClockKilling, AIStrategic
 
 # Check if 1983/Bears season data exists
-_seasons_dir = Path(__file__).parent.parent / 'seasons'
-_has_1983_bears = (_seasons_dir / '1983' / 'Bears').exists()
+_seasons_dir = Path(__file__).parent.parent / "seasons"
+_has_1983_bears = (_seasons_dir / "1983" / "Bears").exists()
 requires_1983_bears = pytest.mark.skipif(
-    not _has_1983_bears,
-    reason="1983/Bears season data not available"
+    not _has_1983_bears, reason="1983/Bears season data not available"
 )
 
 
@@ -29,11 +35,11 @@ def create_mock_chart(short_name: str = "TEST", team_name: str = "Test Team") ->
             team_name=team_name,
             team_nickname="Testers",
             power_rating=50,
-            short_name=short_name
+            short_name=short_name,
         ),
         offense=MagicMock(spec=OffenseChart),
         defense=MagicMock(spec=DefenseChart),
-        special_teams=MagicMock(spec=SpecialTeamsChart)
+        special_teams=MagicMock(spec=SpecialTeamsChart),
     )
 
 
@@ -54,15 +60,15 @@ def cpu_ai():
             two_minute_drill=TwoMinuteDrill(
                 q2_hurry_when_trailing_by=7,
                 q4_any_deficit_minutes=2.0,
-                q4_deficit_9_minutes=8.0,   # Old hardcoded: < 8.0
-                q4_deficit_4_minutes=5.0,   # Old hardcoded: < 5.0
-                q4_always_minutes=4.0,       # Old hardcoded: < 4.0
+                q4_deficit_9_minutes=8.0,  # Old hardcoded: < 8.0
+                q4_deficit_4_minutes=5.0,  # Old hardcoded: < 5.0
+                q4_always_minutes=4.0,  # Old hardcoded: < 4.0
                 skip_when_leading_by=14,
             ),
             hurry_up=HurryUp(
                 q4_deficit_9_minutes=10.0,  # Old hardcoded: < 10.0
                 q4_deficit_4_minutes=6.0,  # Old hardcoded: < 6.0
-                q4_any_minutes=5.0,         # Old hardcoded: < 5.0
+                q4_any_minutes=5.0,  # Old hardcoded: < 5.0
             ),
             clock_killing=ClockKilling(
                 q4_any_lead_minutes=4.0,
@@ -80,99 +86,134 @@ def cpu_ai():
 
 class TestSelectOffenseFirstDown:
     """Tests for first down play selection."""
-    
+
     def test_first_and_10_returns_valid_play(self, game, cpu_ai):
         """First and 10 should return a valid offensive play."""
         game.state.down = 1
         game.state.yards_to_go = 10
         game.state.ball_position = 25  # Own 25
-        
+
         play = cpu_ai.select_offense(game)
-        
-        assert play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN,
-                       PlayType.DRAW, PlayType.SCREEN, PlayType.SHORT_PASS,
-                       PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.TE_SHORT_LONG]
-    
+
+        assert play in [
+            PlayType.LINE_PLUNGE,
+            PlayType.OFF_TACKLE,
+            PlayType.END_RUN,
+            PlayType.DRAW,
+            PlayType.SCREEN,
+            PlayType.SHORT_PASS,
+            PlayType.MEDIUM_PASS,
+            PlayType.LONG_PASS,
+            PlayType.TE_SHORT_LONG,
+        ]
+
     def test_first_down_deep_in_own_territory_favors_runs(self, game, cpu_ai):
         """Deep in own territory, should favor conservative plays."""
         game.state.down = 1
         game.state.yards_to_go = 10
         game.state.ball_position = 10  # Own 10
-        
+
         # Run multiple times to check distribution
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have some running plays
-        run_plays = [p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, 
-                                                PlayType.END_RUN, PlayType.DRAW]]
+        run_plays = [
+            p
+            for p in plays
+            if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]
+        ]
         assert len(run_plays) > 0
 
 
 class TestSelectOffenseSecondDown:
     """Tests for second down play selection."""
-    
+
     def test_second_and_long_favors_passes(self, game, cpu_ai):
         """Second and long should favor passing plays."""
         game.state.down = 2
         game.state.yards_to_go = 8
         game.state.ball_position = 50
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have some passing plays
-        pass_plays = [p for p in plays if p in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-                                                 PlayType.LONG_PASS, PlayType.SCREEN,
-                                                 PlayType.TE_SHORT_LONG]]
+        pass_plays = [
+            p
+            for p in plays
+            if p
+            in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+                PlayType.TE_SHORT_LONG,
+            ]
+        ]
         assert len(pass_plays) > 0
-    
+
     def test_second_and_short_can_run(self, game, cpu_ai):
         """Second and short should allow running plays."""
         game.state.down = 2
         game.state.yards_to_go = 2
         game.state.ball_position = 50
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have some running plays
-        run_plays = [p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE,
-                                                PlayType.END_RUN, PlayType.DRAW]]
+        run_plays = [
+            p
+            for p in plays
+            if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]
+        ]
         assert len(run_plays) > 0
 
 
 class TestSelectOffenseThirdDown:
     """Tests for third down play selection."""
-    
+
     def test_third_and_short_favors_runs(self, game, cpu_ai):
         """Third and short should favor running plays."""
         game.state.down = 3
         game.state.yards_to_go = 1
         game.state.ball_position = 50
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have running plays for short yardage
-        run_plays = [p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE,
-                                                PlayType.END_RUN, PlayType.DRAW]]
+        run_plays = [
+            p
+            for p in plays
+            if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]
+        ]
         assert len(run_plays) > 0
-    
+
     def test_third_and_long_favors_passes(self, game, cpu_ai):
         """Third and long should favor passing plays."""
         game.state.down = 3
         game.state.yards_to_go = 10
         game.state.ball_position = 50
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have passing plays
-        pass_plays = [p for p in plays if p in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-                                                 PlayType.LONG_PASS, PlayType.SCREEN,
-                                                 PlayType.TE_SHORT_LONG]]
+        pass_plays = [
+            p
+            for p in plays
+            if p
+            in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+                PlayType.TE_SHORT_LONG,
+            ]
+        ]
         assert len(pass_plays) > 0
 
 
 class TestFourthDownDecision:
     """Tests for fourth down decision making."""
-    
+
     def test_fourth_down_deep_in_own_territory_punts(self, game, cpu_ai):
         """Fourth down deep in own territory should punt."""
         game.state.down = 4
@@ -180,11 +221,11 @@ class TestFourthDownDecision:
         game.state.ball_position = 25  # Own 25
         game.state.quarter = 2
         game.state.time_remaining = 10.0
-        
+
         play = cpu_ai.select_offense(game)
-        
+
         assert play == PlayType.PUNT
-    
+
     def test_fourth_down_in_fg_range_kicks(self, game, cpu_ai):
         """Fourth down in FG range should attempt field goal."""
         game.state.down = 4
@@ -192,11 +233,11 @@ class TestFourthDownDecision:
         game.state.ball_position = 75  # Opponent's 25, ~42 yard FG
         game.state.quarter = 2
         game.state.time_remaining = 10.0
-        
+
         play = cpu_ai.select_offense(game)
-        
+
         assert play == PlayType.FIELD_GOAL
-    
+
     def test_fourth_and_inches_may_go_for_it(self, game):
         """Fourth and inches with aggressive AI may go for it."""
         aggressive_ai = ComputerAI(aggression=0.8)
@@ -205,14 +246,18 @@ class TestFourthDownDecision:
         game.state.ball_position = 70  # Opponent's 30
         game.state.quarter = 2
         game.state.time_remaining = 10.0
-        
+
         # With high aggression, might go for it on 4th and 1
         play = aggressive_ai.select_offense(game)
-        
+
         # Could be FG or go for it
-        assert play in [PlayType.FIELD_GOAL, PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE,
-                       PlayType.QB_SNEAK]
-    
+        assert play in [
+            PlayType.FIELD_GOAL,
+            PlayType.LINE_PLUNGE,
+            PlayType.OFF_TACKLE,
+            PlayType.QB_SNEAK,
+        ]
+
     def test_fourth_down_trailing_late_goes_for_it(self, game, cpu_ai):
         """Fourth down trailing late in game should go for it if needed."""
         game.state.down = 4
@@ -223,50 +268,51 @@ class TestFourthDownDecision:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
         game.state.is_home_possession = True
-        
+
         play = cpu_ai.select_offense(game)
-        
+
         # Should go for it when trailing late and need TD
         assert play not in [PlayType.PUNT]
 
 
 class TestGoalLineOffense:
     """Tests for goal line offense."""
-    
+
     def test_goal_line_favors_power_plays(self, game, cpu_ai):
         """Goal line should favor power running plays."""
         game.state.down = 1
         game.state.yards_to_go = 3
         game.state.ball_position = 97  # 3 yard line
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should have power plays
-        power_plays = [p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE,
-                                                  PlayType.QB_SNEAK]]
+        power_plays = [
+            p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.QB_SNEAK]
+        ]
         assert len(power_plays) > 0
-        
+
         # Check mode was set
         assert cpu_ai.last_mode == "Goal Line"
 
 
 class TestRedZoneOffense:
     """Tests for red zone offense."""
-    
+
     def test_red_zone_sets_mode(self, game, cpu_ai):
         """Red zone should set the mode correctly."""
         game.state.down = 1
         game.state.yards_to_go = 10
         game.state.ball_position = 85  # Opponent's 15
-        
+
         cpu_ai.select_offense(game)
-        
+
         assert cpu_ai.last_mode == "Red Zone"
 
 
 class TestTwoMinuteDrill:
     """Tests for two-minute drill offense."""
-    
+
     def test_two_minute_drill_trailing_uses_passes(self, game, cpu_ai):
         """Two-minute drill when trailing should use passing plays."""
         game.state.down = 1
@@ -277,22 +323,31 @@ class TestTwoMinuteDrill:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
         game.state.is_home_possession = True
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should favor passing plays in two-minute drill
-        pass_plays = [p for p in plays if p in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-                                                 PlayType.LONG_PASS, PlayType.SCREEN,
-                                                 PlayType.TE_SHORT_LONG]]
+        pass_plays = [
+            p
+            for p in plays
+            if p
+            in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+                PlayType.TE_SHORT_LONG,
+            ]
+        ]
         assert len(pass_plays) > 5  # Majority should be passes
-        
+
         # Check mode was set
         assert cpu_ai.last_mode == "Two-Minute Drill"
 
 
 class TestClockKillingOffense:
     """Tests for clock killing offense."""
-    
+
     def test_clock_killing_favors_runs(self, game, cpu_ai):
         """Clock killing when leading should favor running plays."""
         game.state.down = 1
@@ -303,78 +358,91 @@ class TestClockKillingOffense:
         game.state.home_score = 21
         game.state.away_score = 14  # Leading by 7
         game.state.is_home_possession = True
-        
+
         plays = [cpu_ai.select_offense(game) for _ in range(20)]
-        
+
         # Should favor running plays to kill clock
-        run_plays = [p for p in plays if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE,
-                                                PlayType.END_RUN, PlayType.DRAW]]
+        run_plays = [
+            p
+            for p in plays
+            if p in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]
+        ]
         assert len(run_plays) > 5  # Majority should be runs
-        
+
         # Check mode was set
         assert cpu_ai.last_mode == "Clock Killing"
 
 
 class TestSelectDefense:
     """Tests for defensive play selection."""
-    
+
     def test_defense_returns_valid_type(self, game, cpu_ai):
         """Defense selection should return a valid DefenseType."""
         game.state.down = 1
         game.state.yards_to_go = 10
         game.state.ball_position = 50
-        
+
         defense = cpu_ai.select_defense(game)
-        
-        assert defense in [DefenseType.STANDARD, DefenseType.SHORT_YARDAGE,
-                          DefenseType.SPREAD, DefenseType.SHORT_PASS,
-                          DefenseType.LONG_PASS, DefenseType.BLITZ]
-    
+
+        assert defense in [
+            DefenseType.STANDARD,
+            DefenseType.SHORT_YARDAGE,
+            DefenseType.SPREAD,
+            DefenseType.SHORT_PASS,
+            DefenseType.LONG_PASS,
+            DefenseType.BLITZ,
+        ]
+
     def test_goal_line_defense(self, game, cpu_ai):
         """Goal line should use appropriate defense."""
         game.state.down = 1
         game.state.yards_to_go = 3
         game.state.ball_position = 97  # Offense at 3 yard line
-        
+
         defenses = [cpu_ai.select_defense(game) for _ in range(20)]
-        
+
         # Should use goal line or short yardage defense at least sometimes
-        goal_line_defenses = [d for d in defenses if d in [DefenseType.SHORT_YARDAGE, 
-                                                            DefenseType.STANDARD,
-                                                            DefenseType.SHORT_PASS]]
+        goal_line_defenses = [
+            d
+            for d in defenses
+            if d in [DefenseType.SHORT_YARDAGE, DefenseType.STANDARD, DefenseType.SHORT_PASS]
+        ]
         assert len(goal_line_defenses) > 0
-    
+
     def test_third_and_long_defense(self, game, cpu_ai):
         """Third and long should use pass defense."""
         game.state.down = 3
         game.state.yards_to_go = 12
         game.state.ball_position = 50
-        
+
         defenses = [cpu_ai.select_defense(game) for _ in range(20)]
-        
+
         # Should favor pass defense
-        pass_defenses = [d for d in defenses if d in [DefenseType.SHORT_PASS,
-                                                       DefenseType.LONG_PASS,
-                                                       DefenseType.BLITZ]]
+        pass_defenses = [
+            d
+            for d in defenses
+            if d in [DefenseType.SHORT_PASS, DefenseType.LONG_PASS, DefenseType.BLITZ]
+        ]
         assert len(pass_defenses) > 0
-    
+
     def test_short_yardage_defense(self, game, cpu_ai):
         """Short yardage should use appropriate defense."""
         game.state.down = 3
         game.state.yards_to_go = 1
         game.state.ball_position = 50
-        
+
         defenses = [cpu_ai.select_defense(game) for _ in range(20)]
-        
+
         # Should have short yardage defense
-        short_defenses = [d for d in defenses if d in [DefenseType.SHORT_YARDAGE,
-                                                        DefenseType.STANDARD]]
+        short_defenses = [
+            d for d in defenses if d in [DefenseType.SHORT_YARDAGE, DefenseType.STANDARD]
+        ]
         assert len(short_defenses) > 0
 
 
 class TestAggressionLevels:
     """Tests for different aggression levels."""
-    
+
     def test_conservative_ai_punts_more(self, game):
         """Conservative AI should punt more often on 4th down."""
         conservative_ai = ComputerAI(aggression=0.2)
@@ -383,12 +451,12 @@ class TestAggressionLevels:
         game.state.ball_position = 55  # Opponent's 45
         game.state.quarter = 2
         game.state.time_remaining = 10.0
-        
+
         play = conservative_ai.select_offense(game)
-        
+
         # Conservative should punt or kick FG
         assert play in [PlayType.PUNT, PlayType.FIELD_GOAL]
-    
+
     def test_aggressive_ai_goes_for_it_more(self, game):
         """Aggressive AI should go for it more on 4th down."""
         aggressive_ai = ComputerAI(aggression=0.9)
@@ -397,10 +465,10 @@ class TestAggressionLevels:
         game.state.ball_position = 65  # Opponent's 35
         game.state.quarter = 2
         game.state.time_remaining = 10.0
-        
+
         # Run multiple times - aggressive AI should sometimes go for it
         plays = [aggressive_ai.select_offense(game) for _ in range(10)]
-        
+
         # Should have some go-for-it plays
         go_for_it = [p for p in plays if p not in [PlayType.PUNT, PlayType.FIELD_GOAL]]
         # With 90% aggression on 4th and 1, should go for it
@@ -421,7 +489,9 @@ class TestClockManagement:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         assert use_no_huddle is True
 
@@ -439,8 +509,15 @@ class TestClockManagement:
         # Run multiple times to get passing plays
         oob_count = 0
         for _ in range(20):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
-            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
+            if play in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+            ]:
                 if use_oob:
                     oob_count += 1
 
@@ -458,7 +535,9 @@ class TestClockManagement:
         game.state.home_score = 10
         game.state.away_score = 20  # Trailing by 10
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should be in hurry-up mode
         assert use_no_huddle is True
@@ -474,7 +553,9 @@ class TestClockManagement:
         game.state.home_score = 21
         game.state.away_score = 14  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should NOT be in hurry-up mode when leading
         assert use_no_huddle is False
@@ -508,7 +589,7 @@ class TestEndOfHalfClockManagement:
     def test_red_zone_at_end_of_half_uses_two_minute_drill(self, game, cpu_ai):
         """
         When in red zone at end of half with time running out, should use two-minute drill.
-        
+
         This tests the fix for the bug where CPU would enter red zone offense
         instead of using clock management (OOB designation) at the end of the half.
         """
@@ -521,7 +602,9 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 21
         game.state.away_score = 17  # Leading by 4
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should be in two-minute drill mode, not red zone
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -531,7 +614,7 @@ class TestEndOfHalfClockManagement:
     def test_red_zone_end_of_half_uses_oob_on_passes(self, game, cpu_ai):
         """
         In red zone at end of half, passing plays should use OOB designation.
-        
+
         This ensures the CPU stops the clock on incomplete passes.
         """
         game.state.down = 1
@@ -547,8 +630,15 @@ class TestEndOfHalfClockManagement:
         oob_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
-            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
+            if play in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+            ]:
                 pass_count += 1
                 if use_oob:
                     oob_count += 1
@@ -561,7 +651,7 @@ class TestEndOfHalfClockManagement:
     def test_leading_at_end_of_half_uses_two_minute_not_clock_killing(self, game, cpu_ai):
         """
         At end of half while leading, should use two-minute drill, not clock killing.
-        
+
         Even when leading, teams should try to score more points before halftime.
         """
         game.state.down = 2
@@ -573,7 +663,9 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 10  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should be in two-minute drill, not clock killing
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -593,7 +685,9 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 20  # Trailing by 3
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should be in two-minute drill
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -602,7 +696,7 @@ class TestEndOfHalfClockManagement:
     def test_goal_line_at_end_of_half_uses_two_minute_drill(self, game, cpu_ai):
         """
         At goal line at end of half with time running out, should use two-minute drill.
-        
+
         Time management is more important than field position when time is running out.
         """
         game.state.down = 1
@@ -614,7 +708,9 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 14
         game.state.away_score = 14  # Tied
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            cpu_ai.select_offense_with_clock_management(game)
+        )
 
         # Should be in two-minute drill mode, not goal line
         assert cpu_ai.last_mode == "Two-Minute Drill"
@@ -623,7 +719,7 @@ class TestEndOfHalfClockManagement:
     def test_way_behind_red_zone_no_long_pass(self, game, cpu_ai):
         """
         When way behind in red zone at end of half, should NOT call long pass.
-        
+
         Even when trailing by 14+, you can't throw a long pass from the 1-yard line.
         """
         game.state.down = 1
@@ -638,7 +734,9 @@ class TestEndOfHalfClockManagement:
         # Run multiple times - should never get LONG_PASS from goal line
         long_pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
             if play == PlayType.LONG_PASS:
                 long_pass_count += 1
 
@@ -648,7 +746,7 @@ class TestEndOfHalfClockManagement:
     def test_red_zone_two_minute_avoids_long_pass(self, game, cpu_ai):
         """
         In red zone during two-minute drill, should avoid long passes.
-        
+
         Even when trailing and needing a big play, don't throw deep from the red zone.
         """
         game.state.down = 2
@@ -664,8 +762,15 @@ class TestEndOfHalfClockManagement:
         long_pass_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = cpu_ai.select_offense_with_clock_management(game)
-            if play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]:
+            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
+            if play in [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.SCREEN,
+            ]:
                 pass_count += 1
                 if play == PlayType.LONG_PASS:
                     long_pass_count += 1
@@ -694,7 +799,9 @@ class TestCPUPuntOptions:
         short_drop_count = 0
         for _ in range(20):
             cpu_ai.aggression = 0.2  # Conservative
-            play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
+            play, _, _, punt_short_drop, punt_coffin, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
             if play == PlayType.PUNT and punt_short_drop:
                 short_drop_count += 1
 
@@ -716,7 +823,9 @@ class TestCPUPuntOptions:
         coffin_corner_count = 0
         for _ in range(30):
             cpu_ai.aggression = 0.8  # Aggressive
-            play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
+            play, _, _, punt_short_drop, punt_coffin, _ = (
+                cpu_ai.select_offense_with_clock_management(game)
+            )
             if play == PlayType.PUNT and punt_coffin >= 15:
                 coffin_corner_count += 1
 
@@ -732,7 +841,9 @@ class TestCPUPuntOptions:
         game.state.time_remaining = 10.0
         game.state.is_home_possession = True
 
-        play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(game)
+        play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(
+            game
+        )
 
         # Punt options should be False/0 on 1st down (not a punt situation)
         assert punt_short_drop is False
@@ -858,40 +969,40 @@ class TestEndOfHalfFieldGoal:
 
 class TestAIWithAnalysis:
     """Tests for AI with chart analysis and opponent modeling enabled."""
-    
+
     def test_ai_init_with_analysis(self):
         """AI can be initialized with analysis enabled."""
         ai = ComputerAI(aggression=0.5, use_analysis=True)
         assert ai.use_analysis is True
         assert ai.opponent_model is not None
-    
+
     def test_ai_init_without_analysis(self):
         """AI can be initialized without analysis."""
         ai = ComputerAI(aggression=0.5, use_analysis=False)
         assert ai.use_analysis is False
         assert ai.opponent_model is None
-    
+
     @requires_1983_bears
     def test_ai_set_team(self):
         """AI can have team set for chart analysis."""
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
-        
+
         ai = ComputerAI(aggression=0.5, use_analysis=True)
-        bears = load_team_chart(Path('seasons/1983/Bears'))
+        bears = load_team_chart(Path("seasons/1983/Bears"))
         ai.set_team(bears)
-        
+
         assert ai.team_analyzer is not None
-    
+
     @requires_1983_bears
     def test_defense_uses_opponent_model(self):
         """Defense selection uses opponent model when enabled."""
         from pathlib import Path
         from paydirt.chart_loader import load_team_chart
-        
+
         ai = ComputerAI(aggression=0.5, use_analysis=True)
-        bears = load_team_chart(Path('seasons/1983/Bears'))
-        
+        bears = load_team_chart(Path("seasons/1983/Bears"))
+
         # Set up game state
         game = PaydirtGameEngine(
             away_chart=bears,
@@ -905,12 +1016,17 @@ class TestAIWithAnalysis:
         game.state.is_home_possession = True
         game.state.home_score = 10
         game.state.away_score = 10
-        
+
         # Should not crash and should return a valid defense
         defense = ai.select_defense(game)
-        assert defense in [DefenseType.STANDARD, DefenseType.SHORT_YARDAGE, 
-                         DefenseType.SPREAD, DefenseType.SHORT_PASS,
-                         DefenseType.LONG_PASS, DefenseType.BLITZ]
+        assert defense in [
+            DefenseType.STANDARD,
+            DefenseType.SHORT_YARDAGE,
+            DefenseType.SPREAD,
+            DefenseType.SHORT_PASS,
+            DefenseType.LONG_PASS,
+            DefenseType.BLITZ,
+        ]
 
 
 class TestShouldGoForTwo:
@@ -1106,7 +1222,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = True
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is True
 
@@ -1127,7 +1245,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1148,7 +1268,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1169,7 +1291,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1190,7 +1314,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=True, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=True, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1210,7 +1336,9 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.FIELD_GOAL
         outcome.field_goal_made = True
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is True
 
@@ -1233,7 +1361,9 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.FIELD_GOAL
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1256,7 +1386,9 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.PUNT
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1279,7 +1411,9 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.PUNT
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1302,7 +1436,9 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.KICKOFF
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is False
 
@@ -1320,7 +1456,9 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(outcome, is_human_offense=False, human_is_home=True)
+        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+            outcome, is_human_offense=False, human_is_home=True
+        )
 
         assert accept_play is True
 
@@ -1417,3 +1555,62 @@ class TestAnalyzeTeamStrength:
         result = ComputerAI.analyze_team_strength(offense)
 
         assert result == "run"
+
+
+class TestReturnValueSignature:
+    """Regression tests to ensure function return signatures are consistent with call sites."""
+
+    def test_select_offense_with_clock_management_returns_six_values(self, game, cpu_ai):
+        """Verify select_offense_with_clock_management returns exactly 6 values."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 25
+        game.state.time_remaining = 10.0
+        game.state.quarter = 2
+
+        result = cpu_ai.select_offense_with_clock_management(game)
+
+        assert len(result) == 6, f"Expected 6 return values, got {len(result)}"
+
+    def test_select_offense_with_clock_management_tuple_structure(self, game, cpu_ai):
+        """Verify tuple has expected types to catch unpacking mismatches."""
+        game.state.down = 1
+        game.state.yards_to_go = 10
+        game.state.ball_position = 25
+        game.state.time_remaining = 10.0
+        game.state.quarter = 2
+
+        result = cpu_ai.select_offense_with_clock_management(game)
+
+        play_type, out_of_bounds, no_huddle, punt_short_drop, punt_coffin, call_spike = result
+
+        assert isinstance(play_type, PlayType)
+        assert isinstance(out_of_bounds, bool)
+        assert isinstance(no_huddle, bool)
+        assert isinstance(punt_short_drop, bool)
+        assert isinstance(punt_coffin, int)
+        assert isinstance(call_spike, bool)
+
+    def test_select_offense_with_clock_management_all_quarters(self, game, cpu_ai):
+        """Verify return signature across all quarters."""
+        game.state.down = 2
+        game.state.yards_to_go = 5
+        game.state.ball_position = 50
+        game.state.time_remaining = 15.0
+
+        for quarter in [1, 2, 3, 4]:
+            game.state.quarter = quarter
+            result = cpu_ai.select_offense_with_clock_management(game)
+
+            assert len(result) == 6, (
+                f"Quarter {quarter}: Expected 6 return values, got {len(result)}"
+            )
+
+            play_type, out_of_bounds, no_huddle, punt_short_drop, punt_coffin, call_spike = result
+
+            assert isinstance(play_type, PlayType)
+            assert isinstance(out_of_bounds, bool)
+            assert isinstance(no_huddle, bool)
+            assert isinstance(punt_short_drop, bool)
+            assert isinstance(punt_coffin, int)
+            assert isinstance(call_spike, bool)
