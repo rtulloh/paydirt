@@ -431,7 +431,8 @@ async def get_seasons():
     if not SEASONS_DIR.exists():
         return {"seasons": []}
 
-    seasons = [d.name for d in SEASONS_DIR.iterdir() if d.is_dir()]
+    # Only include directories with numeric names (valid season years)
+    seasons = [d.name for d in SEASONS_DIR.iterdir() if d.is_dir() and d.name.isdigit()]
     seasons.sort(reverse=True)
     return {"seasons": seasons}
 

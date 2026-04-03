@@ -2,6 +2,7 @@
 Entry point for running the paydirt package as a module.
 Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home | --web [--port PORT]]
 """
+
 import sys
 import os
 import webbrowser
@@ -18,22 +19,24 @@ except ImportError as e:
 
 def get_web_static_path():
     """Get the path to web static files (works both in development and bundled)."""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running as bundled executable
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             # PyInstaller
-            return os.path.join(sys._MEIPASS, 'web_static')
+            return os.path.join(sys._MEIPASS, "web_static")
         else:
             # cx_Freeze or similar
-            return os.path.join(os.path.dirname(sys.executable), 'web_static')
+            return os.path.join(os.path.dirname(sys.executable), "web_static")
     else:
         # Running in development
-        return os.path.join(os.path.dirname(os.path.dirname(__file__)), 'paydirt-web', 'backend', 'web_static')
+        return os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "paydirt-web", "backend", "web_static"
+        )
 
 
 def start_web_server(port=8000, open_browser=True):
     """Start the web server in a separate thread."""
-    
+
     def run_server():
         global uvicorn
         try:
@@ -41,12 +44,12 @@ def start_web_server(port=8000, open_browser=True):
         except ImportError as e:
             print(f"Error: uvicorn not available: {e}")
             return
-        
+
         # Import FastAPI
         from fastapi import FastAPI
         from fastapi.middleware.cors import CORSMiddleware
         from fastapi.responses import FileResponse
-        
+
         # Create app
         app = FastAPI(title="Paydirt Web API", version="1.0.0")
         app.add_middleware(
@@ -56,26 +59,30 @@ def start_web_server(port=8000, open_browser=True):
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
         # Get paths
         web_static_path = get_web_static_path()
         seasons_path = get_seasons_path()
-        
+
         # Try to load full backend routes
         try:
             # Both dev and bundled mode use the same path structure
-            backend_path = os.path.join(sys._MEIPASS if getattr(sys, 'frozen', False) else 
-                                        os.path.dirname(os.path.dirname(__file__)),
-                                        'paydirt-web', 'backend')
-            routes_file = os.path.join(backend_path, 'routes.py')
-            
+            backend_path = os.path.join(
+                sys._MEIPASS
+                if getattr(sys, "frozen", False)
+                else os.path.dirname(os.path.dirname(__file__)),
+                "paydirt-web",
+                "backend",
+            )
+            routes_file = os.path.join(backend_path, "routes.py")
+
             if os.path.exists(routes_file):
                 # PyInstaller bundles files into directories, so routes.py might be
                 # at routes.py/routes.py - check for that case
                 actual_routes_file = routes_file
                 if os.path.isdir(routes_file):
-                    actual_routes_file = os.path.join(routes_file, 'routes.py')
-                
+                    actual_routes_file = os.path.join(routes_file, "routes.py")
+
                 # Add backend path to sys.path for routes.py's own imports
                 if backend_path not in sys.path:
                     sys.path.insert(0, backend_path)
@@ -83,15 +90,16 @@ def start_web_server(port=8000, open_browser=True):
                 paydirt_root = os.path.dirname(os.path.dirname(actual_routes_file))
                 if paydirt_root not in sys.path:
                     sys.path.insert(0, paydirt_root)
-                
+
                 # Use importlib to load from file path directly
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location("routes", actual_routes_file)
                 backend_routes = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(backend_routes)
-                
+
                 # Include router from routes
-                if hasattr(backend_routes, 'router'):
+                if hasattr(backend_routes, "router"):
                     app.include_router(backend_routes.router)
                 else:
                     raise Exception("routes.py has no router")
@@ -100,17 +108,20 @@ def start_web_server(port=8000, open_browser=True):
         except Exception as e:
             print(f"ERROR loading routes.py: {e}", flush=True)
             import traceback
+
             traceback.print_exc()
+
             # Fall back to basic endpoints
             @app.get("/api/seasons")
             async def list_seasons():
                 seasons = []
                 if seasons_path.exists():
                     for d in sorted(seasons_path.iterdir()):
-                        if d.is_dir() and not d.name.startswith('.'):
+                        # Only include directories with numeric names (valid season years)
+                        if d.is_dir() and d.name.isdigit():
                             seasons.append(d.name)
                 return {"seasons": seasons}
-        
+
         # Override /api/teams to return format frontend expects (season/team)
         @app.get("/api/teams")
         @app.get("/api/teams/{season}")
@@ -119,64 +130,78 @@ def start_web_server(port=8000, open_browser=True):
             season_path = seasons_path / season
             if season_path.exists():
                 for d in sorted(season_path.iterdir()):
-                    if d.is_dir() and not d.name.startswith('.'):
-                        teams.append({
-                            "id": f"{season}/{d.name}",  # season/team format
-                            "name": d.name,
-                            "season": season,
-                        })
+                    if d.is_dir() and not d.name.startswith("."):
+                        teams.append(
+                            {
+                                "id": f"{season}/{d.name}",  # season/team format
+                                "name": d.name,
+                                "season": season,
+                            }
+                        )
             return {"teams": teams, "season": season}
-        
+
         # Health check
         @app.get("/api/health")
         async def health():
             return {"status": "ok"}
-        
+
         # Root - serve index.html
         @app.get("/")
         async def root():
-            index_path = os.path.join(web_static_path, 'index.html')
+            index_path = os.path.join(web_static_path, "index.html")
             if os.path.isfile(index_path):
                 return FileResponse(index_path)
             return {"error": "Web files not found"}
-        
+
         # Static files - only serve specific static file patterns, NOT /api/* paths
         from fastapi.staticfiles import StaticFiles
-        
+
         # Mount assets directory
-        assets_path = os.path.join(web_static_path, 'assets')
+        assets_path = os.path.join(web_static_path, "assets")
         if os.path.isdir(assets_path):
             app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
-        
+
         # Start uvicorn
         config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="info")
         server = uvicorn.Server(config)
         server.run()
-    
+
     # Start server in a thread
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
-    
+
     # Wait for server
     time.sleep(2)
-    
+
     url = f"http://127.0.0.1:{port}"
     print(f"\nWeb UI: {url}\n")
-    
+
     if open_browser:
         webbrowser.open(url)
-    
+
     return server_thread
 
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
     # For bundled app: if no CLI args, start web mode; if CLI args present, run CLI
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Bundled app - check if CLI args are present
-        cli_args = ['--play', '-p', '--auto', '-a', '--teams', '--simulate', '--scaffold-season', '-l', '--load', '--help', '-h']
+        cli_args = [
+            "--play",
+            "-p",
+            "--auto",
+            "-a",
+            "--teams",
+            "--simulate",
+            "--scaffold-season",
+            "-l",
+            "--load",
+            "--help",
+            "-h",
+        ]
         has_cli_arg = any(arg in sys.argv for arg in cli_args)
-        
+
         if not has_cli_arg:
             # No CLI args - start web mode
             print("Starting Paydirt Web Interface...")
@@ -188,26 +213,26 @@ def main():
                 print("\nShutting down...")
             return
         # Has CLI args - fall through to CLI mode
-    
+
     # Development mode - check CLI args
     if len(sys.argv) == 1:
         port = 8000
         open_browser = True
-        
+
         # Parse --web options
-        web_args = [a for a in sys.argv[1:] if a not in ['--web', '-w']]
+        web_args = [a for a in sys.argv[1:] if a not in ["--web", "-w"]]
         for i, arg in enumerate(web_args):
-            if arg == '--port' and i + 1 < len(web_args):
+            if arg == "--port" and i + 1 < len(web_args):
                 try:
                     port = int(web_args[i + 1])
                 except ValueError:
                     print(f"Error: --port requires a number, got '{web_args[i + 1]}'")
                     return
-            elif arg == '--no-browser':
+            elif arg == "--no-browser":
                 open_browser = False
-        
+
         start_web_server(port=port, open_browser=open_browser)
-        
+
         # Keep the main thread alive
         try:
             while True:
@@ -215,9 +240,9 @@ def main():
         except KeyboardInterrupt:
             print("\nShutting down web server...")
         return
-    
+
     # Check for --help or -h first
-    if '--help' in sys.argv or '-h' in sys.argv:
+    if "--help" in sys.argv or "-h" in sys.argv:
         print("PAYDIRT - Football Board Game Simulation")
         print("=" * 50)
         print("\nUsage:")
@@ -255,17 +280,19 @@ def main():
         print("\nExamples:")
         print("  python -m paydirt -p                   # menus to select teams")
         print("  python -m paydirt -p -H 2026/Ironclads -A 2026/Thunderhawks  # you are Ironclads")
-        print("  python -m paydirt -p -H 2026/Thunderhawks -A 2026/Ironclads  # you are Thunderhawks")
+        print(
+            "  python -m paydirt -p -H 2026/Thunderhawks -A 2026/Ironclads  # you are Thunderhawks"
+        )
         print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks  # away @ home")
         print("  python -m paydirt -a 2026/Ironclads 2026/Thunderhawks --playoff-game")
         print("  python -m paydirt --scaffold-season 1995")
         return
 
     # Check for --scaffold-season
-    if '--scaffold-season' in sys.argv:
-        idx = sys.argv.index('--scaffold-season')
-        force = '--force' in sys.argv
-        if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith('-'):
+    if "--scaffold-season" in sys.argv:
+        idx = sys.argv.index("--scaffold-season")
+        force = "--force" in sys.argv
+        if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("-"):
             year_str = sys.argv[idx + 1]
             try:
                 year = int(year_str)
@@ -273,6 +300,7 @@ def main():
                 print(f"Error: --scaffold-season requires a year (integer), got '{year_str}'")
                 return
             from .season_rules import scaffold_season_rules
+
             seasons_dir = get_seasons_path()
             season_dir = seasons_dir / str(year)
             yaml_path = season_dir / f"{year}.yaml"
@@ -289,44 +317,45 @@ def main():
             print("Usage: python -m paydirt --scaffold-season <year> [--force]")
             return
 
-    if len(sys.argv) > 1 and sys.argv[1] in ['--load', 'load']:
+    if len(sys.argv) > 1 and sys.argv[1] in ["--load", "load"]:
         from .interactive_game import resume_game
-        
+
         # Get optional save file path
         save_file = "paydirt_save.json"
-        if len(sys.argv) > 2 and not sys.argv[2].startswith('-'):
+        if len(sys.argv) > 2 and not sys.argv[2].startswith("-"):
             save_file = sys.argv[2]
-        
+
         # Parse additional options
-        difficulty = 'medium'
+        difficulty = "medium"
         compact = False
         week = 0
-        
+
         for i, arg in enumerate(sys.argv[2:], start=2):
-            if arg in ['-d', '--difficulty'] and i + 1 < len(sys.argv):
+            if arg in ["-d", "--difficulty"] and i + 1 < len(sys.argv):
                 difficulty = sys.argv[i + 1]
-            elif arg in ['--compact', '-c']:
+            elif arg in ["--compact", "-c"]:
                 compact = True
-            elif arg in ['--week', '-w'] and i + 1 < len(sys.argv):
+            elif arg in ["--week", "-w"] and i + 1 < len(sys.argv):
                 try:
                     week = int(sys.argv[i + 1])
                 except ValueError:
                     pass
-        
+
         resume_game(save_file=save_file, difficulty=difficulty, compact=compact, week=week)
         return
 
     # Check for --auto/-a flag for CPU vs CPU mode
-    if len(sys.argv) >= 2 and sys.argv[1] in ['--auto', '-a', 'auto']:
+    if len(sys.argv) >= 2 and sys.argv[1] in ["--auto", "-a", "auto"]:
         # Check for --playoff-game flag
-        is_playoff = '--playoff-game' in sys.argv or '--playoff' in sys.argv
-        
+        is_playoff = "--playoff-game" in sys.argv or "--playoff" in sys.argv
+
         # Extract team specs (filter out flags)
-        team_args = [arg for arg in sys.argv[2:] if not arg.startswith('-')]
+        team_args = [arg for arg in sys.argv[2:] if not arg.startswith("-")]
         if len(team_args) >= 2:
             team1_name = team_args[0]
             team2_name = team_args[1]
             from .auto_game import run_auto_game
+
             run_auto_game(team1_name, team2_name, is_playoff=is_playoff)
             return
         else:
@@ -338,9 +367,9 @@ def main():
             return
 
     # Check for --play/-p flag for interactive mode
-    if len(sys.argv) > 1 and sys.argv[1] in ['--play', '-p', 'play']:
+    if len(sys.argv) > 1 and sys.argv[1] in ["--play", "-p", "play"]:
         # Parse optional flags
-        difficulty = 'medium'  # default
+        difficulty = "medium"  # default
         compact = False
         load_save = False
         save_file = None
@@ -353,8 +382,10 @@ def main():
         args = sys.argv[2:]
         i = 0
         # Check for --help first
-        if '--help' in args:
-            print("Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]] [--week N] [--record] [--home team] [--away team] [--playoff-game]")
+        if "--help" in args:
+            print(
+                "Usage: python -m paydirt --play [-d easy|medium|hard] [--compact] [--load [file]] [--week N] [--record] [--home team] [--away team] [--playoff-game]"
+            )
             print("  Difficulty levels:")
             print("    easy   - CPU makes conservative decisions")
             print("    medium - Balanced CPU play calling (default)")
@@ -376,28 +407,30 @@ def main():
             return
 
         while i < len(args):
-            if args[i] in ['-d', '--difficulty']:
+            if args[i] in ["-d", "--difficulty"]:
                 if i + 1 < len(args):
                     difficulty = args[i + 1]
-                    if difficulty not in ['easy', 'medium', 'hard']:
-                        print(f"Error: -d/--difficulty must be easy, medium, or hard, got '{difficulty}'")
+                    if difficulty not in ["easy", "medium", "hard"]:
+                        print(
+                            f"Error: -d/--difficulty must be easy, medium, or hard, got '{difficulty}'"
+                        )
                         return
                     i += 2
                 else:
                     print("Error: -d/--difficulty requires a value (easy, medium, or hard)")
                     return
-            elif args[i] in ['--compact', '-c']:
+            elif args[i] in ["--compact", "-c"]:
                 compact = True
                 i += 1
-            elif args[i] in ['--load', '-l']:
+            elif args[i] in ["--load", "-l"]:
                 load_save = True
                 # Check if next arg is a filename (not another flag)
-                if i + 1 < len(args) and not args[i + 1].startswith('-'):
+                if i + 1 < len(args) and not args[i + 1].startswith("-"):
                     save_file = args[i + 1]
                     i += 2
                 else:
                     i += 1
-            elif args[i] in ['--week', '-w']:
+            elif args[i] in ["--week", "-w"]:
                 if i + 1 < len(args):
                     try:
                         week = int(args[i + 1])
@@ -408,34 +441,34 @@ def main():
                 else:
                     print("Error: --week requires a number")
                     return
-            elif args[i] in ['--record', '-r']:
+            elif args[i] in ["--record", "-r"]:
                 i += 1
-            elif args[i] in ['--home', '-H']:
+            elif args[i] in ["--home", "-H"]:
                 if i + 1 < len(args):
                     home_team = args[i + 1]
                     i += 2
                 else:
                     print("Error: --home requires a team name")
                     return
-            elif args[i] in ['--away', '-A']:
+            elif args[i] in ["--away", "-A"]:
                 if i + 1 < len(args):
                     away_team = args[i + 1]
                     i += 2
                 else:
                     print("Error: --away requires a team name")
                     return
-            elif args[i] in ['--playoff-game', '--playoff']:
+            elif args[i] in ["--playoff-game", "--playoff"]:
                 # This is a playoff game
                 is_playoff = True
                 i += 1
             else:
                 i += 1
-        
+
         # If user specified both --home and --away, determine position from order
         if home_team and away_team:
             # Find which flag came first in the original args
-            away_idx = next ((j for j, a in enumerate(args) if a == '--away'), 999)
-            home_idx = next ((j for j, a in enumerate(args) if a == '--home'), 999)
+            away_idx = next((j for j, a in enumerate(args) if a == "--away"), 999)
+            home_idx = next((j for j, a in enumerate(args) if a == "--home"), 999)
             if away_idx < home_idx:
                 # --away came first: user plays that team (away), other is opponent (home)
                 human_is_home = False
@@ -445,21 +478,30 @@ def main():
 
         if load_save:
             from .interactive_game import resume_game
+
             save_file_arg = save_file if save_file else "paydirt_save.json"
             resume_game(save_file=save_file_arg, difficulty=difficulty, compact=compact, week=week)
         else:
             from .interactive_game import run_interactive_game
-            run_interactive_game(difficulty=difficulty, compact=compact, week=week, 
-                                home_team=home_team, away_team=away_team,
-                                human_is_home=human_is_home, is_playoff=is_playoff)
+
+            run_interactive_game(
+                difficulty=difficulty,
+                compact=compact,
+                week=week,
+                home_team=home_team,
+                away_team=away_team,
+                human_is_home=human_is_home,
+                is_playoff=is_playoff,
+            )
         return
 
     # Handle --teams flag
-    if '--teams' in sys.argv:
+    if "--teams" in sys.argv:
         from .chart_loader import find_team_charts
+
         seasons_dir = str(get_seasons_path())
         charts = find_team_charts(seasons_dir)
-        
+
         print("Available teams:")
         current_season = None
         for year, name, path in sorted(charts):
@@ -489,7 +531,7 @@ def main():
 
             choice = input("Select option: ").strip()
 
-            if choice == '1':
+            if choice == "1":
                 # Ask for difficulty
                 print("\nSelect CPU difficulty:")
                 print("  [1] Easy   - CPU makes conservative decisions")
@@ -497,22 +539,26 @@ def main():
                 print("  [3] Hard   - CPU makes aggressive, optimal decisions")
                 print("  [Enter] = Medium")
                 diff_choice = input("\nDifficulty: ").strip()
-                difficulty = {'1': 'easy', '2': 'medium', '3': 'hard'}.get(diff_choice, 'medium')
+                difficulty = {"1": "easy", "2": "medium", "3": "hard"}.get(diff_choice, "medium")
                 from .interactive_game import run_interactive_game
+
                 run_interactive_game(difficulty=difficulty)
-            elif choice == '2':
+            elif choice == "2":
                 from .cli_charts import main as charts_main
+
                 charts_main()
             else:
                 print("Goodbye!")
         else:
             # Fall back to simple CLI
             from .cli import main as simple_main
+
             simple_main()
     except ImportError as e:
         print(f"Import error: {e}")
         # Fall back to simple CLI
         from .cli import main as simple_main
+
         simple_main()
 
 

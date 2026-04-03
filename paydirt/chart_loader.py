@@ -2,6 +2,7 @@
 Loader for Paydirt team chart CSV files.
 Parses the actual team chart format used in the board game.
 """
+
 import csv
 import os
 import re
@@ -14,6 +15,7 @@ import yaml
 @dataclass
 class TeamMetadata:
     """Team metadata loaded from team.yaml file."""
+
     team_name: str = ""
     short_name: str = ""
     location: str = ""
@@ -25,27 +27,27 @@ class TeamMetadata:
 def load_team_metadata(team_dir: str) -> Optional[TeamMetadata]:
     """
     Load team metadata from team.yaml file in the team directory.
-    
+
     Returns None if the file doesn't exist or can't be parsed.
     """
-    yaml_path = os.path.join(team_dir, 'team.yaml')
+    yaml_path = os.path.join(team_dir, "team.yaml")
     if not os.path.exists(yaml_path):
         return None
-    
+
     try:
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path, "r") as f:
             data = yaml.safe_load(f)
-        
+
         if not data:
             return None
-        
+
         return TeamMetadata(
-            team_name=data.get('team_name', ''),
-            short_name=data.get('short_name', ''),
-            location=data.get('location', ''),
-            nickname=data.get('nickname', ''),
-            aliases=data.get('aliases', []),
-            history=data.get('history', [])
+            team_name=data.get("team_name", ""),
+            short_name=data.get("short_name", ""),
+            location=data.get("location", ""),
+            nickname=data.get("nickname", ""),
+            aliases=data.get("aliases", []),
+            history=data.get("history", []),
         )
     except Exception:
         return None
@@ -54,6 +56,7 @@ def load_team_metadata(team_dir: str) -> Optional[TeamMetadata]:
 @dataclass
 class PeripheralData:
     """Team peripheral data from the chart."""
+
     year: int
     team_name: str
     team_nickname: str
@@ -73,6 +76,7 @@ class OffenseChart:
     Offensive play chart for a team.
     Maps dice rolls (10-39) to outcomes for each play type.
     """
+
     # Play type columns: dice_roll -> result string
     line_plunge: dict[int, str] = field(default_factory=dict)
     off_tackle: dict[int, str] = field(default_factory=dict)
@@ -93,9 +97,10 @@ class DefenseChart:
     """
     Defensive chart for a team.
     Maps defense type + sub-row to modifiers for each offensive play type.
-    Defense types: A (Standard), B (Short Yardage), C (Spread), 
+    Defense types: A (Standard), B (Short Yardage), C (Spread),
                    D (Short Pass), E (Long Pass), F (Blitz)
     """
+
     # Format: (defense_letter, sub_row) -> {play_column: modifier}
     modifiers: dict[tuple[str, int], dict[int, str]] = field(default_factory=dict)
 
@@ -103,6 +108,7 @@ class DefenseChart:
 @dataclass
 class SpecialTeamsChart:
     """Special teams chart data."""
+
     # dice_roll -> result
     kickoff: dict[int, str] = field(default_factory=dict)
     kickoff_return: dict[int, str] = field(default_factory=dict)
@@ -117,6 +123,7 @@ class SpecialTeamsChart:
 @dataclass
 class TeamChart:
     """Complete team chart with all data."""
+
     peripheral: PeripheralData
     offense: OffenseChart
     defense: DefenseChart
@@ -129,12 +136,15 @@ class TeamChart:
 
     @property
     def short_name(self) -> str:
-        return self.peripheral.short_name or f"{self.peripheral.team_nickname[:3].upper()} '{str(self.peripheral.year)[2:]}"
+        return (
+            self.peripheral.short_name
+            or f"{self.peripheral.team_nickname[:3].upper()} '{str(self.peripheral.year)[2:]}"
+        )
 
 
 def parse_peripheral_data(filepath: str) -> PeripheralData:
     """Parse the PERIPHERAL DATA CSV file."""
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
@@ -163,7 +173,7 @@ def parse_peripheral_data(filepath: str) -> PeripheralData:
 
     # Parse power rating (format: "219 ± 1")
     if len(data_row) > 4 and data_row[4]:
-        pr_match = re.match(r'(\d+)\s*[±+-]\s*(\d+)', data_row[4])
+        pr_match = re.match(r"(\d+)\s*[±+-]\s*(\d+)", data_row[4])
         if pr_match:
             power_rating = int(pr_match.group(1))
             power_variance = int(pr_match.group(2))
@@ -175,19 +185,19 @@ def parse_peripheral_data(filepath: str) -> PeripheralData:
 
     # Parse yardage factors (format: "100 / 80")
     if len(data_row) > 5 and data_row[5]:
-        yf_match = re.match(r'(\d+)\s*/\s*(\d+)', data_row[5])
+        yf_match = re.match(r"(\d+)\s*/\s*(\d+)", data_row[5])
         if yf_match:
             base_yf = int(yf_match.group(1))
             reduced_yf = int(yf_match.group(2))
 
     # Parse fumble ranges
     if len(data_row) > 6 and data_row[6]:
-        fr_match = re.match(r'(\d+)-(\d+)', data_row[6])
+        fr_match = re.match(r"(\d+)-(\d+)", data_row[6])
         if fr_match:
             fumble_rec = (int(fr_match.group(1)), int(fr_match.group(2)))
 
     if len(data_row) > 7 and data_row[7]:
-        fl_match = re.match(r'(\d+)-(\d+)', data_row[7])
+        fl_match = re.match(r"(\d+)-(\d+)", data_row[7])
         if fl_match:
             fumble_lost = (int(fl_match.group(1)), int(fl_match.group(2)))
 
@@ -230,48 +240,52 @@ def parse_peripheral_data(filepath: str) -> PeripheralData:
 def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     """
     Parse the OFFENSE CSV file.
-    
+
     Extracts both the offense chart data and peripheral data (team name, year,
     fumble ranges) from the offense chart, eliminating the need for a separate
     PERIPHERAL DATA file.
-    
+
     Returns:
         Tuple of (OffenseChart, PeripheralData)
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
     chart = OffenseChart()
-    
+
     # Extract peripheral data from offense chart
     # Row 1 (index 0): "1983 Chicago                      offense"
     # Row 12 (index 11): Contains "Yardage factors: 100% / 80%" in column 11
     # Row 21 (index 20): Contains "Power rating: 220½ ± 1" in column 11
     # Row 26 (index 25): Contains "Fumble Recovered 10-27; Lost Ball 28-39" in column 15
-    
+
     year = 1983
     team_name = ""
     team_nickname = ""
     fumble_rec = (10, 31)  # default
     fumble_lost = (32, 39)  # default
-    
+
     # Parse year and team from row 1 (format: "1983 Chicago                      offense")
     if rows and rows[0]:
         header = rows[0][0].strip() if rows[0][0] else ""
         # Extract year (first 4 digits) and team name
-        year_match = re.match(r'(\d{4})\s+(.+?)\s+offense', header, re.IGNORECASE)
+        year_match = re.match(r"(\d{4})\s+(.+?)\s+offense", header, re.IGNORECASE)
         if year_match:
             year = int(year_match.group(1))
             team_name = year_match.group(2).strip()
             # Use team name as nickname too (can be overridden)
             team_nickname = team_name
-    
+
     # Parse fumble ranges - look for "Fumble Recovered X-Y; Lost Ball Z-W" pattern
     # This is typically on the row for dice roll 26, but search all rows to be safe
     for row in rows:
-        row_text = ' '.join(str(cell) for cell in row)
-        fumble_match = re.search(r'Fumble\s+Recovered\s+(\d+)-(\d+);?\s*Lost\s+Ball\s+(\d+)-(\d+)', row_text, re.IGNORECASE)
+        row_text = " ".join(str(cell) for cell in row)
+        fumble_match = re.search(
+            r"Fumble\s+Recovered\s+(\d+)-(\d+);?\s*Lost\s+Ball\s+(\d+)-(\d+)",
+            row_text,
+            re.IGNORECASE,
+        )
         if fumble_match:
             fumble_rec = (int(fumble_match.group(1)), int(fumble_match.group(2)))
             fumble_lost = (int(fumble_match.group(3)), int(fumble_match.group(4)))
@@ -281,46 +295,46 @@ def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     # Use team directory name to disambiguate (Giants vs Jets, Raiders vs Rams)
     # The team_name from header may be ambiguous (e.g., "New York", "Los Angeles")
     short_name_map = {
-        'Chicago': 'CHI',
-        'Cincinnati': 'CIN',
-        'Cleveland': 'CLE',
-        'Dallas': 'DAL',
-        'Denver': 'DEN',
-        'Detroit': 'DET',
-        'Green Bay': 'GB',
-        'Houston': 'HOU',
-        'Indianapolis': 'IND',
-        'Baltimore': 'BAL',
-        'Kansas City': 'KC',
-        'Miami': 'MIA',
-        'Minnesota': 'MIN',
-        'New England': 'NE',
-        'New Orleans': 'NO',
-        'Philadelphia': 'PHI',
-        'Pittsburgh': 'PIT',
-        'San Diego': 'SD',
-        'San Francisco': 'SF',
-        'Seattle': 'SEA',
-        'St. Louis': 'STL',
-        'Tampa Bay': 'TB',
-        'Washington': 'Wash',
-        'Atlanta': 'ATL',
-        'Buffalo': 'BUF',
+        "Chicago": "CHI",
+        "Cincinnati": "CIN",
+        "Cleveland": "CLE",
+        "Dallas": "DAL",
+        "Denver": "DEN",
+        "Detroit": "DET",
+        "Green Bay": "GB",
+        "Houston": "HOU",
+        "Indianapolis": "IND",
+        "Baltimore": "BAL",
+        "Kansas City": "KC",
+        "Miami": "MIA",
+        "Minnesota": "MIN",
+        "New England": "NE",
+        "New Orleans": "NO",
+        "Philadelphia": "PHI",
+        "Pittsburgh": "PIT",
+        "San Diego": "SD",
+        "San Francisco": "SF",
+        "Seattle": "SEA",
+        "St. Louis": "STL",
+        "Tampa Bay": "TB",
+        "Washington": "Wash",
+        "Atlanta": "ATL",
+        "Buffalo": "BUF",
         # Handle variants without spaces
-        'NewYork': 'NY',  # Will be disambiguated by directory
-        'LosAngeles': 'LA',  # Will be disambiguated by directory
+        "NewYork": "NY",  # Will be disambiguated by directory
+        "LosAngeles": "LA",  # Will be disambiguated by directory
     }
-    
+
     # Try direct lookup first
     abbrev = short_name_map.get(team_name)
-    
+
     # If not found or ambiguous (NY/LA), we'll fix it in load_team_chart
     # using the directory name
     if not abbrev:
-        abbrev = team_name[:3].upper() if team_name else 'UNK'
-    
+        abbrev = team_name[:3].upper() if team_name else "UNK"
+
     short_name = abbrev
-    
+
     peripheral = PeripheralData(
         year=year,
         team_name=team_name,
@@ -382,7 +396,7 @@ def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
 def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]:
     """
     Parse the DEFENSE CSV file.
-    
+
     Defense chart structure:
     - Rows 3-32 contain defense data (formations A-F, sub-rows 1-5)
     - Column 1: Formation letter (A-F) or formation name
@@ -392,7 +406,7 @@ def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]
     - Columns 13-18: Special teams (Kickoff, KO Return, Punt, Punt Return, Int Return, FG)
     - Column 19: Dice roll number for special teams
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
@@ -473,7 +487,7 @@ def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]
         # 1972 format: 1 = Good, 0 = No Good
         # 1983 format: blank = Good, NG = No Good
         extra_point_val = get_cell(8)
-        if extra_point_val and extra_point_val.strip() in ('0', 'NG'):
+        if extra_point_val and extra_point_val.strip() in ("0", "NG"):
             special.extra_point_no_good.append(dice_roll)
 
         special_teams_roll += 1
@@ -484,31 +498,31 @@ def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]
 def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     """
     Parse the new format offense.csv file.
-    
+
     Format:
     #,Line Plunge,Off Tackle,End Run,Draw,Screen,Short,Med,Long,T/E S/L,B,QT
     10,6,5,F - 4,3,-11,PI 5,13,DEF 5,PI 18,17,-3
-    
+
     Returns:
         Tuple of (OffenseChart, PeripheralData)
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
     chart = OffenseChart()
-    
+
     # Extract team info from filename (directory name)
     path = Path(filepath)
     team_dir = path.parent.name
-    
+
     # Parse year from parent directory
     year_dir = path.parent.parent.name
     try:
         year = int(year_dir)
     except ValueError:
         year = 1983
-    
+
     peripheral = PeripheralData(
         year=year,
         team_name=team_dir,
@@ -525,19 +539,19 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
     for row in rows[1:]:  # Skip header
         if len(row) < 2:
             continue
-        
+
         # Skip comment rows (starting with #)
-        if row[0] and str(row[0]).strip().startswith('#'):
+        if row[0] and str(row[0]).strip().startswith("#"):
             continue
-        
+
         try:
             dice_roll = int(row[0])
         except (ValueError, IndexError):
             continue
-        
+
         if dice_roll < 10 or dice_roll > 39:
             continue
-        
+
         # Parse fumble column (R = recovered, L = lost)
         if len(row) > 12 and row[12]:
             fumble_val = row[12].strip().upper()
@@ -545,7 +559,7 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
                 fumble_recovered_rolls.append(dice_roll)
             elif fumble_val == "L":
                 fumble_lost_rolls.append(dice_roll)
-        
+
         # Map columns to play types
         if len(row) > 1 and row[1]:
             chart.line_plunge[dice_roll] = row[1]
@@ -575,26 +589,29 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
         if not row or len(row) < 2:
             continue
         first_cell = str(row[0]).strip()
-        if first_cell == '# Recovered' and len(row) > 1:
+        if first_cell == "# Recovered" and len(row) > 1:
             range_str = str(row[1]).strip()
-            if '-' in range_str:
+            if "-" in range_str:
                 try:
-                    parts = range_str.split('-')
+                    parts = range_str.split("-")
                     peripheral.fumble_recovered_range = (int(parts[0]), int(parts[1]))
                 except Exception:
                     pass
-        elif first_cell == '# Lost' and len(row) > 1:
+        elif first_cell == "# Lost" and len(row) > 1:
             range_str = str(row[1]).strip()
-            if '-' in range_str:
+            if "-" in range_str:
                 try:
-                    parts = range_str.split('-')
+                    parts = range_str.split("-")
                     peripheral.fumble_lost_range = (int(parts[0]), int(parts[1]))
                 except Exception:
                     pass
 
     # Set fumble ranges from the data (fallback if comments not found)
     if peripheral.fumble_recovered_range == (0, 0) and fumble_recovered_rolls:
-        peripheral.fumble_recovered_range = (min(fumble_recovered_rolls), max(fumble_recovered_rolls))
+        peripheral.fumble_recovered_range = (
+            min(fumble_recovered_rolls),
+            max(fumble_recovered_rolls),
+        )
     if peripheral.fumble_lost_range == (0, 0) and fumble_lost_rolls:
         peripheral.fumble_lost_range = (min(fumble_lost_rolls), max(fumble_lost_rolls))
 
@@ -604,15 +621,15 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
 def parse_defense_csv(filepath: str) -> DefenseChart:
     """
     Parse the new format defense.csv file.
-    
+
     Format:
     #,Formation,Sub,1,2,3,4,5,6,7,8,9
     A-1,A,1,,,,-2.0,(-1),,,-3.0
-    
+
     Returns:
         DefenseChart
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
@@ -622,14 +639,14 @@ def parse_defense_csv(filepath: str) -> DefenseChart:
     for row in rows[1:]:
         if len(row) < 3:
             continue
-        
+
         # Formation is in column 1, Sub is in column 2
         formation = row[1].strip()
         try:
             sub_row = int(row[2])
         except (ValueError, IndexError):
             continue
-        
+
         # Parse modifiers for each play type (columns 3-11 for dice 1-9)
         modifiers = {}
         for col_idx in range(3, 12):
@@ -637,7 +654,7 @@ def parse_defense_csv(filepath: str) -> DefenseChart:
                 cell_value = row[col_idx].strip()
                 if cell_value:
                     modifiers[col_idx - 2] = cell_value  # 1-indexed play columns (col 3 -> dice 1)
-        
+
         if modifiers:
             defense.modifiers[(formation, sub_row)] = modifiers
 
@@ -647,15 +664,15 @@ def parse_defense_csv(filepath: str) -> DefenseChart:
 def parse_special_csv(filepath: str) -> SpecialTeamsChart:
     """
     Parse the new format special.csv file.
-    
+
     Format:
     #,Kickoff,Kickoff Return,Punt,Punt Return,Int. Return,Field Goal,Extra Point
     10,72,28,30*,OFF 15,,NG,
-    
+
     Returns:
         SpecialTeamsChart
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         rows = list(reader)
 
@@ -665,15 +682,15 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
     for row in rows[1:]:
         if len(row) < 2:
             continue
-        
+
         try:
             dice_roll = int(row[0])
         except (ValueError, IndexError):
             continue
-        
+
         if dice_roll < 10 or dice_roll > 39:
             continue
-        
+
         # Parse special teams columns
         if len(row) > 1 and row[1]:
             special.kickoff[dice_roll] = row[1]
@@ -688,9 +705,9 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
             special.fumble_return[dice_roll] = row[5]
         if len(row) > 6 and row[6]:
             special.field_goal[dice_roll] = row[6]
-        
+
         # Extra Point: 1972 format: 1 = Good, 0 = No Good; 1983 format: blank = Good, NG = No Good
-        if len(row) > 7 and row[7] and row[7].strip() in ('0', 'NG'):
+        if len(row) > 7 and row[7] and row[7].strip() in ("0", "NG"):
             special.extra_point_no_good.append(dice_roll)
 
     return special
@@ -699,12 +716,12 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
 def load_team_chart(team_dir: str) -> TeamChart:
     """
     Load a complete team chart from a directory containing the CSV files.
-    
+
     Args:
         team_dir: Path to directory containing CSV files.
                   Supports both legacy format (OFFENSE-Table 1.csv, DEFENSE-Table 1.csv)
                   and new format (offense.csv, defense.csv, special.csv)
-    
+
     Returns:
         TeamChart with all parsed data
     """
@@ -721,13 +738,15 @@ def load_team_chart(team_dir: str) -> TeamChart:
         defense = parse_defense_csv(str(defense_csv))
         special_teams = parse_special_csv(str(special_csv))
     else:
-        raise FileNotFoundError(f"Chart files not found in {team_dir}. Expected: offense.csv, defense.csv, special.csv")
-    
+        raise FileNotFoundError(
+            f"Chart files not found in {team_dir}. Expected: offense.csv, defense.csv, special.csv"
+        )
+
     # Load team metadata from team.yaml if available
     metadata = load_team_metadata(str(team_path))
     if metadata and metadata.short_name:
         peripheral.short_name = metadata.short_name
-    
+
     # Also set team_nickname from directory name for clarity
     if peripheral.team_nickname == peripheral.team_name:
         peripheral.team_nickname = team_path.name
@@ -744,7 +763,7 @@ def load_team_chart(team_dir: str) -> TeamChart:
 def find_team_charts(seasons_dir: str) -> list[tuple[str, str, str]]:
     """
     Find all team chart directories in the seasons folder.
-    
+
     Returns:
         List of (year, team_name, path) tuples
     """
@@ -758,17 +777,22 @@ def find_team_charts(seasons_dir: str) -> list[tuple[str, str, str]]:
         if not year_dir.is_dir():
             continue
 
-        try:
-            year = year_dir.name
-        except ValueError:
+        # Only include directories with numeric names (valid season years)
+        if not year_dir.name.isdigit():
             continue
+
+        year = year_dir.name
 
         for team_dir in year_dir.iterdir():
             if not team_dir.is_dir():
                 continue
 
             # Check if this directory has the required CSV files (new format)
-            if (team_dir / "offense.csv").exists() and (team_dir / "defense.csv").exists() and (team_dir / "special.csv").exists():
+            if (
+                (team_dir / "offense.csv").exists()
+                and (team_dir / "defense.csv").exists()
+                and (team_dir / "special.csv").exists()
+            ):
                 charts.append((year, team_dir.name, str(team_dir)))
 
     return sorted(charts)
