@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from .chart_loader import load_team_chart, TeamChart, OffenseChart
+from .packaging import get_seasons_path, get_all_season_paths
 from .game_engine import PaydirtGameEngine
 from .play_resolver import PlayType, DefenseType, ResultType, is_passing_play
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
@@ -94,14 +95,14 @@ def clear_screen():
 
 
 def get_available_seasons() -> list[str]:
-    """Find all available season directories."""
-    seasons = []
-    seasons_path = Path("seasons")
-    if seasons_path.exists():
-        for season_dir in sorted(seasons_path.iterdir()):
-            if season_dir.is_dir() and season_dir.name.isdigit():
-                seasons.append(season_dir.name)
-    return seasons
+    """Find all available season directories (user + built-in)."""
+    seasons_set = set()
+    for seasons_path in get_all_season_paths():
+        if seasons_path.exists():
+            for season_dir in seasons_path.iterdir():
+                if season_dir.is_dir() and season_dir.name.isdigit():
+                    seasons_set.add(season_dir.name)
+    return sorted(seasons_set, reverse=True)
 
 
 def select_season(prompt: str = "Select Season:") -> str:
@@ -130,11 +131,22 @@ def select_season(prompt: str = "Select Season:") -> str:
 
 
 def get_available_teams(season: Optional[str] = None) -> list[tuple[str, str]]:
-    """Find all available team chart directories."""
+    """Find all available team chart directories (user + built-in)."""
     teams = []
-    seasons_path = Path("seasons")
-    if seasons_path.exists():
-        season_dirs = [seasons_path / season] if season else sorted(seasons_path.iterdir())
+    for seasons_path in get_all_season_paths():
+        if not seasons_path.exists():
+            continue
+        if season:
+            # Look for specific season in this path
+            season_dir = seasons_path / season
+            if season_dir.exists():
+                season_dirs = [season_dir]
+            else:
+                continue
+        else:
+            # List all seasons
+            season_dirs = sorted(seasons_path.iterdir())
+
         for season_dir in season_dirs:
             if season_dir.is_dir() and season_dir.name.isdigit():
                 for team_dir in sorted(season_dir.iterdir()):
@@ -143,6 +155,11 @@ def get_available_teams(season: Optional[str] = None) -> list[tuple[str, str]]:
                         offense_file_old = team_dir / "OFFENSE-Table 1.csv"
                         if offense_file_new.exists() or offense_file_old.exists():
                             teams.append((str(team_dir), team_dir.name))
+
+        # If we found a specific season, stop searching other paths
+        if season and teams:
+            break
+
     return teams
 
 
@@ -3451,9 +3468,11 @@ def run_interactive_game(
         def find_team_path(team_name: str) -> Optional[str]:
             if not team_name:
                 return None
-            # Try exact path first
-            if Path(f"seasons/{team_name}").exists():
-                return f"seasons/{team_name}"
+            # Try exact path first - check in all season paths
+            for seasons_path in get_all_season_paths():
+                possible_path = seasons_path / team_name
+                if possible_path.exists():
+                    return str(possible_path)
             if Path(team_name).exists():
                 return team_name
             # Try lookup
