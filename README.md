@@ -2,9 +2,38 @@
 
 A Python implementation of the classic Paydirt football board game, originally published by Avalon Hill.
 
+## Installation
+
+### Quick Install (Recommended)
+
+```bash
+pip install paydirt
+```
+
+### Running the Game
+
+```bash
+# Interactive game (Human vs CPU)
+paydirt
+
+# Or use python -m paydirt
+python -m paydirt
+```
+
+### Other Installation Options
+
+| Method | Command |
+|--------|---------|
+| **Latest from PyPI** | `pip install paydirt` |
+| **Specific version** | `pip install paydirt==1.0.0-beta.71` |
+| **Development version** | `pip install git+https://github.com/rtulloh/paydirt.git` |
+| **Local development** | `pip install -e .` |
+
+---
+
 ## Prerequisites
 
-This project requires **Python 3.9 or higher**. Follow the instructions below for your operating system.
+If installing manually (without pip), this project requires **Python 3.9 or higher**. Follow the instructions below for your operating system.
 
 ### macOS
 
@@ -96,25 +125,23 @@ Paydirt is a football simulation game where you select an NFL team and call play
 ## Quick Start
 
 ```bash
-cd paydirt
-
 # Interactive game (Human vs CPU)
-python -m paydirt
+paydirt
 
 # Interactive game with difficulty setting
-python -m paydirt --play -d hard
+paydirt -d hard
 
 # Compact display mode (recommended)
-python -m paydirt --play --compact
+paydirt --play --compact
 
 # Specify week for standings
-python -m paydirt --play --week 1 --compact
+paydirt --play --week 1 --compact
 
 # Resume a saved game
-python -m paydirt --play --load --compact
+paydirt --play --load --compact
 
 # Auto game (CPU vs CPU) - great for testing
-python -m paydirt -auto Bears Cowboys
+paydirt -auto Bears Cowboys
 ```
 
 Select your team, choose home or away, select CPU difficulty, and start playing!
@@ -215,7 +242,7 @@ The helper analyzes your team's offensive charts to find:
 
 ### Starting a Game
 
-1. Run `python -m paydirt`
+1. Run `paydirt` (or `python -m paydirt`)
 2. Select your team from the list (e.g., `1` for the first team)
 3. Choose to play as Home or Away
 4. The game begins with a kickoff
@@ -508,10 +535,10 @@ Use the scaffold command to generate a starter YAML file:
 
 ```bash
 # Generate rules with era-appropriate defaults
-python -m paydirt --scaffold-season 1995
+paydirt --scaffold-season 1995
 
 # Overwrite existing file
-python -m paydirt --scaffold-season 2026 --force
+paydirt --scaffold-season 2026 --force
 ```
 
 The scaffold auto-detects rules based on the year (2-point conversion, overtime format, period length).
@@ -585,7 +612,7 @@ After importing, you need to:
 
 3. **Create the season rules file** if it doesn't exist:
    ```bash
-   python -m paydirt --scaffold-season 2026
+   paydirt --scaffold-season 2026
    ```
 
 ---
@@ -603,7 +630,7 @@ Game saved to paydirt_save.json
 
 ### Resuming a Game
 ```bash
-python -m paydirt --play --load --compact
+paydirt --play --load --compact
 ```
 
 The save file preserves:
@@ -634,10 +661,10 @@ python -m paydirt --play --week 1 --compact
 ### Viewing Standings
 ```bash
 # Show standings for a season
-python -m paydirt.standings show 2026
+python -m paydirt standings show 2026
 
 # List all recorded games
-python -m paydirt.standings games 2026
+python -m paydirt standings games 2026
 ```
 
 ### Managing Results
@@ -645,13 +672,13 @@ python -m paydirt.standings games 2026
 Use `games` to see the numbered list of games, then reference the number with `edit` or `delete`:
 ```bash
 # List all games (shows game numbers)
-python -m paydirt.standings games 2026
+python -m paydirt standings games 2026
 
 # Edit a game's score by its number (from the games list)
-python -m paydirt.standings edit 2026 1 --home-score 31
+python -m paydirt standings edit 2026 1 --home-score 31
 
 # Delete a game by its number (from the games list)
-python -m paydirt.standings delete 2026 1
+python -m paydirt standings delete 2026 1
 ```
 
 ---
