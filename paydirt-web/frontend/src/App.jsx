@@ -6,6 +6,7 @@ import CoinToss from './components/Game/CoinToss';
 import PlayingPhase from './components/Game/PlayingPhase';
 import Halftime from './components/Game/Halftime';
 import GameOver from './components/Game/GameOver';
+import HelpGuide from './components/Game/HelpGuide';
 import { API_BASE } from './config';
 
 function App() {
@@ -26,7 +27,9 @@ function App() {
   // Route to appropriate phase component
   switch (gamePhase) {
     case 'menu':
-      return <MenuPhase onNewGame={handleNewGame} />;
+      return <MenuPhase onNewGame={handleNewGame} onOpenGuide={handleOpenGuide} />;
+    case 'guide':
+      return <HelpGuide onBackToMenu={handleBackToMenu} />;
     case 'teamSelect':
       return <TeamSelectPhase 
         onTeamSelected={handleTeamSelection} 
@@ -89,6 +92,11 @@ const handleBackToMenu = () => {
   const { setGamePhase, reset } = useGameStore.getState();
   reset();
   setGamePhase('menu');
+};
+
+const handleOpenGuide = () => {
+  const { setGamePhase } = useGameStore.getState();
+  setGamePhase('guide');
 };
 
 const handleCoinTossComplete = async (coinData) => {

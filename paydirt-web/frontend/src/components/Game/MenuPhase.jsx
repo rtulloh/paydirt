@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
-const MenuPhase = ({ onNewGame }) => {
+const MenuPhase = ({ onNewGame, onOpenGuide }) => {
   const [hasSavedGame, setHasSavedGame] = useState(false);
   const [hasSavedReplay, setHasSavedReplay] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +93,15 @@ const MenuPhase = ({ onNewGame }) => {
             </div>
           )}
         </div>
-        <p className="text-gray-500 text-sm mt-8">
+        <div className="mt-8">
+          <button
+            onClick={onOpenGuide}
+            className="w-64 px-8 py-3 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 transition-all text-lg"
+          >
+            GUIDE
+          </button>
+        </div>
+        <p className="text-gray-500 text-sm mt-4">
           Tip: Save Replay during gameplay to capture the exact state for debugging
         </p>
       </div>
