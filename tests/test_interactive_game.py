@@ -760,11 +760,12 @@ class TestGetAvailableSeasons:
             assert isinstance(season, str)
 
     def test_seasons_are_sorted(self):
-        """Seasons should be returned in sorted order."""
+        """Seasons should be returned in sorted order (newest first)."""
         from paydirt.interactive_game import get_available_seasons
 
         seasons = get_available_seasons()
-        assert seasons == sorted(seasons)
+        # Function returns sorted in reverse order (newest first)
+        assert seasons == sorted(seasons, reverse=True)
 
 
 class TestGetAvailableTeams:

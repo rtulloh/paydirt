@@ -3182,7 +3182,9 @@ def resume_game(
 
         if call_timeout and not outcome.touchdown:
             play_seconds = time_before_play - game.state.time_remaining
-            should_apply, skip_msg = game._should_apply_timeout_after_play(outcome, play_seconds)
+            should_apply, skip_msg = game._should_apply_timeout_after_play(
+                outcome, play_seconds, quarter_before_play
+            )
             if should_apply:
                 if game.state.use_timeout(human_is_home):
                     game._apply_timeout(time_before_play, quarter_before_play)
@@ -3987,6 +3989,7 @@ def run_interactive_game(
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
         time_before_play = game.state.time_remaining
+        quarter_before_play = game.state.quarter
         offense_was_home = game.state.is_home_possession
         two_min_warning_before = game.state.two_minute_warning_called
 
@@ -4036,7 +4039,9 @@ def run_interactive_game(
         elif (call_timeout or cpu_call_timeout) and not outcome.touchdown:
             # Timeout was called but skipped (incomplete, OOB, or short play)
             play_seconds = (time_before_play - game.state.time_remaining) * 60
-            _, skip_msg = game._should_apply_timeout_after_play(outcome, play_seconds)
+            _, skip_msg = game._should_apply_timeout_after_play(
+                outcome, play_seconds, quarter_before_play
+            )
             if skip_msg:
                 print(f"  {skip_msg}")
 

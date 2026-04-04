@@ -1735,7 +1735,9 @@ class PaydirtGameEngine:
             # Note: Only one modifier should be applied - timeout takes precedence
             if call_timeout and not outcome.touchdown and not outcome.turnover:
                 play_seconds = (time_before_play - self.state.time_remaining) * 60
-                should_apply, _ = self._should_apply_timeout_after_play(outcome, play_seconds)
+                should_apply, _ = self._should_apply_timeout_after_play(
+                    outcome, play_seconds, quarter_before_play
+                )
                 if should_apply:
                     self._apply_timeout(time_before_play, quarter_before_play)
                     outcome.timeout_used = True
@@ -2235,7 +2237,9 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _should_apply_timeout_after_play(self, outcome, play_seconds: float) -> tuple[bool, str]:
+    def _should_apply_timeout_after_play(
+        self, outcome, play_seconds: float, quarter_before_play: int
+    ) -> tuple[bool, str]:
         """
         Check if timeout modifier should be applied after seeing play result.
 
@@ -2247,10 +2251,14 @@ class PaydirtGameEngine:
         Args:
             outcome: PlayOutcome from the executed play
             play_seconds: Actual seconds used by the play
+            quarter_before_play: Quarter before the play started (to detect quarter changes)
 
         Returns:
             Tuple of (should_apply, message_if_skipped)
         """
+        if quarter_before_play != self.state.quarter:
+            return True, ""
+
         if outcome.result.result_type == ResultType.INCOMPLETE:
             return False, "[Timeout SKIPPED - play was incomplete, clock already stopped]"
 
