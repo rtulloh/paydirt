@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { API_BASE } from '../../config';
 
 const HelpGuide = ({ onBackToMenu }) => {
@@ -90,7 +91,7 @@ const HelpGuide = ({ onBackToMenu }) => {
           prose-td:border prose-td:border-gray-700 prose-td:px-4 prose-td:py-2
           prose-hr:border-gray-700"
         >
-          <ReactMarkdown>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
         </div>
       </div>
 
