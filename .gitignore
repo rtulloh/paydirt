@@ -66,3 +66,7 @@ node_modules/
 seasons/1972/
 seasons/1983/
 .venv310/
+
+# Web frontend build output (regenerated during CI builds)
+paydirt-web/backend/web_static/
+paydirt-web/frontend/dist/

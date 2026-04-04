@@ -50,6 +50,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: true
+      
+      - name: Clean build artifacts (self-hosted runners)
+        run: |
+          rm -rf build/ dist/ paydirt-web/backend/web_static/
+        shell: bash
        
       - name: Set up Python
         uses: actions/setup-python@v5
