@@ -8,6 +8,7 @@ datas = [
     # Include the MIT LICENSE and README files
     ('LICENSE', '.'),
     ('README.md', '.'),
+    ('docs/images', 'docs/images'),
 ]
 
 a = Analysis(

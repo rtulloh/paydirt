@@ -2195,3 +2195,51 @@ Final section should stay.
     assert "This should be removed." not in filtered
     assert "## Building Standalone Executables" not in filtered
     assert "Including code signing info." not in filtered
+
+
+def test_filter_readme_rewrites_image_paths():
+    """Test that image paths are rewritten to use API endpoint."""
+    from routes import _filter_readme_for_guide
+
+    test_content = """# Test
+
+![Main Menu](docs/images/menu.png)
+
+Some text.
+
+![Another Image](docs/images/screenshot.jpg)
+"""
+
+    filtered = _filter_readme_for_guide(test_content)
+
+    assert "![Main Menu](/api/docs/images/menu.png)" in filtered
+    assert "![Another Image](/api/docs/images/screenshot.jpg)" in filtered
+    # The original relative path should be replaced
+    assert "(docs/images/" not in filtered
+
+
+def test_get_doc_image_returns_image():
+    """Test that the image endpoint returns images."""
+    response = client.get("/api/docs/images/menu.png")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+
+
+def test_get_doc_image_rejects_path_traversal():
+    """Test that path traversal attempts are rejected."""
+    # FastAPI normalizes URLs, so ../ gets handled before our code
+    # The important thing is we don't serve files outside docs/images
+    response = client.get("/api/docs/images/..%2Ftest.png")
+    assert response.status_code in [400, 404]  # Either rejected or not found
+
+
+def test_get_doc_image_rejects_invalid_extension():
+    """Test that non-image files are rejected."""
+    response = client.get("/api/docs/images/malicious.exe")
+    assert response.status_code == 400
+
+
+def test_get_doc_image_returns_404_for_missing():
+    """Test that missing images return 404."""
+    response = client.get("/api/docs/images/nonexistent.png")
+    assert response.status_code == 404

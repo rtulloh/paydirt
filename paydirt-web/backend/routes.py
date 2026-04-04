@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -68,11 +69,14 @@ def _get_readme_path() -> Optional[Path]:
 
 def _filter_readme_for_guide(content: str) -> str:
     """
-    Filter README.md content to remove developer-only sections.
+    Filter README.md content to remove developer-only sections and rewrite image paths.
 
     Removes:
     - Project Structure section
     - Building Standalone Executables section (includes Code Signing)
+
+    Rewrites:
+    - Image paths from docs/images/X.png to /api/docs/images/X.png
     """
     lines = content.split("\n")
     filtered_lines = []
@@ -91,6 +95,12 @@ def _filter_readme_for_guide(content: str) -> str:
 
         # Add line if we're not skipping
         if not skip_until_next_h2:
+            # Rewrite image paths to use API endpoint
+            line = re.sub(
+                r"!\[([^\]]*)\]\(docs/images/([^)]+)\)",
+                r"![\1](/api/docs/images/\2)",
+                line,
+            )
             filtered_lines.append(line)
 
     return "\n".join(filtered_lines)
@@ -118,6 +128,65 @@ async def get_guide():
         return GuideResponse(content=filtered_content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading guide: {str(e)}")
+
+
+def _get_docs_path() -> Optional[Path]:
+    """
+    Get the path to the docs directory.
+
+    In bundled mode, docs is in the same directory as other bundled files.
+    In development mode, it's in the project root.
+    """
+    if getattr(sys, "frozen", False):
+        # Bundled mode
+        if hasattr(sys, "_MEIPASS"):
+            docs_path = Path(sys._MEIPASS) / "docs"
+        else:
+            docs_path = Path(os.path.dirname(sys.executable)) / "docs"
+    else:
+        # Development mode
+        docs_path = Path(__file__).parent.parent.parent / "docs"
+
+    return docs_path if docs_path.exists() else None
+
+
+@router.get("/api/docs/images/{image_name}")
+async def get_doc_image(image_name: str):
+    """
+    Serve documentation images.
+
+    Returns images from the docs/images directory for use in the guide.
+    """
+    # Validate image name to prevent path traversal
+    if "/" in image_name or "\\" in image_name or ".." in image_name:
+        raise HTTPException(status_code=400, detail="Invalid image name")
+
+    # Only allow common image extensions
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+    ext = Path(image_name).suffix.lower()
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Invalid image type")
+
+    docs_path = _get_docs_path()
+    if docs_path is None:
+        raise HTTPException(status_code=404, detail="Documentation not available")
+
+    image_path = docs_path / "images" / image_name
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Determine media type
+    media_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
+    media_type = media_types.get(ext, "application/octet-stream")
+
+    return FileResponse(image_path, media_type=media_type)
 
 
 class Team(BaseModel):

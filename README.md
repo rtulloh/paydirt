@@ -20,6 +20,48 @@ If you see "Paydirt is damaged and can't be opened":
 - **Option 1**: Right-click the app → Open → Click "Open" in the dialog
 - **Option 2**: Run in Terminal: `xattr -cr "/Applications/Paydirt.app"`
 
+## Web Interface
+
+The pre-built releases include a web-based graphical interface. When you launch Paydirt, it automatically opens in your browser.
+
+### Main Menu
+
+From the main menu, start a new game or access the user guide.
+
+![Main Menu](docs/images/menu.png)
+
+### Starting a Game
+
+Select a season and choose your teams. Pick which team you want to play as (home or away).
+
+![Team Selection](docs/images/team-select.png)
+
+![Start Game Options](docs/images/start-game-menu.png)
+
+### Coin Toss
+
+Call the coin toss to determine who receives the opening kickoff.
+
+![Coin Toss](docs/images/coin-toss.png)
+
+### Gameplay
+
+The main game screen shows the scoreboard, field position, and play selection.
+
+![Kickoff and Scoreboard](docs/images/kickoff-and-scoreboard.png)
+
+#### Calling Plays
+
+On offense, choose from running plays, passing plays, or special plays:
+
+![Offense Play Selection](docs/images/offense.png)
+
+On defense, select your formation to counter the opponent:
+
+![Defense Formation Selection](docs/images/defense.png)
+
+---
+
 ### Python Installation (Manual)
 
 If you prefer to run from source or a pre-built executable isn't available for your platform:
