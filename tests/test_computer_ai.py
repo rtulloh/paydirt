@@ -1417,30 +1417,39 @@ class TestShouldAcceptPenalty:
 
         assert accept_play is False
 
-    def test_kickoff_penalty_accepts_penalty(self, game, cpu_ai):
-        """CPU should accept kickoff penalty generally."""
+    def test_cpu_selects_best_penalty_option(self, game, cpu_ai):
+        """CPU should select the penalty with auto first down or most yards."""
         from unittest.mock import MagicMock
-        from paydirt.play_resolver import PlayType
 
         outcome = MagicMock()
         outcome.penalty_choice = MagicMock()
         outcome.penalty_choice.offended_team = "offense"
-        outcome.penalty_choice.penalty_options = [MagicMock()]
-        outcome.penalty_choice.penalty_options[0].penalty_type = "DEF"
-        outcome.penalty_choice.penalty_options[0].auto_first_down = False
-        outcome.penalty_choice.penalty_options[0].yards = 5
+
+        # Create two options: DEF 5 (no auto FD) and PI 6 (auto FD)
+        opt1 = MagicMock()
+        opt1.penalty_type = "DEF"
+        opt1.auto_first_down = False
+        opt1.yards = 5
+
+        opt2 = MagicMock()
+        opt2.penalty_type = "PI"
+        opt2.auto_first_down = True
+        opt2.yards = 6
+
+        outcome.penalty_choice.penalty_options = [opt1, opt2]
         outcome.penalty_choice.play_result = MagicMock()
         outcome.penalty_choice.play_result.yards = 0
         outcome.penalty_choice.play_result.turnover = False
         outcome.penalty_choice.play_result.touchdown = False
-        outcome.play_type = PlayType.KICKOFF
-        outcome.field_goal_made = False
+        outcome.play_type = MagicMock()
 
         accept_play, penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
         assert accept_play is False
+        # Should have selected the second option (index 1)
+        assert penalty_idx == 1
 
     def test_no_penalties_defaults_to_accept_play(self, game, cpu_ai):
         """CPU should default to accept play when no penalties available."""
