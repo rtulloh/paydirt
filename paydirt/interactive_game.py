@@ -2590,10 +2590,17 @@ def handle_penalty_decision(
             else:
                 return game.apply_penalty_decision(outcome, accept_play=True)
         else:
-            opt = filtered_penalties[best_penalty_idx]
+            # Use filtered penalties if available, otherwise fall back to original options
+            if filtered_penalties:
+                opt = filtered_penalties[best_penalty_idx]
+            else:
+                opt = penalty_choice.penalty_options[best_penalty_idx] if best_penalty_idx < len(penalty_choice.penalty_options) else penalty_choice.penalty_options[0] if penalty_choice.penalty_options else None
             # Find the original index in penalty_options for apply_penalty_decision
-            original_idx = penalty_choice.penalty_options.index(opt)
-            print(f"\n  >> {cpu_team} accepts penalty: {opt.description}")
+            if opt and opt in penalty_choice.penalty_options:
+                original_idx = penalty_choice.penalty_options.index(opt)
+            else:
+                original_idx = 0 if penalty_choice.penalty_options else None
+            print(f"\n  >> {cpu_team} accepts penalty: {opt.description if opt else 'play result'}")
             if is_fg_penalty:
                 return game.apply_fg_penalty_decision(
                     outcome, accept_play=False, penalty_index=original_idx
@@ -3492,7 +3499,46 @@ def run_interactive_game(
             for year, name, path in available_charts:
                 if team_name.lower() in name.lower():
                     return path
-            raise ValueError(f"Team not found: {team_name}")
+
+        # Parse team positions from command line
+        # --away X means YOU play as X (away position)
+        # --home X means YOU play as X (home position)
+        # If both are specified, the FIRST one determines your team/position
+        human_team_path = None
+        cpu_team_path = None
+
+        # Determine which team the human plays based on command line order
+        # If -H comes first, human plays home; if -A comes first, human plays away
+        # Check command line order by examining sys.argv
+        import sys
+        argv = sys.argv[1:]  # Skip the script name
+        human_is_home_from_args = None
+        
+        # Find the order of -H and -A flags
+        h_index = None
+        a_index = None
+        for i, arg in enumerate(argv):
+            if arg == '-H' or arg == '--home':
+                h_index = i
+            elif arg == '-A' or arg == '--away':
+                a_index = i
+        
+        if h_index is not None and a_index is not None:
+            # Both specified - human plays as the FIRST team listed
+            if h_index < a_index:
+                human_is_home_from_args = True  # -H came first, human plays home
+            else:
+                human_is_home_from_args = False  # -A came first, human plays away
+        elif h_index is not None:
+            # Only -H specified - human plays home
+            human_is_home_from_args = True
+        elif a_index is not None:
+            # Only -A specified - human plays away
+            human_is_home_from_args = False
+        
+        # Use the args-determined value if available, otherwise default
+        if human_is_home_from_args is not None:
+            human_is_home = human_is_home_from_args
 
         # Parse team positions from command line
         # --away X means YOU play as X (away position)
