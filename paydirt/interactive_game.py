@@ -2173,7 +2173,12 @@ def display_play_result(
     if outcome.turnover:
         print(f"  >>> TURNOVER! {def_team} takes over!")
     if outcome.touchdown:
-        print(f"  >>> TOUCHDOWN {off_team}!")
+        # Use the scoring_team field if set, otherwise fall back to off_team
+        scoring_team = getattr(outcome.result, "scoring_team", None)
+        if scoring_team:
+            print(f"  >>> TOUCHDOWN {scoring_team}!")
+        else:
+            print(f"  >>> TOUCHDOWN {off_team}!")
     if outcome.safety:
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
 

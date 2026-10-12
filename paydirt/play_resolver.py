@@ -105,6 +105,9 @@ class PlayResult:
     out_of_bounds: bool = False
     # Original offense yards before penalty (used when defense commits penalty)
     offense_yards: int = 0
+    # Team that scored the touchdown (set by game engine when touchdown occurs)
+    # Use team peripheral.short_name, or None if not a touchdown
+    scoring_team: Optional[str] = None
 
 
 @dataclass

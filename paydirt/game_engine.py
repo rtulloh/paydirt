@@ -1177,6 +1177,12 @@ class PaydirtGameEngine:
                     if recovery_roll == 39:
                         return_yards = 100 - fumble_spot_defense
                         touchdown = True
+                        # Determine scoring team: after switch_possession(), 
+                        # is_home_possession reflects the new defensive team
+                        if self.state.is_home_possession:
+                            result.scoring_team = self.state.home_chart.peripheral.short_name
+                        else:
+                            result.scoring_team = self.state.away_chart.peripheral.short_name
                         self._score_touchdown()
                         self.state.ball_position = 97
                         # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
@@ -1193,6 +1199,12 @@ class PaydirtGameEngine:
 
                         if new_position >= 100 or "TD" in str(int_return_result).upper():
                             touchdown = True
+                            # Determine scoring team: after switch_possession(), 
+                            # is_home_possession reflects the new defensive team
+                            if self.state.is_home_possession:
+                                result.scoring_team = self.state.home_chart.peripheral.short_name
+                            else:
+                                result.scoring_team = self.state.away_chart.peripheral.short_name
                             self._score_touchdown()
                             self.state.ball_position = 97
                             # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
