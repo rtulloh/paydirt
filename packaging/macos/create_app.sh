@@ -5,7 +5,8 @@ set -e
 APP_NAME="Paydirt"
 APP_BUNDLE="${APP_NAME}.app"
 EXECUTABLE="paydirt"
-VERSION="${GITHUB_REF_NAME:-1.0.0}"
+VERSION="${GITHUB_REF_NAME:-1.1.0}"
+VERSION="${VERSION#v}"
 
 # Create .app bundle structure
 mkdir -p "${APP_BUNDLE}/Contents/MacOS"
