@@ -1198,7 +1198,8 @@ class ComputerAI:
         Returns:
             Tuple of (accept_play: bool, penalty_index: Optional[int])
             If accept_play is True, penalty_index is not used.
-            If accept_play is False, penalty_index indicates which penalty to accept.
+            If accept_play is False, penalty_index is an index into
+            outcome.penalty_choice.penalty_options (not the filtered list).
         """
         penalty_choice = outcome.penalty_choice
         play_result = penalty_choice.play_result
@@ -1218,12 +1219,15 @@ class ComputerAI:
                 opt for opt in penalty_choice.penalty_options if opt.penalty_type == "OFF"
             ]
 
+        if not filtered_penalties:
+            return (True, None)
+
         play_yards = play_result.yards
         play_turnover = play_result.turnover
         play_td = play_result.touchdown
 
         accept_play = True
-        best_penalty_idx = 0
+        best_penalty_idx = penalty_choice.penalty_options.index(filtered_penalties[0])
 
         if is_fg_penalty:
             if outcome.field_goal_made:

@@ -2590,23 +2590,18 @@ def handle_penalty_decision(
             else:
                 return game.apply_penalty_decision(outcome, accept_play=True)
         else:
-            # Use filtered penalties if available, otherwise fall back to original options
-            if filtered_penalties:
-                opt = filtered_penalties[best_penalty_idx]
-            else:
-                opt = penalty_choice.penalty_options[best_penalty_idx] if best_penalty_idx < len(penalty_choice.penalty_options) else penalty_choice.penalty_options[0] if penalty_choice.penalty_options else None
-            # Find the original index in penalty_options for apply_penalty_decision
-            if opt and opt in penalty_choice.penalty_options:
-                original_idx = penalty_choice.penalty_options.index(opt)
-            else:
-                original_idx = 0 if penalty_choice.penalty_options else None
-            print(f"\n  >> {cpu_team} accepts penalty: {opt.description if opt else 'play result'}")
+            # The shared AI returns an index into the original penalty options.
+            original_idx = best_penalty_idx
+            opt = penalty_choice.penalty_options[original_idx]
+            print(f"\n  >> {cpu_team} accepts penalty: {opt.description}")
             if is_fg_penalty:
                 return game.apply_fg_penalty_decision(
                     outcome, accept_play=False, penalty_index=original_idx
                 )
             elif is_punt_penalty:
-                return game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+                return game.apply_punt_penalty_decision(
+                    outcome, accept_penalty=True, penalty_index=original_idx
+                )
             elif is_kickoff_penalty:
                 return game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
             else:
