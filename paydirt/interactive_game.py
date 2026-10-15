@@ -16,6 +16,7 @@ from .play_resolver import PlayType, DefenseType, ResultType, is_passing_play
 from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
 from .computer_ai import (
     ComputerAI,
+    create_computer_ai,
     cpu_should_go_for_two,
     cpu_should_onside_kick,
     cpu_should_accept_penalty,
@@ -2780,14 +2781,7 @@ def resume_game(
     away_chart = game.state.away_chart
     home_chart = game.state.home_chart
 
-    # Map difficulty to aggression value - needed for pending score handling
-    difficulty_map = {"easy": 0.3, "medium": 0.5, "hard": 0.7}
-    cpu_aggression = difficulty_map.get(difficulty, 0.5)
-    cpu_ai = ComputerAI(
-        aggression=cpu_aggression,
-        use_analysis=(difficulty == "hard"),
-        ai_behavior=game.season_rules.ai_behavior,
-    )
+    cpu_ai = create_computer_ai(difficulty, game, cpu_is_home=not human_is_home)
 
     # Try to load AI opponent model data (for persistent learning)
     save_dir = os.path.dirname(filepath) or "."
@@ -2967,11 +2961,6 @@ def resume_game(
         print(f"  {outcome.description}")
         outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
 
-    # Set the AI's team for analysis if in hard mode
-    use_analysis = difficulty == "hard"
-    if use_analysis:
-        cpu_team_chart = home_chart if not human_is_home else away_chart
-        cpu_ai.set_team(cpu_team_chart)
 
     # Create easy mode helper if in easy mode
     if difficulty == "easy":
@@ -3102,7 +3091,7 @@ def resume_game(
                 print("  Use 'python -m paydirt --load' to resume")
                 continue
 
-            def_type = computer_select_defense(game)
+            def_type = cpu_ai.select_defense(game)
             print(f"  Defense shows: {def_type.value.replace('_', ' ').title()}")
         else:
             call_timeout = False
@@ -3195,6 +3184,8 @@ def resume_game(
         time_before_play = game.state.time_remaining
         quarter_before_play = game.state.quarter
         offense_was_home = game.state.is_home_possession
+        down_before_play = game.state.down
+        distance_before_play = game.state.yards_to_go
         two_min_warning_before = game.state.two_minute_warning_called
 
         punt_short_drop = False
@@ -3224,10 +3215,9 @@ def resume_game(
             if is_human_offense:
                 from paydirt.play_resolver import is_passing_play
 
-                game_state = game.state
                 cpu_ai.opponent_model.record_opponent_play(
-                    down=game_state.down,
-                    distance=game_state.yards_to_go,
+                    down=down_before_play,
+                    distance=distance_before_play,
                     play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
                     yards_gained=outcome.yards_gained,
                     is_pass=is_passing_play(play_type),
@@ -3435,9 +3425,6 @@ def run_interactive_game(
     COMPACT_MODE = compact
     AI_HELPER_ENABLED = difficulty == "easy"
 
-    # Map difficulty to aggression value
-    difficulty_map = {"easy": 0.3, "medium": 0.5, "hard": 0.7}
-    cpu_aggression = difficulty_map.get(difficulty, 0.5)
 
     # Easy mode helper - available in easy mode
     easy_mode_helper = None
@@ -3706,20 +3693,7 @@ def run_interactive_game(
         else:
             first_half_kicking_home = False  # Away (human) kicks
 
-    # Create CPU AI for computer opponent decisions
-    # Enable analysis/opponent modeling in hard mode
-    use_analysis = difficulty == "hard"
-    cpu_ai = ComputerAI(
-        aggression=cpu_aggression,
-        use_analysis=use_analysis,
-        ai_behavior=game.season_rules.ai_behavior,
-    )
-
-    # Set the AI's team for analysis
-    if use_analysis:
-        # CPU AI needs to know its own team (the team it's controlling)
-        cpu_team_chart = home_chart if not human_is_home else away_chart
-        cpu_ai.set_team(cpu_team_chart)
+    cpu_ai = create_computer_ai(difficulty, game, cpu_is_home=not human_is_home)
 
     # Create easy mode helper if in easy mode
     if difficulty == "easy":
@@ -3910,7 +3884,7 @@ def run_interactive_game(
                 continue
 
             # Computer selects defense (hidden)
-            def_type = computer_select_defense(game)
+            def_type = cpu_ai.select_defense(game)
 
             print(f"  Defense shows: {def_type.value.replace('_', ' ').title()}")
         else:
@@ -4021,6 +3995,8 @@ def run_interactive_game(
         time_before_play = game.state.time_remaining
         quarter_before_play = game.state.quarter
         offense_was_home = game.state.is_home_possession
+        down_before_play = game.state.down
+        distance_before_play = game.state.yards_to_go
         two_min_warning_before = game.state.two_minute_warning_called
 
         # Initialize punt options
@@ -4091,10 +4067,9 @@ def run_interactive_game(
             if is_human_offense:
                 from paydirt.play_resolver import is_passing_play
 
-                game_state = game.state
                 cpu_ai.opponent_model.record_opponent_play(
-                    down=game_state.down,
-                    distance=game_state.yards_to_go,
+                    down=down_before_play,
+                    distance=distance_before_play,
                     play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
                     yards_gained=outcome.yards_gained,
                     is_pass=is_passing_play(play_type),

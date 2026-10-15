@@ -784,20 +784,12 @@ class OpponentModel:
         self.is_comeback_mode: bool = False
     
     def update_game_state(self, score_diff: int, quarter: int, time_remaining: float):
-        """Update game state awareness."""
+        """Update awareness using the opponent offense's score advantage."""
         self.score_differential_history.append(score_diff)
         
-        # Determine game state
-        if quarter >= 4 and time_remaining < 5.0:
-            if score_diff > 0:
-                self.is_protecting_lead = True
-                self.is_comeback_mode = False
-            elif score_diff < 0:
-                self.is_comeback_mode = True
-                self.is_protecting_lead = False
-        else:
-            self.is_protecting_lead = False
-            self.is_comeback_mode = False
+        late_game = quarter >= 4 and time_remaining < 5.0
+        self.is_protecting_lead = late_game and score_diff > 0
+        self.is_comeback_mode = late_game and score_diff < 0
     
     def predict_defense(self, down: int, distance: int, score_diff: int,
                        quarter: int, time_remaining: float) -> str:
@@ -805,6 +797,7 @@ class OpponentModel:
         Predict the best defense to use against opponent.
         
         Considers both opponent tendencies and game state.
+        score_diff is the opponent offense's score minus our defense's score.
         """
         self.update_game_state(score_diff, quarter, time_remaining)
         

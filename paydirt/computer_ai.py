@@ -894,9 +894,9 @@ class ComputerAI:
         # ============================================================
 
         if self.use_analysis and self.opponent_model:
-            # Use opponent model to predict and choose best defense
+            # The model describes the opponent (offense), not our defense.
             defense_rec = self.opponent_model.predict_defense(
-                down, ytg, score_diff, quarter, time_left
+                down, ytg, -score_diff, quarter, time_left
             )
             # Convert to DefenseType
             defense_map = {
@@ -1274,6 +1274,30 @@ class ComputerAI:
                 accept_play = False
 
         return (accept_play, best_penalty_idx)
+
+
+def create_computer_ai(
+    difficulty: str, game: PaydirtGameEngine, cpu_is_home: bool
+) -> ComputerAI:
+    """Create a difficulty-configured opponent for any game interface.
+
+    Args:
+        difficulty: Easy, medium, or hard; unknown values default to medium.
+        game: Engine supplying season behavior and team charts.
+        cpu_is_home: Whether the CPU controls the home team.
+
+    Returns:
+        AI with season settings and, in hard mode, its own team analyzer.
+    """
+    difficulty = (difficulty or "medium").lower()
+    aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.7}.get(difficulty, 0.5)
+    ai = ComputerAI(
+        aggression=aggression,
+        use_analysis=difficulty == "hard",
+        ai_behavior=game.season_rules.ai_behavior,
+    )
+    ai.set_team(game.state.home_chart if cpu_is_home else game.state.away_chart)
+    return ai
 
 
 # Convenience functions for backward compatibility

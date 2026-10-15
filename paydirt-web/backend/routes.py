@@ -33,8 +33,8 @@ SEASONS_DIR = get_builtin_seasons_path()
 
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
-from paydirt.play_resolver import PlayType, DefenseType
-from paydirt.computer_ai import ComputerAI, cpu_should_accept_penalty
+from paydirt.play_resolver import PlayType, DefenseType, is_passing_play
+from paydirt.computer_ai import create_computer_ai, cpu_should_accept_penalty
 from paydirt.season_rules import load_season_rules
 
 router = APIRouter()
@@ -718,8 +718,6 @@ async def new_game(request: NewGameRequest):
     engine = PaydirtGameEngine(home_chart, away_chart)
 
     difficulty = request.difficulty.lower() if request.difficulty else "medium"
-    difficulty_map = {"easy": 0.3, "medium": 0.5, "hard": 0.7}
-    cpu_aggression = difficulty_map.get(difficulty, 0.5)
 
     game = {
         "game_id": game_id,
@@ -729,13 +727,12 @@ async def new_game(request: NewGameRequest):
         "player_team_id": player_team_id,
         "cpu_team_id": cpu_team_id,
         "engine": engine,
-        "ai": ComputerAI(aggression=cpu_aggression),
+        "ai": create_computer_ai(difficulty, engine, cpu_is_home=home_team.id == cpu_team_id),
         "created_at": datetime.now(),
         "season": request.season,
         "difficulty": difficulty,
     }
 
-    game["ai"].set_team(home_chart if home_team.id == cpu_team_id else away_chart)
 
     games[game_id] = game
 
@@ -980,6 +977,8 @@ async def execute_play(request: PlayRequest):
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
     quarter_before = engine.state.quarter
+    down_before = engine.state.down
+    distance_before = engine.state.yards_to_go
 
     # Map play types to display keys for logging
     offense_key_map = {
@@ -1026,6 +1025,15 @@ async def execute_play(request: PlayRequest):
         punt_short_drop=request.short_drop,
         punt_coffin_corner_yards=request.coffin_corner_yards,
     )
+
+    if player_offense and game["ai"].opponent_model is not None:
+        game["ai"].opponent_model.record_opponent_play(
+            down=down_before,
+            distance=distance_before,
+            play_type=offense_play.value,
+            yards_gained=result.yards_gained,
+            is_pass=is_passing_play(offense_play),
+        )
 
     # Log play in CLI compact format with teams and field position
     field_pos = engine.state.field_position_str()
@@ -1793,8 +1801,6 @@ async def load_replay(request: LoadReplayRequest):
     engine = PaydirtGameEngine(home_chart, away_chart)
 
     difficulty = replay_data.get("difficulty", "medium")
-    difficulty_map = {"easy": 0.3, "medium": 0.5, "hard": 0.7}
-    cpu_aggression = difficulty_map.get(difficulty, 0.5)
 
     new_game = {
         "game_id": game_id,
@@ -1804,14 +1810,15 @@ async def load_replay(request: LoadReplayRequest):
         "player_team_id": game_state.get("human_team_id", home_team_id),
         "cpu_team_id": game_state.get("cpu_team_id", away_team_id),
         "engine": engine,
-        "ai": ComputerAI(aggression=cpu_aggression),
+        "ai": create_computer_ai(
+            difficulty, engine, cpu_is_home=home_team.id == game_state.get("cpu_team_id", away_team_id)
+        ),
         "created_at": datetime.now(),
         "season": season,
         "difficulty": difficulty,
         "play_history": replay_data.get("play_history", []),
     }
 
-    new_game["ai"].set_team(home_chart if home_team.id == new_game["cpu_team_id"] else away_chart)
 
     # Restore game state from replay
     state = engine.state

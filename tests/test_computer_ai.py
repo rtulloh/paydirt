@@ -4,7 +4,6 @@ Tests for computer AI offensive and defensive play selection.
 
 import os
 import pytest
-from pathlib import Path
 from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI
@@ -19,12 +18,7 @@ from paydirt.chart_loader import (
 )
 from paydirt.season_rules import AIBehavior, TwoMinuteDrill, HurryUp, ClockKilling, AIStrategic
 
-# Check if 1983/Bears season data exists
-_seasons_dir = Path(__file__).parent.parent / "seasons"
-_has_1983_bears = (_seasons_dir / "1983" / "Bears").exists()
-requires_1983_bears = pytest.mark.skipif(
-    not _has_1983_bears, reason="1983/Bears season data not available"
-)
+from tests.game_fixtures import make_sample_game
 
 
 def create_mock_chart(short_name: str = "TEST", team_name: str = "Test Team") -> TeamChart:
@@ -982,32 +976,18 @@ class TestAIWithAnalysis:
         assert ai.use_analysis is False
         assert ai.opponent_model is None
 
-    @requires_1983_bears
     def test_ai_set_team(self):
         """AI can have team set for chart analysis."""
-        from pathlib import Path
-        from paydirt.chart_loader import load_team_chart
-
         ai = ComputerAI(aggression=0.5, use_analysis=True)
-        bears = load_team_chart(Path("seasons/1983/Bears"))
-        ai.set_team(bears)
+        sample = make_sample_game().state.home_chart
+        ai.set_team(sample)
 
         assert ai.team_analyzer is not None
 
-    @requires_1983_bears
     def test_defense_uses_opponent_model(self):
         """Defense selection uses opponent model when enabled."""
-        from pathlib import Path
-        from paydirt.chart_loader import load_team_chart
-
         ai = ComputerAI(aggression=0.5, use_analysis=True)
-        bears = load_team_chart(Path("seasons/1983/Bears"))
-
-        # Set up game state
-        game = PaydirtGameEngine(
-            away_chart=bears,
-            home_chart=bears,
-        )
+        game = make_sample_game()
         game.state.down = 3
         game.state.yards_to_go = 10
         game.state.ball_position = 50
