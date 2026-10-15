@@ -1,5 +1,29 @@
 # Paydirt Release Notes
 
+## v1.2.0
+
+### Game Flow and Rules
+- End sudden-death overtime immediately after a winning field goal or safety, without a subsequent kick.
+- Complete PAT and kickoff sequences after kickoff-return touchdowns, including consecutive return touchdowns.
+- Correct offensive fumble-recovery advances: net yardage, first downs, fourth-down possession, and touchdowns use the final recovery position.
+- Attribute defensive end-zone fumble-recovery touchdowns to the correct team.
+- Preserve replacement untimed downs after repeated accepted defensive penalties, and let the engine finish periods after clean untimed downs.
+- Avoid phantom untimed downs after clean Hail Mary plays.
+- Correct punt penalty previews and handling of declined kicking-team penalties.
+
+### Clearer Reporting
+- Show overtime scoring separately from the fourth quarter, including scoreless and multiple OT periods.
+- Use explicit overtime labels in CLI status and scoring summaries.
+- Explain offensive fumble-recovery advances and show recovery-return dice in the CLI.
+- Explain QB-sneak special-rule outcomes in the CLI and web interface.
+
+### Validation
+- Core: 2,201 tests passed, 8 skipped; backend: 139 passed; frontend: 242 passed, 1 skipped.
+- Generated 16-week season: all 224 games passed, including 11 overtime games. This is not the historical 1983 schedule.
+- All 14 CLI integration matchups and Ruff checks passed.
+
+---
+
 ## Unreleased
 
 ### Spike Ball as Play Modifier
