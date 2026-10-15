@@ -1101,13 +1101,16 @@ class PaydirtGameEngine:
 
                     return_yards = self._parse_return_yards(int_return_result, fumble_spot)
                     new_position = fumble_spot + return_yards
-                    new_position = clamp_ball_position(new_position)
-                    self.state.ball_position = new_position
+                    self.state.ball_position = clamp_ball_position(new_position)
 
                     if new_position >= 100 or "TD" in str(int_return_result).upper():
                         touchdown = True
+                        result.scoring_team = off_team
                         self._score_touchdown()
                         self.state.ball_position = 97
+                    elif new_position <= 0:
+                        safety = True
+                        self._score_safety()
 
                     result.fumble_return_yards = return_yards
                     result.fumble_return_dice = return_dice
@@ -1135,29 +1138,43 @@ class PaydirtGameEngine:
                         result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at the {fumble_spot} ({off_team} ball)"
                     result.description += f" | Recovery: {recovery_roll}"
 
-                # Check down/distance after recovery
-                yards_gained_to_spot = fumble_spot - ball_pos_before
-
-                if down_before == 4:
-                    if yards_gained_to_spot < ytg_before:
-                        # Turnover on downs even though offense recovered
+                # The line to gain is measured from the final recovery/advance spot.
+                final_position = self.state.ball_position
+                net_yards = yards + result.fumble_return_yards
+                if not touchdown and not safety:
+                    if net_yards >= ytg_before:
+                        first_down = True
+                        self.state.down = 1
+                        self.state.yards_to_go = min(10, 100 - final_position)
+                        self.state.offense_stats.first_downs += 1
+                    elif down_before == 4:
                         turnover = True
                         self.state.switch_possession()
-                        self.state.ball_position = 100 - fumble_spot
-                    else:
-                        first_down = True
-                        self.state.down = 1
-                        self.state.yards_to_go = 10
-                        self.state.offense_stats.first_downs += 1
-                else:
-                    if yards_gained_to_spot >= ytg_before:
-                        first_down = True
-                        self.state.down = 1
-                        self.state.yards_to_go = 10
-                        self.state.offense_stats.first_downs += 1
+                        self.state.ball_position = 100 - final_position
                     else:
                         self.state.next_down()
-                        self.state.yards_to_go = max(1, ytg_before - yards_gained_to_spot)
+                        self.state.yards_to_go = max(1, ytg_before - net_yards)
+
+                if result.fumble_return_dice:
+                    spot = format_field_position_with_team(fumble_spot, off_team, def_team)
+                    end_spot = format_field_position_with_team(
+                        new_position, off_team, def_team
+                    )
+                    net_description = (
+                        f"net gain {net_yards} yards" if net_yards >= 0
+                        else f"net loss {-net_yards} yards"
+                    )
+                    marker = (
+                        " TOUCHDOWN!" if touchdown else " SAFETY!" if safety
+                        else " FIRST DOWN!" if first_down
+                        else " TURNOVER ON DOWNS!" if turnover else ""
+                    )
+                    result.rule_explanation = (
+                        f"Recovery roll {recovery_roll} allows an interception-chart advance. "
+                        f"Fumble at {spot}, recovered by {off_team}, "
+                        f"advanced {result.fumble_return_yards} yards to {end_spot} "
+                        f"({net_description}).{marker}"
+                    )
             else:
                 # Defense recovers - fumble lost
                 turnover = True
@@ -1393,6 +1410,8 @@ class PaydirtGameEngine:
             turnover, touchdown, safety, first_down = self._handle_fumble(
                 result, self.state.ball_position, yards, down_before, self.state.yards_to_go
             )
+            if result.fumble_recovered:
+                yards += result.fumble_return_yards
 
         elif result.result_type == ResultType.SACK:
             self.state.offense_stats.sacks += 1
@@ -1564,7 +1583,7 @@ class PaydirtGameEngine:
             else:
                 self.state.offense_stats.rushing_yards += yards
 
-        if first_down:
+        if first_down and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
 
         if turnover:
@@ -2039,6 +2058,8 @@ class PaydirtGameEngine:
             turnover, touchdown, safety, first_down = self._handle_fumble(
                 result, ball_pos_before, yards, down_before, ytg_before, txn
             )
+            if result.fumble_recovered:
+                yards += result.fumble_return_yards
 
         elif result.result_type == ResultType.INCOMPLETE:
             self.state.next_down()

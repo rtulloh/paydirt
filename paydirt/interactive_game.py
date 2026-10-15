@@ -1681,6 +1681,12 @@ def display_play_result(
                         result_str = f"FUMBLE - Recovered! {txn.yards_gained} yds"
                     else:
                         result_str = "FUMBLE - Recovered!"
+                    if txn.first_down:
+                        special_marker = " FIRST DOWN!"
+                    elif txn.touchdown:
+                        special_marker = " ★ TOUCHDOWN!"
+                    elif txn.safety:
+                        special_marker = " ★ SAFETY!"
             elif txn.touchdown:
                 result_str = "TOUCHDOWN!"
                 special_marker = " ★ TOUCHDOWN!"
@@ -1735,7 +1741,9 @@ def display_play_result(
                 print(f"► {play_name.upper()}: {result_str}{special_marker}")
 
             # Line 2: Action line for turnovers (interception/fumble returns)
-            if txn.has_event_type(EventType.INTERCEPTION):
+            if outcome.result.rule_explanation:
+                print(f"  → {outcome.result.rule_explanation}")
+            elif txn.has_event_type(EventType.INTERCEPTION):
                 int_event = txn.get_events_by_type(EventType.INTERCEPTION)[0]
                 ret_events = txn.get_events_by_type(EventType.INT_RETURN)
                 if ret_events:
@@ -1817,7 +1825,7 @@ def display_play_result(
                 if recovery_events:
                     rec_event = recovery_events[0]
                     rec_result = "kept" if not txn.turnover else "lost"
-                    if txn.turnover:
+                    if txn.turnover or txn.has_event_type(EventType.FUMBLE_RETURN):
                         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                         ret_yards = ret_events[0].yards if ret_events else 0
                         ret_dice = ret_events[0].dice_roll if ret_events else 0
@@ -1990,7 +1998,8 @@ def display_play_result(
                 if outcome.turnover:
                     extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{fumble_return}'
                 elif fumble_return > 0:
-                    extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{fumble_return}'
+                    return_dice = outcome.result.fumble_return_dice
+                    extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{return_dice}→{fumble_return}'
                 else:
                     extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}"'
 
