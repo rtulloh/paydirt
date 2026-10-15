@@ -154,6 +154,29 @@ class PlayOutcome:
 - CLI in `cli.py`, game engine in `game_engine.py`
 - Tests mirror source structure in `tests/` directory
 
+### Required Test-First Workflow
+
+For bug fixes and new behavior, write the test cases **before changing production
+code**. This is the default requirement; the user should not need to repeat it
+in prompts.
+
+1. Add self-contained regressions that express the intended behavior, using
+   synthetic fixtures or the public sample teams only. Include relevant edge
+   cases and passing controls.
+2. Run the new tests against the unchanged implementation. Demonstrate that
+   they fail for the expected behavior, not because of broken fixtures, missing
+   data, or unrelated setup errors. Report the baseline failures and controls.
+3. Make the production fix, then rerun the focused tests and relevant regression
+   suites. Follow the full validation checklist above before any push.
+4. Disclose every change to an existing test expectation and explain why the
+   previous expectation was wrong. Never weaken assertions or add skips simply
+   to make a failing implementation pass.
+
+If a meaningful failing test cannot be written or run, explain the limitation
+and obtain explicit approval before proceeding with the production change.
+Documentation-only and release-metadata changes do not require inventing a
+failing behavior test; run applicable existing checks instead.
+
 ### Test Style
 
 - Use pytest fixtures for setup:
