@@ -2368,8 +2368,8 @@ class PaydirtGameEngine:
         if self.state.quarter > quarter_before_play and time_after_timeout > 0:
             self.state.quarter = quarter_before_play
 
-        # Ensure quarter doesn't end prematurely if there was time for the play
-        if time_before_play > 0 and self.state.quarter <= 4:
+        # Reopen regulation only if the adjusted clock actually preserves time.
+        if time_after_timeout > 0 and self.state.quarter <= 4:
             self.state.game_over = False
 
     def _apply_spike(self, time_before_play: float, quarter_before_play: int):
@@ -2416,8 +2416,8 @@ class PaydirtGameEngine:
         if self.state.quarter > quarter_before_play and time_after_spike > 0:
             self.state.quarter = quarter_before_play
 
-        # Ensure quarter doesn't end prematurely if there was time for the play
-        if time_before_play > 0 and self.state.quarter <= 4:
+        # A spike cannot reopen a finished game when its adjusted clock is 0:00.
+        if time_after_spike > 0 and self.state.quarter <= 4:
             self.state.game_over = False
 
     def _handle_hail_mary(self) -> PlayOutcome:

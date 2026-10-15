@@ -1,5 +1,21 @@
 # Paydirt Release Notes
 
+## v1.3.0
+
+### Gameplay Fixes
+- Correct down and distance after accepted field-goal penalties, including first downs and half-distance enforcement. A defensive five-yard penalty on 4th & 8 now produces 4th & 3.
+- Report accepted field-goal penalties as penalties rather than displaying the discarded kick as a miss, score, or blocked attempt.
+- Preserve the engine game-over flag when a timeout or spike adjustment still leaves the clock at 0:00; reopen regulation only when time actually remains.
+
+### Regression Validation
+- Add `python3 tests/run_full_season.py`: deterministic generated 16-week/224-game 1983 validation using real engine rules, dice, and CLI flow, without saving standings. This is not the historical NFL schedule.
+- Check final game and untimed-down flags, period-score totals, scoring logs, and absence of kickoffs after game end; failures report the matchup and seed and return a nonzero exit status.
+- Require the complete regression checklist, including all 224 season games, before every push in `AGENTS.md`.
+- Add 115 regression cases covering field-goal penalties, clock modifiers, seeded full-game reproductions, and the season runner. Existing test expectations are unchanged.
+- Core: 2,312 passed, 8 skipped; backend: 143 passed; frontend: 242 passed, 1 skipped. All 14 CLI matchups and 224 generated-season games passed, including 11 overtime games and one tie. Build and lint passed.
+
+---
+
 ## v1.2.0
 
 ### Game Flow and Rules

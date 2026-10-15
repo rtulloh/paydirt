@@ -30,6 +30,30 @@ pytest --cov=paydirt --cov-report=term-missing
 pytest -v --tb=short
 ```
 
+### Required Full Regression Before Any Push
+
+Before **every push**, including tag/release pushes, run all of the following
+from the repository root. Do not push if any command fails; investigate and fix
+failures first. Disclose existing skips and warnings rather than hiding them.
+
+```bash
+python3 -m pytest tests/ -q -o addopts= --tb=short -rs --cov=paydirt --cov-report=term
+(cd paydirt-web/backend && python3 -m pytest tests/ -q -o addopts= --tb=short)
+(cd paydirt-web/frontend && npm test -- --run)
+(cd paydirt-web/frontend && npm run build)
+ruff check paydirt/ tests/ paydirt-web/backend/
+python3 tests/run_all_games.py
+python3 tests/run_full_season.py
+```
+
+`tests/run_full_season.py` runs a deterministic, generated 16-week/224-game
+1983 schedule through real engine rules, dice, and CLI flow. It is **not** the
+historical NFL schedule. It checks final game/untimed-down flags, period and
+scoring-log totals, and rejects kickoffs after game end. It never saves standings.
+Failures include the matchup and seed for reproduction, and the script exits
+nonzero. The runner requires pytest and the complete checked-in 1983 team data.
+All 224 games must pass before pushing; a partial run is not sufficient.
+
 ### Test Configuration (from pyproject.toml)
 
 - Test path: `tests/`
