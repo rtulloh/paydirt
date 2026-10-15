@@ -28,7 +28,7 @@ class TeamStats:
     first_downs: int = 0
     total_yards: int = 0
     rushing_yards: int = 0
-    passing_yards: int = 0
+    passing_yards: int = 0  # Gross passing; sacks are recorded separately.
     turnovers: int = 0
     penalties: int = 0
     penalty_yards: int = 0
@@ -36,6 +36,11 @@ class TeamStats:
     sack_yards: int = 0
     interceptions_thrown: int = 0
     fumbles_lost: int = 0
+
+    @property
+    def net_passing_yards(self) -> int:
+        """Return team passing yardage after sack losses, without altering saves."""
+        return self.passing_yards - self.sack_yards
 
 
 @dataclass

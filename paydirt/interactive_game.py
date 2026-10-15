@@ -425,7 +425,10 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
         f"|  {'  Rushing':20}  |  {away_stats.rushing_yards:^12}  |  {home_stats.rushing_yards:^12}  |"
     )
     print(
-        f"|  {'  Passing':20}  |  {away_stats.passing_yards:^12}  |  {home_stats.passing_yards:^12}  |"
+        f"|  {'  Net Passing':20}  |  {away_stats.net_passing_yards:^12}  |  {home_stats.net_passing_yards:^12}  |"
+    )
+    print(
+        f"|  {'  Gross Passing':20}  |  {away_stats.passing_yards:^12}  |  {home_stats.passing_yards:^12}  |"
     )
     # Calculate turnovers as sum of interceptions thrown + fumbles lost
     away_turnovers = away_stats.interceptions_thrown + away_stats.fumbles_lost
@@ -441,9 +444,9 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     print(
         f"|  {'Penalty Yards':20}  |  {away_stats.penalty_yards:^12}  |  {home_stats.penalty_yards:^12}  |"
     )
-    print(f"|  {'Sacks':20}  |  {away_stats.sacks:^12}  |  {home_stats.sacks:^12}  |")
+    print(f"|  {'Sacks Allowed':20}  |  {away_stats.sacks:^12}  |  {home_stats.sacks:^12}  |")
     print(
-        f"|  {'Sack Yards':20}  |  {away_stats.sack_yards:^12}  |  {home_stats.sack_yards:^12}  |"
+        f"|  {'Sack Yards Lost':20}  |  {away_stats.sack_yards:^12}  |  {home_stats.sack_yards:^12}  |"
     )
     print("+" + "-" * 58 + "+")
 

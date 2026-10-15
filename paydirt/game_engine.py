@@ -1304,6 +1304,46 @@ class PaydirtGameEngine:
             return min(yards, 100 - ball_position)
         return yards
 
+    @staticmethod
+    def _record_scrimmage_yardage(
+        stats: TeamStats, play_type: PlayType, result: PlayResult,
+        yards: int, ball_position: int,
+    ) -> None:
+        """Credit signed offensive yardage to the team that snapped the ball.
+
+        Return yardage after a defensive recovery/interception is not offense.
+        QB-time identifies a passer fumble: at/behind the line it is a sack,
+        beyond the line it is rushing. Other fumbles retain the play category.
+        """
+        if result.result_type not in (
+            ResultType.YARDS, ResultType.BREAKAWAY, ResultType.TOUCHDOWN,
+            ResultType.FUMBLE, ResultType.QB_SCRAMBLE, ResultType.SACK,
+        ):
+            return
+        credited_yards = max(-ball_position, min(yards, 100 - ball_position))
+        stats.total_yards += credited_yards
+        qt_fumble = result.result_type == ResultType.FUMBLE and result.qb_scramble_dice > 0
+        is_sack = (
+            result.result_type == ResultType.SACK
+            or (result.result_type == ResultType.QB_SCRAMBLE and yards < 0)
+            or (qt_fumble and result.yards <= 0)
+        )
+        if is_sack:
+            loss = min(max(0, -result.yards), ball_position)
+            stats.sacks += 1
+            stats.sack_yards += loss
+            # Any offensive recovery advance is separate from the sack loss.
+            stats.rushing_yards += credited_yards + loss
+        elif result.result_type == ResultType.QB_SCRAMBLE or qt_fumble:
+            stats.rushing_yards += credited_yards
+        elif play_type in (
+            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS,
+            PlayType.SCREEN, PlayType.TE_SHORT_LONG, PlayType.HAIL_MARY,
+        ):
+            stats.passing_yards += credited_yards
+        else:
+            stats.rushing_yards += credited_yards
+
     def run_play(
         self,
         play_type: PlayType,
@@ -1359,20 +1399,12 @@ class PaydirtGameEngine:
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
         ball_pos_before = self.state.ball_position
+        offense_stats = self.state.offense_stats
 
         # Resolve the play using charts
         result = resolve_play(
             self.state.possession_team, self.state.defense_team, play_type, defense_type
         )
-
-        # Determine if this is a running or passing play
-        is_pass = play_type in [
-            PlayType.SHORT_PASS,
-            PlayType.MEDIUM_PASS,
-            PlayType.LONG_PASS,
-            PlayType.SCREEN,
-            PlayType.TE_SHORT_LONG,
-        ]
 
         # Process the result
         yards = result.yards
@@ -1444,8 +1476,6 @@ class PaydirtGameEngine:
                     yards = min(yards, 100 - ball_pos_before)
 
         elif result.result_type == ResultType.SACK:
-            self.state.offense_stats.sacks += 1
-            self.state.offense_stats.sack_yards += abs(yards)
             self.state.ball_position += yards  # yards is negative
             if self.state.ball_position <= 0:
                 safety = True
@@ -1498,13 +1528,13 @@ class PaydirtGameEngine:
                 )
             else:
                 self.state.offense_stats.penalties += 1
-                self.state.offense_stats.penalty_yards += penalty_result.yards
+                self.state.offense_stats.penalty_yards += abs(new_pos - ball_pos_numeric)
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 # Update result description with penalty details
                 result.description = penalty_result.description
-                yards = -penalty_result.yards  # For outcome reporting
+                yards = new_pos - ball_pos_numeric  # Actual enforced distance.
                 if self.state.ball_position <= 0:
                     safety = True
                     self._score_safety()
@@ -1531,22 +1561,22 @@ class PaydirtGameEngine:
             if penalty_result.is_false_start:
                 # No-huddle false start: DEF penalty flipped to OFF 5
                 self.state.offense_stats.penalties += 1
-                self.state.offense_stats.penalty_yards += penalty_result.yards
+                self.state.offense_stats.penalty_yards += abs(new_pos - ball_pos_numeric)
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 result.description = penalty_result.description
-                yards = -penalty_result.yards  # Offensive penalty = negative yards
+                yards = new_pos - ball_pos_numeric
             else:
                 self.state.defense_stats.penalties += 1
-                self.state.defense_stats.penalty_yards += penalty_result.yards
+                self.state.defense_stats.penalty_yards += abs(new_pos - ball_pos_numeric)
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 first_down = got_first
                 # Update result description with penalty details
                 result.description = penalty_result.description
-                yards = penalty_result.yards  # For outcome reporting
+                yards = new_pos - ball_pos_numeric
 
                 # Check for untimed down rule: defensive penalty at 0:00 means extra play
                 result.description = self.check_untimed_down_for_defensive_penalty(
@@ -1570,6 +1600,7 @@ class PaydirtGameEngine:
                 result.description = f"Pass interference, {yards} yards - automatic first down"
 
             self.state.defense_stats.penalties += 1
+            yards = new_pos - ball_pos_numeric
             self.state.defense_stats.penalty_yards += yards
             self.state.ball_position = new_pos
             self.state.down = new_down
@@ -1603,21 +1634,14 @@ class PaydirtGameEngine:
             # Incomplete pass - no yardage, next down
             self.state.next_down()
 
-        # Update stats
-        if yards > 0 and not turnover and result.result_type not in (
-            ResultType.PENALTY_OFFENSE, ResultType.PENALTY_DEFENSE, ResultType.PASS_INTERFERENCE,
-        ):
-            self.state.offense_stats.total_yards += yards
-            if is_pass and result.result_type != ResultType.QB_SCRAMBLE:
-                self.state.offense_stats.passing_yards += yards
-            else:
-                self.state.offense_stats.rushing_yards += yards
+        # Resolve possession/scoring first, but credit the original offense.
+        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
 
         if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
 
         if turnover:
-            self.state.offense_stats.turnovers += 1
+            offense_stats.turnovers += 1
 
         outcome = PlayOutcome(
             play_type=play_type,
@@ -1907,12 +1931,12 @@ class PaydirtGameEngine:
                     )
 
                 self.state.defense_stats.penalties += 1
-                self.state.defense_stats.penalty_yards += penalty_opt.yards
+                self.state.defense_stats.penalty_yards += new_pos - ball_pos_numeric
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 first_down = True
-                yards = penalty_opt.yards
+                yards = new_pos - ball_pos_numeric
 
                 # Check for untimed down rule: PI (defensive penalty) at 0:00 means extra play
                 description = self.check_untimed_down_for_defensive_penalty(description)
@@ -1931,12 +1955,12 @@ class PaydirtGameEngine:
                     auto_first_down=penalty_opt.auto_first_down,
                 )
                 self.state.offense_stats.penalties += 1
-                self.state.offense_stats.penalty_yards += penalty_result.yards
+                self.state.offense_stats.penalty_yards += abs(new_pos - ball_pos_numeric)
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 description = penalty_result.description
-                yards = -penalty_result.yards
+                yards = new_pos - ball_pos_numeric
                 first_down = False
 
             elif penalty_opt.penalty_type == "DEF":
@@ -1953,13 +1977,13 @@ class PaydirtGameEngine:
                     auto_first_down=penalty_opt.auto_first_down,
                 )
                 self.state.defense_stats.penalties += 1
-                self.state.defense_stats.penalty_yards += penalty_result.yards
+                self.state.defense_stats.penalty_yards += abs(new_pos - ball_pos_numeric)
                 self.state.ball_position = new_pos
                 self.state.down = new_down
                 self.state.yards_to_go = new_ytg
                 first_down = got_first
                 description = penalty_result.description
-                yards = penalty_result.yards
+                yards = new_pos - ball_pos_numeric
 
                 # Check for untimed down rule: defensive penalty at 0:00 means extra play
                 description = self.check_untimed_down_for_defensive_penalty(description)
@@ -2013,6 +2037,7 @@ class PaydirtGameEngine:
         This is a helper method that applies the result of a play (after penalty decisions)
         to the game state. It handles all result types (yards, turnovers, TDs, etc.)
         """
+        offense_stats = self.state.offense_stats
         yards = result.yards
         turnover = result.turnover
         touchdown = result.touchdown
@@ -2079,15 +2104,6 @@ class PaydirtGameEngine:
             )
         )
 
-        # Determine if this is a passing play
-        is_pass = play_type in [
-            PlayType.SHORT_PASS,
-            PlayType.MEDIUM_PASS,
-            PlayType.LONG_PASS,
-            PlayType.SCREEN,
-            PlayType.TE_SHORT_LONG,
-        ]
-
         # Handle different result types
         if result.result_type == ResultType.INTERCEPTION:
             # Use centralized interception handler
@@ -2104,23 +2120,11 @@ class PaydirtGameEngine:
                 yards += result.fumble_return_yards
                 if touchdown:
                     yards = min(yards, 100 - ball_pos_before)
-                if yards > 0 and not turnover:
-                    self.state.offense_stats.total_yards += yards
-                    if is_pass:
-                        self.state.offense_stats.passing_yards += yards
-                    else:
-                        self.state.offense_stats.rushing_yards += yards
 
         elif result.result_type == ResultType.INCOMPLETE:
             self.state.next_down()
 
         elif result.result_type == ResultType.QB_SCRAMBLE:
-            if yards < 0:
-                self.state.offense_stats.sacks += 1
-                self.state.offense_stats.sack_yards += abs(yards)
-            elif yards > 0:
-                self.state.offense_stats.total_yards += yards
-                self.state.offense_stats.rushing_yards += yards
             first_down = self.state.advance_ball(yards)
             if self.state.ball_position >= 100:
                 touchdown = True
@@ -2132,8 +2136,6 @@ class PaydirtGameEngine:
                 self.state.next_down()
 
         elif result.result_type == ResultType.SACK:
-            self.state.offense_stats.sacks += 1
-            self.state.offense_stats.sack_yards += abs(yards)
             first_down = self.state.advance_ball(yards)
             if self.state.ball_position <= 0:
                 safety = True
@@ -2145,19 +2147,8 @@ class PaydirtGameEngine:
             touchdown = True
             self.state.ball_position = 100
             self._score_touchdown(play_type, yards)
-            self.state.offense_stats.total_yards += yards
-            if is_pass:
-                self.state.offense_stats.passing_yards += yards
-            else:
-                self.state.offense_stats.rushing_yards += yards
 
         elif result.result_type in [ResultType.YARDS, ResultType.BREAKAWAY]:
-            if is_pass:
-                self.state.offense_stats.passing_yards += yards
-            else:
-                self.state.offense_stats.rushing_yards += yards
-            self.state.offense_stats.total_yards += yards
-
             first_down = self.state.advance_ball(yards)
 
             if self.state.ball_position >= 100:
@@ -2168,6 +2159,8 @@ class PaydirtGameEngine:
                 self._score_safety()
             elif not first_down:
                 self.state.next_down()
+
+        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
 
         # A touchdown is a statistical first down even on a goal-to-go play.
         # Fumble first downs are recorded in the centralized handler.
@@ -2641,6 +2634,8 @@ class PaydirtGameEngine:
         """
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
+        offense_stats = self.state.offense_stats
+        ball_pos_before = self.state.ball_position
 
         # Automatic 2-yard loss
         yards = -2
@@ -2672,6 +2667,8 @@ class PaydirtGameEngine:
             turnover = self.state.next_down()
             if turnover:
                 result.description = "QB takes a knee - TURNOVER ON DOWNS!"
+
+        self._record_scrimmage_yardage(offense_stats, PlayType.QB_KNEEL, result, yards, ball_pos_before)
 
         outcome = PlayOutcome(
             play_type=PlayType.QB_KNEEL,
@@ -3553,8 +3550,15 @@ class PaydirtGameEngine:
                         final_position, combined_penalty_yards
                     )
                     final_position -= effective_penalty
+                self.state.offense_stats.penalties += 1
+                self.state.offense_stats.penalty_yards += effective_penalty
             else:
                 # DEF penalty on kicking team (from return chart, not punt chart)
+                self.state.defense_stats.penalties += 1
+                self.state.defense_stats.penalty_yards += (
+                    combined_penalty_yards if would_be_td
+                    else min(combined_penalty_yards, 100 - final_position)
+                )
                 if would_be_td:
                     # TD stands, penalty applied to kickoff spot
                     touchdown = True

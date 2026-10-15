@@ -55,9 +55,12 @@ nonzero. The runner requires pytest and private, local-only 1983 team data;
 these files are intentionally ignored and must never be committed or exported.
 It also runs the four historical full-game reproductions outside the unit suite.
 
-**Unit tests must not depend on private season files.** Use synthetic fixtures
-or the public 2026 sample teams. Do not skip unit regressions to hide missing
-private data. Keep private-chart integration checks in standalone local scripts.
+**When writing unit tests, use only synthetic fixtures or the public sample
+teams under `seasons/2026/`. Never load or depend on any other season data,
+even if it is available locally.** Do not introduce fixtures, parametrized cases,
+or skip guards that rely on private/historical seasons (including 1972 or 1983).
+Do not skip unit regressions to hide missing private data. Keep private-chart
+integration checks in standalone local scripts outside unit-test collection.
 Before pushing, also verify unit tests in a clean, tracked-files-only checkout
 so ignored local data cannot mask CI failures.
 All 224 games must pass before pushing; a partial run is not sufficient.

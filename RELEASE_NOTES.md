@@ -1,5 +1,23 @@
 # Paydirt Release Notes
 
+## v1.3.1
+
+### Box-Score Corrections
+- Count offensive touchdowns and accepted penalty-awarded first downs; exclude defensive return touchdowns.
+- Cap offensive touchdown yardage at the goal line while preserving raw chart results.
+- Credit signed rushing/passing yardage, including lost fumbles, recovered fumbles, scrambles, kneels, and turnover-on-downs plays, to the original offense.
+- Deduct sack losses from total/net passing yardage, retain gross passing for saved-game compatibility, and classify passer fumbles using QB-time metadata.
+- Count punt-return penalties for the correct team and report actual enforced penalty distances.
+- Label CLI statistics as Gross Passing, Net Passing, Sacks Allowed, and Sack Yards Lost. The web frontend does not yet display this complete breakdown.
+
+### Regression and Debugging
+- Add 362 self-contained accounting regression cases across the two new suites.
+- Remove private historical-chart dependencies from unit fixtures so clean upstream builds can run; historical reproductions remain local integration checks.
+- Document deferred replay logging work in `docs/replayable-game-logs.md`. The historical TB–GB replay matched only the kickoff and six plays before missing inputs blocked continuation; its final box score is not claimed as replay-verified.
+- Existing expectation corrections in the first accounting commit: cap a touchdown from the opponent’s 10 at 10 yards rather than 15, and count offensive recovery touchdowns as statistical first downs. The subsequent accounting suite changes no existing expectations.
+
+---
+
 ## v1.3.0
 
 ### Gameplay Fixes
