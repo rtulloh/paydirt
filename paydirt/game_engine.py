@@ -4707,6 +4707,14 @@ class PaydirtGameEngine:
         else:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
+        # A last-second touchdown can leave regulation provisionally over or
+        # tied. Only the completed try determines the final result/need for OT.
+        if (self.state.quarter == 4 and self.state.time_remaining <= 0
+                and not self.state.is_overtime and not self.has_untimed_down()):
+            self.state.game_over = (
+                self.state.home_score != self.state.away_score
+                or not self.season_rules.overtime.enabled
+            )
         return success, description
 
     def attempt_two_point(
@@ -5152,7 +5160,8 @@ class PaydirtGameEngine:
                 self._check_overtime_end()
             else:
                 # End of Q4 - check for overtime or game over
-                if self.state.home_score != self.state.away_score:
+                if (self.state.home_score != self.state.away_score
+                        or not self.season_rules.overtime.enabled):
                     self.state.game_over = True
                 # If tied, overtime will be started by the game loop
 
@@ -5207,6 +5216,24 @@ class PaydirtGameEngine:
             "is_overtime": self.state.is_overtime,
         }
 
+    def can_attempt_conversion_after_touchdown(self) -> bool:
+        """Allow the regulation try even after time expires, but not after OT wins."""
+        return not (self.state.is_overtime and self.state.game_over)
+
+    def can_kickoff_after_play(self, quarter_before: int) -> bool:
+        """Whether a scoring play may be followed by a kick in the current period.
+
+        Half-ending scores wait for the second-half kickoff. Expired regulation,
+        untimed downs, and game-ending overtime scores never trigger a new kick.
+        Quarter-one/three transitions still allow the scoring team to kick.
+        """
+        return (
+            not self.state.game_over
+            and self.state.time_remaining > 0
+            and not self.has_untimed_down()
+            and not (quarter_before == 2 and self.state.quarter == 3)
+        )
+
     def needs_overtime(self) -> bool:
         """Check if the game needs to go to overtime (tied at end of Q4)."""
         return (
@@ -5215,6 +5242,8 @@ class PaydirtGameEngine:
             and self.state.home_score == self.state.away_score
             and not self.state.game_over
             and not self.state.is_overtime
+            and not self.has_untimed_down()
+            and self.season_rules.overtime.enabled
         )
 
     def start_overtime(self, coin_toss_winner_is_home: bool = None) -> str:

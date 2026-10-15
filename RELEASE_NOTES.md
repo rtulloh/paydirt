@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Automated Game Flow
+- Resolve AI penalty choices before displaying results or initiating scoring/kickoff sequences, including opening kicks and scrimmage plays. Credit accepted field goals before possession changes.
+- Complete consecutive return-touchdown sequences and final regulation extra points; let the engine decide whether overtime or another kickoff is allowed.
+- Start season-configured overtime, finish ties when overtime is disabled, and preserve engine-managed replacement untimed downs.
+- Reject unfinished games at the play limit instead of reporting a false final score. Add synthetic/public-team full-flow regressions without changing existing test expectations.
+
+### AI Consistency and Endgame Decisions
+- Share difficulty configuration across CLI/web play, preserve defensive score perspective, and learn from pre-play situations consistently.
+- Improve late-game field-goal, clock, spike, and safe-kneel choices; use season rules for two-point conversion availability and decisions.
+
 ### Interception Location Fix
 - Use the winning interception chart result's downfield yardage when locating the catch. In particular, offensive BLACK + defensive INT 13 remains an interception, now 13 yards downfield rather than at the line of scrimmage.
 - Correct resulting return positions, touchbacks, and defensive touchdowns; describe interception depth separately from return yardage. Dice generation, priority rules, and return-chart lookups are unchanged.

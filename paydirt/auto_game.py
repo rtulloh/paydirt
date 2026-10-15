@@ -10,10 +10,10 @@ from pathlib import Path
 from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
-from .game_engine import PaydirtGameEngine
+from .game_engine import PaydirtGameEngine, PlayOutcome
 from .computer_ai import ComputerAI
 from .interactive_game import display_box_score
-from .play_resolver import PlayType, ResultType
+from .play_resolver import PlayType
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -73,6 +73,76 @@ def list_available_teams(charts: list) -> list:
     for season, team_name, chart_path in charts:
         teams.append(f"{season}/{team_name}")
     return sorted(teams)
+
+
+def _resolve_auto_penalties(
+    game: PaydirtGameEngine, outcome: PlayOutcome, offense_home: bool,
+    home_ai: ComputerAI, away_ai: ComputerAI,
+) -> PlayOutcome:
+    """Collect AI choices and apply them before using a provisional outcome."""
+    for _ in range(100):
+        if not outcome.pending_penalty_decision:
+            return outcome
+        choice = outcome.penalty_choice
+        if choice is None:
+            raise RuntimeError("Pending penalty decision has no choices")
+        offended_home = offense_home if choice.offended_team == "offense" else not offense_home
+        ai = home_ai if offended_home else away_ai
+        accept_play, penalty_index = ai.should_accept_penalty(
+            outcome, is_human_offense=offense_home != offended_home,
+            human_is_home=not offended_home,
+        )
+        penalty_index = 0 if penalty_index is None else penalty_index
+        if outcome.play_type == PlayType.FIELD_GOAL:
+            outcome = game.apply_fg_penalty_decision(outcome, accept_play, penalty_index)
+        elif outcome.play_type == PlayType.PUNT:
+            outcome = game.apply_punt_penalty_decision(outcome, not accept_play, penalty_index)
+        elif outcome.play_type == PlayType.KICKOFF:
+            outcome = game.apply_kickoff_penalty_decision(outcome, not accept_play)
+        else:
+            outcome = game.apply_penalty_decision(outcome, accept_play, penalty_index)
+        print(f"  [Penalty: {'play stands' if accept_play else 'penalty accepted'}]")
+    raise RuntimeError("Auto-game penalty decision limit reached")
+
+
+def _complete_auto_outcome(
+    game: PaydirtGameEngine, outcome: PlayOutcome, offense_home: bool,
+    quarter_before: int, home_ai: ComputerAI, away_ai: ComputerAI,
+) -> None:
+    """Display finalized engine results and complete any scoring/kickoff chain."""
+    for _ in range(500):
+        outcome = _resolve_auto_penalties(game, outcome, offense_home, home_ai, away_ai)
+        print(f"  {outcome.description}")
+        result = outcome.result
+        dice_info = (f'O:{result.dice_roll}→"{result.raw_result}"'
+                     f' | Def:→"{result.defense_modifier or ""}"')
+        if result.breakaway_dice:
+            dice_info += f" | B:{result.breakaway_dice}→{result.breakaway_yards}"
+        if result.qb_scramble_dice:
+            dice_info += f" | QT:{result.qb_scramble_dice}→{result.qb_scramble_yards}"
+        if result.int_return_dice:
+            dice_info += f" | INT@{result.int_spot} | R:{result.int_return_dice}→{result.int_return_yards}"
+        print(f"  ({dice_info})")
+
+        if outcome.touchdown:
+            if not game.can_attempt_conversion_after_touchdown():
+                return
+            _, description = game.attempt_extra_point()
+            print(f"  {description}")
+        elif not outcome.field_goal_made and not outcome.safety:
+            return
+
+        if not game.can_kickoff_after_play(quarter_before):
+            return
+        kicking_home = game.state.is_home_possession
+        quarter_before = game.state.quarter
+        if outcome.safety:
+            outcome = game.safety_free_kick()
+        else:
+            outcome = game.kickoff(kicking_home=kicking_home)
+        # Kickoff decisions use the receiving team's offense perspective, as in CLI.
+        offense_home = not kicking_home
+    raise RuntimeError("Auto-game scoring/kickoff sequence limit reached")
 
 
 def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playoff: bool = False):
@@ -145,9 +215,9 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
     print("  OPENING KICKOFF")
     print("=" * 70)
 
-    game.kickoff(kicking_home=opening_kicking_home)
-    receiving_team = home_name if game.state.is_home_possession else away_name
-    print(f"  {receiving_team} receives the kickoff")
+    quarter_before = game.state.quarter
+    outcome = game.kickoff(kicking_home=opening_kicking_home)
+    _complete_auto_outcome(game, outcome, not opening_kicking_home, quarter_before, home_ai, away_ai)
     print(f"  Ball spotted at {game.state.field_position_str()}")
     time.sleep(delay)
 
@@ -158,12 +228,19 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
     while not game.state.game_over:
         state = game.state
 
-        # Handle untimed down: clear the flag after the extra play completes
-        # This allows _use_time() to advance the quarter on the next play
-        # Use < 0.0167 (1 second) threshold to catch tiny positive residuals
-        # from floating-point arithmetic that display as 0:00
-        if state.time_remaining < 0.0167 and game.has_untimed_down():
-            game.clear_untimed_down()
+        # The engine consumes untimed downs when the play starts, and may award
+        # a replacement down after another accepted defensive penalty.
+        if state.time_remaining <= 0 and game.has_untimed_down():
+            print("  UNTIMED DOWN - period extended by the engine")
+        elif game.needs_overtime():
+            display_box_score(game, "END OF REGULATION")
+            print(f"\n  {game.start_overtime()}")
+            last_quarter = state.quarter
+            quarter_before = state.quarter
+            kicking_home = not state.ot_coin_toss_winner_is_home
+            outcome = game.kickoff(kicking_home=kicking_home)
+            _complete_auto_outcome(game, outcome, not kicking_home, quarter_before, home_ai, away_ai)
+            continue
 
         # Check for quarter change
         if state.quarter != last_quarter:
@@ -179,10 +256,12 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
                 print()
 
                 # Second half kickoff
-                game.kickoff(kicking_home=not opening_kicking_home)
-                receiving_team = home_name if state.is_home_possession else away_name
-                print(f"  {receiving_team} receives the second half kickoff")
-                print(f"  Ball spotted at {state.field_position_str()}")
+                quarter_before = state.quarter
+                kicking_home = not opening_kicking_home
+                outcome = game.kickoff(kicking_home=kicking_home)
+                _complete_auto_outcome(game, outcome, not kicking_home, quarter_before, home_ai, away_ai)
+                if state.game_over:
+                    break
 
             last_quarter = state.quarter
             time.sleep(delay)
@@ -190,20 +269,22 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         # Determine which team is on offense
         if state.is_home_possession:
             off_team = home_name
-            def_team = away_name
             off_ai = home_ai
             def_ai = away_ai
         else:
             off_team = away_name
-            def_team = home_name
             off_ai = away_ai
             def_ai = home_ai
+
+        if state.game_over:
+            break
 
         # Display game status
         minutes = int(state.time_remaining)
         seconds = int((state.time_remaining % 1) * 60)
 
-        print(f"\n  Q{state.quarter} {minutes}:{seconds:02d} | {away_name} {state.away_score} - {home_name} {state.home_score}")
+        period = f"OT{state.ot_period}" if state.is_overtime else f"Q{state.quarter}"
+        print(f"\n  {period} {minutes}:{seconds:02d} | {away_name} {state.away_score} - {home_name} {state.home_score}")
         print(f"  {off_team} ball at {state.field_position_str()} | {state.down}&{state.yards_to_go}")
 
         # CPU selects plays with clock management
@@ -235,6 +316,8 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         print(f"  {off_team}: {play_name} vs {def_name}")
 
         # Run the play with OOB designation, punt options, and spike modifier
+        offense_home = state.is_home_possession
+        quarter_before = state.quarter
         outcome = game.run_play_with_penalty_procedure(play_type, def_type,
                                                         out_of_bounds_designation=use_oob,
                                                         punt_short_drop=punt_short_drop,
@@ -242,135 +325,14 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
                                                         no_huddle=use_no_huddle,
                                                         call_spike=use_spike)
 
-        # Display spike result if applied
-        if outcome.spike_used:
-            print("  [SPIKE: Clock stopped]")
-
-        # Display result
-        if outcome.touchdown:
-            # Use current possession to determine who scored (handles defensive TDs)
-            scoring_team = home_name if state.is_home_possession else away_name
-            print(f"  >>> TOUCHDOWN {scoring_team}! <<<")
-            # CPU kicks extra point (or goes for 2 in certain situations)
-            success, description = game.attempt_extra_point()
-            print(f"  {description}")
-
-            # Kickoff after score - scoring team kicks
-            kicking_home = game.state.is_home_possession
-            game.kickoff(kicking_home=kicking_home)
-            receiving_team = home_name if state.is_home_possession else away_name
-            print(f"  {receiving_team} receives kickoff at {state.field_position_str()}")
-
-        elif outcome.field_goal_made:
-            print(f"  >>> FIELD GOAL {off_team}! <<<")
-            # Kickoff after field goal - scoring team kicks
-            kicking_home = game.state.is_home_possession
-            game.kickoff(kicking_home=kicking_home)
-            receiving_team = home_name if state.is_home_possession else away_name
-            print(f"  {receiving_team} receives kickoff at {state.field_position_str()}")
-
-        elif outcome.safety:
-            print(f"  >>> SAFETY! {def_team} scores 2 points <<<")
-            # Safety free kick from the 20
-            game.safety_free_kick()
-            receiving_team = home_name if state.is_home_possession else away_name
-            print(f"  {receiving_team} receives safety kick at {state.field_position_str()}")
-
-        elif outcome.turnover:
-            if "INTERCEPTION" in outcome.description.upper():
-                print(f"  INTERCEPTED by {def_team}!")
-            elif "FUMBLE" in outcome.description.upper():
-                print(f"  FUMBLE recovered by {def_team}!")
-            elif "DOWNS" in outcome.description.upper():
-                print("  Turnover on downs!")
-            else:
-                print(f"  Turnover! {def_team} takes over")
-        else:
-            # Normal play result
-            yards = outcome.yards_gained
-            
-            # Check for special result types
-            if outcome.result.result_type == ResultType.BREAKAWAY:
-                result_str = f"BREAKAWAY! +{yards} yards"
-            elif outcome.result.result_type == ResultType.SACK:
-                result_str = f"SACKED -{abs(yards)} yards"
-            elif outcome.result.result_type == ResultType.FUMBLE:
-                result_str = "FUMBLE!"
-            elif outcome.result.result_type == ResultType.INCOMPLETE:
-                result_str = "Incomplete"
-            elif yards > 0:
-                result_str = f"Gain of {yards}"
-            elif yards < 0:
-                result_str = f"Loss of {abs(yards)}"
-            else:
-                result_str = "No gain"
-
-            if outcome.first_down:
-                result_str += " - FIRST DOWN"
-
-            # Show penalty details if the play was a penalty
-            desc = outcome.description or ""
-            if "penalty" in desc.lower() or "BAD SNAP" in desc or "FALSE START" in desc:
-                result_str += f" [{desc}]"
-
-            print(f"  {result_str}")
-
-            # Show dice roll details for auditing (similar to compact mode)
-            def_mod = outcome.result.defense_modifier or ""
-            
-            # Build dice roll info string
-            dice_info = f"(O:{outcome.result.dice_roll}→\"{outcome.result.raw_result}\" | Def:→\"{def_mod}\")"
-            
-            # Add breakaway dice if this is a breakaway play
-            if outcome.result.result_type == ResultType.BREAKAWAY:
-                b_dice = getattr(outcome.result, 'breakaway_dice', 0)
-                b_yards = getattr(outcome.result, 'breakaway_yards', 0)
-                if b_dice:
-                    dice_info += f" | B:{b_dice}→{b_yards}"
-            
-            # Add QB scramble dice if applicable
-            if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
-                qt_dice = getattr(outcome.result, 'qb_scramble_dice', 0)
-                qt_yards = getattr(outcome.result, 'qb_scramble_yards', 0)
-                if qt_dice:
-                    dice_info += f" | QT:{qt_dice}→{qt_yards}"
-            
-            print(f"  {dice_info}")
-
-        # Handle penalty decisions for special teams (punt, field goal, kickoff)
-        if outcome.pending_penalty_decision and outcome.penalty_choice:
-            penalty_choice = outcome.penalty_choice
-            
-            # CPU makes a decision based on what's beneficial
-            # For punt: OFF penalty = accept (replay from worse spot), DEF penalty = accept (usually first down)
-            # For FG: usually accept the penalty
-            # For kickoff: usually accept the penalty
-            
-            if penalty_choice.offended_team == "defense":
-                # Defense was offended - accept penalty is usually better
-                accept_penalty = True
-            else:
-                # Offense was offended - usually accept penalty
-                accept_penalty = True
-            
-            # Apply the decision
-            if play_type == PlayType.PUNT:
-                outcome = game.apply_punt_penalty_decision(outcome, accept_penalty)
-                print(f"  [PENALTY: {'Accepted' if accept_penalty else 'Declined'}]")
-            elif play_type == PlayType.FIELD_GOAL:
-                outcome = game.apply_fg_penalty_decision(outcome, accept_play=True, penalty_index=0)
-                print("  [PENALTY: Accepted]")
-            elif play_type == PlayType.KICKOFF:
-                outcome = game.apply_kickoff_penalty_decision(outcome, accept_penalty=True)
-                print("  [PENALTY: Accepted]")
+        _complete_auto_outcome(game, outcome, offense_home, quarter_before, home_ai, away_ai)
 
         play_count += 1
         time.sleep(delay)
 
         # Safety check - prevent infinite loops
-        if play_count > 500:
-            print("\n  [Game ended - play limit reached]")
-            break
+        if play_count >= 500 and not game.state.game_over:
+            raise RuntimeError("Auto-game play limit reached before game completion")
 
     # Game over
     print("\n" + "=" * 70)

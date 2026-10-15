@@ -2658,6 +2658,8 @@ def _complete_touchdown_sequence(
             _, description = game.attempt_extra_point()
         print(f"\n  {description}")
         print(f"  Score: {game.get_score_str()}")
+        if not game.can_kickoff_after_play(game.state.quarter):
+            return outcome
 
         kicking_team = (
             game.state.home_chart if scoring_home else game.state.away_chart
