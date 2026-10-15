@@ -1102,7 +1102,10 @@ class PaydirtGameEngine:
                         )
                     )
 
-                    return_yards = self._parse_return_yards(int_return_result, fumble_spot)
+                    return_yards = min(
+                        self._parse_return_yards(int_return_result, fumble_spot),
+                        100 - fumble_spot,
+                    )
                     new_position = fumble_spot + return_yards
                     self.state.ball_position = clamp_ball_position(new_position)
 
@@ -1279,6 +1282,11 @@ class PaydirtGameEngine:
                             )
                         )
 
+        # Offensive recovery touchdowns count as one scrimmage first down.
+        # Defensive recovery scores never count for either offense.
+        if touchdown and offense_recovers:
+            self.state.offense_stats.first_downs += 1
+
         # Store recovery info
         result.fumble_recovery_roll = recovery_roll
         result.fumble_spot = fumble_spot if fumble_spot <= 99 else 99
@@ -1286,6 +1294,15 @@ class PaydirtGameEngine:
         result.fumble_resolved = True  # Mark as resolved so we don't re-roll on penalty acceptance
 
         return (turnover, touchdown, safety, first_down)
+
+    @staticmethod
+    def _credited_scrimmage_yards(result: PlayResult, yards: int, ball_position: int) -> int:
+        """Limit offensive gains to the goal line, preserving raw chart data."""
+        if result.result_type == ResultType.TOUCHDOWN:
+            return 100 - ball_position
+        if result.result_type in (ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE):
+            return min(yards, 100 - ball_position)
+        return yards
 
     def run_play(
         self,
@@ -1341,6 +1358,7 @@ class PaydirtGameEngine:
 
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
+        ball_pos_before = self.state.ball_position
 
         # Resolve the play using charts
         result = resolve_play(
@@ -1406,6 +1424,8 @@ class PaydirtGameEngine:
                 result.description += " (In Bounds designation: -5 yards)"
                 result.out_of_bounds = False  # Force in bounds
 
+        yards = self._credited_scrimmage_yards(result, yards, ball_pos_before)
+
         # Handle different result types
         if result.result_type == ResultType.INTERCEPTION:
             # Use centralized interception handler
@@ -1420,6 +1440,8 @@ class PaydirtGameEngine:
             )
             if result.fumble_recovered:
                 yards += result.fumble_return_yards
+                if touchdown:
+                    yards = min(yards, 100 - ball_pos_before)
 
         elif result.result_type == ResultType.SACK:
             self.state.offense_stats.sacks += 1
@@ -1559,10 +1581,8 @@ class PaydirtGameEngine:
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
-            # For direct TD results, yards is the distance to the end zone
-            td_yards = 100 - self.state.ball_position if yards == 0 else yards
             self.state.ball_position = 100
-            self._score_touchdown(play_type, td_yards)
+            self._score_touchdown(play_type, yards)
 
         elif result.result_type in [ResultType.YARDS, ResultType.BREAKAWAY]:
             # Normal yardage result
@@ -1584,14 +1604,16 @@ class PaydirtGameEngine:
             self.state.next_down()
 
         # Update stats
-        if yards > 0 and not turnover:
+        if yards > 0 and not turnover and result.result_type not in (
+            ResultType.PENALTY_OFFENSE, ResultType.PENALTY_DEFENSE, ResultType.PASS_INTERFERENCE,
+        ):
             self.state.offense_stats.total_yards += yards
-            if is_pass:
+            if is_pass and result.result_type != ResultType.QB_SCRAMBLE:
                 self.state.offense_stats.passing_yards += yards
             else:
                 self.state.offense_stats.rushing_yards += yards
 
-        if first_down and result.result_type != ResultType.FUMBLE:
+        if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
 
         if turnover:
@@ -1947,6 +1969,9 @@ class PaydirtGameEngine:
                 yards = 0
                 first_down = False
 
+            if first_down:
+                self.state.offense_stats.first_downs += 1
+
             # Build the final outcome
             final_outcome = PlayOutcome(
                 play_type=outcome.play_type,
@@ -2033,6 +2058,8 @@ class PaydirtGameEngine:
                 result.description += " (In Bounds designation: -5 yards)"
                 result.out_of_bounds = False
 
+        yards = self._credited_scrimmage_yards(result, yards, ball_pos_before)
+
         # Build transaction for this play
         txn = PlayTransaction()
         off_team = self.state.possession_team.peripheral.short_name
@@ -2075,6 +2102,14 @@ class PaydirtGameEngine:
             )
             if result.fumble_recovered:
                 yards += result.fumble_return_yards
+                if touchdown:
+                    yards = min(yards, 100 - ball_pos_before)
+                if yards > 0 and not turnover:
+                    self.state.offense_stats.total_yards += yards
+                    if is_pass:
+                        self.state.offense_stats.passing_yards += yards
+                    else:
+                        self.state.offense_stats.rushing_yards += yards
 
         elif result.result_type == ResultType.INCOMPLETE:
             self.state.next_down()
@@ -2083,6 +2118,9 @@ class PaydirtGameEngine:
             if yards < 0:
                 self.state.offense_stats.sacks += 1
                 self.state.offense_stats.sack_yards += abs(yards)
+            elif yards > 0:
+                self.state.offense_stats.total_yards += yards
+                self.state.offense_stats.rushing_yards += yards
             first_down = self.state.advance_ball(yards)
             if self.state.ball_position >= 100:
                 touchdown = True
@@ -2105,10 +2143,13 @@ class PaydirtGameEngine:
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
-            # For direct TD results, yards is the distance to the end zone
-            td_yards = 100 - self.state.ball_position if yards == 0 else yards
             self.state.ball_position = 100
-            self._score_touchdown(play_type, td_yards)
+            self._score_touchdown(play_type, yards)
+            self.state.offense_stats.total_yards += yards
+            if is_pass:
+                self.state.offense_stats.passing_yards += yards
+            else:
+                self.state.offense_stats.rushing_yards += yards
 
         elif result.result_type in [ResultType.YARDS, ResultType.BREAKAWAY]:
             if is_pass:
@@ -2125,10 +2166,13 @@ class PaydirtGameEngine:
             elif self.state.ball_position <= 0:
                 safety = True
                 self._score_safety()
-            elif first_down:
-                self.state.offense_stats.first_downs += 1
             elif not first_down:
                 self.state.next_down()
+
+        # A touchdown is a statistical first down even on a goal-to-go play.
+        # Fumble first downs are recorded in the centralized handler.
+        if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
+            self.state.offense_stats.first_downs += 1
 
         # Finalize transaction
         txn.turnover = turnover
@@ -2265,6 +2309,9 @@ class PaydirtGameEngine:
         if yards > 0 and not turnover:
             self.state.offense_stats.total_yards += yards
             self.state.offense_stats.rushing_yards += yards
+
+        if first_down or (touchdown and not turnover):
+            self.state.offense_stats.first_downs += 1
 
         outcome = PlayOutcome(
             play_type=PlayType.QB_SNEAK,
@@ -2447,13 +2494,14 @@ class PaydirtGameEngine:
         # Resolve using Hail Mary table
         result = resolve_hail_mary(dice_roll, self.state.ball_position)
 
-        yards = result.yards
+        yards = self._credited_scrimmage_yards(result, result.yards, self.state.ball_position)
         turnover = result.turnover
         touchdown = result.touchdown
         safety = False
         first_down = False
 
         if result.result_type == ResultType.TOUCHDOWN:
+            touchdown = True
             self._score_touchdown(PlayType.HAIL_MARY, yards)
             self.state.ball_position = 97
 
@@ -2496,9 +2544,12 @@ class PaydirtGameEngine:
             self.state.next_down()
 
         # Update passing stats
-        if yards > 0 and not turnover:
+        if yards > 0 and not turnover and result.result_type != ResultType.PASS_INTERFERENCE:
             self.state.offense_stats.total_yards += yards
             self.state.offense_stats.passing_yards += yards
+
+        if first_down or (touchdown and not turnover):
+            self.state.offense_stats.first_downs += 1
 
         outcome = PlayOutcome(
             play_type=PlayType.HAIL_MARY,
@@ -4142,6 +4193,8 @@ class PaydirtGameEngine:
             )
             stats.penalties += 1
             stats.penalty_yards += enforced_yards
+            if first_down:
+                self.state.offense_stats.first_downs += 1
 
             # The kick was discarded: report only the enforced penalty, even if
             # the provisional kick would have scored or turned the ball over.

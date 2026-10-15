@@ -128,7 +128,8 @@ def test_recovery_advance_uses_final_spot_for_downs_and_scores(
     assert outcome.yards_gained == net_yards
     assert game.state.ball_position == expected_position
     assert game.state.is_home_possession == (not offense_is_home if turnover else offense_is_home)
-    assert offense_stats.first_downs == int(first_down)
+    # NFL stats count offensive touchdowns, even without a new series of downs.
+    assert offense_stats.first_downs == int(first_down or touchdown)
     assert offense_stats.fumbles_lost == 0
     if touchdown:
         assert result.scoring_team == offense.peripheral.short_name

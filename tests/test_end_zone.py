@@ -576,8 +576,8 @@ class TestDirectTouchdownYardage:
         # Description should mention 25 yards (100 - 75)
         assert "25 yards" in scoring_play.description
     
-    def test_td_with_explicit_yards_uses_those_yards(self, game):
-        """TD result with explicit yards should use those yards."""
+    def test_td_with_explicit_yards_stops_at_goal_line(self, game):
+        """Explicit chart yardage cannot extend a touchdown past the goal line."""
         game.state.ball_position = 90  # 10 yards from end zone
         game.state.is_home_possession = True
         game.state.down = 1
@@ -593,8 +593,7 @@ class TestDirectTouchdownYardage:
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
             game.run_play(PlayType.END_RUN, DefenseType.STANDARD)
         
-        # Check scoring play description includes explicit yardage
+        # Check scoring play description uses the distance to the goal line.
         assert len(game.state.scoring_plays) == 1
         scoring_play = game.state.scoring_plays[0]
-        # Description should mention 15 yards (the explicit value)
-        assert "15 yard" in scoring_play.description
+        assert "10 yards" in scoring_play.description
