@@ -8,7 +8,10 @@ from typing import Optional
 from .packaging import get_seasons_path
 
 from .chart_loader import TeamChart, load_team_chart
-from .utils import clamp_ball_position, format_field_position, format_field_position_with_team
+from .utils import (
+    clamp_ball_position, format_down_and_distance, format_field_position,
+    format_field_position_with_team,
+)
 from .play_resolver import (
     PlayType,
     DefenseType,
@@ -4054,8 +4057,7 @@ class PaydirtGameEngine:
         statistical_distance = getattr(outcome, "_fg_statistical_distance", distance_to_goal + 17)
         spot_of_hold = getattr(outcome, "_fg_spot_of_hold", self.state.ball_position - 7)
         ball_pos_before = getattr(outcome, "_fg_ball_pos_before", self.state.ball_position)
-        # ytg_before retrieved but not currently used - kept for potential future use
-        _ = getattr(outcome, "_fg_ytg_before", self.state.yards_to_go)
+        ytg_before = getattr(outcome, "_fg_ytg_before", self.state.yards_to_go)
 
         if accept_play:
             # Accept the FG result - apply the full FG logic
@@ -4122,32 +4124,49 @@ class PaydirtGameEngine:
                 penalty_index = 0
 
             penalty = penalty_choice.penalty_options[penalty_index]
-            penalty_yards = penalty.yards
+            penalty_result, new_position, new_down, new_ytg, first_down = resolve_penalty(
+                penalty.raw_result,
+                ball_pos_before,
+                yards_to_go=ytg_before,
+                down=outcome.down_before,
+                chart_yards=penalty.yards,
+                auto_first_down=penalty.auto_first_down,
+            )
+            self.state.ball_position = new_position
+            self.state.down = new_down
+            self.state.yards_to_go = min(new_ytg, 100 - new_position)
+            enforced_yards = abs(new_position - ball_pos_before)
+            stats = (
+                self.state.offense_stats if penalty.penalty_type == "OFF"
+                else self.state.defense_stats
+            )
+            stats.penalties += 1
+            stats.penalty_yards += enforced_yards
+
+            # The kick was discarded: report only the enforced penalty, even if
+            # the provisional kick would have scored or turned the ball over.
+            outcome.penalty_applied = True
+            outcome.field_goal_made = False
+            outcome.touchdown = False
+            outcome.safety = False
+            outcome.turnover = False
+            outcome.first_down = first_down
+            outcome.yards_gained = new_position - ball_pos_before
+            outcome.down_after = new_down
+            down_distance = format_down_and_distance(
+                new_down, self.state.yards_to_go, 100 - new_position
+            )
+            action = "first down" if first_down else "down replayed"
+            description = (
+                f"{penalty_result.description} - {action}; "
+                f"{down_distance} at {self.state.field_position_str()}"
+            )
 
             if penalty.penalty_type == "OFF":
-                # Offensive penalty - move back, rekick
-                new_position = max(1, ball_pos_before - penalty_yards)
-                self.state.ball_position = new_position
-                description = f"Offensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
-
-                # Check if time has expired - if so, this creates an untimed down
-                # Per NFL rules: if offense commits penalty on FG as time expires and defense accepts,
-                # the half is extended for one untimed down
-                time_might_expire = self.state.time_remaining <= 0.5
-                if self.state.time_remaining <= 0 or time_might_expire:
+                # Preserve the existing FG rekick procedure at the end of a half.
+                if self.state.time_remaining <= 0.5:
                     self.state.untimed_down_pending = True
                     description += " (HALF EXTENDED - UNTIMED DOWN)"
-            else:
-                # Defensive penalty - move forward, rekick (or auto first down)
-                new_position = min(99, ball_pos_before + penalty_yards)
-                self.state.ball_position = new_position
-                if penalty.auto_first_down:
-                    # Auto first down - offense keeps ball with new set of downs
-                    self.state.down = 1
-                    self.state.yards_to_go = 10
-                    description = f"Defensive penalty ({penalty_yards} yards + auto 1st down) - 1st down at {self.state.field_position_str()}"
-                else:
-                    description = f"Defensive penalty ({penalty_yards} yards) - rekick from {self.state.field_position_str()}"
 
             outcome.field_position_after = self.state.field_position_str()
             outcome.description = description
