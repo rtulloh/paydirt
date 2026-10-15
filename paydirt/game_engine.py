@@ -817,6 +817,19 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def _record_turnover(self, *, interception: bool) -> None:
+        """Count an applied statistical loss before switching possession.
+
+        Args:
+            interception: True for an interception, False for a lost fumble.
+        """
+        stats = self.state.offense_stats
+        if interception:
+            stats.interceptions_thrown += 1
+        else:
+            stats.fumbles_lost += 1
+        stats.turnovers += 1
+
     def _handle_interception(
         self,
         result: PlayResult,
@@ -840,7 +853,7 @@ class PaydirtGameEngine:
         touchdown = False
         safety = False
 
-        self.state.offense_stats.interceptions_thrown += 1
+        self._record_turnover(interception=True)
         def_team = self.state.defense_team.peripheral.short_name
 
         # Calculate raw interception spot from offense's perspective
@@ -1045,7 +1058,7 @@ class PaydirtGameEngine:
                 self.state.ball_position = 97
             else:
                 turnover = True
-                self.state.offense_stats.fumbles_lost += 1
+                self._record_turnover(interception=False)
                 self.state.switch_possession()
                 self.state.ball_position = 20  # Touchback
                 result.description = "Fumble recovered by defense in end zone - TOUCHBACK"
@@ -1060,7 +1073,7 @@ class PaydirtGameEngine:
                 self.state.ball_position = 97
             else:
                 turnover = True
-                self.state.offense_stats.fumbles_lost += 1
+                self._record_turnover(interception=False)
                 self.state.switch_possession()
                 self.state.ball_position = 20  # Touchback
                 result.description = "Fumble recovered by defense in end zone - TOUCHBACK"
@@ -1077,7 +1090,7 @@ class PaydirtGameEngine:
                 # Defense recovers in opponent's end zone = TD for defense
                 turnover = True
                 touchdown = True
-                self.state.offense_stats.fumbles_lost += 1
+                self._record_turnover(interception=False)
                 self.state.switch_possession()
                 result.scoring_team = def_team
                 self._score_touchdown()
@@ -1184,7 +1197,7 @@ class PaydirtGameEngine:
             else:
                 # Defense recovers - fumble lost
                 turnover = True
-                self.state.offense_stats.fumbles_lost += 1
+                self._record_turnover(interception=False)
                 fumble_spot_defense = 100 - fumble_spot
 
                 # Check for special return on recovery rolls 37, 38, 39
@@ -1639,9 +1652,6 @@ class PaydirtGameEngine:
 
         if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
-
-        if turnover:
-            offense_stats.turnovers += 1
 
         outcome = PlayOutcome(
             play_type=play_type,
@@ -2278,7 +2288,7 @@ class PaydirtGameEngine:
             else:
                 # Defense recovers
                 turnover = True
-                self.state.offense_stats.fumbles_lost += 1
+                self._record_turnover(interception=False)
                 self.state.switch_possession()  # This already flips ball_position
                 result.description = (
                     f"QB Sneak - Fumble LOST! Defense recovers (roll {recovery_roll})"

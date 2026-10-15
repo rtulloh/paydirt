@@ -431,10 +431,9 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     print(
         f"|  {'  Gross Passing':20}  |  {away_stats.passing_yards:^12}  |  {home_stats.passing_yards:^12}  |"
     )
-    # Calculate turnovers as sum of interceptions thrown + fumbles lost
-    away_turnovers = away_stats.interceptions_thrown + away_stats.fumbles_lost
-    home_turnovers = home_stats.interceptions_thrown + home_stats.fumbles_lost
-    print(f"|  {'Turnovers':20}  |  {away_turnovers:^12}  |  {home_turnovers:^12}  |")
+    print(
+        f"|  {'Turnovers':20}  |  {away_stats.turnovers:^12}  |  {home_stats.turnovers:^12}  |"
+    )
     print(
         f"|  {'  Interceptions':20}  |  {away_stats.interceptions_thrown:^12}  |  {home_stats.interceptions_thrown:^12}  |"
     )

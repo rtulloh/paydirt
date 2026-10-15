@@ -176,6 +176,7 @@ class TestLoadGame:
         game.state.home_stats.first_downs = 12
         game.state.home_stats.total_yards = 250
         game.state.home_stats.turnovers = 1
+        game.state.home_stats.fumbles_lost = 1  # Keep the aggregate and breakdown consistent.
         game.state.away_stats.first_downs = 8
         game.state.away_stats.interceptions_thrown = 2
         

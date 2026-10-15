@@ -87,7 +87,15 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
             for sp in state.scoring_plays
         ],
     }
-    
+
+    # Version-1 readers ignore this optional metadata. Without it, a later load
+    # would mistake defaulted component counters for a complete legacy history.
+    incomplete = [
+        name for name in ("home_stats", "away_stats")
+        if not getattr(state, name)._turnover_breakdown_complete
+    ]
+    if incomplete:
+        save_data["incomplete_turnover_stats"] = incomplete
     try:
         with open(filepath, 'w') as f:
             json.dump(save_data, f, indent=2)
@@ -169,11 +177,20 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     state.is_playoff = save_data.get("is_playoff", False)
     state.untimed_down_pending = save_data.get("untimed_down_pending", False)
     
-    # Restore team stats
-    home_stats_data = save_data.get("home_stats", {})
-    away_stats_data = save_data.get("away_stats", {})
-    state.home_stats = TeamStats(**home_stats_data)
-    state.away_stats = TeamStats(**away_stats_data)
+    # Repair stale aggregates only when the component history is complete.
+    # Legacy totals without a full breakdown cannot safely be reconstructed.
+    incomplete = save_data.get("incomplete_turnover_stats", [])
+    for name in ("home_stats", "away_stats"):
+        data = save_data.get(name, {})
+        stats = TeamStats(**data)
+        stats._turnover_breakdown_complete = (
+            name not in incomplete
+            and "interceptions_thrown" in data and "fumbles_lost" in data
+        )
+        known_losses = stats.interceptions_thrown + stats.fumbles_lost
+        stats.turnovers = (known_losses if stats._turnover_breakdown_complete
+                           else max(stats.turnovers, known_losses))
+        setattr(state, name, stats)
     
     # Restore scoring plays
     state.scoring_plays = [

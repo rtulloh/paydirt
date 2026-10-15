@@ -130,6 +130,10 @@ for away, home in matchups:
     )
     
     output = result.stdout + result.stderr
+    if result.returncode != 0:
+        errors.append(f"{away}@{home}: Game process exited {result.returncode}")
+        print(f"  ERROR: Game process exited {result.returncode}")
+        continue
     
     # Check for breakaway plays
     breakaway_pattern = re.compile(r'breakaway', re.IGNORECASE)
@@ -162,8 +166,8 @@ for away, home in matchups:
     else:
         # Try alternate pattern from box score
         box_match = re.search(
-            rf"\|\s+{TEAM_PATTERN}\s+\|\s+\d+\s+\d+\s+\d+\s+\d+\s+\|\s+(\d+)\s+\|.*?"
-            rf"\|\s+{TEAM_PATTERN}\s+\|\s+\d+\s+\d+\s+\d+\s+\d+\s+\|\s+(\d+)\s+\|",
+            rf"\|\s+{TEAM_PATTERN}\s+\|\s+(?:\d+\s+){{4,}}\|\s+(\d+)\s+\|.*?"
+            rf"\|\s+{TEAM_PATTERN}\s+\|\s+(?:\d+\s+){{4,}}\|\s+(\d+)\s+\|",
             output, re.DOTALL
         )
         if box_match:
@@ -183,19 +187,23 @@ for away, home in matchups:
             in_final_stats = True
             continue
         if in_final_stats and 'TEAM' in line and '1Q' in line:
+            # Include every displayed OT column; require the same count per row.
+            period_count = len(line.split("|")[2].split())
             for team_line in lines[i+1:i+5]:
                 m = re.search(
-                    rf"\|\s+{TEAM_PATTERN}\s+\|\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\|\s+(\d+)\s+\|",
+                    rf"\|\s+{TEAM_PATTERN}\s+\|\s+((?:\d+\s+){{{period_count}}})\|\s+(\d+)\s+\|",
                     team_line
                 )
                 if m:
-                    team, q1, q2, q3, q4, total = m.groups()
-                    calc_total = int(q1) + int(q2) + int(q3) + int(q4)
+                    team, period_text, total = m.groups()
+                    period_scores = [int(score) for score in period_text.split()]
+                    calc_total = sum(period_scores)
+                    calculation = "+".join(map(str, period_scores))
                     if calc_total != int(total):
-                        errors.append(f"{away}@{home}: {team} quarters {q1}+{q2}+{q3}+{q4}={calc_total} != {total}")
-                        print(f"  ERROR: {team} quarter math wrong!")
+                        errors.append(f"{away}@{home}: {team} periods {calculation}={calc_total} != {total}")
+                        print(f"  ERROR: {team} period math wrong!")
                     else:
-                        print(f"  {team}: {q1}+{q2}+{q3}+{q4}={total} ✓")
+                        print(f"  {team}: {calculation}={total} ✓")
                     teams_found.append(team)
             break
     
@@ -337,3 +345,5 @@ if breakaway_matches:
         print(f"    {match}")
 else:
     print("\n  NO BREAKAWAY PLAYS FOUND in any game")
+
+raise SystemExit(1 if errors else 0)

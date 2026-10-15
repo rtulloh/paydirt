@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Turnover Accounting
+- Count applied interceptions and lost fumbles exactly once for the original offense in direct and penalty-procedure play, including QB sneaks. Do not count turnover on downs or canceled outcomes as statistical turnovers.
+- Use the engine total consistently in the CLI and web API. Repair stale totals in saved games with complete component counters; preserve incomplete legacy histories across repeated saves using optional version-1 metadata.
+- Add synthetic/public-team accounting, API, and save/load regressions. Correct the existing save-test fixture to pair its one aggregate turnover with one lost fumble; existing assertions are unchanged.
+- Repair the standalone 14-game CLI checker to validate all displayed overtime periods, reject failed child processes, and exit nonzero on validation errors. Add synthetic subprocess-output regressions.
+
 ### Automated Game Flow
 - Resolve AI penalty choices before displaying results or initiating scoring/kickoff sequences, including opening kicks and scrimmage plays. Credit accepted field goals before possession changes.
 - Complete consecutive return-touchdown sequences and final regulation extra points; let the engine decide whether overtime or another kickoff is allowed.

@@ -37,6 +37,9 @@ class TeamStats:
     interceptions_thrown: int = 0
     fumbles_lost: int = 0
 
+    # Not a dataclass field: save_game persists this only for incomplete legacy
+    # records, without changing the statistics/API schema.
+    _turnover_breakdown_complete = True
     @property
     def net_passing_yards(self) -> int:
         """Return team passing yardage after sack losses, without altering saves."""
