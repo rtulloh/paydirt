@@ -18,6 +18,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.computer_ai import ComputerAI
+from paydirt.play_resolver import PlayType
 from tests.test_untimed_down_flow import run_seeded_cli_game
 
 
@@ -100,6 +102,25 @@ def run_full_season(teams: list[str]) -> int:
 
 def run_historical_reproductions() -> int:
     """Keep private-chart reproductions in local integration, never unit tests."""
+    # These are engine/CLI flow regressions, not AI benchmarks. Keep calling
+    # legal scrimmage plays even when the live AI could safely kneel, so late
+    # penalty rolls and untimed downs remain exercised. Do not alter dice or
+    # engine rules. The generated season above uses the unmodified live AI.
+    select = ComputerAI.select_offense_with_clock_management
+
+    def play_on(ai: ComputerAI, game: PaydirtGameEngine) -> tuple:
+        decision = select(ai, game)
+        if decision[0] != PlayType.QB_KNEEL:
+            return decision
+        state = game.state
+        if state.down == 1:
+            play = ai._first_down_offense(state.ball_position)
+        elif state.down == 2:
+            play = ai._second_down_offense(state.yards_to_go)
+        else:
+            play = ai._third_down_offense(state.yards_to_go, state.ball_position)
+        return (play, False, False, False, 0, False)
+
     failures = 0
     for away, home, seed, needs_untimed in (
         ("Raiders", "Eagles", 19831104, True),
@@ -110,7 +131,8 @@ def run_historical_reproductions() -> int:
         output = io.StringIO()
         try:
             with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
-                engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
+                with patch.object(ComputerAI, "select_offense_with_clock_management", play_on):
+                    engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
             validate_game(engine, output.getvalue())
             if needs_untimed and "UNTIMED DOWN" not in output.getvalue():
                 raise ValueError("Expected untimed-down reproduction was not exercised")

@@ -2623,6 +2623,36 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def can_kneel_out_game(self) -> bool:
+        """Whether safe kneels can exhaust regulation without giving up possession.
+
+        Budget only the downs before fourth down: kneels advance the down before
+        consuming time. Account for every available defensive timeout and every
+        two-yard loss. A timeout reduces a kneel to about ten seconds, so using
+        ten as the lower bound is conservative. Overtime, untimed downs, and
+        pending scores are deliberately not treated as victory formations.
+
+        Returns:
+            True if a kneel-only plan guarantees the offense keeps its lead.
+        """
+        state = self.state
+        offense_leads = (state.home_score > state.away_score if state.is_home_possession
+                         else state.away_score > state.home_score)
+        if (state.game_over or state.is_overtime or state.quarter != 4
+                or not offense_leads or state.time_remaining <= 0
+                or state.untimed_down_pending or not 1 <= state.down <= 3
+                or not 0 < state.ball_position < 100):
+            return False
+
+        for kneels in range(1, 5 - state.down):
+            if state.ball_position <= 2 * kneels:
+                break  # A later kneel would concede a safety.
+            stopped_plays = min(kneels, state.defense_timeouts)
+            seconds_available = 40 * kneels - 30 * stopped_plays
+            if state.time_remaining * 60 <= seconds_available + 1e-9:
+                return True
+        return False
+
     def _handle_qb_kneel(self) -> PlayOutcome:
         """
         Handle a QB Kneel play per official Paydirt rules.

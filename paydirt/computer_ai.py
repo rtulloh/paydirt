@@ -121,7 +121,8 @@ class ComputerAI:
         ytg = state.yards_to_go
         field_pos = state.ball_position  # 0=own goal, 100=opponent goal
         time_left = state.time_remaining
-        quarter = state.quarter
+        # An overtime period has the same scoring urgency as the final quarter.
+        quarter = 4 if state.is_overtime else state.quarter
 
         # Calculate score differential (positive = winning)
         if state.is_home_possession:
@@ -138,16 +139,26 @@ class ComputerAI:
         # SPECIAL SITUATIONS - Time-based checks FIRST (most important)
         # ============================================================
 
+        if game.can_kneel_out_game():
+            self.last_mode = "Victory Formation"
+            return (PlayType.QB_KNEEL, False, False, False, 0, False)
+
         # End-of-half FG: kick on any down when time is about to expire
         # and the ball is in easy/makeable FG range (inside opponent 30).
         # Exception: in Q4, don't kick if trailing by more than 3 (need TD instead)
-        if quarter in [2, 4] and time_left <= 0.17:  # ~10 seconds or less
+        if quarter in [2, 4] and time_left <= 10 / 60:
             fg_distance = 100 - field_pos + 17  # End zone + holder
             fg_helps = (quarter == 2) or (score_diff >= -3)  # Q2 always; Q4 only if FG ties/wins
             if fg_distance <= 47 and fg_helps:  # Makeable range (~65%+ in 1983)
                 self.last_mode = "End-of-Half FG"
                 use_no_huddle = True
                 return (PlayType.FIELD_GOAL, use_oob, use_no_huddle, False, 0, False)
+
+        # Last-chance touchdown attempts also take priority over fourth-down
+        # conversion plays, which may gain yards without reaching the end zone.
+        if quarter in [2, 4] and time_left <= 0.15 and score_diff < 0 and field_pos >= 40:
+            self.last_mode = "Two-Minute Drill"
+            return (PlayType.HAIL_MARY, False, True, False, 0, False)
 
         # 4th Down Decision
         if down == 4:
@@ -306,7 +317,7 @@ class ComputerAI:
 
         if quarter == 4 and score_diff < 0:
             # Must score to win/tie
-            if time_left < 2.0:
+            if time_left <= 2.0:
                 # Under 2 minutes, trailing
                 if fg_easy and score_diff >= -3:
                     return (
@@ -565,13 +576,7 @@ class ComputerAI:
     def _clock_killing_offense(self, down, ytg, time_left, field_pos) -> PlayType:
         """Conservative offense when protecting a lead."""
 
-        # QB Kneel when very late in game and can run out clock
-        # Each kneel uses 40 seconds, so 3 kneels = 2 minutes
-        if time_left <= 2.0 and down <= 3:
-            # Can kneel out the clock - do it (unless too close to own goal)
-            if field_pos >= 5:  # Not in danger of safety
-                return PlayType.QB_KNEEL
-
+        # Victory formation is selected only via the engine's safe-clock query.
         # 3rd down - still try to convert but safely
         if down == 3:
             if ytg <= 3:
@@ -800,29 +805,22 @@ class ComputerAI:
         Determine if CPU should go for 2-point conversion.
 
         Generally kicks extra point (default), but goes for 2 when:
-        - Late in game and need 2 points to tie/win
+        - Late in game and need 2 points to tie
         - Down by 2 (2-point makes it a tie)
-        - Down by 5 (TD + 2 = 8, makes it a 3-point game)
         - Down by 8 or 9 (need 2 to have chance to tie with another TD)
         - Up by 1 (2-point makes it a 3-point lead)
         """
         state = game.state
+        if not game.season_rules.two_point_conversion or state.game_over:
+            return False
 
         if state.is_home_possession:
             score_diff = state.home_score - state.away_score
         else:
             score_diff = state.away_score - state.home_score
 
-        late_game = state.quarter == 4 and state.time_remaining < 5.0
-        very_late = state.quarter == 4 and state.time_remaining < 2.0
-
-        if very_late:
-            if score_diff == 0:
-                return True
-            if score_diff == -2:
-                return True
-            if score_diff == 1:
-                return True
+        final_period = state.quarter == 4 or state.is_overtime
+        late_game = final_period and state.time_remaining < 5.0
 
         if late_game:
             if score_diff == -2:
@@ -857,7 +855,7 @@ class ComputerAI:
 
         time_left = state.time_remaining
 
-        if time_left < 2.0 and score_diff < 0:
+        if time_left <= 2.0 and score_diff < 0:
             return True
 
         if time_left < 5.0 and score_diff <= -9:
@@ -1084,7 +1082,7 @@ class ComputerAI:
         """
         state = game.state
         time_left = state.time_remaining
-        quarter = state.quarter
+        quarter = 4 if state.is_overtime else state.quarter
 
         # Get score differential from CPU's perspective (CPU is on defense)
         if state.is_home_possession:
@@ -1141,7 +1139,7 @@ class ComputerAI:
         """
         state = game.state
         time_left = state.time_remaining
-        quarter = state.quarter
+        quarter = 4 if state.is_overtime else state.quarter
 
         # Get score differential and timeouts from CPU's perspective (CPU is on offense)
         if state.is_home_possession:

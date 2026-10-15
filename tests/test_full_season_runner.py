@@ -129,3 +129,31 @@ def test_main_requires_both_integration_checks_to_pass(
     monkeypatch.setattr(runner, "run_full_season", season)
     assert runner.main() == (reproduction_status or season_status)
     assert calls == [[]]
+
+
+def test_historical_driver_plays_on_but_does_not_change_live_ai(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep late-penalty flow reachable using legal calls, not altered dice/rules."""
+    from paydirt.computer_ai import ComputerAI
+    from paydirt.play_resolver import PlayType
+    from tests.game_fixtures import make_sample_game
+
+    game = make_sample_game()
+    game.state.is_home_possession = True
+    game.state.home_score, game.state.away_score = 7, 0
+    game.state.quarter, game.state.time_remaining = 4, 6 / 60
+    game.state.ball_position = 80
+    ai = ComputerAI()
+    decisions = []
+
+    def simulate(context: pytest.MonkeyPatch, away: str, home: str, seed: int) -> SimpleNamespace:
+        decisions.append(ai.select_offense(game))
+        print("FINAL\nUNTIMED DOWN")
+        return finished_game()
+
+    monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
+    assert runner.run_historical_reproductions() == 0
+    assert len(decisions) == 4
+    assert all(play != PlayType.QB_KNEEL for play in decisions)
+    assert ai.select_offense(game) == PlayType.QB_KNEEL

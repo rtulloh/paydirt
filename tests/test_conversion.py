@@ -22,6 +22,7 @@ from paydirt.chart_loader import (
 )
 from paydirt.play_resolver import PlayType
 from paydirt.interactive_game import cpu_should_go_for_two
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture
@@ -325,9 +326,9 @@ class TestCPUTwoPointDecision:
 
     @pytest.fixture
     def mock_game(self):
-        """Create a mock game for testing."""
-        game = MagicMock(spec=PaydirtGameEngine)
-        game.state = MagicMock(spec=GameState)
+        """Use public sample teams with explicit conversion rules."""
+        game = make_sample_game()
+        game.season_rules.two_point_conversion = True
         game.state.quarter = 4
         game.state.time_remaining = 1.0  # Very late game
         game.state.is_home_possession = True
@@ -344,12 +345,12 @@ class TestCPUTwoPointDecision:
 
         assert cpu_should_go_for_two(mock_game) is False
 
-    def test_goes_for_two_when_tied_very_late(self, mock_game):
-        """Should go for 2 when tied very late in game."""
+    def test_kicks_extra_point_when_tied_very_late(self, mock_game):
+        """A successful extra point takes the lead; two points are unnecessary."""
         mock_game.state.home_score = 14  # Tied after TD
         mock_game.state.away_score = 14
 
-        assert cpu_should_go_for_two(mock_game) is True
+        assert cpu_should_go_for_two(mock_game) is False
 
     def test_goes_for_two_when_down_by_2_late(self, mock_game):
         """Should go for 2 when down by 2 late in game."""

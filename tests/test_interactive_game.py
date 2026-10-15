@@ -156,6 +156,11 @@ class TestAnalyzeTeamStrength:
 class TestCpuShouldGoForTwo:
     """Tests for cpu_should_go_for_two function."""
 
+    @pytest.fixture(autouse=True)
+    def allow_two_point_conversions(self, game: PaydirtGameEngine) -> None:
+        """These strategy cases explicitly permit two-point attempts."""
+        game.season_rules.two_point_conversion = True
+
     def test_kicks_extra_point_by_default(self, game):
         """CPU should kick extra point in normal situations."""
         game.state.quarter = 2
@@ -168,8 +173,8 @@ class TestCpuShouldGoForTwo:
 
         assert result is False
 
-    def test_goes_for_two_when_tied_very_late(self, game):
-        """CPU should go for 2 when tied very late in game."""
+    def test_kicks_extra_point_when_tied_very_late(self, game):
+        """Kick the extra point to lead rather than risk an unnecessary two-point try."""
         game.state.quarter = 4
         game.state.time_remaining = 1.0  # Under 2 minutes
         game.state.home_score = 14
@@ -178,7 +183,7 @@ class TestCpuShouldGoForTwo:
 
         result = cpu_should_go_for_two(game)
 
-        assert result is True
+        assert result is False
 
     def test_goes_for_two_when_down_by_2_late(self, game):
         """CPU should go for 2 when down by 2 late in game."""

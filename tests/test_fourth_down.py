@@ -9,18 +9,16 @@ Tests verify that the AI makes smart decisions based on:
 - Aggression level
 """
 import pytest
-from unittest.mock import MagicMock
 
 from paydirt.computer_ai import ComputerAI
 from paydirt.play_resolver import PlayType
-from paydirt.game_engine import PaydirtGameEngine, GameState
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture
 def mock_game():
-    """Create a mock game for testing."""
-    game = MagicMock(spec=PaydirtGameEngine)
-    game.state = MagicMock(spec=GameState)
+    """Use a real engine so engine queries cannot become truthy mock objects."""
+    game = make_sample_game()
     game.state.down = 4
     game.state.yards_to_go = 3
     game.state.ball_position = 50
