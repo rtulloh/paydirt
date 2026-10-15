@@ -122,6 +122,7 @@ class PenaltyOption:
     description: str  # Human-readable description
     auto_first_down: bool = False  # Whether penalty gives automatic first down
     is_pass_interference: bool = False  # PI has special handling
+    result_preview: Optional[str] = None  # Engine-generated state after choosing this option
 
 
 @dataclass

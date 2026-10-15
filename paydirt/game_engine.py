@@ -8,7 +8,7 @@ from typing import Optional
 from .packaging import get_seasons_path
 
 from .chart_loader import TeamChart, load_team_chart
-from .utils import clamp_ball_position, format_field_position
+from .utils import clamp_ball_position, format_field_position, format_field_position_with_team
 from .play_resolver import (
     PlayType,
     DefenseType,
@@ -2607,6 +2607,17 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def _punt_keep_result_preview(self, receiving_position: int) -> str:
+        """Describe a kept punt result from the receiving team's perspective."""
+        receiving_team = self.state.defense_team.peripheral.short_name
+        kicking_team = self.state.possession_team.peripheral.short_name
+        if receiving_position >= 100:
+            return f"{receiving_team} TOUCHDOWN!"
+        field_position = format_field_position_with_team(
+            clamp_ball_position(receiving_position), receiving_team, kicking_team
+        )
+        return f"{receiving_team} 1st and 10 at {field_position}"
+
     def _handle_punt(
         self, short_drop: bool = False, coffin_corner_yards: int = 0, punt_from: int = None
     ) -> PlayOutcome:
@@ -2918,7 +2929,8 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=f"Keep touchback + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
-                    auto_first_down=True,  # Offense gets first down when accepting defensive penalty
+                    auto_first_down=True,  # Receiving team starts a new possession
+                    result_preview=self._punt_keep_result_preview(keep_position),
                 )
 
                 penalty_choice = PenaltyChoice(
@@ -3024,7 +3036,8 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=f"Keep result + {punt_penalty_yards} yards → {format_field_position(keep_position)}",
-                    auto_first_down=True,  # Offense gets first down when accepting defensive penalty
+                    auto_first_down=True,  # Receiving team starts a new possession
+                    result_preview=self._punt_keep_result_preview(keep_position),
                 )
 
                 penalty_choice = PenaltyChoice(
@@ -3289,7 +3302,8 @@ class PaydirtGameEngine:
                     raw_result=f"KEEP+{punt_penalty_yards}",
                     yards=punt_penalty_yards,
                     description=keep_desc,
-                    auto_first_down=True,  # Offense gets first down when accepting defensive penalty
+                    auto_first_down=True,  # Receiving team starts a new possession
+                    result_preview=self._punt_keep_result_preview(keep_position),
                 )
 
                 penalty_choice = PenaltyChoice(
@@ -3578,7 +3592,7 @@ class PaydirtGameEngine:
         penalty_yards = state["punt_penalty_yards"]
         is_offensive_penalty = state.get("is_offensive_penalty", False)
 
-        if is_offensive_penalty:
+        if is_offensive_penalty and accept_penalty:
             # OFF penalty - kicking team committed foul, receiving team decides
             # Check if the selected option is "keep return" (contains "KEEP" in raw_result)
             keep_return = False
@@ -3663,7 +3677,7 @@ class PaydirtGameEngine:
 
                 return new_outcome
         else:
-            # DEF penalty - receiving team committed foul, kicking team decides
+            # Enforce a receiving-team penalty, or decline either penalty.
             if accept_penalty:
                 # Accept penalty - ball moves forward for kicking team
                 original_pos = self.state.ball_position
@@ -3710,7 +3724,8 @@ class PaydirtGameEngine:
 
                 return new_outcome
             else:
-                # Decline penalty - take punt result as-is
+                # A declined penalty preserves the punt/return without penalty yardage.
+                deciding_team = "Receiving team" if is_offensive_penalty else "Kicking team"
                 final_position = state["final_position"]
 
                 touchdown = False
@@ -3732,9 +3747,9 @@ class PaydirtGameEngine:
                 return_yards = state["return_yards"]
 
                 if touchdown:
-                    description = f"Kicking team declines penalty. Punt {punt_yards} yards, returned for TOUCHDOWN!"
+                    description = f"{deciding_team} declines penalty. Punt {punt_yards} yards, returned for TOUCHDOWN!"
                 else:
-                    description = f"Kicking team declines penalty. Punt {punt_yards} yards, returned {return_yards} yards to {self.state.field_position_str()}."
+                    description = f"{deciding_team} declines penalty. Punt {punt_yards} yards, returned {return_yards} yards to {self.state.field_position_str()}."
 
                 new_outcome = PlayOutcome(
                     play_type=PlayType.PUNT,

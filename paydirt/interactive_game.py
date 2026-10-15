@@ -2474,6 +2474,10 @@ def handle_penalty_decision(
 
         # Show penalty options with projected field position (use filtered_penalties from above)
         for i, opt in enumerate(filtered_penalties):
+            if opt.result_preview:
+                print(f"    [{i + 2}] Accept PENALTY: {opt.description} -> {opt.result_preview}")
+                continue
+
             # Calculate where ball would be after penalty
             # Apply half-distance rule (except for PI)
             if opt.penalty_type == "PI":

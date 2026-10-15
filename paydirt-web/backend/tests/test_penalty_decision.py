@@ -296,12 +296,12 @@ class TestPuntPenaltyDecision:
         # This simulates what routes.py should do when user selects option [3]
         result = engine.apply_punt_penalty_decision(
             outcome, 
-            accept_penalty=False,  # Decline penalty, keep play result
+            accept_penalty=True,  # Enforce penalty at the end of the return
             penalty_index=1  # Keep return + yards option
         )
         
         # Verify possession switched to receiving team
-        assert engine.state.is_home_possession == True  # Home was receiving
+        assert engine.state.is_home_possession is True  # Home was receiving
         assert engine.state.down == 1
         assert engine.state.yards_to_go == 10
         
@@ -390,7 +390,7 @@ class TestPuntPenaltyDecision:
         # Test with penalty_index=0 (replay punt option)
         result = engine.apply_punt_penalty_decision(
             outcome, 
-            accept_penalty=False,
+            accept_penalty=True,  # Enforce penalty by replaying the punt
             penalty_index=0  # Replay punt option
         )
         

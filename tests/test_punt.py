@@ -1688,3 +1688,156 @@ class TestPuntPenaltyKeepOptionAutoFirstDown:
 
 class TestPuntWithoutPenalty:
     """Placeholder to maintain test count alignment."""
+
+
+@pytest.fixture
+def punt_preview_game(mock_team_chart):
+    """Use distinct teams so previews can identify possession unambiguously."""
+    from copy import deepcopy
+
+    home = deepcopy(mock_team_chart)
+    away = deepcopy(mock_team_chart)
+    home.peripheral.short_name = "BAL '83"
+    away.peripheral.short_name = "CIN '83"
+    return PaydirtGameEngine(home, away)
+
+
+@pytest.mark.parametrize("kicking_is_home", [True, False])
+@pytest.mark.parametrize(
+    "punt_from,punt_result,return_result,coffin_corner_yards,expected_position,expected_spot",
+    [
+        (24, "34", "2", 0, 54, "opponent 46"),
+        (24, "45", "2", 0, 43, "own 43"),
+        (24, "38*", "0", 0, 48, "own 48"),
+        (24, "38†", "0", 0, 48, "own 48"),
+        (50, "65", "0", 0, 30, "own 30"),
+        (24, "34", "0", 15, 52, "opponent 48"),
+        (24, "34", "50", 0, 100, "touchdown"),
+        (5, "34", "2", 0, 73, "opponent 27"),
+    ],
+)
+def test_punt_keep_preview_matches_applied_result(
+    punt_preview_game, kicking_is_home: bool, punt_from: int, punt_result: str,
+    return_result: str, coffin_corner_yards: int, expected_position: int, expected_spot: str,
+) -> None:
+    """Preview the return spot, not the replay LOS, without changing game state."""
+    game = punt_preview_game
+    game.state.is_home_possession = kicking_is_home
+    game.state.ball_position = punt_from
+    game.state.down = 4
+    game.state.yards_to_go = 1
+    game.state.possession_team.special_teams.punt.update({14: "OFF 10", 10: punt_result})
+    game.state.defense_team.special_teams.punt_return[10] = return_result
+    receiving_team = game.state.defense_team.peripheral.short_name
+    kicking_team = game.state.possession_team.peripheral.short_name
+    with patch("paydirt.game_engine.roll_chart_dice", side_effect=[
+        (14, "B1+W3+W0=14"), (10, "B1+W0+W0=10"), (10, "B1+W0+W0=10"),
+    ]):
+        outcome = game.run_play(PlayType.PUNT, None, punt_coffin_corner_yards=coffin_corner_yards)
+    assert outcome.pending_penalty_decision
+    keep_option = outcome.penalty_choice.penalty_options[1]
+    if expected_spot == "touchdown":
+        expected_preview = f"{receiving_team} TOUCHDOWN!"
+    else:
+        side, yardline = expected_spot.split()
+        field_team = receiving_team if side == "own" else kicking_team
+        expected_preview = f"{receiving_team} 1st and 10 at {field_team.split()[0]} {yardline}"
+    assert keep_option.result_preview == expected_preview
+    assert game.state.ball_position == punt_from
+    assert game.state.is_home_possession == kicking_is_home
+    assert game.state.down == 4
+    assert game.state.yards_to_go == 1
+
+    applied = game.apply_punt_penalty_decision(outcome, accept_penalty=True, penalty_index=1)
+    assert game.state.is_home_possession != kicking_is_home
+    assert applied.touchdown == (expected_spot == "touchdown")
+    if not applied.touchdown:
+        assert game.state.ball_position == expected_position
+        assert game.state.down == 1
+        assert game.state.yards_to_go == 10
+
+
+@pytest.mark.parametrize("kicking_is_home", [True, False])
+@pytest.mark.parametrize("choice,expected_position", [("1", 44), ("3", 54)])
+def test_cli_punt_keep_choice_shows_receiving_team_spot(
+    punt_preview_game, capsys, kicking_is_home: bool, choice: str, expected_position: int,
+) -> None:
+    """Reproduce the reported menu and verify selection preserves the correct result."""
+    from paydirt.interactive_game import handle_penalty_decision
+
+    game = punt_preview_game
+    game.state.is_home_possession = kicking_is_home
+    game.state.ball_position = 24
+    game.state.down = 4
+    game.state.yards_to_go = 1
+    game.state.possession_team.special_teams.punt.update({14: "OFF 10", 10: "34"})
+    game.state.defense_team.special_teams.punt_return[10] = "2"
+    receiving_team = game.state.defense_team.peripheral.short_name
+    kicking_team = game.state.possession_team.peripheral.short_name
+    with patch("paydirt.game_engine.roll_chart_dice", side_effect=[
+        (14, "B1+W3+W0=14"), (10, "B1+W0+W0=10"), (10, "B1+W0+W0=10"),
+    ]):
+        outcome = game.run_play(PlayType.PUNT, None)
+    with patch("builtins.input", return_value=choice):
+        handle_penalty_decision(game, outcome, is_human_offense=False, human_is_home=not kicking_is_home)
+    output = capsys.readouterr().out
+    option_three = next(line for line in output.splitlines() if "[3] Accept PENALTY:" in line)
+    assert f"{receiving_team} 1st and 10 at {kicking_team.split()[0]} 46" in option_three
+    assert "own 14" not in option_three
+    assert "[2] Accept PENALTY: Replay punt from own 14 -> 4th and 11 at own 14" in output
+    assert game.state.is_home_possession != kicking_is_home
+    assert game.state.ball_position == expected_position
+    assert game.state.down == 1
+    assert game.state.yards_to_go == 10
+
+
+@pytest.mark.parametrize("kicking_is_home", [True, False])
+@pytest.mark.parametrize("penalty_index", [0, 1])
+@pytest.mark.parametrize(
+    "punt_from,punt_result,return_result,coffin_corner_yards,expected_position,touchdown",
+    [
+        (24, "34", "2", 0, 44, False),
+        (24, "38*", "0", 0, 38, False),
+        (24, "38†", "0", 0, 38, False),
+        (50, "65", "0", 0, 20, False),
+        (24, "34", "0", 15, 42, False),
+        (24, "34", "60", 0, 100, True),
+    ],
+)
+def test_declining_offensive_punt_penalty_preserves_unpenalized_result(
+    punt_preview_game, kicking_is_home: bool, penalty_index: int, punt_from: int,
+    punt_result: str, return_result: str, coffin_corner_yards: int,
+    expected_position: int, touchdown: bool,
+) -> None:
+    """Declining must neither replay the punt nor add penalty yards to the return."""
+    game = punt_preview_game
+    game.state.is_home_possession = kicking_is_home
+    game.state.ball_position = punt_from
+    game.state.down = 4
+    game.state.yards_to_go = 1
+    game.state.possession_team.special_teams.punt.update({14: "OFF 10", 10: punt_result})
+    game.state.defense_team.special_teams.punt_return[10] = return_result
+    with patch("paydirt.game_engine.roll_chart_dice", side_effect=[
+        (14, "B1+W3+W0=14"), (10, "B1+W0+W0=10"), (10, "B1+W0+W0=10"),
+    ]):
+        outcome = game.run_play(PlayType.PUNT, None, punt_coffin_corner_yards=coffin_corner_yards)
+    assert outcome.pending_penalty_decision
+    with patch("paydirt.game_engine.roll_chart_dice") as dice:
+        applied = game.apply_punt_penalty_decision(
+            outcome, accept_penalty=False, penalty_index=penalty_index
+        )
+    dice.assert_not_called()
+    assert game.state.is_home_possession != kicking_is_home
+    assert applied.touchdown == touchdown
+    assert not applied.penalty_applied
+    assert not applied.pending_penalty_decision
+    assert not hasattr(game, "_pending_punt_state")
+    assert applied.description.startswith("Receiving team declines penalty.")
+    assert applied.yards_gained == int(punt_result.rstrip("*†"))
+    assert game.play_log[-1] is applied
+    assert game.state.home_score == (6 if touchdown and not kicking_is_home else 0)
+    assert game.state.away_score == (6 if touchdown and kicking_is_home else 0)
+    if not touchdown:
+        assert game.state.ball_position == expected_position
+        assert game.state.down == 1
+        assert game.state.yards_to_go == 10
