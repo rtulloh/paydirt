@@ -14,7 +14,7 @@ from io import StringIO
 import sys
 
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
-from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
+from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType, PenaltyChoice
 from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 import paydirt.interactive_game as ig
 
@@ -137,3 +137,62 @@ class TestFumbleReportingFix:
             f"Fix should work: display should NOT say '>>> TOUCHDOWN TB '83!'\n"
             f"But output was:\n{output}"
         )
+
+@pytest.mark.parametrize("offense_is_home", [False, True])
+@pytest.mark.parametrize("fumble_yards", [-5, -6], ids=["goal-line", "in-end-zone"])
+@pytest.mark.parametrize("compact", [False, True], ids=["full-cli", "compact-cli"])
+@pytest.mark.parametrize("use_penalty_procedure", [False, True], ids=["direct", "penalty-procedure"])
+def test_end_zone_defensive_recovery_sets_scoring_team(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+    offense_is_home: bool,
+    fumble_yards: int,
+    compact: bool,
+    use_penalty_procedure: bool,
+) -> None:
+    """Real engine recovery metadata must credit the defense in either CLI mode."""
+    home = create_mock_chart("TB '83", "Tampa Bay Buccaneers")
+    away = create_mock_chart("CIN '83", "Cincinnati Bengals")
+    game = PaydirtGameEngine(home, away)
+    game.state.is_home_possession = offense_is_home
+    game.state.ball_position = 5
+    game.state.down = 2
+    game.state.yards_to_go = 10
+    offense = game.state.possession_team
+    defense = game.state.defense_team
+    result = PlayResult(
+        result_type=ResultType.FUMBLE, yards=fumble_yards,
+        raw_result="F", description="FUMBLE!",
+    )
+    run_play = game.run_play_with_penalty_procedure if use_penalty_procedure else game.run_play
+    with (
+        patch("paydirt.game_engine.resolve_play", return_value=result),
+        patch("paydirt.game_engine.resolve_play_with_penalties", return_value=PenaltyChoice(result)),
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(30, "Recovery: 30")),
+    ):
+        outcome = run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+
+    assert outcome.touchdown
+    assert outcome.turnover
+    assert not outcome.safety
+    assert (game.state.home_score, game.state.away_score) == (
+        (0, 6) if offense_is_home else (6, 0)
+    )
+    assert game.state.is_home_possession == (not offense_is_home)
+    assert game.state.ball_position == 97
+    assert game.state.scoring_plays[-1].team == defense.peripheral.short_name
+    assert outcome.result.scoring_team == defense.peripheral.short_name
+
+    monkeypatch.setattr(ig, "COMPACT_MODE", compact)
+    ig.display_play_result(
+        game, outcome, PlayType.LINE_PLUNGE, DefenseType.STANDARD,
+        offense, offense_is_home,
+    )
+    output = capsys.readouterr().out
+    if compact:
+        assert "SCOOP AND SCORE!" in output
+        assert defense.peripheral.short_name in output
+        assert offense.peripheral.short_name not in output
+    else:
+        assert f"TOUCHDOWN {defense.peripheral.short_name}!" in output
+        assert f"TOUCHDOWN {offense.peripheral.short_name}!" not in output

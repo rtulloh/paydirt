@@ -1076,6 +1076,7 @@ class PaydirtGameEngine:
                 touchdown = True
                 self.state.offense_stats.fumbles_lost += 1
                 self.state.switch_possession()
+                result.scoring_team = def_team
                 self._score_touchdown()
                 self.state.ball_position = 97
                 result.description = "Fumble recovered by defense in end zone - TOUCHDOWN"
