@@ -216,6 +216,8 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
     else:
         down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
 
+    period = game.get_status()["quarter"]
+    period_label = f"Q{period}" if isinstance(period, int) else period
     if COMPACT_MODE:
         # Compact single-line status with timeouts inline with score (Option 1)
         you_marker = "*" if is_human_offense else ""
@@ -227,12 +229,12 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         away_to = state.away_timeouts
         home_to = state.home_timeouts
         print(
-            f"\nQ{state.quarter} {format_time(state.time_remaining)} | {away_name} {away_score} ({away_to}) - {home_name} {home_score} ({home_to}) | {down_str} @ {field_pos} | {off_team}{you_marker} ball"
+            f"\n{period_label} {format_time(state.time_remaining)} | {away_name} {away_score} ({away_to}) - {home_name} {home_score} ({home_to}) | {down_str} @ {field_pos} | {off_team}{you_marker} ball"
         )
     else:
         # Verbose multi-line status
         print("\n" + "=" * 70)
-        print(f"  Q{state.quarter} | {format_time(state.time_remaining)} | {game.get_score_str()}")
+        print(f"  {period_label} | {format_time(state.time_remaining)} | {game.get_score_str()}")
         print("=" * 70)
 
         print(f"\n  Ball on: {field_pos}-yard line")
@@ -259,36 +261,24 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     away_stats = state.away_stats
     home_stats = state.home_stats
 
-    # Calculate quarter scores from scoring plays
-    away_q = {1: 0, 2: 0, 3: 0, 4: 0}
-    home_q = {1: 0, 2: 0, 3: 0, 4: 0}
-    for play in state.scoring_plays:
-        q = min(play.quarter, 4)  # Cap at Q4 for OT
-        if play.is_home_team:
-            home_q[q] += play.points
-        else:
-            away_q[q] += play.points
-
-    # Calculate width for formatting
+    periods = game.get_period_scores()
+    period_names = {period["quarter"]: period["name"] for period in periods}
     name_width = max(len(away_name), len(home_name), 10)
+    columns = "  ".join(f"{period['label']:>4}" for period in periods)
+    header = f"  {'TEAM':<{name_width}}  |  {columns}  |  {'TOTAL':>5}  "
+    width = max(58, len(header))
 
     print()
-    print("+" + "-" * 58 + "+")
-    print(f"|{title:^58}|")
-    print("+" + "-" * 58 + "+")
-
-    # Score line with quarter breakdown
-    print(
-        f"|  {'TEAM':<{name_width}}  |  {'1Q':>4}  {'2Q':>4}  {'3Q':>4}  {'4Q':>4}  |  {'TOTAL':>5}  |"
-    )
-    print("|" + "-" * 58 + "|")
-    print(
-        f"|  {away_name:<{name_width}}  |  {away_q[1]:>4}  {away_q[2]:>4}  {away_q[3]:>4}  {away_q[4]:>4}  |  {state.away_score:>5}  |"
-    )
-    print(
-        f"|  {home_name:<{name_width}}  |  {home_q[1]:>4}  {home_q[2]:>4}  {home_q[3]:>4}  {home_q[4]:>4}  |  {state.home_score:>5}  |"
-    )
-    print("+" + "-" * 58 + "+")
+    print("+" + "-" * width + "+")
+    print(f"|{title:^{width}}|")
+    print("+" + "-" * width + "+")
+    print(f"|{header:<{width}}|")
+    print("|" + "-" * width + "|")
+    for name, team, total in [(away_name, "away", state.away_score), (home_name, "home", state.home_score)]:
+        scores = "  ".join(f"{period[team]:>4}" for period in periods)
+        row = f"  {name:<{name_width}}  |  {scores}  |  {total:>5}  "
+        print(f"|{row:<{width}}|")
+    print("+" + "-" * width + "+")
 
     # Scoring Summary - NFL style with running scores
     if state.scoring_plays:
@@ -364,8 +354,7 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
             # Quarter header with team columns
             if entry["quarter"] != current_quarter:
                 current_quarter = entry["quarter"]
-                q_names = {1: "1st Quarter", 2: "2nd Quarter", 3: "3rd Quarter", 4: "4th Quarter"}
-                q_name = q_names.get(current_quarter, f"Q{current_quarter}")
+                q_name = period_names[current_quarter]
                 # Score header line
                 score_header = f"{away_name:>8}  {home_name:>8}"
                 print(f"|{score_header:>{WIDTH}}|")
@@ -3041,10 +3030,8 @@ def resume_game(
 
         # Check for end of game conditions
         time_effectively_zero = game.state.time_remaining < 0.0167
-        is_untimed_down = False
         if time_effectively_zero and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
-            is_untimed_down = True
         elif time_effectively_zero:
             game.state.time_remaining = 0
             if game.state.is_overtime:
@@ -3243,9 +3230,6 @@ def resume_game(
                     is_pass=is_passing_play(play_type),
                 )
 
-        if is_untimed_down:
-            game.clear_untimed_down()
-
         if not two_min_warning_before and game.state.two_minute_warning_called:
             quarter_name = "first half" if game.state.quarter == 2 else "second half"
             print("\n" + "=" * 70)
@@ -3266,6 +3250,8 @@ def resume_game(
 
         if outcome.field_goal_made:
             print(f"  Score: {game.get_score_str()}")
+            if game.state.game_over:
+                break
 
             kicking_home = game.state.is_home_possession
             kicking_team = (
@@ -3294,6 +3280,8 @@ def resume_game(
 
         if outcome.safety:
             print(f"  Score: {game.get_score_str()}")
+            if game.state.game_over:
+                break
 
             kicking_home = game.state.is_home_possession
             kicking_team = (
@@ -3830,13 +3818,9 @@ def run_interactive_game(
         # from floating-point arithmetic in timeout calculations that display as 0:00
         time_effectively_zero = game.state.time_remaining < 0.0167
         # But first check for untimed down (defensive penalty at 0:00)
-        is_untimed_down = False
         if time_effectively_zero and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
             print("  The quarter cannot end on an accepted defensive penalty.")
-            is_untimed_down = True
-            # Don't clear the flag yet - it prevents quarter from advancing during _use_time
-            # We'll clear it after the untimed play completes
         elif time_effectively_zero:
             # Clamp any tiny residual to exactly 0
             game.state.time_remaining = 0
@@ -4113,9 +4097,6 @@ def run_interactive_game(
                     is_pass=is_passing_play(play_type),
                 )
 
-        if is_untimed_down:
-            game.clear_untimed_down()
-
         if not two_min_warning_before and game.state.two_minute_warning_called:
             quarter_name = "first half" if game.state.quarter == 2 else "second half"
             print("\n" + "=" * 70)
@@ -4126,6 +4107,8 @@ def run_interactive_game(
         # Handle field goal made - kickoff after score
         if outcome.field_goal_made:
             print(f"  Score: {game.get_score_str()}")
+            if game.state.game_over:
+                break
 
             # Kickoff after field goal
             kicking_home = game.state.is_home_possession
@@ -4157,6 +4140,8 @@ def run_interactive_game(
         # Handle safety - free kick after score
         if outcome.safety:
             print(f"  Score: {game.get_score_str()}")
+            if game.state.game_over:
+                break
 
             # Free kick after safety
             kicking_home = game.state.is_home_possession

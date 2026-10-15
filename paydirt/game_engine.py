@@ -1311,6 +1311,11 @@ class PaydirtGameEngine:
         if self.state.game_over:
             raise ValueError("Game is over")
 
+        # Consume this extension before resolving the play. An accepted defensive
+        # penalty can then award a new untimed down; otherwise _use_time ends the period.
+        if self.state.time_remaining <= 0 and self.has_untimed_down():
+            self.clear_untimed_down()
+
         # Out of bounds designation cannot be used on punts
         if out_of_bounds_designation and play_type == PlayType.PUNT:
             out_of_bounds_designation = False
@@ -1692,6 +1697,10 @@ class PaydirtGameEngine:
                 no_huddle=no_huddle,
             )
 
+        # The engine, not its callers, owns the lifetime of an untimed down.
+        if self.state.time_remaining <= 0 and self.has_untimed_down():
+            self.clear_untimed_down()
+
         # Capture time before play for spike/timeout calculations
         time_before_play = self.state.time_remaining
         quarter_before_play = self.state.quarter
@@ -1729,6 +1738,9 @@ class PaydirtGameEngine:
 
         elif penalty_choice.offsetting:
             # Offsetting penalties - replay the down, 10 seconds elapse
+            description = self.check_untimed_down_for_defensive_penalty(
+                "Offsetting penalties - down replayed"
+            )
             self._use_time(10)
             outcome = PlayOutcome(
                 play_type=play_type,
@@ -1739,7 +1751,7 @@ class PaydirtGameEngine:
                 field_position_after=field_pos_before,
                 down_before=down_before,
                 down_after=down_before,
-                description="Offsetting penalties - down replayed",
+                description=description,
                 penalty_choice=penalty_choice,
                 pending_penalty_decision=False,
             )
@@ -2502,9 +2514,10 @@ class PaydirtGameEngine:
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 15))  # End of half play
 
-        # Check again after time is consumed - time might have run out during the play
-        # This catches the case where there was enough time before but it expired during play
-        outcome.description = self.check_untimed_down_for_defensive_penalty(outcome.description)
+        # Only an accepted defensive foul can extend the period, not a clean
+        # Hail Mary completion or incompletion that happens to exhaust the clock.
+        if result.result_type == ResultType.PASS_INTERFERENCE:
+            outcome.description = self.check_untimed_down_for_defensive_penalty(outcome.description)
 
         return outcome
 
@@ -5045,6 +5058,32 @@ class PaydirtGameEngine:
         home_name = self.state.home_chart.short_name
         return f"{away_name} {self.state.away_score} - {home_name} {self.state.home_score}"
 
+    def get_period_scores(self) -> list[dict]:
+        """Return regulation and overtime scoring, including scoreless periods.
+
+        Returns:
+            Period labels, names, and each team's points from the scoring log.
+        """
+        last_period = max(4, self.state.quarter)
+        if self.state.is_overtime:
+            last_period = max(last_period, 4 + self.state.ot_period)
+        for play in self.state.scoring_plays:
+            last_period = max(last_period, play.quarter)
+        quarter_names = {1: "1st Quarter", 2: "2nd Quarter", 3: "3rd Quarter", 4: "4th Quarter"}
+        periods = []
+        for quarter in range(1, last_period + 1):
+            periods.append({
+                "quarter": quarter,
+                "label": f"{quarter}Q" if quarter <= 4 else "OT" if quarter == 5 else f"OT{quarter - 4}",
+                "name": quarter_names.get(quarter, f"Overtime {quarter - 4}"),
+                "home": 0,
+                "away": 0,
+            })
+        for play in self.state.scoring_plays:
+            team = "home" if play.is_home_team else "away"
+            periods[play.quarter - 1][team] += play.points
+        return periods
+
     def get_status(self) -> dict:
         """Get current game status."""
         quarter_str = self.state.quarter
@@ -5145,6 +5184,7 @@ class PaydirtGameEngine:
 
         # Start another OT period (playoffs continue until someone wins)
         self.state.ot_period += 1
+        self.state.quarter = 4 + self.state.ot_period
         self.state.time_remaining = rules.period_length_minutes
         self.state.two_minute_warning_called = False
         self.state.ot_first_possession_complete = False
