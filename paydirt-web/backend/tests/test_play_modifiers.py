@@ -20,74 +20,74 @@ class TestParsePlayWithModifiers:
         """Test parsing a simple play with no modifiers."""
         play_type, modifiers = parse_play_with_modifiers("7")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == False
-        assert modifiers['call_timeout'] == False
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is False
+        assert modifiers['call_timeout'] is False
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is False
     
     def test_play_with_spike_modifier(self):
         """Test parsing play with spike modifier."""
         play_type, modifiers = parse_play_with_modifiers("7S")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == True
-        assert modifiers['call_timeout'] == False
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is True
+        assert modifiers['call_timeout'] is False
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is False
     
     def test_play_with_timeout_modifier(self):
         """Test parsing play with timeout modifier."""
         play_type, modifiers = parse_play_with_modifiers("7T")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == False
-        assert modifiers['call_timeout'] == True
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is False
+        assert modifiers['call_timeout'] is True
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is False
     
     def test_play_with_out_of_bounds_modifier(self):
         """Test parsing play with out-of-bounds modifier."""
         play_type, modifiers = parse_play_with_modifiers("7+")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == False
-        assert modifiers['call_timeout'] == False
-        assert modifiers['out_of_bounds'] == True
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is False
+        assert modifiers['call_timeout'] is False
+        assert modifiers['out_of_bounds'] is True
+        assert modifiers['in_bounds'] is False
     
     def test_play_with_in_bounds_modifier(self):
         """Test parsing play with in-bounds modifier."""
         play_type, modifiers = parse_play_with_modifiers("7-")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == False
-        assert modifiers['call_timeout'] == False
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == True
+        assert modifiers['call_spike'] is False
+        assert modifiers['call_timeout'] is False
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is True
     
     def test_play_with_multiple_modifiers(self):
         """Test parsing play with multiple modifiers (should handle all)."""
         play_type, modifiers = parse_play_with_modifiers("7ST")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == True
-        assert modifiers['call_timeout'] == True
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is True
+        assert modifiers['call_timeout'] is True
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is False
     
     def test_play_with_all_modifiers(self):
         """Test parsing play with all possible modifiers."""
         play_type, modifiers = parse_play_with_modifiers("7+ST-")
         assert play_type == PlayType.MEDIUM_PASS
-        assert modifiers['call_spike'] == True
-        assert modifiers['call_timeout'] == True
-        assert modifiers['out_of_bounds'] == True
-        assert modifiers['in_bounds'] == True
+        assert modifiers['call_spike'] is True
+        assert modifiers['call_timeout'] is True
+        assert modifiers['out_of_bounds'] is True
+        assert modifiers['in_bounds'] is True
     
     def test_standalone_spike(self):
         """Test parsing standalone spike play."""
         play_type, modifiers = parse_play_with_modifiers("S")
         assert play_type == PlayType.SPIKE_BALL
         # Standalone spike should not have spike modifier
-        assert modifiers['call_spike'] == False
-        assert modifiers['call_timeout'] == False
-        assert modifiers['out_of_bounds'] == False
-        assert modifiers['in_bounds'] == False
+        assert modifiers['call_spike'] is False
+        assert modifiers['call_timeout'] is False
+        assert modifiers['out_of_bounds'] is False
+        assert modifiers['in_bounds'] is False
     
     def test_different_play_types(self):
         """Test parsing various play types."""
@@ -137,20 +137,20 @@ class TestModifierEdgeCases:
         # This tests that backend doesn't reject spike on 4th down
         # The engine will handle the turnover if needed
         play_type, modifiers = parse_play_with_modifiers("7S")
-        assert modifiers['call_spike'] == True
+        assert modifiers['call_spike'] is True
     
     def test_timeout_without_timeouts_backend(self):
         """Backend should allow timeout modifier even if no timeouts left."""
         # The engine will handle whether timeout succeeds
         play_type, modifiers = parse_play_with_modifiers("7T")
-        assert modifiers['call_timeout'] == True
+        assert modifiers['call_timeout'] is True
     
     def test_out_of_bounds_with_in_bounds(self):
         """Both out-of-bounds and in-bounds modifiers can be set."""
         # This is technically possible but UI should prevent it
         play_type, modifiers = parse_play_with_modifiers("7+-")
-        assert modifiers['out_of_bounds'] == True
-        assert modifiers['in_bounds'] == True
+        assert modifiers['out_of_bounds'] is True
+        assert modifiers['in_bounds'] is True
 
 
 class TestModifierIntegration:
@@ -193,7 +193,7 @@ class TestModifierIntegration:
         response = client.get(f"/api/game/state/{game_id}")
         assert response.status_code == 200
         game_state = response.json()
-        assert game_state["player_offense"] == True
+        assert game_state["player_offense"] is True
         
         return game_id
     
@@ -231,7 +231,7 @@ class TestModifierIntegration:
         # Get initial timeouts
         response = client.get(f"/api/game/state/{game_id}")
         initial_state = response.json()
-        initial_timeouts = initial_state["home_timeouts"] if initial_state["human_is_home"] else initial_state["away_timeouts"]
+        _initial_timeouts = initial_state["home_timeouts"] if initial_state["human_is_home"] else initial_state["away_timeouts"]
         
         response = client.post("/api/game/execute", json={
             "game_id": game_id,

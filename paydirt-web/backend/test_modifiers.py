@@ -47,23 +47,23 @@ def main():
             # Test simple play
             result = execute_play(game_id, "7")
             if result:
-                print(f"Play 7 executed successfully")
+                print("Play 7 executed successfully")
             # Test spike modifier
             result = execute_play(game_id, "7S")
             if result:
-                print(f"Play 7S executed (spike modifier)")
+                print("Play 7S executed (spike modifier)")
             # Test timeout modifier
             result = execute_play(game_id, "7T")
             if result:
-                print(f"Play 7T executed (timeout modifier)")
+                print("Play 7T executed (timeout modifier)")
             # Test out-of-bounds modifier
             result = execute_play(game_id, "7+")
             if result:
-                print(f"Play 7+ executed (out-of-bounds modifier)")
+                print("Play 7+ executed (out-of-bounds modifier)")
             # Test no-huddle mode
             result = execute_play(game_id, "7", no_huddle=True)
             if result:
-                print(f"Play 7 with no_huddle=True executed")
+                print("Play 7 with no_huddle=True executed")
             print("All tests passed!")
             return
         else:

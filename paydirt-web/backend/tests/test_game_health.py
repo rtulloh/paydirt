@@ -219,7 +219,7 @@ class TestGameHealth:
             f"Average plays {avg_plays:.0f} outside expected range"
         )
         
-        print(f"\n  Game results:")
+        print("\n  Game results:")
         for i, (plays, hs, as_) in enumerate(results, 1):
             # Show scoring breakdown
             td_h = hs // 7
