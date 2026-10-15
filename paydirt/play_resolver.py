@@ -108,6 +108,8 @@ class PlayResult:
     # Team that scored the touchdown (set by game engine when touchdown occurs)
     # Use team peripheral.short_name, or None if not a touchdown
     scoring_team: Optional[str] = None
+    # Authoritative explanation when special rules reinterpret a chart result.
+    rule_explanation: Optional[str] = None
 
 
 @dataclass
@@ -610,12 +612,21 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
 
     # Penalties, interceptions, QT, etc. = White/Yellow box = No gain
     # (OFF, DEF, INT, PI, QT all treated as no gain for QB Sneak)
+    procedure_note = (
+        "No penalty is enforced; no re-roll is required."
+        if result_str.upper().startswith(("OFF", "DEF", "PI"))
+        else "No re-roll is required."
+    )
     return PlayResult(
         result_type=ResultType.YARDS,
         yards=0,
         description="QB Sneak - No gain",
         raw_result=result_str,
         dice_roll=dice_roll,
+        rule_explanation=(
+            f'QB sneak rule: "{result_str}" is treated as no gain. '
+            f"{procedure_note}"
+        ),
     )
 
 

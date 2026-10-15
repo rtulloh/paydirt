@@ -314,3 +314,63 @@ class TestQbSneakDefenseNotParticipating:
         
         # Both should have same result since defense doesn't participate
         assert outcome1.yards_gained == outcome2.yards_gained
+
+
+@pytest.mark.parametrize("raw_result", ["OFF 10", "DEF 5X", "PI 15", "off 5"])
+def test_sneak_explains_ignored_penalty(mock_offense_chart, raw_result: str) -> None:
+    """Keep the chart value, but explain why no penalty or reroll occurs."""
+    mock_offense_chart.line_plunge[16] = raw_result
+    result = resolve_qb_sneak(mock_offense_chart, 16)
+    assert result.result_type == ResultType.YARDS
+    assert result.yards == 0
+    assert result.raw_result == raw_result
+    assert result.rule_explanation == (
+        f'QB sneak rule: "{raw_result}" is treated as no gain. '
+        "No penalty is enforced; no re-roll is required."
+    )
+
+
+@pytest.mark.parametrize("roll", [19, 20])
+def test_sneak_explains_other_special_chart_results(mock_offense_chart, roll: int) -> None:
+    """Interceptions and QT results also use the sneak rule, not their usual procedure."""
+    result = resolve_qb_sneak(mock_offense_chart, roll)
+    assert result.rule_explanation == (
+        f'QB sneak rule: "{result.raw_result}" is treated as no gain. No re-roll is required.'
+    )
+
+
+@pytest.mark.parametrize("roll", [10, 12, 13, 14, 17])
+def test_sneak_without_special_chart_result_has_no_explanation(mock_offense_chart, roll: int) -> None:
+    assert resolve_qb_sneak(mock_offense_chart, roll).rule_explanation is None
+
+
+@pytest.mark.parametrize("compact", [True, False])
+@pytest.mark.parametrize("home_possession", [True, False])
+def test_sneak_penalty_explanation_reaches_cli(game, capsys, compact: bool, home_possession: bool) -> None:
+    """The actual fourth-down outcome carries its explanation into both CLI modes."""
+    from paydirt.interactive_game import display_play_result
+
+    game.state.is_home_possession = home_possession
+    game.state.ball_position = 86
+    game.state.down = 4
+    game.state.yards_to_go = 1
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(16, "B1+W1+W4=16")) as dice:
+        outcome = game.run_play_with_penalty_procedure(PlayType.QB_SNEAK, DefenseType.STANDARD)
+    dice.assert_called_once()
+    assert outcome.yards_gained == 0
+    assert not outcome.pending_penalty_decision
+    assert game.state.is_home_possession != home_possession
+    assert game.state.ball_position == 14
+    assert outcome.result.rule_explanation is not None
+    with patch("paydirt.interactive_game.COMPACT_MODE", compact):
+        display_play_result(game, outcome, PlayType.QB_SNEAK, DefenseType.STANDARD,
+                            human_team="home", offense_was_home=home_possession)
+    output = capsys.readouterr().out
+    assert outcome.result.rule_explanation in output
+    assert "OFF 10" in output
+
+
+def test_ordinary_result_has_no_rule_explanation() -> None:
+    from paydirt.play_resolver import parse_result_string
+
+    assert parse_result_string("5").rule_explanation is None

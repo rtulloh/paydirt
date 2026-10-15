@@ -10,7 +10,7 @@ Download the latest release from the [GitHub Releases](https://github.com/rtullo
 
 | Platform | File |
 |----------|------|
-| **macOS (Apple Silicon)** | `Paydirt-X.X.X-arm64.dmg` (M1, M2, M3, M4) |
+| **macOS (Apple Silicon)** | `Paydirt-X.X.X-arm64.dmg` (M1 or later) |
 | **macOS (Intel)** | `Paydirt-X.X.X-x86_64.dmg` |
 | **Windows** | `PaydirtSetup.exe` (installer) or `paydirt.exe` (portable) |
 | **Linux** | `Paydirt-x86_64.AppImage` |

@@ -33,3 +33,19 @@ describe('PlayLogDisplay', () => {
     expect(screen.getByText(/Play 2/i)).toBeInTheDocument()
   })
 })
+
+describe('PlayLogDisplay rule explanations', () => {
+  const explanation = 'QB sneak rule: "OFF 10" is treated as no gain. No penalty is enforced; no re-roll is required.';
+
+  it('displays the engine explanation alongside the play outcome', () => {
+    render(<PlayLogDisplay plays={[{ description: 'No gain. Turnover on downs!', ruleExplanation: explanation }]} />);
+    expect(screen.getByText(explanation)).toBeInTheDocument();
+    expect(screen.getByText('No gain. Turnover on downs!')).toBeInTheDocument();
+  });
+
+  it.each([undefined, null, ''])('omits absent explanations (%s) for older saved plays', (ruleExplanation) => {
+    render(<PlayLogDisplay plays={[{ description: 'No gain', ruleExplanation }]} />);
+    expect(screen.getByText('No gain')).toBeInTheDocument();
+    expect(screen.queryByText(/QB sneak rule/)).not.toBeInTheDocument();
+  });
+});

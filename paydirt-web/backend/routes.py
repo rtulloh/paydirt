@@ -234,6 +234,7 @@ class PlayResult(BaseModel):
     pending_penalty_decision: bool = False
     penalty_choice: Optional[PenaltyChoiceModel] = None
     play_type: Optional[str] = None
+    rule_explanation: Optional[str] = None
 
     headline: Optional[str] = None
     commentary: Optional[str] = None
@@ -1206,6 +1207,7 @@ async def execute_play(request: PlayRequest):
             result=result.result.value if hasattr(result.result, "value") else str(result.result),
             yards=result.yards_gained,
             description=result.description,
+            rule_explanation=result.result.rule_explanation,
             turnover=result.turnover,
             scoring=scoring,
             touchdown=result.touchdown,

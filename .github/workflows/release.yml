@@ -197,7 +197,7 @@ jobs:
             ## Downloads by Architecture
             
             ### macOS
-            - **Apple Silicon (M1, M2, M3, M4)** - Download the `arm64.dmg` file
+            - **Apple Silicon (M1 or later)** - Download the `arm64.dmg` file
             - **Intel Mac** - Download the `x86_64.dmg` file
             
             ### Windows

@@ -28,6 +28,7 @@ interface PlayLogEntry {
   offenseDice?: DiceRoll;
   defenseDice?: DiceRoll;
   description?: string;
+  ruleExplanation?: string;
   headline?: string;
   yards?: number;
   newPosition?: number;
@@ -137,6 +138,9 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
             )}
             
             <div className="text-sm text-white font-medium">{play.description || play.headline}</div>
+            {play.ruleExplanation && (
+              <div className="text-xs text-amber-200 mt-1">{play.ruleExplanation}</div>
+            )}
             
             {play.yards !== undefined && play.yards !== 0 && play.description && (
               <div className={`text-xs ${play.yards > 0 ? 'text-green-400' : 'text-red-400'}`}>

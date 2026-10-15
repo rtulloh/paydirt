@@ -306,6 +306,7 @@ export function useGameLogic(
           offenseDice,
           defenseDice,
           description: data.result.description,
+          ruleExplanation: data.result.rule_explanation,
           headline: data.result.headline,
           yards: data.result.yards || 0,
           newPosition: data.game_state.ball_position,

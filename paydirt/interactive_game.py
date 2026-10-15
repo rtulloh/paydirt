@@ -2016,6 +2016,8 @@ def display_play_result(
                 f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}" | D:{def_row}→"{outcome.result.defense_modifier}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})'
             )
 
+        if outcome.result.rule_explanation:
+            print(f"  → {outcome.result.rule_explanation}")
         # Announce turnover on downs with expressive commentary and possession change
         if is_turnover_on_downs:
             print()
@@ -2035,7 +2037,8 @@ def display_play_result(
     if off_match:
         print(f"  Dice: {off_match.group(1)}")
     print(f'  Offense Chart Result: "{outcome.result.raw_result}"')
-
+    if outcome.result.rule_explanation:
+        print(f"  → {outcome.result.rule_explanation}")
     # Defensive roll
     if def_match:
         r, g, row = def_match.groups()

@@ -678,6 +678,7 @@ const PlayingPhase = () => {
           offenseDice,
           defenseDice,
           description: data.result.description,
+          ruleExplanation: data.result.rule_explanation,
           headline: data.result.headline,
           yards: data.result.yards || 0,
           newPosition: data.game_state.ball_position,
@@ -1061,6 +1062,9 @@ const PlayingPhase = () => {
               <div className="text-white font-bold text-lg">{localLastResult.headline || localLastResult.description}</div>
               {localLastResult.commentary && (
                 <div className="text-white/80 text-sm mt-1">{localLastResult.commentary}</div>
+              )}
+              {localLastResult.rule_explanation && (
+                <div className="text-amber-200 text-sm mt-1">{localLastResult.rule_explanation}</div>
               )}
             </div>
           </div>
