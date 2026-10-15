@@ -485,10 +485,13 @@ def apply_priority_chart(offense_result: str, defense_result: str,
             else:
                 final_yards = def_yards_val
                 priority = PriorityResult.D_INT
-        else:
-            # INT vs non-INT: offense wins
+        elif off_cat == ResultCategory.INT:
             final_yards = off_yards_val
-        description = f"INTERCEPTION! {final_yards} yard return"
+        else:
+            # A defensive INT supplies the depth; unrelated offensive yardage
+            # (including BLACK's missing value) cannot determine the catch spot.
+            final_yards = def_yards_val
+        description = f"INTERCEPTION! {final_yards} yards downfield"
 
     elif priority in [PriorityResult.FUMBLE, PriorityResult.D_FUMBLE,
                       PriorityResult.FUMBLE_PLUS, PriorityResult.FUMBLE_MINUS]:

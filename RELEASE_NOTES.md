@@ -1,5 +1,14 @@
 # Paydirt Release Notes
 
+## Unreleased
+
+### Interception Location Fix
+- Use the winning interception chart result's downfield yardage when locating the catch. In particular, offensive BLACK + defensive INT 13 remains an interception, now 13 yards downfield rather than at the line of scrimmage.
+- Correct resulting return positions, touchbacks, and defensive touchdowns; describe interception depth separately from return yardage. Dice generation, priority rules, and return-chart lookups are unchanged.
+- Add synthetic/public-sample regressions for both possession orientations, direct and penalty-procedure play resolution, declined penalties, and goal-line boundaries.
+
+---
+
 ## v1.3.1
 
 ### Box-Score Corrections
