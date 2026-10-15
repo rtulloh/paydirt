@@ -1,23 +1,24 @@
 """Regression coverage for advancing an offensive fumble recovery."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from paydirt import interactive_game
-from paydirt.chart_loader import load_team_chart
+from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.play_resolver import DefenseType, PlayType
 
 
 @pytest.fixture
 def game() -> PaydirtGameEngine:
-    season = Path(__file__).resolve().parents[1] / "seasons" / "1983"
-    engine = PaydirtGameEngine(
-        load_team_chart(str(season / "Colts")),
-        load_team_chart(str(season / "Bengals")),
-    )
+    engine = make_sample_game("BAL '83", "CIN '83")
+    # Minimal synthetic inputs for BLACK/QT -> fumble -> recovery advance.
+    engine.state.home_chart.offense.long_pass[35] = "BLACK"
+    engine.state.home_chart.offense.qb_time[26] = "F - 10"
+    engine.state.away_chart.defense.modifiers[("F", 5)] = {8: "QT"}
+    engine.state.home_chart.peripheral.fumble_recovered_range = (10, 32)
+    engine.state.home_chart.special_teams.interception_return[13] = "41"
     engine.state.is_home_possession = True
     engine.state.quarter = 3
     engine.state.time_remaining = 4.15
@@ -28,7 +29,7 @@ def game() -> PaydirtGameEngine:
 
 
 def run_long_pass(game: PaydirtGameEngine, penalty_procedure: bool) -> PlayOutcome:
-    """Use real charts: BLACK/QT -> F - 10, recovery 19, return 13 -> 41."""
+    """Use synthetic inputs: BLACK/QT -> F - 10, recovery 19, advance 41."""
     run_play = game.run_play_with_penalty_procedure if penalty_procedure else game.run_play
     with (
         patch("paydirt.play_resolver.random.choice", side_effect=[3, 2]),

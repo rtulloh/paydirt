@@ -1,23 +1,18 @@
 """Reproduce overtime post-score flow, period accounting, and CLI labels."""
 
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
 from paydirt import interactive_game as cli
-from paydirt.chart_loader import load_team_chart
+from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome, ScoringPlay
 from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture
 def game() -> PaydirtGameEngine:
-    season = Path(__file__).resolve().parents[1] / "seasons" / "1983"
-    return PaydirtGameEngine(
-        load_team_chart(str(season / "Colts")),
-        load_team_chart(str(season / "Bengals")),
-    )
+    return make_sample_game("BAL '83", "CIN '83")
 
 
 def prepare_overtime(game: PaydirtGameEngine, offense_home: bool, score_type: str) -> None:

@@ -51,7 +51,15 @@ python3 tests/run_full_season.py
 historical NFL schedule. It checks final game/untimed-down flags, period and
 scoring-log totals, and rejects kickoffs after game end. It never saves standings.
 Failures include the matchup and seed for reproduction, and the script exits
-nonzero. The runner requires pytest and the complete checked-in 1983 team data.
+nonzero. The runner requires pytest and private, local-only 1983 team data;
+these files are intentionally ignored and must never be committed or exported.
+It also runs the four historical full-game reproductions outside the unit suite.
+
+**Unit tests must not depend on private season files.** Use synthetic fixtures
+or the public 2026 sample teams. Do not skip unit regressions to hide missing
+private data. Keep private-chart integration checks in standalone local scripts.
+Before pushing, also verify unit tests in a clean, tracked-files-only checkout
+so ignored local data cannot mask CI failures.
 All 224 games must pass before pushing; a partial run is not sufficient.
 
 ### Test Configuration (from pyproject.toml)

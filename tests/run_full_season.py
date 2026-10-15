@@ -78,7 +78,7 @@ def run_full_season(teams: list[str]) -> int:
             output = io.StringIO()
             try:
                 with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
-                    engine = run_seeded_cli_game(monkeypatch, away, home, seed)
+                    engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
                 validate_game(engine, output.getvalue())
                 overtime += engine.state.ot_period > 0
                 ties += engine.state.home_score == engine.state.away_score
@@ -98,11 +98,38 @@ def run_full_season(teams: list[str]) -> int:
     return 1 if failures else 0
 
 
+def run_historical_reproductions() -> int:
+    """Keep private-chart reproductions in local integration, never unit tests."""
+    failures = 0
+    for away, home, seed, needs_untimed in (
+        ("Raiders", "Eagles", 19831104, True),
+        ("Chiefs", "Giants", 19831603, True),
+        ("Rams", "49ers", 19830601, False),
+        ("Browns", "Buccaneers", 19830914, False),
+    ):
+        output = io.StringIO()
+        try:
+            with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
+                engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
+            validate_game(engine, output.getvalue())
+            if needs_untimed and "UNTIMED DOWN" not in output.getvalue():
+                raise ValueError("Expected untimed-down reproduction was not exercised")
+        except Exception as error:
+            failures += 1
+            print(f"FAIL {away}@{home} seed={seed}: {error}", file=sys.stderr)
+            print(output.getvalue(), file=sys.stderr)
+    print(f"Historical reproductions: {4 - failures}/4 passed")
+    return 1 if failures else 0
+
+
 def main() -> int:
-    """Discover the checked-in 1983 teams and run the complete regression season."""
+    """Run local integration using private, untracked 1983 data."""
     try:
         teams = [path.name for path in SEASON_DIR.iterdir() if path.is_dir() and (path / "team.yaml").is_file()]
-        return run_full_season(teams)
+        build_schedule(teams)  # Validate availability before running any games.
+        reproduction_status = run_historical_reproductions()
+        season_status = run_full_season(teams)
+        return reproduction_status or season_status
     except (OSError, ValueError) as error:
         print(f"Full-season validation failed: {error}", file=sys.stderr)
         return 1

@@ -1,11 +1,10 @@
 """Clock-saving modifiers may reopen a game only when they preserve time."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from paydirt.chart_loader import load_team_chart
+from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType
 from tests.test_untimed_down_flow import run_seeded_cli_game
@@ -13,11 +12,7 @@ from tests.test_untimed_down_flow import run_seeded_cli_game
 
 @pytest.fixture(params=[True, False], ids=["home-offense", "away-offense"])
 def game(request: pytest.FixtureRequest) -> PaydirtGameEngine:
-    season = Path(__file__).resolve().parents[1] / "seasons" / "1983"
-    engine = PaydirtGameEngine(
-        load_team_chart(str(season / "Browns")),
-        load_team_chart(str(season / "Buccaneers")),
-    )
+    engine = make_sample_game()
     engine.state.quarter = 4
     engine.state.home_score = 24
     engine.state.away_score = 17
@@ -71,10 +66,10 @@ def test_play_with_clock_modifier_finishes_or_preserves_game(
 
 
 @pytest.mark.parametrize("away,home,seed", [
-    ("Rams", "49ers", 19830601),
-    ("Browns", "Buccaneers", 19830914),
+    ("Ironclads", "Thunderhawks", 19830601),
+    ("Thunderhawks", "Ironclads", 19830914),
 ])
-def test_generated_season_clock_modifier_reproductions(
+def test_sample_game_clock_modifier_flow(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
     away: str, home: str, seed: int,
 ) -> None:

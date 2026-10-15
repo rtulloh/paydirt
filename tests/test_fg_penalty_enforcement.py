@@ -1,22 +1,23 @@
 """Field-goal penalty enforcement must preserve the line to gain and discard the kick."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from paydirt import interactive_game as cli
-from paydirt.chart_loader import load_team_chart
+from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.play_resolver import DefenseType, PlayType
 
 
 @pytest.fixture(params=[True, False], ids=["home-kicking", "away-kicking"])
 def game(request: pytest.FixtureRequest) -> PaydirtGameEngine:
-    season = Path(__file__).resolve().parents[1] / "seasons" / "1983"
-    browns = load_team_chart(str(season / "Browns"))
-    seahawks = load_team_chart(str(season / "Seahawks"))
-    engine = PaydirtGameEngine(browns, seahawks) if request.param else PaydirtGameEngine(seahawks, browns)
+    engine = make_sample_game(
+        "CLE '83" if request.param else "SEA '83",
+        "SEA '83" if request.param else "CLE '83",
+    )
+    for chart in (engine.state.home_chart, engine.state.away_chart):
+        chart.special_teams.field_goal.update({22: "DEF 5", 21: "F - 7"})
     engine.state.is_home_possession = request.param
     engine.state.home_score = engine.state.away_score = 7
     engine.state.quarter = 3
