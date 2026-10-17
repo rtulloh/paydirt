@@ -206,3 +206,5 @@ class PlayOutcome:
     # Post-play modifiers applied
     spike_used: bool = False
     timeout_used: bool = False
+    # Preserve the requested pace while a penalty choice is awaiting resolution.
+    no_huddle: bool = False

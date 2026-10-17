@@ -4,6 +4,8 @@ Parses chart result strings and determines play outcomes.
 Uses the Priority Chart to combine offensive and defensive results.
 """
 
+from collections import Counter
+from itertools import product
 import random
 import re
 from dataclasses import dataclass, field
@@ -110,6 +112,8 @@ class PlayResult:
     scoring_team: Optional[str] = None
     # Authoritative explanation when special rules reinterpret a chart result.
     rule_explanation: Optional[str] = None
+    # Defense recovered in the original offense's end zone; no return occurred.
+    fumble_end_zone_touchdown: bool = False
 
 
 @dataclass
@@ -168,13 +172,33 @@ def roll_d10() -> int:
     return 10 if result == 0 else result
 
 
+# Shared by actual rolls and deterministic AI probability analysis.
+_CHART_BLACK_DIE_FACES = (1, 1, 2, 2, 3, 3)
+_CHART_WHITE_DIE_MIN = 0
+_CHART_WHITE_DIE_MAX = 5
+_CHART_ONES_CAP = 9
+
+
+def chart_roll_weights() -> dict[int, int]:
+    """Return face-combination counts for each chart row, without rolling dice.
+
+    Returns:
+        Row weights totaling 216, including white sums 9 and 10 in row x9.
+    """
+    whites = range(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX + 1)
+    return dict(Counter(
+        black * 10 + min(white1 + white2, _CHART_ONES_CAP)
+        for black, white1, white2 in product(_CHART_BLACK_DIE_FACES, whites, whites)
+    ))
+
+
 def roll_chart_dice() -> tuple[int, str]:
     """
     Roll dice for chart lookup (10-39).
 
     Paydirt offensive dice:
     - Black die (tens digit): faces 1, 1, 2, 2, 3, 3 -> determines 10s, 20s, or 30s
-    - Two White dice (ones digit): each 0-4, sum gives 0-8 (capped at 9 for ones digit)
+    - Two White dice (ones digit): each 0-5, with their sum capped at 9
 
     Result = (Black * 10) + min(White1 + White2, 9)
     Range: 10+0=10 to 30+9=39
@@ -187,14 +211,11 @@ def roll_chart_dice() -> tuple[int, str]:
     Returns:
         Tuple of (result, description string showing dice breakdown)
     """
-    # Black die: 1, 1, 2, 2, 3, 3
-    black_die_faces = [1, 1, 2, 2, 3, 3]
-    black = random.choice(black_die_faces)
+    black = random.choice(_CHART_BLACK_DIE_FACES)
 
-    # Two white dice: each 0-4 (sum 0-8, or 0-5 capped at 9)
-    white1 = random.randint(0, 5)
-    white2 = random.randint(0, 5)
-    white_sum = min(white1 + white2, 9)  # Cap at 9 to stay in 10-39 range
+    white1 = random.randint(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX)
+    white2 = random.randint(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX)
+    white_sum = min(white1 + white2, _CHART_ONES_CAP)
 
     # Combine: tens digit from black, ones digit from sum of whites
     result = (black * 10) + white_sum

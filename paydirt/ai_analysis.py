@@ -2,7 +2,9 @@
 AI Analysis module for studying team charts and opponent tendencies.
 
 This module provides utilities for analyzing offense and defense charts to identify
-best plays for different situations, ignoring penalties and turnovers.
+best plays for different situations. Offense averages/rates are dice-weighted and
+conditional on included chart outcomes, excluding penalties, turnovers, and
+breakaway results. They are not full engine-resolved play expectations.
 """
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -10,7 +12,10 @@ from enum import Enum
 from typing import Optional
 
 from paydirt.chart_loader import OffenseChart, DefenseChart, TeamChart
+from .play_resolver import chart_roll_weights
 
+_CHART_ROLL_WEIGHTS = chart_roll_weights()
+_CHART_ROLL_WEIGHT_TOTAL = sum(_CHART_ROLL_WEIGHTS.values())
 
 @dataclass
 class PlayOutcome:
@@ -38,12 +43,12 @@ class RollStats:
 
 @dataclass
 class PlayTypeStats:
-    """Statistics for a play type across all relevant dice rolls."""
+    """Chart-row counts and conditional dice-weighted metrics for a play type."""
     play_type: str
     total_rolls: int = 0
     valid_rolls: int = 0  # excluding penalties and turnovers
     
-    # Yards statistics (valid plays only)
+    # Unweighted chart-row yardage sum; avg_yards is probability-weighted.
     total_yards: int = 0
     avg_yards: float = 0.0
     max_yards: int = 0
@@ -55,9 +60,14 @@ class PlayTypeStats:
     zero_plays: int = 0
     negative_plays: int = 0
     
-    # Rates
-    success_rate: float = 0.0  # % positive or first down
-    first_down_rate: float = 0.0
+    # Conditional rates among included rows, not whole-play success odds.
+    success_rate: float = 0.0  # Probability of positive yardage, as a percentage.
+    first_down_rate: float = 0.0  # Reserved: no distance-specific conversion model.
+
+    # Probability mass under the full dice distribution (0-1, not row counts).
+    total_probability: float = 0.0  # Present chart rows, including exclusions.
+    valid_probability: float = 0.0  # Present rows included in analysis.
+    positive_probability: float = 0.0  # Included positive-gain rows.
 
 
 @dataclass 
@@ -309,7 +319,7 @@ class OffenseAnalyzer:
         return not (outcome.is_penalty or outcome.is_fumble or outcome.is_interception or outcome.is_breakaway)
     
     def analyze_play_type(self, play_column: str) -> PlayTypeStats:
-        """Analyze a specific play type column."""
+        """Weight included chart outcomes by dice odds; retain raw row counts."""
         if play_column in self._stats_cache:
             return self._stats_cache[play_column]
         
@@ -319,16 +329,20 @@ class OffenseAnalyzer:
             roll_results = self._get_chart_attribute(play_column)
         
         stats = PlayTypeStats(play_type=play_column)
-        
+        total_weight = valid_weight = positive_weight = weighted_yards = 0
         for dice_roll, result in roll_results.items():
             # Dice rolls in offense chart are 10-39
             if dice_roll < 10 or dice_roll > 39:
                 continue
                 
+            weight = _CHART_ROLL_WEIGHTS[dice_roll]
+            total_weight += weight
             stats.total_rolls += 1
             outcome = self._parse_result(result)
             
             if self._is_valid_play(outcome):
+                valid_weight += weight
+                weighted_yards += weight * outcome.yards
                 stats.valid_rolls += 1
                 stats.total_yards += outcome.yards
                 stats.max_yards = max(stats.max_yards, outcome.yards)
@@ -339,19 +353,20 @@ class OffenseAnalyzer:
                     stats.min_yards = min(stats.min_yards, outcome.yards)
                 
                 if outcome.is_positive:
+                    positive_weight += weight
                     stats.positive_plays += 1
                 elif outcome.is_negative:
                     stats.negative_plays += 1
                 else:
                     stats.zero_plays += 1
         
-        # Calculate rates
-        if stats.valid_rolls > 0:
-            stats.avg_yards = stats.total_yards / stats.valid_rolls
-            # Success = positive yards OR (can't determine first down from dice roll alone)
-            # For now, success = positive yardage
-            stats.success_rate = (stats.positive_plays / stats.valid_rolls) * 100
-            stats.first_down_rate = (stats.first_downs / stats.valid_rolls) * 100
+        stats.total_probability = total_weight / _CHART_ROLL_WEIGHT_TOTAL
+        stats.valid_probability = valid_weight / _CHART_ROLL_WEIGHT_TOTAL
+        stats.positive_probability = positive_weight / _CHART_ROLL_WEIGHT_TOTAL
+        if valid_weight > 0:
+            stats.avg_yards = weighted_yards / valid_weight
+            stats.success_rate = positive_weight / valid_weight * 100
+            # Leave first_down_rate unset: a positive gain is not a conversion.
         
         self._stats_cache[play_column] = stats
         return stats

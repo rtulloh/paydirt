@@ -1649,7 +1649,10 @@ def display_play_result(
                     special_marker = " ★ TURNOVER!"
             elif txn.has_event_type(EventType.FUMBLE):
                 recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
-                if txn.turnover:
+                if outcome.result.fumble_end_zone_touchdown:
+                    result_str = "FUMBLE - Recovered in end zone!"
+                    special_marker = " ★ TOUCHDOWN!"
+                elif txn.turnover:
                     if txn.touchdown:
                         result_str = "FUMBLE - Loss! RETURNED FOR TD!"
                         special_marker = " ★ SCOOP AND SCORE!"
@@ -1714,8 +1717,13 @@ def display_play_result(
                 def_cat_check, _ = categorize_result(outcome.result.defense_modifier)
                 is_check_down = def_cat_check == ResultCategory.PARENS_NUMBER
 
-            comment = ""
-            if not skip_commentary:
+            canonical_td = outcome.touchdown and (
+                not outcome.turnover or outcome.result.fumble_end_zone_touchdown
+            )
+            comment = outcome.description if canonical_td else ""
+            if outcome.result.fumble_end_zone_touchdown:
+                comment = outcome.result.description
+            if not canonical_td and not skip_commentary:
                 comment = commentary.generate(
                     play_type=play_type,
                     result_type=outcome.result.result_type,
@@ -1817,7 +1825,8 @@ def display_play_result(
                 if recovery_events:
                     rec_event = recovery_events[0]
                     rec_result = "kept" if not txn.turnover else "lost"
-                    if txn.turnover or txn.has_event_type(EventType.FUMBLE_RETURN):
+                    if (not outcome.result.fumble_end_zone_touchdown
+                            and (txn.turnover or txn.has_event_type(EventType.FUMBLE_RETURN))):
                         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
                         ret_yards = ret_events[0].yards if ret_events else 0
                         ret_dice = ret_events[0].dice_roll if ret_events else 0
@@ -1879,7 +1888,10 @@ def display_play_result(
         elif outcome.result.result_type == ResultType.FUMBLE:
             if outcome.turnover:
                 # Check for touchback (fumble in end zone recovered by defense)
-                if "TOUCHBACK" in outcome.result.description.upper():
+                if outcome.result.fumble_end_zone_touchdown:
+                    result_str = "FUMBLE - Recovered in end zone!"
+                    special_marker = " ★ TOUCHDOWN!"
+                elif "TOUCHBACK" in outcome.result.description.upper():
                     result_str = "FUMBLE in end zone - TOUCHBACK!"
                     special_marker = " ★ TURNOVER!"
                 # Check for fumble return TD
@@ -1951,8 +1963,13 @@ def display_play_result(
             def_cat_check, _ = categorize_result(outcome.result.defense_modifier)
             is_check_down = def_cat_check == ResultCategory.PARENS_NUMBER
 
-        comment = ""
-        if not skip_commentary:
+        canonical_td = outcome.touchdown and (
+            not outcome.turnover or outcome.result.fumble_end_zone_touchdown
+        )
+        comment = outcome.description if canonical_td else ""
+        if outcome.result.fumble_end_zone_touchdown:
+            comment = outcome.result.description
+        if not canonical_td and not skip_commentary:
             comment = commentary.generate(
                 play_type=play_type,
                 result_type=outcome.result.result_type,
@@ -1987,7 +2004,7 @@ def display_play_result(
             fumble_return = getattr(outcome.result, "fumble_return_yards", 0)
             if recovery_roll is not None:
                 rec_result = "kept" if not outcome.turnover else "lost"
-                if outcome.turnover:
+                if outcome.turnover and not outcome.result.fumble_end_zone_touchdown:
                     extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{fumble_return}'
                 elif fumble_return > 0:
                     return_dice = outcome.result.fumble_return_dice
@@ -2076,6 +2093,9 @@ def display_play_result(
         print(f"  {format_dice_roll(int_dice, result=str(int_return), prefix='R')} yard return")
         if outcome.touchdown:
             print("  >>> PICK SIX! Returned for a TOUCHDOWN!")
+    elif outcome.result.fumble_end_zone_touchdown:
+        print(f"  RESULT: {outcome.result.description}")
+        print(f"  {format_dice_roll(outcome.result.fumble_recovery_roll, prefix='R')}")
     elif outcome.result.result_type == ResultType.FUMBLE:
         # Show detailed fumble info per official rules
         fumble_spot = outcome.result.fumble_spot if hasattr(outcome.result, "fumble_spot") else 0
@@ -2150,7 +2170,9 @@ def display_play_result(
     # Generate and display colorful commentary
     # Skip fumble commentary if offense recovered (already shown in detailed display)
     is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
-    skip_commentary = outcome.result.result_type == ResultType.FUMBLE and not outcome.turnover
+    skip_commentary = outcome.result.result_type == ResultType.FUMBLE and (
+        not outcome.turnover or outcome.result.fumble_end_zone_touchdown
+    )
 
     # Check if defense limited the gain with parentheses result
     is_check_down = False
@@ -2158,7 +2180,9 @@ def display_play_result(
         def_cat, _ = categorize_result(outcome.result.defense_modifier)
         is_check_down = def_cat == ResultCategory.PARENS_NUMBER
 
-    if not skip_commentary:
+    if outcome.touchdown and not outcome.turnover:
+        print(f"\n  >> {outcome.description}")
+    elif not skip_commentary:
         comment = commentary.generate(
             play_type=play_type,
             result_type=outcome.result.result_type,
@@ -2471,7 +2495,10 @@ def handle_penalty_decision(
                     )
 
         # Option 1 is always the play result
-        print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")
+        if is_punt_penalty and play_result.fumble_recovered:
+            print(f"    [1] Accept PLAY result: {play_result.description}")
+        else:
+            print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")
 
         # Show penalty options with projected field position (use filtered_penalties from above)
         for i, opt in enumerate(filtered_penalties):
@@ -3204,7 +3231,7 @@ def resume_game(
             in_bounds_designation=in_bounds,
             punt_short_drop=punt_short_drop,
             punt_coffin_corner_yards=punt_coffin_corner_yards,
-            no_huddle=no_huddle_mode,
+            no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
         )
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
@@ -4024,7 +4051,7 @@ def run_interactive_game(
             in_bounds_designation=in_bounds,
             punt_short_drop=punt_short_drop,
             punt_coffin_corner_yards=punt_coffin_corner_yards,
-            no_huddle=no_huddle_mode,
+            no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
             call_spike=call_spike,
             call_timeout=call_timeout or cpu_call_timeout,
         )

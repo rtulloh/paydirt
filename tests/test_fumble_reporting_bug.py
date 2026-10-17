@@ -190,9 +190,10 @@ def test_end_zone_defensive_recovery_sets_scoring_team(
     )
     output = capsys.readouterr().out
     if compact:
-        assert "SCOOP AND SCORE!" in output
-        assert defense.peripheral.short_name in output
-        assert offense.peripheral.short_name not in output
+        assert "SCOOP AND SCORE!" not in output
+        assert "RETURNED FOR TD" not in output
+        assert (f"{defense.peripheral.short_name} recovers the fumble in "
+                f"{offense.peripheral.short_name}'s end zone. TOUCHDOWN!") in output
     else:
         assert f"TOUCHDOWN {defense.peripheral.short_name}!" in output
         assert f"TOUCHDOWN {offense.peripheral.short_name}!" not in output

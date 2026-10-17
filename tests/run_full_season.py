@@ -122,12 +122,17 @@ def run_historical_reproductions() -> int:
         return (play, False, False, False, 0, False)
 
     failures = 0
-    for away, home, seed, needs_untimed in (
+    cases = (
         ("Raiders", "Eagles", 19831104, True),
-        ("Chiefs", "Giants", 19831603, True),
+        # Retain prior reproductions when corrected commentary/timing changes
+        # their seeded trajectories; require a real extension in the new supplement.
+        ("Chiefs", "Giants", 19831603, False),
+        ("Chiefs", "Giants", 19831607, False),
+        ("Chiefs", "Giants", 19831621, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
-    ):
+    )
+    for away, home, seed, needs_untimed in cases:
         output = io.StringIO()
         try:
             with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
@@ -140,7 +145,7 @@ def run_historical_reproductions() -> int:
             failures += 1
             print(f"FAIL {away}@{home} seed={seed}: {error}", file=sys.stderr)
             print(output.getvalue(), file=sys.stderr)
-    print(f"Historical reproductions: {4 - failures}/4 passed")
+    print(f"Historical reproductions: {len(cases) - failures}/{len(cases)} passed")
     return 1 if failures else 0
 
 

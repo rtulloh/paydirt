@@ -13,7 +13,7 @@ Makes intelligent decisions based on:
 import random
 from typing import Optional
 
-from .play_resolver import PlayType, DefenseType
+from .play_resolver import PlayType, DefenseType, ResultType
 from .game_engine import PaydirtGameEngine
 from .ai_analysis import TeamAnalyzer, OpponentModel
 from .chart_loader import OffenseChart
@@ -1226,6 +1226,12 @@ class ComputerAI:
 
         accept_play = True
         best_penalty_idx = penalty_choice.penalty_options.index(filtered_penalties[0])
+
+        if (is_punt_penalty and play_result.result_type == ResultType.FUMBLE
+                and play_result.fumble_recovered):
+            # A live returner loss gives the kicking team a fresh possession.
+            # Keep that recovery, or erase our own return fumble by replaying.
+            return (offended_is_offense, best_penalty_idx)
 
         if is_fg_penalty:
             if outcome.field_goal_made:

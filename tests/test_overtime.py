@@ -521,16 +521,16 @@ class TestCheckUntimedDownForDefensivePenalty:
         assert game.state.untimed_down_pending is True
         assert "(Untimed down)" in result
     
-    def test_sets_untimed_down_when_time_might_expire(self, game):
-        """Should set untimed down when time is low (<=30 sec) and defensive penalty occurs."""
+    def test_does_not_set_untimed_down_before_time_expires(self, game):
+        """Low time alone cannot award an extension before play timing is applied."""
         game.state.time_remaining = 0.4  # 24 seconds left
         game.state.quarter = 2
         game.state.is_overtime = False
         
         result = game.check_untimed_down_for_defensive_penalty("Defensive Offside!")
         
-        assert game.state.untimed_down_pending is True
-        assert "(Untimed down)" in result
+        assert game.state.untimed_down_pending is False
+        assert "(Untimed down)" not in result
     
     def test_does_not_set_untimed_down_when_sufficient_time_remains(self, game):
         """Should not set untimed down if plenty of time remains (>30 sec)."""

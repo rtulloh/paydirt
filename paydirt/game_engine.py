@@ -1095,7 +1095,11 @@ class PaydirtGameEngine:
                 result.scoring_team = def_team
                 self._score_touchdown()
                 self.state.ball_position = 97
-                result.description = "Fumble recovered by defense in end zone - TOUCHDOWN"
+                result.fumble_end_zone_touchdown = True
+                result.description = (
+                    f"{def_team} recovers the fumble in {off_team}'s end zone. TOUCHDOWN!"
+                )
+                result.rule_explanation = result.description
 
         else:
             # Normal field position (1-99)
@@ -1425,6 +1429,7 @@ class PaydirtGameEngine:
         touchdown = result.touchdown
         safety = False
         first_down = False
+        defensive_penalty = False
 
         # Apply Out of Bounds designation penalty (-5 yards)
         # Per rules: 5 yards subtracted AFTER combining offense/defense results
@@ -1591,10 +1596,7 @@ class PaydirtGameEngine:
                 result.description = penalty_result.description
                 yards = new_pos - ball_pos_numeric
 
-                # Check for untimed down rule: defensive penalty at 0:00 means extra play
-                result.description = self.check_untimed_down_for_defensive_penalty(
-                    result.description
-                )
+                defensive_penalty = True
 
         elif result.result_type == ResultType.PASS_INTERFERENCE:
             # PI is special: always automatic first down, can exceed half-distance
@@ -1620,8 +1622,7 @@ class PaydirtGameEngine:
             self.state.yards_to_go = new_ytg
             first_down = True
 
-            # Check for untimed down rule: PI (defensive penalty) at 0:00 means extra play
-            result.description = self.check_untimed_down_for_defensive_penalty(result.description)
+            defensive_penalty = True
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
@@ -1652,6 +1653,9 @@ class PaydirtGameEngine:
 
         if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
+
+        if touchdown and not turnover:
+            result.description = f"{self.state.scoring_plays[-1].description} | {result.description}"
 
         outcome = PlayOutcome(
             play_type=play_type,
@@ -1702,7 +1706,12 @@ class PaydirtGameEngine:
         else:
             play_seconds = random.uniform(25, 45)
 
-        self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
+        self._use_time(
+            play_seconds, out_of_bounds=is_out_of_bounds, defensive_penalty=defensive_penalty
+        )
+        if defensive_penalty:
+            result.description = self.check_untimed_down_for_defensive_penalty(result.description)
+            outcome.description = result.description
 
         return outcome
 
@@ -1792,15 +1801,16 @@ class PaydirtGameEngine:
                 description=penalty_choice.play_result.description,
                 penalty_choice=penalty_choice,
                 pending_penalty_decision=True,
+                no_huddle=no_huddle,
             )
             return outcome
 
         elif penalty_choice.offsetting:
             # Offsetting penalties - replay the down, 10 seconds elapse
+            self._use_time(10, defensive_penalty=True)
             description = self.check_untimed_down_for_defensive_penalty(
                 "Offsetting penalties - down replayed"
             )
-            self._use_time(10)
             outcome = PlayOutcome(
                 play_type=play_type,
                 defense_type=defense_type,
@@ -1913,6 +1923,7 @@ class PaydirtGameEngine:
                 self.state.yards_to_go,
                 out_of_bounds_designation=False,
                 in_bounds_designation=False,
+                no_huddle=outcome.no_huddle,
             )
         else:
             # Accept the penalty - down is replayed
@@ -1947,10 +1958,6 @@ class PaydirtGameEngine:
                 self.state.yards_to_go = new_ytg
                 first_down = True
                 yards = new_pos - ball_pos_numeric
-
-                # Check for untimed down rule: PI (defensive penalty) at 0:00 means extra play
-                description = self.check_untimed_down_for_defensive_penalty(description)
-
             elif penalty_opt.penalty_type == "OFF":
                 # Offensive penalty - defense was offended
                 # Use chart yardage if explicitly specified (e.g., "OFF 10")
@@ -1995,8 +2002,6 @@ class PaydirtGameEngine:
                 description = penalty_result.description
                 yards = new_pos - ball_pos_numeric
 
-                # Check for untimed down rule: defensive penalty at 0:00 means extra play
-                description = self.check_untimed_down_for_defensive_penalty(description)
             else:
                 # Unknown penalty type
                 description = f"Penalty: {penalty_opt.description}"
@@ -2005,6 +2010,12 @@ class PaydirtGameEngine:
 
             if first_down:
                 self.state.offense_stats.first_downs += 1
+
+            play_seconds = random.uniform(15, 25) if outcome.no_huddle else random.uniform(25, 45)
+            defensive_penalty = penalty_opt.penalty_type in ("DEF", "PI")
+            self._use_time(play_seconds, defensive_penalty=defensive_penalty)
+            if defensive_penalty:
+                description = self.check_untimed_down_for_defensive_penalty(description)
 
             # Build the final outcome
             final_outcome = PlayOutcome(
@@ -2024,7 +2035,6 @@ class PaydirtGameEngine:
             )
 
             self.play_log.append(final_outcome)
-            self._use_time(random.uniform(25, 45))
 
             return final_outcome
 
@@ -2188,6 +2198,9 @@ class PaydirtGameEngine:
         txn.final_yards_to_go = self.state.yards_to_go
         txn.possession_team = self.state.possession_team.peripheral.short_name
         txn.is_complete = True
+
+        if touchdown and not turnover:
+            result.description = f"{self.state.scoring_plays[-1].description} | {result.description}"
 
         outcome = PlayOutcome(
             play_type=play_type,
@@ -2528,11 +2541,6 @@ class PaydirtGameEngine:
             first_down = True
             self.state.defense_stats.penalties += 1
             self.state.defense_stats.penalty_yards += yards
-
-            # Check for untimed down rule: defensive penalty at 0:00 means extra play
-            # Per NFL rules: No quarter may end on an accepted defensive penalty
-            result.description = self.check_untimed_down_for_defensive_penalty(result.description)
-
         elif result.result_type == ResultType.YARDS:
             # Completion for yardage
             first_down = self.state.advance_ball(yards)
@@ -2569,12 +2577,16 @@ class PaydirtGameEngine:
         )
 
         self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 15))  # End of half play
+        self._use_time(
+            random.uniform(5, 15),
+            defensive_penalty=result.result_type == ResultType.PASS_INTERFERENCE,
+        )
 
         # Only an accepted defensive foul can extend the period, not a clean
         # Hail Mary completion or incompletion that happens to exhaust the clock.
         if result.result_type == ResultType.PASS_INTERFERENCE:
-            outcome.description = self.check_untimed_down_for_defensive_penalty(outcome.description)
+            result.description = self.check_untimed_down_for_defensive_penalty(result.description)
+            outcome.description = result.description
 
         return outcome
 
@@ -3119,6 +3131,7 @@ class PaydirtGameEngine:
                     field_position_after=self.state.field_position_str(),
                     description=description,
                 )
+                outcome.result.dice_roll = punt_roll
                 self.play_log.append(outcome)
                 self._use_time(random.uniform(5, 10))
                 return outcome
@@ -3230,6 +3243,7 @@ class PaydirtGameEngine:
                     field_position_after=self.state.field_position_str(),
                     description=full_description,
                 )
+                outcome.result.dice_roll = punt_roll
                 self.play_log.append(outcome)
                 self._use_time(random.uniform(5, 10))
                 return outcome
@@ -3238,6 +3252,7 @@ class PaydirtGameEngine:
         return_penalty_yards = 0
         return_penalty_is_offensive = False
         return_roll = 0  # Initialize for all code paths
+        return_fumbled = False
 
         if is_downed:
             # Ball downed or out of bounds - no return
@@ -3271,33 +3286,9 @@ class PaydirtGameEngine:
                     # Penalty will be applied in the TD check logic below
                 # Check for fumble on return
                 elif "F" in return_result.upper():
-                    # Fumble on return - punting team recovers
+                    # Resolve only after the offended team has chosen play or penalty.
+                    return_fumbled = True
                     return_desc = "FUMBLE on the return!"
-                    # Punting team gets ball at landing spot
-                    self.state.ball_position = landing_spot
-                    # Don't switch possession - punting team recovers
-                    # Reset to 1st and 10 since kicking team gets fresh possession
-                    self.state.down = 1
-                    self.state.yards_to_go = 10
-
-                    # Add return dice to result so it can be displayed
-                    parsed_result = parse_result_string(punt_result)
-                    parsed_result.punt_return_dice = return_roll
-                    parsed_result.dice_roll = punt_roll  # Also preserve the original punt dice roll
-
-                    outcome = PlayOutcome(
-                        play_type=PlayType.PUNT,
-                        defense_type=DefenseType.STANDARD,
-                        result=parsed_result,
-                        yards_gained=punt_yards,
-                        turnover=False,  # Punting team recovers - no turnover
-                        field_position_before=field_pos_before,
-                        field_position_after=self.state.field_position_str(),
-                        description=f"{description}Punt {punt_yards} yards, {return_desc} Recovered at {self.state.field_position_str()}",
-                    )
-                    self.play_log.append(outcome)
-                    self._use_time(random.uniform(5, 12))
-                    return outcome
                 else:
                     # Normal return yardage
                     try:
@@ -3434,7 +3425,7 @@ class PaydirtGameEngine:
 
                 penalty_choice = PenaltyChoice(
                     play_result=parse_result_string(punt_result),
-                    penalty_options=[replay_option, keep_option],
+                    penalty_options=[replay_option] if return_fumbled else [replay_option, keep_option],
                     offended_team="defense",  # Receiving team is offended
                     offsetting=False,
                 )
@@ -3458,12 +3449,19 @@ class PaydirtGameEngine:
                     "coffin_corner_yards": coffin_corner_yards,
                     "is_fair_catch": is_fair_catch,
                     "punt_from": punt_from,
+                    "return_fumbled": return_fumbled,
                 }
 
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
-
-                description = f"Punt {punt_yards} yards, returned {return_yards} yards. PENALTY: OFF {punt_penalty_yards} on kicking team. Receiving team chooses: replay punt OR keep result + yardage."
+                if return_fumbled:
+                    parsed_result = self._punt_return_fumble_result(
+                        punt_result, punt_roll, return_roll, punt_yards, landing_spot
+                    )
+                    penalty_choice.play_result = parsed_result
+                    description = f"Punt {punt_yards} yards, FUMBLE on the return! Kicking team recovers. PENALTY: OFF {punt_penalty_yards}. Receiving team may replay the punt or decline."
+                else:
+                    description = f"Punt {punt_yards} yards, returned {return_yards} yards. PENALTY: OFF {punt_penalty_yards} on kicking team. Receiving team chooses: replay punt OR keep result + yardage."
 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -3549,13 +3547,20 @@ class PaydirtGameEngine:
                     "coffin_corner_yards": coffin_corner_yards,
                     "is_fair_catch": is_fair_catch,
                     "punt_from": punt_from,
+                    "return_fumbled": return_fumbled,
                 }
 
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
-
+                if return_fumbled:
+                    parsed_result = self._punt_return_fumble_result(
+                        punt_result, punt_roll, return_roll, punt_yards, landing_spot
+                    )
+                    penalty_choice.play_result = parsed_result
                 penalty_suffix = "X" if punt_penalty_auto_first_down else ""
                 description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards}{penalty_suffix} on receiving team. Kicking team chooses: accept OR decline."
+                if return_fumbled:
+                    description += " FUMBLE on the return! Kicking team recovers if penalty declined."
 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -3570,6 +3575,11 @@ class PaydirtGameEngine:
                     pending_penalty_decision=True,
                 )
                 return outcome
+
+        if return_fumbled:
+            return self._finish_punt_return_fumble(
+                punt_result, punt_roll, return_roll, punt_yards, landing_spot, field_pos_before
+            )
 
         # Switch possession now (after DEF penalty check passed)
         self.state.switch_possession()
@@ -3694,6 +3704,51 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def _punt_return_fumble_result(
+        self, punt_result: str, punt_roll: int, return_roll: int, punt_yards: int,
+        landing_spot: int,
+    ) -> PlayResult:
+        """Describe a return fumble without applying its statistics or possession."""
+        team = self.state.possession_team.peripheral.short_name
+        spot = format_field_position_with_team(
+            landing_spot, team, self.state.defense_team.peripheral.short_name
+        )
+        return PlayResult(
+            result_type=ResultType.FUMBLE, raw_result=punt_result, dice_roll=punt_roll,
+            punt_return_dice=return_roll, fumble_recovered=True, fumble_resolved=True,
+            fumble_spot=landing_spot, first_down=True,
+            description=f"Punt {punt_yards} yards, FUMBLE on the return! "
+                        f"Recovered by {team} at {spot}; 1st and {min(10, 100 - landing_spot)}.",
+        )
+
+    def _finish_punt_return_fumble(
+        self, punt_result: str, punt_roll: int, return_roll: int, punt_yards: int,
+        landing_spot: int, field_pos_before: str,
+    ) -> PlayOutcome:
+        """Apply a live returner loss, charged to the receiving team only.
+
+        The original offense recovers, so outcome.turnover remains False.
+        Call only once the punt result stands, never for a replayed down.
+        """
+        stats = self.state.defense_stats
+        stats.fumbles_lost += 1
+        stats.turnovers += 1
+        self.state.ball_position = landing_spot
+        self.state.down = 1
+        self.state.yards_to_go = min(10, 100 - landing_spot)
+        result = self._punt_return_fumble_result(
+            punt_result, punt_roll, return_roll, punt_yards, landing_spot
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
+            yards_gained=punt_yards, turnover=False, field_position_before=field_pos_before,
+            field_position_after=self.state.field_position_str(),
+            description=result.description,
+        )
+        self.play_log.append(outcome)
+        self._use_time(random.uniform(5, 12))
+        return outcome
+
     def apply_punt_penalty_decision(
         self, outcome: PlayOutcome, accept_penalty: bool, penalty_index: int = 0
     ) -> PlayOutcome:
@@ -3725,6 +3780,13 @@ class PaydirtGameEngine:
         penalty_yards = state["punt_penalty_yards"]
         is_offensive_penalty = state.get("is_offensive_penalty", False)
 
+        if state.get("return_fumbled") and not accept_penalty:
+            del self._pending_punt_state
+            return self._finish_punt_return_fumble(
+                state["punt_result"], state["punt_roll"], state["return_roll"],
+                state["punt_yards"], 100 - state["final_position"], state["field_pos_before"],
+            )
+
         if is_offensive_penalty and accept_penalty:
             # OFF penalty - kicking team committed foul, receiving team decides
             # Check if the selected option is "keep return" (contains "KEEP" in raw_result)
@@ -3747,6 +3809,9 @@ class PaydirtGameEngine:
                 self.state.ball_position = clamp_ball_position(final_position)
                 self.state.down = 1
                 self.state.yards_to_go = 10
+
+                self.state.defense_stats.penalties += 1
+                self.state.defense_stats.penalty_yards += penalty_yards
 
                 if touchdown:
                     self._score_touchdown()
@@ -3787,7 +3852,9 @@ class PaydirtGameEngine:
 
                 self.state.ball_position = new_pos
                 self.state.down = 4  # Still 4th down, replay the punt
-                self.state.yards_to_go = 10 + penalty_yards  # Yards to go increased
+                self.state.yards_to_go = state["ytg_before"] + original_pos - new_pos
+                self.state.offense_stats.penalties += 1
+                self.state.offense_stats.penalty_yards += original_pos - new_pos
 
                 del self._pending_punt_state
 
@@ -3818,6 +3885,8 @@ class PaydirtGameEngine:
                 if new_pos > 99:
                     new_pos = 99
 
+                self.state.defense_stats.penalties += 1
+                self.state.defense_stats.penalty_yards += new_pos - original_pos
                 self.state.ball_position = new_pos
 
                 # Check if penalty yards give a first down
@@ -5096,7 +5165,9 @@ class PaydirtGameEngine:
 
         return 0
 
-    def _use_time(self, seconds: float, out_of_bounds: bool = False) -> bool:
+    def _use_time(
+        self, seconds: float, out_of_bounds: bool = False, *, defensive_penalty: bool = False,
+    ) -> bool:
         """
         Use game clock time.
 
@@ -5114,6 +5185,8 @@ class PaydirtGameEngine:
         Args:
             seconds: Normal time to use for the play
             out_of_bounds: True if play ended out of bounds (asterisk/dagger marker)
+            defensive_penalty: Hold the period at expiry so the caller can award
+                an untimed down for an accepted defensive or offsetting foul.
 
         Returns:
             True if 2-minute warning was triggered
@@ -5154,9 +5227,9 @@ class PaydirtGameEngine:
 
         if self.state.time_remaining <= 0:
             self.state.time_remaining = 0
-            # Don't advance quarter if untimed down is pending (defensive penalty at 0:00)
-            # Per NFL rules: No quarter may end on an accepted defensive penalty
-            if self.state.untimed_down_pending:
+            # Hold the period until an accepted defensive foul can award its extension.
+            # This is checked after actual timing, not from an estimated snap-time threshold.
+            if self.state.untimed_down_pending or defensive_penalty:
                 # Keep time at 0, don't advance quarter - untimed down must be played
                 pass
             elif self.state.quarter < 4:
@@ -5431,26 +5504,8 @@ class PaydirtGameEngine:
         if self.state.untimed_down_pending:
             return result_description
 
-        # Check if time is already at 0 OR might expire during the play
-        # Use 0.5 minutes (30 seconds) as threshold - if less time than typical play,
-        # we might need an untimed down
-        time_might_expire = self.state.time_remaining <= 0.5
-
-        if self.state.time_remaining <= 0 or time_might_expire:
-            self.state.untimed_down_pending = True
-            return result_description + " (Untimed down)"
-
-        return result_description
-
-        if self.state.untimed_down_pending:
-            return result_description
-
-        # Check if time is already at 0 OR might expire during the play
-        # Use 0.5 minutes (30 seconds) as threshold - if less time than typical play,
-        # we might need an untimed down
-        time_might_expire = self.state.time_remaining <= 0.5
-
-        if self.state.time_remaining <= 0 or time_might_expire:
+        # Call after consuming play time; low time alone is not an extension.
+        if self.state.time_remaining <= 0:
             self.state.untimed_down_pending = True
             return result_description + " (Untimed down)"
 

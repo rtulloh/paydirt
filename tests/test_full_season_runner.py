@@ -105,13 +105,31 @@ def test_historical_runner_keeps_all_reproductions_local(
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == int(problem is not None)
-    assert len(calls) == 4
+    assert len(calls) == 6
     assert all(away.startswith("1983/") and home.startswith("1983/") for away, home, _ in calls)
     output = capsys.readouterr()
-    assert ("4/4" if problem is None else "3/4" if problem == "exception" else "2/4") in output.out
+    assert ("6/6" if problem is None else "5/6" if problem == "exception" else "4/6") in output.out
     if problem:
         assert "seed=19831104" in output.err
 
+
+@pytest.mark.parametrize("missing_supplemental", [False, True])
+def test_seed_drift_retains_original_and_requires_supplemental_untimed_flow(
+    monkeypatch: pytest.MonkeyPatch, missing_supplemental: bool,
+) -> None:
+    calls = []
+
+    def simulate(context, away: str, home: str, seed: int) -> SimpleNamespace:
+        calls.append(seed)
+        print("FINAL")
+        # Synthetic output only: no historical charts are loaded by this test.
+        if seed not in (19831603, 19831607) and not (seed == 19831621 and missing_supplemental):
+            print("UNTIMED DOWN")
+        return finished_game()
+
+    monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
+    assert runner.run_historical_reproductions() == int(missing_supplemental)
+    assert {19831603, 19831607, 19831621}.issubset(calls)
 
 @pytest.mark.parametrize("reproduction_status,season_status", [(0, 0), (1, 0), (0, 1), (1, 1)])
 def test_main_requires_both_integration_checks_to_pass(
@@ -154,6 +172,6 @@ def test_historical_driver_plays_on_but_does_not_change_live_ai(
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == 0
-    assert len(decisions) == 4
+    assert len(decisions) == 6
     assert all(play != PlayType.QB_KNEEL for play in decisions)
     assert ai.select_offense(game) == PlayType.QB_KNEEL

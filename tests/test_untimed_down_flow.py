@@ -207,7 +207,14 @@ def test_sample_full_games_end_in_engine(monkeypatch, capsys, away, home, seed) 
     assert "FINAL" in output
     assert game.state.game_over
     assert not game.has_untimed_down()
-    assert game.state.time_remaining == 0
+    if game.state.time_remaining > 0:
+        # A winning overtime TD ends the game before its clock expires.
+        assert game.state.is_overtime
+        assert game.state.home_score != game.state.away_score
+        assert game.state.scoring_plays[-1].play_type == "TD"
+        assert game.state.scoring_plays[-1].points == 6
+    else:
+        assert game.state.time_remaining == 0
     assert sum(p["home"] for p in game.get_period_scores()) == game.state.home_score
     assert sum(p["away"] for p in game.get_period_scores()) == game.state.away_score
 

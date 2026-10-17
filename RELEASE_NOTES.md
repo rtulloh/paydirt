@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Interactive Play-Test Repairs
+- Pass the CPU's no-huddle choice to the engine in both new and resumed interactive games, independently of the human's hurry-up setting.
+- Charge live punt-return fumble losses to the receiving team. Resolve punt penalties before applying recovery/statistics, preserve correct replay distance, and keep recovered possession when the CPU declines a penalty.
+- Reuse engine-generated touchdown scorer descriptions in CLI/web presentation instead of selecting different players for the same score.
+- Describe defensive fumble recoveries in the offense's end zone as recovery touchdowns, not return touchdowns. Name both teams and omit the unused return-dice field; preserve genuine fumble-return scores and rolls.
+- Preserve no-huddle timing when a penalty is accepted or declined. Award untimed downs only after actual clock expiry, including direct plays, pass interference, Hail Mary, and offsetting penalties.
+- Retain the actual punt dice in touchback and coffin-corner results so compact output no longer shows a placeholder roll of zero.
+- Add synthetic/public-team regressions. Retain the original historical integration games and add a supplemental untimed-down seed after the corrected presentation changes seeded game trajectories.
+
+### Dice-Weighted AI Chart Analysis
+- Weight offensive chart averages and positive-gain rates using the actual 216 dice-face combinations, including capped white sums in row x9. Keep raw chart-row counts separate from probability mass.
+- Preserve current outcome exclusions and difficulty behavior. These remain conditional chart metrics, not full matchup or turnover-risk evaluations; no Expert mode or UI controls are added.
+- Add synthetic/public-team regressions covering every dice row, ranking reversals, exclusions, sparse charts, and unchanged dice behavior.
+
 ### Turnover Accounting
 - Count applied interceptions and lost fumbles exactly once for the original offense in direct and penalty-procedure play, including QB sneaks. Do not count turnover on downs or canceled outcomes as statistical turnovers.
 - Use the engine total consistently in the CLI and web API. Repair stale totals in saved games with complete component counters; preserve incomplete legacy histories across repeated saves using optional version-1 metadata.

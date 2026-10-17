@@ -147,6 +147,9 @@ class ResultFormatter:
     def _get_commentary(self, outcome: PlayOutcome, result) -> str:
         """Generate colorful commentary from commentary.py system."""
         
+        if outcome.touchdown:
+            return outcome.description
+
         play_type = outcome.play_type
         
         # For special teams plays, don't generate run/pass commentary with player names
