@@ -59,3 +59,38 @@ jobs:
       - name: Run ruff check
         run: ruff check paydirt/ tests/
         continue-on-error: true
+
+  browser-games:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: paydirt-web/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: paydirt-web/frontend/package-lock.json
+      - name: Install real backend and browser dependencies
+        run: |
+          python3 -m pip install -r ../backend/requirements.txt
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Frontend unit regressions and coverage
+        run: npm run test:coverage -- --run
+      - name: Build frontend
+        run: npm run build
+      - name: Play complete games through the UI
+        run: npm run test:e2e
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-game-failures
+          path: paydirt-web/frontend/test-results/
+          retention-days: 7

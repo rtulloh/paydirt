@@ -39,7 +39,15 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
+
+# Required full-game browser regression (starts real backend and frontend)
+npm run test:e2e
 ```
+
+The browser suite is mandatory in the root `AGENTS.md` full-regression checklist
+before every push, including tags/releases. Both complete games must pass; do
+not substitute mocked UI tests or skip for missing Chromium. Setup and isolated
+service requirements are documented in `frontend/e2e/README.md`.
 
 ### Linting
 

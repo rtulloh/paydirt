@@ -98,6 +98,13 @@ const PlayingPhase = () => {
   const [cpuGoingForIt, setCpuGoingForIt] = useState(false);
   const [showHalftime, setShowHalftime] = useState(false);
 
+  // Every API path publishes the engine's final flag through the store.
+  // Keep an outstanding PAT/decision on screen until it has been resolved.
+  useEffect(() => {
+    if (gameOver && !pendingPat && !localExecuting && !localShowPenaltyChoice) {
+      setGamePhase('gameOver');
+    }
+  }, [gameOver, pendingPat, localExecuting, localShowPenaltyChoice, setGamePhase]);
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
   useEffect(() => {

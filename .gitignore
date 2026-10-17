@@ -70,3 +70,8 @@ seasons/1983/
 # Web frontend build output (regenerated during CI builds)
 paydirt-web/backend/web_static/
 paydirt-web/frontend/dist/
+
+# Browser test artifacts
+paydirt-web/frontend/test-results/
+paydirt-web/frontend/playwright-report/
+paydirt-web/frontend/coverage/

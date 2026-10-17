@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "framer-motion": "^11.0.0",
@@ -28,7 +29,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
-    "@vitest/coverage-v8": "^4.1.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "autoprefixer": "^10.4.0",
     "jsdom": "^24.0.0",
     "postcss": "^8.4.0",

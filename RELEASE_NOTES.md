@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Web Full-Game Regression
+- Add Chromium browser coverage for two complete games through the real API/core engine, using only public 2026 teams. Verify halftime, final scores, and a clean second-game start; run it in CI with failure traces.
+- Transition every completed playing state to the final-score screen while preserving outstanding PATs and decisions. Add focused regressions and align the Vitest coverage provider with Vitest 1.
+
 ### Interactive Play-Test Repairs
 - Pass the CPU's no-huddle choice to the engine in both new and resumed interactive games, independently of the human's hurry-up setting.
 - Charge live punt-return fumble losses to the receiving team. Resolve punt penalties before applying recovery/statistics, preserve correct replay distance, and keep recovered possession when the CPU declines a penalty.

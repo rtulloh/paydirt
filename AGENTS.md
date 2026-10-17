@@ -41,10 +41,21 @@ python3 -m pytest tests/ -q -o addopts= --tb=short -rs --cov=paydirt --cov-repor
 (cd paydirt-web/backend && python3 -m pytest tests/ -q -o addopts= --tb=short)
 (cd paydirt-web/frontend && npm test -- --run)
 (cd paydirt-web/frontend && npm run build)
+(cd paydirt-web/frontend && npm run test:e2e)
 ruff check paydirt/ tests/ paydirt-web/backend/
 python3 tests/run_all_games.py
 python3 tests/run_full_season.py
 ```
+
+`npm run test:e2e` is a required part of full regression, not an optional smoke
+check. It must complete both real-engine browser games (human home/receiving,
+then away/kicking), including halftime, final-score screens, and clean new-game
+state. Install Chromium once with `npx playwright install chromium` from
+`paydirt-web/frontend` (on Linux, use `--with-deps`). The backend dependencies
+must also be installed. Stop development servers on ports 8000 and 5173 first;
+Playwright starts and stops its own isolated services using public 2026 teams
+only. Missing browsers/services or reaching the action limit are failures, not
+reasons to skip this check. See `paydirt-web/frontend/e2e/README.md` for details.
 
 `tests/run_full_season.py` runs a deterministic, generated 16-week/224-game
 1983 schedule through real engine rules, dice, and CLI flow. It is **not** the
