@@ -128,7 +128,8 @@ def run_historical_reproductions() -> int:
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),
         ("Chiefs", "Giants", 19831607, False),
-        ("Chiefs", "Giants", 19831621, True),
+        ("Chiefs", "Giants", 19831621, False),
+        ("Chiefs", "Giants", 19831623, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )

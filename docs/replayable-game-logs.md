@@ -1,6 +1,6 @@
 # Follow-up: Replayable Game Logs for Debugging
 
-Status: deferred; implement when requested.
+Status: full replay work remains deferred; the narrow QB-time dice visibility fix below is queued for the next round of changes.
 
 ## Goal
 
@@ -27,6 +27,20 @@ Other observed gaps include:
 
 Private logs and historical charts must remain local, ignored, and unexported.
 Do not commit them or make unit tests depend on them.
+
+## Next round: expose secondary QB-time dice
+
+- [ ] Preserve and display the actual secondary QB-time roll and its resolved
+  result, not just the initial `QT` chart entry. The current live play-test
+  produced a sack/safety whose secondary roll could not be audited from the log.
+- Capture the roll in the resolver/engine as structured data; CLI compact and
+  normal views should display it without parsing commentary or rerolling dice.
+- Test first with synthetic/public-team cases for QB-time sacks (including a
+  safety), scrambles, and fumbles, plus controls for plays without QB-time rolls.
+  Verify the trace agrees with the engine outcome, no unused roll is fabricated,
+  and dice consumption, RNG state, and gameplay outcomes remain unchanged.
+- Keep this fix independent of full replay infrastructure, AI strategy changes,
+  and any attempt to reconstruct missing rolls in older logs.
 
 ## Required replay record
 

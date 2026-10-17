@@ -9,6 +9,7 @@
 - Describe defensive fumble recoveries in the offense's end zone as recovery touchdowns, not return touchdowns. Name both teams and omit the unused return-dice field; preserve genuine fumble-return scores and rolls.
 - Preserve no-huddle timing when a penalty is accepted or declined. Award untimed downs only after actual clock expiry, including direct plays, pass interference, Hail Mary, and offsetting penalties.
 - Retain the actual punt dice in touchback and coffin-corner results so compact output no longer shows a placeholder roll of zero.
+- Use normal 5–10-second kick timing when field-goal penalties are declined. Both new and resumed CLI games query the engine before a post-score kickoff, preventing a half-expiring field goal from spending third-quarter time before halftime.
 - Add synthetic/public-team regressions. Retain the original historical integration games and add a supplemental untimed-down seed after the corrected presentation changes seeded game trajectories.
 
 ### Dice-Weighted AI Chart Analysis

@@ -4343,9 +4343,26 @@ class PaydirtGameEngine:
         # Only advance time if there's no untimed down pending
         # (if untimed_down_pending is True, the half extends and clock stays at 0)
         if not self.state.untimed_down_pending:
-            self._use_time(random.uniform(25, 45))
+            seconds = random.uniform(5, 10) if accept_play else random.uniform(25, 45)
+            self._use_time(seconds)
 
         return outcome
+
+    def should_kickoff_after_score(self, scoring_quarter: int) -> bool:
+        """Whether a score is followed by a kickoff before any half/OT transition.
+
+        Args:
+            scoring_quarter: Period in which the scoring play began.
+
+        Returns:
+            False after game end or when the scoring play exhausted a half or
+            overtime period. Quarter-one/three scores still require a kickoff.
+        """
+        if self.state.game_over:
+            return False
+        if scoring_quarter == 2 or scoring_quarter >= 4:
+            return self.state.quarter == scoring_quarter and self.state.time_remaining > 0
+        return True
 
     def _handle_field_goal(self) -> PlayOutcome:
         """

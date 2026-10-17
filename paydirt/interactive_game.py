@@ -3274,6 +3274,9 @@ def resume_game(
             if game.state.game_over:
                 break
 
+            if not game.should_kickoff_after_score(quarter_before_play):
+                continue
+
             kicking_home = game.state.is_home_possession
             kicking_team = (
                 home_chart.peripheral.short_name
@@ -4115,6 +4118,9 @@ def run_interactive_game(
             print(f"  Score: {game.get_score_str()}")
             if game.state.game_over:
                 break
+
+            if not game.should_kickoff_after_score(quarter_before_play):
+                continue
 
             # Kickoff after field goal
             kicking_home = game.state.is_home_possession
