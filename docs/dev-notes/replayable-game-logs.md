@@ -2,6 +2,8 @@
 
 Status: full replay work remains deferred; the narrow QB-time dice visibility fix below is queued for the next round of changes.
 
+See the [issue tracker](issue-tracker.md#die-roll-tracking-and-replay) for individual priorities, status, and resolutions.
+
 ## Goal
 
 Reproduce a reported game through the authoritative core engine from its log,

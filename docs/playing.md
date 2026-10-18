@@ -128,7 +128,8 @@ See the [player priority reference and worked examples](priority-chart.md) for t
 
 - Four 15-minute regulation quarters; overtime follows the home team's season rules.
 - Four downs to gain ten yards, or reach the goal line in goal-to-go situations.
-- Failing on fourth down turns over possession.
+- Failing on fourth down turns over possession. Offsetting penalties replay the same down without
+  changing possession; a replayed fourth down is not a turnover on downs.
 - Touchback placement depends on the event and applicable engine rules; do not assume every touchback is at the 20.
 - Time depends on the play result and applicable modifiers; see [Time Management](clock-management.md).
 

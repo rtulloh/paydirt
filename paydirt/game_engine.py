@@ -1434,6 +1434,7 @@ class PaydirtGameEngine:
         touchdown = result.touchdown
         safety = False
         first_down = False
+        turnover_on_downs = False
         defensive_penalty = False
 
         # Apply Out of Bounds designation penalty (-5 yards)
@@ -1507,7 +1508,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             else:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.QB_SCRAMBLE:
             # QB scramble - treat like a run play
@@ -1519,7 +1520,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.PENALTY_OFFENSE:
             # Full Feature Method: Roll dice to determine actual penalty yardage
@@ -1650,11 +1651,11 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down and not turnover:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.INCOMPLETE:
             # Incomplete pass - no yardage, next down
-            self.state.next_down()
+            turnover_on_downs = self.state.next_down()
 
         # Resolve possession/scoring first, but credit the original offense.
         self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
@@ -1671,6 +1672,9 @@ class PaydirtGameEngine:
             result=result,
             yards_gained=yards,
             turnover=turnover,
+            turnover_on_downs=turnover_on_downs or (
+                turnover and result.fumble_recovered and not touchdown and not safety
+            ),
             touchdown=touchdown,
             safety=safety,
             first_down=first_down,
@@ -2108,6 +2112,7 @@ class PaydirtGameEngine:
         touchdown = result.touchdown
         safety = False
         first_down = False
+        turnover_on_downs = False
 
         # Apply Out of Bounds designation penalty (-5 yards)
         # Per rules: 5 yards subtracted AFTER combining offense/defense results
@@ -2187,7 +2192,7 @@ class PaydirtGameEngine:
                     yards = min(yards, 100 - ball_pos_before)
 
         elif result.result_type == ResultType.INCOMPLETE:
-            self.state.next_down()
+            turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.QB_SCRAMBLE:
             first_down = self.state.advance_ball(yards)
@@ -2198,7 +2203,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.SACK:
             first_down = self.state.advance_ball(yards)
@@ -2206,7 +2211,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
@@ -2223,7 +2228,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
 
@@ -2253,6 +2258,9 @@ class PaydirtGameEngine:
             result=result,
             yards_gained=yards,
             turnover=turnover,
+            turnover_on_downs=turnover_on_downs or (
+                turnover and result.fumble_recovered and not touchdown and not safety
+            ),
             touchdown=touchdown,
             safety=safety,
             first_down=first_down,
@@ -2323,6 +2331,7 @@ class PaydirtGameEngine:
         touchdown = False
         safety = False
         first_down = False
+        turnover_on_downs = False
 
         if result.result_type == ResultType.FUMBLE:
             # Fumble at line of scrimmage - use normal fumble handling
@@ -2341,7 +2350,7 @@ class PaydirtGameEngine:
             if offense_recovers:
                 # Offense recovers at LOS - no gain, but get another down
                 turnover = False
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
                 result.description = f"QB Sneak - Fumble RECOVERED at LOS (roll {recovery_roll})"
             else:
                 # Defense recovers
@@ -2364,7 +2373,7 @@ class PaydirtGameEngine:
                 safety = True
                 self._score_safety()
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         # Update stats
         if yards > 0 and not turnover:
@@ -2381,6 +2390,7 @@ class PaydirtGameEngine:
             yards_gained=yards,
             first_down=first_down,
             touchdown=touchdown,
+            turnover_on_downs=turnover_on_downs,
             turnover=turnover,
             safety=safety,
             field_position_before=field_pos_before,
@@ -2628,6 +2638,7 @@ class PaydirtGameEngine:
         39         | DEF PI (25 + T1*10 yards downfield)
         """
         field_pos_before = self.state.field_position_str()
+        down_before = self.state.down
 
         # Roll offensive dice only - defense doesn't participate
         dice_roll, dice_desc = roll_chart_dice()
@@ -2644,6 +2655,7 @@ class PaydirtGameEngine:
         touchdown = result.touchdown
         safety = False
         first_down = False
+        turnover_on_downs = False
 
         if result.result_type == ResultType.TOUCHDOWN:
             touchdown = True
@@ -2677,11 +2689,11 @@ class PaydirtGameEngine:
                 touchdown = True
                 self._score_touchdown(PlayType.HAIL_MARY, yards)
             elif not first_down:
-                self.state.next_down()
+                turnover_on_downs = self.state.next_down()
 
         elif result.result_type == ResultType.INCOMPLETE:
             # Incomplete - next down
-            self.state.next_down()
+            turnover_on_downs = self.state.next_down()
 
         # Update passing stats
         if yards > 0 and not turnover and result.result_type != ResultType.PASS_INTERFERENCE:
@@ -2701,6 +2713,9 @@ class PaydirtGameEngine:
             turnover=turnover,
             safety=safety,
             field_position_before=field_pos_before,
+            down_before=down_before,
+            down_after=self.state.down,
+            turnover_on_downs=turnover_on_downs,
             field_position_after=self.state.field_position_str(),
             description=result.description,
         )
@@ -2755,6 +2770,7 @@ class PaydirtGameEngine:
             result=result,
             yards_gained=0,
             turnover=turnover,
+            turnover_on_downs=turnover,
             touchdown=False,
             safety=False,
             first_down=False,
@@ -2857,6 +2873,7 @@ class PaydirtGameEngine:
             result=result,
             yards_gained=yards,
             turnover=turnover,
+            turnover_on_downs=turnover,
             touchdown=False,
             safety=safety,
             first_down=False,

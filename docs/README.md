@@ -28,6 +28,7 @@ Only the public fictional 2026 teams are distributed. Keep private charts, sourc
 
 Create all future development notes only under `docs/dev-notes/`. Read the [developer-only disclaimer](dev-notes/README.md); these are not player manuals or promises of implemented features:
 
+- [Issue tracker](dev-notes/issue-tracker.md): developer priorities, status, and resolution history.
 - [AI play-testing](dev-notes/ai-playtesting.md): an experiment evaluating dice-weighted Hard analysis.
 - [Replayable game logs](dev-notes/replayable-game-logs.md): debugging requirements and deferred replay work.
 

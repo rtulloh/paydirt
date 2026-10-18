@@ -1718,13 +1718,7 @@ def display_play_result(
                 result_str = "No gain"
 
             # Detect turnover on downs (4th down failure)
-            is_turnover_on_downs = (
-                outcome.down_before == 4
-                and not txn.first_down
-                and not txn.turnover
-                and not txn.touchdown
-                and not txn.safety
-            )
+            is_turnover_on_downs = outcome.turnover_on_downs
             if is_turnover_on_downs:
                 special_marker = " ★ TURNOVER ON DOWNS!"
 
@@ -1952,13 +1946,7 @@ def display_play_result(
             result_str = "No gain"
 
         # Detect turnover on downs (4th down failure) - for legacy path
-        is_turnover_on_downs = (
-            outcome.down_before == 4
-            and not outcome.first_down
-            and not outcome.turnover
-            and not outcome.touchdown
-            and not outcome.safety
-        )
+        is_turnover_on_downs = outcome.turnover_on_downs
 
         # Don't overwrite special turnover TD markers (PICK SIX, SCOOP AND SCORE)
         turnover_td_markers = [" ★ PICK SIX!", " ★ SCOOP AND SCORE!"]
@@ -2231,13 +2219,7 @@ def display_play_result(
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
 
     # Detect and announce turnover on downs (4th down failure)
-    is_turnover_on_downs = (
-        outcome.down_before == 4
-        and not outcome.first_down
-        and not outcome.turnover
-        and not outcome.touchdown
-        and not outcome.safety
-    )
+    is_turnover_on_downs = outcome.turnover_on_downs
     if is_turnover_on_downs:
         print()
         print("  " + "=" * 50)
@@ -3366,14 +3348,7 @@ def resume_game(
             outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
             continue
 
-        is_turnover_on_downs = (
-            outcome.down_before == 4
-            and not outcome.first_down
-            and not outcome.turnover
-            and not outcome.touchdown
-            and not outcome.safety
-            and outcome.play_type not in [PlayType.PUNT, PlayType.FIELD_GOAL]
-        )
+        is_turnover_on_downs = outcome.turnover_on_downs
         if is_turnover_on_downs:
             print("\n  *** TURNOVER ON DOWNS ***")
 
@@ -4231,14 +4206,7 @@ def run_interactive_game(
 
         # Handle turnover on downs (only for regular plays, not punts/kicks)
         # Turnover on downs is when offense fails to convert on 4th down
-        is_turnover_on_downs = (
-            outcome.down_before == 4
-            and not outcome.first_down
-            and not outcome.turnover  # Not INT/fumble
-            and not outcome.touchdown
-            and not outcome.safety
-            and outcome.play_type not in [PlayType.PUNT, PlayType.FIELD_GOAL]
-        )
+        is_turnover_on_downs = outcome.turnover_on_downs
         if is_turnover_on_downs:
             print("\n  *** TURNOVER ON DOWNS ***")
 

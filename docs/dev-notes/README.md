@@ -13,6 +13,7 @@ use the [documentation index](../README.md).
 
 ## Notes
 
+- [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
 - [AI play-testing](ai-playtesting.md)
 - [Replayable game logs](replayable-game-logs.md)
 

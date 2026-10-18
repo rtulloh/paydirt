@@ -1,5 +1,7 @@
 # Play-testing dice-weighted AI analysis
 
+Current follow-ups and completed AI changes are indexed in the [issue tracker](issue-tracker.md#ai-work-and-evaluation).
+
 ## What changed
 
 Offensive chart averages and positive-yardage rates now use the actual dice

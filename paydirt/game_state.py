@@ -208,3 +208,6 @@ class PlayOutcome:
     timeout_used: bool = False
     # Preserve the requested pace while a penalty choice is awaiting resolution.
     no_huddle: bool = False
+    # Engine-confirmed loss of possession because the offensive downs were exhausted.
+    # Separate from interceptions/fumbles and their statistical turnover accounting.
+    turnover_on_downs: bool = False
