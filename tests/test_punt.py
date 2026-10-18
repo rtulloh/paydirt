@@ -1841,3 +1841,16 @@ def test_declining_offensive_punt_penalty_preserves_unpenalized_result(
         assert game.state.ball_position == expected_position
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
+
+
+class TestReturnPenaltyTrace:
+    """Return-penalty rerolls remain available for audit output."""
+
+    def test_return_penalty_records_the_reroll_and_yardage(self, game) -> None:
+        with patch("paydirt.game_engine.roll_chart_dice", return_value=(14, "B1+W4+W4=14")):
+            yards, penalty, is_offense, needs_rekick, rerolls = game._handle_return_penalty(
+                "OFF 15", {14: "60"}
+            )
+
+        assert (yards, penalty, is_offense, needs_rekick) == (60, 15, True, False)
+        assert rerolls == [(14, "60")]

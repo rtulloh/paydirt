@@ -57,26 +57,26 @@ class TestOutOfBoundsYardagePenalty:
         assert outcome.yards_gained == 7
         assert "Out of Bounds designation" in outcome.description
     
-    def test_oob_minimum_zero_yards(self, game):
-        """Out of Bounds penalty should not make yardage negative."""
+    def test_oob_subtracts_5_yards_even_when_override_is_less_than_cost(self, game):
+        """The designation cost follows priority resolution and may create a loss."""
         game.state.ball_position = 50
         game.state.down = 1
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
-        
-        # Mock a 3-yard gain (less than 5)
+
         with patch('paydirt.game_engine.resolve_play') as mock_resolve:
             mock_resolve.return_value = PlayResult(
                 result_type=ResultType.YARDS,
                 yards=3,
-                description="Gain of 3 yards"
+                description="Defense (#) gives offense 3 yards: (3)",
             )
-            
-            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD,
-                                   out_of_bounds_designation=True)
-        
-        # Should be max(0, 3-5) = 0 yards
-        assert outcome.yards_gained == 0
+            outcome = game.run_play(
+                PlayType.LINE_PLUNGE, DefenseType.STANDARD,
+                out_of_bounds_designation=True,
+            )
+
+        assert outcome.yards_gained == -2
+        assert "Out of Bounds designation" in outcome.description
     
     def test_oob_not_applied_to_incomplete(self, game):
         """Out of Bounds penalty should NOT be applied to incomplete passes."""

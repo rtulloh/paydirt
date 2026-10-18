@@ -653,3 +653,65 @@ class TestCompactDisplayInterceptionTouchback:
         assert "Returned" not in output
         assert "+13" not in output
         assert 'O:30→"INT 13"' in output  # Labeled trace, not gained yardage.
+
+
+class TestCompactFieldGoalDisplay:
+    """Field-goal display retains original attempt metadata after a penalty decision."""
+
+    def test_penalty_decision_miss_uses_original_attempt_distance(self) -> None:
+        from paydirt.game_engine import PaydirtGameEngine
+
+        home_chart = create_mock_chart("NO '83", "New Orleans Saints")
+        away_chart = create_mock_chart("MIA '83", "Miami Dolphins")
+        game = PaydirtGameEngine(home_chart, away_chart)
+        result = PlayResult(
+            result_type=ResultType.YARDS, yards=21, dice_roll=23,
+            raw_result="21", description="Field goal NO GOOD",
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.FIELD_GOAL, defense_type=DefenseType.STANDARD,
+            result=result, field_goal_made=False, description="Field goal NO GOOD",
+        )
+        outcome._fg_distance_to_goal = 30
+        outcome._fg_statistical_distance = 47
+        ig.COMPACT_MODE = True
+
+        with patch("sys.stdout", new_callable=StringIO) as captured:
+            ig.display_play_result(
+                game, outcome, PlayType.FIELD_GOAL, DefenseType.STANDARD,
+                home_chart, offense_was_home=True,
+            )
+
+        output = captured.getvalue()
+        assert "FG 47 yards: NO GOOD" in output
+        assert "Needed: 30 yds" in output
+
+
+class TestCompactPuntPenaltyTrace:
+    """Compact punt output shows the complete return-penalty resolution."""
+
+    def test_punt_penalty_includes_return_reroll_and_enforcement(self) -> None:
+        from paydirt.game_engine import PaydirtGameEngine
+
+        home_chart = create_mock_chart("NO '83", "New Orleans Saints")
+        away_chart = create_mock_chart("MIA '83", "Miami Dolphins")
+        game = PaydirtGameEngine(home_chart, away_chart)
+        result = PlayResult(
+            result_type=ResultType.YARDS, yards=44, dice_roll=16,
+            raw_result="44", punt_return_dice=28,
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD,
+            result=result,
+            description="Punt 44 yards. Penalty on return: OFF 15; return reroll 28 → 60 yards; enforced 15 yards",
+        )
+        ig.COMPACT_MODE = True
+
+        with patch("sys.stdout", new_callable=StringIO) as captured:
+            ig.display_play_result(
+                game, outcome, PlayType.PUNT, DefenseType.STANDARD,
+                home_chart, offense_was_home=True,
+            )
+
+        assert 'R:28→"60"' in captured.getvalue()
+        assert "enforced 15 yards" in captured.getvalue()

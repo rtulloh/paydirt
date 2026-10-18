@@ -1458,9 +1458,14 @@ def display_play_result(
                 punt_dice = outcome.result.dice_roll
                 punt_result_str = outcome.result.raw_result or ""
                 return_dice = getattr(outcome.result, "punt_return_dice", 0) or 0
-                # Get return result from description
+                # Return penalties roll again for return yardage; show that final roll.
                 return_match = re.search(r"returned (\d+) yards", outcome.description)
-                return_yards_str = return_match.group(1) if return_match else ""
+                reroll_match = re.search(r"reroll (\d+) → (-?\d+) yards", outcome.description)
+                if reroll_match:
+                    return_dice = int(reroll_match.group(1))
+                    return_yards_str = reroll_match.group(2)
+                else:
+                    return_yards_str = return_match.group(1) if return_match else ""
 
                 if return_dice > 0:
                     print(
@@ -1528,10 +1533,14 @@ def display_play_result(
         dice_roll = outcome.result.dice_roll if outcome.result else 0
         chart_result = outcome.result.raw_result if outcome.result else ""
 
-        # Calculate distances for display
-        fg_distance_match = re.search(r"(\d+) yards", outcome.description)
-        statistical_distance = int(fg_distance_match.group(1)) if fg_distance_match else 0
-        distance_to_goal = statistical_distance - 17 if statistical_distance > 17 else 0
+        # Penalty decisions can replace the prose description; retain the engine's
+        # original attempt metadata instead of parsing a possibly unrelated result.
+        statistical_distance = getattr(outcome, "_fg_statistical_distance", None)
+        distance_to_goal = getattr(outcome, "_fg_distance_to_goal", None)
+        if statistical_distance is None or distance_to_goal is None:
+            fg_distance_match = re.search(r"(\d+) yards", outcome.description)
+            statistical_distance = int(fg_distance_match.group(1)) if fg_distance_match else 0
+            distance_to_goal = statistical_distance - 17 if statistical_distance > 17 else 0
 
         # Check if FG was nullified by penalty with untimed down (half extended)
         fg_nullified = (

@@ -263,7 +263,7 @@ class PaydirtGameEngine:
 
     def _handle_return_penalty(
         self, return_result: str, return_chart: dict, default_return: int = 20
-    ) -> tuple[int, int, bool, bool]:
+    ) -> tuple[int, int, bool, bool, list[tuple[int, str]]]:
         """
         Handle penalty logic for kickoff/punt returns.
 
@@ -273,12 +273,13 @@ class PaydirtGameEngine:
             default_return: Default return yards when chart has no valid entries (fallback only)
 
         Returns:
-            tuple of (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
+            tuple of (return_yards, penalty_yards, is_offensive_penalty, needs_rekick, rerolls)
         """
         penalty_yards = 0
         is_offensive_penalty = False
         needs_rekick = False
         return_yards = None
+        rerolls: list[tuple[int, str]] = []
 
         if "OFF" in return_result.upper() or "DEF" in return_result.upper():
             # Parse penalty from initial result
@@ -295,7 +296,7 @@ class PaydirtGameEngine:
                 reroll_count += 1
                 reroll, _ = roll_chart_dice()
                 reroll_result = return_chart.get(reroll, str(default_return))
-
+                rerolls.append((reroll, reroll_result))
                 # Check if re-roll is also a penalty
                 if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
                     reroll_is_offensive = "OFF" in reroll_result.upper()
@@ -326,7 +327,7 @@ class PaydirtGameEngine:
             penalty_yards = 0
             return_yards = default_return
 
-        return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick)
+        return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick, rerolls)
 
     def kickoff(self, kicking_home: bool = True, kickoff_spot: int = 35) -> PlayOutcome:
         """
@@ -604,12 +605,16 @@ class PaydirtGameEngine:
 
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
                     # Penalty on return - use helper to handle re-roll logic
-                    ret_yards, return_penalty_yards, return_is_offensive_penalty, needs_rekick = (
-                        self._handle_return_penalty(
-                            ret_result,
-                            receiving_chart.special_teams.kickoff_return,
-                            default_return=20,
-                        )
+                    (
+                        ret_yards,
+                        return_penalty_yards,
+                        return_is_offensive_penalty,
+                        needs_rekick,
+                        _,
+                    ) = self._handle_return_penalty(
+                        ret_result,
+                        receiving_chart.special_teams.kickoff_return,
+                        default_return=20,
                     )
                     if needs_rekick:
                         return self.kickoff(kicking_home=kicking_home)
@@ -1449,7 +1454,7 @@ class PaydirtGameEngine:
                 or result.out_of_bounds  # Already out of bounds anyway
             )
             if not skip_oob_penalty and yards > 0:
-                yards = max(0, yards - 5)  # Subtract 5 yards, minimum 0
+                yards -= 5
                 result.description += " (Out of Bounds designation: -5 yards)"
 
         # Apply In Bounds designation penalty (-5 yards)
@@ -1470,7 +1475,7 @@ class PaydirtGameEngine:
                 or not result.out_of_bounds  # Already in bounds anyway
             )
             if not skip_ib_penalty and yards > 0:
-                yards = max(0, yards - 5)  # Subtract 5 yards, minimum 0
+                yards -= 5
                 result.description += " (In Bounds designation: -5 yards)"
                 result.out_of_bounds = False  # Force in bounds
 
@@ -2406,14 +2411,14 @@ class PaydirtGameEngine:
         Returns:
             Tuple of (should_apply, message_if_skipped)
         """
-        if quarter_before_play != self.state.quarter:
-            return True, ""
-
         if outcome.result.result_type == ResultType.INCOMPLETE:
             return False, "[Timeout SKIPPED - play was incomplete, clock already stopped]"
 
         if outcome.result.out_of_bounds:
             return False, "[Timeout SKIPPED - play went out of bounds, clock already at 10 sec]"
+
+        if quarter_before_play != self.state.quarter:
+            return True, ""
 
         if play_seconds <= 10:
             return False, "[Timeout SKIPPED - no time would be saved]"
@@ -3308,15 +3313,22 @@ class PaydirtGameEngine:
                 # Check for penalty on return first (before fumble check since DEF contains F)
                 if "OFF" in return_result.upper() or "DEF" in return_result.upper():
                     return_desc = f"Penalty on return: {return_result}"
-                    # Use shared helper to handle re-roll logic
                     (
                         return_yards,
                         return_penalty_yards,
                         return_penalty_is_offensive,
                         needs_repunt,
+                        return_rerolls,
                     ) = self._handle_return_penalty(
                         return_result, receiving_team.special_teams.punt_return, default_return=20
                     )
+                    reroll_text = "; ".join(
+                        f"reroll {roll} → {result} yards"
+                        for roll, result in return_rerolls
+                        if result.lstrip("+-").isdigit()
+                    )
+                    if reroll_text:
+                        return_desc = f"{return_desc}; {reroll_text}"
                     if needs_repunt:
                         return self._handle_punt(
                             short_drop=short_drop, coffin_corner_yards=coffin_corner_yards
@@ -3692,7 +3704,11 @@ class PaydirtGameEngine:
 
         # Build description
         penalty_desc = ""
-        if punt_penalty_yards > 0:
+        if return_penalty_yards > 0:
+            penalty_team = "OFF" if return_penalty_is_offensive else "DEF"
+            direction = "enforced" if return_penalty_is_offensive else "added"
+            penalty_desc = f" ({penalty_team} {return_penalty_yards} {direction} on return)"
+        elif punt_penalty_yards > 0:
             if is_punt_offensive_penalty:
                 penalty_desc = f" (OFF {punt_penalty_yards} - offense penalized)"
             else:
@@ -4090,12 +4106,16 @@ class PaydirtGameEngine:
                 else:
                     # Handle return with potential penalty
                     if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                        ret_yards, ret_penalty_yards, ret_is_offensive, needs_rekick = (
-                            self._handle_return_penalty(
-                                ret_result,
-                                receiving_chart.special_teams.kickoff_return,
-                                default_return=20,
-                            )
+                        (
+                            ret_yards,
+                            ret_penalty_yards,
+                            ret_is_offensive,
+                            needs_rekick,
+                            _,
+                        ) = self._handle_return_penalty(
+                            ret_result,
+                            receiving_chart.special_teams.kickoff_return,
+                            default_return=20,
                         )
                         if needs_rekick:
                             return self.kickoff(kicking_home=kicking_home)

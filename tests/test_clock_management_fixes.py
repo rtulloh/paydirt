@@ -426,3 +426,17 @@ class TestPenaltyProcedurePassesNoHuddle:
         call_kwargs = mock_run_play.call_args
         assert call_kwargs.kwargs.get('no_huddle') is True or \
                (len(call_kwargs.args) > 6 and call_kwargs.args[6] is True)
+
+
+class TestTimeoutAfterStoppedClockPlay:
+    """Timeout modifiers do not consume a timeout after the clock is already stopped."""
+
+    def test_incompletion_skips_timeout_even_when_the_quarter_ends(self, game):
+        outcome = MagicMock()
+        outcome.result.result_type = ResultType.INCOMPLETE
+        should_apply, message = game._should_apply_timeout_after_play(
+            outcome, play_seconds=18, quarter_before_play=2
+        )
+
+        assert should_apply is False
+        assert "clock already stopped" in message
