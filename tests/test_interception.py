@@ -459,3 +459,33 @@ class TestInterceptionInEndZone:
         assert outcome.result.int_return_dice == 10
         assert game.state.ball_position == 90
         assert outcome.turnover is True
+
+
+class TestEndZoneInterceptionPresentation:
+    """Automatic touchbacks do not roll returns or credit passing yardage."""
+
+    @pytest.mark.parametrize("ball_position,yards", [(87, 13), (95, 5), (98, 3)])
+    def test_end_zone_touchback_has_no_return_roll_or_offensive_yards(
+        self, game, ball_position: int, yards: int,
+    ) -> None:
+        game.state.ball_position = ball_position
+        game.state.is_home_possession = True
+        result = PlayResult(
+            result_type=ResultType.INTERCEPTION, yards=yards, turnover=True,
+            raw_result=f"INT {yards}", dice_roll=30,
+        )
+        with (
+            patch("paydirt.game_engine.resolve_play", return_value=result),
+            patch("paydirt.game_engine.roll_chart_dice") as dice,
+        ):
+            outcome = game.run_play(PlayType.MEDIUM_PASS, DefenseType.SHORT_PASS)
+        dice.assert_not_called()
+        assert outcome.yards_gained == 0
+        assert game.state.home_stats.passing_yards == 0
+        assert game.state.home_stats.total_yards == 0
+        assert game.state.ball_position == 20
+        assert game.state.is_home_possession is False
+        assert outcome.result.int_spot == 20
+        assert outcome.result.int_return_yards == 0
+        assert outcome.result.int_return_dice == 0
+        assert outcome.result.description == "Interception in end zone - TOUCHBACK"

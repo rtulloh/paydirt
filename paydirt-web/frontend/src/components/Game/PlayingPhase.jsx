@@ -97,6 +97,7 @@ const PlayingPhase = () => {
   const [isKickPlay, setIsKickPlay] = useState(false);
   const [cpuGoingForIt, setCpuGoingForIt] = useState(false);
   const [showHalftime, setShowHalftime] = useState(false);
+  const cpuPatInFlightRef = useRef(false);
 
   // Every API path publishes the engine's final flag through the store.
   // Keep an outstanding PAT/decision on screen until it has been resolved.
@@ -468,6 +469,19 @@ const PlayingPhase = () => {
     }
   };
 
+  useEffect(() => {
+    if (!pendingPat) {
+      cpuPatInFlightRef.current = false;
+      return;
+    }
+    if (playerOffense || cpuPatInFlightRef.current) {
+      return;
+    }
+
+    cpuPatInFlightRef.current = true;
+    void handleCpuPatAuto(gameId);
+  }, [gameId, pendingPat, playerOffense]);
+
   const handleNewGame = () => {
     // Reset game state
     const { reset } = useGameStore.getState();
@@ -715,7 +729,7 @@ const PlayingPhase = () => {
           } else {
             // CPU scored — auto-attempt extra point
             setLocalExecuting(false);
-            await handleCpuPatAuto(gameId);
+            // The pending-PAT effect resolves CPU attempts after this response updates the store.
             return;
           }
         }

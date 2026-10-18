@@ -14,9 +14,10 @@ export function checkPendingPat(gameState) {
     return { isPendingPat: false, scoringTeamIsPlayer: false, canGoForTwo: false };
   }
 
-  const isHomeScoring = gameState.possession === 'home';
-  const scoringTeamIsPlayer = (gameState.human_is_home && isHomeScoring) ||
-                              (!gameState.human_is_home && !isHomeScoring);
+  const scoringTeamIsPlayer = typeof gameState.player_offense === 'boolean'
+    ? gameState.player_offense
+    : (gameState.human_is_home && isHomeScoring) ||
+      (!gameState.human_is_home && !isHomeScoring);
 
   return { 
     isPendingPat, 

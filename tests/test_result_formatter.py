@@ -762,3 +762,21 @@ class TestFormatPlayResult:
         assert formatted.headline == "Gain of 4"
         assert formatted.yards == 4
         assert formatted.is_gain is True
+
+
+def test_end_zone_interception_headline_is_touchback() -> None:
+    """Web consumers receive the engine's automatic-touchback result."""
+    from paydirt.game_state import PlayOutcome
+    from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
+    from paydirt.result_formatter import ResultFormatter
+
+    result = PlayResult(
+        result_type=ResultType.INTERCEPTION, yards=13, raw_result="INT 13",
+        description="Interception in end zone - TOUCHBACK",
+    )
+    outcome = PlayOutcome(PlayType.MEDIUM_PASS, DefenseType.SHORT_PASS, result,
+                          yards_gained=0, turnover=True, description=result.description)
+    formatted = ResultFormatter("GB", "CHI").format(outcome)
+    assert formatted.headline == "INTERCEPTED in end zone - TOUCHBACK"
+    assert formatted.yards == 0
+    assert not formatted.is_gain

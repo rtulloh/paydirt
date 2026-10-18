@@ -618,3 +618,38 @@ class TestPuntReturnFumbleDisplay:
             assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
         finally:
             ig.COMPACT_MODE = original_compact
+
+
+class TestCompactDisplayInterceptionTouchback:
+    """End-zone interceptions must not be presented as a gained pass or return."""
+
+    def test_end_zone_interception_shows_touchback_not_return(self) -> None:
+        home_chart = create_mock_chart("CHI '83", "Chicago Bears")
+        away_chart = create_mock_chart("GB '83", "Green Bay Packers")
+        from paydirt.game_engine import PaydirtGameEngine
+
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        game.state.ball_position = 20
+        result = PlayResult(
+            result_type=ResultType.INTERCEPTION, yards=13, dice_roll=30,
+            raw_result="INT 13", description="Interception in end zone - TOUCHBACK",
+        )
+        result.int_spot = 20
+        result.int_return_yards = 0
+        result.int_return_dice = 0
+        outcome = PlayOutcome(
+            play_type=PlayType.MEDIUM_PASS, defense_type=DefenseType.SHORT_PASS,
+            result=result, yards_gained=0, turnover=True,
+            description=result.description,
+        )
+        ig.COMPACT_MODE = True
+        with patch("sys.stdout", new_callable=StringIO) as captured:
+            ig.display_play_result(game, outcome, PlayType.MEDIUM_PASS,
+                                   DefenseType.SHORT_PASS, away_chart,
+                                   offense_was_home=False)
+        output = captured.getvalue()
+        assert "INTERCEPTED in end zone - TOUCHBACK" in output
+        assert "Returned" not in output
+        assert "+13" not in output
+        assert 'O:30→"INT 13"' in output  # Labeled trace, not gained yardage.

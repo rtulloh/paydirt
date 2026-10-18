@@ -1634,19 +1634,23 @@ def display_play_result(
         if txn and txn.is_complete:
             # Build result string from transaction
             if txn.has_event_type(EventType.INTERCEPTION):
-                int_events = txn.get_events_by_type(EventType.INT_RETURN)
-                if int_events and int_events[0].yards != 0:
-                    result_str = f"INTERCEPTED! Returned {int_events[0].yards} yds"
-                else:
-                    result_str = "INTERCEPTED!"
-                if txn.touchdown:
-                    special_marker = " ★ PICK SIX!"
-                elif game.state.ball_position >= 95:
-                    special_marker = " ★ TURNOVER! GOAL LINE!"
-                elif game.state.ball_position >= 80:
-                    special_marker = " ★ TURNOVER! IN THE RED ZONE!"
-                else:
+                if "TOUCHBACK" in (outcome.description or outcome.result.description).upper():
+                    result_str = "INTERCEPTED in end zone - TOUCHBACK"
                     special_marker = " ★ TURNOVER!"
+                else:
+                    int_events = txn.get_events_by_type(EventType.INT_RETURN)
+                    if int_events and int_events[0].yards != 0:
+                        result_str = f"INTERCEPTED! Returned {int_events[0].yards} yds"
+                    else:
+                        result_str = "INTERCEPTED!"
+                    if txn.touchdown:
+                        special_marker = " ★ PICK SIX!"
+                    elif game.state.ball_position >= 95:
+                        special_marker = " ★ TURNOVER! GOAL LINE!"
+                    elif game.state.ball_position >= 80:
+                        special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                    else:
+                        special_marker = " ★ TURNOVER!"
             elif txn.has_event_type(EventType.FUMBLE):
                 recovery_events = txn.get_events_by_type(EventType.FUMBLE_RECOVERY)
                 if outcome.result.fumble_end_zone_touchdown:
@@ -1863,28 +1867,29 @@ def display_play_result(
         if outcome.result.result_type == ResultType.INCOMPLETE:
             result_str = "Incomplete"
         elif outcome.result.result_type == ResultType.INTERCEPTION:
-            # Check for return yardage on interception
-            int_return = getattr(outcome.result, "int_return_yards", None)
-            int_dice = getattr(outcome.result, "int_return_dice", None)
-            int_spot = getattr(outcome.result, "int_spot", None)
-            if int_dice is not None:
-                # We have return info - show clean game action, details go on technical line
-                if int_return and int_return != 0:
-                    result_str = f"INTERCEPTED! Returned {int_return} yds"
+            if "TOUCHBACK" in (outcome.description or outcome.result.description).upper():
+                result_str = "INTERCEPTED in end zone - TOUCHBACK"
+                special_marker = " ★ TURNOVER!"
+            else:
+                int_return = getattr(outcome.result, "int_return_yards", None)
+                int_dice = getattr(outcome.result, "int_return_dice", None)
+                int_spot = getattr(outcome.result, "int_spot", None)
+                if int_dice is not None:
+                    if int_return and int_return != 0:
+                        result_str = f"INTERCEPTED! Returned {int_return} yds"
+                    else:
+                        result_str = "INTERCEPTED!"
+                    if game.state.ball_position >= 95:
+                        special_marker = " ★ TURNOVER! GOAL LINE!"
+                    elif game.state.ball_position >= 80:
+                        special_marker = " ★ TURNOVER! IN THE RED ZONE!"
+                    else:
+                        special_marker = " ★ TURNOVER!"
                 else:
                     result_str = "INTERCEPTED!"
-                # Check if return ended in red zone
-                if game.state.ball_position >= 95:
-                    special_marker = " ★ TURNOVER! GOAL LINE!"
-                elif game.state.ball_position >= 80:
-                    special_marker = " ★ TURNOVER! IN THE RED ZONE!"
-                else:
                     special_marker = " ★ TURNOVER!"
-            else:
-                result_str = "INTERCEPTED!"
-                special_marker = " ★ TURNOVER!"
-            if outcome.touchdown:
-                special_marker = " ★ PICK SIX!"
+                if outcome.touchdown:
+                    special_marker = " ★ PICK SIX!"
         elif outcome.result.result_type == ResultType.FUMBLE:
             if outcome.turnover:
                 # Check for touchback (fumble in end zone recovered by defense)
@@ -2360,6 +2365,7 @@ def handle_penalty_decision(
     # Show play result with projected down/distance
     play_result = penalty_choice.play_result
     txn = penalty_choice.transaction
+    safety_preview = game.get_penalty_safety_preview(outcome)
     print("\n  Play Result (if accepted, down counts):")
 
     # Handle FG plays specially - the chart yardage is kick distance, not yards gained
@@ -2370,6 +2376,9 @@ def handle_penalty_decision(
             print("    -> FIELD GOAL GOOD!")
         else:
             print("    -> FIELD GOAL NO GOOD (turnover on downs)")
+    elif safety_preview:
+        print(f"    {play_result.description}")
+        print(f"    -> {safety_preview}")
     elif play_result.result_type == ResultType.FUMBLE:
         # Fumble - show the play result and recovery from transaction
         print(f"    {play_result.description}")
@@ -2415,7 +2424,10 @@ def handle_penalty_decision(
 
         # Show play result option with outcome details
         # Handle FG plays specially - the chart yardage is kick distance, not yards gained
-        if is_fg_penalty:
+        if safety_preview:
+            play_outcome_str = safety_preview
+            play_field_str = ""
+        elif is_fg_penalty:
             if outcome.field_goal_made:
                 play_outcome_str = "FIELD GOAL GOOD!"
                 play_field_str = "kickoff"
@@ -2495,7 +2507,9 @@ def handle_penalty_decision(
                     )
 
         # Option 1 is always the play result
-        if is_punt_penalty and play_result.fumble_recovered:
+        if safety_preview:
+            print(f"    [1] Accept PLAY result: {safety_preview}")
+        elif is_punt_penalty and play_result.fumble_recovered:
             print(f"    [1] Accept PLAY result: {play_result.description}")
         else:
             print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")

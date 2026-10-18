@@ -55,6 +55,7 @@ class ComputerAI:
         # For opponent modeling (shared across offense and defense)
         self.opponent_model = OpponentModel() if use_analysis else None
         self.team_analyzer = None  # Set when we know our team
+        self._defense_rng: Optional[random.Random] = None  # Lazy, separate from engine dice.
 
     def set_team(self, team_chart):
         """Set the AI's team for chart analysis."""
@@ -896,6 +897,9 @@ class ComputerAI:
             defense_rec = self.opponent_model.predict_defense(
                 down, ytg, -score_diff, quarter, time_left
             )
+            pressure_defense = self._late_trailing_defense(game, score_diff)
+            if pressure_defense is not None:
+                return pressure_defense
             # Convert to DefenseType
             defense_map = {
                 "A": DefenseType.STANDARD,
@@ -941,6 +945,43 @@ class ComputerAI:
 
         # Early downs - read and react
         return self._early_down_defense(down, ytg)
+
+    def _late_trailing_defense(
+        self, game: PaydirtGameEngine, score_diff: int,
+    ) -> Optional[DefenseType]:
+        """Mix calculated risks when Hard's defense needs multiple late stops.
+
+        Args:
+            game: Engine supplying time, field position, and conversion rules.
+            score_diff: Defense's score minus the opposing offense's score.
+
+        Returns:
+            A weighted A/B/F choice, or None to retain the existing policy.
+            Red-zone and goal-line behavior is deliberately left unchanged.
+        """
+        state = game.state
+        max_score = 8 if game.season_rules.two_point_conversion else 7
+        deficit = -score_diff
+        if (state.quarter != 4 or not 0 < state.time_remaining < 5.0
+                or state.game_over or not 0 < state.ball_position < 80
+                or state.down not in (1, 2, 3, 4) or deficit <= max_score):
+            return None
+
+        # Keep balanced defense available; increase risk with the required stops.
+        weights = (40, 35, 25) if deficit > 2 * max_score else (55, 30, 15)
+        if state.down >= 3 and state.yards_to_go >= 7:
+            weights = (45, 10, 45)
+        elif state.yards_to_go <= 3:
+            weights = (weights[0] - 10, weights[1] + 10, weights[2])
+
+        if self._defense_rng is None:
+            # Derive a namespaced seed without advancing engine dice. Do not
+            # clone its stream: that would correlate formations with next rolls.
+            self._defense_rng = random.Random(f"paydirt-late-defense:{random.getstate()!r}")
+        return self._defense_rng.choices(
+            (DefenseType.STANDARD, DefenseType.SHORT_YARDAGE, DefenseType.BLITZ),
+            weights=weights, k=1,
+        )[0]
 
     def _goal_line_defense(self, down, ytg) -> DefenseType:
         """Defense inside our own 5 yard line."""

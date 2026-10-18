@@ -823,3 +823,17 @@ describe('Game reload → TD → PAT flow', () => {
     expect(useGameStore.getState().pendingPat).toBe(true);
   })
 })
+
+
+describe('CPU PAT identity from execute response', () => {
+  it('uses player_offense when the response lacks human_is_home', () => {
+    const result = checkPendingPat({
+      pending_pat: true,
+      possession: 'away',
+      player_offense: false,
+    });
+
+    expect(result.isPendingPat).toBe(true);
+    expect(result.scoringTeamIsPlayer).toBe(false);
+  });
+});

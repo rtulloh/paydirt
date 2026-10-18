@@ -517,3 +517,19 @@ class TestCommentary:
             )
             assert "touchdown" not in comment.lower(), \
                 f"Negative breakaway should not mention touchdown, got: {comment}"
+
+
+class TestHailMaryCommentary:
+    """Hail Mary results use passing, never rushing, commentary."""
+
+    def test_completed_hail_mary_credits_a_receiver_not_running_back(self) -> None:
+        commentary = Commentary(
+            TeamRoster(qb=["Test QB"], rb=["Test RB"], wr=["Test WR"], te=["Test TE"]),
+            TeamRoster(db=["Test DB"]),
+            "Offense", "Defense",
+        )
+
+        for _ in range(20):
+            text = commentary.generate(PlayType.HAIL_MARY, ResultType.YARDS, yards=26)
+            assert "Test WR" in text
+            assert "Test RB" not in text

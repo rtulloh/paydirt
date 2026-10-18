@@ -1482,6 +1482,9 @@ class PaydirtGameEngine:
             turnover, touchdown, safety = self._handle_interception(
                 result, self.state.ball_position, yards
             )
+            # INT depth identifies the defensive catch spot; it is never
+            # offensive scrimmage yardage in the completed outcome.
+            yards = 0
 
         elif result.result_type == ResultType.FUMBLE:
             # Use centralized fumble handler
@@ -1863,6 +1866,41 @@ class PaydirtGameEngine:
                     outcome.spike_used = True
 
             return outcome
+
+    def get_penalty_safety_preview(self, outcome: PlayOutcome) -> Optional[str]:
+        """Describe a retained scrimmage loss that would score a safety.
+
+        Args:
+            outcome: Pending penalty choice, before applying either option.
+
+        Returns:
+            Engine-generated safety text, or None for other play results.
+            This query does not change game state, consume dice, or resolve
+            fumble recoveries/interception returns as ordinary scrimmage losses.
+        """
+        if not outcome.pending_penalty_decision or not outcome.penalty_choice:
+            return None
+        if outcome.play_type in (PlayType.FIELD_GOAL, PlayType.PUNT, PlayType.KICKOFF):
+            return None
+
+        result = outcome.penalty_choice.play_result
+        yards = result.yards
+        result_type = result.result_type
+        # Match the retained yardage used by apply_penalty_decision when a
+        # defensive penalty's yardage replaced the original offensive result.
+        if (result.defense_modifier or "").startswith("DEF") and result.offense_yards != yards:
+            yards = result.offense_yards
+            result_type = ResultType.YARDS
+        if result.turnover or result.touchdown or result_type not in (
+            ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE, ResultType.SACK,
+        ):
+            return None
+        if self.state.ball_position + yards > 0:
+            return None
+
+        offense = self.state.possession_team.peripheral.short_name
+        defense = self.state.defense_team.peripheral.short_name
+        return f"SAFETY! {offense} concedes 2 points to {defense}"
 
     def apply_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0

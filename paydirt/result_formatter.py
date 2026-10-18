@@ -100,6 +100,8 @@ class ResultFormatter:
 
         if outcome.turnover:
             if "INT" in str(result.result_type):
+                if "TOUCHBACK" in (outcome.description or result.description).upper():
+                    return "INTERCEPTED in end zone - TOUCHBACK"
                 return "INTERCEPTED!"
             return "FUMBLE!"
 

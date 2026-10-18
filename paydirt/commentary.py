@@ -330,7 +330,8 @@ class Commentary:
         # Determine if this is a pass or run play
         is_pass = play_type in [
             PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-            PlayType.LONG_PASS, PlayType.SCREEN, PlayType.TE_SHORT_LONG
+            PlayType.LONG_PASS, PlayType.SCREEN, PlayType.TE_SHORT_LONG,
+            PlayType.HAIL_MARY,
         ]
 
         # Get player names

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Interception Touchback Presentation
+- Treat interception depth as a defensive catch spot, never completed offensive yardage. End-zone interceptions retain the automatic touchback at the 20 without a return roll, and CLI/web output now identifies the touchback instead of a generic interception.
+- Add synthetic regression coverage for over-the-goal-line and goal-line touchbacks, no return RNG, outcome/stat accounting, compact CLI output, and web headline formatting.
+
 ### Web Full-Game Regression
 - Add Chromium browser coverage for two complete games through the real API/core engine, using only public 2026 teams. Verify halftime, final scores, and a clean second-game start; run it in CI with failure traces.
 - Transition every completed playing state to the final-score screen while preserving outstanding PATs and decisions. Add focused regressions and align the Vitest coverage provider with Vitest 1.
@@ -14,7 +18,12 @@
 - Preserve no-huddle timing when a penalty is accepted or declined. Award untimed downs only after actual clock expiry, including direct plays, pass interference, Hail Mary, and offsetting penalties.
 - Retain the actual punt dice in touchback and coffin-corner results so compact output no longer shows a placeholder roll of zero.
 - Use normal 5–10-second kick timing when field-goal penalties are declined. Both new and resumed CLI games query the engine before a post-score kickoff, preventing a half-expiring field goal from spending third-quarter time before halftime.
+- Preview retained scrimmage losses reaching the offense's goal line as safeties in both CLI penalty summaries and the play-result choice. Use an engine-owned, side-effect-free preview instead of displaying a fictitious next down at own one; preserve actual resolution and dice.
 - Add synthetic/public-team regressions. Retain the original historical integration games and add a supplemental untimed-down seed after the corrected presentation changes seeded game trajectories.
+
+### Hard AI and Public Sample Charts
+- Let Hard AI defending a late multi-score deficit outside the red zone mix Standard, Short Yardage, and Blitz choices. Preserve existing behavior elsewhere and keep the formation stream separate from engine dice.
+- Repair public 2026 sample-chart CSV schema, give the two teams distinct moderate run/pass profiles, live formation tradeoffs, and rare touchdown exposure. Add structural and balance checks plus standalone public-chart stress and paired-game runners.
 
 ### Dice-Weighted AI Chart Analysis
 - Weight offensive chart averages and positive-gain rates using the actual 216 dice-face combinations, including capped white sums in row x9. Keep raw chart-row counts separate from probability mass.
