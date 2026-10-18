@@ -108,15 +108,20 @@ python -m paydirt
 - **Onside Kicks**: Rarely attempts
 
 **AI Helper Features**:
-- Shows your top 3 plays ranked by success rate
-- Provides situational tips (clock management, red zone, etc.)
-- Displays average yards per play
+- Ranks up to 3 callable plays by a yardage target: half the distance on first down, 70% on second, and the full distance on third/fourth (rounded up)
+- Shows dice-weighted target-reaching and positive-gain percentages, average yards, and evaluated chart coverage
+- Estimates use plain numeric chart cells only; missing rows, penalties, turnovers, breakaways, and symbolic results are excluded
+- These are conditional chart estimates, **not conversion odds against a defense**; coverage below 50% is marked limited and ranked behind better-supported estimates
+- Provides separate score/clock and down-and-distance tips
 - Toggle with `Z` key during play selection
 
 #### Medium Mode (Default)
 
 - **AI Helper**: Disabled by default
 - **CPU Aggression**: 0.5 (balanced)
+- **Team Strengths**: On ordinary first/second downs, shifts the existing run/pass mix by 10 percentage points toward the stronger category, preserving variety within each category
+- **Evidence/Fallback**: Uses equally averaged, dice-weighted known positive-gain mass per callable play; requires at least 50% numeric coverage in both categories and a gap greater than 5 percentage points
+- **Situational Overrides**: Third/fourth down, red zone, goal line, hurry-up, clock killing, and timeout policies remain unchanged
 - **4th Down**: Standard NFL decision-making
 - **Field Goals**: Normal range considerations
 - **Onside Kicks**: Occasional surprise attempts

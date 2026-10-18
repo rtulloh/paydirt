@@ -9,6 +9,8 @@ breakaway results. They are not full engine-resolved play expectations.
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
+import math
+import re
 from typing import Optional
 
 from paydirt.chart_loader import OffenseChart, DefenseChart, TeamChart
@@ -91,6 +93,16 @@ class SituationStats:
         return plays[:count]
 
 
+@dataclass(frozen=True)
+class ChartTargetStats:
+    """Conditional plain-yardage estimates, never full-engine conversion odds."""
+
+    target_rate: float = 0.0
+    positive_rate: float = 0.0
+    avg_yards: float = 0.0
+    coverage: float = 0.0
+
+
 class OffenseAnalyzer:
     """Analyzes an offense chart to find best plays for situations."""
     
@@ -112,6 +124,7 @@ class OffenseAnalyzer:
     def __init__(self, offense_chart: OffenseChart):
         self.chart = offense_chart
         self._stats_cache: dict[str, PlayTypeStats] = {}
+        self._target_cache: dict[tuple[str, int], ChartTargetStats] = {}
         
     def _parse_result(self, result: str) -> PlayOutcome:
         """Parse a result string into structured outcome."""
@@ -405,6 +418,57 @@ class OffenseAnalyzer:
         
         return result
     
+    def get_target_stats(self, play_column: str, target_yards: int) -> ChartTargetStats:
+        """Estimate a target using numeric cells only, with full-dice coverage.
+
+        Symbolic results (including BLACK and parenthesized priority results)
+        require defense/engine resolution and are deliberately not guessed here.
+        Missing rows also reduce coverage. Existing Hard metrics stay unchanged.
+        """
+        key = (play_column, target_yards)
+        if key not in self._target_cache:
+            evaluated = reached = positive = weighted_yards = 0
+            if self.PLAY_TYPE_MAP.get(play_column) in ("run", "pass"):
+                for roll, result in self._get_chart_attribute(play_column).items():
+                    if roll not in _CHART_ROLL_WEIGHTS:
+                        continue
+                    text = str(result).strip()
+                    if not re.fullmatch(r"[+-]?[0-9]+", text):
+                        continue
+                    yards = int(text)
+                    weight = _CHART_ROLL_WEIGHTS[roll]
+                    evaluated += weight
+                    reached += weight * (yards >= target_yards)
+                    positive += weight * (yards > 0)
+                    weighted_yards += weight * yards
+            self._target_cache[key] = ChartTargetStats(
+                target_rate=100 * reached / evaluated if evaluated else 0.0,
+                positive_rate=100 * positive / evaluated if evaluated else 0.0,
+                avg_yards=weighted_yards / evaluated if evaluated else 0.0,
+                coverage=evaluated / _CHART_ROLL_WEIGHT_TOTAL,
+            )
+        return self._target_cache[key]
+
+    def early_down_run_bias(self) -> float:
+        """Return a coarse ±10-point mix adjustment, or zero without evidence.
+
+        Average each category's known positive-gain probability mass equally
+        across its callable plays, not its column count or conditional extremes.
+        Both categories need at least half of their dice mass evaluable; a gap
+        of five percentage points or less is treated as balanced.
+        """
+        scores = {}
+        for category in ("run", "pass"):
+            profiles = [self.get_target_stats(play, 1)
+                        for play, kind in self.PLAY_TYPE_MAP.items() if kind == category]
+            if sum(p.coverage for p in profiles) / len(profiles) < 0.5:
+                return 0.0
+            scores[category] = sum(p.positive_rate * p.coverage for p in profiles) / len(profiles)
+        difference = scores["run"] - scores["pass"]
+        if abs(difference) <= 5.0:
+            return 0.0
+        return 0.1 if difference > 0 else -0.1
+
     def get_best_play_for_downs(self, is_passing_down: bool, is_short_yardage: bool) -> str:
         """Get best play type for current down/distance situation."""
         all_stats = self.get_all_play_stats()
@@ -891,34 +955,46 @@ class EasyModeHelper:
         self.opponent_tracker = OpponentTendencyTracker()
         self._last_suggestion = None
     
+    @staticmethod
+    def _coaching_target(down: int, distance: int) -> int:
+        """Choose a coaching objective, not a change to game rules."""
+        distance = max(1, distance)
+        fraction = 0.5 if down == 1 else (0.7 if down == 2 else 1.0)
+        return max(1, math.ceil(distance * fraction))
+
     def suggest_offense_plays(self, down: int, distance: int, count: int = 3) -> list[dict]:
+        """Rank callable plays by a distance target among numeric chart outcomes.
+
+        Rates/averages are conditional on evaluated cells; coverage reports the
+        fraction of the full dice distribution evaluated. Prefer supported data
+        (at least 50% coverage) over sparse apparent perfection. Keep success_rate
+        as the positive-gain field for compatibility, not a conversion estimate.
         """
-        Get play suggestions for current situation.
-        
-        Returns list of dicts with:
-        - play: play type name
-        - success_rate: percentage chance of positive yards
-        - avg_yards: average yards gained
-        - is_pass: True if passing play
-        """
-        all_stats = self.team_analyzer.offense.get_all_play_stats()
-        
-        # Calculate success rate for each play type
+        if count <= 0:
+            return []
+        analyzer = self.team_analyzer.offense
+        target = self._coaching_target(down, distance)
         suggestions = []
-        for play_type, stats in all_stats.items():
-            # Skip breakaway (B) - not a callable play, it's a random result
-            if play_type == 'B':
+        for play, category in analyzer.PLAY_TYPE_MAP.items():
+            if category not in ("run", "pass"):
                 continue
-            if stats.valid_rolls > 0:
-                suggestions.append({
-                    'play': play_type,
-                    'success_rate': stats.success_rate,
-                    'avg_yards': stats.avg_yards,
-                    'is_pass': self.team_analyzer.offense.PLAY_TYPE_MAP.get(play_type) == 'pass',
-                })
-        
-        # Sort by success rate
-        suggestions.sort(key=lambda x: x['success_rate'], reverse=True)
+            stats = analyzer.get_target_stats(play, target)
+            if not stats.coverage:
+                continue
+            limited = stats.coverage < 0.5
+            explanation = (
+                f"{stats.target_rate:.0f}% of evaluated chart outcomes reach target {target} yd"
+                + ("; limited chart data" if limited else "")
+            )
+            suggestions.append({
+                "play": play, "target_yards": target, "target_rate": stats.target_rate,
+                "success_rate": stats.positive_rate, "avg_yards": stats.avg_yards,
+                "coverage": stats.coverage, "limited_data": limited,
+                "is_pass": category == "pass", "explanation": explanation,
+            })
+        suggestions.sort(key=lambda s: (
+            not s["limited_data"], s["target_rate"], s["success_rate"], s["avg_yards"],
+        ), reverse=True)
         return suggestions[:count]
     
     def suggest_defense(self, down: int, distance: int) -> str:
@@ -959,7 +1035,7 @@ class EasyModeHelper:
         suggestions = self.suggest_offense_plays(down, distance, 1)
         if suggestions:
             best = suggestions[0]
-            tips.append(f"Recommended: {best['play']} ({best['success_rate']:.0f}% success)")
+            tips.append(f"Recommended: {best['play']} — {best['explanation']}")
         
         return " | ".join(tips) if tips else ""
     
@@ -967,28 +1043,16 @@ class EasyModeHelper:
         """
         Explain why a play type is good or bad for current situation.
         """
-        stats = self.team_analyzer.offense.analyze_play_type(play_type)
-        
-        if stats.valid_rolls == 0:
-            return f"{play_type}: Not enough data to analyze."
-        
-        play_category = self.team_analyzer.offense.PLAY_TYPE_MAP.get(play_type, "unknown")
-        
-        explanation = f"{play_type}: {stats.success_rate:.0f}% success, {stats.avg_yards:.1f} avg yards"
-        
-        # Add context based on situation
-        if down == 3 and distance >= 7:
-            if play_category == "pass":
-                explanation += " - Good for third and long!"
-            elif play_category == "run":
-                explanation += " - Risky on third and long."
-        elif down == 3 and distance <= 2:
-            if play_category == "run":
-                explanation += " - Good for short yardage!"
-            elif play_category == "pass":
-                explanation += " - Risky on short yardage."
-        
-        return explanation
+        suggestions = self.suggest_offense_plays(down, distance, len(OffenseAnalyzer.PLAY_TYPE_MAP))
+        suggestion = next((s for s in suggestions if s["play"] == play_type), None)
+        if suggestion is None:
+            return f"{play_type}: Not enough numeric chart data to analyze."
+        return (
+            f"{play_type}: {suggestion['explanation']}; "
+            f"{suggestion['success_rate']:.0f}% positive gain, "
+            f"{suggestion['avg_yards']:.1f} avg yd, "
+            f"{suggestion['coverage']:.0%} coverage. Chart-only, not conversion odds."
+        )
     
     def warn_danger(self, down: int, distance: int) -> str:
         """

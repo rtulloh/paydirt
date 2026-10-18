@@ -73,6 +73,8 @@ def test_runner_completes_all_games_and_returns_failure_status(
         return finished_game()
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
+    # Isolate regular-season failure accounting; postseason has its own full-flow tests.
+    monkeypatch.setattr(runner, "run_playoffs", lambda season: 0)
     status = runner.run_full_season([str(n) for n in range(28)])
     output = capsys.readouterr()
     assert len(calls) == 224

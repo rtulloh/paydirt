@@ -143,7 +143,9 @@ def test_cli_does_not_discard_replacement_untimed_down(game, monkeypatch, capsys
     assert "FINAL" in capsys.readouterr().out
 
 
-def run_seeded_cli_game(monkeypatch, away: str, home: str, seed: int) -> PaydirtGameEngine:
+def run_seeded_cli_game(
+    monkeypatch, away: str, home: str, seed: int, *, is_playoff: bool = False,
+) -> PaydirtGameEngine:
     """Run unmodified game rules/dice with AI supplying human choices; never save standings."""
     random_state = random.getstate()
     random.seed(seed)
@@ -190,6 +192,7 @@ def run_seeded_cli_game(monkeypatch, away: str, home: str, seed: int) -> Paydirt
                 home_team=home if "/" in home else f"2026/{home}",
                 away_team=away if "/" in away else f"2026/{away}",
                 compact=True,
+                is_playoff=is_playoff,
             )
         return engines[0]
     finally:

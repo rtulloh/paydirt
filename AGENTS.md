@@ -58,13 +58,22 @@ only. Missing browsers/services or reaching the action limit are failures, not
 reasons to skip this check. See `paydirt-web/frontend/e2e/README.md` for details.
 
 `tests/run_full_season.py` runs a deterministic, generated 16-week/224-game
-1983 schedule through real engine rules, dice, and CLI flow. It is **not** the
-historical NFL schedule. It checks final game/untimed-down flags, period and
-scoring-log totals, and rejects kickoffs after game end. It never saves standings.
-Failures include the matchup and seed for reproduction, and the script exits
-nonzero. The runner requires pytest and private, local-only 1983 team data;
-these files are intentionally ignored and must never be committed or exported.
-It also runs the four historical full-game reproductions outside the unit suite.
+1983 schedule followed by a ten-team/nine-game postseason through real engine
+rules, dice, and CLI flow. It is **not** the historical NFL schedule or results.
+Playoff seeds use the generated regular-season standings: three division winners
+and two wildcards per conference, ranked by winning percentage, point differential,
+points scored, then team name (deterministic regression tiebreakers, not the full
+NFL tiebreaking procedure). Divisional matchups avoid same-division opponents.
+It checks final game/untimed-down flags, period and scoring-log totals, rejects
+kickoffs after game end, and fails any tied playoff final. Regular-season ties
+remain valid under the season rules. Both phases print pass/fail, overtime, and
+tie totals; playoffs also print round results and the champion. Failed playoff
+games do not advance either team; dependent games are reported as not played.
+It never saves standings. Failures include the matchup and seed for reproduction,
+and the script exits nonzero. Playoffs do not run after regular-season failures.
+The runner requires pytest and private, local-only 1983 team data; these files
+are intentionally ignored and must never be committed or exported. It also runs
+seven historical full-game reproductions outside the unit suite.
 
 **When writing unit tests, use only synthetic fixtures or the public sample
 teams under `seasons/2026/`. Never load or depend on any other season data,
@@ -74,7 +83,8 @@ Do not skip unit regressions to hide missing private data. Keep private-chart
 integration checks in standalone local scripts outside unit-test collection.
 Before pushing, also verify unit tests in a clean, tracked-files-only checkout
 so ignored local data cannot mask CI failures.
-All 224 games must pass before pushing; a partial run is not sufficient.
+All 224 regular-season games and all nine playoff games must pass before pushing;
+a partial run is not sufficient, and no playoff game may finish tied.
 
 ### Test Configuration (from pyproject.toml)
 

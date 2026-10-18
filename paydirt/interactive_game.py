@@ -1083,13 +1083,19 @@ def _show_easy_mode_helper(helper, game: PaydirtGameEngine, is_offense: bool):
 
     if is_offense:
         suggestions = helper.suggest_offense_plays(state.down, state.yards_to_go, 3)
-        print("\n  === AI HELPER (Your Best Plays) ===")
+        print("\n  === AI HELPER (Chart-only Play Suggestions) ===")
+        print("  Numeric chart estimates, not conversion odds against a defense.")
+        print("  Excluded: penalties, turnovers, breakaways, symbolic results, and missing rows.")
         print("  " + "-" * 40)
         for i, s in enumerate(suggestions, 1):
             print(
-                f"    {i}. {s['play']} - {s['success_rate']:.0f}% success, {s['avg_yards']:.1f} avg yards"
+                f"    {i}. {s['play']} - target {s['target_yards']} yd: {s['target_rate']:.0f}%, "
+                f"{s['success_rate']:.0f}% positive gain, {s['avg_yards']:.1f} avg yd, "
+                f"{s['coverage']:.0%} coverage"
             )
-
+            print(f"       {s['explanation']}")
+        if not suggestions:
+            print("    Not enough numeric chart data for recommendations.")
         # Show tip
         if state.is_home_possession:
             score_diff = state.home_score - state.away_score
@@ -3238,7 +3244,13 @@ def resume_game(
         down_before_play = game.state.down
         distance_before_play = game.state.yards_to_go
         two_min_warning_before = game.state.two_minute_warning_called
-
+        timeouts_before_play = (game.state.home_timeouts, game.state.away_timeouts)
+        cpu_call_timeout = bool(
+            not is_human_offense and cpu_ai and cpu_ai.should_call_timeout_on_offense(game)
+        )
+        cpu_defensive_timeout = bool(
+            is_human_offense and cpu_ai and cpu_ai.should_call_timeout_on_defense(game)
+        )
         punt_short_drop = False
         punt_coffin_corner_yards = 0
         if is_human_offense and play_type == PlayType.PUNT:
@@ -3255,12 +3267,29 @@ def resume_game(
             punt_short_drop=punt_short_drop,
             punt_coffin_corner_yards=punt_coffin_corner_yards,
             no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
+            call_timeout=(call_timeout if is_human_offense else cpu_call_timeout),
         )
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
+        defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
+        defense_timeout_used = defensive_timeout_requested and game.apply_defensive_timeout(
+            outcome,
+            time_before_play=time_before_play,
+            quarter_before_play=quarter_before_play,
+            offense_was_home=offense_was_home,
+            two_minute_warning_before=two_min_warning_before,
+            timeouts_before_play=timeouts_before_play,
+        )
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
+        if outcome.timeout_used:
+            mins = int(game.state.time_remaining)
+            secs = int((game.state.time_remaining % 1) * 60)
+            team_name = "CPU DEFENSIVE " if cpu_defensive_timeout and defense_timeout_used else (
+                "CPU " if cpu_call_timeout else ""
+            )
+            print(f"\n  *** {team_name}TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
 
         if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
             if is_human_offense:
@@ -3281,16 +3310,6 @@ def resume_game(
             print(f"  Official timeout - 2:00 remaining in the {quarter_name}")
             print("=" * 70)
 
-        if call_timeout and not outcome.touchdown:
-            play_seconds = time_before_play - game.state.time_remaining
-            should_apply, skip_msg = game._should_apply_timeout_after_play(
-                outcome, play_seconds, quarter_before_play
-            )
-            if should_apply:
-                if game.state.use_timeout(human_is_home):
-                    game._apply_timeout(time_before_play, quarter_before_play)
-            else:
-                print(f"  {skip_msg}")
 
         if outcome.field_goal_made:
             print(f"  Score: {game.get_score_str()}")
@@ -4052,7 +4071,10 @@ def run_interactive_game(
         down_before_play = game.state.down
         distance_before_play = game.state.yards_to_go
         two_min_warning_before = game.state.two_minute_warning_called
-
+        timeouts_before_play = (game.state.home_timeouts, game.state.away_timeouts)
+        cpu_defensive_timeout = bool(
+            is_human_offense and cpu_ai and cpu_ai.should_call_timeout_on_defense(game)
+        )
         # Initialize punt options
         punt_short_drop = False
         punt_coffin_corner_yards = 0
@@ -4079,19 +4101,30 @@ def run_interactive_game(
             punt_coffin_corner_yards=punt_coffin_corner_yards,
             no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
             call_spike=call_spike,
-            call_timeout=call_timeout or cpu_call_timeout,
+            call_timeout=(call_timeout if is_human_offense else False) or cpu_call_timeout,
         )
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
+        defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
+        defense_timeout_used = defensive_timeout_requested and game.apply_defensive_timeout(
+            outcome,
+            time_before_play=time_before_play,
+            quarter_before_play=quarter_before_play,
+            offense_was_home=offense_was_home,
+            two_minute_warning_before=two_min_warning_before,
+            timeouts_before_play=timeouts_before_play,
+        )
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
 
         # Display modifier results
         if outcome.timeout_used:
             mins = int(game.state.time_remaining)
             secs = int((game.state.time_remaining % 1) * 60)
-            team_name = "CPU" if cpu_call_timeout else None
+            team_name = "CPU DEFENSIVE" if cpu_defensive_timeout and defense_timeout_used else (
+                "CPU" if cpu_call_timeout else None
+            )
             if team_name:
                 print(f"\n  *** {team_name} TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
             else:

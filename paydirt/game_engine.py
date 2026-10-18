@@ -1780,7 +1780,9 @@ class PaydirtGameEngine:
         # Capture time before play for spike/timeout calculations
         time_before_play = self.state.time_remaining
         quarter_before_play = self.state.quarter
-
+        offense_was_home = self.state.is_home_possession
+        two_minute_warning_before = self.state.two_minute_warning_called
+        timeouts_before_play = (self.state.home_timeouts, self.state.away_timeouts)
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
         ball_pos_before = self.state.ball_position
@@ -1855,13 +1857,13 @@ class PaydirtGameEngine:
             # Apply post-play modifiers (timeout or spike)
             # Note: Only one modifier should be applied - timeout takes precedence
             if call_timeout and not outcome.touchdown and not outcome.turnover:
-                play_seconds = (time_before_play - self.state.time_remaining) * 60
-                should_apply, _ = self._should_apply_timeout_after_play(
-                    outcome, play_seconds, quarter_before_play
+                self._apply_requested_timeout(
+                    outcome, timeout_is_home=offense_was_home,
+                    time_before_play=time_before_play, quarter_before_play=quarter_before_play,
+                    offense_was_home=offense_was_home,
+                    two_minute_warning_before=two_minute_warning_before,
+                    timeouts_before_play=timeouts_before_play,
                 )
-                if should_apply:
-                    self._apply_timeout(time_before_play, quarter_before_play)
-                    outcome.timeout_used = True
 
             elif call_spike and not outcome.touchdown and not outcome.turnover:
                 play_seconds = (time_before_play - self.state.time_remaining) * 60
@@ -2391,6 +2393,90 @@ class PaydirtGameEngine:
         self._use_time(random.uniform(5, 25))
 
         return outcome
+
+    def apply_defensive_timeout(
+        self,
+        outcome: PlayOutcome,
+        *,
+        time_before_play: float,
+        quarter_before_play: int,
+        offense_was_home: bool,
+        two_minute_warning_before: bool,
+        timeouts_before_play: Optional[tuple[int, int]] = None,
+    ) -> bool:
+        """Request a timeout for the team defending at the original snap.
+
+        Args:
+            outcome: Resolved play, after any penalty decision.
+            time_before_play: Minutes remaining before the snap.
+            quarter_before_play: Period before the snap.
+            offense_was_home: Possession before the snap, for timeout ownership.
+            two_minute_warning_before: Whether the warning had already occurred.
+            timeouts_before_play: Home/away budgets before a possible halftime reset.
+
+        Returns:
+            True if a timeout was charged and the play's clock adjusted.
+        """
+        return self._apply_requested_timeout(
+            outcome, timeout_is_home=not offense_was_home,
+            time_before_play=time_before_play, quarter_before_play=quarter_before_play,
+            offense_was_home=offense_was_home,
+            two_minute_warning_before=two_minute_warning_before,
+            timeouts_before_play=timeouts_before_play,
+        )
+
+    def _apply_requested_timeout(
+        self,
+        outcome: PlayOutcome,
+        *,
+        timeout_is_home: bool,
+        time_before_play: float,
+        quarter_before_play: int,
+        offense_was_home: bool,
+        two_minute_warning_before: bool,
+        timeouts_before_play: Optional[tuple[int, int]] = None,
+    ) -> bool:
+        """Charge one team's timeout only when the resolved play can save time."""
+        if (
+            outcome.pending_penalty_decision
+            or outcome.penalty_applied
+            or outcome.timeout_used
+            or outcome.spike_used
+            or outcome.touchdown
+            or outcome.safety
+            or outcome.turnover
+            or self.state.is_home_possession != offense_was_home
+            or outcome.play_type in (PlayType.PUNT, PlayType.FIELD_GOAL)
+            or (not two_minute_warning_before and self.state.two_minute_warning_called)
+            or time_before_play * 60 <= 10
+        ):
+            return False
+
+        play_seconds = (time_before_play - self.state.time_remaining) * 60
+        if self.state.quarter == quarter_before_play and play_seconds <= 10 + 1e-6:
+            return False
+        should_apply, _ = self._should_apply_timeout_after_play(
+            outcome, play_seconds, quarter_before_play
+        )
+        if not should_apply:
+            return False
+
+        # A play may already have crossed halftime and reset the timeout budgets.
+        # Restore the old half only if an old-half timeout can actually save it.
+        crossed_halftime = quarter_before_play == 2 and self.state.quarter == 3
+        if crossed_halftime:
+            if timeouts_before_play is None:
+                return False
+            available = timeouts_before_play[0 if timeout_is_home else 1]
+            if available <= 0:
+                return False
+            self.state.home_timeouts, self.state.away_timeouts = timeouts_before_play
+            self.state.two_minute_warning_called = two_minute_warning_before
+        if not self.state.use_timeout(timeout_is_home):
+            return False
+        self._apply_timeout(time_before_play, quarter_before_play)
+        outcome.timeout_used = True
+        return True
 
     def _should_apply_timeout_after_play(
         self, outcome, play_seconds: float, quarter_before_play: int

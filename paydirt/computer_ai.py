@@ -13,9 +13,9 @@ Makes intelligent decisions based on:
 import random
 from typing import Optional
 
-from .play_resolver import PlayType, DefenseType, ResultType
+from .play_resolver import PlayType, DefenseType, ResultType, is_passing_play
 from .game_engine import PaydirtGameEngine
-from .ai_analysis import TeamAnalyzer, OpponentModel
+from .ai_analysis import TeamAnalyzer, OpponentModel, OffenseAnalyzer
 from .chart_loader import OffenseChart
 from .season_rules import AIBehavior
 
@@ -56,11 +56,15 @@ class ComputerAI:
         self.opponent_model = OpponentModel() if use_analysis else None
         self.team_analyzer = None  # Set when we know our team
         self._defense_rng: Optional[random.Random] = None  # Lazy, separate from engine dice.
+        self.use_team_strength = False  # Explicit Medium capability, enabled by the factory.
+        self._run_bias = 0.0
 
     def set_team(self, team_chart):
         """Set the AI's team for chart analysis."""
         if self.use_analysis:
             self.team_analyzer = TeamAnalyzer(team_chart)
+        self._run_bias = (OffenseAnalyzer(team_chart.offense).early_down_run_bias()
+                          if self.use_team_strength else 0.0)
 
     def select_offense(self, game: PaydirtGameEngine) -> PlayType:
         """
@@ -636,12 +640,25 @@ class ComputerAI:
             # 3rd and very long - need chunk play
             return random.choice([PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN])
 
+    def _choose_early_down(self, plays: list[PlayType]) -> PlayType:
+        """Tilt category probabilities only; preserve the existing within-category mix."""
+        if not self.use_team_strength or not self._run_bias:
+            return random.choice(plays)
+        run_count = sum(not is_passing_play(play) for play in plays)
+        pass_count = len(plays) - run_count
+        if not run_count or not pass_count:
+            return random.choice(plays)
+        run_probability = max(0.0, min(1.0, run_count / len(plays) + self._run_bias))
+        weights = [(1 - run_probability) / pass_count if is_passing_play(play)
+                   else run_probability / run_count for play in plays]
+        return random.choices(plays, weights=weights, k=1)[0]
+
     def _second_down_offense(self, ytg) -> PlayType:
         """2nd down play calling."""
 
         if ytg <= 3:
             # 2nd and short - stay balanced, set up 3rd and short
-            return random.choice(
+            return self._choose_early_down(
                 [
                     PlayType.LINE_PLUNGE,
                     PlayType.OFF_TACKLE,
@@ -652,7 +669,7 @@ class ComputerAI:
             )
         elif ytg <= 7:
             # 2nd and medium - balanced attack
-            return random.choice(
+            return self._choose_early_down(
                 [
                     PlayType.OFF_TACKLE,
                     PlayType.SHORT_PASS,
@@ -664,7 +681,7 @@ class ComputerAI:
             )
         else:
             # 2nd and long - need to get some back
-            return random.choice(
+            return self._choose_early_down(
                 [
                     PlayType.SHORT_PASS,
                     PlayType.MEDIUM_PASS,
@@ -679,12 +696,12 @@ class ComputerAI:
 
         # Deep in own territory - be careful
         if field_pos < 20:
-            return random.choice(
+            return self._choose_early_down(
                 [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.SHORT_PASS, PlayType.DRAW]
             )
 
         # Normal field position - balanced attack
-        return random.choice(
+        return self._choose_early_down(
             [
                 PlayType.LINE_PLUNGE,
                 PlayType.OFF_TACKLE,
@@ -1335,12 +1352,15 @@ def create_computer_ai(
         AI with season settings and, in hard mode, its own team analyzer.
     """
     difficulty = (difficulty or "medium").lower()
-    aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.7}.get(difficulty, 0.5)
+    if difficulty not in ("easy", "medium", "hard"):
+        difficulty = "medium"
+    aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.7}[difficulty]
     ai = ComputerAI(
         aggression=aggression,
         use_analysis=difficulty == "hard",
         ai_behavior=game.season_rules.ai_behavior,
     )
+    ai.use_team_strength = difficulty == "medium"
     ai.set_team(game.state.home_chart if cpu_is_home else game.state.away_chart)
     return ai
 
