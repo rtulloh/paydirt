@@ -49,15 +49,54 @@ Two-minute warnings in the second and fourth quarters are handled automatically.
 
 ## Spike Modifier and Combinations
 
-`7S` means Medium Pass followed by the spike modifier. Unlike standalone `S`, the modifier does not
-advance the down a second time. If applicable, the engine caps the first play at 17 seconds and
-adds three seconds for the spike, for at most 20 seconds total.
-It is skipped when the outcome already stops the clock or makes it inapplicable, such as an incompletion,
-out-of-bounds result, or turnover.
+`7S` means **Medium Pass followed by a spike**, not a free clock stop.
+The spike must carry a down cost. For a `7S` call made on **first down**, the agreed rule is:
+when the completion and spike both apply, the next play is **third down**, **even if the pass earns a first down**.
+An **incompletion needs no spike**; it leaves second down without an extra spike cost.
+Penalties must be resolved before deciding the spike's effect on down and clock.
 
-Modifiers can be combined, for example `7+S` or `7ST`. A requested timeout takes precedence over
-the spike modifier when applicable. Already-stopped outcomes do not justify an additional timeout charge.
-Always read the resulting engine description and updated clock.
+**Known implementation mismatch:** the current engine applies the spike's clock adjustment without charging
+that additional down. It also processes an offensive spike before a defensive timeout request.
+The examples below state the agreed rules to be implemented, not a claim that these fixes have shipped.
+The earlier statement that the modifier intentionally does not advance the down was incorrect.
+
+For an applied spike modifier, the existing timing procedure caps the first play at 17 seconds and
+adds three seconds for the spike, for at most 20 seconds total. This timing cap does not make the spike free.
+Standalone `S` is a separate spike play and also consumes a down.
+
+### Spike and Defensive Timeout Priority
+
+The agreed resolution order is **penalty decision, applicable timeout, then the planned spike**.
+An applicable defensive `AT` stops the clock before the spike: charge the defense's timeout and
+cancel the spike, without charging a spike-related down. A request with no timeout available cannot cancel it.
+On an incompletion, neither a spike nor a clock-saving timeout is needed.
+The game log should identify the winning procedure, for example: **Defensive timeout; planned spike canceled.**
+
+The current engine already gives an offensive timeout request precedence over a spike when both are requested
+on the offensive call, such as `7ST`. Extending that priority to defensive requests is a pending fix;
+do not infer that `7S` against `AT` is currently resolved correctly.
+
+### Worked Spike Examples
+
+All examples start on **first down**, with possession retained, no score ending the sequence,
+and enough time for the stated actions. Rows without penalties assume none occurs.
+Downs in this table describe the **agreed behavior**, subject to the implementation mismatch above.
+
+| Calls and outcome | Spike / timeout treatment | Next play |
+|-------------------|---------------------------|-----------|
+| `7S`: complete for 4 yards on first-and-ten | Apply spike; if the completion is capped at 17 seconds plus a three-second spike, the total is 20 seconds | Third-and-six |
+| `7S`: complete for 12 yards on first-and-ten | The first-down gain does **not** waive the agreed spike down cost | Third-and-ten at the new spot |
+| `7S`: incomplete | No spike needed; no extra three seconds or spike down | Second-and-ten |
+| `7S` against `AT`: complete for 4 yards; defense has an applicable timeout | Charge defense; use timeout timing instead of the spike sequence | Second-and-six; no spike-related down |
+| `7S` against `AT`: complete for 4 yards; defense has no timeout left | Reject the unavailable timeout; apply the spike normally | Third-and-six |
+| `7S` against `AT`: incomplete | No spike and no timeout charged | Second-and-ten |
+| `7S` with a penalty flag | Resolve acceptance/declination and enforcement first | Follow the enforced down/distance and applicable spike procedure; do not blindly force third down |
+
+For the first row, starting at 0:30 and using the full 20-second sequence leaves 0:10.
+Starting with exactly 0:20 can leave **zero**, so a field-goal attempt is not guaranteed.
+An out-of-bounds designation is not, by itself, the agreed reason to waive a called spike's down cost;
+incompletions and penalty resolution must be distinguished from a completed pass. The defensive-timeout
+cancellation above is the separately agreed exception.
 
 ## Final Seconds Strategy
 

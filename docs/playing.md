@@ -115,13 +115,14 @@ Defaults vary with down, distance, and context; they are conveniences, not a pro
 
 1. The offense calls a play and the defense selects a formation.
 2. Offensive and defensive dice select chart entries.
-3. The priority chart combines those entries.
+3. The [priority chart](priority-chart.md) combines those entries.
 4. Secondary rolls, penalties, and special-play procedures apply as required.
 5. The engine updates field position, possession, statistics, scoring, and time.
 
 Common results include gains/losses, incompletions, interceptions, fumbles, breakaways, and penalties.
 A BLACK offensive entry is not necessarily the final result; the defensive entry and priority chart still matter.
 Asterisks and daggers mark sideline results; actual clock treatment depends on the situation.
+See the [player priority reference and worked examples](priority-chart.md) for the combination table.
 
 ## Game Rules
 

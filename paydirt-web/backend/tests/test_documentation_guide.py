@@ -11,7 +11,7 @@ from main import app
 import routes
 
 PAGES = (
-    "installation", "web-interface", "playing", "clock-management",
+    "installation", "web-interface", "playing", "priority-chart", "clock-management",
     "ai-difficulty", "seasons", "chart-generator", "saved-games-and-standings",
 )
 client = TestClient(app)
@@ -99,3 +99,24 @@ def test_packaging_includes_markdown_guides_and_images(spec: str) -> None:
             data.extend(ast.literal_eval(node.value))
     assert ("docs/*.md", "docs") in data
     assert ("docs/images", "docs/images") in data
+
+
+def test_player_guide_includes_priority_reference_and_examples() -> None:
+    response = client.get("/api/guide")
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert "# Priority Chart Reference" in content
+    assert "[Priority Chart Reference](#priority-chart-reference)" in content
+    assert "## Worked Priority Examples" in content
+    assert "BLACK" in content
+
+
+def test_player_priority_chart_preserves_source_ascii_reference() -> None:
+    root = Path(__file__).resolve().parents[3]
+    source = ast.get_docstring(ast.parse((root / "paydirt/priority_chart.py").read_text()))
+    chart = "\n".join(
+        line.removeprefix("# ")
+        for line in source.split("# Priority Chart Reference:\n", 1)[1].splitlines()
+    )
+    content = client.get("/api/guide").json()["content"]
+    assert f"```text\n{chart}\n```" in content

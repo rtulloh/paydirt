@@ -8,6 +8,7 @@
 2. [Use the browser interface](web-interface.md), or [play in the terminal](playing.md).
 3. Choose [CPU difficulty and coaching](ai-difficulty.md).
 4. Learn [clock management](clock-management.md) and [saving games and standings](saved-games-and-standings.md).
+5. Use the [priority chart reference](priority-chart.md) to understand combined results, with worked examples.
 
 ## Teams and Data
 

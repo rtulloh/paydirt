@@ -50,7 +50,7 @@ async def health_check():
 
 # Canonical player topics, assembled for offline reading without a second manual.
 GUIDE_PAGES = (
-    "installation.md", "web-interface.md", "playing.md", "clock-management.md",
+    "installation.md", "web-interface.md", "playing.md", "priority-chart.md", "clock-management.md",
     "ai-difficulty.md", "seasons.md", "chart-generator.md", "saved-games-and-standings.md",
 )
 
