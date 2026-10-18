@@ -245,6 +245,17 @@ def load_team_info(season_dir: Path, team_id: str) -> Team:
 - Check code coverage when tests or code are added. Aim for 80% or better coverage
 - Always run the linter and unit tests before commit of changes
 
+## Documentation Maintenance
+
+Follow the root `AGENTS.md` documentation-maintenance requirements. Update the
+canonical guides in `docs/` alongside changes to web controls, API behavior,
+setup, or packaging; keep `paydirt-web/README.md` focused on web development.
+Player guides supply the offline User Guide, so preserve local topic links,
+heading anchors, bundled Markdown, and images when changing guide loading.
+Create all future development notes, including proposed work and investigations,
+**only in `docs/dev-notes/`**, not in player guides, the repository root, or web
+subdirectories. Maintained reference guides are distinct from development notes.
+
 ## Architecture: Core Engine is Source of Truth
 
 The core game engine (`paydirt/game_engine.py`) is the authoritative source of truth for all game decisions. All game logic, rules, and state management live in the core engine.

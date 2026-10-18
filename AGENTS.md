@@ -210,6 +210,28 @@ failing behavior test; run applicable existing checks instead.
 - Use `unittest.mock.patch` for mocking dice rolls
 - Test file naming: `test_<module>.py`
 
+## Documentation Maintenance
+
+Keep documentation up to date in the same change as the behavior it describes.
+When changing gameplay, AI/coaching, controls, commands, API behavior, dependencies,
+data formats, installation, or packaging, review and update the affected guides.
+If no documentation update is needed, state why in the change summary.
+
+- Keep `README.md` a concise landing page; detailed instructions belong in `docs/`.
+- Use `docs/README.md` as the documentation index and link to each canonical topic
+  instead of duplicating instructions across files.
+- Create all future development notes (experiments, investigations, and proposed
+  designs) **only in `docs/dev-notes/`**, never in the repository root or elsewhere
+  in `docs/`. Clearly distinguish them from implemented features and current
+  player guidance. Keep maintained user/developer reference guides in `docs/`.
+- Verify examples against the current implementation. Use synthetic data or public
+  2026 sample teams; never publish private charts, workbooks, or historical logs.
+- When moving or renaming documentation, update references, relative links,
+  heading anchors, and image paths. Run `python3 -m pytest tests/test_documentation.py`.
+- Player guides also power the offline in-app User Guide. Keep the backend
+  `GUIDE_PAGES` list, frontend navigation, and packaging specs consistent with
+  documentation changes; run guide/API tests and browser checks when affected.
+
 ## Architecture Principles
 
 ### Core Game Engine is Source of Truth

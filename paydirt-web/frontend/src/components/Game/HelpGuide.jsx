@@ -3,6 +3,25 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { API_BASE } from '../../config';
 
+// Match the backend's Markdown heading slugs; code examples are not headings.
+function remarkGuideAnchors() {
+  return (tree) => {
+    const used = new Set();
+    const text = (node) => node.value || (node.children || []).map(text).join('');
+    const visit = (node) => {
+      if (node.type === 'heading') {
+        const base = text(node).toLowerCase().replace(/[^\p{L}\p{N}_ -]/gu, '').replace(/ /g, '-');
+        let id = base;
+        for (let suffix = 1; used.has(id); suffix += 1) id = base + '-' + suffix;
+        used.add(id);
+        node.data = { ...node.data, hProperties: { ...node.data?.hProperties, id } };
+      }
+      (node.children || []).forEach(visit);
+    };
+    visit(tree);
+  };
+}
+
 const HelpGuide = ({ onBackToMenu }) => {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('Paydirt User Guide');
@@ -91,7 +110,7 @@ const HelpGuide = ({ onBackToMenu }) => {
           prose-td:border prose-td:border-gray-700 prose-td:px-4 prose-td:py-2
           prose-hr:border-gray-700"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkGuideAnchors]}>{content}</ReactMarkdown>
         </div>
       </div>
 

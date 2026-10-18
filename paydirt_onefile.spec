@@ -9,6 +9,7 @@ datas = [
     ('LICENSE', '.'),
     ('README.md', '.'),
     ('docs/images', 'docs/images'),
+    ('docs/*.md', 'docs'),
 ]
 
 a = Analysis(

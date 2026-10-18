@@ -8,6 +8,7 @@ datas = [
     ('LICENSE', '.'),
     ('README.md', '.'),
     ('docs/images', 'docs/images'),
+    ('docs/*.md', 'docs'),
     # Include web static files
     ('paydirt-web/backend/web_static', 'web_static'),
     # Include web backend code

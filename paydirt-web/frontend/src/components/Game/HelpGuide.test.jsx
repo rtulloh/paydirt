@@ -122,3 +122,26 @@ echo "code block"
     expect(mockOnBackToMenu).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe('offline guide navigation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('gives headings stable anchors, including formatted and duplicate headings', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        title: 'Paydirt User Guide',
+        content: '# Manual\n\n[Clock](#clock-management)\n\n## Clock Management\n\n### **Timeouts** & Spikes\n\n### Choices\n\n~~~text\n## Choices\n~~~\n\n### Choices',
+      }),
+    });
+    render(<HelpGuide onBackToMenu={() => {}} />);
+    expect(await screen.findByRole('heading', { name: 'Clock Management' })).toHaveAttribute('id', 'clock-management');
+    expect(screen.getByRole('heading', { name: 'Timeouts & Spikes' })).toHaveAttribute('id', 'timeouts--spikes');
+    const choices = screen.getAllByRole('heading', { name: 'Choices' });
+    expect(choices[0]).toHaveAttribute('id', 'choices');
+    expect(choices[1]).toHaveAttribute('id', 'choices-1');
+    expect(screen.getByRole('link', { name: 'Clock' })).toHaveAttribute('href', '#clock-management');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});

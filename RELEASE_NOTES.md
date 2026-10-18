@@ -66,7 +66,7 @@
 ### Regression and Debugging
 - Add 362 self-contained accounting regression cases across the two new suites.
 - Remove private historical-chart dependencies from unit fixtures so clean upstream builds can run; historical reproductions remain local integration checks.
-- Document deferred replay logging work in `docs/replayable-game-logs.md`. The historical TB–GB replay matched only the kickoff and six plays before missing inputs blocked continuation; its final box score is not claimed as replay-verified.
+- Document deferred replay logging work in `docs/dev-notes/replayable-game-logs.md`. The historical TB–GB replay matched only the kickoff and six plays before missing inputs blocked continuation; its final box score is not claimed as replay-verified.
 - Existing expectation corrections in the first accounting commit: cap a touchdown from the opponent’s 10 at 10 yards rather than 15, and count offensive recovery touchdowns as statistical first downs. The subsequent accounting suite changes no existing expectations.
 
 ---

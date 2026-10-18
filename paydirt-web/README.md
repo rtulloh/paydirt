@@ -1,119 +1,88 @@
-# Paydirt Web
+# Paydirt Web Development
 
-A web-based interface for the Paydirt football board game.
+For playing the game, see the [browser walkthrough](../docs/web-interface.md).
+This page covers running the React frontend and FastAPI backend from source.
+See also the [documentation index](../docs/README.md) and [development guide](../docs/development.md).
 
 ## Requirements
 
-- **Frontend**: Node.js 18+
-- **Backend**: Python 3.12+ (FastAPI requires prebuilt wheels not available for Python 3.15+)
+- Node.js 18+; the release workflow uses Node.js 20.
+- A Python version compatible with the pinned backend requirements. Python 3.12 is a practical development choice;
+  the release workflow uses Python 3.10. Newer Python versions may lack wheels for pinned dependencies.
+- The repository checkout, including the public `seasons/2026/` data and `docs/`.
 
-## Quick Start
+## Install Dependencies
 
-### 1. Set up Python 3.12 (if needed)
+From the repository root (macOS/Linux):
 
-```bash
-# Install Python 3.12 via Homebrew
-brew install python@3.12
-
-# Use Python 3.12 for the backend
-cd paydirt-web/backend
-/usr/local/opt/python@3.12/bin/python3 -m pip install -r requirements.txt
+```sh
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r paydirt-web/backend/requirements.txt
+python -m pip install pytest httpx pytest-cov
 ```
 
-### 2. Install Frontend Dependencies
+On Windows, use your compatible Python launcher to create the environment and activate it with
+`.venv\Scripts\Activate.ps1`. Keep using that environment for backend commands.
 
-```bash
+In a separate terminal, from the repository root:
+
+```sh
 cd paydirt-web/frontend
-npm install
+npm ci
 ```
 
-### 3. Start the Application
+## Run Development Services
 
-**Mac/Linux:**
-```bash
-cd paydirt-web
-./start.sh
-```
+**Terminal 1**, from the repository root with the Python environment active:
 
-**Windows:**
-```batch
-cd paydirt-web
-start.bat
-```
-
-Or run each service separately:
-
-```bash
-# Terminal 1 - Backend (Python 3.12)
+```sh
 cd paydirt-web/backend
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
+```
 
-# Terminal 2 - Frontend
+**Terminal 2**, from the repository root:
+
+```sh
 cd paydirt-web/frontend
 npm run dev
 ```
 
-## Access
+Open **http://localhost:5173**. The Vite development server proxies API requests to port 8000.
+These instructions run the services separately so the selected Python environment is explicit.
+Convenience launchers `start.sh` and `start.bat` also live in `paydirt-web/`; review their environment assumptions before use.
 
-Open your browser to: **http://localhost:5173**
+## Tests and Build
 
-## Project Structure
+From `paydirt-web/backend/` in the Python environment:
 
-```
-paydirt-web/
-├── backend/           # FastAPI backend
-│   ├── main.py        # App entry point
-│   ├── routes.py      # API routes
-│   ├── tests/         # Backend tests
-│   └── requirements.txt
-├── frontend/          # React frontend
-│   ├── src/
-│   │   ├── components/Game/  # Game UI components
-│   │   │   ├── PlayingPhase.jsx    # Main gameplay
-│   │   │   ├── PlayModifiers.jsx   # No-huddle, timeout, OOB, spike
-│   │   │   ├── Halftime.jsx        # Halftime screen
-│   │   │   └── ...
-│   │   ├── store/       # Zustand state management
-│   │   └── styles/      # Tailwind CSS
-│   ├── package.json
-│   └── vite.config.js
-├── start.sh           # Launch script (Mac/Linux)
-└── start.bat          # Launch script (Windows)
+```sh
+python -m pytest tests/ -q -o addopts= --tb=short
 ```
 
-## Running Tests
+From `paydirt-web/frontend/`:
 
-```bash
-# Frontend tests (already working)
-cd paydirt-web/frontend
-npm test
-
-# Backend tests (requires Python 3.12+)
-cd paydirt-web/backend
-pytest
+```sh
+npm test -- --run
+npm run build
 ```
 
-## API Endpoints
+The required [full-game browser regression](frontend/e2e/README.md) starts isolated services and needs Chromium.
+Stop development services on ports 8000 and 5173 before running it.
+Follow [AGENTS.md](../AGENTS.md#required-full-regression-before-any-push) for the complete pre-push checklist;
+these local commands alone are not full regression validation.
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check |
-| `/api/seasons` | GET | List available seasons |
-| `/api/teams?season=X` | GET | List teams for a season |
-| `/api/game/new` | POST | Start a new game |
+## Structure and API
 
-## Development Status
+- `backend/main.py`: app startup; `backend/routes.py`: engine adapter and API routes.
+- `frontend/src/components/`: UI; `frontend/src/store/`: Zustand state.
+- The core engine decides game rules, results, descriptions, scoring, and timing; the UI displays them.
+- Player guides under `docs/` are assembled into `GET /api/guide` for offline help. Images use `/api/docs/images/{name}`.
 
-**Core Features Complete:**
-- Full game engine with all play types
-- CPU AI opponent with difficulty levels
-- Season/team support (1972, 1983, 2026)
-- Replay save/load functionality
-- Play modifiers: No-huddle, Timeout, Out-of-Bounds, Spike
+Useful endpoints include `GET /api/health`, `GET /api/seasons`, `GET /api/teams?season=2026`,
+`POST /api/game/new`, and `GET /api/game/state/{game_id}`.
+The running backend's **http://localhost:8000/docs** provides its API schema.
 
-**Play Modifiers:**
-- **No-huddle mode**: Persists until possession change
-- **Timeout (T)**: Stops clock after play (uses timeout)
-- **Out-of-Bounds (+)**: Guarantees 10-sec play in final minutes (costs 5 yards)
-- **In-Bounds (-)**: Forces clock to keep running (costs 5 yards)
-- **Spike (S)**: Spikes ball to stop clock (uses a down)
+Browser saved replays are not resumable CLI games or deterministic engine-log replay.
+See [saved games](../docs/saved-games-and-standings.md) and the separately labeled
+[replay design notes](../docs/dev-notes/replayable-game-logs.md).

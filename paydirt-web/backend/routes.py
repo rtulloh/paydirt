@@ -8,6 +8,7 @@ import random
 import uuid
 import re
 import os
+import posixpath
 from datetime import datetime
 
 import sys
@@ -47,29 +48,97 @@ async def health_check():
     return {"status": "ok"}
 
 
-def _get_readme_path() -> Optional[Path]:
-    """
-    Get the path to README.md.
+# Canonical player topics, assembled for offline reading without a second manual.
+GUIDE_PAGES = (
+    "installation.md", "web-interface.md", "playing.md", "clock-management.md",
+    "ai-difficulty.md", "seasons.md", "chart-generator.md", "saved-games-and-standings.md",
+)
 
-    In bundled mode, README.md is in the same directory as other bundled files.
-    In development mode, it's in the project root.
-    """
-    if getattr(sys, "frozen", False):
-        # Bundled mode - README is in _MEIPASS or executable directory
-        if hasattr(sys, "_MEIPASS"):
-            readme_path = Path(sys._MEIPASS) / "README.md"
+
+def _guide_lines(content: str) -> list[tuple[str, bool]]:
+    """Identify fenced code so examples are not rewritten or indexed as headings."""
+    lines = []
+    fence = ""
+    for line in content.split("\n"):
+        marker = re.match(r"^ {0,3}(\x60{3,}|~{3,})", line)
+        in_code = bool(fence or marker)
+        if marker:
+            run = marker.group(1)
+            if not fence:
+                fence = run
+            elif run[0] == fence[0] and len(run) >= len(fence) and not line[marker.end():].strip():
+                fence = ""
+        lines.append((line, in_code))
+    return lines
+
+
+def _guide_slug(text: str) -> str:
+    """Heading slug shared with HelpGuide's Markdown anchor renderer."""
+    return re.sub(r"[^\w -]", "", text.lower()).replace(" ", "-")
+
+
+def _assemble_guide(docs_path: Path) -> str:
+    """Join canonical topics and turn their relative links into offline anchors."""
+    pages = {page: (docs_path / page).read_text(encoding="utf-8") for page in GUIDE_PAGES}
+    anchors = {}
+    titles = {}
+    used = {"paydirt-user-guide"}
+    for page, content in pages.items():
+        local_used = set()
+        for line, in_code in _guide_lines(content):
+            heading = re.match(r"^#{1,6} (.+?)(?: +#+)?$", line) if not in_code else None
+            if not heading:
+                continue
+            title = heading.group(1)
+            base = _guide_slug(title)
+            local = base
+            suffix = 1
+            while local in local_used:
+                local = f"{base}-{suffix}"
+                suffix += 1
+            local_used.add(local)
+            combined = base
+            suffix = 1
+            while combined in used:
+                combined = f"{base}-{suffix}"
+                suffix += 1
+            used.add(combined)
+            anchors[page, local] = combined
+            if page not in titles:
+                titles[page] = title
+                anchors[page, ""] = combined
+
+    def rewrite_link(match: re.Match, page: str) -> str:
+        label, target = match.groups()
+        if ":" in target or target.startswith("/"):
+            return match.group(0)
+        path, _, fragment = target.partition("#")
+        target_page = path or page
+        if target_page == "README.md":
+            anchor = "paydirt-user-guide"
         else:
-            readme_path = Path(os.path.dirname(sys.executable)) / "README.md"
-    else:
-        # Development mode - README is in project root
-        readme_path = Path(__file__).parent.parent.parent / "README.md"
+            anchor = anchors.get((target_page, fragment))
+        if anchor is not None:
+            return f"[{label}](#{anchor})"
+        repo_path = posixpath.normpath(f"docs/{path}") if path else f"docs/{page}"
+        url = f"https://github.com/rtulloh/paydirt/blob/main/{repo_path}"
+        return f"[{label}]({url}{'#' + fragment if fragment else ''})"
 
-    return readme_path if readme_path.exists() else None
+    contents = ["# Paydirt User Guide", ""]
+    contents.extend(f"- [{titles[page]}](#{anchors[page, '']})" for page in GUIDE_PAGES)
+    for page, content in pages.items():
+        contents.extend(["", "---", ""])
+        for line, in_code in _guide_lines(content):
+            contents.append(line if in_code else re.sub(
+                r"(?<!!)\[([^\]]+)\]\(([^)]+)\)",
+                lambda match: rewrite_link(match, page), line,
+            ))
+    return _filter_readme_for_guide("\n".join(contents))
 
 
 def _filter_readme_for_guide(content: str) -> str:
     """
-    Filter README.md content to remove developer-only sections and rewrite image paths.
+    Filter legacy developer sections and rewrite guide image paths.
 
     Removes:
     - Project Structure section
@@ -78,12 +147,15 @@ def _filter_readme_for_guide(content: str) -> str:
     Rewrites:
     - Image paths from docs/images/X.png to /api/docs/images/X.png
     """
-    lines = content.split("\n")
     filtered_lines = []
     skip_until_next_h2 = False
     sections_to_skip = ["## Project Structure", "## Building Standalone Executables"]
 
-    for line in lines:
+    for line, in_code in _guide_lines(content):
+        if in_code:
+            if not skip_until_next_h2:
+                filtered_lines.append(line)
+            continue
         # Check if we hit a section to skip
         if any(line.startswith(section) for section in sections_to_skip):
             skip_until_next_h2 = True
@@ -97,7 +169,7 @@ def _filter_readme_for_guide(content: str) -> str:
         if not skip_until_next_h2:
             # Rewrite image paths to use API endpoint
             line = re.sub(
-                r"!\[([^\]]*)\]\(docs/images/([^)]+)\)",
+                r"!\[([^\]]*)\]\((?:docs/)?images/([^)]+)\)",
                 r"![\1](/api/docs/images/\2)",
                 line,
             )
@@ -113,21 +185,16 @@ class GuideResponse(BaseModel):
 
 @router.get("/api/guide", response_model=GuideResponse)
 async def get_guide():
-    """
-    Get the user guide content (filtered README.md).
-
-    Returns the README.md content with developer-only sections removed.
-    """
-    readme_path = _get_readme_path()
-    if readme_path is None:
+    """Return the complete player manual from the bundled canonical topic files."""
+    docs_path = _get_docs_path()
+    if docs_path is None:
         raise HTTPException(status_code=404, detail="Guide not available")
-
     try:
-        content = readme_path.read_text(encoding="utf-8")
-        filtered_content = _filter_readme_for_guide(content)
-        return GuideResponse(content=filtered_content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading guide: {str(e)}")
+        return GuideResponse(content=_assemble_guide(docs_path))
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Guide topic not available")
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Error reading guide: {error}")
 
 
 def _get_docs_path() -> Optional[Path]:
