@@ -502,6 +502,34 @@ def _calculate_post_play_state(
         }
 
 
+def _arm_follow_up_state(game: Dict[str, Any], engine, outcome) -> tuple:
+    """Record pending PAT/kickoff bookkeeping for a FINALIZED engine outcome.
+
+    A pending penalty choice has recorded no score, so it leaves the spot,
+    `pending_pat`, and `is_kickoff` untouched. The engine owns scoring; this
+    only places the ball for the next engine-driven step.
+
+    Returns:
+        (scoring, is_pending_pat, pre_kickoff_ball_position)
+    """
+    if outcome.pending_penalty_decision:
+        game["pending_pat"] = False
+        return False, False, None
+    scoring = outcome.touchdown or outcome.field_goal_made or outcome.safety
+    is_pending_pat = outcome.touchdown and not engine.state.game_over
+    game["pending_pat"] = is_pending_pat
+    pre_kickoff_ball_position = None
+    if outcome.touchdown and not engine.state.game_over:
+        engine.setup_for_pat()
+    elif outcome.touchdown and engine.state.game_over:
+        engine.setup_for_kickoff()  # Game-ending TD: reset for consistency
+    elif scoring and not engine.state.game_over:
+        # Scoring team keeps possession to kick off; safety free kick is from the 20.
+        pre_kickoff_ball_position = engine.state.ball_position
+        engine.setup_for_kickoff(from_safety=outcome.safety)
+        game["is_kickoff"] = True
+    return scoring, is_pending_pat, pre_kickoff_ball_position
+
 def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
@@ -1127,30 +1155,9 @@ async def execute_play(request: PlayRequest):
     if result.pending_penalty_decision:
         engine._last_play_outcome = result
 
-    scoring = result.touchdown or result.field_goal_made or result.safety
-
-    # After a score, set up for kickoff.
-    # Scoring team keeps possession to kick off — DON'T switch possession here.
-    # The engine's kickoff() method handles the receiver getting the ball.
-    # Note: After a safety, the kickoff is from the 20 yard line, not 35
-    is_pending_pat = result.touchdown and not engine.state.game_over
-    game["pending_pat"] = is_pending_pat
-
-    # After a TD, set up for PAT attempt using engine method
-    if result.touchdown and not engine.state.game_over:
-        engine.setup_for_pat()
-    elif result.touchdown and engine.state.game_over:
-        engine.setup_for_kickoff()  # Game-ending TD: reset for consistency
-
-    # Save pre-reset ball position for TD/SF responses (before we set up for kickoff)
-    pre_kickoff_ball_position = None
-    if scoring and not engine.state.game_over and not is_pending_pat:
-        pre_kickoff_ball_position = engine.state.ball_position
-
-    if scoring and not engine.state.game_over and not is_pending_pat:
-        # Set up for kickoff using engine method (safety free kick is from 20)
-        engine.setup_for_kickoff(from_safety=result.safety)
-        game["is_kickoff"] = True  # Mark that kickoff is needed
+    # Scoring setup must wait for a finalized outcome: a pending penalty choice
+    # has recorded no score and must not move the ball before the decision.
+    scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(game, engine, result)
 
     # Determine if human needs to make penalty decision
     # offended_team indicates who is "offended" by the penalty (who benefited)
@@ -1234,14 +1241,7 @@ async def execute_play(request: PlayRequest):
             f"[{off_team} vs {def_team}] CPU PENALTY DECISION: {decision_str} @ {field_pos} | {result.description}"
         )
 
-        # Recalculate scoring and pending_pat after penalty resolution
-        # The penalty may have changed the outcome (e.g., pushed ball into end zone for TD)
-        scoring = result.touchdown or result.field_goal_made or result.safety
-        is_pending_pat = result.touchdown and not engine.state.game_over
-        game["pending_pat"] = is_pending_pat
-        if scoring and not engine.state.game_over and not is_pending_pat:
-            engine.setup_for_kickoff(from_safety=result.safety)
-            game["is_kickoff"] = True  # Mark that kickoff is needed
+        scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(game, engine, result)
 
         # CPU decided, so no pending decision for human
         pending_penalty = False
@@ -1691,14 +1691,8 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         f"[{off_team} vs {def_team}] PENALTY DECISION: {decision_str} @ {field_pos} | yards_gained={new_outcome.yards_gained} | {new_outcome.description}"
     )
 
-    # Check for touchdown based on ball position (in case engine didn't detect it)
-    if engine.state.ball_position >= 100 and not new_outcome.turnover:
-        new_outcome.touchdown = True
-        engine.state.ball_position = 100
-
-    scoring = new_outcome.touchdown or new_outcome.field_goal_made or new_outcome.safety
-    is_pending_pat = new_outcome.touchdown and not engine.state.game_over
-    game["pending_pat"] = is_pending_pat
+    # The engine alone decides touchdowns; never infer one from the spot here.
+    scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(game, engine, new_outcome)
 
     penalty_choice_model = None
     if new_outcome.penalty_choice:
@@ -1731,7 +1725,9 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         turnover=new_outcome.turnover,
         scoring=scoring,
         touchdown=new_outcome.touchdown,
-        new_ball_position=engine.state.ball_position,
+        new_ball_position=pre_kickoff_ball_position
+        if pre_kickoff_ball_position is not None
+        else engine.state.ball_position,
         new_down=engine.state.down,
         new_yards_to_go=engine.state.yards_to_go,
         new_score_home=engine.state.home_score,

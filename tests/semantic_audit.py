@@ -30,7 +30,7 @@ class SemanticAudit:
     def penalty(self, outcome: PlayOutcome, decision: tuple[bool, int]) -> None:
         """Keep our TD, erase theirs when a legal replay penalty is available."""
         choice = outcome.penalty_choice
-        if not choice or not (outcome.touchdown or choice.play_result.touchdown):
+        if not choice or not (outcome.projected_touchdown is True or choice.play_result.touchdown is True):
             return
         offense = choice.offended_team == "offense"
         eligible = [(i, option) for i, option in enumerate(choice.penalty_options)

@@ -93,3 +93,13 @@ Paydirt was published by Avalon Hill, with team charts designed by mathematician
 This implementation models chart/priority resolution, Full Feature Method penalties, the offensive and defensive dice,
 special teams, variable-yardage entries, and clock-management procedures.
 It is a fan-made project; the original game's names and trademarks belong to their respective owners.
+
+## Pending penalty outcomes
+
+`run_play_with_penalty_procedure` returns a provisional `PlayOutcome` with
+`pending_penalty_decision=True` while the offended team chooses. Nothing has been
+applied: the spot, down, score, statistics, and `touchdown` flag are unchanged, and
+`touchdown` stays `False`. `PlayOutcome.projected_touchdown` estimates whether
+accepting the play would score, for CPU decisions and audits only. UI layers must
+not place the ball for a try or kickoff, change `pending_pat`, or infer a score
+until `apply_*_penalty_decision` returns a finalized outcome.

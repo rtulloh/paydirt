@@ -1268,7 +1268,7 @@ class ComputerAI:
 
         play_yards = play_result.yards
         play_turnover = play_result.turnover
-        play_td = play_result.touchdown or outcome.touchdown is True
+        play_td = play_result.touchdown is True or outcome.projected_touchdown is True
 
         accept_play = True
         best_penalty_idx = penalty_choice.penalty_options.index(filtered_penalties[0])

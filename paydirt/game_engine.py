@@ -1863,15 +1863,17 @@ class PaydirtGameEngine:
                 result=penalty_choice.play_result,
                 yards_gained=penalty_choice.play_result.yards,
                 turnover=penalty_choice.play_result.turnover,
-                touchdown=(penalty_choice.play_result.touchdown
-                           or penalty_choice.play_result.result_type == ResultType.TOUCHDOWN
-                           or (not penalty_choice.play_result.turnover
-                               and penalty_choice.play_result.result_type in (
-                                   ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE)
-                               and self.state.ball_position + (
-                                   penalty_choice.play_result.offense_yards
-                                   if (penalty_choice.play_result.defense_modifier or "").startswith("DEF")
-                                   else penalty_choice.play_result.yards) >= 100)),
+                touchdown=False,
+                projected_touchdown=(
+                    penalty_choice.play_result.touchdown
+                    or penalty_choice.play_result.result_type == ResultType.TOUCHDOWN
+                    or (not penalty_choice.play_result.turnover
+                        and penalty_choice.play_result.result_type in (
+                            ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE)
+                        and self.state.ball_position + (
+                            penalty_choice.play_result.offense_yards
+                            if (penalty_choice.play_result.defense_modifier or "").startswith("DEF")
+                            else penalty_choice.play_result.yards) >= 100)),
                 field_position_before=field_pos_before,
                 down_before=down_before,
                 description=penalty_choice.play_result.description,

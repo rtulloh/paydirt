@@ -211,3 +211,7 @@ class PlayOutcome:
     # Engine-confirmed loss of possession because the offensive downs were exhausted.
     # Separate from interceptions/fumbles and their statistical turnover accounting.
     turnover_on_downs: bool = False
+    # Estimate, for a pending penalty choice only, that accepting the play would
+    # score. Nothing is recorded until the decision is applied; `touchdown` stays
+    # False on pending outcomes so no consumer treats the projection as a score.
+    projected_touchdown: bool = False

@@ -60,7 +60,8 @@ def test_cpu_scoring_choice_has_real_engine_consequences(
         pending = game.run_play_with_penalty_procedure(PlayType.SHORT_PASS, DefenseType.STANDARD)
     assert game.state.home_score == game.state.away_score == 0
     assert not game.state.scoring_plays
-    assert pending.touchdown  # Includes a non-TD chart gain crossing the goal line.
+    assert pending.touchdown is False  # No score recorded while the choice is pending.
+    assert pending.projected_touchdown  # Includes a non-TD chart gain crossing the goal line.
     decision, index = ComputerAI().should_accept_penalty(pending, not cpu_offense, home)
     assert decision is cpu_offense
     with patch("paydirt.game_engine.resolve_play_with_penalties") as reroll:
@@ -242,3 +243,26 @@ def test_two_point_period_attribution_without_reinterpreting_conversion_mechanic
     assert [score.quarter for score in game.state.scoring_plays] == [quarter, quarter]
     assert game.state.scoring_plays[-1].is_home_team is not defensive
     assert (game.state.quarter, game.state.time_remaining) == live
+
+
+@pytest.mark.parametrize("home", [False, True])
+@pytest.mark.parametrize("cell", ["TD", "9", "B", "QT"])
+def test_pending_penalty_outcome_projects_but_does_not_record_a_touchdown(home: bool, cell: str) -> None:
+    game = make_sample_game()
+    game.state.is_home_possession = home
+    game.state.ball_position = 94
+    offense = game.state.possession_team.offense
+    offense.off_tackle.update({26: "OFF 10", 27: cell})
+    offense.breakaway[26] = "40"
+    offense.qb_time[26] = "15"
+    game.state.defense_team.defense.modifiers = {}
+    rolls = [(26, "foul"), (27, "reroll"), (26, "secondary")]
+    with (patch("paydirt.play_resolver.roll_chart_dice", side_effect=rolls),
+          patch("paydirt.game_engine.roll_chart_dice", side_effect=rolls)):
+        pending = game.run_play_with_penalty_procedure(PlayType.OFF_TACKLE, DefenseType.STANDARD)
+    assert pending.pending_penalty_decision
+    assert pending.touchdown is False  # Nothing has been recorded yet.
+    assert pending.projected_touchdown is True
+    assert game.state.ball_position == 94 and not game.state.scoring_plays
+    accept, index = ComputerAI().should_accept_penalty(pending, is_human_offense=True, human_is_home=home)
+    assert (accept, index) == (False, 0)  # Defense erases the provisional score.
