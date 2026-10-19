@@ -103,3 +103,14 @@ applied: the spot, down, score, statistics, and `touchdown` flag are unchanged, 
 accepting the play would score, for CPU decisions and audits only. UI layers must
 not place the ball for a try or kickoff, change `pending_pat`, or infer a score
 until `apply_*_penalty_decision` returns a finalized outcome.
+
+## Period and try queries after a score
+
+The engine records the period in which each scoring-capable action began
+(scrimmage plays, penalty procedures, kickoffs, onside kicks, safety free kicks;
+tries preserve it). `can_kickoff_after_play()` and `should_kickoff_after_score()`
+default to that recorded period, so UI layers must not pass the live quarter after
+`_use_time` has advanced it. `can_attempt_conversion_after_touchdown()` decides
+whether a try is still owed: regulation tries are played even when the clock has
+expired and the game is provisionally over; both try methods recompute
+`game_over` afterwards.

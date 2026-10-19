@@ -2683,7 +2683,9 @@ def _complete_touchdown_sequence(
     Scoring and play resolution remain in the engine. Recheck every kickoff
     result so a return touchdown cannot fall through to a scrimmage prompt.
     """
-    while outcome.touchdown and not game.state.game_over:
+    # The engine decides whether a try is still owed (regulation tries are played
+    # even after the clock expires) and whether any kick may follow it.
+    while outcome.touchdown and game.can_attempt_conversion_after_touchdown():
         scoring_home = game.state.is_home_possession
         human_scored = scoring_home == human_is_home
         two_point_allowed = game.season_rules.two_point_conversion
@@ -2711,7 +2713,7 @@ def _complete_touchdown_sequence(
             _, description = game.attempt_extra_point()
         print(f"\n  {description}")
         print(f"  Score: {game.get_score_str()}")
-        if not game.can_kickoff_after_play(game.state.quarter):
+        if not game.can_kickoff_after_play():
             return outcome
 
         kicking_team = (
@@ -3346,6 +3348,8 @@ def resume_game(
             print(f"  Score: {game.get_score_str()}")
             if game.state.game_over:
                 break
+            if not game.should_kickoff_after_score():
+                continue  # Half-ending safety: the scheduled second-half kickoff follows.
 
             kicking_home = game.state.is_home_possession
             kicking_team = (
@@ -4199,6 +4203,8 @@ def run_interactive_game(
             print(f"  Score: {game.get_score_str()}")
             if game.state.game_over:
                 break
+            if not game.should_kickoff_after_score():
+                continue  # Half-ending safety: the scheduled second-half kickoff follows.
 
             # Free kick after safety
             kicking_home = game.state.is_home_possession

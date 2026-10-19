@@ -120,6 +120,11 @@ class PaydirtGameEngine:
             )
 
         self.play_log: list[PlayOutcome] = []
+        # Period in which the most recent scoring-capable action began. Scores that
+        # expire a half must not be followed by the scoring team's kickoff, and
+        # only the engine can know this once _use_time has advanced the period.
+        self._last_play_start_quarter: int = self.state.quarter
+        self._conversion_in_progress = False
         self.offensive_call_history: list[dict] = []
 
     def _record_offensive_call(self, play_type: PlayType) -> None:
@@ -372,6 +377,7 @@ class PaydirtGameEngine:
             kicking_home: True if home team is kicking
             kickoff_spot: Yard line to kick from (default 35, use 20 for safety free kick)
         """
+        self._record_play_start()
         kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
         receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
 
@@ -815,6 +821,7 @@ class PaydirtGameEngine:
         Returns:
             PlayOutcome with recovery result
         """
+        self._record_play_start()
         # Roll offensive dice
         dice_roll, dice_desc = roll_chart_dice()
 
@@ -1442,8 +1449,10 @@ class PaydirtGameEngine:
         Returns:
             PlayOutcome with full details
         """
-        if self.state.game_over:
+        if self.state.game_over and not self._conversion_in_progress:
             raise ValueError("Game is over")
+        if not self._conversion_in_progress:
+            self._record_play_start()
 
         # Consume this extension before resolving the play. An accepted defensive
         # penalty can then award a new untimed down; otherwise _use_time ends the period.
@@ -1810,6 +1819,7 @@ class PaydirtGameEngine:
         """
         if self.state.game_over:
             raise ValueError("Game is over")
+        self._record_play_start()
 
         # Special teams don't use penalty procedure
         if play_type in [
@@ -4579,16 +4589,23 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def should_kickoff_after_score(self, scoring_quarter: int) -> bool:
+    def _record_play_start(self) -> None:
+        """Remember the period a scoring-capable action starts in (engine-owned)."""
+        self._last_play_start_quarter = self.state.quarter
+
+    def should_kickoff_after_score(self, scoring_quarter: Optional[int] = None) -> bool:
         """Whether a score is followed by a kickoff before any half/OT transition.
 
         Args:
-            scoring_quarter: Period in which the scoring play began.
+            scoring_quarter: Period in which the scoring play began. Defaults to
+                the period recorded when the most recent action started.
 
         Returns:
             False after game end or when the scoring play exhausted a half or
             overtime period. Quarter-one/three scores still require a kickoff.
         """
+        if scoring_quarter is None:
+            scoring_quarter = self._last_play_start_quarter
         if self.state.game_over:
             return False
         if scoring_quarter == 2 or scoring_quarter >= 4:
@@ -5034,15 +5051,20 @@ class PaydirtGameEngine:
         else:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
-        # A last-second touchdown can leave regulation provisionally over or
-        # tied. Only the completed try determines the final result/need for OT.
+        self._recompute_game_over_after_try()
+        return success, description
+
+    def _recompute_game_over_after_try(self) -> None:
+        """A last-second touchdown leaves regulation provisionally over or tied.
+
+        Only the completed try determines the final result or the need for OT.
+        """
         if (self.state.quarter == 4 and self.state.time_remaining <= 0
                 and not self.state.is_overtime and not self.has_untimed_down()):
             self.state.game_over = (
                 self.state.home_score != self.state.away_score
                 or not self.season_rules.overtime.enabled
             )
-        return success, description
 
     def attempt_two_point(
         self, play_type: PlayType, defense_type: DefenseType = None
@@ -5073,7 +5095,16 @@ class PaydirtGameEngine:
             defense_type = DefenseType.STANDARD
 
         # Run the play using the normal play resolution
-        outcome = self.run_play(play_type, defense_type)
+        # The try is untimed and belongs to the touchdown's period; a regulation
+        # try is still played after the clock has expired (the game-over flag is
+        # recomputed below, as attempt_extra_point does).
+        start_quarter = self._last_play_start_quarter
+        self._conversion_in_progress = True
+        try:
+            outcome = self.run_play(play_type, defense_type)
+        finally:
+            self._conversion_in_progress = False
+            self._last_play_start_quarter = start_quarter
 
         # Check for turnover returned for defensive 2 points
         if outcome.turnover:
@@ -5129,6 +5160,7 @@ class PaydirtGameEngine:
         self.state.ball_position = original_position
         self.state.down = original_down
         self.state.yards_to_go = original_ytg
+        self._recompute_game_over_after_try()
 
         return success, 0, description
 
@@ -5338,6 +5370,7 @@ class PaydirtGameEngine:
         Returns:
             PlayOutcome with the result of the free kick
         """
+        self._record_play_start()
         kicking_home = self.state.is_home_possession
 
         if use_punt:
@@ -5589,13 +5622,17 @@ class PaydirtGameEngine:
         """Allow the regulation try even after time expires, but not after OT wins."""
         return not (self.state.is_overtime and self.state.game_over)
 
-    def can_kickoff_after_play(self, quarter_before: int) -> bool:
+    def can_kickoff_after_play(self, quarter_before: Optional[int] = None) -> bool:
         """Whether a scoring play may be followed by a kick in the current period.
 
         Half-ending scores wait for the second-half kickoff. Expired regulation,
         untimed downs, and game-ending overtime scores never trigger a new kick.
         Quarter-one/three transitions still allow the scoring team to kick.
+        `quarter_before` defaults to the engine-recorded start period of the
+        most recent action.
         """
+        if quarter_before is None:
+            quarter_before = self._last_play_start_quarter
         return (
             not self.state.game_over
             and self.state.time_remaining > 0

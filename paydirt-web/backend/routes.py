@@ -516,13 +516,15 @@ def _arm_follow_up_state(game: Dict[str, Any], engine, outcome) -> tuple:
         game["pending_pat"] = False
         return False, False, None
     scoring = outcome.touchdown or outcome.field_goal_made or outcome.safety
-    is_pending_pat = outcome.touchdown and not engine.state.game_over
+    # Regulation tries are owed even after the clock expires; the engine recomputes
+    # game-over after the try (RULE-002).
+    is_pending_pat = outcome.touchdown and engine.can_attempt_conversion_after_touchdown()
     game["pending_pat"] = is_pending_pat
     pre_kickoff_ball_position = None
-    if outcome.touchdown and not engine.state.game_over:
+    if is_pending_pat:
         engine.setup_for_pat()
-    elif outcome.touchdown and engine.state.game_over:
-        engine.setup_for_kickoff()  # Game-ending TD: reset for consistency
+    elif outcome.touchdown:
+        engine.setup_for_kickoff()  # Game-ending overtime TD: reset for consistency
     elif scoring and not engine.state.game_over:
         # Scoring team keeps possession to kick off; safety free kick is from the 20.
         pre_kickoff_ball_position = engine.state.ball_position

@@ -162,6 +162,8 @@ future game outcomes.
   changing possession; a replayed fourth down is not a turnover on downs.
 - Touchback placement depends on the event and applicable engine rules; do not assume every touchback is at the 20.
 - Time depends on the play result and applicable modifiers; see [Time Management](clock-management.md).
+- A touchdown on the last play of a half or of regulation still gets its try; the scoring team does not
+  kick off afterwards, and a half-ending safety has no free kick. The second-half kickoff follows at halftime.
 
 | Score | Points |
 |-------|--------|
