@@ -1,6 +1,6 @@
 # Eight-finding game audit repair: validation record
 
-Developer working record, **implemented but uncommitted**, 2026-10-19. Not a release
+Developer working record, 2026-10-19; the fixes were committed in `eb37c60` and are not yet in a release. Not a release
 promise. See the [issue tracker](issue-tracker.md) and
 [semantic audit guide](../ai-auditing.md#semantic-checks-and-coverage).
 Private charts and original narrative logs remain local; none are reproduced here.
