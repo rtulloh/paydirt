@@ -1,6 +1,6 @@
 # Paydirt Release Notes
 
-## v1.9.0
+## v1.8.1
 
 ### AI Variety and Situational Coaching
 - Hard samples competitive calls across all nine primary plays using down/distance targets, known risks, and bounded recent-call adjustments. Team strengths remain meaningful; no play-frequency quotas or gameplay-odds changes are introduced.
@@ -12,7 +12,7 @@
 - Correct turnover-on-downs announcements and finish periods/games when a completion leaves time but the following spike consumes the remaining seconds. Existing spike timing is unchanged; the separately documented spike-down and defensive-timeout-priority work remains pending.
 - Add a testing-only AI audit harness with reproducible game/season schedules, difficulty comparisons, finalized outcome evidence, JSON/CSV reports, and sample-aware play-concentration diagnostics. Normal auto-game difficulty defaults remain unchanged.
 - Full regression includes unit/API/frontend/browser checks, clean-checkout verification, complete generated regular seasons and playoffs, and AI play-selection/balance review. Private charts and local narrative logs are not distributed.
-- Align Python, web, and installer version metadata at 1.9.0. See the maintained guides for current AI behavior and known limitations.
+- Align Python, web, and installer version metadata at 1.8.1. See the maintained guides for current AI behavior and known limitations.
 
 ## v1.8.0
 
