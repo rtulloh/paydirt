@@ -205,19 +205,11 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         off_team = state.away_chart.peripheral.short_name
         def_team = state.home_chart.peripheral.short_name
 
-    # Field position - use abbreviated team name (e.g., "SF" instead of "SF '83")
-    field_pos = format_field_position_with_team(state.ball_position, off_team, def_team)
-
-    # Down and distance string
-    ytg = yards_to_goal(state.ball_position)
-    # Show "& Goal @ X" when you need a touchdown to convert (yards_to_go >= yards to goal)
-    # But don't show "Goal @ 0" - that indicates the ball is already at/past the goal line
-    if state.yards_to_go >= ytg and ytg > 0:
-        down_str = f"{state.down}{_ordinal(state.down)} & Goal @ {ytg}"
-    else:
-        down_str = f"{state.down}{_ordinal(state.down)} & {state.yards_to_go}"
-
-    period = game.get_status()["quarter"]
+    # The core owns down/distance and team-relative position descriptions.
+    status = game.get_status()
+    field_pos = status["field_position"]
+    down_str = status["down_description"]
+    period = status["quarter"]
     period_label = f"Q{period}" if isinstance(period, int) else period
     if COMPACT_MODE:
         # Compact single-line status with timeouts inline with score (Option 1)
@@ -239,10 +231,7 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
         print("=" * 70)
 
         print(f"\n  Ball on: {field_pos}-yard line")
-        if ytg <= 10 and state.yards_to_go >= ytg:
-            print(f"  Down: {state.down}{_ordinal(state.down)} and Goal")
-        else:
-            print(f"  Down: {state.down}{_ordinal(state.down)} and {state.yards_to_go}")
+        print(f"  Down: {down_str.replace(' & ', ' and ')}")
         print(f"  Possession: {off_team}{' (YOU)' if is_human_offense else ''}")
         print(
             f"  Timeouts: {off_team} {state.offense_timeouts} | {def_team} {state.defense_timeouts}"
@@ -1204,7 +1193,6 @@ def _get_human_defense_play_compact(
 
         if choice_clean in DEFENSE_PLAYS:
             def_type, name, _ = DEFENSE_PLAYS[choice_clean]
-            print(f"  You called: {name}")
             return def_type, call_timeout
 
         print("  Invalid. A-F, T, W, / or ? for help")
@@ -1382,11 +1370,18 @@ def display_play_result(
                          (turnover, turnover on downs, punt, etc.)
     """
     state = game.state
+    # The engine explanation already tells the offensive recovery/advance story.
+    explained_offensive_fumble = (
+        outcome.result.result_type == ResultType.FUMBLE
+        and outcome.result.fumble_recovered
+        and bool(outcome.result.rule_explanation)
+    )
 
     # If a penalty was applied, show simplified penalty result instead of play details
     if getattr(outcome, "penalty_applied", False):
         if COMPACT_MODE:
-            first_down_marker = " FIRST DOWN!" if outcome.first_down else ""
+            first_down_marker = (" FIRST DOWN!" if outcome.first_down
+                                 and "FIRST DOWN" not in outcome.description.upper() else "")
             print(
                 f"► PENALTY: {outcome.description}{first_down_marker} → {outcome.field_position_after}"
             )
@@ -1395,7 +1390,7 @@ def display_play_result(
             print("  PENALTY ENFORCED")
             print("=" * 70)
             print(f"\n  {outcome.description}")
-            if outcome.first_down:
+            if outcome.first_down and "FIRST DOWN" not in outcome.description.upper():
                 print("  >> FIRST DOWN!")
             print(f"\n  Ball spotted at {outcome.field_position_after}")
         return
@@ -1581,8 +1576,7 @@ def display_play_result(
         print(f"  Distance needed: {distance_to_goal} yards to goal line")
 
         if outcome.field_goal_made and not fg_nullified:
-            print(f"\n  >> {kicker} kicks it... IT'S GOOD!")
-            print("  >>> FIELD GOAL IS GOOD!")
+            print(f"\n  >>> FIELD GOAL IS GOOD! ({kicker})")
         elif "BLOCKED" in outcome.description.upper():
             print(f"\n  >> BLOCKED! {outcome.description}")
         elif "FUMBLE" in outcome.description.upper():
@@ -1673,7 +1667,7 @@ def display_play_result(
                     special_marker = " ★ TOUCHDOWN!"
                 elif txn.turnover:
                     if txn.touchdown:
-                        result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                        result_str = "FUMBLE - Loss!"
                         special_marker = " ★ SCOOP AND SCORE!"
                     else:
                         return_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
@@ -1701,11 +1695,13 @@ def display_play_result(
                         special_marker = " ★ TOUCHDOWN!"
                     elif txn.safety:
                         special_marker = " ★ SAFETY!"
+            elif outcome.result.result_type == ResultType.INCOMPLETE:
+                result_str = "Incomplete pass"
             elif txn.touchdown:
-                result_str = "TOUCHDOWN!"
+                result_str = f"+{txn.yards_gained}" if txn.yards_gained else ""
                 special_marker = " ★ TOUCHDOWN!"
             elif txn.safety:
-                result_str = "SAFETY!"
+                result_str = f"{txn.yards_gained:+d}"
                 special_marker = " ★ SAFETY!"
             elif txn.first_down:
                 result_str = f"+{txn.yards_gained}"
@@ -1720,7 +1716,7 @@ def display_play_result(
             # Detect turnover on downs (4th down failure)
             is_turnover_on_downs = outcome.turnover_on_downs
             if is_turnover_on_downs:
-                special_marker = " ★ TURNOVER ON DOWNS!"
+                special_marker = ""  # The possession-change banner announces it once.
 
             # Generate commentary
             is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
@@ -1733,15 +1729,22 @@ def display_play_result(
             canonical_td = outcome.touchdown and (
                 not outcome.turnover or outcome.result.fumble_end_zone_touchdown
             )
-            comment = outcome.description if canonical_td else ""
+            comment = game.get_play_narrative(outcome) if canonical_td and not explained_offensive_fumble else ""
+            if canonical_td and outcome.result.result_type != ResultType.FUMBLE:
+                special_marker = ""  # The canonical narrative announces the score.
+            if explained_offensive_fumble and outcome.safety:
+                special_marker = ""  # The engine action line announces this safety.
+            if play_type == PlayType.QB_KNEEL:
+                comment = game.get_play_narrative(outcome)
             if outcome.result.fumble_end_zone_touchdown:
                 comment = outcome.result.description
-            if not canonical_td and not skip_commentary:
+                special_marker = ""
+            if not canonical_td and not skip_commentary and play_type != PlayType.QB_KNEEL:
                 comment = commentary.generate(
                     play_type=play_type,
                     result_type=outcome.result.result_type,
                     yards=txn.yards_gained,
-                    is_first_down=txn.first_down,
+                    is_first_down=False,  # The result marker owns this announcement.
                     is_touchdown=txn.touchdown,
                     is_breakaway=is_breakaway,
                     is_check_down=is_check_down,
@@ -1755,7 +1758,8 @@ def display_play_result(
 
             # Line 2: Action line for turnovers (interception/fumble returns)
             if outcome.result.rule_explanation:
-                print(f"  → {outcome.result.rule_explanation}")
+                if not outcome.result.fumble_end_zone_touchdown:
+                    print(f"  → {outcome.result.rule_explanation}")
             elif txn.has_event_type(EventType.INTERCEPTION):
                 int_event = txn.get_events_by_type(EventType.INTERCEPTION)[0]
                 ret_events = txn.get_events_by_type(EventType.INT_RETURN)
@@ -1767,7 +1771,7 @@ def display_play_result(
                     # Describe the return action
                     if txn.touchdown:
                         print(
-                            f"  → Intercepted at the {int_pos_str}, returned {ret_yards} yards for a TOUCHDOWN!"
+                            f"  → Intercepted at the {int_pos_str}, returned {ret_yards} yards to the end zone"
                         )
                     elif ret_yards > 0:
                         final_spot = int_spot + ret_yards
@@ -1792,7 +1796,7 @@ def display_play_result(
                         ret_yards = ret_event.yards
                         if txn.touchdown:
                             print(
-                                f"  → Fumble at the {fumble_pos_str}, recovered and returned {ret_yards} yards for a TOUCHDOWN!"
+                                f"  → Fumble at the {fumble_pos_str}, recovered and returned {ret_yards} yards to the end zone"
                             )
                         elif ret_yards > 0:
                             print(
@@ -1844,6 +1848,8 @@ def display_play_result(
                         ret_yards = ret_events[0].yards if ret_events else 0
                         ret_dice = ret_events[0].dice_roll if ret_events else 0
                         extra_info = f' | F@{fumble_event.spot} | R:{rec_event.dice_roll}→"{rec_result}" | Ret:{ret_dice}→{ret_yards}'
+                        if explained_offensive_fumble and ret_events:
+                            extra_info += f' (chart "{ret_events[0].chart_result}")'
                     else:
                         extra_info = (
                             f' | F@{fumble_event.spot} | R:{rec_event.dice_roll}→"{rec_result}"'
@@ -1874,7 +1880,7 @@ def display_play_result(
 
         # Fallback to legacy display if no transaction
         if outcome.result.result_type == ResultType.INCOMPLETE:
-            result_str = "Incomplete"
+            result_str = "Incomplete pass"
         elif outcome.result.result_type == ResultType.INTERCEPTION:
             if "TOUCHBACK" in (outcome.description or outcome.result.description).upper():
                 result_str = "INTERCEPTED in end zone - TOUCHBACK"
@@ -1910,7 +1916,7 @@ def display_play_result(
                     special_marker = " ★ TURNOVER!"
                 # Check for fumble return TD
                 elif outcome.touchdown:
-                    result_str = "FUMBLE - Loss! RETURNED FOR TD!"
+                    result_str = "FUMBLE - Loss!"
                     special_marker = " ★ SCOOP AND SCORE!"
                 # Check for return yardage on fumble recovery
                 else:
@@ -1932,7 +1938,7 @@ def display_play_result(
                 result_str = "FUMBLE - Recovered!"
         elif outcome.result.result_type == ResultType.TOUCHDOWN or outcome.touchdown:
             # Check for TD before checking yards_gained (TD may have yards_gained=0)
-            result_str = "TOUCHDOWN!"
+            result_str = f"+{outcome.yards_gained}" if outcome.yards_gained else ""
             special_marker = " ★ TOUCHDOWN!"
         elif outcome.result.result_type == ResultType.BREAKAWAY:
             result_str = f"BREAKAWAY +{outcome.yards_gained}"
@@ -1961,7 +1967,7 @@ def display_play_result(
         elif outcome.safety:
             special_marker = " ★ SAFETY!"
         elif is_turnover_on_downs:
-            special_marker = " ★ TURNOVER ON DOWNS!"
+            special_marker = ""  # The possession-change banner announces it once.
 
         # Generate commentary
         is_breakaway = outcome.result.result_type == ResultType.BREAKAWAY
@@ -1974,15 +1980,22 @@ def display_play_result(
         canonical_td = outcome.touchdown and (
             not outcome.turnover or outcome.result.fumble_end_zone_touchdown
         )
-        comment = outcome.description if canonical_td else ""
+        comment = game.get_play_narrative(outcome) if canonical_td and not explained_offensive_fumble else ""
+        if canonical_td and outcome.result.result_type != ResultType.FUMBLE:
+            special_marker = ""  # The canonical narrative announces the score.
+        if explained_offensive_fumble and outcome.safety:
+            special_marker = ""  # The engine action line announces this safety.
+        if play_type == PlayType.QB_KNEEL:
+            comment = game.get_play_narrative(outcome)
         if outcome.result.fumble_end_zone_touchdown:
             comment = outcome.result.description
-        if not canonical_td and not skip_commentary:
+            special_marker = ""
+        if not canonical_td and not skip_commentary and play_type != PlayType.QB_KNEEL:
             comment = commentary.generate(
                 play_type=play_type,
                 result_type=outcome.result.result_type,
                 yards=outcome.yards_gained,
-                is_first_down=outcome.first_down,
+                is_first_down=False,  # The result marker owns this announcement.
                 is_touchdown=outcome.touchdown,
                 is_breakaway=is_breakaway,
                 is_check_down=is_check_down,
@@ -2042,7 +2055,7 @@ def display_play_result(
                 f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}" | D:{def_row}→"{outcome.result.defense_modifier}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})'
             )
 
-        if outcome.result.rule_explanation:
+        if outcome.result.rule_explanation and not outcome.result.fumble_end_zone_touchdown:
             print(f"  → {outcome.result.rule_explanation}")
         # Announce turnover on downs with expressive commentary and possession change
         if is_turnover_on_downs:
@@ -2063,7 +2076,7 @@ def display_play_result(
     if off_match:
         print(f"  Dice: {off_match.group(1)}")
     print(f'  Offense Chart Result: "{outcome.result.raw_result}"')
-    if outcome.result.rule_explanation:
+    if outcome.result.rule_explanation and not outcome.result.fumble_end_zone_touchdown:
         print(f"  → {outcome.result.rule_explanation}")
     # Defensive roll
     if def_match:
@@ -2100,7 +2113,7 @@ def display_play_result(
         print(f"  RESULT: INTERCEPTED at the {int_pos_str} yard line!")
         print(f"  {format_dice_roll(int_dice, result=str(int_return), prefix='R')} yard return")
         if outcome.touchdown:
-            print("  >>> PICK SIX! Returned for a TOUCHDOWN!")
+            print(f"  >>> PICK SIX! TOUCHDOWN {outcome.result.scoring_team}!")
     elif outcome.result.fumble_end_zone_touchdown:
         print(f"  RESULT: {outcome.result.description}")
         print(f"  {format_dice_roll(outcome.result.fumble_recovery_roll, prefix='R')}")
@@ -2144,16 +2157,16 @@ def display_play_result(
                 print(
                     f"  Return: {format_dice_roll(return_dice, result=str(return_yards), prefix='Ret')}"
                 )
-        if outcome.touchdown:
-            print("  >>> FUMBLE RETURN TOUCHDOWN!")
+        if outcome.touchdown and not explained_offensive_fumble:
+            print(f"  >>> FUMBLE RETURN TOUCHDOWN {outcome.result.scoring_team}!")
+    elif outcome.result.result_type == ResultType.INCOMPLETE:
+        print("  RESULT: Incomplete pass")
     elif outcome.result.result_type == ResultType.BREAKAWAY:
         print(f"  RESULT: BREAKAWAY! {outcome.yards_gained} yards!")
     elif outcome.result.result_type == ResultType.SACK:
         print(f"  RESULT: SACKED for {abs(outcome.yards_gained)} yard loss!")
     elif outcome.result.result_type == ResultType.QB_SCRAMBLE:
-        if outcome.touchdown:
-            print(f"  RESULT: QB scrambles for {outcome.yards_gained} yards - TOUCHDOWN!")
-        elif outcome.yards_gained >= 0:
+        if outcome.yards_gained >= 0:
             print(f"  RESULT: QB scrambles for {outcome.yards_gained} yards")
         else:
             print(f"  RESULT: SACKED for {abs(outcome.yards_gained)} yard loss!")
@@ -2188,14 +2201,16 @@ def display_play_result(
         def_cat, _ = categorize_result(outcome.result.defense_modifier)
         is_check_down = def_cat == ResultCategory.PARENS_NUMBER
 
-    if outcome.touchdown and not outcome.turnover:
-        print(f"\n  >> {outcome.description}")
+    if play_type == PlayType.QB_KNEEL:
+        print(f"\n  >> {game.get_play_narrative(outcome)}")
+    elif outcome.touchdown and not outcome.turnover and not explained_offensive_fumble:
+        print(f"\n  >> {game.get_play_narrative(outcome)}")
     elif not skip_commentary:
         comment = commentary.generate(
             play_type=play_type,
             result_type=outcome.result.result_type,
             yards=outcome.yards_gained,
-            is_first_down=outcome.first_down,
+            is_first_down=False,  # The special-outcome line owns this announcement.
             is_touchdown=outcome.touchdown,
             is_breakaway=is_breakaway,
             is_check_down=is_check_down,
@@ -2206,16 +2221,16 @@ def display_play_result(
     # Special outcomes
     if outcome.first_down and not outcome.touchdown:
         print("  >>> FIRST DOWN!")
-    if outcome.turnover:
+    if outcome.turnover and not outcome.turnover_on_downs:
         print(f"  >>> TURNOVER! {def_team} takes over!")
-    if outcome.touchdown:
+    if outcome.touchdown and outcome.result.result_type == ResultType.FUMBLE and not outcome.turnover:
         # Use the scoring_team field if set, otherwise fall back to off_team
         scoring_team = getattr(outcome.result, "scoring_team", None)
         if scoring_team:
             print(f"  >>> TOUCHDOWN {scoring_team}!")
         else:
             print(f"  >>> TOUCHDOWN {off_team}!")
-    if outcome.safety:
+    if outcome.safety and not explained_offensive_fumble:
         print(f"  >>> SAFETY! {def_team} scores 2 points!")
 
     # Detect and announce turnover on downs (4th down failure)
@@ -2449,6 +2464,7 @@ def handle_penalty_decision(
             play_outcome_str = "Kickoff stands as called"
             play_field_str = format_field_position(game.state.ball_position, style="short")
         else:
+            zero_gain_label = "Incomplete pass" if play_result.result_type == ResultType.INCOMPLETE else "No gain"
             yards_gained = play_result.yards
             play_new_pos = game.state.ball_position + yards_gained
 
@@ -2482,7 +2498,7 @@ def handle_penalty_decision(
                     if yards_gained > 0:
                         play_outcome_str = f"{yards_gained} yards -> TURNOVER ON DOWNS"
                     elif yards_gained == 0:
-                        play_outcome_str = "No gain -> TURNOVER ON DOWNS"
+                        play_outcome_str = f"{zero_gain_label} -> TURNOVER ON DOWNS"
                     else:
                         play_outcome_str = f"Loss of {abs(yards_gained)} -> TURNOVER ON DOWNS"
                 elif yards_gained > 0:
@@ -2494,7 +2510,7 @@ def handle_penalty_decision(
                 elif yards_gained == 0:
                     next_down = game.state.down + 1
                     play_outcome_str = (
-                        f"No gain -> {ordinal(next_down)} and {game.state.yards_to_go}"
+                        f"{zero_gain_label} -> {ordinal(next_down)} and {game.state.yards_to_go}"
                     )
                 else:
                     next_down = game.state.down + 1
@@ -3188,7 +3204,7 @@ def resume_game(
                         print(f"\n  *** GAME SAVED to {filepath} ***")
                         print("  Use 'python -m paydirt --load' to resume")
                         continue
-                    print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                    print(f"\n  Defense: {DEFENSE_PLAYS[def_type.value][1]}")
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
                 def_type, call_timeout = get_human_defense_play(game, easy_mode_helper)
@@ -3217,7 +3233,7 @@ def resume_game(
                 if cpu_no_huddle:
                     cpu_team = game.state.possession_team.peripheral.short_name
                     print(f"\n  {cpu_team} in NO-HUDDLE offense!")
-                print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                print(f"\n  Defense: {DEFENSE_PLAYS[def_type.value][1]}")
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
         time_before_play = game.state.time_remaining
@@ -3348,9 +3364,7 @@ def resume_game(
             outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
             continue
 
-        is_turnover_on_downs = outcome.turnover_on_downs
-        if is_turnover_on_downs:
-            print("\n  *** TURNOVER ON DOWNS ***")
+        # display_play_result owns the final turnover-on-downs announcement.
 
     # Game over
     print("\n" + "=" * 70)
@@ -4002,7 +4016,7 @@ def run_interactive_game(
                         print(f"\n  *** GAME SAVED to {filepath} ***")
                         print("  Use 'python -m paydirt --load' to resume")
                         continue
-                    print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                    print(f"\n  Defense: {DEFENSE_PLAYS[def_type.value][1]}")
                     print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
             else:
                 # Normal down - get defensive call first, then CPU selects offense
@@ -4037,7 +4051,7 @@ def run_interactive_game(
                     cpu_team = game.state.possession_team.peripheral.short_name
                     print(f"\n  {cpu_team} in NO-HUDDLE offense!")
 
-                print(f"\n  You called: {def_type.value.replace('_', ' ').title()}")
+                print(f"\n  Defense: {DEFENSE_PLAYS[def_type.value][1]}")
                 print(f"  Offense runs: {play_type.value.replace('_', ' ').title()}")
 
         time_before_play = game.state.time_remaining
@@ -4204,11 +4218,7 @@ def run_interactive_game(
             outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
             continue
 
-        # Handle turnover on downs (only for regular plays, not punts/kicks)
-        # Turnover on downs is when offense fails to convert on 4th down
-        is_turnover_on_downs = outcome.turnover_on_downs
-        if is_turnover_on_downs:
-            print("\n  *** TURNOVER ON DOWNS ***")
+        # display_play_result owns the final turnover-on-downs announcement.
 
     # Game over
     print("\n" + "=" * 70)

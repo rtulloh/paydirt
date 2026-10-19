@@ -103,6 +103,9 @@ Early-down punts and field goals are also offered.
 
 After a touchdown, kick for one point or try for two if the season rules permit it.
 Availability is controlled by [season YAML](seasons.md#season-rules), not just the year in the team name.
+Conversion points belong to the touchdown's quarter, even if the live clock has
+already advanced. The CPU keeps its own touchdown and accepts an eligible replay
+penalty that erases an opponent's touchdown when that score is known at decision time.
 On kickoff selection, `K` is the normal kick and `O` requests an onside kick. Follow the current prompt;
 an onside attempt does not guarantee recovery.
 
@@ -123,6 +126,33 @@ Common results include gains/losses, incompletions, interceptions, fumbles, brea
 A BLACK offensive entry is not necessarily the final result; the defensive entry and priority chart still matter.
 Asterisks and daggers mark sideline results; actual clock treatment depends on the situation.
 See the [player priority reference and worked examples](priority-chart.md) for the combination table.
+
+For an offensive fumble recovery with an advance, the action line separates yards before
+the fumble, the recovery location, and yards advanced afterward. Recovery rolls 17–19
+permit an interception-chart advance; that chart value is not necessarily the actual
+advance, which stops at the goal line. Compact transaction traces label the recovery
+roll (`R:`), advance roll and actual yards (`Ret:`), and raw chart result separately.
+The defensive call is confirmed once as `Defense: Long Pass (E)`, for example; the
+following `Offense runs:` line identifies the opponent's actual call.
+
+An ordinary offensive recovery at the fumble spot has no extra advance; its action
+line labels the yards before the fumble and the net result. QB-time scrambles are
+rushing actions even when the original call was a pass. Incomplete passes are
+labeled separately from completed passes or runs for no gain, including penalty
+choices. Non-scoring breakaways do not guarantee a touchdown.
+
+CLI result output announces each touchdown, safety, made field goal, and first down
+once, while keeping chart evidence in the technical details. An intentional QB kneel
+uses the engine's kneel description rather than ordinary tackled-loss commentary. Goal-to-go
+status shows one location, for example `1st & Goal @ AWAY 6`.
+
+Turnover-on-downs results and pass-interference first downs are announced once
+in the final play output; penalty-choice previews and scoring summaries remain separate.
+
+Colorful narration uses a separate random stream: displaying or reformatting a play
+does not advance the game's dice/coaching RNG. Seeded interactive games from older
+versions can consequently follow different sequences; rendering no longer affects
+future game outcomes.
 
 ## Game Rules
 

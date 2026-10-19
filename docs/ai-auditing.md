@@ -67,6 +67,31 @@ PAT/kickoff chains. Each selected call counts once; rerolls are not new selectio
 PATs/kickoffs are game flow, not independently selected offensive calls. Preview
 queries are not part of this harness and never add executed-call history.
 
+### Semantic checks and coverage
+
+Game completion and matching totals are not a full semantic audit. The runner now
+also checks that successful conversions share the preceding touchdown's period.
+Its read-only semantic observer checks known scoring-side penalty choices,
+QB-scramble touchdown action text and its scorer/rushing-versus-passing stat deltas,
+incomplete-pass yardage, and ordinary scrimmage
+fumble-recovery-at-spot wording. These checks do not change state or draw dice.
+Each game has `semantics.covered` counts and an explicit `unexercised` list;
+`semantic_coverage` aggregates completed games only, including zero-count categories.
+
+Absent rare events do not fail random games or establish coverage. Mandatory
+synthetic/public regressions exercise inverse scorer cases, real enforcement,
+quarter boundaries, save/resume, all breakaway templates, and complete new/resumed
+CLI loops. Selected-call observations omit subsequent kickoff chains. Announcement
+counts, player identity, other action/stat classifications, other coaching decisions, and full
+two-point conversion mechanics are not all checked by the season observer. Keep
+completion/accounting, decisions, narratives, and event coverage separate in reports.
+
+Run deterministic semantic checks independently:
+
+```sh
+python3 -m pytest tests/test_audit_scoring_semantics.py tests/test_audit_presentation_semantics.py tests/test_audit_semantic_harness.py tests/test_turnover_on_downs_display.py
+```
+
 Reports group by team, difficulty, coaching mode, down, and distance band
 (1–3, 4–6, 7–10, 11+; goal-to-go distance zero shares the short band). Inspect:
 

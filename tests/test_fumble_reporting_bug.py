@@ -126,11 +126,11 @@ class TestFumbleReportingFix:
         print(f"Output:\n{output}")
 
         # The fix should make the display correctly credit CIN '83
-        has_correct_cin_td = ">>> TOUCHDOWN CIN '83!" in output
-        has_buggy_tb_td = ">>> TOUCHDOWN TB '83!" in output
+        has_correct_cin_td = "FUMBLE RETURN TOUCHDOWN CIN '83!" in output
+        has_buggy_tb_td = "TOUCHDOWN TB '83!" in output
 
         assert has_correct_cin_td, (
-            f"Fix should work: display should say '>>> TOUCHDOWN CIN '83!'\n"
+            "Display should credit the defense in the single fumble-return announcement\n"
             f"But output was:\n{output}"
         )
         assert not has_buggy_tb_td, (
@@ -189,11 +189,9 @@ def test_end_zone_defensive_recovery_sets_scoring_team(
         offense, offense_is_home,
     )
     output = capsys.readouterr().out
-    if compact:
-        assert "SCOOP AND SCORE!" not in output
-        assert "RETURNED FOR TD" not in output
-        assert (f"{defense.peripheral.short_name} recovers the fumble in "
-                f"{offense.peripheral.short_name}'s end zone. TOUCHDOWN!") in output
-    else:
-        assert f"TOUCHDOWN {defense.peripheral.short_name}!" in output
-        assert f"TOUCHDOWN {offense.peripheral.short_name}!" not in output
+    assert "SCOOP AND SCORE!" not in output
+    assert "RETURNED FOR TD" not in output
+    assert (f"{defense.peripheral.short_name} recovers the fumble in "
+            f"{offense.peripheral.short_name}'s end zone. TOUCHDOWN!") in output
+    assert output.upper().count("TOUCHDOWN") == 1
+    assert f"TOUCHDOWN {offense.peripheral.short_name}!" not in output

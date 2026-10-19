@@ -10,6 +10,8 @@ from typing import Optional
 
 from .play_resolver import PlayType, ResultType
 
+# Narration must not consume the global stream used by game dice and coaching.
+_NARRATION_RANDOM = random.Random()
 
 @dataclass
 class TeamRoster:
@@ -31,31 +33,31 @@ class TeamRoster:
     p: list[str] = field(default_factory=list)   # Punters
     kr: list[str] = field(default_factory=list)  # Kick returners
 
-    def random_qb(self) -> str:
-        return random.choice(self.qb) if self.qb else "The quarterback"
+    def random_qb(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.qb) if self.qb else "The quarterback"
 
-    def random_rb(self) -> str:
-        return random.choice(self.rb) if self.rb else "The running back"
+    def random_rb(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.rb) if self.rb else "The running back"
 
-    def random_wr(self) -> str:
-        return random.choice(self.wr) if self.wr else "The receiver"
+    def random_wr(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.wr) if self.wr else "The receiver"
 
-    def random_te(self) -> str:
-        return random.choice(self.te) if self.te else "The tight end"
+    def random_te(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.te) if self.te else "The tight end"
 
-    def random_dl(self) -> str:
-        return random.choice(self.dl) if self.dl else "The defensive lineman"
+    def random_dl(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.dl) if self.dl else "The defensive lineman"
 
-    def random_lb(self) -> str:
-        return random.choice(self.lb) if self.lb else "The linebacker"
+    def random_lb(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.lb) if self.lb else "The linebacker"
 
-    def random_db(self) -> str:
-        return random.choice(self.db) if self.db else "The defensive back"
+    def random_db(self, rng: Optional[random.Random] = None) -> str:
+        return (rng or random).choice(self.db) if self.db else "The defensive back"
 
-    def random_defender(self) -> str:
+    def random_defender(self, rng: Optional[random.Random] = None) -> str:
         """Return a random defensive player."""
         all_defenders = self.dl + self.lb + self.db
-        return random.choice(all_defenders) if all_defenders else "The defender"
+        return (rng or random).choice(all_defenders) if all_defenders else "The defender"
 
 
 def load_roster_from_file(team_dir: str) -> Optional[TeamRoster]:
@@ -325,6 +327,8 @@ class Commentary:
             is_check_down: Whether defense limited the gain (parentheses result)
             offense_recovered_fumble: Whether offense recovered (True) or defense (False) for fumbles
         """
+        # UI narration uses its own stream; core roster calls keep their seeded contract.
+        random = _NARRATION_RANDOM
         lines = []
 
         # Determine if this is a pass or run play
@@ -338,13 +342,13 @@ class Commentary:
         # Use starting QB (first in list) for passing plays to avoid backup QBs
         # who might also be listed as RBs (e.g., Joe Washington)
         qb = self.off_roster.qb[0] if self.off_roster.qb else "The quarterback"
-        rb = self.off_roster.random_rb()
-        wr = self.off_roster.random_wr()
-        te = self.off_roster.random_te()
-        self.def_roster.random_defender()
-        db = self.def_roster.random_db()
-        dl = self.def_roster.random_dl()
-        lb = self.def_roster.random_lb()
+        rb = self.off_roster.random_rb(random)
+        wr = self.off_roster.random_wr(random)
+        te = self.off_roster.random_te(random)
+        self.def_roster.random_defender(random)
+        db = self.def_roster.random_db(random)
+        dl = self.def_roster.random_dl(random)
+        lb = self.def_roster.random_lb(random)
 
         # Choose receiver based on play type
         if play_type == PlayType.TE_SHORT_LONG:
@@ -429,7 +433,7 @@ class Commentary:
         elif result_type == ResultType.BREAKAWAY:
             # Breakaway run - but the B column can still produce negative yardage
             if yards > 0:
-                template = random.choice(BREAKAWAY_CALLS)
+                template = random.choice(BREAKAWAY_CALLS if is_touchdown else BIG_RUN_CALLS)
                 lines.append(template.format(player=ball_carrier, yards=yards))
                 if is_touchdown:
                     lines.append(random.choice(TOUCHDOWN_CALLS).format(team=self.off_name))

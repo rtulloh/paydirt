@@ -1268,7 +1268,7 @@ class ComputerAI:
 
         play_yards = play_result.yards
         play_turnover = play_result.turnover
-        play_td = play_result.touchdown
+        play_td = play_result.touchdown or outcome.touchdown is True
 
         accept_play = True
         best_penalty_idx = penalty_choice.penalty_options.index(filtered_penalties[0])
@@ -1278,6 +1278,11 @@ class ComputerAI:
             # A live returner loss gives the kicking team a fresh possession.
             # Keep that recovery, or erase our own return fumble by replaying.
             return (offended_is_offense, best_penalty_idx)
+
+        # The offended CPU can keep its own score or erase its opponent's.
+        # Turnover is relative to the original offense, not to home/human control.
+        if play_td:
+            return (offended_is_offense != bool(play_turnover), best_penalty_idx)
 
         if is_fg_penalty:
             if outcome.field_goal_made:
@@ -1301,8 +1306,6 @@ class ComputerAI:
                     accept_play = True  # Accept penalty, decline the result
             else:
                 accept_play = True
-        elif play_td:
-            accept_play = True
         elif play_turnover:
             if offended_is_offense:
                 accept_play = False

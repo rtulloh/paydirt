@@ -439,19 +439,17 @@ class TestCommentary:
         assert "touchdown" in comment.lower()
 
     def test_breakaway_positive_yards(self, commentary):
-        """Breakaway with positive yards should use exciting breakaway language."""
-        # Run multiple times to check all generated commentary is positive
-        breakaway_phrases = [
-            "breaks loose", "daylight", "GONE", "HUGE hole", "makes a man miss"
-        ]
+        """A non-scoring breakaway describes the gain without promising a score."""
         for _ in range(20):
             comment = commentary.generate(
                 PlayType.OFF_TACKLE, ResultType.BREAKAWAY, yards=25
             )
             assert comment is not None
             assert len(comment) > 0
-            assert any(phrase in comment for phrase in breakaway_phrases), \
-                f"Positive breakaway should use exciting language, got: {comment}"
+            assert "25" in comment
+            assert "touchdown" not in comment.lower()
+            assert "nobody" not in comment.lower()
+            assert "all the way" not in comment.lower()
 
     def test_breakaway_negative_yards_no_daylight(self, commentary):
         """Breakaway with negative yards should NOT use positive breakaway language."""

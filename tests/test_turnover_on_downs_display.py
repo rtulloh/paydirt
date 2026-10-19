@@ -166,7 +166,7 @@ def test_cli_loop_announces_only_actual_turnover_on_downs(
         else:
             cli.run_interactive_game()
     output = capsys.readouterr().out
-    assert ("TURNOVER ON DOWNS" in output) is (scenario == "failed")
+    assert output.count("TURNOVER ON DOWNS") == int(scenario == "failed")
     if scenario != "failed":
         assert game.state.is_home_possession
         assert game.state.down == 4

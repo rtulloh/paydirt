@@ -64,6 +64,13 @@ def validate_game(engine: PaydirtGameEngine, output: str) -> None:
         checks[f"{side} scoring log does not sum to final score"] = (
             sum(play.points for play in state.scoring_plays if play.is_home_team == is_home) == score
         )
+    for previous, current in zip(state.scoring_plays, state.scoring_plays[1:]):
+        if getattr(current, "play_type", None) in ("PAT", "2PT", "Def 2PT"):
+            checks["conversion period differs from touchdown period"] = (
+                checks.get("conversion period differs from touchdown period", True)
+                and getattr(previous, "play_type", None) == "TD"
+                and current.quarter == previous.quarter
+            )
     failures = [message for message, passed in checks.items() if not passed]
     if failures:
         raise ValueError("; ".join(failures))
@@ -250,13 +257,17 @@ def run_historical_reproductions() -> int:
 
     failures = 0
     cases = (
-        ("Raiders", "Eagles", 19831104, True),
+        ("Raiders", "Eagles", 19831104, False),
+        # Narration now has its own RNG. Retain the old complete games and
+        # require real untimed downs in supplements, without changing dice.
+        ("Raiders", "Eagles", 19831107, True),
         # Retain prior reproductions when corrected commentary/timing changes
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),
         ("Chiefs", "Giants", 19831607, False),
         ("Chiefs", "Giants", 19831621, False),
-        ("Chiefs", "Giants", 19831623, True),
+        ("Chiefs", "Giants", 19831623, False),
+        ("Chiefs", "Giants", 19831624, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )

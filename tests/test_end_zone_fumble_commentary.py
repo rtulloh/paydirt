@@ -96,7 +96,7 @@ def test_genuine_return_rolls_and_touchdowns_remain_visible(
     assert outcome.result.fumble_return_dice == 34
     assert outcome.touchdown is (recovery == 39)
     if recovery == 39:
-        assert ("FUMBLE RETURN TOUCHDOWN" if view == "full" else "RETURNED FOR TD") in output
+        assert ("FUMBLE RETURN TOUCHDOWN" if view == "full" else "SCOOP AND SCORE") in output
         assert outcome.result.scoring_team == defense
     if view == "compact" and flow != "direct":
         assert "Ret:34" in output

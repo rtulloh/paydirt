@@ -23,6 +23,7 @@ from paydirt.offense_strategy import situation_key
 from paydirt.play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType
 from tests.run_full_season import validate_game
 
+from tests.semantic_audit import SemanticAudit
 
 DIFFICULTIES = ("easy", "medium", "hard", "balanced")
 
@@ -90,6 +91,13 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     output = io.StringIO()
     original_random = random.getstate()
     original_kickoff = PaydirtGameEngine.kickoff
+    semantics = SemanticAudit()
+    original_penalty_choice = ComputerAI.should_accept_penalty
+
+    def checked_penalty(ai: ComputerAI, outcome: PlayOutcome, *args, **kwargs) -> tuple:
+        decision = original_penalty_choice(ai, outcome, *args, **kwargs)
+        semantics.penalty(outcome, decision)
+        return decision
 
     def guarded_kickoff(engine: PaydirtGameEngine, *args, **kwargs) -> PlayOutcome:
         if engine.state.game_over:
@@ -111,6 +119,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
         return ai
 
     def decision(game: PaydirtGameEngine, ai: ComputerAI, play: PlayType, defense: DefenseType) -> None:
+        semantics.before(game)
         state = game.state
         home = state.is_home_possession
         weights = {}
@@ -136,6 +145,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     def result(game: PaydirtGameEngine, outcome: PlayOutcome) -> None:
         if outcome.pending_penalty_decision:
             raise ValueError("Audit result still requires a penalty decision")
+        semantics.result(game, outcome)
         call = record["calls"][-1]
         if "result" in call:
             raise ValueError("Duplicate audit result")
@@ -151,7 +161,9 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
 
     try:
         random.seed(spec.seed)
-        with patch.object(PaydirtGameEngine, "kickoff", guarded_kickoff), contextlib.redirect_stdout(output):
+        with (patch.object(PaydirtGameEngine, "kickoff", guarded_kickoff),
+              patch.object(ComputerAI, "should_accept_penalty", checked_penalty),
+              contextlib.redirect_stdout(output)):
             game = run_auto_game(spec.away, spec.home, is_playoff=spec.is_playoff,
                                  ai_factory=factory, on_decision=decision, on_result=result,
                                  play_limit=play_limit)
@@ -177,6 +189,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
         record["error"] = f"{type(error).__name__}: {reason}"
     finally:
         random.setstate(original_random)
+    record["semantics"] = semantics.report()
     return record
 
 
@@ -232,6 +245,9 @@ def make_report(games: list[dict]) -> dict:
                              "message": "Concentrated ordinary calls: inspect chart strengths and alternatives; not a failure or usage cap."})
     return {"schema_version": 1, "python": platform.python_version(),
             "notes": "Generated games, not historical results. Serial seeds reproduce within the same code, data, and Python environment. Small samples are not balance verdicts. No standings saved.",
+            "semantic_coverage": {event: sum(game.get("semantics", {}).get("covered", {}).get(event, 0)
+                                             for game in games if game["status"] == "passed")
+                                  for event in SemanticAudit.EVENTS},
             "games": games, "summary": {
                 "games": len(games), "passed": sum(g["status"] == "passed" for g in games),
                 "failed": sum(g["status"] != "passed" for g in games), "calls": all_calls,

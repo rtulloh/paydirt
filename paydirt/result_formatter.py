@@ -149,6 +149,9 @@ class ResultFormatter:
     def _get_commentary(self, outcome: PlayOutcome, result) -> str:
         """Generate colorful commentary from commentary.py system."""
         
+        if outcome.play_type == PlayType.QB_KNEEL:
+            return outcome.description
+
         if outcome.touchdown:
             return outcome.description
 

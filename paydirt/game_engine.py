@@ -10,7 +10,7 @@ from .packaging import get_seasons_path
 from .chart_loader import TeamChart, load_team_chart
 from .utils import (
     clamp_ball_position, format_down_and_distance, format_field_position,
-    format_field_position_with_team,
+    format_field_position_with_team, ordinal,
 )
 from .play_resolver import (
     PlayType,
@@ -918,6 +918,7 @@ class PaydirtGameEngine:
             self.state.switch_possession()
             self._score_touchdown()
             self.state.ball_position = 97
+            result.scoring_team = def_team
             result.description = "Interception in end zone - TOUCHDOWN for defense"
             result.int_spot = 100  # Defense's perspective
             result.int_return_yards = 0
@@ -991,6 +992,7 @@ class PaydirtGameEngine:
         # Check for return touchdown BEFORE capping position
         if return_td or final_position >= 100:
             touchdown = True
+            result.scoring_team = def_team
             self._score_touchdown()
             self.state.ball_position = 97
             if txn:
@@ -1179,8 +1181,13 @@ class PaydirtGameEngine:
                     result.fumble_return_dice = return_dice
                     # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
                     if not result.description or result.description.startswith("FUMBLE!"):
-                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at the {fumble_spot} ({off_team} ball)"
-                    result.description += f" | Recovery: {recovery_roll}→{int_return_result} ({return_yards} yard return)"
+                        spot = format_field_position_with_team(fumble_spot, off_team, def_team)
+                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at {spot} ({off_team} ball)"
+                    result.description += (
+                        f' | Recovery roll {recovery_roll}: offense keeps possession'
+                        f' | Return roll {return_dice}: chart "{int_return_result}"'
+                        f' ({return_yards} yard advance)'
+                    )
 
                     # Add fumble return event to transaction for offense recovery rolls 17-19
                     if txn:
@@ -1198,7 +1205,8 @@ class PaydirtGameEngine:
                     # Normal offense recovery without return
                     # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
                     if not result.description or result.description.startswith("FUMBLE!"):
-                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at the {fumble_spot} ({off_team} ball)"
+                        spot = format_field_position_with_team(fumble_spot, off_team, def_team)
+                        result.description = f"FUMBLE! {yards} yards before fumble - Offense recovers at {spot} ({off_team} ball)"
                     result.description += f" | Recovery: {recovery_roll}"
 
                 # The line to gain is measured from the final recovery/advance spot.
@@ -1228,15 +1236,24 @@ class PaydirtGameEngine:
                         else f"net loss {-net_yards} yards"
                     )
                     marker = (
-                        " TOUCHDOWN!" if touchdown else " SAFETY!" if safety
+                        " SAFETY!" if safety
                         else " FIRST DOWN!" if first_down
                         else " TURNOVER ON DOWNS!" if turnover else ""
                     )
                     result.rule_explanation = (
+                        f"{yards} yards before fumble. "
                         f"Recovery roll {recovery_roll} allows an interception-chart advance. "
                         f"Fumble at {spot}, recovered by {off_team}, "
                         f"advanced {result.fumble_return_yards} yards to {end_spot} "
                         f"({net_description}).{marker}"
+                    )
+                else:
+                    spot = format_field_position_with_team(fumble_spot, off_team, def_team)
+                    net_description = (f"net gain {net_yards} yards" if net_yards >= 0
+                                       else f"net loss {-net_yards} yards")
+                    result.rule_explanation = (
+                        f"{yards} yards before fumble. Fumble at {spot}, "
+                        f"recovered by {off_team} at the spot ({net_description})."
                     )
             else:
                 # Defense recovers - fumble lost
@@ -1551,7 +1568,7 @@ class PaydirtGameEngine:
             first_down = self.state.advance_ball(yards)
             if self.state.ball_position >= 100:
                 touchdown = True
-                self._score_touchdown(play_type, yards)
+                self._score_touchdown(play_type, yards, qb_scramble=True)
             elif self.state.ball_position <= 0:
                 safety = True
                 self._score_safety()
@@ -1846,7 +1863,15 @@ class PaydirtGameEngine:
                 result=penalty_choice.play_result,
                 yards_gained=penalty_choice.play_result.yards,
                 turnover=penalty_choice.play_result.turnover,
-                touchdown=penalty_choice.play_result.touchdown,
+                touchdown=(penalty_choice.play_result.touchdown
+                           or penalty_choice.play_result.result_type == ResultType.TOUCHDOWN
+                           or (not penalty_choice.play_result.turnover
+                               and penalty_choice.play_result.result_type in (
+                                   ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE)
+                               and self.state.ball_position + (
+                                   penalty_choice.play_result.offense_yards
+                                   if (penalty_choice.play_result.defense_modifier or "").startswith("DEF")
+                                   else penalty_choice.play_result.yards) >= 100)),
                 field_position_before=field_pos_before,
                 down_before=down_before,
                 description=penalty_choice.play_result.description,
@@ -2235,7 +2260,7 @@ class PaydirtGameEngine:
             first_down = self.state.advance_ball(yards)
             if self.state.ball_position >= 100:
                 touchdown = True
-                self._score_touchdown(play_type, yards)
+                self._score_touchdown(play_type, yards, qb_scramble=True)
             elif self.state.ball_position <= 0:
                 safety = True
                 self._score_safety()
@@ -2894,7 +2919,7 @@ class PaydirtGameEngine:
         result = PlayResult(
             result_type=ResultType.YARDS,
             yards=yards,
-            description="QB takes a knee - running out the clock",
+            description="QB takes a knee - intentional 2-yard loss to run out the clock",
             raw_result="KNEEL",
         )
 
@@ -5109,9 +5134,16 @@ class PaydirtGameEngine:
         self, team: str, is_home_team: bool, play_type: str, description: str, points: int
     ):
         """Log a scoring play."""
+        quarter = self.state.quarter
+        if play_type in ("PAT", "2PT", "Def 2PT") and self.state.scoring_plays:
+            touchdown = self.state.scoring_plays[-1]
+            if touchdown.play_type == "TD":
+                # A try belongs to the TD period even after the play advances it.
+                # The live quarter/time must remain untouched for subsequent flow.
+                quarter = touchdown.quarter
         self.state.scoring_plays.append(
             ScoringPlay(
-                quarter=self.state.quarter,
+                quarter=quarter,
                 time_remaining=self.state.time_remaining,
                 team=team,
                 is_home_team=is_home_team,
@@ -5121,7 +5153,9 @@ class PaydirtGameEngine:
             )
         )
 
-    def _score_touchdown(self, play_type: PlayType = None, yards: int = 0):
+    def _score_touchdown(
+        self, play_type: PlayType = None, yards: int = 0, *, qb_scramble: bool = False,
+    ) -> None:
         """Record a touchdown with player names from roster."""
         if self.state.is_home_possession:
             team = self.state.home_chart.peripheral.short_name
@@ -5136,6 +5170,12 @@ class PaydirtGameEngine:
 
         # Generate description with player names
         description = self._generate_td_description(chart, play_type, yards)
+        if qb_scramble:
+            # Preserve the existing scoring-name RNG draw above: narrative repair
+            # must not change the dice stream of later plays. Only the QB runs.
+            roster = get_roster(chart.peripheral.team_name, chart.team_dir)
+            qb = roster.qb[0] if roster.qb else "The quarterback"
+            description = f"{qb} scrambled for {yards} yards. TOUCHDOWN"
         self._log_score(team, is_home, "TD", description, 6)
 
         # Check if this TD ends overtime (sudden death)
@@ -5503,11 +5543,33 @@ class PaydirtGameEngine:
             periods[play.quarter - 1][team] += play.points
         return periods
 
+    def get_play_narrative(self, outcome: PlayOutcome) -> str:
+        """Return authoritative action text without repeated resolution evidence.
+
+        Raw resolution evidence remains on the outcome/result for technical traces.
+        This query never resolves a play, changes state, or draws randomness.
+        """
+        if outcome.play_type == PlayType.QB_KNEEL:
+            return re.sub(r" - (?:SAFETY|TURNOVER ON DOWNS)!$", "", outcome.description)
+        if (outcome.touchdown and not outcome.turnover
+                and outcome.result.result_type != ResultType.FUMBLE):
+            narrative = outcome.description.partition(" | ")[0]
+            if narrative.strip(".! ").upper() == "TOUCHDOWN":
+                return "TOUCHDOWN!"
+            if not re.search(r"\bTOUCHDOWN\b", narrative, flags=re.IGNORECASE):
+                narrative += " TOUCHDOWN!"
+            return narrative.strip()
+        return outcome.description
+
     def get_status(self) -> dict:
         """Get current game status."""
         quarter_str = self.state.quarter
         if self.state.is_overtime:
             quarter_str = f"OT{self.state.ot_period}"
+        distance_to_goal = 100 - self.state.ball_position
+        down_description = format_down_and_distance(self.state.down, self.state.yards_to_go)
+        if 0 < distance_to_goal <= self.state.yards_to_go:
+            down_description = f"{ordinal(self.state.down)} & Goal"
         return {
             "quarter": quarter_str,
             "time": f"{int(self.state.time_remaining)}:{int((self.state.time_remaining % 1) * 60):02d}",
@@ -5516,6 +5578,7 @@ class PaydirtGameEngine:
             "field_position": self.state.field_position_str(),
             "down": self.state.down,
             "yards_to_go": self.state.yards_to_go,
+            "down_description": down_description,
             "game_over": self.state.game_over,
             "is_overtime": self.state.is_overtime,
         }
