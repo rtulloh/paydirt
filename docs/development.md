@@ -51,6 +51,7 @@ Do not treat the quick unit-test command above as full release validation.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two complete real-engine games, including clean new-game state.
 - `tests/run_all_games.py`: standalone game integration checks.
 - `tests/run_full_season.py`: generated 224-game regular season, nine-game playoffs, and historical reproductions.
+- `tests/run_ai_audit.py`: full generated Hard-vs-Hard seasons and legacy balanced comparisons; review [play-selection/balance evidence](ai-auditing.md), not just final scores.
 - Clean tracked-files-only unit tests, so ignored local data cannot mask CI failures.
 
 Historical integration runners need private local 1983 data and never export it. The generated season is not the

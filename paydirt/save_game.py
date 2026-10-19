@@ -86,6 +86,8 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
             }
             for sp in state.scoring_plays
         ],
+        # Optional game-local coaching context; absent in legacy version-1 saves.
+        "offensive_call_history": engine.offensive_call_history,
     }
 
     # Version-1 readers ignore this optional metadata. Without it, a later load
@@ -148,6 +150,7 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     # Create engine with loaded charts (constructor takes home_chart, away_chart)
     engine = PaydirtGameEngine(home_chart, away_chart)
     state = engine.state
+    engine.restore_offensive_call_history(save_data.get("offensive_call_history", []))
     
     # Restore core game state
     state.home_score = save_data["home_score"]

@@ -45,7 +45,23 @@ python3 -m pytest tests/ -q -o addopts= --tb=short -rs --cov=paydirt --cov-repor
 ruff check paydirt/ tests/ paydirt-web/backend/
 python3 tests/run_all_games.py
 python3 tests/run_full_season.py
+python3 tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/public-season.json
+python3 tests/run_ai_audit.py --season 1983 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/local-season.json --csv .ai-audits/local-season.csv
 ```
+
+**Play-selection and play-balance audit is part of full regression**, not merely
+a final-score check. The audit commands exercise Hard-vs-Hard and legacy balanced
+auto AI on the same independently seeded generated schedules. Require every game
+to complete and reconcile audit totals, then inspect per-team/down/distance/mode
+call shares, distinct calls, and comparable-situation repetition streaks. Review
+concentration warnings with sample counts and chart strengths; they are advisory,
+not universal play-frequency caps or grounds for weakening tests. Record any
+questionable decisions/findings in the developer tracker, even when all games
+complete. The 1983 audit requires the same private local data as the integration
+runners; keep its reports in ignored `.ai-audits/`, never commit/export private
+charts or narrative logs. The generated audit schedule is regular-season only;
+it supplements, never replaces, the existing nine-playoff-game regression. See
+[AI audit harness](docs/ai-auditing.md) for commands and interpretation.
 
 `npm run test:e2e` is a required part of full regression, not an optional smoke
 check. It must complete both real-engine browser games (human home/receiving,

@@ -43,6 +43,14 @@ class PlayType(Enum):
     QB_KNEEL = "qb_kneel"  # Running out the clock - automatic -2 yards, 40 seconds
 
 
+# Primary callable offense columns; B/QT are secondary resolution tables.
+CHART_PLAY_TYPES = (
+    PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW,
+    PlayType.SCREEN, PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS,
+    PlayType.TE_SHORT_LONG,
+)
+
+
 class DefenseType(Enum):
     """Defensive formations matching the chart rows."""
 

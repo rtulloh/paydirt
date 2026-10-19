@@ -7,13 +7,14 @@ Usage:
 """
 import time
 from pathlib import Path
+from typing import Callable, Optional
 from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine, PlayOutcome
 from .computer_ai import ComputerAI
 from .interactive_game import display_box_score
-from .play_resolver import PlayType
+from .play_resolver import DefenseType, PlayType
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -108,10 +109,14 @@ def _resolve_auto_penalties(
 def _complete_auto_outcome(
     game: PaydirtGameEngine, outcome: PlayOutcome, offense_home: bool,
     quarter_before: int, home_ai: ComputerAI, away_ai: ComputerAI,
+    on_result: Optional[Callable[[PaydirtGameEngine, PlayOutcome], None]] = None,
 ) -> None:
     """Display finalized engine results and complete any scoring/kickoff chain."""
     for _ in range(500):
         outcome = _resolve_auto_penalties(game, outcome, offense_home, home_ai, away_ai)
+        if on_result is not None:
+            on_result(game, outcome)
+            on_result = None  # Observe this finalized call, not subsequent kickoff chains.
         print(f"  {outcome.description}")
         result = outcome.result
         dice_info = (f'O:{result.dice_roll}→"{result.raw_result}"'
@@ -145,7 +150,13 @@ def _complete_auto_outcome(
     raise RuntimeError("Auto-game scoring/kickoff sequence limit reached")
 
 
-def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playoff: bool = False):
+def run_auto_game(
+    team1_spec: str, team2_spec: str, delay: float = 0.0, is_playoff: bool = False, *,
+    ai_factory: Optional[Callable[[PaydirtGameEngine, bool], ComputerAI]] = None,
+    on_decision: Optional[Callable[[PaydirtGameEngine, ComputerAI, PlayType, DefenseType], None]] = None,
+    on_result: Optional[Callable[[PaydirtGameEngine, PlayOutcome], None]] = None,
+    play_limit: int = 500,
+) -> Optional[PaydirtGameEngine]:
     """
     Run a CPU vs CPU game between two teams.
     
@@ -154,7 +165,16 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         team2_spec: Home team - name (e.g., "Cowboys") or path (e.g., "seasons/1985/Cowboys")
         delay: Seconds to pause between plays (default 0.0)
         is_playoff: If True, this is a playoff game
+        ai_factory: Optional caller-owned AI configuration; default remains balanced.
+        on_decision: Read-only observer after selection, before execution.
+        on_result: Read-only observer after penalty resolution, before scoring chains.
+        play_limit: Maximum selected calls; incomplete runs raise RuntimeError.
+
+    Returns:
+        Completed engine, or None if team lookup fails. Observers must not mutate it.
     """
+    if play_limit < 1:
+        raise ValueError("Auto-game play limit must be positive")
     # Find team charts
     seasons_dir = str(get_seasons_path())
 
@@ -206,8 +226,12 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
     game.state.is_playoff = is_playoff
 
     # Create AI for both teams (home team's season rules govern AI behavior)
-    away_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
-    home_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
+    if ai_factory is None:
+        away_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
+        home_ai = ComputerAI(aggression=0.5, ai_behavior=game.season_rules.ai_behavior)
+    else:
+        away_ai = ai_factory(game, False)
+        home_ai = ai_factory(game, True)
 
     # Opening kickoff - home team kicks to start
     opening_kicking_home = True
@@ -290,7 +314,8 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         # CPU selects plays with clock management
         play_type, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, use_spike = off_ai.select_offense_with_clock_management(game)
         def_type = def_ai.select_defense(game)
-
+        if on_decision is not None:
+            on_decision(game, off_ai, play_type, def_type)
         play_name = play_type.value.replace('_', ' ').title()
         def_name = def_type.value.replace('_', ' ').title()
 
@@ -325,13 +350,14 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
                                                         no_huddle=use_no_huddle,
                                                         call_spike=use_spike)
 
-        _complete_auto_outcome(game, outcome, offense_home, quarter_before, home_ai, away_ai)
+        _complete_auto_outcome(
+            game, outcome, offense_home, quarter_before, home_ai, away_ai, on_result)
 
         play_count += 1
         time.sleep(delay)
 
         # Safety check - prevent infinite loops
-        if play_count >= 500 and not game.state.game_over:
+        if play_count >= play_limit and not game.state.game_over:
             raise RuntimeError("Auto-game play limit reached before game completion")
 
     # Game over
@@ -348,6 +374,7 @@ def run_auto_game(team1_spec: str, team2_spec: str, delay: float = 0.0, is_playo
         print("\n  TIE GAME!")
 
     display_box_score(game, "FINAL STATISTICS")
+    return game
 
 
 if __name__ == "__main__":

@@ -9,14 +9,15 @@ probabilities instead of treating all 30 chart rows as equally likely. For
 example, row 15 is six times as likely as row 10. The implemented white dice
 are 0–5; sums of 9 and 10 both use row x9.
 
-The dice algorithm, game rules, difficulty presets, and analysis usage rate are
-unchanged. Hard still mixes chart suggestions with its existing situational
-choices; this does not make it an always-optimizing opponent.
+The original weighting change left the dice algorithm, game rules, difficulty presets,
+and 40% Hard recommendation override unchanged. That override is superseded by
+AI-008's weighted, situation-aware ordinary-down selection and recent-call adjustment;
+see the [current AI guide](../ai-difficulty.md#hard-chart-analysis).
 
-These remain **conditional chart metrics**, excluding penalties, interceptions,
-fumbles, and breakaway results. BLACK remains an included zero-yard failure.
-They do not measure full play value against a particular defense, conversion
-probability, or turnover risk.
+The original chart-summary metrics remain **conditional chart metrics**, excluding
+penalties, interceptions, fumbles, and breakaway results. BLACK remains an included
+zero-yard failure. They are not the new selection score and do not measure full
+defense-specific play value, conversion probability, or turnover risk.
 
 ## Start with the AI on the weaker team
 

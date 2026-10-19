@@ -22,6 +22,7 @@ Only the public fictional 2026 teams are distributed. Keep private charts, sourc
 - [Development guide](development.md): architecture, testing, packaging, and release entry points.
 - [Web setup](../paydirt-web/README.md): frontend and backend development.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two full real-engine games.
+- [AI audit harness](ai-auditing.md): reproducible game/season play-selection and play-balance testing.
 - [AGENTS.md](../AGENTS.md): authoritative agent workflow and mandatory pre-push checks.
 
 ## Testing and Design Notes

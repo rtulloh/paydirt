@@ -1,6 +1,20 @@
 # Paydirt Release Notes
 
-## Unreleased
+## v1.9.0
+
+### AI Variety and Situational Coaching
+- Hard samples competitive calls across all nine primary plays using down/distance targets, known risks, and bounded recent-call adjustments. Team strengths remain meaningful; no play-frequency quotas or gameplay-odds changes are introduced.
+- Recent executed-call history is game-local, excludes previews, counts penalty rerolls once, and survives CLI save/resume. B/QT secondary columns cannot be standalone recommendations.
+- Hurry-up separates no-huddle pace from play choice: credible runs remain possible while passing preference rises with clock/deficit urgency and respects season two-point-conversion availability.
+- Opponent learning excludes punts, field goals, kickoffs, kneels, spikes, and unknown/secondary actions from run/pass totals and streaks. Previously saved aggregate learning cannot be corrected retroactively.
+
+### Correctness and Repeatable Validation
+- Correct turnover-on-downs announcements and finish periods/games when a completion leaves time but the following spike consumes the remaining seconds. Existing spike timing is unchanged; the separately documented spike-down and defensive-timeout-priority work remains pending.
+- Add a testing-only AI audit harness with reproducible game/season schedules, difficulty comparisons, finalized outcome evidence, JSON/CSV reports, and sample-aware play-concentration diagnostics. Normal auto-game difficulty defaults remain unchanged.
+- Full regression includes unit/API/frontend/browser checks, clean-checkout verification, complete generated regular seasons and playoffs, and AI play-selection/balance review. Private charts and local narrative logs are not distributed.
+- Align Python, web, and installer version metadata at 1.9.0. See the maintained guides for current AI behavior and known limitations.
+
+## v1.8.0
 
 ### Interception Touchback Presentation
 - Treat interception depth as a defensive catch spot, never completed offensive yardage. End-zone interceptions retain the automatic touchback at the 20 without a return roll, and CLI/web output now identifies the touchback instead of a generic interception.

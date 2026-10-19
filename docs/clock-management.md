@@ -62,7 +62,9 @@ The earlier statement that the modifier intentionally does not advance the down 
 
 For an applied spike modifier, the existing timing procedure caps the first play at 17 seconds and
 adds three seconds for the spike, for at most 20 seconds total. This timing cap does not make the spike free.
-Standalone `S` is a separate spike play and also consumes a down.
+Standalone `S` is a separate spike play and also consumes a down. If the modifier
+consumes the final seconds after a completion, normal period-end handling still
+applies, including game completion, overtime eligibility, or a pending untimed down.
 
 ### Spike and Defensive Timeout Priority
 

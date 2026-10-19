@@ -11,13 +11,15 @@ Makes intelligent decisions based on:
 """
 
 import random
+from math import ceil, exp
 from typing import Optional
 
-from .play_resolver import PlayType, DefenseType, ResultType, is_passing_play
+from .play_resolver import CHART_PLAY_TYPES, PlayType, DefenseType, ResultType, is_passing_play
 from .game_engine import PaydirtGameEngine
 from .ai_analysis import TeamAnalyzer, OpponentModel, OffenseAnalyzer
 from .chart_loader import OffenseChart
 from .season_rules import AIBehavior
+from .offense_strategy import OffensiveStrategy
 
 
 class ComputerAI:
@@ -56,6 +58,8 @@ class ComputerAI:
         self.opponent_model = OpponentModel() if use_analysis else None
         self.team_analyzer = None  # Set when we know our team
         self._defense_rng: Optional[random.Random] = None  # Lazy, separate from engine dice.
+        self._offense_rng: Optional[random.Random] = None
+        self.offense_strategy: Optional[OffensiveStrategy] = None
         self.use_team_strength = False  # Explicit Medium capability, enabled by the factory.
         self._run_bias = 0.0
 
@@ -63,6 +67,7 @@ class ComputerAI:
         """Set the AI's team for chart analysis."""
         if self.use_analysis:
             self.team_analyzer = TeamAnalyzer(team_chart)
+            self.offense_strategy = OffensiveStrategy(team_chart.offense)
         self._run_bias = (OffenseAnalyzer(team_chart.offense).early_down_run_bias()
                           if self.use_team_strength else 0.0)
 
@@ -186,7 +191,10 @@ class ComputerAI:
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
         if self._is_two_minute_drill(time_left, quarter, score_diff):
             self.last_mode = "Two-Minute Drill"
-            play = self._two_minute_offense(down, ytg, field_pos, score_diff, time_left)
+            if self._offense_rng is None:
+                self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
+            weights = self.get_hurry_up_weights(game)
+            play = self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
             use_no_huddle = True
             # Use OOB designation on passing plays based on aggression
             if play in [
@@ -195,7 +203,7 @@ class ComputerAI:
                 PlayType.LONG_PASS,
                 PlayType.SCREEN,
             ]:
-                if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
+                if self._offense_rng.random() < self.ai_behavior.strategic.oob_designation_aggression:
                     use_oob = True
             # Spike modifier: add spike to stop clock after play (only on 1st/2nd down, not 3rd)
             # On 3rd down, spiking wastes the down and we need to punt/kick on 4th
@@ -208,7 +216,7 @@ class ComputerAI:
                     not in ("incomplete", "interception", "fumble")
                     and prev.yards_gained > 0
                 )
-                if is_prev_completion and ytg >= 5 and random.random() < spike_chance:
+                if is_prev_completion and ytg >= 5 and self._offense_rng.random() < spike_chance:
                     self.last_mode = "Play + Spike"
                     use_spike = True
             return (play, use_oob, use_no_huddle, False, 0, use_spike)
@@ -251,6 +259,17 @@ class ComputerAI:
         # ============================================================
         self.last_mode = None  # Clear mode for standard plays
 
+        # Hard selects a mixture directly, not a winner-only override of a
+        # separate random call. Coaching priorities above still take precedence.
+        if self.offense_strategy is not None:
+            weights = self.offense_strategy.weights(
+                down, ytg, game.offensive_call_history, state.is_home_possession)
+            if weights:
+                if self._offense_rng is None:
+                    self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
+                play = self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
+                return (play, use_oob, use_no_huddle, False, 0, False)
+
         # 3rd Down
         if down == 3:
             play = self._third_down_offense(ytg, field_pos)
@@ -260,14 +279,6 @@ class ComputerAI:
         # 1st Down - balanced attack
         else:
             play = self._first_down_offense(field_pos)
-
-        # Apply chart analyzer suggestion if available (hard mode with analysis)
-        if self.team_analyzer and random.random() < 0.4:
-            suggestion = self._get_ai_play_suggestion(down, ytg)
-            if suggestion:
-                suggested_play = self._ai_play_to_play_type(suggestion)
-                if suggested_play:
-                    play = suggested_play
 
         return (play, use_oob, use_no_huddle, False, 0, False)
 
@@ -521,62 +532,39 @@ class ComputerAI:
             ]
         )
 
-    def _two_minute_offense(self, down, ytg, field_pos, score_diff, time_left) -> PlayType:
-        """Hurry-up offense when trailing late. Prioritize passing to stop clock."""
+    def get_hurry_up_weights(self, game: PaydirtGameEngine) -> dict[PlayType, float]:
+        """Preview credible calls with gradual clock/deficit passing pressure.
 
-        # Hail Mary - last play of half/game, need TD, in range
-        if time_left <= 0.15 and field_pos >= 40 and score_diff < 0:
-            # ~10 seconds left, need a miracle
-            return PlayType.HAIL_MARY
-
-        # Spike Ball - stop clock after a big gain if very low on time
-        # (AI would need to track previous play, so this is situational)
-
-        # Need big play if way behind - BUT NOT in the red zone/goal line
-        # Don't throw long passes from inside the 20 yard line
-        if score_diff <= -14 and field_pos < 80:
-            return random.choice([PlayType.LONG_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS])
-
-        # Under 2 minutes - ONLY pass plays (clock stops on incomplete)
-        # Avoid running plays that keep clock running
-        if time_left < 2.0:
-            if down == 3:
-                if ytg <= 5:
-                    return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN])
-                else:
-                    return random.choice(
-                        [PlayType.MEDIUM_PASS, PlayType.SHORT_PASS, PlayType.LONG_PASS]
-                    )
-            # Early downs - quick passes (avoid long passes in red zone)
-            if score_diff <= -7 or field_pos < 50:
-                # Don't use LONG_PASS from red zone (inside 20)
-                if field_pos >= 80:
-                    return random.choice(
-                        [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN]
-                    )
-                return random.choice(
-                    [PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SHORT_PASS]
-                )
-            return random.choice([PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN])
-
-        # 3rd down - must convert (can use draw as surprise)
-        if down == 3:
-            if ytg <= 5:
-                return random.choice([PlayType.SHORT_PASS, PlayType.SCREEN, PlayType.DRAW])
-            else:
-                return random.choice([PlayType.MEDIUM_PASS, PlayType.SHORT_PASS])
-
-        # Quick passes to stop clock and move chains (minimize running plays)
-        plays = [PlayType.SHORT_PASS, PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.SCREEN]
-
-        # Add long pass if need chunk plays (but not from red zone)
-        if (score_diff <= -7 or field_pos < 50) and field_pos >= 80:
-            # Red zone - use shorter routes only
-            pass  # Don't add LONG_PASS
-        elif score_diff <= -7 or field_pos < 50:
-            plays.extend([PlayType.LONG_PASS, PlayType.MEDIUM_PASS])
-
-        return random.choice(plays)
+        Pace is decided separately. The multiplier is a coaching preference,
+        not a pass quota: it cannot admit an ineligible call or ban a credible
+        run. Hard retains chart strength, target sensitivity and recent history.
+        Easy/Medium use situational weights, with Medium's supported run bias.
+        """
+        state = game.state
+        down, distance = state.down, state.yards_to_go
+        if self.offense_strategy is not None:
+            weights = self.offense_strategy.weights(
+                down, distance, game.offensive_call_history, state.is_home_possession)
+        else:
+            # All nine primary calls remain possible; later/long downs favor passes.
+            run_weight = .45 if down >= 3 and distance > 3 else 1.0
+            if self.use_team_strength and down <= 2:
+                run_weight *= exp(self._run_bias)
+            weights = {play: 1.0 if is_passing_play(play) else run_weight
+                       for play in CHART_PLAY_TYPES}
+        # Preserve compact-field route restrictions without altering engine resolution.
+        if state.ball_position >= 80:
+            weights.pop(PlayType.LONG_PASS, None)
+        if not weights:
+            weights = {PlayType.SHORT_PASS: 1.0}
+        score_diff = (state.home_score - state.away_score) * (1 if state.is_home_possession else -1)
+        points_per_score = 8 if game.season_rules.two_point_conversion else 7
+        scores_needed = max(1, ceil(max(0, -score_diff) / points_per_score))
+        # Two minutes per needed score is a smooth urgency scale, not a timing rule.
+        # Bound pressure so runs retain positive weight even in genuine desperation.
+        pressure = exp(min(4.0, 2.0 * scores_needed / max(.25, state.time_remaining)))
+        return {play: weight * (pressure if is_passing_play(play) else 1.0)
+                for play, weight in weights.items()}
 
     def _clock_killing_offense(self, down, ytg, time_left, field_pos) -> PlayType:
         """Conservative offense when protecting a lead."""

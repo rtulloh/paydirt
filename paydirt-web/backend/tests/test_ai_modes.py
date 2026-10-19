@@ -10,7 +10,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from main import app
 import routes
 from paydirt.game_state import PlayOutcome
-from paydirt.play_resolver import DefenseType, PlayType, parse_result_string
+from paydirt.play_resolver import (
+    DefenseType, PlayType, PenaltyChoice, PlayResult, ResultType, parse_result_string,
+)
 
 
 @pytest.fixture
@@ -92,3 +94,61 @@ def test_web_learns_only_human_preplay_situation(
     assert tracker.get_tendency(3, 7).pass_plays == int(human_offense)
     assert tracker.get_tendency(1, 10).total_plays == 0
     assert sum(len(plays) for plays in tracker.situation_plays.values()) == int(human_offense)
+
+
+@pytest.mark.parametrize("is_home", [False, True])
+def test_web_previews_do_not_record_calls_but_execution_records_once(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, is_home: bool,
+) -> None:
+    game = new_game(client, "hard", is_home)
+    engine = game["engine"]
+    engine.state.is_home_possession = not is_home
+    engine.state.down, engine.state.yards_to_go = 1, 10
+    engine.state.ball_position = 40
+    engine.state.quarter, engine.state.time_remaining = 1, 10
+    game["is_kickoff"] = False
+    selected = None
+    for _ in range(10):
+        response = client.post("/api/game/cpu-play", json={"game_id": game["game_id"]})
+        assert response.status_code == 200, response.text
+        selected = response.json()["cpu_play"]
+    engine.state.down = 4
+    response = client.get(f"/api/game/cpu-4th-down-decision/{game['game_id']}")
+    assert response.status_code == 200, response.text
+    assert engine.offensive_call_history == []
+    engine.state.down = 1
+    monkeypatch.setattr("paydirt.game_engine.resolve_play_with_penalties", lambda *args: (
+        PenaltyChoice(PlayResult(ResultType.INCOMPLETE))))
+    response = client.post("/api/game/execute", json={
+        "game_id": game["game_id"], "player_play": "A", "cpu_play": selected,
+    })
+    assert response.status_code == 200, response.text
+    assert engine.offensive_call_history == [{
+        "is_home": not is_home, "down": 1, "distance": 10,
+        "play": routes.get_play_type_from_key(selected).value,
+    }]
+
+
+@pytest.mark.parametrize("is_home", [False, True])
+@pytest.mark.parametrize("key", ["P", "F", "S"])
+def test_web_special_actions_do_not_contaminate_opponent_tendencies(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, is_home: bool, key: str,
+) -> None:
+    from copy import deepcopy
+
+    game = new_game(client, "hard", is_home)
+    engine = game["engine"]
+    engine.state.is_home_possession = is_home
+    engine.state.down, engine.state.yards_to_go = 4, 10
+    game["is_kickoff"] = False
+    tracker = game["ai"].opponent_model.tracker
+    tracker.record_play(1, 10, "short_pass", 5, is_pass=True)
+    before = deepcopy(tracker.to_dict())
+    play = routes.get_play_type_from_key(key)
+    monkeypatch.setattr(engine, "run_play_with_penalty_procedure", lambda *args, **kwargs: (
+        PlayOutcome(play, DefenseType.STANDARD, parse_result_string("0"), down_before=4)))
+    response = client.post("/api/game/execute", json={
+        "game_id": game["game_id"], "player_play": key, "cpu_play": "A",
+    })
+    assert response.status_code == 200, response.text
+    assert tracker.to_dict() == before

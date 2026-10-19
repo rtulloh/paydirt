@@ -471,7 +471,8 @@ class OffenseAnalyzer:
 
     def get_best_play_for_downs(self, is_passing_down: bool, is_short_yardage: bool) -> str:
         """Get best play type for current down/distance situation."""
-        all_stats = self.get_all_play_stats()
+        all_stats = {name: stats for name, stats in self.get_all_play_stats().items()
+                     if self.PLAY_TYPE_MAP.get(name) in ("run", "pass")}
         
         if not all_stats:
             return 'Off Tackle'  # Default
@@ -646,16 +647,15 @@ def get_situation_type(down: int, distance: int) -> SituationType:
 
 
 def categorize_play(play_type: str) -> PlayCategory:
-    """Categorize a play type as run, pass, or special."""
-    run_keywords = ['Line Plunge', 'Off Tackle', 'End Run', 'Draw']
-    pass_keywords = ['Screen', 'Short', 'Med', 'Long', 'T/E S/L']
-    
-    for keyword in run_keywords:
-        if keyword in play_type:
-            return PlayCategory.RUN
-    for keyword in pass_keywords:
-        if keyword in play_type:
-            return PlayCategory.PASS
+    """Classify recognized calls exactly; kicks/clock actions are not run/pass evidence."""
+    name = play_type.strip().lower().replace("_", " ")
+    runs = {"run", "line plunge", "off tackle", "end run", "draw", "qb sneak"}
+    passes = {"pass", "screen", "short", "short pass", "med", "medium",
+              "medium pass", "long", "long pass", "t/e s/l", "te short long", "hail mary"}
+    if name in runs:
+        return PlayCategory.RUN
+    if name in passes:
+        return PlayCategory.PASS
     return PlayCategory.SPECIAL
 
 
@@ -711,16 +711,14 @@ class OpponentTendencyTracker:
             distance: Yards to go
             play_type: The play type they chose
             yards_gained: Yards gained (used to filter out big plays, not for tendency tracking)
-            is_pass: Optional override for pass vs run classification
+            is_pass: Optional override for recognized run/pass calls only
         """
-        situation = get_situation_type(down, distance)
-        
-        # Categorize the play
+        category = categorize_play(play_type)
+        if category == PlayCategory.SPECIAL:
+            return  # Do not alter run/pass totals or streaks, even with an override.
         if is_pass is not None:
             category = PlayCategory.PASS if is_pass else PlayCategory.RUN
-        else:
-            category = categorize_play(play_type)
-        
+        situation = get_situation_type(down, distance)
         # Record the play
         self.situation_plays[situation].append(category)
         self.recent_plays.append(category)

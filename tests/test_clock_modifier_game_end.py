@@ -81,3 +81,60 @@ def test_sample_game_clock_modifier_flow(
     assert engine.state.game_over
     assert sum(p["home"] for p in engine.get_period_scores()) == engine.state.home_score
     assert sum(p["away"] for p in engine.get_period_scores()) == engine.state.away_score
+
+
+@pytest.mark.parametrize("quarter", [1, 2, 4])
+@pytest.mark.parametrize("seconds", [18, 30])
+def test_spike_that_consumes_remaining_time_runs_period_expiration(
+    game: PaydirtGameEngine, quarter: int, seconds: int,
+) -> None:
+    game.state.quarter = quarter
+    game.state.time_remaining = seconds / 60
+    game._use_time(16)
+    assert game.state.time_remaining > 0
+    assert not game.state.game_over
+    game._apply_spike(seconds / 60, quarter)
+    if seconds == 30:
+        assert game.state.time_remaining == pytest.approx(11 / 60)
+        assert game.state.quarter == quarter
+        assert not game.state.game_over
+    elif quarter < 4:
+        assert game.state.quarter == quarter + 1
+        assert game.state.time_remaining == 15
+        assert not game.state.game_over
+    else:
+        assert game.state.quarter == 4
+        assert game.state.time_remaining == 0
+        assert game.state.game_over
+
+
+def test_completion_plus_spike_can_expire_game_when_completion_leaves_time(
+    game: PaydirtGameEngine,
+) -> None:
+    game.state.time_remaining = 18 / 60
+    choice = PenaltyChoice(PlayResult(ResultType.YARDS, yards=4))
+    with patch("paydirt.game_engine.resolve_play_with_penalties", return_value=choice), patch(
+        "paydirt.game_engine.random.uniform", return_value=16,
+    ):
+        outcome = game.run_play_with_penalty_procedure(
+            PlayType.SHORT_PASS, DefenseType.STANDARD, call_spike=True)
+    assert outcome.spike_used
+    assert game.state.time_remaining == 0
+    assert game.state.game_over
+    assert not game.has_untimed_down()
+
+
+@pytest.mark.parametrize("extension", ["tie", "untimed"])
+def test_spike_expiration_preserves_tied_game_and_untimed_down_processing(
+    game: PaydirtGameEngine, extension: str,
+) -> None:
+    if extension == "tie":
+        game.state.home_score = game.state.away_score
+    else:
+        game.state.untimed_down_pending = True
+    game.state.time_remaining = 18 / 60
+    game._use_time(16)
+    game._apply_spike(18 / 60, 4)
+    assert game.state.time_remaining == 0
+    assert not game.state.game_over
+    assert game.has_untimed_down() is (extension == "untimed")

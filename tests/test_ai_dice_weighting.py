@@ -125,8 +125,17 @@ def test_hard_ai_ranks_likely_gains_above_more_rare_winning_rows(
     ai = create_computer_ai("hard", game, cpu_is_home=home)
     assert ai._get_ai_play_suggestion(down, distance) == "Off Tackle"
     assert ai.team_analyzer.offense.get_top_plays(1)[0][0] == "Off Tackle"
-    with patch("paydirt.computer_ai.random.random", return_value=0):
+    # Hard now samples competitive weighted calls instead of forcing a single
+    # recommendation when a global-random override fires. Verify the same dice
+    # advantage reaches the selector, without demanding a deterministic policy.
+    weights = ai.offense_strategy.weights(down, distance, [], home)
+    assert set(weights) == {PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE}
+    assert weights[PlayType.OFF_TACKLE] > weights[PlayType.LINE_PLUNGE]
+    ai._offense_rng = random.Random(0)
+    with patch.object(ai._offense_rng, "choices", return_value=[PlayType.OFF_TACKLE]) as choose:
         assert ai.select_offense(game) == PlayType.OFF_TACKLE
+    plays = choose.call_args.args[0]
+    assert dict(zip(plays, choose.call_args.kwargs["weights"])) == weights
 
 
 @pytest.mark.parametrize("difficulty,analysis,aggression", [

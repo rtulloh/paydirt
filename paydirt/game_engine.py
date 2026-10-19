@@ -14,6 +14,7 @@ from .utils import (
 )
 from .play_resolver import (
     PlayType,
+    CHART_PLAY_TYPES,
     DefenseType,
     PlayResult,
     ResultType,
@@ -119,6 +120,40 @@ class PaydirtGameEngine:
             )
 
         self.play_log: list[PlayOutcome] = []
+        self.offensive_call_history: list[dict] = []
+
+    def _record_offensive_call(self, play_type: PlayType) -> None:
+        """Remember an executed primary call before its result changes possession.
+
+        Penalty rerolls/decisions are part of this call, not additional calls.
+        This engine-owned record is shared by CLI and web; previews never enter.
+        """
+        if play_type in CHART_PLAY_TYPES:
+            self.offensive_call_history.append({
+                "is_home": self.state.is_home_possession,
+                "down": self.state.down, "distance": self.state.yards_to_go,
+                "play": play_type.value,
+            })
+            del self.offensive_call_history[:-96]
+
+    def restore_offensive_call_history(self, records: object) -> None:
+        """Validate optional save metadata without inventing legacy call history."""
+        if not isinstance(records, list):
+            raise ValueError("Invalid offensive call history: expected a list")
+        allowed = {play.value for play in CHART_PLAY_TYPES}
+        restored = []
+        for record in records:
+            if (not isinstance(record, dict)
+                    or type(record.get("is_home")) is not bool
+                    or type(record.get("down")) is not int
+                    or not 1 <= record["down"] <= 4
+                    or type(record.get("distance")) is not int
+                    or record["distance"] < 0
+                    or not isinstance(record.get("play"), str)
+                    or record["play"] not in allowed):
+                raise ValueError("Invalid offensive call history entry")
+            restored.append({key: record[key] for key in ("is_home", "down", "distance", "play")})
+        self.offensive_call_history = restored[-96:]
 
     @classmethod
     def from_directories(cls, home_dir: str, away_dir: str) -> "PaydirtGameEngine":
@@ -1427,6 +1462,7 @@ class PaydirtGameEngine:
         result = resolve_play(
             self.state.possession_team, self.state.defense_team, play_type, defense_type
         )
+        self._record_offensive_call(play_type)
 
         # Process the result
         yards = result.yards
@@ -1796,6 +1832,7 @@ class PaydirtGameEngine:
         penalty_choice = resolve_play_with_penalties(
             self.state.possession_team, self.state.defense_team, play_type, defense_type
         )
+        self._record_offensive_call(play_type)
 
         # Check if there are any penalties to decide on
         has_penalties = len(penalty_choice.penalty_options) > 0
@@ -2596,7 +2633,8 @@ class PaydirtGameEngine:
         spike_seconds = 0.05  # ~3 seconds for the spike itself
 
         # Calculate how much time the play actually used
-        play_used_seconds = time_before_play - self.state.time_remaining
+        clock_before_spike = self.state.time_remaining
+        play_used_seconds = time_before_play - clock_before_spike
 
         # If the play used more than 17 seconds, cap it
         play_max_seconds = 0.283  # 17 seconds
@@ -2621,6 +2659,11 @@ class PaydirtGameEngine:
         # A spike cannot reopen a finished game when its adjusted clock is 0:00.
         if time_after_spike > 0 and self.state.quarter <= 4:
             self.state.game_over = False
+        elif time_after_spike == 0 and clock_before_spike > 0:
+            # The spike itself can consume the final seconds of a live period.
+            # Reuse authoritative period/OT/untimed-down handling, without
+            # charging additional time or changing the spike down procedure.
+            self._use_time(0)
 
     def _handle_hail_mary(self) -> PlayOutcome:
         """

@@ -39,6 +39,7 @@ env/
 htmlcov/
 .tox/
 .nox/
+.ai-audits/
 
 # Test outputs and scripts
 *_test*.txt

@@ -3,6 +3,7 @@ Tests for computer AI offensive and defensive play selection.
 """
 
 import os
+import random
 import pytest
 from unittest.mock import MagicMock
 
@@ -566,15 +567,16 @@ class TestClockManagement:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
 
-        # Run multiple times
+        # Fixed stream and a meaningful sample retain the original <25% run check
+        # without making a 20-call random fluctuation a test failure.
+        cpu_ai._offense_rng = random.Random(8306)
         running_plays = 0
-        for _ in range(20):
+        for _ in range(2000):
             play, _, _, _, _, _ = cpu_ai.select_offense_with_clock_management(game)
             if play in [PlayType.LINE_PLUNGE, PlayType.OFF_TACKLE, PlayType.END_RUN, PlayType.DRAW]:
                 running_plays += 1
 
-        # Should have very few running plays under 2 minutes
-        assert running_plays < 5  # Less than 25% running plays
+        assert 0 < running_plays < 500  # Still below 25%; credible runs are not banned.
 
 
 class TestEndOfHalfClockManagement:
