@@ -584,6 +584,7 @@ class PaydirtGameEngine:
                     penalty_options=[accept_option, decline_option],
                     offended_team="offense" if ko_is_offensive_penalty else "defense",
                     offsetting=False,
+                    kick_phase="kick",
                 )
 
                 outcome = PlayOutcome(
@@ -615,60 +616,20 @@ class PaydirtGameEngine:
             return_position = 20  # Touchback at 20
             is_touchback = True
         else:
-            # Normal return
-            landing_spot = 100 - (
-                kickoff_spot + ko_yards
-            )  # Where ball lands from receiver's perspective
-            if landing_spot > -10:
-                roll_return()
-
-            # Initialize penalty tracking for double foul check
-            ko_penalty_yards = 0
-            ko_is_offensive_penalty = False
-
-            # Per VI-12-F: Handle end zone returns
-            # landing_spot <= 0 means ball is in or beyond the end zone
-            # landing_spot = 0 is the goal line (part of end zone)
-            # landing_spot < 0 is deeper in end zone (negative = yards deep)
-            if landing_spot <= 0:
-                # Ball in end zone - can elect touchback or attempt return
-                # Per rule VI-12-F-ii: Returns cannot be attempted from on/behind end line
-                # End line is 10 yards deep in end zone (landing_spot <= -10)
-                if landing_spot <= -10:
-                    # At or behind end line - automatic touchback, no return allowed
-                    return_position = 20
-                    is_touchback = True
-                else:
-                    # In end zone but not at end line - can attempt return
-                    # Convert landing_spot to yards deep in end zone (0 = goal line, -5 = 5 yards deep)
-                    yards_deep = abs(landing_spot)  # 0 = at goal line, 5 = 5 yards deep
-                    try:
-                        ret_yards = int(ret_result) if ret_result else 20
-                    except ValueError:
-                        if ret_parsed.result_type == ResultType.FUMBLE:
-                            ret_yards = ret_parsed.yards
-                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                            ret_yards = 100
-                        else:
-                            ret_yards = 20
-
-                    # End zone yardage counts in return
-                    # Must advance past goal line (yards_deep yards) to get on field
-                    if ret_yards > yards_deep:
-                        # Made it out of end zone
-                        return_position = ret_yards - yards_deep  # Field position
-                        is_touchback = False
-                    else:
-                        # Didn't make it out - touchback
-                        return_position = 20
-                        is_touchback = True
+            # Where the ball lands from the receiver's perspective. Per VI-12-F,
+            # <= 0 is in the end zone (0 is the goal line) and a return may be
+            # attempted unless the ball is at or beyond the end line (<= -10).
+            landing_spot = 100 - (kickoff_spot + ko_yards)
+            if landing_spot <= -10:
+                return_position = 20
+                is_touchback = True
             else:
-                # Handle return with potential penalty using shared helper
+                roll_return()
                 return_penalty_yards = 0
                 return_is_offensive_penalty = False
-
                 if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on return - use helper to handle re-roll logic
+                    # Penalty on the return: reroll for the return yardage, then
+                    # offer the offended team the choice (penalty procedure).
                     (
                         ret_yards,
                         return_penalty_yards,
@@ -683,89 +644,26 @@ class PaydirtGameEngine:
                     if needs_rekick:
                         return self.kickoff(kicking_home=kicking_home)
                 else:
-                    # Normal return - parse yardage
-                    try:
-                        ret_yards = int(ret_result) if ret_result else 20
-                    except ValueError:
-                        if ret_parsed.result_type == ResultType.FUMBLE:
-                            ret_yards = ret_parsed.yards
-                        elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                            ret_yards = 100
-                        else:
-                            ret_yards = 20
+                    ret_yards = self._kickoff_return_yards(ret_result, ret_parsed)
 
-                # Check for double foul (both kickoff chart and return chart have penalties)
-                if ko_penalty_yards > 0 and return_penalty_yards > 0:
-                    # Use NFL Rule 14-5-1 to determine outcome
-                    double_foul_result = self._handle_double_foul_penalty(
-                        penalty_a_yards=ko_penalty_yards,
-                        penalty_a_is_offensive=ko_is_offensive_penalty,
-                        penalty_a_has_auto_fd=False,  # Kickoff penalties don't have X modifier
-                        penalty_b_yards=return_penalty_yards,
-                        penalty_b_is_offensive=return_is_offensive_penalty,
-                        penalty_b_has_auto_fd=False,  # Return penalties don't have X modifier
-                        landing_spot=landing_spot,
-                        punt_roll=dice_roll,
-                        return_roll=dice_roll,
-                        punt_result=ko_result,
-                        return_result=ret_result,
-                    )
+                return_position, is_touchback = self._kickoff_return_spot(landing_spot, ret_yards)
 
-                    if double_foul_result["action"] == "offset":
-                        # Penalties offset - re-kick
-                        outcome = PlayOutcome(
-                            play_type=PlayType.KICKOFF,
-                            defense_type=DefenseType.STANDARD,
-                            result=parse_result_string(ko_result),
-                            yards_gained=0,
-                            field_position_before=f"Kickoff from {kickoff_spot}",
-                            field_position_after="pending",
-                            description=double_foul_result["description"],
-                        )
-                        self.play_log.append(outcome)
-                        return outcome
-                    else:
-                        # Apply 15-yard penalty only - receiving team keeps possession
-                        self.state.is_home_possession = not kicking_home
-                        self.state.ball_position = clamp_ball_position(
-                            double_foul_result["final_position"]
-                        )
-                        self.state.down = 1
-                        self.state.yards_to_go = 10
-
-                        outcome = PlayOutcome(
-                            play_type=PlayType.KICKOFF,
-                            defense_type=DefenseType.STANDARD,
-                            result=parse_result_string(ko_result),
-                            yards_gained=0,
-                            touchdown=False,
-                            field_position_before=f"Kickoff from {kickoff_spot}",
-                            field_position_after=self.state.field_position_str(),
-                            description=double_foul_result["description"],
-                        )
-                        self.play_log.append(outcome)
-                        self._use_time(random.uniform(5, 15))
-                        return outcome
-
-                # Calculate return position: landing spot + return yards
-                return_position = landing_spot + ret_yards
-
-                # Apply penalty on top of return
                 if return_penalty_yards > 0:
-                    if return_is_offensive_penalty:
-                        # OFF penalty - subtract from return position with half-the-distance
-                        effective_penalty = self._apply_half_the_distance(
-                            return_position, return_penalty_yards
-                        )
-                        return_position -= effective_penalty
-                    else:
-                        # DEF penalty - add yards to return position
-                        return_position += return_penalty_yards
-
-                if return_position > 100:
-                    return_position = 100  # Touchdown
-                if return_position < 1:
-                    return_position = 1  # Minimum field position
+                    return self._pending_kickoff_return_penalty(
+                        kicking_home=kicking_home,
+                        kickoff_spot=kickoff_spot,
+                        dice_roll=dice_roll,
+                        ko_result=ko_result,
+                        ko_yards=ko_yards,
+                        return_roll=return_roll,
+                        ret_result=ret_result,
+                        ret_yards=ret_yards,
+                        return_rerolls=return_rerolls,
+                        landing_spot=landing_spot,
+                        declined_position=return_position,
+                        penalty_yards=return_penalty_yards,
+                        is_receiving_team_foul=return_is_offensive_penalty,
+                    )
 
         # Set game state
         # Possession goes to the RECEIVING team (opposite of kicker)
@@ -795,10 +693,7 @@ class PaydirtGameEngine:
             elif actual_return < 0:
                 return_commentary = " Outstanding special teams coverage!"
 
-        return_trace = f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none"
-        for reroll, reroll_result in return_rerolls:
-            return_trace += f' | RT reroll:{reroll}→"{reroll_result}"'
-        dice_line = f'(KO:{dice_roll}→"{ko_result}" | {return_trace})'
+        dice_line = self._kickoff_dice_line(dice_roll, ko_result, return_roll, ret_result, return_rerolls)
 
         # Store both rolls in the result for the UI layers
         ret_parsed.dice_roll = dice_roll
@@ -832,6 +727,201 @@ class PaydirtGameEngine:
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 15))
 
+        return outcome
+
+    @staticmethod
+    def _kickoff_return_yards(ret_result: str, ret_parsed: PlayResult) -> int:
+        """Return yardage for a non-penalty kickoff-return chart cell."""
+        try:
+            return int(ret_result) if ret_result else 20
+        except ValueError:
+            if ret_parsed.result_type == ResultType.FUMBLE:
+                return ret_parsed.yards
+            if ret_parsed.result_type == ResultType.TOUCHDOWN:
+                return 100
+            return 20
+
+    @staticmethod
+    def _kickoff_return_spot(landing_spot: int, ret_yards: int) -> tuple[int, bool]:
+        """Field position after a return from landing_spot (<= 0 is yards deep in the end zone).
+
+        Returns (position, is_touchback); 100 is a return touchdown.
+        """
+        if landing_spot <= 0:
+            yards_deep = -landing_spot
+            if ret_yards > yards_deep:
+                return min(100, ret_yards - yards_deep), False
+            return 20, True
+        return max(1, min(100, landing_spot + ret_yards)), False
+
+    @staticmethod
+    def _kickoff_dice_line(
+        dice_roll: int, ko_result: str, return_roll: int, ret_result: str,
+        return_rerolls: list[tuple[int, str]],
+    ) -> str:
+        return_trace = f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none"
+        for reroll, reroll_result in return_rerolls:
+            return_trace += f' | RT reroll:{reroll}→"{reroll_result}"'
+        return f'(KO:{dice_roll}→"{ko_result}" | {return_trace})'
+
+    def _pending_kickoff_return_penalty(
+        self, *, kicking_home: bool, kickoff_spot: int, dice_roll: int, ko_result: str,
+        ko_yards: int, return_roll: int, ret_result: str, ret_yards: int,
+        return_rerolls: list[tuple[int, str]], landing_spot: int, declined_position: int,
+        penalty_yards: int, is_receiving_team_foul: bool,
+    ) -> PlayOutcome:
+        """Offer the offended team the choice for a penalty on the kickoff return.
+
+        Kickoff decisions use the receiving team as "offense" (as the CLI and
+        auto game do): a receiving-team foul (OFF) is the kicking team's choice,
+        a kicking-team foul (DEF) is the receiving team's choice. Nothing is
+        applied until apply_kickoff_penalty_decision().
+        """
+        kicker_chart = self.state.home_chart if kicking_home else self.state.away_chart
+        receiver_chart = self.state.away_chart if kicking_home else self.state.home_chart
+        kicker = kicker_chart.peripheral.short_name
+        receiver = receiver_chart.peripheral.short_name
+        declined_td = declined_position >= 100
+        # A penalty that wipes out a score is enforced from the catch spot;
+        # otherwise from the end of the return.
+        base = max(1, landing_spot) if declined_td else declined_position
+        if is_receiving_team_foul:
+            effective = self._apply_half_the_distance(base, penalty_yards)
+            accepted_position = max(1, base - effective)
+        else:
+            distance_to_goal = 100 - base
+            effective = penalty_yards if penalty_yards * 2 <= distance_to_goal else distance_to_goal // 2
+            accepted_position = base + effective
+
+        def spot(position: int) -> str:
+            return format_field_position_with_team(position, receiver, kicker)
+
+        kind = f"{'OFF' if is_receiving_team_foul else 'DEF'} {penalty_yards}"
+        foul = "receiving team foul" if is_receiving_team_foul else "kicking team foul"
+        chooser = "Kicking team" if is_receiving_team_foul else "Receiving team"
+        accept_preview = f"1st and 10 at {spot(accepted_position)}"
+        play_preview = "Return TOUCHDOWN" if declined_td else f"Return to {spot(declined_position)}"
+        dice_line = self._kickoff_dice_line(dice_roll, ko_result, return_roll, ret_result, return_rerolls)
+
+        play_result = parse_result_string(ret_result)
+        play_result.yards = ret_yards
+        play_result.touchdown = declined_td
+        play_result.dice_roll = dice_roll
+        play_result.kickoff_return_dice = return_roll
+        play_result.kickoff_return_result = ret_result
+
+        accept_option = PenaltyOption(
+            penalty_type="OFF" if is_receiving_team_foul else "DEF",
+            raw_result=ret_result,
+            yards=penalty_yards,
+            description=f"{kind} on the return ({foul})",
+            auto_first_down=False,
+            result_preview=accept_preview,
+        )
+        penalty_choice = PenaltyChoice(
+            play_result=play_result,
+            penalty_options=[accept_option],
+            offended_team="defense" if is_receiving_team_foul else "offense",
+            offsetting=False,
+            kick_phase="return",
+            play_result_preview=play_preview,
+        )
+        # The ball stays with the kicking team until the decision is applied.
+        self.state.is_home_possession = kicking_home
+        self._pending_kickoff_penalty_state = {
+            "phase": "return",
+            "kicking_home": kicking_home,
+            "kickoff_spot": kickoff_spot,
+            "dice_roll": dice_roll,
+            "ko_result": ko_result,
+            "ko_yards": ko_yards,
+            "return_roll": return_roll,
+            "ret_result": ret_result,
+            "ret_yards": ret_yards,
+            "return_rerolls": list(return_rerolls),
+            "landing_spot": landing_spot,
+            "declined_position": declined_position,
+            "accepted_position": accepted_position,
+            "penalty_yards": penalty_yards,
+            "effective_penalty_yards": effective,
+            "is_receiving_team_foul": is_receiving_team_foul,
+        }
+        description = (
+            f"PENALTY on kickoff return: {kind} ({foul}). {chooser} chooses: "
+            f"accept ({accept_preview}) OR decline ({play_preview}). {dice_line}"
+        )
+        return PlayOutcome(
+            play_type=PlayType.KICKOFF,
+            defense_type=DefenseType.STANDARD,
+            result=play_result,
+            yards_gained=0,
+            field_position_before=f"Kickoff from {kickoff_spot}",
+            field_position_after="pending",
+            description=description,
+            penalty_choice=penalty_choice,
+            pending_penalty_decision=True,
+        )
+
+    def _apply_kickoff_return_penalty_decision(self, state: dict, accept_penalty: bool) -> PlayOutcome:
+        """Finish a kickoff whose return-chart penalty was accepted or declined."""
+        kicking_home = state["kicking_home"]
+        kickoff_spot = state["kickoff_spot"]
+        return_position = state["accepted_position"] if accept_penalty else state["declined_position"]
+        is_receiving_team_foul = state["is_receiving_team_foul"]
+
+        self.state.is_home_possession = not kicking_home
+        self.state.ball_position = clamp_ball_position(return_position)
+        self.state.down = 1
+        self.state.yards_to_go = 10
+
+        touchdown = return_position >= 100
+        if touchdown:
+            self._score_touchdown()
+        if accept_penalty:
+            fouling_stats = self.state.offense_stats if is_receiving_team_foul else self.state.defense_stats
+            fouling_stats.penalties += 1
+            fouling_stats.penalty_yards += state["effective_penalty_yards"]
+
+        kind = f"{'OFF' if is_receiving_team_foul else 'DEF'} {state['penalty_yards']}"
+        kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
+        dice_line = self._kickoff_dice_line(
+            state["dice_roll"], state["ko_result"], state["return_roll"], state["ret_result"],
+            state["return_rerolls"],
+        )
+        declined_td = state["declined_position"] >= 100
+        if accept_penalty:
+            nullified = " Return touchdown nullified;" if declined_td else ""
+            description = (
+                f"{kick_type} {state['ko_yards']} yards.{nullified} {kind} on the return accepted, "
+                f"ball at {self.state.field_position_str()}. {dice_line}"
+            )
+        elif touchdown:
+            description = f"{kick_type} {state['ko_yards']} yards, RETURNED FOR A TOUCHDOWN! ({kind} declined) {dice_line}"
+        else:
+            description = (
+                f"{kick_type} {state['ko_yards']} yards, returned to {self.state.field_position_str()} "
+                f"({kind} declined). {dice_line}"
+            )
+
+        result = parse_result_string(state["ret_result"])
+        result.yards = state["ret_yards"]
+        result.touchdown = touchdown
+        result.dice_roll = state["dice_roll"]
+        result.kickoff_return_dice = state["return_roll"]
+        result.kickoff_return_result = state["ret_result"]
+        outcome = PlayOutcome(
+            play_type=PlayType.KICKOFF,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=return_position,
+            touchdown=touchdown,
+            field_position_before=f"Kickoff from {kickoff_spot}",
+            field_position_after=self.state.field_position_str(),
+            description=description,
+            penalty_applied=accept_penalty,
+        )
+        self.play_log.append(outcome)
+        self._use_time(random.uniform(5, 15))
         return outcome
 
     def onside_kick(self, kicking_home: bool = True) -> PlayOutcome:
@@ -4240,11 +4330,15 @@ class PaydirtGameEngine:
         self, outcome: PlayOutcome, accept_penalty: bool
     ) -> PlayOutcome:
         """
-        Apply the offended team's decision for a kickoff chart penalty.
+        Apply the offended team's decision for a kickoff penalty.
+
+        A kick-chart penalty is re-kicked (accepted) or played as rolled
+        (declined). A return-chart penalty is enforced from the return
+        (accepted) or the return stands (declined).
 
         Args:
             outcome: The PlayOutcome with pending_penalty_decision=True from kickoff
-            accept_penalty: True to accept penalty (re-kick from adjusted spot), False to decline
+            accept_penalty: True to accept the penalty, False to decline it
 
         Returns:
             Updated PlayOutcome with game state applied
@@ -4253,12 +4347,14 @@ class PaydirtGameEngine:
             return outcome
 
         state = self._pending_kickoff_penalty_state
+        del self._pending_kickoff_penalty_state
+        if state.get("phase") == "return":
+            return self._apply_kickoff_return_penalty_decision(state, accept_penalty)
+
         kicking_home = state["kicking_home"]
         kickoff_spot = state["kickoff_spot"]
         ko_penalty_yards = state["ko_penalty_yards"]
         ko_is_offensive_penalty = state["ko_is_offensive_penalty"]
-
-        del self._pending_kickoff_penalty_state
 
         if accept_penalty:
             # Accept penalty - re-kick from adjusted spot

@@ -2309,18 +2309,16 @@ def handle_penalty_decision(
 
         print(f"\n  ({' | '.join(roll_parts)})")
     elif is_kickoff_penalty and hasattr(game, "_pending_kickoff_penalty_state"):
+        # The engine's own kick/return trace, as shown for completed kickoffs.
         state = game._pending_kickoff_penalty_state
-        kick_roll = state.get("kick_roll", 0)
-        kick_result = state.get("kick_result", "")
-        return_yards = state.get("return_yards", 0)
-
-        roll_parts = []
-        roll_parts.append(f'K:{kick_roll}→"{kick_result}"')
-
-        if return_yards > 0:
-            roll_parts.append(f'R:→"{return_yards}"')
-
-        print(f"\n  ({' | '.join(roll_parts)})")
+        print(
+            "\n  "
+            + game._kickoff_dice_line(
+                state.get("dice_roll", 0), state.get("ko_result", ""),
+                state.get("return_roll", 0), state.get("ret_result", ""),
+                state.get("return_rerolls", []),
+            )
+        )
     else:
         # Standard scrimmage play - show O:/D: format
         off_roll_str = ""
@@ -2463,6 +2461,9 @@ def handle_penalty_decision(
             # For kickoff penalties, show the kickoff result
             play_outcome_str = "Kickoff stands as called"
             play_field_str = format_field_position(game.state.ball_position, style="short")
+            if penalty_choice.play_result_preview:
+                play_outcome_str = penalty_choice.play_result_preview
+                play_field_str = ""
         else:
             zero_gain_label = "Incomplete pass" if play_result.result_type == ResultType.INCOMPLETE else "No gain"
             yards_gained = play_result.yards
@@ -2524,6 +2525,8 @@ def handle_penalty_decision(
             print(f"    [1] Accept PLAY result: {safety_preview}")
         elif is_punt_penalty and play_result.fumble_recovered:
             print(f"    [1] Accept PLAY result: {play_result.description}")
+        elif not play_field_str:
+            print(f"    [1] Accept PLAY result: {play_outcome_str}")
         else:
             print(f"    [1] Accept PLAY result: {play_outcome_str} at {play_field_str}")
 
@@ -2634,11 +2637,13 @@ def handle_penalty_decision(
             outcome, is_human_offense, human_is_home
         )
 
-        # Get CPU team name for display
+        # Get CPU team name for display. At a kickoff the ball is still with the
+        # kicker while the decision is pending, and the receiver is "offense".
+        cpu_is_possessing = is_human_offense if is_kickoff_penalty else not is_human_offense
         cpu_team = (
-            game.state.defense_team.peripheral.short_name
-            if is_human_offense
-            else game.state.possession_team.peripheral.short_name
+            game.state.possession_team.peripheral.short_name
+            if cpu_is_possessing
+            else game.state.defense_team.peripheral.short_name
         )
 
         if accept_play:

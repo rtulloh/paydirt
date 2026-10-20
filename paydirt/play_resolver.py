@@ -170,6 +170,11 @@ class PenaltyChoice:
     reroll_log: List[str] = field(default_factory=list)
     # Transaction capturing all play events (chart lookup, fumble recovery, etc.)
     transaction: Optional[PlayTransaction] = None
+    # Kick plays: "kick" (penalty on the kick chart, re-kick if accepted) or
+    # "return" (penalty on the return chart, enforced from the return).
+    kick_phase: str = ""
+    # Engine-generated description of the state if the play result is taken.
+    play_result_preview: Optional[str] = None
 
 
 def roll_dice() -> int:

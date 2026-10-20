@@ -109,7 +109,11 @@ penalty that erases an opponent's touchdown when that score is known at decision
 On kickoff selection, `K` is the normal kick and `O` requests an onside kick. The kicking team
 rolls for the kick distance and the receiving team then rolls its own dice for the return; the
 compact trace shows both (`KO:` and `RT:`, or `RT:none` when the kick is not returned). Follow the current prompt;
-an onside attempt does not guarantee recovery.
+an onside attempt does not guarantee recovery. A penalty on the return is the offended team's
+choice, like any other penalty: a receiving-team foul is offered to the kicking team (accept
+to enforce it from the end of the return, or decline and let the return stand), and a
+kicking-team foul is offered to the receiving team. The prompt shows the engine's preview of
+both outcomes; a penalty that would wipe out a return touchdown is enforced from the catch spot.
 
 ### Quick Play with Defaults
 

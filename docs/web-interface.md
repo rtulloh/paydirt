@@ -45,7 +45,9 @@ On defense, choose a formation to counter the CPU's offense.
 
 ![Defense Formation Selection](images/defense.png)
 
-Resolve penalty choices when prompted. After a touchdown, choose an extra point or, when enabled by the season,
+Resolve penalty choices when prompted, including a flag on a kickoff or its return: the offended team
+(kicking or receiving) sees the engine's preview of both the penalty and the play result, and the CPU
+resolves its own kickoff choices immediately. After a touchdown, choose an extra point or, when enabled by the season,
 a two-point attempt. Follow kickoff and halftime prompts to continue; halftime appears once the engine reports
 the first half over (after any outstanding try or penalty decision), and the team that received the opening
 kickoff kicks off the second half. The final-score screen confirms game completion.

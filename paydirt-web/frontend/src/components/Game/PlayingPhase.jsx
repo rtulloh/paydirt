@@ -281,6 +281,7 @@ const PlayingPhase = () => {
           setLocalShowPenaltyChoice(true);
           setLocalIsRolling(false);
           setLocalExecuting(false);
+          setIsKickoff(false);  // The kick is in the air; the decision comes next.
           return;
         }
         
@@ -1176,7 +1177,7 @@ const PlayingPhase = () => {
             <PenaltyDecisionPanel 
               penaltyData={localPendingPenaltyData} 
               onDecision={handlePenaltyDecision}
-              cpuIsOnDefense={playerOffense}
+              cpuIsOnDefense={localPendingPenaltyData?.play_type === 'kickoff' ? !playerOffense : playerOffense}
             />
           </div>
         )}

@@ -272,6 +272,7 @@ class PenaltyOptionModel(BaseModel):
     description: str
     auto_first_down: bool = False
     is_pass_interference: bool = False
+    result_preview: Optional[str] = None
 
 
 class PenaltyChoiceModel(BaseModel):
@@ -280,7 +281,32 @@ class PenaltyChoiceModel(BaseModel):
     offsetting: bool = False
     is_pass_interference: bool = False
     reroll_log: List[str] = []
+    kick_phase: str = ""
+    play_result_preview: Optional[str] = None
 
+
+def _penalty_choice_model(choice) -> PenaltyChoiceModel:
+    """Serialize the engine's PenaltyChoice, including its state previews."""
+    return PenaltyChoiceModel(
+        penalty_options=[
+            PenaltyOptionModel(
+                penalty_type=opt.penalty_type,
+                raw_result=opt.raw_result,
+                yards=opt.yards,
+                description=opt.description,
+                auto_first_down=opt.auto_first_down,
+                is_pass_interference=getattr(opt, "is_pass_interference", False),
+                result_preview=getattr(opt, "result_preview", None),
+            )
+            for opt in choice.penalty_options
+        ],
+        offended_team=choice.offended_team,
+        offsetting=choice.offsetting,
+        is_pass_interference=choice.is_pass_interference,
+        reroll_log=choice.reroll_log or [],
+        kick_phase=getattr(choice, "kick_phase", ""),
+        play_result_preview=getattr(choice, "play_result_preview", None),
+    )
 
 class PlayResult(BaseModel):
     result: str
@@ -1212,25 +1238,7 @@ async def execute_play(request: PlayRequest):
     penalty_choice_model = None
     if should_prompt_human:
         # Human decides - save outcome and return pending decision
-        penalty_options = []
-        for opt in result.penalty_choice.penalty_options:
-            penalty_options.append(
-                PenaltyOptionModel(
-                    penalty_type=opt.penalty_type,
-                    raw_result=opt.raw_result,
-                    yards=opt.yards,
-                    description=opt.description,
-                    auto_first_down=opt.auto_first_down,
-                    is_pass_interference=getattr(opt, "is_pass_interference", False),
-                )
-            )
-        penalty_choice_model = PenaltyChoiceModel(
-            penalty_options=penalty_options,
-            offended_team=result.penalty_choice.offended_team,
-            offsetting=result.penalty_choice.offsetting,
-            is_pass_interference=result.penalty_choice.is_pass_interference,
-            reroll_log=result.penalty_choice.reroll_log or [],
-        )
+        penalty_choice_model = _penalty_choice_model(result.penalty_choice)
     elif pending_penalty:
         # CPU decides - apply penalty decision automatically
         human_is_home = game.get("human_is_home", False)
@@ -1527,13 +1535,33 @@ async def perform_kickoff(request: KickoffRequest):
     kicking_abbrev = home_abbrev if kicking_home else away_abbrev
     result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
 
+    # A penalty on the kick or return is the offended team's choice. Kickoff
+    # decisions use the receiving team as "offense" (engine convention).
+    penalty_choice_model = None
+    if result.pending_penalty_decision and result.penalty_choice:
+        human_is_home = game["home_team"].id == game.get("player_team_id")
+        human_receives = human_is_home != kicking_home
+        human_decides = (result.penalty_choice.offended_team == "offense") == human_receives
+        if human_decides:
+            engine._last_play_outcome = result
+            penalty_choice_model = _penalty_choice_model(result.penalty_choice)
+        else:
+            accept_play, _ = cpu_should_accept_penalty(
+                result, is_human_offense=human_receives, human_is_home=human_is_home
+            )
+            result = engine.apply_kickoff_penalty_decision(result, accept_penalty=not accept_play)
+            print(
+                f"[{kicking_abbrev} KO] CPU PENALTY DECISION: "
+                f"{'ACCEPT PLAY' if accept_play else 'ACCEPT PENALTY'} | {result.description}"
+            )
+
     # Log kickoff with dice and result details
     receiving_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
     field_pos = engine.state.field_position_str()
     print(f"[{kicking_abbrev} KO → {receiving_abbrev}] {result.description} @ {field_pos}")
 
     scoring = result.touchdown or result.safety
-    possession_changed = True
+    possession_changed = not result.pending_penalty_decision
 
     # Get dice roll from result - decompose into display dice
     # Kickoff roll is 10-39, decompose into: black (tens) + white1 + white2 (ones)
@@ -1593,7 +1621,7 @@ async def perform_kickoff(request: KickoffRequest):
             quarter_changed=False,
             half_changed=halftime,
             pending_penalty_decision=result.pending_penalty_decision,
-            penalty_choice=None,
+            penalty_choice=penalty_choice_model,
             play_type="kickoff",
         ),
         game_state=game_state_to_response(game),
@@ -1674,8 +1702,14 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
     if not outcome or not outcome.pending_penalty_decision:
         raise HTTPException(status_code=400, detail="No pending penalty decision")
 
-    player_offense = game["human_plays_offense"]
-    human_is_home = game.get("human_is_home", False)
+    # Decide from the live possession, never the stale human_plays_offense flag.
+    # While a kickoff decision is pending the kicker holds the ball and the
+    # receiver is "offense" (engine convention).
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    if outcome.play_type == PlayType.KICKOFF:
+        player_offense = human_is_home != engine.state.is_home_possession
+    else:
+        player_offense = human_is_home == engine.state.is_home_possession
     penalty_choice = outcome.penalty_choice
     offended_is_offense = penalty_choice.offended_team == "offense"
 
@@ -1722,25 +1756,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
 
     penalty_choice_model = None
     if new_outcome.penalty_choice:
-        penalty_options = []
-        for opt in new_outcome.penalty_choice.penalty_options:
-            penalty_options.append(
-                PenaltyOptionModel(
-                    penalty_type=opt.penalty_type,
-                    raw_result=opt.raw_result,
-                    yards=opt.yards,
-                    description=opt.description,
-                    auto_first_down=opt.auto_first_down,
-                    is_pass_interference=getattr(opt, "is_pass_interference", False),
-                )
-            )
-        penalty_choice_model = PenaltyChoiceModel(
-            penalty_options=penalty_options,
-            offended_team=new_outcome.penalty_choice.offended_team,
-            offsetting=new_outcome.penalty_choice.offsetting,
-            is_pass_interference=new_outcome.penalty_choice.is_pass_interference,
-            reroll_log=new_outcome.penalty_choice.reroll_log or [],
-        )
+        penalty_choice_model = _penalty_choice_model(new_outcome.penalty_choice)
 
     play_result = PlayResult(
         result=new_outcome.result.result_type.value

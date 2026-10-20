@@ -5,6 +5,7 @@ interface PenaltyOption {
   description?: string;
   auto_first_down?: boolean;
   is_pass_interference?: boolean;
+  result_preview?: string | null;
 }
 
 interface PenaltyChoice {
@@ -13,6 +14,8 @@ interface PenaltyChoice {
   offsetting?: boolean;
   is_pass_interference?: boolean;
   reroll_log?: string[];
+  kick_phase?: string;
+  play_result_preview?: string | null;
 }
 
 interface PenaltyData {
@@ -93,11 +96,16 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
   };
 
   const formatPenaltyChoice = (opt: PenaltyOption): string => {
+    // The engine's preview is authoritative when it supplies one.
+    if (opt.result_preview) return opt.result_preview;
     const result = getPenaltyResult(opt);
     return `${formatDown(result.down)} & ${result.yardsToGo} at ${formatFieldPosition(result.ballPos)}`;
   };
 
   const getPlayResultSummary = (): string => {
+    if (penalty_choice.play_result_preview) {
+      return penalty_choice.play_result_preview;
+    }
     if (turnover) {
       return `TURNOVER at ${formatFieldPosition(newBallPosition || 0)}`;
     }
@@ -132,6 +140,15 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
   
   const isDefenseChoosing = penalty_choice.offended_team === 'defense';
   const cpuDeciding = isDefenseChoosing && cpuIsOnDefense;
+  // Kickoffs: the receiving team is "offense"; a receiving-team foul is the kicking team's choice.
+  const isKickoff = penaltyData.play_type === 'kickoff';
+  const chooserLabel = isKickoff
+    ? (isDefenseChoosing
+      ? 'RECEIVING TEAM committed penalty - Your choice (Kicking team)'
+      : 'KICKING TEAM committed penalty - Your choice (Receiving team)')
+    : (isDefenseChoosing
+      ? 'OFFENSE committed penalty - Your choice (Defense)'
+      : 'DEFENSE committed penalty - Your choice (Offense)');
   
   return (
 <div className="bg-yellow-700 rounded-lg px-4 py-4 text-center border-2 border-yellow-500">
@@ -154,11 +171,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
         <>
           {/* Choice header - shows who is deciding */}
           <div className="text-yellow-200 text-sm mb-3">
-            {cpuDeciding 
-              ? 'CPU is deciding...'
-              : isDefenseChoosing 
-              ? 'OFFENSE committed penalty - Your choice (Defense)'
-              : 'DEFENSE committed penalty - Your choice (Offense)'}
+            {cpuDeciding ? 'CPU is deciding...' : chooserLabel}
           </div>
           
           <div className="bg-gray-800 rounded-lg p-3 mb-4">
