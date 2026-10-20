@@ -1,5 +1,22 @@
 # Paydirt Release Notes
 
+## v1.9.2
+
+### Trace Accuracy and Developer Validation
+
+- Preserve raw punt-return chart cells, so punt-return fumbles display the actual `R:<die>→"F"` result rather than a blank placeholder.
+- Preserve the defense-chart row in ordinary fumble traces and omit `Ret:0→0` when no fumble-return chart roll occurred.
+- Correctly retain punt-return metadata when resolving a penalty decision after a return fumble.
+- Define a full test run in the contributor guide as including the full-season runner and both public and local AI audits, not pytest alone.
+
+### Validation
+
+- Core: 5,420 passed, 8 existing local-data skips; backend: 218; frontend: 255 passed, 1 existing skip; build and Playwright browser games passed.
+- Full game runner: 14/14; generated season: 224/224 regular-season games and 9/9 playoff games; historical reproductions: 10/10.
+- AI audits reconciled: public 32/32 with no concentration warnings and local 448/448 with four advisory concentration warnings. Private charts and audit reports remain local.
+
+`1.9.2` is a bug-fix and trace-correctness release. The existing `v1.9.1` tag is preserved as immutable history.
+
 ## v1.9.1
 
 ### Return Rules and Special Teams
