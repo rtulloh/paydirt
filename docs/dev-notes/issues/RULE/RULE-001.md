@@ -2,7 +2,7 @@
 id: RULE-001
 title: Two-point tries run through run_play
 status: open
-priority: High
+priority: Medium
 created-at: 2026-10-19
 resolved-at: 
 closed-at:
@@ -26,3 +26,6 @@ Every existing two-point test mocks `run_play`. Add unmocked regressions first: 
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Open (reproduced)).
+
+--- 2026-10-20 17:30 ---
+Priority changed from High to Medium: two-point conversion support is not a current product priority. The defect remains reproduced and must be addressed before prioritizing 2026 two-point-conversion play-testing.

@@ -74,19 +74,18 @@ python3 scripts/build_issue_index.py
 
 ## Current work order (High items first)
 
-1. [RULE-001](RULE/RULE-001.md) — two-point tries resolved as live plays; unreachable under
-   1983 rules and required before any 2026 play-test.
-2. [FLOW-004](FLOW/FLOW-004.md) — frontend pending-PAT fallback crash; include a Vitest case
+1. [FLOW-004](FLOW/FLOW-004.md) — frontend pending-PAT fallback crash; include a Vitest case
    that a pending-penalty response for a goal-line play routes to the penalty UI.
-3. [VAL-002](VAL/VAL-002.md) and [VAL-003](VAL/VAL-003.md) — CI enforcement and the untracked
+2. [VAL-002](VAL/VAL-002.md) and [VAL-003](VAL/VAL-003.md) — CI enforcement and the untracked
    private standings file.
-4. [AI-015](AI/AI-015.md) — CPU must take the better KEEP option on a kicking-team punt foul;
+3. [AI-015](AI/AI-015.md) — CPU must take the better KEEP option on a kicking-team punt foul;
    confirmed by the 2026-10-20 NYJ/CLE play test.
-5. [AUD-020](AUD/AUD-020.md) — punt-penalty menu play-result preview is misleading; same play test.
-6. [TRACE-004](TRACE/TRACE-004.md) — completed punt-penalty trace drops the return roll; same play test.
-7. [RULE-011](RULE/RULE-011.md) and [RULE-012](RULE/RULE-012.md) — era kickoff spot and the
+4. [AUD-020](AUD/AUD-020.md) — punt-penalty menu play-result preview is misleading; same play test.
+5. [TRACE-004](TRACE/TRACE-004.md) — completed punt-penalty trace drops the return roll; same play test.
+6. [RULE-011](RULE/RULE-011.md) and [RULE-012](RULE/RULE-012.md) — era kickoff spot and the
    era-dependent final-try rule, both as season configuration.
-8. [RULE-003](RULE/RULE-003.md) (re-scoped Medium); then remaining Medium items by area, and
+7. [RULE-003](RULE/RULE-003.md) (re-scoped Medium); then remaining Medium items by area, including
+   [RULE-001](RULE/RULE-001.md) when two-point conversion support becomes a priority, and
    [FLOW-009](FLOW/FLOW-009.md) if a human ever needs the non-kickoff return-fumble prompt.
 
 Play-testing closes issues: see [AI play-testing](../ai-playtesting.md) and the

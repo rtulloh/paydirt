@@ -16,7 +16,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
 | [FLOW-004](issues/FLOW/FLOW-004.md) | High | CheckPendingPat fallback references the deleted isHomeScoring | created 2026-10-19 | — |
-| [RULE-001](issues/RULE/RULE-001.md) | High | Two-point tries run through run_play | created 2026-10-19 | RULE-002, RULE-007, STAT-003 |
 | [SPIKE-001](issues/SPIKE/SPIKE-001.md) | High | The S modifier adjusts time without charging the agreed additional down | created 2026-10-18 | SPIKE-003 |
 | [STAT-003](issues/STAT/STAT-003.md) | High | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
 | [VAL-002](issues/VAL/VAL-002.md) | High | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19 | — |
@@ -42,6 +41,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
+| [RULE-001](issues/RULE/RULE-001.md) | Medium | Two-point tries run through run_play | created 2026-10-19 | RULE-002, RULE-007, STAT-003 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
