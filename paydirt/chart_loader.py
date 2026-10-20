@@ -19,17 +19,41 @@ _SPECIAL_CELL = re.compile(
     re.IGNORECASE,
 )
 _SPECIAL_COLUMNS = ("Kickoff", "Kickoff Return", "Punt", "Punt Return", "Int. Return", "Field Goal")
+# Characters a chart result can legitimately contain; anything else (a stray
+# backtick or quote mark in the source workbook) is noise.
+_SPECIAL_NOISE = re.compile(r"[^A-Za-z0-9+\-*† ]")
 
 
-def _check_special_cell(filepath: str, column: str, dice_roll: int, cell: str) -> None:
-    """Warn about a chart cell no rule can interpret; the engine would read it as a zero-yard result."""
-    if not _SPECIAL_CELL.match(cell.strip()):
+def normalize_special_cell(cell: str) -> str:
+    """Best-guess cleanup of a special-teams chart cell from the source workbook.
+
+    Stray characters are dropped; a cell left empty is a blank (zero-yard)
+    result. Legitimate markers (* and † sidelines, +/- signs) are kept.
+    """
+    return _SPECIAL_NOISE.sub("", "" if cell is None else str(cell)).strip()
+
+
+def _check_special_cell(filepath: str, column: str, dice_roll: int, cell: str) -> str:
+    """Normalize a chart cell, warning when the source data needed cleanup.
+
+    Returns the value to store ("" for a blank cell, which the engine plays as 0 yards).
+    """
+    cleaned = normalize_special_cell(cell)
+    if cleaned != cell.strip():
         warnings.warn(
-            f"{filepath}: {column} roll {dice_roll} has an unreadable cell {cell.strip()!r}; "
+            f"{filepath}: {column} roll {dice_roll} has a stray character in {cell.strip()!r}; "
+            f"reading it as {cleaned!r}" + (" (a blank, 0-yard result)" if not cleaned else ""),
+            UserWarning,
+            stacklevel=3,
+        )
+    elif cleaned and not _SPECIAL_CELL.match(cleaned):
+        warnings.warn(
+            f"{filepath}: {column} roll {dice_roll} has an unreadable cell {cleaned!r}; "
             "it will play as a 0-yard result until the chart is corrected",
             UserWarning,
             stacklevel=3,
         )
+    return cleaned
 
 
 @dataclass
@@ -711,23 +735,24 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
         if dice_roll < 10 or dice_roll > 39:
             continue
 
-        # Parse special teams columns
+        # Parse special teams columns (cleaned of stray source-workbook characters)
+        values = {}
         for index, column in enumerate(_SPECIAL_COLUMNS, start=1):
             if len(row) > index and row[index]:
-                _check_special_cell(filepath, column, dice_roll, row[index])
-        if len(row) > 1 and row[1]:
-            special.kickoff[dice_roll] = row[1]
-        if len(row) > 2 and row[2]:
-            special.kickoff_return[dice_roll] = row[2]
-        if len(row) > 3 and row[3]:
-            special.punt[dice_roll] = row[3]
-        if len(row) > 4 and row[4]:
-            special.punt_return[dice_roll] = row[4]
-        if len(row) > 5 and row[5]:
-            special.interception_return[dice_roll] = row[5]
-            special.fumble_return[dice_roll] = row[5]
-        if len(row) > 6 and row[6]:
-            special.field_goal[dice_roll] = row[6]
+                values[column] = _check_special_cell(filepath, column, dice_roll, row[index])
+        if values.get("Kickoff"):
+            special.kickoff[dice_roll] = values["Kickoff"]
+        if values.get("Kickoff Return"):
+            special.kickoff_return[dice_roll] = values["Kickoff Return"]
+        if values.get("Punt"):
+            special.punt[dice_roll] = values["Punt"]
+        if values.get("Punt Return"):
+            special.punt_return[dice_roll] = values["Punt Return"]
+        if values.get("Int. Return"):
+            special.interception_return[dice_roll] = values["Int. Return"]
+            special.fumble_return[dice_roll] = values["Int. Return"]
+        if values.get("Field Goal"):
+            special.field_goal[dice_roll] = values["Field Goal"]
 
         # Extra Point: 1972 format: 1 = Good, 0 = No Good; 1983 format: blank = Good, NG = No Good
         if len(row) > 7 and row[7] and row[7].strip() in ("0", "NG"):

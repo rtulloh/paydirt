@@ -13,6 +13,8 @@ import os
 import csv
 import argparse
 
+from paydirt.chart_loader import normalize_special_cell
+
 BASE_DIR = "/Users/rtulloh/Downloads/1972teams"
 OUTPUT_DIR = "/Users/rtulloh/Downloads/1972"
 
@@ -345,7 +347,9 @@ def extract_defense_chart(file_path):
         row_data = {}
         for col_name, col_idx in special_col_map.items():
             cell = sheet.cell(row_idx, col_idx)
-            cell_value = format_cell_value(cell.value, cell.ctype)
+            # Source workbooks occasionally carry a stray character (a lone backtick)
+            # in an otherwise blank result cell; read it as a blank (zero-yard) cell.
+            cell_value = normalize_special_cell(format_cell_value(cell.value, cell.ctype))
             
             is_black = is_black_cell(workbook, cell)
             

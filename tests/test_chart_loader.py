@@ -141,9 +141,18 @@ class TestSpecialChartValidation:
             special = parse_special_csv(path)
         assert special.interception_return[10] == "TD"
 
-    def test_stray_character_is_reported_with_column_and_roll(self, tmp_path: Path) -> None:
+    def test_stray_character_is_reported_and_read_as_a_blank_cell(self, tmp_path: Path) -> None:
         from paydirt.chart_loader import parse_special_csv
         path = self._write(tmp_path, "30,60,25,38*,10,`,45,\n")
-        with pytest.warns(UserWarning, match=r"Int\. Return.*roll 30.*'`'"):
+        with pytest.warns(UserWarning, match=r"Int\. Return.*roll 30.*'`'.*blank"):
             special = parse_special_csv(path)
-        assert special.interception_return[30] == "`"  # The chart is loaded as written.
+        assert 30 not in special.interception_return  # A blank cell: the engine reads it as 0 yards.
+        assert special.kickoff[30] == "60"
+
+    @pytest.mark.parametrize("raw,expected", [
+        ("`", ""), ("  ", ""), ("25", "25"), ("25`", "25"), ("'OFF 15'", "OFF 15"),
+        ("F + 17", "F + 17"), ("38*", "38*"), ("12†", "12†"), ("BK -8", "BK -8"), ("“TD”", "TD"),
+    ])
+    def test_normalize_special_cell_drops_stray_characters_only(self, raw: str, expected: str) -> None:
+        from paydirt.chart_loader import normalize_special_cell
+        assert normalize_special_cell(raw) == expected

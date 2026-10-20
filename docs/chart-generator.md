@@ -146,6 +146,10 @@ Do not overwrite the distributed Thunderhawks or Ironclads when experimenting.
 - **Empty formula cells:** `xlrd` does not evaluate formulas. Recalculate/save usable cached results in a spreadsheet application,
   or replace formulas with verified literal values in a copy preserving formatting. Inspect the CSV afterward.
 - **Wrong BLACK/extra-point entries:** verify solid BLACK/RED fills survived editing.
+- **Stray characters in result cells:** a source cell holding only a backtick or quote mark is a
+  blank (zero-yard) result. The generator drops such characters when writing `special.csv`, and the
+  game loader does the same with a warning naming the column and dice roll, so existing CSVs do not
+  need to be regenerated to play correctly.
 - **Partial output:** repair only the affected staged team, rerun, and review every message.
 - **Team missing in the app:** check rules YAML and source-versus-bundled data locations.
 
