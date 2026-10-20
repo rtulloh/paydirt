@@ -57,7 +57,11 @@ call shares, distinct calls, and comparable-situation repetition streaks. Review
 concentration warnings with sample counts and chart strengths; they are advisory,
 not universal play-frequency caps or grounds for weakening tests. Record any
 questionable decisions/findings in the developer tracker, even when all games
-complete. The 1983 audit requires the same private local data as the integration
+complete. At the end of every play-test and audit review, inspect the per-issue
+tracker for resolved tickets with newly confirmed evidence; add timestamped
+comments and close tickets when the audit demonstrates that the issue no longer
+occurs. Do not close a ticket from unit tests alone when play-test confirmation
+is required. The 1983 audit requires the same private local data as the integration
 runners; keep its reports in ignored `.ai-audits/`, never commit/export private
 charts or narrative logs. The generated audit schedule is regular-season only;
 it supplements, never replaces, the existing nine-playoff-game regression. See
