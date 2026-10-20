@@ -114,3 +114,12 @@ default to that recorded period, so UI layers must not pass the live quarter aft
 whether a try is still owed: regulation tries are played even when the clock has
 expired and the game is provisionally over; both try methods recompute
 `game_over` afterwards.
+
+## Halftime and the second-half kicker
+
+The engine records which team kicked to open the game (`GameState.opening_kicking_home`,
+persisted in saves) and exposes `halftime_pending()` (first half over, second-half
+kickoff still owed) and `second_half_kicking_home()`. `prepare_second_half_kickoff()`
+hands the ball to that kicker at the kickoff spot. UI layers must use these queries
+rather than inferring halftime from one API path or guessing the kicker from
+possession; the web API reports `halftime_pending` in every game state.

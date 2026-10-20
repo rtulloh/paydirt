@@ -67,9 +67,9 @@ class TestKickoffReturnPenalties:
         game.state.away_chart.special_teams.kickoff_return[13] = "30"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 13: re-roll for actual return yardage (30 yards)
-            mock_dice.side_effect = [(11, "B1+W0+W1=11"), (13, "B1+W2+W1=13")]
+            # Roll 11: kickoff (50 yards); roll 11: the receiving team's return (OFF 15 penalty)
+            # Roll 13: re-roll for actual return yardage (30 yards)
+            mock_dice.side_effect = [(11, "B1+W0+W1=11"), (11, "B1+W0+W1=11"), (13, "B1+W2+W1=13")]
             
             game.kickoff(kicking_home=True)
             
@@ -88,9 +88,9 @@ class TestKickoffReturnPenalties:
         game.state.away_chart.special_teams.kickoff_return[10] = "20"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll = 12: kickoff (50 yards) and return (DEF 15 penalty)
-            # Second roll = 10: re-roll for actual return yardage (20 yards)
-            mock_dice.side_effect = [(12, "B1+W0+W2=12"), (10, "B1+W0+W0=10")]
+            # Roll 12: kickoff (50 yards); roll 12: return (DEF 15 penalty)
+            # Roll 10: re-roll for actual return yardage (20 yards)
+            mock_dice.side_effect = [(12, "B1+W0+W2=12"), (12, "B1+W0+W2=12"), (10, "B1+W0+W0=10")]
             
             game.kickoff(kicking_home=True)
             
@@ -113,13 +113,14 @@ class TestKickoffReturnPenalties:
         game.state.away_chart.special_teams.kickoff_return[14] = "25"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 12: re-roll gets DEF 10 - offsetting (OFF + DEF)!
-            # Third roll = 14: rekick - kickoff (55 yards) and return (25 yards)
+            # Kick 11 (50 yards); return 11 (OFF 15); re-roll 12 gets DEF 10 - offsetting!
+            # Rekick: kick 14 (55 yards); return 14 (25 yards)
             mock_dice.side_effect = [
-                (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
+                (11, "B1+W0+W1=11"),  # Kickoff
+                (11, "B1+W0+W1=11"),  # Return roll (OFF 15)
                 (12, "B1+W0+W2=12"),  # Re-roll gets DEF 10 - offsetting
-                (14, "B1+W3+W1=14"),  # Rekick - normal result
+                (14, "B1+W3+W1=14"),  # Rekick
+                (14, "B1+W3+W1=14"),  # Rekick return - normal result
             ]
             
             game.kickoff(kicking_home=True)
@@ -139,11 +140,10 @@ class TestKickoffReturnPenalties:
         game.state.away_chart.special_teams.kickoff_return[13] = "25"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 12: re-roll gets OFF 20 - same type, take larger, re-roll again
-            # Third roll = 13: re-roll gets actual return yardage (25 yards)
+            # Kick 11 (50 yards); return 11 (OFF 15); re-roll 12 gets OFF 20 (larger); re-roll 13 (25)
             mock_dice.side_effect = [
-                (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
+                (11, "B1+W0+W1=11"),  # Kickoff
+                (11, "B1+W0+W1=11"),  # Return roll (OFF 15)
                 (12, "B1+W0+W2=12"),  # Re-roll gets OFF 20 - larger penalty
                 (13, "B1+W2+W1=13"),  # Re-roll gets actual yardage (25)
             ]
@@ -166,11 +166,10 @@ class TestKickoffReturnPenalties:
         game.state.away_chart.special_teams.kickoff_return[13] = "25"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # First roll = 11: kickoff (50 yards) and return (OFF 15 penalty)
-            # Second roll = 12: re-roll gets OFF 5 - same type, keep larger (15), re-roll again
-            # Third roll = 13: re-roll gets actual return yardage (25 yards)
+            # Kick 11 (50 yards); return 11 (OFF 15); re-roll 12 gets OFF 5 (smaller); re-roll 13 (25)
             mock_dice.side_effect = [
-                (11, "B1+W0+W1=11"),  # First kickoff + return (OFF 15)
+                (11, "B1+W0+W1=11"),  # Kickoff
+                (11, "B1+W0+W1=11"),  # Return roll (OFF 15)
                 (12, "B1+W0+W2=12"),  # Re-roll gets OFF 5 - smaller
                 (13, "B1+W2+W1=13"),  # Re-roll gets actual yardage (25)
             ]
@@ -184,13 +183,13 @@ class TestKickoffReturnPenalties:
 
     def test_normal_kickoff_return_still_works(self, game):
         """Normal kickoff return without penalty should work correctly."""
-        # Note: Kickoff uses same dice roll for both kickoff and return charts
+        # The receiving team rolls its own return; both rolls happen to be 10 here.
         # Set up charts so roll 10 gives 50 yard kickoff and 20 yard return
         game.state.home_chart.special_teams.kickoff[10] = "50"
         game.state.away_chart.special_teams.kickoff[10] = "50"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Single roll = 10 used for both kickoff (50 yards) and return (20 yards)
+            # Kick roll 10 (50 yards) and a separate return roll 10 (20 yards)
             mock_dice.return_value = (10, "B1+W0+W0=10")
             
             game.kickoff(kicking_home=True)
@@ -212,8 +211,8 @@ class TestKickoffChartPenalties:
         game.state.home_chart.special_teams.kickoff[11] = "60"  # Re-roll result
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Roll 1: kickoff chart (DEF 5), Roll 2: re-roll (60 yards)
-            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11")]
+            # Roll 1: kickoff chart (DEF 5), roll 2: re-roll (60 yards), roll 3: the return
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11"), (10, "B1+W0+W0=10")]
             
             outcome = game.kickoff(kicking_home=True)
             
@@ -231,12 +230,14 @@ class TestKickoffChartPenalties:
         game.state.away_chart.special_teams.kickoff_return[12] = "20"
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            # Roll 1: kickoff chart (DEF 5), Roll 2: re-roll (60 yards)
-            # Roll 3: re-kick (55 yards), uses same roll for return (20 yards)
+            # Roll 1: kickoff chart (DEF 5), roll 2: re-roll (60 yards), roll 3: return
+            # Re-kick: roll 4 kick (55 yards), roll 5 return (20 yards)
             mock_dice.side_effect = [
                 (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
                 (11, "B1+W0+W1=11"),  # Re-roll for yardage - 60
-                (12, "B1+W0+W2=12"),  # Re-kick roll - 55 yards kickoff, 20 return
+                (10, "B1+W0+W0=10"),  # Return roll for the flagged kick
+                (12, "B1+W0+W2=12"),  # Re-kick roll - 55 yards
+                (12, "B1+W0+W2=12"),  # Re-kick return - 20 yards
             ]
             
             outcome = game.kickoff(kicking_home=True)
@@ -260,6 +261,7 @@ class TestKickoffChartPenalties:
             mock_dice.side_effect = [
                 (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
                 (11, "B1+W0+W1=11"),  # Re-roll for yardage - 60
+                (10, "B1+W0+W0=10"),  # Receiving team's return roll - 25
             ]
             
             outcome = game.kickoff(kicking_home=True)
@@ -279,7 +281,7 @@ class TestKickoffChartPenalties:
         game.state.home_chart.special_teams.kickoff[11] = "55"  # Re-roll result
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11")]
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (11, "B1+W0+W1=11"), (10, "B1+W0+W0=10")]
             
             outcome = game.kickoff(kicking_home=True)
             
@@ -300,6 +302,7 @@ class TestKickoffChartPenalties:
                 (10, "B1+W0+W0=10"),  # Initial roll - DEF 5
                 (11, "B1+W0+W1=11"),  # Re-roll - OFF 10 (offsetting!)
                 (12, "B1+W0+W2=12"),  # Re-kick - normal result
+                (12, "B1+W0+W2=12"),  # Re-kick return
             ]
             
             outcome = game.kickoff(kicking_home=True)
@@ -365,16 +368,15 @@ class TestKickoffDiceDisplay:
 
     def test_def_penalty_on_kickoff_chart_with_return_td(self, game):
         """DEF penalty on kickoff chart with return TD - TD should count, penalty to next kickoff."""
-        # Both kickoff and return use the same dice roll
         game.state.home_chart.special_teams.kickoff[10] = "DEF 5"
         game.state.home_chart.special_teams.kickoff[11] = "65"  # Re-roll result - 65 yards
-        # Return from same roll (10) should be TD
         game.state.away_chart.special_teams.kickoff_return[10] = "100"  # 100 yard return = TD
-        
+
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             mock_dice.side_effect = [
-                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5 on kickoff, return "100"
+                (10, "B1+W0+W0=10"),  # Initial roll - DEF 5 on kickoff
                 (11, "B1+W0+W1=11"),  # Re-roll for yardage - 65
+                (10, "B1+W0+W0=10"),  # Receiving team's return roll - "100"
             ]
             
             outcome = game.kickoff(kicking_home=True)

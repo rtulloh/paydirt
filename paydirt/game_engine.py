@@ -378,6 +378,7 @@ class PaydirtGameEngine:
             kickoff_spot: Yard line to kick from (default 35, use 20 for safety free kick)
         """
         self._record_play_start()
+        self._record_opening_kicker(kicking_home)
         kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
         receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
 
@@ -387,12 +388,29 @@ class PaydirtGameEngine:
         # Get kickoff distance from kicking team's chart
         ko_result = kicking_chart.special_teams.kickoff.get(dice_roll, "")
 
-        # Get return yardage from receiving team's chart
-        ret_result = receiving_chart.special_teams.kickoff_return.get(dice_roll, "")
-
-        # Parse results
         parse_result_string(ko_result)
-        ret_parsed = parse_result_string(ret_result)
+
+        # Kickoff Return rule: the receiving team rolls its own offensive dice for
+        # the return. It is rolled once, and only when the kick can be returned
+        # (not out of bounds, not a touchback, not at or beyond the end line).
+        return_roll = 0
+        ret_result = ""
+        ret_parsed = parse_result_string("")
+        return_rerolls: list[tuple[int, str]] = []
+
+        def returnable(result: str, yards: int) -> bool:
+            upper = result.upper()
+            if "OB" in upper or "OUT" in upper or "TB" in upper or yards >= 75:
+                return False
+            return 100 - (kickoff_spot + yards) > -10
+
+        def roll_return() -> None:
+            nonlocal return_roll, ret_result, ret_parsed
+            if return_roll:
+                return
+            return_roll, _ = roll_chart_dice()
+            ret_result = receiving_chart.special_teams.kickoff_return.get(return_roll, "")
+            ret_parsed = parse_result_string(ret_result)
 
         # Calculate field position - use provided kickoff_spot, adjust for pending penalty
         penalty_desc = ""
@@ -456,6 +474,8 @@ class PaydirtGameEngine:
 
                 if ko_yards is None:
                     ko_yards = 65  # Fallback
+                if returnable(ko_result, ko_yards):
+                    roll_return()
 
                 # Check for double foul BEFORE offering penalty choice
                 # If there's also a penalty on the return, use 5 vs 15 rule instead
@@ -529,6 +549,7 @@ class PaydirtGameEngine:
                     "ko_yards": ko_yards,
                     "ko_result": ko_result,
                     "ret_result": ret_result,
+                    "return_roll": return_roll,
                     "ko_penalty_yards": ko_penalty_yards,
                     "ko_is_offensive_penalty": ko_is_offensive_penalty,
                     "dice_roll": dice_roll,
@@ -598,6 +619,8 @@ class PaydirtGameEngine:
             landing_spot = 100 - (
                 kickoff_spot + ko_yards
             )  # Where ball lands from receiver's perspective
+            if landing_spot > -10:
+                roll_return()
 
             # Initialize penalty tracking for double foul check
             ko_penalty_yards = 0
@@ -651,7 +674,7 @@ class PaydirtGameEngine:
                         return_penalty_yards,
                         return_is_offensive_penalty,
                         needs_rekick,
-                        _,
+                        return_rerolls,
                     ) = self._handle_return_penalty(
                         ret_result,
                         receiving_chart.special_teams.kickoff_return,
@@ -772,10 +795,15 @@ class PaydirtGameEngine:
             elif actual_return < 0:
                 return_commentary = " Outstanding special teams coverage!"
 
-        dice_line = f'(KO:{dice_roll}→"{ko_result}" | RT:{dice_roll}→"{actual_return}")'
+        return_trace = f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none"
+        for reroll, reroll_result in return_rerolls:
+            return_trace += f' | RT reroll:{reroll}→"{reroll_result}"'
+        dice_line = f'(KO:{dice_roll}→"{ko_result}" | {return_trace})'
 
-        # Store dice roll in result for frontend
+        # Store both rolls in the result for the UI layers
         ret_parsed.dice_roll = dice_roll
+        ret_parsed.kickoff_return_dice = return_roll
+        ret_parsed.kickoff_return_result = ret_result
 
         # Use "Safety free kick" for kicks from own 20
         kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
@@ -822,6 +850,7 @@ class PaydirtGameEngine:
             PlayOutcome with recovery result
         """
         self._record_play_start()
+        self._record_opening_kicker(kicking_home)
         # Roll offensive dice
         dice_roll, dice_desc = roll_chart_dice()
 
@@ -4247,6 +4276,7 @@ class PaydirtGameEngine:
             ko_yards = state["ko_yards"]
             ko_result = state["ko_result"]
             ret_result = state["ret_result"]
+            return_roll = state.get("return_roll", 0)
 
             # Continue with normal kickoff logic using the stored values
             # This is essentially the rest of the kickoff method
@@ -4359,10 +4389,14 @@ class PaydirtGameEngine:
             else:
                 description = f"{kick_type} {ko_yards} yards (penalty declined), returned to {self.state.field_position_str()}."
 
+            declined_result = parse_result_string(ko_result)
+            declined_result.dice_roll = state.get("dice_roll", 0)
+            declined_result.kickoff_return_dice = return_roll
+            declined_result.kickoff_return_result = ret_result
             new_outcome = PlayOutcome(
                 play_type=PlayType.KICKOFF,
                 defense_type=DefenseType.STANDARD,
-                result=parse_result_string(ko_result),
+                result=declined_result,
                 yards_gained=return_position,
                 touchdown=touchdown,
                 field_position_after=self.state.field_position_str(),
@@ -5245,6 +5279,39 @@ class PaydirtGameEngine:
             self.state.ball_position = 35  # Normal kickoff from 35
         self.state.down = 1
         self.state.yards_to_go = 10
+
+    def _record_opening_kicker(self, kicking_home: bool) -> None:
+        """Remember who kicked to open the game; later kicks never overwrite it."""
+        if self.state.opening_kicking_home is None:
+            self.state.opening_kicking_home = kicking_home
+
+    def halftime_pending(self) -> bool:
+        """Whether the first half has ended and the second-half kickoff is still owed.
+
+        True from the moment a second-quarter action (play, kick, try, or penalty
+        decision) advances the period until the second-half kickoff starts.
+        """
+        return (
+            not self.state.is_overtime
+            and self.state.quarter == 3
+            and self._last_play_start_quarter == 2
+            and not self.has_untimed_down()
+        )
+
+    def second_half_kicking_home(self) -> bool:
+        """The opening receiver kicks off to start the second half.
+
+        Legacy saves without an opening-kick record fall back to the previous
+        approximation (the team without the ball kicks).
+        """
+        if self.state.opening_kicking_home is not None:
+            return not self.state.opening_kicking_home
+        return not self.state.is_home_possession
+
+    def prepare_second_half_kickoff(self) -> None:
+        """Give the ball to the second-half kicker at the normal kickoff spot."""
+        self.state.is_home_possession = self.second_half_kicking_home()
+        self.setup_for_kickoff()
 
     def _generate_td_description(self, chart: TeamChart, play_type: PlayType, yards: int) -> str:
         """Generate a touchdown description with player names."""

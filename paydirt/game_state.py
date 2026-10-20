@@ -77,6 +77,9 @@ class GameState:
     ot_first_possession_was_td: bool = False
     ot_coin_toss_winner_is_home: bool = False  # Who won the OT coin toss
     is_playoff: bool = False  # Is this a playoff game?
+    # Which team kicked off to open the game (None until the opening kick).
+    # The other team kicks off to start the second half.
+    opening_kicking_home: Optional[bool] = None
     # Untimed down tracking (defensive penalty at 0:00)
     untimed_down_pending: bool = False  # True if an untimed down must be played
     # Pending penalty to apply to next kickoff (e.g., when TD scored on return with penalty)

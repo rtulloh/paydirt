@@ -53,5 +53,10 @@ def test_final_play_touchdown_offers_the_pat(human_is_home: bool, pat_good: bool
             scorer = tried_data["new_score_home"] if human_is_home else tried_data["new_score_away"]
             assert scorer == (21 if pat_good else 20)
             assert tried_data["game_state"]["game_over"] is (not pat_good)
+            # A game-ending try arms no kickoff; a tying try leads to overtime handling.
+            assert tried_data["is_kickoff"] is pat_good
+            assert tried_data["game_state"]["is_kickoff"] is pat_good
+            state = client.get(f"/api/game/state/{game_id}").json()
+            assert state["is_kickoff"] is pat_good and state["game_over"] is (not pat_good)
         finally:
             client.delete(f"/api/game/{game_id}")

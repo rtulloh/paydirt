@@ -260,7 +260,11 @@ def run_historical_reproductions() -> int:
         ("Raiders", "Eagles", 19831104, False),
         # Narration now has its own RNG. Retain the old complete games and
         # require real untimed downs in supplements, without changing dice.
-        ("Raiders", "Eagles", 19831107, True),
+        ("Raiders", "Eagles", 19831107, False),
+        # The receiving team now rolls its own kickoff return (RULE-010), which
+        # changed the 19831107 trajectory. Retain it as a complete game and require
+        # the untimed down in an independently verified supplement.
+        ("Raiders", "Eagles", 19831127, True),
         # Retain prior reproductions when corrected commentary/timing changes
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),

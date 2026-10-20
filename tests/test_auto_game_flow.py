@@ -165,7 +165,7 @@ def test_punt_penalty_resolved_once(run_scenario: Callable, home: bool, accept_p
         set_scrimmage(game, home)
         game.state.down, game.state.yards_to_go = 4, 8
     result = run_scenario(setup, (PlayType.PUNT,), position, accept_play,
-                          engine_rolls=(16, 16, 17))
+                          engine_rolls=(16, 16, 16, 17))  # kick, return, punt (DEF 5), reroll
     state = result["game"].state
     assert not hasattr(result["game"], "_pending_punt_state")
     assert state.is_home_possession is (not home if accept_play else home)
@@ -199,7 +199,8 @@ def test_consecutive_opening_return_touchdowns_complete_before_scrimmage(run_sce
     def setup(game: PaydirtGameEngine) -> None:
         game.state.away_chart.special_teams.kickoff_return[16] = "TD"
         game.state.home_chart.special_teams.kickoff_return[17] = "TD"
-    result = run_scenario(setup, engine_rolls=(16, 18, 17, 19, 20))
+    # Kick, return (TD), PAT, kick, return (TD), PAT, kick, return.
+    result = run_scenario(setup, engine_rolls=(16, 16, 18, 17, 17, 19, 20))
     state = result["game"].state
     assert state.home_score == state.away_score == 7
     assert len(result["kicks"]) == 3

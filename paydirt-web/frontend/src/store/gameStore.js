@@ -31,6 +31,7 @@ const initialGameState = {
   difficulty: 'medium',
   playLogVersion: 0,
   isKickoff: false,
+  halftimePending: false,
   playLog: [],
   currentSeason: '1983',
   fieldPosition: '',
@@ -120,6 +121,8 @@ export const useGameStore = create((set, get) => ({
       humanTeamId: human_team_id,
       playerOffense: playerIsOnOffense,
       isKickoff: isKickoff,
+      // Engine-owned halftime signal (first half over, second-half kickoff owed).
+      halftimePending: state.halftime_pending || false,
       pendingPat: pendingPat,
       isOvertime: isOvertime,
       otPeriod: otPeriod,
@@ -285,6 +288,7 @@ export const useGameStore = create((set, get) => ({
               playerOffense: backendData.game_state.player_offense,
               playLog: replayData.play_history || [],
               isKickoff: backendData.game_state.is_kickoff,
+              halftimePending: backendData.game_state.halftime_pending || false,
               pendingPat: backendData.game_state.pending_pat || false,
               currentSeason: backendData.game_state.season || replayData.season || '1983',
             });
@@ -412,6 +416,7 @@ export const useGameStore = create((set, get) => ({
               playLog: replayData.play_history || [],
               playLogVersion: (get().playLogVersion || 0) + 1,
               isKickoff: data.game_state.is_kickoff || false,
+              halftimePending: data.game_state.halftime_pending || false,
               pendingPat: data.game_state.pending_pat || false,
               currentSeason: data.game_state.season || replayData.season || '1983',
             });

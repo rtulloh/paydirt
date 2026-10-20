@@ -94,6 +94,9 @@ class PlayResult:
     defense_modifier: str = ""
     # Punt return dice roll
     punt_return_dice: int = 0
+    # Kickoff return: the receiving team's own roll and chart cell (0/"" when no return)
+    kickoff_return_dice: int = 0
+    kickoff_return_result: str = ""
     # Interception return details (set by game engine)
     int_return_yards: int = 0
     int_return_dice: int = 0

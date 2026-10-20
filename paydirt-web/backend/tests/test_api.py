@@ -266,8 +266,11 @@ def test_kickoff_returns_dice_details():
     assert 1 <= dice_details["offense"]["black"] <= 3
     assert 10 <= dice_details["offense"]["total"] <= 39
 
-    # Defense/return dice: red = black (tens), green = white1 (ones, max 5)
-    assert dice_details["defense"]["red"] == dice_details["offense"]["black"]
+    # Return dice are the receiving team's own chart roll (0 when the kick was not returned),
+    # never a copy of the kickoff roll.
+    rt_total = dice_details["defense"]["total"]
+    assert rt_total == 0 or 10 <= rt_total <= 39
+    assert dice_details["defense"]["red"] == rt_total // 10
     assert 0 <= dice_details["defense"]["green"] <= 5
 
     # dice_roll_offense and dice_roll_defense should also be set

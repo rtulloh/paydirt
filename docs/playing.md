@@ -106,7 +106,9 @@ Availability is controlled by [season YAML](seasons.md#season-rules), not just t
 Conversion points belong to the touchdown's quarter, even if the live clock has
 already advanced. The CPU keeps its own touchdown and accepts an eligible replay
 penalty that erases an opponent's touchdown when that score is known at decision time.
-On kickoff selection, `K` is the normal kick and `O` requests an onside kick. Follow the current prompt;
+On kickoff selection, `K` is the normal kick and `O` requests an onside kick. The kicking team
+rolls for the kick distance and the receiving team then rolls its own dice for the return; the
+compact trace shows both (`KO:` and `RT:`, or `RT:none` when the kick is not returned). Follow the current prompt;
 an onside attempt does not guarantee recovery.
 
 ### Quick Play with Defaults

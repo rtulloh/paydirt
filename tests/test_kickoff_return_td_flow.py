@@ -80,7 +80,7 @@ def test_cli_return_td_requires_pat_and_another_kickoff(
         patch("paydirt.play_resolver.roll_chart_dice", return_value=(16, "B1+W2+W3=16")),
         patch("paydirt.play_resolver.roll_white_dice", return_value=(2, "R2+G0=2")),
         patch("paydirt.game_engine.roll_chart_dice", side_effect=[
-            (37, "PAT=37"), (28, "KO=28"), (37, "PAT=37"), (10, "KO=10"),
+            (37, "PAT=37"), (28, "KO=28"), (28, "RT=28"), (37, "PAT=37"), (10, "KO=10"), (10, "RT=10"),
         ]),
         patch.object(game, "attempt_extra_point", wraps=game.attempt_extra_point) as pat,
         patch.object(game, "kickoff", wraps=game.kickoff) as kickoff,
@@ -167,7 +167,7 @@ def test_new_game_loop_handles_return_td_before_next_scrimmage(
         patch("paydirt.play_resolver.roll_chart_dice", return_value=(16, "B1+W2+W3=16")),
         patch("paydirt.play_resolver.roll_white_dice", return_value=(2, "R2+G0=2")),
         patch("paydirt.game_engine.roll_chart_dice", side_effect=[
-            (37, "PAT=37"), (28, "KO=28"), (37, "PAT=37"), (10, "KO=10"),
+            (37, "PAT=37"), (28, "KO=28"), (28, "RT=28"), (37, "PAT=37"), (10, "KO=10"), (10, "RT=10"),
         ]),
         patch.object(game, "attempt_extra_point", wraps=game.attempt_extra_point) as pat,
     ):
@@ -188,7 +188,8 @@ def test_consecutive_return_touchdowns_each_get_pat_and_kickoff(monkeypatch) -> 
     monkeypatch.setattr(interactive_game, "get_kickoff_choice", lambda *args: False)
     with (
         patch("paydirt.game_engine.roll_chart_dice", side_effect=[
-            (28, "KO=28"), (37, "PAT=37"), (28, "KO=28"), (37, "PAT=37"), (10, "KO=10"),
+            (28, "KO=28"), (28, "RT=28"), (37, "PAT=37"), (28, "KO=28"), (28, "RT=28"),
+            (37, "PAT=37"), (10, "KO=10"), (10, "RT=10"),
         ]),
         patch.object(game, "attempt_extra_point", wraps=game.attempt_extra_point) as pat,
         patch.object(game, "kickoff", wraps=game.kickoff) as kickoff,

@@ -52,6 +52,7 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         "quarter": state.quarter,
         "time_remaining": state.time_remaining,
         "is_home_possession": state.is_home_possession,
+        "opening_kicking_home": state.opening_kicking_home,
         "ball_position": state.ball_position,
         "down": state.down,
         "yards_to_go": state.yards_to_go,
@@ -158,6 +159,7 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     state.quarter = save_data["quarter"]
     state.time_remaining = save_data["time_remaining"]
     state.is_home_possession = save_data["is_home_possession"]
+    state.opening_kicking_home = save_data.get("opening_kicking_home")
     state.ball_position = save_data["ball_position"]
     state.down = save_data["down"]
     state.yards_to_go = save_data["yards_to_go"]

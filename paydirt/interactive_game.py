@@ -3030,8 +3030,8 @@ def resume_game(
     no_huddle_mode = False
     last_quarter = game.state.quarter
 
-    # We don't know who kicked first, so just track from current state
-    first_half_kicking_home = not game.state.is_home_possession  # Approximate
+    # The engine records the opening kicker (persisted in saves); legacy saves
+    # fall back to its documented approximation.
 
     while not game.state.game_over:
         play_num += 1
@@ -3046,7 +3046,7 @@ def resume_game(
                 display_box_score(game, "HALFTIME STATS")
                 input("\n  Press Enter for 2nd half kickoff...")
 
-                second_half_kicking_home = not first_half_kicking_home
+                second_half_kicking_home = game.second_half_kicking_home()
                 kicking_team = (
                     home_chart.peripheral.short_name
                     if second_half_kicking_home

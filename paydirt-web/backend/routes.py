@@ -379,6 +379,8 @@ class GameStateResponse(BaseModel):
     home_stats: Optional[Dict[str, int]] = None
     away_stats: Optional[Dict[str, int]] = None
     season: str = "1983"  # Season year for replay saving
+    # Engine-owned: the first half has ended and the second-half kickoff is still owed.
+    halftime_pending: bool = False
 
 
 class NewGameResponse(BaseModel):
@@ -526,11 +528,28 @@ def _arm_follow_up_state(game: Dict[str, Any], engine, outcome) -> tuple:
     elif outcome.touchdown:
         engine.setup_for_kickoff()  # Game-ending overtime TD: reset for consistency
     elif scoring and not engine.state.game_over:
-        # Scoring team keeps possession to kick off; safety free kick is from the 20.
         pre_kickoff_ball_position = engine.state.ball_position
-        engine.setup_for_kickoff(from_safety=outcome.safety)
-        game["is_kickoff"] = True
+        _arm_kickoff(game, engine, from_safety=outcome.safety)
     return scoring, is_pending_pat, pre_kickoff_ball_position
+
+
+def _arm_kickoff(game: Dict[str, Any], engine, *, from_safety: bool = False) -> None:
+    """Place the ball for the next kick the engine says is owed.
+
+    A half-ending score is followed by the scheduled second-half kickoff by the
+    opening receiver, never by the scoring team's kick.
+    """
+    if engine.state.game_over:
+        # A final try ends the game; nothing is kicked afterwards.
+        game["is_kickoff"] = False
+        engine.setup_for_kickoff()  # Neutral spot for the final-state display.
+        return
+    if engine.halftime_pending():
+        engine.prepare_second_half_kickoff()
+    else:
+        # Scoring team keeps possession to kick off; safety free kick is from the 20.
+        engine.setup_for_kickoff(from_safety=from_safety)
+    game["is_kickoff"] = True
 
 def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
@@ -592,6 +611,7 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> Gam
         pending_pat=pending_pat,
         can_go_for_two=can_go_for_two,
         is_overtime=game["engine"].state.is_overtime,
+        halftime_pending=game["engine"].halftime_pending(),
         ot_period=game["engine"].state.ot_period,
         home_stats=home_stats,
         away_stats=away_stats,
@@ -1469,16 +1489,15 @@ async def attempt_extra_point(request: GameIdRequest):
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     # The engine's kickoff() method handles the receiver getting the ball.
     game["pending_pat"] = False
-    game["is_kickoff"] = True  # Mark that kickoff is needed
-    engine.setup_for_kickoff()
+    _arm_kickoff(game, engine)
 
     return ExtraPointResponse(
         success=success,
         description=description,
         new_score_home=engine.state.home_score,
         new_score_away=engine.state.away_score,
-        game_state=game_state_to_response(game, is_kickoff=True).dict(),
-        is_kickoff=True,
+        game_state=game_state_to_response(game, is_kickoff=game["is_kickoff"]).dict(),
+        is_kickoff=game["is_kickoff"],
     )
 
 
@@ -1501,7 +1520,10 @@ async def perform_kickoff(request: KickoffRequest):
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
 
-    kicking_home = engine.state.is_home_possession
+    # The engine decides who kicks: the opening receiver after halftime, otherwise
+    # the team holding the ball (the scoring team).
+    halftime = engine.halftime_pending()
+    kicking_home = engine.second_half_kicking_home() if halftime else engine.state.is_home_possession
     kicking_abbrev = home_abbrev if kicking_home else away_abbrev
     result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
 
@@ -1540,7 +1562,9 @@ async def perform_kickoff(request: KickoffRequest):
         "white2": white2_value,
         "total": ko_value,
     }
-    return_dice = {"red": black_value, "green": white1_value, "total": ko_value}
+    # The return is the receiving team's own roll (0 when the kick was not returned).
+    rt_value = getattr(result.result, "kickoff_return_dice", 0) or 0
+    return_dice = {"red": rt_value // 10, "green": min(5, rt_value % 10), "total": rt_value}
 
     dice_details = {"offense": kickoff_dice, "defense": return_dice}
 
@@ -1567,7 +1591,7 @@ async def perform_kickoff(request: KickoffRequest):
             possession_changed=possession_changed,
             game_over=engine.state.game_over,
             quarter_changed=False,
-            half_changed=False,
+            half_changed=halftime,
             pending_penalty_decision=result.pending_penalty_decision,
             penalty_choice=None,
             play_type="kickoff",
@@ -1607,7 +1631,7 @@ async def attempt_two_point(request: TwoPointRequest):
     # After two-point attempt, set up for kickoff using engine method
     # Scoring team keeps possession to kick off — DON'T switch possession here.
     game["pending_pat"] = False
-    engine.setup_for_kickoff()
+    _arm_kickoff(game, engine)
 
     return ExecutePlayResponse(
         player_play=request.offense_play,
@@ -1737,7 +1761,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         possession_changed=new_outcome.turnover or scoring,
         game_over=engine.state.game_over,
         quarter_changed=False,
-        half_changed=False,
+        half_changed=engine.halftime_pending(),
         pending_penalty_decision=False,
         penalty_choice=penalty_choice_model,
         play_type=new_outcome.play_type.value

@@ -46,7 +46,9 @@ On defense, choose a formation to counter the CPU's offense.
 ![Defense Formation Selection](images/defense.png)
 
 Resolve penalty choices when prompted. After a touchdown, choose an extra point or, when enabled by the season,
-a two-point attempt. Follow kickoff and halftime prompts to continue. The final-score screen confirms game completion.
+a two-point attempt. Follow kickoff and halftime prompts to continue; halftime appears once the engine reports
+the first half over (after any outstanding try or penalty decision), and the team that received the opening
+kickoff kicks off the second half. The final-score screen confirms game completion.
 
 The core engine determines legal choices, timing, scoring, and results; the browser displays them.
 CLI keyboard commands in [Playing](playing.md) do not describe browser shortcuts.

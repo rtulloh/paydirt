@@ -69,6 +69,7 @@ const PlayingPhase = () => {
     showPenaltyChoice,
     pendingPenaltyData,
     isKickoff,
+    halftimePending,
     setIsKickoff,
     pendingPat,
     setPendingPat,
@@ -97,6 +98,7 @@ const PlayingPhase = () => {
   const [isKickPlay, setIsKickPlay] = useState(false);
   const [cpuGoingForIt, setCpuGoingForIt] = useState(false);
   const [showHalftime, setShowHalftime] = useState(false);
+  const halftimeShownRef = useRef(false);
   const cpuPatInFlightRef = useRef(false);
 
   // Every API path publishes the engine's final flag through the store.
@@ -106,6 +108,18 @@ const PlayingPhase = () => {
       setGamePhase('gameOver');
     }
   }, [gameOver, pendingPat, localExecuting, localShowPenaltyChoice, setGamePhase]);
+  // Halftime is an engine fact (first half over, second-half kickoff still owed).
+  // Show it once per transition, after any outstanding try or penalty decision.
+  useEffect(() => {
+    if (!halftimePending) {
+      halftimeShownRef.current = false;
+      return;
+    }
+    if (!halftimeShownRef.current && !pendingPat && !localShowPenaltyChoice && !localExecuting) {
+      halftimeShownRef.current = true;
+      setShowHalftime(true);
+    }
+  }, [halftimePending, pendingPat, localShowPenaltyChoice, localExecuting]);
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
   useEffect(() => {
@@ -734,12 +748,7 @@ const PlayingPhase = () => {
           }
         }
 
-        // Check for halftime
-        if (data.result.half_changed) {
-          setShowHalftime(true);
-          setLocalExecuting(false);
-          return;
-        }
+        // Halftime is driven by the engine's halftime_pending flag (effect above).
       }
     } catch (err) {
       console.error('Failed to execute play:', err);
