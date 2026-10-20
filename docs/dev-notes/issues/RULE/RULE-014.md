@@ -24,3 +24,6 @@ Return fumbles are resolved with the returning team's recovery roll (its `fumble
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Resolved (`9be5487`)).
+
+--- 2026-10-20 16:00 ---
+Play-test confirmation — ordinary recovered kickoff-return fumble: CLE '83 kicked 57 yards; NYJ '83 returned with `RT:14→"F + 26"`; recovery roll `R:15→"recovered"`. NYJ retained possession at NYJ 34 and continued at 1st & 10, with no turnover or incorrect touchdown. This confirms the initial KR → fumble → returning-team recovery path. RULE-014 remains resolved/awaiting closure pending a play-test of a lost return fumble or a fumble reached through a penalty reroll.
