@@ -2314,9 +2314,7 @@ def handle_penalty_decision(
         print(
             "\n  "
             + game._kickoff_dice_line(
-                state.get("dice_roll", 0), state.get("ko_result", ""),
-                state.get("return_roll", 0), state.get("ret_result", ""),
-                state.get("return_rerolls", []),
+                state.get("dice_roll", 0), state.get("ko_result", ""), state.get("return_trace", ""),
             )
         )
     else:

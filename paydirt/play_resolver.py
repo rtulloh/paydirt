@@ -125,6 +125,8 @@ class PlayResult:
     rule_explanation: Optional[str] = None
     # Defense recovered in the original offense's end zone; no return occurred.
     fumble_end_zone_touchdown: bool = False
+    # Offsetting fouls on a return nullified the play: replay the down, ten seconds.
+    replay_down: bool = False
 
 
 @dataclass

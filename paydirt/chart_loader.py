@@ -9,7 +9,27 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+import warnings
 import yaml
+
+# Every form a special-teams chart cell may take: yardage (with sideline markers),
+# touchdown, penalties, fumbles, kick outcomes, and no-good extra points.
+_SPECIAL_CELL = re.compile(
+    r"^(?:[+-]?\d+[*†]?|TD|(?:OFF|DEF)\s*\d+X?|F(?:\s*[+-]\s*\d+)?|OB|OUT|TB|BK\s*-?\s*\d+|NG|0|1)$",
+    re.IGNORECASE,
+)
+_SPECIAL_COLUMNS = ("Kickoff", "Kickoff Return", "Punt", "Punt Return", "Int. Return", "Field Goal")
+
+
+def _check_special_cell(filepath: str, column: str, dice_roll: int, cell: str) -> None:
+    """Warn about a chart cell no rule can interpret; the engine would read it as a zero-yard result."""
+    if not _SPECIAL_CELL.match(cell.strip()):
+        warnings.warn(
+            f"{filepath}: {column} roll {dice_roll} has an unreadable cell {cell.strip()!r}; "
+            "it will play as a 0-yard result until the chart is corrected",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 @dataclass
@@ -692,6 +712,9 @@ def parse_special_csv(filepath: str) -> SpecialTeamsChart:
             continue
 
         # Parse special teams columns
+        for index, column in enumerate(_SPECIAL_COLUMNS, start=1):
+            if len(row) > index and row[index]:
+                _check_special_cell(filepath, column, dice_roll, row[index])
         if len(row) > 1 and row[1]:
             special.kickoff[dice_roll] = row[1]
         if len(row) > 2 and row[2]:

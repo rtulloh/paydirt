@@ -4,6 +4,7 @@ Game engine that uses actual Paydirt team charts.
 
 import random
 import re
+from dataclasses import dataclass, field
 from typing import Optional
 from .packaging import get_seasons_path
 
@@ -48,6 +49,62 @@ from .game_state import ScoringPlay, TeamStats, GameState, PlayOutcome
 # Re-export for backward compatibility
 __all__ = ["PaydirtGameEngine", "ScoringPlay", "TeamStats", "GameState", "PlayOutcome"]
 
+
+@dataclass
+class ReturnChartRoll:
+    """Every roll taken on a return chart for one return, and what the final cell meant."""
+
+    rolls: list  # [(dice, cell)], the first entry being the initial return roll
+    yards: int = 0
+    touchdown: bool = False
+    fumble: bool = False
+    penalty_yards: int = 0
+    returner_foul: bool = False  # OFF: the returning team fouled; DEF: the other team did
+    offsetting: bool = False
+
+    @property
+    def first_roll(self) -> int:
+        return self.rolls[0][0]
+
+    @property
+    def first_cell(self) -> str:
+        return self.rolls[0][1]
+
+    def trace(self, label: str) -> str:
+        parts = [f'{label}:{self.rolls[0][0]}→"{self.rolls[0][1]}"']
+        parts += [f'{label} reroll:{dice}→"{cell}"' for dice, cell in self.rolls[1:]]
+        return " | ".join(parts)
+
+
+@dataclass
+class ReturnChain:
+    """A resolved return and any fumble returns it chained into; nothing applied yet.
+
+    spot is from the possessing team's perspective (100 = touchdown, 0 = own end
+    zone). penalties and fumbles_lost are statistics to charge when applied;
+    choice is set when the other team recovered a fumble while the returner's
+    own foul was live and may keep the recovery or take the penalty.
+    """
+
+    first_roll: int
+    first_cell: str
+    possession_home: bool
+    spot: int
+    yards: int = 0  # The first segment's chart yards (a TD cell counts to the goal line)
+    touchback: bool = False
+    offsetting: bool = False
+    fumbled: bool = False
+    td_wiped: bool = False
+    penalties: list = field(default_factory=list)  # (fouling_home, effective_yards)
+    fumbles_lost: list = field(default_factory=list)  # team_home per lost fumble
+    choice: Optional[dict] = None
+    trace: list = field(default_factory=list)
+    notes: list = field(default_factory=list)
+    live: list = field(default_factory=list)
+
+    @property
+    def touchdown(self) -> bool:
+        return self.spot >= 100
 
 class PaydirtGameEngine:
     """
@@ -396,7 +453,6 @@ class PaydirtGameEngine:
         return_roll = 0
         ret_result = ""
         ret_parsed = parse_result_string("")
-        return_rerolls: list[tuple[int, str]] = []
 
         def returnable(result: str, yards: int) -> bool:
             upper = result.upper()
@@ -553,6 +609,7 @@ class PaydirtGameEngine:
                     "ko_penalty_yards": ko_penalty_yards,
                     "ko_is_offensive_penalty": ko_is_offensive_penalty,
                     "dice_roll": dice_roll,
+                    "return_trace": f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none",
                 }
 
                 # Build description and return pending decision
@@ -606,8 +663,8 @@ class PaydirtGameEngine:
             ko_yards = 65
 
         is_touchback = False
-
-        # Handle special kickoff results
+        landing_spot = None
+        chain = None
         if "OB" in ko_result or "OUT" in ko_result.upper():
             # Out of bounds - ball at 40
             return_position = 40
@@ -620,126 +677,325 @@ class PaydirtGameEngine:
             # <= 0 is in the end zone (0 is the goal line) and a return may be
             # attempted unless the ball is at or beyond the end line (<= -10).
             landing_spot = 100 - (kickoff_spot + ko_yards)
+            return_position = 20
             if landing_spot <= -10:
-                return_position = 20
                 is_touchback = True
             else:
                 roll_return()
-                return_penalty_yards = 0
-                return_is_offensive_penalty = False
-                if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                    # Penalty on the return: reroll for the return yardage, then
-                    # offer the offended team the choice (penalty procedure).
-                    (
-                        ret_yards,
-                        return_penalty_yards,
-                        return_is_offensive_penalty,
-                        needs_rekick,
-                        return_rerolls,
-                    ) = self._handle_return_penalty(
-                        ret_result,
-                        receiving_chart.special_teams.kickoff_return,
-                        default_return=20,
-                    )
-                    if needs_rekick:
-                        return self.kickoff(kicking_home=kicking_home)
-                else:
-                    ret_yards = self._kickoff_return_yards(ret_result, ret_parsed)
+                chain = self._resolve_return_chain(
+                    not kicking_home, landing_spot,
+                    receiving_chart.special_teams.kickoff_return, "RT",
+                    first=(return_roll, ret_result),
+                    end_rule=lambda yards: self._kickoff_return_spot(landing_spot, yards),
+                )
+                if chain.offsetting:
+                    # Offsetting fouls nullify the kick: ten seconds, then re-kick.
+                    self._use_time(10)
+                    return self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
 
-                return_position, is_touchback = self._kickoff_return_spot(landing_spot, ret_yards)
+        ctx = {
+            "kicking_home": kicking_home,
+            "kickoff_spot": kickoff_spot,
+            "dice_roll": dice_roll,
+            "ko_result": ko_result,
+            "ko_yards": ko_yards,
+            "landing_spot": landing_spot,
+            "is_touchback": is_touchback,
+            "return_position": return_position,
+            "penalty_desc": penalty_desc,
+            "declined_kick_penalty": None,
+        }
+        if chain is not None and chain.choice:
+            return self._pending_kickoff_return_fumble(ctx, chain)
+        return self._complete_kickoff_return(ctx, chain)
 
-                if return_penalty_yards > 0:
-                    return self._pending_kickoff_return_penalty(
-                        kicking_home=kicking_home,
-                        kickoff_spot=kickoff_spot,
-                        dice_roll=dice_roll,
-                        ko_result=ko_result,
-                        ko_yards=ko_yards,
-                        return_roll=return_roll,
-                        ret_result=ret_result,
-                        ret_yards=ret_yards,
-                        return_rerolls=return_rerolls,
-                        landing_spot=landing_spot,
-                        declined_position=return_position,
-                        penalty_yards=return_penalty_yards,
-                        is_receiving_team_foul=return_is_offensive_penalty,
-                    )
+    # ------------------------------------------------------------------
+    # Return charts (kickoff, punt, interception, fumble and blocked-kick returns)
+    # ------------------------------------------------------------------
 
-        # Set game state
-        # Possession goes to the RECEIVING team (opposite of kicker)
-        self.state.is_home_possession = not kicking_home
-        self.state.ball_position = clamp_ball_position(return_position)
-        self.state.down = 1
-        self.state.yards_to_go = 10
+    def _roll_return_chart(self, chart: dict, first: Optional[tuple] = None) -> ReturnChartRoll:
+        """Roll a return chart until a non-penalty cell.
 
-        # Check for return touchdown
-        touchdown = return_position >= 100
-        if touchdown:
-            self._score_touchdown()
+        OFF/DEF cells reroll; same-type fouls keep the larger yardage and
+        opposite fouls offset. The result records every roll consumed.
+        """
+        roll = ReturnChartRoll(rolls=[])
+        if first is None:
+            dice, _ = roll_chart_dice()
+            first = (dice, chart.get(dice, "0"))
+        dice, cell = first
+        for _ in range(12):
+            cell = "" if cell is None else str(cell)
+            roll.rolls.append((dice, cell))
+            match = re.search(r"(OFF|DEF)\s*(\d+)", cell.upper())
+            if match:
+                yards = int(match.group(2))
+                returner_foul = match.group(1) == "OFF"
+                if roll.penalty_yards and returner_foul != roll.returner_foul:
+                    roll.offsetting = True
+                    return roll
+                roll.penalty_yards = max(roll.penalty_yards, yards)
+                roll.returner_foul = returner_foul
+                dice, _ = roll_chart_dice()
+                cell = chart.get(dice, "0")
+                continue
+            parsed = parse_result_string(cell)
+            if parsed.result_type == ResultType.FUMBLE:
+                roll.fumble = True
+                roll.yards = parsed.yards
+            elif parsed.result_type == ResultType.TOUCHDOWN or "TD" in cell.upper():
+                roll.touchdown = True
+            else:
+                try:
+                    roll.yards = int(cell.replace("*", "").replace("†", "").strip())
+                except ValueError:
+                    roll.yards = 0
+            return roll
+        return roll
 
-        # Build description based on result
-        # Add commentary for exceptional returns
-        return_commentary = ""
-        actual_return = 0
-        if not is_touchback and "OB" not in ko_result and "OUT" not in ko_result.upper():
-            # Calculate actual return yards (from landing spot to final position)
-            actual_return = return_position - landing_spot if landing_spot > 0 else return_position
-            if actual_return >= 40:
-                return_commentary = " What a return!"
-            elif actual_return >= 30:
-                return_commentary = " Great return!"
-            elif actual_return <= 5 and actual_return >= 0:
-                return_commentary = " Excellent coverage!"
-            elif actual_return < 0:
-                return_commentary = " Outstanding special teams coverage!"
+    def _enforce_return_penalty(
+        self, end_spot: int, penalty_yards: int, returner_foul: bool
+    ) -> tuple[int, int, bool]:
+        """Assess a return penalty against the end of the return.
 
-        dice_line = self._kickoff_dice_line(dice_roll, ko_result, return_roll, ret_result, return_rerolls)
+        Spots are from the returning team's perspective (100 = goal line).
+        Returns (final_spot, effective_yards, touchdown_wiped). A returner's
+        foul is walked back (half the distance near its own goal) and wipes out
+        a return touchdown; the other team's foul adds yards (half the distance
+        to the goal, never a touchdown) and cannot take a touchdown away.
+        """
+        if returner_foul:
+            base = max(1, min(end_spot, 100))
+            effective = self._apply_half_the_distance(base, penalty_yards)
+            return max(1, base - effective), effective, end_spot >= 100
+        if end_spot >= 100:
+            return 100, 0, False
+        base = max(1, end_spot)
+        distance = 100 - base
+        effective = penalty_yards if penalty_yards * 2 <= distance else distance // 2
+        return base + effective, effective, False
 
-        # Store both rolls in the result for the UI layers
-        ret_parsed.dice_roll = dice_roll
-        ret_parsed.kickoff_return_dice = return_roll
-        ret_parsed.kickoff_return_result = ret_result
+    def _resolve_return_chain(
+        self, returning_home: bool, start: int, chart: dict, label: str,
+        first: Optional[tuple] = None, end_rule=None, depth: int = 0,
+    ) -> ReturnChain:
+        """Resolve a return and anything it chains into, without touching game state.
 
-        # Use "Safety free kick" for kicks from own 20
-        kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
-
-        if touchdown:
-            description = (
-                f"{kick_type} {ko_yards} yards, RETURNED FOR A TOUCHDOWN!{penalty_desc} {dice_line}"
-            )
-        elif is_touchback:
-            description = f"{kick_type} {ko_yards} yards into the end zone. Touchback.{penalty_desc} {dice_line}"
-        elif "OB" in ko_result or "OUT" in ko_result.upper():
-            description = f"{kick_type} out of bounds! Ball at the 40.{penalty_desc} {dice_line}"
-        else:
-            description = f"{kick_type} {ko_yards} yards, returned to {self.state.field_position_str()}.{return_commentary}{penalty_desc} {dice_line}"
-
-        outcome = PlayOutcome(
-            play_type=PlayType.KICKOFF,
-            defense_type=DefenseType.STANDARD,
-            result=ret_parsed,
-            yards_gained=return_position,
-            touchdown=touchdown,
-            field_position_after=self.state.field_position_str(),
-            description=description,
+        A fumble cell is resolved with the returning team's recovery roll;
+        17–19 (kept) and 37–39 (lost) give the recovering team a fumble return on
+        its own interception-return chart, which may chain further. A penalty in a
+        segment that ends in a lost fumble stays live and is settled at the end of
+        the chain (see _settle_live_penalties). end_rule(yards) -> (end_spot,
+        touchback) lets the first segment apply kickoff end-zone or interception
+        touchback rules.
+        """
+        roll = self._roll_return_chart(chart, first)
+        chain = ReturnChain(
+            first_roll=roll.first_roll, first_cell=roll.first_cell,
+            possession_home=returning_home, spot=start,
         )
+        chain.trace.append(roll.trace(label))
+        if roll.offsetting:
+            chain.offsetting = True
+            chain.notes.append("OFFSETTING PENALTIES on the return - the play is nullified")
+            return chain
 
-        self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 15))
+        returner = self.state.home_chart if returning_home else self.state.away_chart
+        other = self.state.away_chart if returning_home else self.state.home_chart
+        returner_name = returner.peripheral.short_name
+        other_name = other.peripheral.short_name
+        yards = (100 - start) if roll.touchdown else roll.yards
+        chain.yards = yards
+        kind = f"{'OFF' if roll.returner_foul else 'DEF'} {roll.penalty_yards}"
 
-        return outcome
+        if roll.fumble:
+            spot = max(1, min(99, start + yards))
+            chain.fumbled = True
+            recovery_roll, _ = roll_chart_dice()
+            low, high = returner.peripheral.fumble_recovered_range
+            recovered = low <= recovery_roll <= high
+            chain.trace.append(f'R:{recovery_roll}→"{"recovered" if recovered else "lost"}"')
+            spot_text = format_field_position_with_team(spot, returner_name, other_name)
+            if roll.penalty_yards:
+                chain.live.append((
+                    returning_home, roll.returner_foul, roll.penalty_yards, spot,
+                    len(chain.penalties), len(chain.fumbles_lost),
+                ))
+            if recovered:
+                chain.notes.append(f"FUMBLE on the return at {spot_text}! {returner_name} recovers")
+                if 17 <= recovery_roll <= 19 and depth < 3:
+                    self._merge_chain(chain, self._resolve_return_chain(
+                        returning_home, spot, returner.special_teams.interception_return, "FR",
+                        depth=depth + 1,
+                    ))
+                else:
+                    chain.spot = spot
+            else:
+                chain.fumbles_lost.append(returning_home)
+                chain.notes.append(f"FUMBLE on the return at {spot_text}! {other_name} recovers")
+                if 37 <= recovery_roll <= 39 and depth < 3:
+                    self._merge_chain(chain, self._resolve_return_chain(
+                        not returning_home, 100 - spot, other.special_teams.interception_return, "FR",
+                        depth=depth + 1,
+                    ))
+                else:
+                    chain.possession_home = not returning_home
+                    chain.spot = 100 - spot
+        else:
+            if end_rule is not None:
+                end, chain.touchback = end_rule(yards)
+            else:
+                end = max(0, min(100, start + yards))
+            chain.spot = end
+            if roll.penalty_yards:
+                final, effective, wiped = self._enforce_return_penalty(
+                    end, roll.penalty_yards, roll.returner_foul
+                )
+                chain.spot = final
+                chain.td_wiped = chain.td_wiped or wiped
+                chain.penalties.append((returning_home if roll.returner_foul else not returning_home, effective))
+                chain.notes.append(
+                    f"{kind} on the return assessed" + (", return touchdown nullified" if wiped else "")
+                )
+
+        if depth == 0 and not chain.offsetting:
+            self._settle_live_penalties(chain)
+        return chain
 
     @staticmethod
-    def _kickoff_return_yards(ret_result: str, ret_parsed: PlayResult) -> int:
-        """Return yardage for a non-penalty kickoff-return chart cell."""
-        try:
-            return int(ret_result) if ret_result else 20
-        except ValueError:
-            if ret_parsed.result_type == ResultType.FUMBLE:
-                return ret_parsed.yards
-            if ret_parsed.result_type == ResultType.TOUCHDOWN:
-                return 100
-            return 20
+    def _merge_chain(chain: "ReturnChain", sub: "ReturnChain") -> None:
+        chain.possession_home = sub.possession_home
+        chain.spot = sub.spot
+        chain.offsetting = chain.offsetting or sub.offsetting
+        chain.td_wiped = chain.td_wiped or sub.td_wiped
+        chain.fumbled = chain.fumbled or sub.fumbled
+        chain.penalties.extend(sub.penalties)
+        chain.fumbles_lost.extend(sub.fumbles_lost)
+        chain.live.extend(
+            (home, foul, yards, spot, n_pen + len(chain.penalties) - len(sub.penalties),
+             n_fum + len(chain.fumbles_lost) - len(sub.fumbles_lost))
+            for home, foul, yards, spot, n_pen, n_fum in sub.live
+        )
+        chain.trace.extend(sub.trace)
+        chain.notes.extend(sub.notes)
+
+    def _settle_live_penalties(self, chain: "ReturnChain") -> None:
+        """Settle penalties whose segment ended in a lost fumble.
+
+        The fouling team ends with the ball: assess from the end of the play.
+        The other team ends with the ball after a returner's foul: its choice
+        (recorded in chain.choice). After the other team's own foul the
+        offended returner always takes the penalty and keeps the ball.
+        """
+        for returning_home, returner_foul, yards, spot, n_penalties, n_fumbles in chain.live:
+            fouling_home = returning_home if returner_foul else not returning_home
+            returner_name = (self.state.home_chart if returning_home else self.state.away_chart).peripheral.short_name
+            kind = f"{'OFF' if returner_foul else 'DEF'} {yards}"
+            if chain.possession_home == returning_home:
+                final, effective, wiped = self._enforce_return_penalty(chain.spot, yards, returner_foul)
+                chain.spot = final
+                chain.td_wiped = chain.td_wiped or wiped
+                chain.penalties.append((fouling_home, effective))
+                chain.notes.append(
+                    f"{kind} on the return assessed from the end of the play"
+                    + (", touchdown nullified" if wiped else "")
+                )
+            elif returner_foul:
+                penalty_spot, effective, _ = self._enforce_return_penalty(spot, yards, True)
+                chain.choice = {
+                    "fouling_home": returning_home,
+                    "penalty_spot": penalty_spot,
+                    "effective": effective,
+                    "yards": yards,
+                    "n_penalties": n_penalties,
+                    "n_fumbles": n_fumbles,
+                }
+                other_name = (self.state.away_chart if returning_home else self.state.home_chart).peripheral.short_name
+                chain.notes.append(f"{kind} on the return declined by {other_name}; the recovery stands")
+            else:
+                penalty_spot, effective, _ = self._enforce_return_penalty(spot, yards, False)
+                chain.possession_home = returning_home
+                chain.spot = penalty_spot
+                del chain.fumbles_lost[n_fumbles:]
+                del chain.penalties[n_penalties:]
+                chain.penalties.append((fouling_home, effective))
+                chain.notes.append(f"{kind} on the return taken by {returner_name}; the recovery is declined")
+                break
+
+    def _apply_return_chain(self, chain: "ReturnChain", accept_choice: Optional[bool] = None) -> bool:
+        """Apply a resolved chain: possession, spot, statistics and any touchdown."""
+        choice = chain.choice if accept_choice else None
+        if choice:
+            possession_home = choice["fouling_home"]
+            spot = choice["penalty_spot"]
+            penalties = chain.penalties[:choice["n_penalties"]] + [(possession_home, choice["effective"])]
+            fumbles_lost = chain.fumbles_lost[:choice["n_fumbles"]]
+        else:
+            possession_home, spot = chain.possession_home, chain.spot
+            penalties, fumbles_lost = chain.penalties, chain.fumbles_lost
+        self.state.is_home_possession = possession_home
+        self.state.ball_position = clamp_ball_position(spot)
+        self.state.down = 1
+        self.state.yards_to_go = 10
+        for home, effective in penalties:
+            stats = self.state.home_stats if home else self.state.away_stats
+            stats.penalties += 1
+            stats.penalty_yards += effective
+        for home in fumbles_lost:
+            stats = self.state.home_stats if home else self.state.away_stats
+            stats.fumbles_lost += 1
+            stats.turnovers += 1
+        touchdown = spot >= 100
+        if touchdown:
+            self._score_touchdown()
+        return touchdown
+
+    def _blocked_kick_return(
+        self, start: int, first: tuple, kick_name: str, recovery_roll: int, who: str,
+    ) -> tuple["ReturnChain", bool, int, str]:
+        """Resolve a blocked-kick or fumbled-snap return from an already rolled chart cell.
+
+        Returns (chain, touchdown, return_yards, description). When
+        chain.offsetting is set nothing has been applied; the caller nullifies
+        the play with _nullify_kick_play().
+        """
+        possessor_home = self.state.is_home_possession
+        chain = self._resolve_return_chain(
+            possessor_home, start, self.state.possession_team.special_teams.interception_return,
+            "Ret", first=first,
+        )
+        if chain.offsetting:
+            return chain, False, 0, ""
+        touchdown = self._apply_return_chain(chain, accept_choice=False)
+        kept = self.state.is_home_possession == possessor_home
+        return_yards = (chain.spot - start) if kept else 0
+        if touchdown:
+            self.state.ball_position = 97
+            description = f"{kick_name}! {who} recovers (roll {recovery_roll}), return roll {first[0]} - RETURN TD!"
+        else:
+            description = (
+                f"{kick_name}! {who} recovers (roll {recovery_roll}), return roll {first[0]} "
+                f"for {return_yards} yards"
+            )
+        if chain.notes:
+            description += "; " + "; ".join(chain.notes)
+        if len(chain.trace) > 1 or "reroll" in chain.trace[0]:
+            description += f" ({' | '.join(chain.trace)})"
+        return chain, touchdown, return_yards, description
+
+    def _nullify_kick_play(
+        self, kicking_home: bool, line_of_scrimmage: int, down_before: int, ytg_before: int,
+        chain: "ReturnChain", kick_name: str,
+    ) -> str:
+        """Offsetting fouls on a blocked-kick return: replay the down from the previous spot."""
+        self.state.is_home_possession = kicking_home
+        self.state.ball_position = clamp_ball_position(line_of_scrimmage)
+        self.state.down = down_before
+        self.state.yards_to_go = ytg_before
+        return (
+            f"{kick_name}! OFFSETTING PENALTIES on the return - the play is nullified, "
+            f"replay the down ({' | '.join(chain.trace)})"
+        )
 
     @staticmethod
     def _kickoff_return_spot(landing_spot: int, ret_yards: int) -> tuple[int, bool]:
@@ -755,174 +1011,169 @@ class PaydirtGameEngine:
         return max(1, min(100, landing_spot + ret_yards)), False
 
     @staticmethod
-    def _kickoff_dice_line(
-        dice_roll: int, ko_result: str, return_roll: int, ret_result: str,
-        return_rerolls: list[tuple[int, str]],
-    ) -> str:
-        return_trace = f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none"
-        for reroll, reroll_result in return_rerolls:
-            return_trace += f' | RT reroll:{reroll}→"{reroll_result}"'
-        return f'(KO:{dice_roll}→"{ko_result}" | {return_trace})'
+    def _kickoff_dice_line(dice_roll: int, ko_result: str, return_trace: str) -> str:
+        return f'(KO:{dice_roll}→"{ko_result}" | {return_trace or "RT:none"})'
 
-    def _pending_kickoff_return_penalty(
-        self, *, kicking_home: bool, kickoff_spot: int, dice_roll: int, ko_result: str,
-        ko_yards: int, return_roll: int, ret_result: str, ret_yards: int,
-        return_rerolls: list[tuple[int, str]], landing_spot: int, declined_position: int,
-        penalty_yards: int, is_receiving_team_foul: bool,
+    def _complete_kickoff_return(
+        self, ctx: dict, chain: Optional["ReturnChain"], accept_choice: Optional[bool] = None,
     ) -> PlayOutcome:
-        """Offer the offended team the choice for a penalty on the kickoff return.
-
-        Kickoff decisions use the receiving team as "offense" (as the CLI and
-        auto game do): a receiving-team foul (OFF) is the kicking team's choice,
-        a kicking-team foul (DEF) is the receiving team's choice. Nothing is
-        applied until apply_kickoff_penalty_decision().
-        """
-        kicker_chart = self.state.home_chart if kicking_home else self.state.away_chart
-        receiver_chart = self.state.away_chart if kicking_home else self.state.home_chart
-        kicker = kicker_chart.peripheral.short_name
-        receiver = receiver_chart.peripheral.short_name
-        declined_td = declined_position >= 100
-        # A penalty that wipes out a score is enforced from the catch spot;
-        # otherwise from the end of the return.
-        base = max(1, landing_spot) if declined_td else declined_position
-        if is_receiving_team_foul:
-            effective = self._apply_half_the_distance(base, penalty_yards)
-            accepted_position = max(1, base - effective)
+        """Apply a kickoff's return (or lack of one) and describe it."""
+        kicking_home = ctx["kicking_home"]
+        kickoff_spot = ctx["kickoff_spot"]
+        ko_result = ctx["ko_result"]
+        ko_yards = ctx["ko_yards"]
+        kicker = (self.state.home_chart if kicking_home else self.state.away_chart).peripheral.short_name
+        receiver = (self.state.away_chart if kicking_home else self.state.home_chart).peripheral.short_name
+        is_touchback = ctx["is_touchback"]
+        touchdown = False
+        turnover = False
+        if chain is None:
+            self.state.is_home_possession = not kicking_home
+            self.state.ball_position = clamp_ball_position(ctx["return_position"])
+            self.state.down = 1
+            self.state.yards_to_go = 10
+            return_trace = "RT:none"
         else:
-            distance_to_goal = 100 - base
-            effective = penalty_yards if penalty_yards * 2 <= distance_to_goal else distance_to_goal // 2
-            accepted_position = base + effective
+            touchdown = self._apply_return_chain(chain, accept_choice)
+            turnover = self.state.is_home_possession == kicking_home
+            is_touchback = is_touchback or chain.touchback
+            return_trace = " | ".join(chain.trace)
+        if touchdown and ctx.get("declined_kick_penalty"):
+            # A declined kick-chart penalty carries over to the next kickoff.
+            yards, is_offense = ctx["declined_kick_penalty"]
+            self.state.pending_kickoff_penalty_yards = yards
+            self.state.pending_kickoff_penalty_is_offense = is_offense
 
-        def spot(position: int) -> str:
-            return format_field_position_with_team(position, receiver, kicker)
+        kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
+        kick_text = f"{kick_type} {ko_yards} yards"
+        spot_text = self.state.field_position_str()
+        if "OB" in ko_result or "OUT" in ko_result.upper():
+            description = f"{kick_type} out of bounds! Ball at the 40."
+        elif is_touchback:
+            description = f"{kick_text} into the end zone. Touchback."
+        elif accept_choice and chain is not None and chain.choice:
+            description = (
+                f"{kick_text}. FUMBLE on the return; {kicker} takes the OFF {chain.choice['yards']} "
+                f"penalty instead of the recovery. {receiver} ball at {spot_text}."
+            )
+        elif touchdown and turnover:
+            description = f"{kick_text}. {kicker} returns the fumble for a TOUCHDOWN!"
+        elif touchdown:
+            description = f"{kick_text}, RETURNED FOR A TOUCHDOWN!"
+        elif turnover:
+            description = f"{kick_text}. {kicker} ball at {spot_text}."
+        else:
+            description = f"{kick_text}, returned to {spot_text}."
+            landing_spot = ctx["landing_spot"]
+            if chain is not None and not chain.fumbled and not chain.penalties and landing_spot is not None:
+                actual_return = chain.spot - landing_spot if landing_spot > 0 else chain.spot
+                if actual_return >= 40:
+                    description += " What a return!"
+                elif actual_return >= 30:
+                    description += " Great return!"
+                elif 0 <= actual_return <= 5:
+                    description += " Excellent coverage!"
+                elif actual_return < 0:
+                    description += " Outstanding special teams coverage!"
+        if chain is not None and not (accept_choice and chain.choice) and chain.notes:
+            description += " " + "; ".join(chain.notes) + "."
+        if ctx.get("declined_kick_penalty"):
+            description += " (kick-chart penalty declined)"
+        description += f"{ctx['penalty_desc']} {self._kickoff_dice_line(ctx['dice_roll'], ko_result, return_trace)}"
 
-        kind = f"{'OFF' if is_receiving_team_foul else 'DEF'} {penalty_yards}"
-        foul = "receiving team foul" if is_receiving_team_foul else "kicking team foul"
-        chooser = "Kicking team" if is_receiving_team_foul else "Receiving team"
-        accept_preview = f"1st and 10 at {spot(accepted_position)}"
-        play_preview = "Return TOUCHDOWN" if declined_td else f"Return to {spot(declined_position)}"
-        dice_line = self._kickoff_dice_line(dice_roll, ko_result, return_roll, ret_result, return_rerolls)
+        result = parse_result_string(chain.first_cell if chain is not None else ko_result)
+        result.dice_roll = ctx["dice_roll"]
+        if chain is not None:
+            result.kickoff_return_dice = chain.first_roll
+            result.kickoff_return_result = chain.first_cell
+            result.touchdown = touchdown
+            if chain.fumbled:
+                result.fumble_resolved = True
+                result.fumble_recovered = not turnover
+        outcome = PlayOutcome(
+            play_type=PlayType.KICKOFF,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=self.state.ball_position,
+            turnover=turnover,
+            touchdown=touchdown,
+            field_position_before=f"Kickoff from {kickoff_spot}",
+            field_position_after=self.state.field_position_str(),
+            description=description,
+            penalty_applied=bool(chain is not None and (chain.penalties or accept_choice)),
+        )
+        self.play_log.append(outcome)
+        self._use_time(random.uniform(5, 15))
+        return outcome
 
-        play_result = parse_result_string(ret_result)
-        play_result.yards = ret_yards
-        play_result.touchdown = declined_td
-        play_result.dice_roll = dice_roll
-        play_result.kickoff_return_dice = return_roll
-        play_result.kickoff_return_result = ret_result
+    def _pending_kickoff_return_fumble(self, ctx: dict, chain: "ReturnChain") -> PlayOutcome:
+        """The kicking team recovered a return fumble while a receiving-team foul is live.
 
-        accept_option = PenaltyOption(
-            penalty_type="OFF" if is_receiving_team_foul else "DEF",
-            raw_result=ret_result,
-            yards=penalty_yards,
-            description=f"{kind} on the return ({foul})",
+        It may keep the recovery (and any fumble return) or take the penalty,
+        which leaves the ball with the receiving team. Kickoff decisions use the
+        receiving team as "offense", so the kicking team is "defense" here.
+        """
+        kicking_home = ctx["kicking_home"]
+        choice = chain.choice
+        kicker = (self.state.home_chart if kicking_home else self.state.away_chart).peripheral.short_name
+        receiver = (self.state.away_chart if kicking_home else self.state.home_chart).peripheral.short_name
+        self.state.is_home_possession = kicking_home
+        kind = f"OFF {choice['yards']}"
+        penalty_spot_text = format_field_position_with_team(choice["penalty_spot"], receiver, kicker)
+        if chain.touchdown:
+            play_preview = f"{kicker} returns the fumble for a TOUCHDOWN"
+        else:
+            play_preview = f"{kicker} recovers at {format_field_position_with_team(chain.spot, kicker, receiver)}"
+        accept_preview = f"1st and 10 at {penalty_spot_text}"
+        return_trace = " | ".join(chain.trace)
+        dice_line = self._kickoff_dice_line(ctx["dice_roll"], ctx["ko_result"], return_trace)
+
+        play_result = parse_result_string(chain.first_cell)
+        play_result.dice_roll = ctx["dice_roll"]
+        play_result.kickoff_return_dice = chain.first_roll
+        play_result.kickoff_return_result = chain.first_cell
+        play_result.touchdown = chain.touchdown
+        play_result.turnover = True
+        option = PenaltyOption(
+            penalty_type="OFF",
+            raw_result=kind,
+            yards=choice["yards"],
+            description=f"{kind} on the return ({receiver} keeps the ball)",
             auto_first_down=False,
             result_preview=accept_preview,
         )
         penalty_choice = PenaltyChoice(
             play_result=play_result,
-            penalty_options=[accept_option],
-            offended_team="defense" if is_receiving_team_foul else "offense",
+            penalty_options=[option],
+            offended_team="defense",
             offsetting=False,
-            kick_phase="return",
+            kick_phase="return_fumble",
             play_result_preview=play_preview,
         )
-        # The ball stays with the kicking team until the decision is applied.
-        self.state.is_home_possession = kicking_home
         self._pending_kickoff_penalty_state = {
-            "phase": "return",
-            "kicking_home": kicking_home,
-            "kickoff_spot": kickoff_spot,
-            "dice_roll": dice_roll,
-            "ko_result": ko_result,
-            "ko_yards": ko_yards,
-            "return_roll": return_roll,
-            "ret_result": ret_result,
-            "ret_yards": ret_yards,
-            "return_rerolls": list(return_rerolls),
-            "landing_spot": landing_spot,
-            "declined_position": declined_position,
-            "accepted_position": accepted_position,
-            "penalty_yards": penalty_yards,
-            "effective_penalty_yards": effective,
-            "is_receiving_team_foul": is_receiving_team_foul,
+            "phase": "return_fumble",
+            "ctx": ctx,
+            "chain": chain,
+            "dice_roll": ctx["dice_roll"],
+            "ko_result": ctx["ko_result"],
+            "return_trace": return_trace,
         }
         description = (
-            f"PENALTY on kickoff return: {kind} ({foul}). {chooser} chooses: "
-            f"accept ({accept_preview}) OR decline ({play_preview}). {dice_line}"
+            f"FUMBLE on the kickoff return with {kind} against {receiver}. {kicker} chooses: "
+            f"keep the recovery ({play_preview}) OR take the penalty ({receiver} ball at {penalty_spot_text}). "
+            f"{dice_line}"
         )
         return PlayOutcome(
             play_type=PlayType.KICKOFF,
             defense_type=DefenseType.STANDARD,
             result=play_result,
             yards_gained=0,
-            field_position_before=f"Kickoff from {kickoff_spot}",
+            field_position_before=f"Kickoff from {ctx['kickoff_spot']}",
             field_position_after="pending",
             description=description,
             penalty_choice=penalty_choice,
             pending_penalty_decision=True,
         )
-
-    def _apply_kickoff_return_penalty_decision(self, state: dict, accept_penalty: bool) -> PlayOutcome:
-        """Finish a kickoff whose return-chart penalty was accepted or declined."""
-        kicking_home = state["kicking_home"]
-        kickoff_spot = state["kickoff_spot"]
-        return_position = state["accepted_position"] if accept_penalty else state["declined_position"]
-        is_receiving_team_foul = state["is_receiving_team_foul"]
-
-        self.state.is_home_possession = not kicking_home
-        self.state.ball_position = clamp_ball_position(return_position)
-        self.state.down = 1
-        self.state.yards_to_go = 10
-
-        touchdown = return_position >= 100
-        if touchdown:
-            self._score_touchdown()
-        if accept_penalty:
-            fouling_stats = self.state.offense_stats if is_receiving_team_foul else self.state.defense_stats
-            fouling_stats.penalties += 1
-            fouling_stats.penalty_yards += state["effective_penalty_yards"]
-
-        kind = f"{'OFF' if is_receiving_team_foul else 'DEF'} {state['penalty_yards']}"
-        kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
-        dice_line = self._kickoff_dice_line(
-            state["dice_roll"], state["ko_result"], state["return_roll"], state["ret_result"],
-            state["return_rerolls"],
-        )
-        declined_td = state["declined_position"] >= 100
-        if accept_penalty:
-            nullified = " Return touchdown nullified;" if declined_td else ""
-            description = (
-                f"{kick_type} {state['ko_yards']} yards.{nullified} {kind} on the return accepted, "
-                f"ball at {self.state.field_position_str()}. {dice_line}"
-            )
-        elif touchdown:
-            description = f"{kick_type} {state['ko_yards']} yards, RETURNED FOR A TOUCHDOWN! ({kind} declined) {dice_line}"
-        else:
-            description = (
-                f"{kick_type} {state['ko_yards']} yards, returned to {self.state.field_position_str()} "
-                f"({kind} declined). {dice_line}"
-            )
-
-        result = parse_result_string(state["ret_result"])
-        result.yards = state["ret_yards"]
-        result.touchdown = touchdown
-        result.dice_roll = state["dice_roll"]
-        result.kickoff_return_dice = state["return_roll"]
-        result.kickoff_return_result = state["ret_result"]
-        outcome = PlayOutcome(
-            play_type=PlayType.KICKOFF,
-            defense_type=DefenseType.STANDARD,
-            result=result,
-            yards_gained=return_position,
-            touchdown=touchdown,
-            field_position_before=f"Kickoff from {kickoff_spot}",
-            field_position_after=self.state.field_position_str(),
-            description=description,
-            penalty_applied=accept_penalty,
-        )
-        self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 15))
-        return outcome
 
     def onside_kick(self, kicking_home: bool = True) -> PlayOutcome:
         """
@@ -1019,7 +1270,6 @@ class PaydirtGameEngine:
         touchdown = False
         safety = False
 
-        self._record_turnover(interception=True)
         def_team = self.state.defense_team.peripheral.short_name
 
         # Calculate raw interception spot from offense's perspective
@@ -1030,6 +1280,7 @@ class PaydirtGameEngine:
         if raw_int_spot >= 100:
             # INT in defense's end zone = TOUCHBACK
             # Defense intercepts in their own end zone, gets ball at 20
+            self._record_turnover(interception=True)
             self.state.switch_possession()
             self.state.ball_position = 20
             result.description = "Interception in end zone - TOUCHBACK"
@@ -1041,6 +1292,7 @@ class PaydirtGameEngine:
             # INT in offense's end zone = TD for defense
             # Defense intercepted in opponent's end zone (where they would score)
             touchdown = True
+            self._record_turnover(interception=True)
             self.state.switch_possession()
             self._score_touchdown()
             self.state.ball_position = 97
@@ -1068,76 +1320,108 @@ class PaydirtGameEngine:
         # Check if interception return was already calculated (e.g., after penalty decision)
         # If so, reuse the existing return instead of re-rolling
         if result.int_return_yards and result.int_return_yards != 0:
-            # Use previously calculated return
+            self._record_turnover(interception=True)
             return_yards = result.int_return_yards
             return_dice = result.int_return_dice if result.int_return_dice else 0
             return_td = (result.int_spot + return_yards >= 100) if result.int_spot else False
-            return_desc = f"Reuse:{return_dice}"
             int_return_result = str(return_yards) if not return_td else "TD"
-        else:
-            # Roll for interception return using defense's special teams chart
-            return_dice, return_desc = roll_chart_dice()
-            int_return_result = self.state.defense_team.special_teams.interception_return.get(
-                return_dice, "0"
-            )
-
-        # Parse return result
-        return_yards = 0
-        return_td = False
-        try:
-            if "TD" in int_return_result.upper():
-                return_td = True
-                return_yards = 100 - int_spot_from_defense
-            elif int_return_result.lstrip("-").isdigit():
-                return_yards = int(int_return_result)
+            if txn:
+                txn.add_event(
+                    create_return_event(
+                        event_type=EventType.INT_RETURN,
+                        return_roll=return_dice,
+                        return_desc=f"Reuse:{return_dice}",
+                        return_yards=return_yards,
+                        chart_result=int_return_result,
+                        is_touchdown=(return_td or (int_spot_from_defense + return_yards >= 100)),
+                        acting_team=def_team,
+                    )
+                )
+            self.state.switch_possession()
+            final_position = int_spot_from_defense + return_yards
+            if return_td or final_position >= 100:
+                touchdown = True
+                result.scoring_team = def_team
+                self._score_touchdown()
+                self.state.ball_position = 97
+                if txn:
+                    txn.add_event(create_touchdown_event(acting_team=def_team))
+            elif final_position <= 0:
+                self.state.ball_position = 20
+                result.description = (
+                    "INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
+                )
             else:
-                match = re.search(r"(-?\d+)", int_return_result)
-                if match:
-                    return_yards = int(match.group(1))
-        except (ValueError, AttributeError):
-            return_yards = 0
+                self.state.ball_position = clamp_ball_position(final_position)
+            result.int_return_yards = return_yards
+            result.int_return_dice = return_dice
+            result.int_spot = int_spot_from_defense
+            return (turnover, touchdown, safety)
 
-        # Add return event to transaction
+        # Roll the return on the intercepting team's chart. Penalties reroll and are
+        # assessed against the end of the return; fumbles resolve and may chain.
+        offense_home = self.state.is_home_possession
+
+        def end_rule(advance: int) -> tuple[int, bool]:
+            end = int_spot_from_defense + advance
+            if end <= 0:
+                # Momentum carries the defender into his own end zone: touchback.
+                return 20, True
+            return min(100, end), False
+
+        chain = self._resolve_return_chain(
+            not offense_home, int_spot_from_defense,
+            self.state.defense_team.special_teams.interception_return, "Ret",
+            end_rule=end_rule,
+        )
+        return_trace = " | ".join(chain.trace)
+        result.int_return_dice = chain.first_roll
+        result.int_spot = int_spot_from_defense
+        if chain.offsetting:
+            # Offsetting fouls on the return nullify the whole play.
+            result.replay_down = True
+            result.int_return_yards = 0
+            result.description = (
+                "INTERCEPTION nullified by OFFSETTING PENALTIES on the return - "
+                f"replay the down ({return_trace})"
+            )
+            result.rule_explanation = result.description
+            return (False, False, False)
+
+        self._record_turnover(interception=True)
+        touchdown = self._apply_return_chain(chain, accept_choice=False)
+        turnover = self.state.is_home_possession != offense_home
+        plain_return = turnover and not chain.penalties and not chain.fumbled
+        return_yards = chain.yards if plain_return else (chain.spot - int_spot_from_defense) if turnover else 0
         if txn:
             txn.add_event(
                 create_return_event(
                     event_type=EventType.INT_RETURN,
-                    return_roll=return_dice,
-                    return_desc=return_desc,
+                    return_roll=chain.first_roll,
+                    return_desc=return_trace,
                     return_yards=return_yards,
-                    chart_result=int_return_result,
-                    is_touchdown=(return_td or (int_spot_from_defense + return_yards >= 100)),
+                    chart_result=chain.first_cell,
+                    is_touchdown=touchdown and turnover,
                     acting_team=def_team,
                 )
             )
-
-        # Switch possession and set ball position
-        self.state.switch_possession()
-        final_position = int_spot_from_defense + return_yards
-
-        # Check for return touchdown BEFORE capping position
-        if return_td or final_position >= 100:
-            touchdown = True
-            result.scoring_team = def_team
-            self._score_touchdown()
+        if touchdown:
+            result.scoring_team = self.state.possession_team.peripheral.short_name
             self.state.ball_position = 97
             if txn:
-                txn.add_event(create_touchdown_event(acting_team=def_team))
-        elif final_position <= 0:
-            # INT return into own end zone = TOUCHBACK at 20
-            # Per NFL momentum rule, impetus from the pass means touchback, not safety
-            self.state.ball_position = 20
+                txn.add_event(create_touchdown_event(acting_team=result.scoring_team))
+        elif chain.touchback and not chain.fumbled:
             result.description = (
                 "INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
             )
-        else:
-            # Normal field position
-            final_position = clamp_ball_position(final_position)
-            self.state.ball_position = final_position
+        plain_cell = chain.first_cell.strip().lstrip("-").isdigit() or "TD" in chain.first_cell.upper()
+        if chain.notes or len(chain.trace) > 1 or "reroll" in return_trace or not plain_cell:
+            extra = ("; ".join(chain.notes) + " " if chain.notes else "") + f"({return_trace})"
+            result.description = f"{result.description} | {extra}" if result.description else extra
 
         # Store return info
         result.int_return_yards = return_yards
-        result.int_return_dice = return_dice
+        result.int_return_dice = chain.first_roll
         result.int_spot = int_spot_from_defense
 
         return (turnover, touchdown, safety)
@@ -1280,31 +1564,44 @@ class PaydirtGameEngine:
                 # Per rules: offense gets INT return from spot of recovery for fumbles recovered
                 # with totals 17, 18, or 19. (Auto TD on 19 only applies to blocked kicks, not fumbles)
                 if recovery_roll in [17, 18, 19]:
-                    return_dice, return_desc = roll_chart_dice()
-                    int_return_result = (
-                        self.state.possession_team.special_teams.interception_return.get(
-                            return_dice, "0"
+                    offense_home = self.state.is_home_possession
+                    chain = self._resolve_return_chain(
+                        offense_home, fumble_spot,
+                        self.state.possession_team.special_teams.interception_return, "Ret",
+                        end_rule=lambda advance: (max(0, min(100, fumble_spot + advance)), False),
+                    )
+                    return_dice = chain.first_roll
+                    int_return_result = chain.first_cell
+                    return_desc = " | ".join(chain.trace)
+                    result.fumble_return_dice = return_dice
+                    if chain.offsetting:
+                        # Offsetting fouls on the advance nullify the whole play.
+                        result.replay_down = True
+                        self.state.ball_position = ball_pos_before
+                        result.description = (
+                            "FUMBLE nullified by OFFSETTING PENALTIES on the advance - "
+                            f"replay the down ({return_desc})"
                         )
-                    )
-
-                    return_yards = min(
-                        self._parse_return_yards(int_return_result, fumble_spot),
-                        100 - fumble_spot,
-                    )
-                    new_position = fumble_spot + return_yards
-                    self.state.ball_position = clamp_ball_position(new_position)
-
-                    if new_position >= 100 or "TD" in str(int_return_result).upper():
-                        touchdown = True
-                        result.scoring_team = off_team
-                        self._score_touchdown()
-                        self.state.ball_position = 97
-                    elif new_position <= 0:
+                        result.rule_explanation = result.description
+                        return (False, False, False, False)
+                    if chain.spot <= 0 and chain.possession_home == offense_home:
+                        new_position = 0
                         safety = True
                         self._score_safety()
-
+                    else:
+                        touchdown = self._apply_return_chain(chain, accept_choice=False)
+                        new_position = chain.spot
+                        if touchdown:
+                            result.scoring_team = self.state.possession_team.peripheral.short_name
+                            self.state.ball_position = 97
+                    turnover = self.state.is_home_possession != offense_home
+                    if turnover:
+                        result.fumble_recovered = False  # Lost on the advance after all.
+                    if safety:
+                        return_yards = chain.yards  # The chart advance that carried the ball back.
+                    else:
+                        return_yards = (new_position - fumble_spot) if not turnover else 0
                     result.fumble_return_yards = return_yards
-                    result.fumble_return_dice = return_dice
                     # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
                     if not result.description or result.description.startswith("FUMBLE!"):
                         spot = format_field_position_with_team(fumble_spot, off_team, def_team)
@@ -1314,6 +1611,10 @@ class PaydirtGameEngine:
                         f' | Return roll {return_dice}: chart "{int_return_result}"'
                         f' ({return_yards} yard advance)'
                     )
+                    if chain.notes:
+                        result.description += " | " + "; ".join(chain.notes)
+                    if "reroll" in return_desc or len(chain.trace) > 1:
+                        result.description += f" ({return_desc})"
 
                     # Add fumble return event to transaction for offense recovery rolls 17-19
                     if txn:
@@ -1338,7 +1639,7 @@ class PaydirtGameEngine:
                 # The line to gain is measured from the final recovery/advance spot.
                 final_position = self.state.ball_position
                 net_yards = yards + result.fumble_return_yards
-                if not touchdown and not safety:
+                if not touchdown and not safety and not turnover:
                     if net_yards >= ytg_before:
                         first_down = True
                         self.state.down = 1
@@ -1384,69 +1685,49 @@ class PaydirtGameEngine:
             else:
                 # Defense recovers - fumble lost
                 turnover = True
-                self._record_turnover(interception=False)
                 fumble_spot_defense = 100 - fumble_spot
 
                 # Check for special return on recovery rolls 37, 38, 39
                 if recovery_roll in [37, 38, 39]:
-                    self.state.switch_possession()
-
-                    return_dice, return_desc = roll_chart_dice()
-                    int_return_result = (
-                        self.state.possession_team.special_teams.interception_return.get(
-                            return_dice, "0"
-                        )
+                    offense_home = self.state.is_home_possession
+                    chain = self._resolve_return_chain(
+                        not offense_home, fumble_spot_defense,
+                        self.state.defense_team.special_teams.interception_return, "Ret",
                     )
-
-                    if recovery_roll == 39:
-                        return_yards = 100 - fumble_spot_defense
-                        touchdown = True
-                        # Determine scoring team: after switch_possession(), 
-                        # is_home_possession reflects the new defensive team
-                        if self.state.is_home_possession:
-                            result.scoring_team = self.state.home_chart.peripheral.short_name
-                        else:
-                            result.scoring_team = self.state.away_chart.peripheral.short_name
-                        self._score_touchdown()
-                        self.state.ball_position = 97
-                        # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
-                        if not result.description or result.description.startswith("FUMBLE!"):
-                            result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned for a TOUCHDOWN! ({def_team} ball)"
-                        result.description += f" | Recovery: {recovery_roll}"
-                    else:
-                        return_yards = self._parse_return_yards(
-                            int_return_result, fumble_spot_defense
+                    return_dice = chain.first_roll
+                    int_return_result = chain.first_cell
+                    return_desc = " | ".join(chain.trace)
+                    result.fumble_return_dice = return_dice
+                    if chain.offsetting:
+                        # Offsetting fouls on the return nullify the whole play.
+                        result.replay_down = True
+                        self.state.ball_position = ball_pos_before
+                        result.description = (
+                            "FUMBLE nullified by OFFSETTING PENALTIES on the return - "
+                            f"replay the down ({return_desc})"
                         )
-                        new_position = fumble_spot_defense + return_yards
-                        new_position = clamp_ball_position(new_position)
-                        self.state.ball_position = new_position
-
-                        if new_position >= 100 or "TD" in str(int_return_result).upper():
-                            touchdown = True
-                            # Determine scoring team: after switch_possession(), 
-                            # is_home_possession reflects the new defensive team
-                            if self.state.is_home_possession:
-                                result.scoring_team = self.state.home_chart.peripheral.short_name
-                            else:
-                                result.scoring_team = self.state.away_chart.peripheral.short_name
-                            self._score_touchdown()
-                            self.state.ball_position = 97
-                            # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
-                            if not result.description or result.description.startswith("FUMBLE!"):
-                                result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned for a TOUCHDOWN! ({def_team} ball)"
-                            result.description += (
-                                f" | Recovery: {recovery_roll}→{int_return_result}"
-                            )
+                        result.rule_explanation = result.description
+                        return (False, False, False, False)
+                    self._record_turnover(interception=False)
+                    touchdown = self._apply_return_chain(chain, accept_choice=False)
+                    turnover = self.state.is_home_possession != offense_home
+                    if touchdown:
+                        result.scoring_team = self.state.possession_team.peripheral.short_name
+                        self.state.ball_position = 97
+                    return_yards = (chain.spot - fumble_spot_defense) if turnover else 0
+                    # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
+                    if not result.description or result.description.startswith("FUMBLE!"):
+                        if touchdown and turnover:
+                            result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned for a TOUCHDOWN! ({def_team} ball)"
                         else:
-                            # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
-                            if not result.description or result.description.startswith("FUMBLE!"):
-                                result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned {return_yards} yards ({def_team} ball)"
-                            result.description += (
-                                f" | Recovery: {recovery_roll}→{int_return_result}"
-                            )
+                            result.description = f"FUMBLE! {yards} yards before fumble - Defense recovers at the {fumble_spot} - Returned {return_yards} yards ({def_team} ball)"
+                    result.description += f" | Recovery: {recovery_roll}→{int_return_result}"
+                    if chain.notes:
+                        result.description += " | " + "; ".join(chain.notes)
+                    if "reroll" in return_desc or len(chain.trace) > 1:
+                        result.description += f" ({return_desc})"
 
                     result.fumble_return_yards = return_yards
-                    result.fumble_return_dice = return_dice
 
                     # Add fumble return event to transaction
                     if txn:
@@ -1462,6 +1743,7 @@ class PaydirtGameEngine:
                         )
                 else:
                     # Normal fumble recovery by defense - no return
+                    self._record_turnover(interception=False)
                     self.state.switch_possession()
                     self.state.ball_position = fumble_spot_defense
                     # Preserve existing description (e.g., "BAD SNAP") if set, otherwise use fumble description
@@ -1892,7 +2174,9 @@ class PaydirtGameEngine:
             forced_10_sec = False
 
         # No huddle reduces play time from ~35 sec to ~20 sec
-        if forced_10_sec:
+        if getattr(result, "replay_down", False):
+            play_seconds = 10.0  # A play nullified by offsetting fouls takes ten seconds.
+        elif forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
             play_seconds = random.uniform(15, 25)
@@ -2487,7 +2771,9 @@ class PaydirtGameEngine:
             forced_10_sec = False
 
         # No huddle reduces play time from ~35 sec to ~20 sec
-        if forced_10_sec:
+        if getattr(result, "replay_down", False):
+            play_seconds = 10.0  # A play nullified by offsetting fouls takes ten seconds.
+        elif forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
             play_seconds = random.uniform(15, 25)
@@ -3163,6 +3449,8 @@ class PaydirtGameEngine:
                 block_yards = -10
 
             block_spot = self.state.ball_position + block_yards
+            kicking_home = self.state.is_home_possession
+            nullified = False
 
             if block_spot <= 0:
                 # Safety - ball went out of own end zone
@@ -3204,26 +3492,28 @@ class PaydirtGameEngine:
                             self.state.ball_position = 97
                             description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}) - RETURN TD!"
                         else:
-                            return_yards = self._parse_return_yards(int_return_result, block_spot)
-                            new_position = block_spot + return_yards
-                            new_position = clamp_ball_position(new_position)
-                            final_spot = new_position
-                            self.state.ball_position = new_position
-
-                            if new_position >= 100:
-                                touchdown = True
-                                self._score_touchdown()
-                                self.state.ball_position = 97
-                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
+                            chain, touchdown, return_yards, description = self._blocked_kick_return(
+                                block_spot, (return_dice, int_return_result), "BLOCKED PUNT",
+                                recovery_roll, "Kicking team",
+                            )
+                            if chain.offsetting:
+                                nullified = True
+                                description = self._nullify_kick_play(
+                                    kicking_home, field_pos_before, down_before, ytg_before, chain, "BLOCKED PUNT",
+                                )
+                            elif self.state.is_home_possession != kicking_home:
+                                turnover = True  # Lost again on the return
                             else:
-                                description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+                                final_spot = chain.spot
                     else:
                         self.state.ball_position = block_spot
                         description = f"BLOCKED PUNT! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
                     # On 4th down, check if kicking team reached first down marker
                     # If not, it's turnover on downs (unless TD scored)
-                    if down_before == 4 and not touchdown and final_spot < first_down_marker:
+                    if nullified or turnover:
+                        pass
+                    elif down_before == 4 and not touchdown and final_spot < first_down_marker:
                         turnover = True
                         self.state.switch_possession()
                         self.state.ball_position = 100 - final_spot
@@ -3256,26 +3546,25 @@ class PaydirtGameEngine:
                             self.state.ball_position = 97
                             description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}) - RETURN TD!"
                         else:
-                            return_yards = self._parse_return_yards(
-                                int_return_result, block_spot_defense
+                            chain, touchdown, return_yards, description = self._blocked_kick_return(
+                                block_spot_defense, (return_dice, int_return_result), "BLOCKED PUNT",
+                                recovery_roll, "Defense",
                             )
-                            new_position = block_spot_defense + return_yards
-                            new_position = clamp_ball_position(new_position)
-                            self.state.ball_position = new_position
-
-                            if new_position >= 100:
-                                touchdown = True
-                                self._score_touchdown()
-                                self.state.ball_position = 97
-                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
-                            else:
-                                description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+                            if chain.offsetting:
+                                nullified = True
+                                turnover = False
+                                description = self._nullify_kick_play(
+                                    kicking_home, field_pos_before, down_before, ytg_before, chain, "BLOCKED PUNT",
+                                )
+                            elif self.state.is_home_possession == kicking_home:
+                                turnover = False  # Fumbled back to the kicking team
                     else:
                         self.state.ball_position = block_spot_defense
                         description = f"BLOCKED PUNT! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
             parsed_result = parse_result_string(punt_result)
             parsed_result.dice_roll = punt_roll
+            parsed_result.replay_down = nullified
 
             outcome = PlayOutcome(
                 play_type=PlayType.PUNT,
@@ -3290,7 +3579,7 @@ class PaydirtGameEngine:
                 description=description,
             )
             self.play_log.append(outcome)
-            self._use_time(random.uniform(3, 6))
+            self._use_time(10 if nullified else random.uniform(3, 6))
             return outcome
 
         # Handle penalty on punt (before the ball is kicked)
@@ -4348,8 +4637,8 @@ class PaydirtGameEngine:
 
         state = self._pending_kickoff_penalty_state
         del self._pending_kickoff_penalty_state
-        if state.get("phase") == "return":
-            return self._apply_kickoff_return_penalty_decision(state, accept_penalty)
+        if state.get("phase") == "return_fumble":
+            return self._complete_kickoff_return(state["ctx"], state["chain"], accept_choice=accept_penalty)
 
         kicking_home = state["kicking_home"]
         kickoff_spot = state["kickoff_spot"]
@@ -4368,142 +4657,52 @@ class PaydirtGameEngine:
             # Perform the re-kick from adjusted spot
             return self.kickoff(kicking_home=kicking_home, kickoff_spot=new_kickoff_spot)
         else:
-            # Decline penalty - execute the kickoff with the rolled yardage
+            # Decline the kick-chart penalty: play the kick as rolled, with the
+            # receiving team's return roll already taken for that kick.
             ko_yards = state["ko_yards"]
             ko_result = state["ko_result"]
             ret_result = state["ret_result"]
-            return_roll = state.get("return_roll", 0)
-
-            # Continue with normal kickoff logic using the stored values
-            # This is essentially the rest of the kickoff method
+            return_roll = state["return_roll"]
+            dice_roll = state.get("dice_roll", 0)
             receiving_chart = self.state.away_chart if kicking_home else self.state.home_chart
 
             is_touchback = False
-
-            # Handle special kickoff results
+            landing_spot = None
+            chain = None
+            return_position = 20
             if "OB" in ko_result.upper() or "OUT" in ko_result.upper():
                 return_position = 40
             elif ko_yards >= 75:
-                return_position = 20
                 is_touchback = True
             else:
                 landing_spot = 100 - (kickoff_spot + ko_yards)
-
-                if landing_spot <= 0:
-                    if landing_spot <= -10:
-                        return_position = 20
-                        is_touchback = True
-                    else:
-                        yards_deep = abs(landing_spot)
-                        ret_parsed = parse_result_string(ret_result)
-                        try:
-                            ret_yards = int(ret_result) if ret_result else 20
-                        except ValueError:
-                            if ret_parsed.result_type == ResultType.FUMBLE:
-                                ret_yards = ret_parsed.yards
-                            elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                                ret_yards = 100
-                            else:
-                                ret_yards = 20
-
-                        if ret_yards > yards_deep:
-                            return_position = ret_yards - yards_deep
-                            is_touchback = False
-                        else:
-                            return_position = 20
-                            is_touchback = True
+                if landing_spot <= -10:
+                    is_touchback = True
                 else:
-                    # Handle return with potential penalty
-                    if "OFF" in ret_result.upper() or "DEF" in ret_result.upper():
-                        (
-                            ret_yards,
-                            ret_penalty_yards,
-                            ret_is_offensive,
-                            needs_rekick,
-                            _,
-                        ) = self._handle_return_penalty(
-                            ret_result,
-                            receiving_chart.special_teams.kickoff_return,
-                            default_return=20,
-                        )
-                        if needs_rekick:
-                            return self.kickoff(kicking_home=kicking_home)
-                    else:
-                        ret_penalty_yards = 0
-                        ret_is_offensive = False
-                        ret_parsed = parse_result_string(ret_result)
-                        try:
-                            ret_yards = int(ret_result) if ret_result else 20
-                        except ValueError:
-                            if ret_parsed.result_type == ResultType.FUMBLE:
-                                ret_yards = ret_parsed.yards
-                            elif ret_parsed.result_type == ResultType.TOUCHDOWN:
-                                ret_yards = 100
-                            else:
-                                ret_yards = 20
-
-                    return_position = landing_spot + ret_yards
-
-                    if ret_penalty_yards > 0:
-                        if ret_is_offensive:
-                            effective_penalty = self._apply_half_the_distance(
-                                return_position, ret_penalty_yards
-                            )
-                            return_position -= effective_penalty
-                        else:
-                            return_position += ret_penalty_yards
-
-                    if return_position > 100:
-                        return_position = 100
-                    if return_position < 1:
-                        return_position = 1
-
-            # Set game state
-            self.state.is_home_possession = not kicking_home
-            self.state.ball_position = clamp_ball_position(return_position)
-            self.state.down = 1
-            self.state.yards_to_go = 10
-
-            touchdown = return_position >= 100
-            if touchdown:
-                self._score_touchdown()
-                # If there was a kickoff chart penalty that was declined, apply it to next kickoff
-                if ko_penalty_yards > 0:
-                    self.state.pending_kickoff_penalty_yards = ko_penalty_yards
-                    self.state.pending_kickoff_penalty_is_offense = ko_is_offensive_penalty
-
-            kick_type = "Safety free kick" if kickoff_spot == 20 else "Kickoff"
-
-            if touchdown:
-                description = (
-                    f"{kick_type} {ko_yards} yards (penalty declined), RETURNED FOR A TOUCHDOWN!"
-                )
-            elif is_touchback:
-                description = f"{kick_type} {ko_yards} yards (penalty declined). Touchback."
-            elif "OB" in ko_result.upper() or "OUT" in ko_result.upper():
-                description = f"{kick_type} out of bounds (penalty declined)! Ball at the 40."
-            else:
-                description = f"{kick_type} {ko_yards} yards (penalty declined), returned to {self.state.field_position_str()}."
-
-            declined_result = parse_result_string(ko_result)
-            declined_result.dice_roll = state.get("dice_roll", 0)
-            declined_result.kickoff_return_dice = return_roll
-            declined_result.kickoff_return_result = ret_result
-            new_outcome = PlayOutcome(
-                play_type=PlayType.KICKOFF,
-                defense_type=DefenseType.STANDARD,
-                result=declined_result,
-                yards_gained=return_position,
-                touchdown=touchdown,
-                field_position_after=self.state.field_position_str(),
-                description=description,
-                penalty_applied=False,
-            )
-
-            self.play_log.append(new_outcome)
-            self._use_time(random.uniform(25, 45))
-
-            return new_outcome
+                    chain = self._resolve_return_chain(
+                        not kicking_home, landing_spot,
+                        receiving_chart.special_teams.kickoff_return, "RT",
+                        first=(return_roll, ret_result),
+                        end_rule=lambda yards: self._kickoff_return_spot(landing_spot, yards),
+                    )
+                    if chain.offsetting:
+                        self._use_time(10)
+                        return self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
+            ctx = {
+                "kicking_home": kicking_home,
+                "kickoff_spot": kickoff_spot,
+                "dice_roll": dice_roll,
+                "ko_result": ko_result,
+                "ko_yards": ko_yards,
+                "landing_spot": landing_spot,
+                "is_touchback": is_touchback,
+                "return_position": return_position,
+                "penalty_desc": "",
+                "declined_kick_penalty": (ko_penalty_yards, ko_is_offensive_penalty),
+            }
+            if chain is not None and chain.choice:
+                return self._pending_kickoff_return_fumble(ctx, chain)
+            return self._complete_kickoff_return(ctx, chain)
 
     def _evaluate_field_goal_result(
         self,
@@ -4863,6 +5062,10 @@ class PaydirtGameEngine:
         # - Roll offensive dice for recovery (same as fumble)
         # - Defense gets INT return for blocked kicks lost (rolls 19, 39 = auto TD)
         # - Offense gets INT return for blocked kicks recovered at/behind LOS with rolls 17, 18, 19
+        fg_kicking_home = self.state.is_home_possession
+        fg_down_before = self.state.down
+        fg_ytg_before = self.state.yards_to_go
+        nullified = False
         if "BK" in fg_result.upper():
             blocked = True
             success = False
@@ -4920,24 +5123,25 @@ class PaydirtGameEngine:
                             f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) - RETURN TD!"
                         )
                     else:
-                        return_yards = self._parse_return_yards(int_return_result, block_spot)
-                        final_position = block_spot + return_yards
-                        final_position = clamp_ball_position(final_position)
-                        self.state.ball_position = final_position
-
-                        if final_position >= 100:
-                            touchdown = True
-                            self._score_touchdown()
-                            self.state.ball_position = 97
-                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
-                        else:
-                            description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+                        chain, touchdown, return_yards, description = self._blocked_kick_return(
+                            block_spot, (return_dice, int_return_result), "BLOCKED FG",
+                            recovery_roll, "Kicking team",
+                        )
+                        if chain.offsetting:
+                            nullified = True
+                            description = self._nullify_kick_play(
+                                fg_kicking_home, line_of_scrimmage, fg_down_before, fg_ytg_before, chain, "BLOCKED FG",
+                            )
+                        elif self.state.is_home_possession == fg_kicking_home:
+                            final_position = chain.spot
                 else:
                     self.state.ball_position = block_spot
                     description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
                 # Check if kicking team reached line to gain or scored
-                if not touchdown and final_position < line_to_gain:
+                if nullified or self.state.is_home_possession != fg_kicking_home:
+                    pass  # Nullified, or lost again on the return: nothing more to settle.
+                elif not touchdown and final_position < line_to_gain:
                     # Only turnover on downs if it was 4th down
                     if self.state.down == 4:
                         defense_position = 100 - final_position
@@ -4981,27 +5185,23 @@ class PaydirtGameEngine:
                             f"BLOCKED FG! Defense recovers (roll {recovery_roll}) - RETURN TD!"
                         )
                     else:
-                        return_yards = self._parse_return_yards(
-                            int_return_result, block_spot_defense
+                        chain, touchdown, return_yards, description = self._blocked_kick_return(
+                            block_spot_defense, (return_dice, int_return_result), "BLOCKED FG",
+                            recovery_roll, "Defense",
                         )
-                        new_position = block_spot_defense + return_yards
-                        new_position = clamp_ball_position(new_position)
-                        self.state.ball_position = new_position
-
-                        if new_position >= 100:
-                            touchdown = True
-                            self._score_touchdown()
-                            self.state.ball_position = 97
-                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD!"
-                        else:
-                            description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards"
+                        if chain.offsetting:
+                            nullified = True
+                            description = self._nullify_kick_play(
+                                fg_kicking_home, spot_of_hold + 7, fg_down_before, fg_ytg_before, chain, "BLOCKED FG",
+                            )
                 else:
                     self.state.ball_position = block_spot_defense
                     description = f"BLOCKED FG! Defense recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
                 # Reset down and distance for defense (new possession)
-                self.state.down = 1
-                self.state.yards_to_go = 10
+                if not nullified:
+                    self.state.down = 1
+                    self.state.yards_to_go = 10
 
         # Check for fumble on hold/snap (F followed by space/+/- and number, e.g., "F - 5", "F + 3")
         elif re.match(r"^F\s*([+-])\s*(\d+)", fg_result, re.IGNORECASE):
@@ -5052,27 +5252,26 @@ class PaydirtGameEngine:
                     self.state.ball_position = 97
                     description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}) - RETURN TD! ({statistical_distance} yards)"
                 else:
-                    return_yards = self._parse_return_yards(int_return_result, fumble_spot_defense)
-                    new_position = fumble_spot_defense + return_yards
-                    new_position = clamp_ball_position(new_position)
-                    self.state.ball_position = new_position
-
-                    if new_position >= 100:
-                        touchdown = True
-                        self._score_touchdown()
-                        self.state.ball_position = 97
-                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} - RETURN TD! ({statistical_distance} yards)"
+                    chain, touchdown, return_yards, description = self._blocked_kick_return(
+                        fumble_spot_defense, (return_dice, int_return_result), "FUMBLED SNAP",
+                        recovery_roll, "Defense",
+                    )
+                    if chain.offsetting:
+                        nullified = True
+                        description = self._nullify_kick_play(
+                            fg_kicking_home, spot_of_hold + 7, fg_down_before, fg_ytg_before, chain, "FUMBLED SNAP",
+                        )
                     else:
-                        description = f"FUMBLED SNAP! Defense recovers (roll {recovery_roll}), return roll {return_dice} for {return_yards} yards ({statistical_distance} yards)"
+                        description += f" ({statistical_distance} yards)"
             else:
                 # No return - defense takes over at fumble spot
                 self.state.ball_position = fumble_spot_defense
                 description = f"FUMBLED SNAP! Defense recovers at {self.state.field_position_str()} ({statistical_distance} yards)"
 
             # Reset down and distance for defense (new possession)
-            # Note: switch_possession already does this, but we need to ensure consistency
-            self.state.down = 1
-            self.state.yards_to_go = 10
+            if not nullified:
+                self.state.down = 1
+                self.state.yards_to_go = 10
 
         # Normal field goal result - number indicates max distance kick can reach
         elif fg_result:
@@ -5133,6 +5332,7 @@ class PaydirtGameEngine:
             self.state.down = 1
             self.state.yards_to_go = 10
 
+        parsed.replay_down = nullified
         outcome = PlayOutcome(
             play_type=PlayType.FIELD_GOAL,
             defense_type=DefenseType.STANDARD,
@@ -5146,7 +5346,7 @@ class PaydirtGameEngine:
         )
 
         self.play_log.append(outcome)
-        self._use_time(random.uniform(5, 10))
+        self._use_time(10 if nullified else random.uniform(5, 10))
 
         return outcome
 
@@ -5589,40 +5789,6 @@ class PaydirtGameEngine:
         else:
             # Didn't make it past goal line - touchback
             return 20, True
-
-    def _parse_return_yards(self, return_result: str, current_position: int) -> int:
-        """
-        Parse return yards from a special teams chart result.
-
-        Args:
-            return_result: The result string from the chart (e.g., "20", "TD", "-5")
-            current_position: Current ball position for TD calculation
-
-        Returns:
-            Number of return yards
-        """
-        if not return_result:
-            return 0
-
-        return_result = str(return_result).strip()
-
-        # Handle TD result
-        if "TD" in return_result.upper():
-            return 100 - current_position
-
-        # Try to extract numeric value
-        try:
-            if return_result.lstrip("-").isdigit():
-                return int(return_result)
-            else:
-                # Try to extract number from result
-                match = re.search(r"(-?\d+)", return_result)
-                if match:
-                    return int(match.group(1))
-        except (ValueError, AttributeError):
-            pass
-
-        return 0
 
     def _use_time(
         self, seconds: float, out_of_bounds: bool = False, *, defensive_penalty: bool = False,

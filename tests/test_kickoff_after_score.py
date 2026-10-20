@@ -7,17 +7,15 @@ possessions after scoring.
 """
 import pytest
 
-from paydirt.chart_loader import find_team_charts, load_team_chart
 from paydirt.game_engine import PaydirtGameEngine
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture
-def game():
-    """Create a game engine with two real teams."""
-    charts = find_team_charts("seasons")
-    home_chart = load_team_chart(charts[0][2])
-    away_chart = load_team_chart(charts[1][2])
-    return PaydirtGameEngine(home_chart, away_chart)
+def game() -> PaydirtGameEngine:
+    """Public sample teams: their return charts carry no fumble cells, so an
+    unpatched kickoff always leaves the receiving team in possession."""
+    return make_sample_game()
 
 
 class TestKickoffAfterScore:

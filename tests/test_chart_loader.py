@@ -120,3 +120,30 @@ class TestFindTeamCharts:
         assert charts[0] == ("1983", "Bears", str(temp_seasons_dir / "1983" / "Bears"))
         assert charts[1][1] == "Aardvarks"
         assert charts[2][1] == "Zebras"
+
+
+class TestSpecialChartValidation:
+    """Unparseable return cells are reported at load time instead of reading as zero."""
+
+    HEADER = "#,Kickoff,Kickoff Return,Punt,Punt Return,Int. Return,Field Goal,Extra Point\n"
+
+    def _write(self, tmp_path: Path, rows: str) -> str:
+        path = tmp_path / "special.csv"
+        path.write_text(self.HEADER + rows)
+        return str(path)
+
+    def test_valid_cells_raise_no_warning(self, tmp_path: Path) -> None:
+        import warnings
+        from paydirt.chart_loader import parse_special_csv
+        path = self._write(tmp_path, "10,60,OFF 15,38*,F - 2,TD,BK -8,NG\n11,OB,F + 17,32*,DEF 10,-5,45,\n12,TB,25,BK -13,12*,OFF 10,OFF 10,\n")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            special = parse_special_csv(path)
+        assert special.interception_return[10] == "TD"
+
+    def test_stray_character_is_reported_with_column_and_roll(self, tmp_path: Path) -> None:
+        from paydirt.chart_loader import parse_special_csv
+        path = self._write(tmp_path, "30,60,25,38*,10,`,45,\n")
+        with pytest.warns(UserWarning, match=r"Int\. Return.*roll 30.*'`'"):
+            special = parse_special_csv(path)
+        assert special.interception_return[30] == "`"  # The chart is loaded as written.

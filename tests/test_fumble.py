@@ -6,9 +6,9 @@ Official rules:
 - Roll offensive dice and check FUMBLE line on Offensive Team Chart
 - Offense recovers on rolls within recovered range, loses on lost range
 - Special returns:
-  - Defense gets INT return on lost fumbles with rolls 37, 38, 39 (39 = auto TD)
+  - Defense gets INT return on lost fumbles with rolls 37, 38, 39
   - Offense gets INT return on recovered fumbles with rolls 17, 18, 19
-  - Note: Auto TD on roll 19/39 only applies to BLOCKED KICKS, not regular fumbles
+  - Note: Auto TD on roll 19/39 only applies to BLOCKED KICKS, not regular fumbles (RULE-015)
 - If offense recovers on 4th down but fails to make first down yardage, defense takes over
 """
 import pytest
@@ -266,12 +266,12 @@ class TestFumbleSpecialReturns:
         assert outcome.result.fumble_return_yards == 20
         assert outcome.result.fumble_return_dice == 14
     
-    def test_defense_auto_td_on_roll_39(self, game):
-        """Recovery roll 39 should be automatic TD for defense."""
+    def test_defense_return_on_roll_39_uses_the_chart(self, game):
+        """Recovery roll 39 is a chart return, not an automatic touchdown (RULE-015)."""
         game.state.ball_position = 50
         game.state.is_home_possession = True
         initial_away_score = game.state.away_score
-        
+
         mock_result = PlayResult(
             result_type=ResultType.FUMBLE,
             yards=3,
@@ -279,16 +279,33 @@ class TestFumbleSpecialReturns:
             raw_result="F + 3",
             dice_roll=10,
         )
-        
+
         with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
             with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 39 = auto TD for defense
+                # Recovery roll of 39, then the return roll of 10 -> 5 yards
                 mock_dice.side_effect = [(39, "B3+W5+W5=39"), (10, "B1+W0+W0=10")]
-                
+
                 outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
-        
+
+        assert outcome.touchdown is False
+        assert game.state.away_score == initial_away_score
+        assert game.state.is_home_possession is False
+        assert game.state.ball_position == 52  # Lost at 53 = defense's 47, returned 5.
+        assert outcome.result.fumble_return_yards == 5
+
+    def test_defense_return_on_roll_39_scores_only_from_a_td_cell(self, game):
+        """A TD cell on the return chart still scores after a 39 recovery."""
+        game.state.ball_position = 50
+        game.state.is_home_possession = True
+        mock_result = PlayResult(
+            result_type=ResultType.FUMBLE, yards=3, turnover=True, raw_result="F + 3", dice_roll=10,
+        )
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
+            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+                mock_dice.side_effect = [(39, "B3+W5+W5=39"), (16, "B1+W3+W3=16")]  # Cell 16 is "TD".
+                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         assert outcome.touchdown is True
-        assert game.state.away_score == initial_away_score + 6
+        assert game.state.away_score == 6
 
 
 class TestFumbleFourthDown:

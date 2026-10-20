@@ -160,7 +160,9 @@ def test_fumble_return_touchdown_first_down_attribution(
     defense = game.state.defense_stats
     game.state.possession_team.peripheral.fumble_recovered_range = (10, 32)
     game.state.possession_team.special_teams.interception_return[13] = "40"
-    # Offense recovers at 65 and advances 40; defense recovery 39 is an automatic TD.
+    # Offense recovers at 65 and advances 40; the defense's recovery 39 is a chart
+    # return (RULE-015), so its chart must carry the touchdown.
+    game.state.defense_team.special_teams.interception_return[13] = "TD"
     with patch("paydirt.game_engine.roll_chart_dice", side_effect=[
         (19 if offense_recovers else 39, "Recovery"), (13, "Return"),
     ]):

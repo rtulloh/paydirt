@@ -25,7 +25,8 @@ def resolve_fumble(
     offense = game.state.possession_team.peripheral.short_name
     defense = game.state.defense_team.peripheral.short_name
     game.state.possession_team.peripheral.fumble_recovered_range = (1, 10)
-    game.state.defense_team.special_teams.interception_return[34] = "0"
+    # Recovery 39 is a chart return like 37/38 (RULE-015): the touchdown comes from the cell.
+    game.state.defense_team.special_teams.interception_return[34] = "TD" if recovery == 39 else "0"
     result = PlayResult(ResultType.FUMBLE, yards=yards, raw_result=f"F {yards:+d}",
                         dice_roll=26, defense_modifier="(-3)", description="FUMBLE!")
     penalties = [PenaltyOption("OFF", "OFF 5", 5, "Offensive penalty, 5 yards")] if flow == "declined" else []

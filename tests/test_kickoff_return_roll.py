@@ -107,16 +107,15 @@ def test_kick_chart_penalty_accepted_rekicks_with_fresh_kick_and_return_rolls() 
     assert outcome.result.kickoff_return_dice == 13
 
 
-def test_return_chart_penalty_rerolls_from_the_separate_return_roll_and_offers_the_choice() -> None:
+def test_return_chart_penalty_rerolls_from_the_separate_return_roll_and_is_assessed() -> None:
     game, kicker, receiver = kick_game()
     kicker.kickoff[24] = "60"
     receiver.kickoff_return.update({24: "0", 31: "DEF 15", 13: "30"})
     with (patch("paydirt.game_engine.roll_chart_dice", side_effect=rolls(24, 31, 13)) as dice,
           patch("paydirt.game_engine.random.uniform", return_value=8)):
-        pending = game.kickoff(kicking_home=True)
+        outcome = game.kickoff(kicking_home=True)
         assert dice.call_count == 3
-        assert pending.pending_penalty_decision is True  # RULE-013: the receiving team chooses.
-        game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
+        assert outcome.pending_penalty_decision is False  # Return penalties are assessed, not offered.
     assert dice.call_count == 3
     # Landed at the 5, returned 30, plus the 15-yard kicking-team foul.
     assert game.state.ball_position == 50

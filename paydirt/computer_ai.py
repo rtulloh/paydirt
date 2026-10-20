@@ -1279,11 +1279,9 @@ class ComputerAI:
             # Keep that recovery, or erase our own return fumble by replaying.
             return (offended_is_offense, best_penalty_idx)
 
-        if is_kickoff_penalty and penalty_choice.kick_phase == "return":
-            # Kickoff decisions use the receiving team as "offense". The penalty
-            # always helps the offended side, except that the receiving team keeps
-            # its own return touchdown rather than take the kicking team's yards.
-            return (offended_is_offense and play_td, best_penalty_idx)
+        if penalty_choice.kick_phase == "return_fumble":
+            # The recovering team keeps the ball rather than hand it back for yards.
+            return (True, best_penalty_idx)
 
         # The offended CPU can keep its own score or erase its opponent's.
         # Turnover is relative to the original offense, not to home/human control.

@@ -56,7 +56,7 @@ def game(mock_team_chart):
 
 
 class TestKickoffReturnPenalties:
-    """Penalties on kickoff returns are offered to the offended team and enforced when accepted."""
+    """Penalties on kickoff returns are rerolled for the return and assessed automatically."""
     
     def test_offensive_penalty_on_kickoff_return_moves_ball_back(self, game):
         """Offensive penalty on kickoff return: landing + rolled return - penalty."""
@@ -71,11 +71,10 @@ class TestKickoffReturnPenalties:
             # Roll 13: re-roll for actual return yardage (30 yards)
             mock_dice.side_effect = [(11, "B1+W0+W1=11"), (11, "B1+W0+W1=11"), (13, "B1+W2+W1=13")]
             
-            pending = game.kickoff(kicking_home=True)
-            # The offended team is offered the penalty (RULE-013); accepting enforces it.
-            assert pending.pending_penalty_decision is True
-            assert "45" in pending.penalty_choice.play_result_preview
-            game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
+            outcome = game.kickoff(kicking_home=True)
+            # The penalty is assessed automatically against the end of the return.
+            assert outcome.pending_penalty_decision is False
+            assert outcome.penalty_applied is True
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
@@ -96,11 +95,10 @@ class TestKickoffReturnPenalties:
             # Roll 10: re-roll for actual return yardage (20 yards)
             mock_dice.side_effect = [(12, "B1+W0+W2=12"), (12, "B1+W0+W2=12"), (10, "B1+W0+W0=10")]
             
-            pending = game.kickoff(kicking_home=True)
-            # The offended team is offered the penalty (RULE-013); accepting enforces it.
-            assert pending.pending_penalty_decision is True
-            assert "35" in pending.penalty_choice.play_result_preview
-            game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
+            outcome = game.kickoff(kicking_home=True)
+            # The penalty is assessed automatically against the end of the return.
+            assert outcome.pending_penalty_decision is False
+            assert outcome.penalty_applied is True
             
             # Kickoff 50 yards from 35 = lands at 15 (receiver's perspective)
             # landing_spot = 100 - (35 + 50) = 15
@@ -156,11 +154,10 @@ class TestKickoffReturnPenalties:
                 (13, "B1+W2+W1=13"),  # Re-roll gets actual yardage (25)
             ]
             
-            pending = game.kickoff(kicking_home=True)
-            # The offended team is offered the penalty (RULE-013); accepting enforces it.
-            assert pending.pending_penalty_decision is True
-            assert "40" in pending.penalty_choice.play_result_preview
-            game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
+            outcome = game.kickoff(kicking_home=True)
+            # The penalty is assessed automatically against the end of the return.
+            assert outcome.pending_penalty_decision is False
+            assert outcome.penalty_applied is True
             
             # Kickoff 50 yards from 35 = lands at 15
             # Re-rolled return 25 yards = 15 + 25 = 40
@@ -186,11 +183,10 @@ class TestKickoffReturnPenalties:
                 (13, "B1+W2+W1=13"),  # Re-roll gets actual yardage (25)
             ]
             
-            pending = game.kickoff(kicking_home=True)
-            # The offended team is offered the penalty (RULE-013); accepting enforces it.
-            assert pending.pending_penalty_decision is True
-            assert "40" in pending.penalty_choice.play_result_preview
-            game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
+            outcome = game.kickoff(kicking_home=True)
+            # The penalty is assessed automatically against the end of the return.
+            assert outcome.pending_penalty_decision is False
+            assert outcome.penalty_applied is True
             
             # Kickoff 50 yards from 35 = lands at 15
             # Re-rolled return 25 yards = 15 + 25 = 40

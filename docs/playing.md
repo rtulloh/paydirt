@@ -109,11 +109,22 @@ penalty that erases an opponent's touchdown when that score is known at decision
 On kickoff selection, `K` is the normal kick and `O` requests an onside kick. The kicking team
 rolls for the kick distance and the receiving team then rolls its own dice for the return; the
 compact trace shows both (`KO:` and `RT:`, or `RT:none` when the kick is not returned). Follow the current prompt;
-an onside attempt does not guarantee recovery. A penalty on the return is the offended team's
-choice, like any other penalty: a receiving-team foul is offered to the kicking team (accept
-to enforce it from the end of the return, or decline and let the return stand), and a
-kicking-team foul is offered to the receiving team. The prompt shows the engine's preview of
-both outcomes; a penalty that would wipe out a return touchdown is enforced from the catch spot.
+an onside attempt does not guarantee recovery.
+
+Return charts (kickoff, punt, interception, and fumble/blocked-kick returns) follow one
+procedure. `OFF` is a foul by the returning team and `DEF` a foul by the other team: the
+return is rerolled for its result and the penalty is then assessed automatically against the
+end of the return — backward for `OFF` (a return touchdown is wiped out and the ball placed
+that many yards short of the goal line), forward for `DEF` (never a penalty touchdown) —
+with half the distance applied near either goal line. Possession is never changed by a return
+penalty, and there is nothing to accept or decline. Two fouls by the same team keep the larger
+one; fouls by both teams nullify the whole play: a kick is re-kicked and a turnover or blocked
+kick is replayed from the previous spot, with ten seconds run off. A fumble cell on a return is
+resolved with the returning team's recovery roll; 17–19 (kept) or 37–39 (lost) give the
+recovering team a fumble return on its interception-return chart, which can chain further.
+The one decision on a return: when the reroll after a returning-team foul is a fumble that the
+other team recovers, that team keeps the recovery or takes the penalty (which gives the ball
+back to the returning team, backed up). Kickoffs prompt for it; the CPU keeps the recovery.
 
 ### Quick Play with Defaults
 
@@ -135,9 +146,11 @@ See the [player priority reference and worked examples](priority-chart.md) for t
 
 For an offensive fumble recovery with an advance, the action line separates yards before
 the fumble, the recovery location, and yards advanced afterward. Recovery rolls 17–19
-permit an interception-chart advance; that chart value is not necessarily the actual
-advance, which stops at the goal line. Compact transaction traces label the recovery
-roll (`R:`), advance roll and actual yards (`Ret:`), and raw chart result separately.
+(offense) and 37–39 (defense) use the interception-return chart; a 39 is a chart return
+like any other, and 19/39 are automatic touchdowns only on blocked kicks. The chart value
+is not necessarily the actual advance, which stops at the goal line. Compact transaction
+traces label the recovery roll (`R:`), advance roll and actual yards (`Ret:`), rerolls
+(`Ret reroll:`), fumble returns (`FR:`), and raw chart result separately.
 The defensive call is confirmed once as `Defense: Long Pass (E)`, for example; the
 following `Offense runs:` line identifies the opponent's actual call.
 
