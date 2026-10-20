@@ -4001,6 +4001,7 @@ class PaydirtGameEngine:
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
                 parsed_result.punt_return_dice = return_roll
+                parsed_result.punt_return_result = return_result
 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -4081,6 +4082,7 @@ class PaydirtGameEngine:
                     "receiving_position": receiving_position,
                     "return_roll": return_roll,
                     "return_yards": return_yards,
+                    "return_result": return_result,
                     "return_desc": return_desc,
                     "final_position": final_position,
                     "would_be_td": would_be_td,
@@ -4097,7 +4099,7 @@ class PaydirtGameEngine:
                 parsed_result.dice_roll = punt_roll
                 if return_fumbled:
                     parsed_result = self._punt_return_fumble_result(
-                        punt_result, punt_roll, return_roll, punt_yards, landing_spot
+                        punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
                     )
                     penalty_choice.play_result = parsed_result
                     description = f"Punt {punt_yards} yards, FUMBLE on the return! Kicking team recovers. PENALTY: OFF {punt_penalty_yards}. Receiving team may replay the punt or decline."
@@ -4178,6 +4180,7 @@ class PaydirtGameEngine:
                     "receiving_position": receiving_position,
                     "return_roll": return_roll,
                     "return_yards": return_yards,
+                    "return_result": return_result,
                     "return_desc": return_desc,
                     "final_position": final_position,
                     "would_be_td": would_be_td,
@@ -4195,7 +4198,7 @@ class PaydirtGameEngine:
                 parsed_result.dice_roll = punt_roll
                 if return_fumbled:
                     parsed_result = self._punt_return_fumble_result(
-                        punt_result, punt_roll, return_roll, punt_yards, landing_spot
+                        punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
                     )
                     penalty_choice.play_result = parsed_result
                 penalty_suffix = "X" if punt_penalty_auto_first_down else ""
@@ -4219,7 +4222,7 @@ class PaydirtGameEngine:
 
         if return_fumbled:
             return self._finish_punt_return_fumble(
-                punt_result, punt_roll, return_roll, punt_yards, landing_spot, field_pos_before
+                punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot, field_pos_before
             )
 
         # Switch possession now (after DEF penalty check passed)
@@ -4330,8 +4333,9 @@ class PaydirtGameEngine:
         parsed_result = parse_result_string(punt_result)
         parsed_result.dice_roll = punt_roll
         parsed_result.raw_result = f"{punt_yards}{'*' if is_fair_catch else ''}"
-        # Add return dice roll for display
+        # Preserve the return-chart fact for UI traces, even when it is a fumble or penalty.
         parsed_result.punt_return_dice = return_roll if return_roll else 0
+        parsed_result.punt_return_result = return_result if return_roll else ""
 
         outcome = PlayOutcome(
             play_type=PlayType.PUNT,
@@ -4350,7 +4354,7 @@ class PaydirtGameEngine:
         return outcome
 
     def _punt_return_fumble_result(
-        self, punt_result: str, punt_roll: int, return_roll: int, punt_yards: int,
+        self, punt_result: str, punt_roll: int, return_roll: int, return_result: str, punt_yards: int,
         landing_spot: int,
     ) -> PlayResult:
         """Describe a return fumble without applying its statistics or possession."""
@@ -4360,14 +4364,14 @@ class PaydirtGameEngine:
         )
         return PlayResult(
             result_type=ResultType.FUMBLE, raw_result=punt_result, dice_roll=punt_roll,
-            punt_return_dice=return_roll, fumble_recovered=True, fumble_resolved=True,
-            fumble_spot=landing_spot, first_down=True,
+            punt_return_dice=return_roll, punt_return_result=return_result,
+            fumble_recovered=True, fumble_resolved=True, fumble_spot=landing_spot, first_down=True,
             description=f"Punt {punt_yards} yards, FUMBLE on the return! "
                         f"Recovered by {team} at {spot}; 1st and {min(10, 100 - landing_spot)}.",
         )
 
     def _finish_punt_return_fumble(
-        self, punt_result: str, punt_roll: int, return_roll: int, punt_yards: int,
+        self, punt_result: str, punt_roll: int, return_roll: int, return_result: str, punt_yards: int,
         landing_spot: int, field_pos_before: str,
     ) -> PlayOutcome:
         """Apply a live returner loss, charged to the receiving team only.
@@ -4382,7 +4386,7 @@ class PaydirtGameEngine:
         self.state.down = 1
         self.state.yards_to_go = min(10, 100 - landing_spot)
         result = self._punt_return_fumble_result(
-            punt_result, punt_roll, return_roll, punt_yards, landing_spot
+            punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
         )
         outcome = PlayOutcome(
             play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
@@ -4429,7 +4433,8 @@ class PaydirtGameEngine:
             del self._pending_punt_state
             return self._finish_punt_return_fumble(
                 state["punt_result"], state["punt_roll"], state["return_roll"],
-                state["punt_yards"], 100 - state["final_position"], state["field_pos_before"],
+                state["return_result"], state["punt_yards"], 100 - state["final_position"],
+                state["field_pos_before"],
             )
 
         if is_offensive_penalty and accept_penalty:

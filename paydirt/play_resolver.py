@@ -92,8 +92,11 @@ class PlayResult:
     raw_result: str = ""
     dice_roll: int = 0
     defense_modifier: str = ""
-    # Punt return dice roll
+    # Defensive dice used to select the defense-chart row (e.g., "R2+G1=3").
+    defense_dice: str = ""
+    # Punt return: the receiving team's own roll and raw chart cell (0/"" when no return)
     punt_return_dice: int = 0
+    punt_return_result: str = ""
     # Kickoff return: the receiving team's own roll and chart cell (0/"" when no return)
     kickoff_return_dice: int = 0
     kickoff_return_result: str = ""
@@ -937,6 +940,7 @@ def resolve_play(
         raw_result=off_result_str,
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
+        defense_dice=f"R{def_red}+G{def_green}={sub_row}",
         out_of_bounds=combined.out_of_bounds,
     )
 
@@ -1357,6 +1361,7 @@ def resolve_play_with_penalties(
                     raw_result=off_result_str,
                     dice_roll=off_dice_roll,
                     defense_modifier=def_result_str,
+                    defense_dice=def_dice_desc,
                 )
                 # Build transaction for PI case
                 off_team = offense_chart.peripheral.short_name
@@ -1435,6 +1440,7 @@ def resolve_play_with_penalties(
         raw_result=off_result_str,
         dice_roll=off_dice_roll,
         defense_modifier=def_result_str,
+        defense_dice=def_dice_desc,
         out_of_bounds=combined.out_of_bounds,
     )
 

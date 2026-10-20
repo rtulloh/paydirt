@@ -386,6 +386,9 @@ class TestPuntDownAndDistance:
             # Kicking team still has possession
             assert game.state.is_home_possession is True
             assert "FUMBLE" in outcome.description
+            assert outcome.result.punt_return_dice == 12
+            assert outcome.result.punt_return_result == "F"
+            assert mock_dice.call_count == 2
 
 
 class TestPuntReturnCommentary:

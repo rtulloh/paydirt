@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-88 issues: 52 open, 32 resolved, 4 closed.
+88 issues: 51 open, 33 resolved, 4 closed.
 
-## Open (52)
+## Open (51)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -66,10 +66,9 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | — |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
-| [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18 | TRACE-007 |
 
 
-## Resolved (awaiting play-test confirmation) (32)
+## Resolved (awaiting play-test confirmation) (33)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -107,6 +106,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 | [AUD-012](issues/AUD/AUD-012.md) | Low | Pass interference repeats the achieved first-down wording | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
+| [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18, resolved 2026-10-20 | TRACE-007 |
 
 
 ## Closed (4)

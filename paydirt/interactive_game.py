@@ -1459,18 +1459,19 @@ def display_play_result(
                 punt_dice = outcome.result.dice_roll
                 punt_result_str = outcome.result.raw_result or ""
                 return_dice = getattr(outcome.result, "punt_return_dice", 0) or 0
+                return_result = getattr(outcome.result, "punt_return_result", "")
                 # Return penalties roll again for return yardage; show that final roll.
                 return_match = re.search(r"returned (\d+) yards", outcome.description)
                 reroll_match = re.search(r"reroll (\d+) → (-?\d+) yards", outcome.description)
                 if reroll_match:
                     return_dice = int(reroll_match.group(1))
-                    return_yards_str = reroll_match.group(2)
-                else:
-                    return_yards_str = return_match.group(1) if return_match else ""
+                    return_result = reroll_match.group(2)
+                elif not return_result:
+                    return_result = return_match.group(1) if return_match else ""
 
                 if return_dice > 0:
                     print(
-                        f'  (P:{punt_dice}→"{punt_result_str}" | R:{return_dice}→"{return_yards_str}" | return)'
+                        f'  (P:{punt_dice}→"{punt_result_str}" | R:{return_dice}→"{return_result}" | return)'
                     )
                 else:
                     print(
@@ -1843,10 +1844,10 @@ def display_play_result(
                     rec_event = recovery_events[0]
                     rec_result = "kept" if not txn.turnover else "lost"
                     if (not outcome.result.fumble_end_zone_touchdown
-                            and (txn.turnover or txn.has_event_type(EventType.FUMBLE_RETURN))):
+                            and outcome.result.fumble_return_dice):
                         ret_events = txn.get_events_by_type(EventType.FUMBLE_RETURN)
-                        ret_yards = ret_events[0].yards if ret_events else 0
-                        ret_dice = ret_events[0].dice_roll if ret_events else 0
+                        ret_yards = outcome.result.fumble_return_yards
+                        ret_dice = outcome.result.fumble_return_dice
                         extra_info = f' | F@{fumble_event.spot} | R:{rec_event.dice_roll}→"{rec_result}" | Ret:{ret_dice}→{ret_yards}'
                         if explained_offensive_fumble and ret_events:
                             extra_info += f' (chart "{ret_events[0].chart_result}")'
@@ -1855,7 +1856,9 @@ def display_play_result(
                             f' | F@{fumble_event.spot} | R:{rec_event.dice_roll}→"{rec_result}"'
                         )
 
-            def_row = def_match.group(3) if def_match else "?"
+            def_row = getattr(outcome.result, "defense_dice", "").split("=")[-1] or (
+                def_match.group(3) if def_match else "?"
+            )
 
             # Add breakaway dice if this is a breakaway play
             breakaway_extra = ""
@@ -2008,7 +2011,9 @@ def display_play_result(
             print(f"► {play_name.upper()}: {result_str}{special_marker}")
 
         # Line 2: Dice details (condensed) - include turnover return info here
-        def_row = def_match.group(3) if def_match else "?"
+        def_row = getattr(outcome.result, "defense_dice", "").split("=")[-1] or (
+            def_match.group(3) if def_match else "?"
+        )
         extra_info = ""
         breakaway_extra = ""
         qt_extra = ""
@@ -2025,9 +2030,8 @@ def display_play_result(
             fumble_return = getattr(outcome.result, "fumble_return_yards", 0)
             if recovery_roll is not None:
                 rec_result = "kept" if not outcome.turnover else "lost"
-                if outcome.turnover and not outcome.result.fumble_end_zone_touchdown:
-                    extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{fumble_return}'
-                elif fumble_return > 0:
+                if (outcome.result.fumble_return_dice
+                        and not outcome.result.fumble_end_zone_touchdown):
                     return_dice = outcome.result.fumble_return_dice
                     extra_info = f' | F@{fumble_spot} | R:{recovery_roll}→"{rec_result}" | Ret:{return_dice}→{fumble_return}'
                 else:

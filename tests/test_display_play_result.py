@@ -41,7 +41,95 @@ def create_mock_chart(short_name: str, full_name: str) -> TeamChart:
     )
 
 
-class TestDisplayPlayResultTeamIdentification:
+class TestCompactPuntFumbleTrace:
+    """Compact punt traces must show the chart result that caused a fumble."""
+
+    def test_punt_return_fumble_shows_raw_return_cell_without_recovery_roll(self):
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+
+        home_chart = create_mock_chart("HOM", "Home Team")
+        away_chart = create_mock_chart("AWY", "Away Team")
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = True
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            raw_result="31",
+            dice_roll=19,
+            punt_return_dice=11,
+            punt_return_result="F",
+            fumble_recovered=True,
+            fumble_resolved=True,
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            description="Punt 31 yards, FUMBLE on the return! Recovered by HOM at HOM 46; 1st and 10.",
+        )
+
+        ig.COMPACT_MODE = True
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            display_play_result(
+                game, outcome, PlayType.PUNT, DefenseType.STANDARD, home_chart,
+                offense_was_home=True,
+            )
+
+        output = mock_stdout.getvalue()
+        assert 'P:19→"31" | R:11→"F" | return' in output
+        assert 'R:11→""' not in output
+        assert "Ret:" not in output
+
+
+class TestCompactOrdinaryFumbleTrace:
+    """Compact fumble traces show only chart facts the engine actually resolved."""
+
+    def test_defensive_recovery_shows_defensive_row_without_fake_return_roll(self):
+        from paydirt.interactive_game import display_play_result
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
+
+        home_chart = create_mock_chart("HOM", "Home Team")
+        away_chart = create_mock_chart("AWY", "Away Team")
+        game = PaydirtGameEngine(home_chart, away_chart)
+        game.state.is_home_possession = False
+        result = PlayResult(
+            result_type=ResultType.FUMBLE,
+            raw_result="F + 19",
+            dice_roll=32,
+            defense_modifier="",
+            defense_dice="R2+G1=3",
+            fumble_recovery_roll=33,
+            fumble_spot=75,
+            fumble_recovered=False,
+            fumble_resolved=True,
+        )
+        transaction = PlayTransaction(is_complete=True, turnover=True, yards_gained=19)
+        transaction.add_event(PlayEvent(event_type=EventType.FUMBLE, description="Fumble", spot=75))
+        transaction.add_event(
+            PlayEvent(event_type=EventType.FUMBLE_RECOVERY, description="Defense recovered", dice_roll=33)
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.LINE_PLUNGE,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=19,
+            turnover=True,
+            description="FUMBLE! Defense recovers at HOM 25.",
+            transaction=transaction,
+        )
+
+        ig.COMPACT_MODE = True
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            display_play_result(
+                game, outcome, PlayType.LINE_PLUNGE, DefenseType.STANDARD, away_chart,
+                offense_was_home=False,
+            )
+
+        output = mock_stdout.getvalue()
+        assert 'D:3→""' in output
+        assert 'R:33→"lost"' in output
+        assert "Ret:" not in output
     """Tests to ensure display_play_result shows the correct team on offense."""
     
     def test_offense_was_home_parameter_used_when_provided(self):
