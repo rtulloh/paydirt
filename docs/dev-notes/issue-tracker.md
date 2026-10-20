@@ -37,7 +37,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
 | [AUD-017](issues/AUD/AUD-017.md) | Medium | Duplicate FIRST DOWN on offensive fumble recoveries | created 2026-10-19 | — |
 | [AUD-018](issues/AUD/AUD-018.md) | Medium | CLI display parses description strings to decide output (first-down marker check, reroll-dice and touchback… | created 2026-10-19 | TRACE-007 |
-| [AUD-020](issues/AUD/AUD-020.md) | Medium | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-015, AI-016 |
+| [AUD-020](issues/AUD/AUD-020.md) | Medium | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-015, AI-016, TRACE-004 |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
