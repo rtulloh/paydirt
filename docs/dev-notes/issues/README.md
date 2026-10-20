@@ -85,8 +85,8 @@ python3 scripts/build_issue_index.py
 6. [RULE-011](RULE/RULE-011.md) and [RULE-012](RULE/RULE-012.md) — era kickoff spot and the
    era-dependent final-try rule, both as season configuration.
 7. [RULE-003](RULE/RULE-003.md) (re-scoped Medium); then remaining Medium items by area, including
-   [RULE-001](RULE/RULE-001.md) when two-point conversion support becomes a priority, and
-   [FLOW-009](FLOW/FLOW-009.md) if a human ever needs the non-kickoff return-fumble prompt.
+   [RULE-001](RULE/RULE-001.md) and [STAT-003](STAT/STAT-003.md) when two-point conversion support
+   becomes a priority, and [FLOW-009](FLOW/FLOW-009.md) if a human ever needs the non-kickoff return-fumble prompt.
 
 Play-testing closes issues: see [AI play-testing](../ai-playtesting.md) and the
 [validation record](../game-audit-validation.md). Everything in the **resolved** section of

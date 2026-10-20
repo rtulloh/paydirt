@@ -14,10 +14,8 @@ export function checkPendingPat(gameState) {
     return { isPendingPat: false, scoringTeamIsPlayer: false, canGoForTwo: false };
   }
 
-  const scoringTeamIsPlayer = typeof gameState.player_offense === 'boolean'
-    ? gameState.player_offense
-    : (gameState.human_is_home && isHomeScoring) ||
-      (!gameState.human_is_home && !isHomeScoring);
+  // The engine owns scoring and player identity; never infer it from UI state.
+  const scoringTeamIsPlayer = gameState.player_offense === true;
 
   return { 
     isPendingPat, 

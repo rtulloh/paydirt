@@ -836,4 +836,22 @@ describe('CPU PAT identity from execute response', () => {
     expect(result.isPendingPat).toBe(true);
     expect(result.scoringTeamIsPlayer).toBe(false);
   });
+
+  it('does not infer scoring ownership when player_offense is missing', () => {
+    expect(() => checkPendingPat({
+      pending_pat: true,
+      human_is_home: true,
+      possession: 'home',
+    })).not.toThrow();
+
+    expect(checkPendingPat({
+      pending_pat: true,
+      human_is_home: true,
+      possession: 'home',
+    })).toMatchObject({
+      isPendingPat: true,
+      scoringTeamIsPlayer: false,
+      canGoForTwo: false,
+    });
+  });
 });

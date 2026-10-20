@@ -7,17 +7,15 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-88 issues: 53 open, 31 resolved, 4 closed.
+88 issues: 52 open, 32 resolved, 4 closed.
 
-## Open (53)
+## Open (52)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
-| [FLOW-004](issues/FLOW/FLOW-004.md) | High | CheckPendingPat fallback references the deleted isHomeScoring | created 2026-10-19 | — |
 | [SPIKE-001](issues/SPIKE/SPIKE-001.md) | High | The S modifier adjusts time without charging the agreed additional down | created 2026-10-18 | SPIKE-003 |
-| [STAT-003](issues/STAT/STAT-003.md) | High | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
 | [VAL-002](issues/VAL/VAL-002.md) | High | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19 | — |
 | [VAL-003](issues/VAL/VAL-003.md) | High | Standings_data.save/season_1983.json is untracked and not ignored and contains private-season results | created 2026-10-19 | — |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18 | AI-003, AI-018 |
@@ -51,6 +49,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-012](issues/RULE/RULE-012.md) | Medium | The final-try rule is era-dependent and the engine currently applies the pre-2018 rule to every season | created 2026-10-19 | RULE-002 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18 | AI-005, RULE-006 |
 | [STAT-001](issues/STAT/STAT-001.md) | Medium | Enforced 15-yard punt double-foul penalty moves the ball but is absent from penalty count/yardage stats | created 2026-10-19 | STAT-003 |
+| [STAT-003](issues/STAT/STAT-003.md) | Medium | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
 | [TRACE-001](issues/TRACE/TRACE-001.md) | Medium | Secondary QB-time rolls/results are not visible consistently, especially QB-time fumbles and transaction-based… | created 2026-10-18 | TRACE-007 |
 | [TRACE-003](issues/TRACE/TRACE-003.md) | Medium | Compact traces do not explicitly identify called modifiers and the winning clock procedure | created 2026-10-18 | — |
 | [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006, AI-015, AUD-020 |
@@ -70,7 +69,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18 | TRACE-007 |
 
 
-## Resolved (awaiting play-test confirmation) (31)
+## Resolved (awaiting play-test confirmation) (32)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -80,6 +79,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-001](issues/FLOW/FLOW-001.md) | High | After a half-ending TD the CLI passed the current quarter to can_kickoff_after_play, so the scoring team kicked… | created 2026-10-19, resolved 2026-10-19 | RULE-002 |
 | [FLOW-002](issues/FLOW/FLOW-002.md) | High | Both CLI loops free-kicked after a half-ending safety (burning Q3 clock and flipping possession), then kicked off… | created 2026-10-19, resolved 2026-10-19 | — |
 | [FLOW-003](issues/FLOW/FLOW-003.md) | High | Web execute_play called setup_for_pat() and set pending_pat from result.touchdown without checking… | created 2026-10-19, resolved 2026-10-19 | RULE-003 |
+| [FLOW-004](issues/FLOW/FLOW-004.md) | High | CheckPendingPat fallback references the deleted isHomeScoring | created 2026-10-19, resolved 2026-10-20 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
 | [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010 |
 | [RULE-015](issues/RULE/RULE-015.md) | High | Recovery roll 39 on an ordinary fumble was an automatic defensive touchdown (R:39→"lost" | Ret:35→97 in the… | created 2026-10-20, resolved 2026-10-20 | — |
