@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-88 issues: 53 open, 34 resolved, 1 closed.
+88 issues: 53 open, 31 resolved, 4 closed.
 
 ## Open (53)
 
@@ -70,20 +70,18 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18 | TRACE-007 |
 
 
-## Resolved (awaiting play-test confirmation) (34)
+## Resolved (awaiting play-test confirmation) (31)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
-| [AI-014](issues/AI/AI-014.md) | High | CPU preserves an opponent touchdown instead of accepting an eligible offensive foul that erases it | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-001](issues/AUD/AUD-001.md) | High | Fourth-down offsetting penalties incorrectly announce turnover on downs despite replaying the down and retaining… | created 2026-10-18, resolved 2026-10-18 | VAL-001, AUD-011 |
 | [FLOW-001](issues/FLOW/FLOW-001.md) | High | After a half-ending TD the CLI passed the current quarter to can_kickoff_after_play, so the scoring team kicked… | created 2026-10-19, resolved 2026-10-19 | RULE-002 |
 | [FLOW-002](issues/FLOW/FLOW-002.md) | High | Both CLI loops free-kicked after a half-ending safety (burning Q3 clock and flipping possession), then kicked off… | created 2026-10-19, resolved 2026-10-19 | — |
 | [FLOW-003](issues/FLOW/FLOW-003.md) | High | Web execute_play called setup_for_pat() and set pending_pat from result.touchdown without checking… | created 2026-10-19, resolved 2026-10-19 | RULE-003 |
 | [RULE-002](issues/RULE/RULE-002.md) | High | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
-| [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19 | AUD-021, FLOW-005 |
-| [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009 |
+| [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010 |
 | [RULE-015](issues/RULE/RULE-015.md) | High | Recovery roll 39 on an ordinary fumble was an automatic defensive touchdown (R:39→"lost" | Ret:35→97 in the… | created 2026-10-20, resolved 2026-10-20 | — |
 | [RULE-016](issues/RULE/RULE-016.md) | High | Penalty cells on the Int. Return chart were read as yardage | created 2026-10-20, resolved 2026-10-20 | — |
 | [SPIKE-003](issues/SPIKE/SPIKE-003.md) | High | A completion could leave time, then its spike reduce the clock to zero without processing period/game expiration | created 2026-10-18, resolved 2026-10-18 | SPIKE-001 |
@@ -98,7 +96,6 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-008](issues/AUD/AUD-008.md) | Medium | Full interception-TD output can name the original offense as scorer because the engine omits result scoring-team… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19 | — |
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
-| [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19 | RULE-002, RULE-010 |
 | [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19 | — |
@@ -112,10 +109,13 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
 
 
-## Closed (1)
+## Closed (4)
 
 A play-test audit confirmed the issue no longer occurs.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
+| [AI-014](issues/AI/AI-014.md) | High | CPU preserves an opponent touchdown instead of accepting an eligible offensive foul that erases it | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | — |
+| [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
+| [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |

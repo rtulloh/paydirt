@@ -1,11 +1,11 @@
 ---
 id: FLOW-005
 title: Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff…
-status: resolved
+status: closed
 priority: Medium
 created-at: 2026-10-19
 resolved-at: 2026-10-19
-closed-at:
+closed-at: 2026-10-20
 tags:
   - was: implemented, uncommitted
 links:
@@ -25,3 +25,6 @@ Exposed by the RULE-010 trajectory change in the required browser suite. Test-fi
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Implemented, uncommitted).
+
+--- 2026-10-20 17:00 ---
+Play-test confirmation: NYG '83 kicked off to PHI '83 to begin Q3 after the 2nd-quarter scoring sequence. PHI received at PHI 25 and continued at 1st & 10. Halftime occurred once; second-half ownership matched the engine's opening-kicker rule. FLOW-005 is closed.

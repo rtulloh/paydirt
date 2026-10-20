@@ -1,14 +1,15 @@
 ---
 id: RULE-010
 title: Kickoffs resolved the kick distance and the return from **one** dice roll
-status: resolved
+status: closed
 priority: High
 created-at: 2026-10-19
 resolved-at: 2026-10-19
-closed-at:
+closed-at: 2026-10-20
 links:
   - AUD-021
   - FLOW-005
+  - RULE-014
 tags:
   - was: implemented, uncommitted
 ---
@@ -25,3 +26,6 @@ Test-first: 12 failing engine cases (separate return roll home/away, no return r
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Implemented, uncommitted).
+
+--- 2026-10-20 17:00 ---
+Play-test confirmation: repeated kickoffs used distinct `KO:` and `RT:` rolls; out-of-bounds kickoffs emitted `RT:none`, and returned kicks showed separate return values. RULE-010 is closed.

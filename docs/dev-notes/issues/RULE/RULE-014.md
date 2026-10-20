@@ -8,6 +8,7 @@ resolved-at: 2026-10-20
 closed-at:
 links:
   - FLOW-009
+  - RULE-010
 commits:
   - 9be5487
 ---
@@ -27,3 +28,6 @@ Migrated from the single-file tracker (status at migration: Resolved (`9be5487`)
 
 --- 2026-10-20 16:00 ---
 Play-test confirmation — ordinary recovered kickoff-return fumble: CLE '83 kicked 57 yards; NYJ '83 returned with `RT:14→"F + 26"`; recovery roll `R:15→"recovered"`. NYJ retained possession at NYJ 34 and continued at 1st & 10, with no turnover or incorrect touchdown. This confirms the initial KR → fumble → returning-team recovery path. RULE-014 remains resolved/awaiting closure pending a play-test of a lost return fumble or a fumble reached through a penalty reroll.
+
+--- 2026-10-20 17:00 ---
+Latest Week 6 audit adds a penalty-reroll fumble: the NYG '83/PHI '83 game reached `OFF 10` on a penalty reroll, then `F + 8`, followed by `R:35→"lost"`. NYG recovered the ball at NYG 49 and continued at 1st & 10. This confirms the penalty-reroll fumble path. RULE-014 remains resolved/awaiting closure because no chained fumble return (recovery roll 37–39) or explicit kicking-team recovery choice occurred.
