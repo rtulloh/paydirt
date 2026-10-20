@@ -33,8 +33,10 @@ pytest -v --tb=short
 ### Required Full Regression Before Any Push
 
 Before **every push**, including tag/release pushes, run all of the following
-from the repository root. Do not push if any command fails; investigate and fix
-failures first. Disclose existing skips and warnings rather than hiding them.
+from the repository root. A "full test run" or "full regression" explicitly includes
+both the generated full-season runner and the public/local AI play-selection audits
+below; pytest alone is not sufficient. Do not push if any command fails; investigate
+and fix failures first. Disclose existing skips and warnings rather than hiding them.
 
 ```bash
 python3 -m pytest tests/ -q -o addopts= --tb=short -rs --cov=paydirt --cov-report=term
