@@ -26,7 +26,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-003](issues/AI/AI-003.md) | Medium | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006 |
 | [AI-012](issues/AI/AI-012.md) | Medium | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
-| [AI-015](issues/AI/AI-015.md) | Medium | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19 | — |
+| [AI-015](issues/AI/AI-015.md) | Medium | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19 | AUD-020, TRACE-004 |
 | [AI-016](issues/AI/AI-016.md) | Medium | CPU never acts on kickoff-chart penalties | created 2026-10-19 | AUD-020, RULE-013 |
 | [AI-017](issues/AI/AI-017.md) | Medium | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19 | — |
 | [AI-018](issues/AI/AI-018.md) | Medium | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002 |
@@ -37,7 +37,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
 | [AUD-017](issues/AUD/AUD-017.md) | Medium | Duplicate FIRST DOWN on offensive fumble recoveries | created 2026-10-19 | — |
 | [AUD-018](issues/AUD/AUD-018.md) | Medium | CLI display parses description strings to decide output (first-down marker check, reroll-dice and touchback… | created 2026-10-19 | TRACE-007 |
-| [AUD-020](issues/AUD/AUD-020.md) | Medium | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-016 |
+| [AUD-020](issues/AUD/AUD-020.md) | Medium | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-015, AI-016 |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
@@ -53,7 +53,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [STAT-001](issues/STAT/STAT-001.md) | Medium | Enforced 15-yard punt double-foul penalty moves the ball but is absent from penalty count/yardage stats | created 2026-10-19 | STAT-003 |
 | [TRACE-001](issues/TRACE/TRACE-001.md) | Medium | Secondary QB-time rolls/results are not visible consistently, especially QB-time fumbles and transaction-based… | created 2026-10-18 | TRACE-007 |
 | [TRACE-003](issues/TRACE/TRACE-003.md) | Medium | Compact traces do not explicitly identify called modifiers and the winning clock procedure | created 2026-10-18 | — |
-| [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006 |
+| [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006, AI-015, AUD-020 |
 | [TRACE-005](issues/TRACE/TRACE-005.md) | Medium | Full deterministic engine replay from logs is not implemented | created 2026-10-18 | TRACE-007 |
 | [TRACE-007](issues/TRACE/TRACE-007.md) | Medium | The PlayTransaction/PlayEvent model (paydirt/play_events.py) does not deliver its stated purpose and is now a… | created 2026-10-19 | AUD-018, TRACE-001, TRACE-002, TRACE-005 |
 | [VAL-001](issues/VAL/VAL-001.md) | Medium | Full-game browser regression lost its execution context during navigation | created 2026-10-18 | AUD-001 |
