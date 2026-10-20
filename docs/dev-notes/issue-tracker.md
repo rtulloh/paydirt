@@ -2,7 +2,7 @@
 
 **Developer-only working record, not a player guide or a release promise.**
 
-*Generated from [`issues/`](issues/) by `python3 scripts/build_issue_index.py`; do not edit by hand.*
+*Generated from [`issues/`](issues/README.md) by `python3 scripts/build_issue_index.py`; do not edit by hand.*
 Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).

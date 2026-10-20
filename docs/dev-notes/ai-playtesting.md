@@ -1,6 +1,6 @@
 # Play-testing dice-weighted AI analysis
 
-Current follow-ups and completed AI changes are indexed in the [issue tracker](issue-tracker.md#ai-work-and-evaluation).
+Current follow-ups and completed AI changes are indexed in the [issue files](issues/README.md).
 
 ## What changed
 
