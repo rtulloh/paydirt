@@ -150,3 +150,24 @@ matrix. All four Python versions remain tested, and matrix failures no longer
 cancel the other versions. Browser backend, npm, and Chromium/system dependency
 installs have separate required steps so setup failures are identifiable even
 from the job summary. Local macOS success does not prove hosted Linux setup.
+
+## GitHub Actions runtimes
+
+Both workflows use reviewed Node 24-native action releases: checkout 7.0.1,
+setup-python/setup-node 7.1.0, upload-artifact 7.0.2, download-artifact 8.0.2,
+and action-gh-release 3.0.3. Codecov 7.1.1 is a composite action whose nested
+github-script v8 uses Node 24; its coverage input is now `files`.
+These action runtimes are separate from the pinned application build runtime,
+Node.js 24.22.1. Node 24 actions require runner 2.327.1 or newer; checkout
+authenticated Git operations inside Docker actions require 2.329.0 or newer.
+The current workflows use GitHub-hosted runners, not Docker actions.
+
+Checkout retains its default credential handling (now stored under RUNNER_TEMP);
+neither workflow uses privileged fork-checkout triggers. Browser npm caching
+keeps its explicit frontend lockfile; standalone builds explicitly disable new
+automatic package-manager caching to retain their previous behavior. Artifact
+uploads retain the default zipped format and named download directories, keeping
+release asset paths unchanged. Manual build dispatch still does not publish a
+release; only a pushed `v*` tag can do that. Verify upstream tests and all four
+standalone platform builds before any release. These runtime upgrades do not
+remediate frontend dependency vulnerabilities.
