@@ -1,13 +1,15 @@
 """
 Game state dataclasses for the Paydirt game engine.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Optional
 
 from .chart_loader import TeamChart
-from .utils import format_field_position_with_team
-from .play_resolver import PlayType, DefenseType, PlayResult, PenaltyChoice
 from .play_events import PlayTransaction
+from .play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType
+from .utils import format_field_position_with_team
 
 
 @dataclass
@@ -79,7 +81,7 @@ class GameState:
     is_playoff: bool = False  # Is this a playoff game?
     # Which team kicked off to open the game (None until the opening kick).
     # The other team kicks off to start the second half.
-    opening_kicking_home: Optional[bool] = None
+    opening_kicking_home: bool | None = None
     # Untimed down tracking (defensive penalty at 0:00)
     untimed_down_pending: bool = False  # True if an untimed down must be played
     # Pending penalty to apply to next kickoff (e.g., when TD scored on return with penalty)
@@ -199,13 +201,13 @@ class PlayOutcome:
     down_after: int = 1
     description: str = ""
     # Penalty choice information - when a penalty occurs, offended team gets a choice
-    penalty_choice: Optional[PenaltyChoice] = None
+    penalty_choice: PenaltyChoice | None = None
     # Whether this outcome requires a penalty decision from the user
     pending_penalty_decision: bool = False
     # Whether a penalty was accepted (vs play result)
     penalty_applied: bool = False
     # Transaction-based event chain (new architecture)
-    transaction: Optional[PlayTransaction] = None
+    transaction: PlayTransaction | None = None
     # Post-play modifiers applied
     spike_used: bool = False
     timeout_used: bool = False

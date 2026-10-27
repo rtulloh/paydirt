@@ -10,25 +10,25 @@ These tests cover the chart-based CLI functions including:
 - Team selection
 - Demo functionality
 """
-from unittest.mock import patch, MagicMock
 import io
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from paydirt.cli_charts import (
-    clear_screen,
-    print_header,
-    print_scoreboard,
-    print_play_menu,
-    print_defense_menu,
-    get_play_choice,
-    get_defense_choice,
-    print_play_result,
-    select_team,
-    quick_demo,
     _ordinal,
+    clear_screen,
+    get_defense_choice,
+    get_play_choice,
+    print_defense_menu,
+    print_header,
+    print_play_menu,
+    print_play_result,
+    print_scoreboard,
+    quick_demo,
+    select_team,
 )
-from paydirt.play_resolver import PlayType, DefenseType
+from paydirt.play_resolver import DefenseType, PlayType
 
 
 class TestClearScreen:
@@ -240,10 +240,9 @@ class TestGetPlayChoice:
 
     def test_get_play_choice_invalid_then_valid(self):
         """Invalid choice should prompt again."""
-        with patch('builtins.input', side_effect=['99', '5']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_play_choice()
-                assert result == PlayType.SCREEN
+        with patch('builtins.input', side_effect=['99', '5']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_play_choice()
+            assert result == PlayType.SCREEN
 
 
 class TestGetDefenseChoice:
@@ -269,10 +268,9 @@ class TestGetDefenseChoice:
 
     def test_get_defense_choice_invalid_then_valid(self):
         """Invalid choice should prompt again."""
-        with patch('builtins.input', side_effect=['Z', 'B']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_defense_choice()
-                assert result == DefenseType.SHORT_YARDAGE
+        with patch('builtins.input', side_effect=['Z', 'B']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_defense_choice()
+            assert result == DefenseType.SHORT_YARDAGE
 
 
 class TestPrintPlayResult:
@@ -417,64 +415,47 @@ class TestSelectTeam:
         with patch('paydirt.cli_charts.find_team_charts', return_value=[
             ('2026', 'Bears', '/seasons/2026/Bears'),
             ('2026', 'Packers', '/seasons/2026/Packers'),
-        ]):
-            with patch('builtins.input', return_value='1'):
-                result = select_team('/seasons', "Select team:")
-                assert result == '/seasons/2026/Bears'
+        ]), patch('builtins.input', return_value='1'):
+            result = select_team('/seasons', "Select team:")
+            assert result == '/seasons/2026/Bears'
 
     def test_select_team_second_option(self):
         """Should return second team when 2 is selected."""
         with patch('paydirt.cli_charts.find_team_charts', return_value=[
             ('2026', 'Bears', '/seasons/2026/Bears'),
             ('2026', 'Packers', '/seasons/2026/Packers'),
-        ]):
-            with patch('builtins.input', return_value='2'):
-                result = select_team('/seasons', "Select team:")
-                assert result == '/seasons/2026/Packers'
+        ]), patch('builtins.input', return_value='2'):
+            result = select_team('/seasons', "Select team:")
+            assert result == '/seasons/2026/Packers'
 
     def test_select_team_invalid_then_valid(self):
         """Should reprompt for invalid selection."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-            ('2026', 'Packers', '/seasons/2026/Packers'),
-        ]):
-            with patch('builtins.input', side_effect=['99', '1']):
-                with patch('sys.stdout', new_callable=io.StringIO):
-                    result = select_team('/seasons', "Select:")
-                    assert result == '/seasons/2026/Bears'
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears'), ('2026', 'Packers', '/seasons/2026/Packers')]), patch('builtins.input', side_effect=['99', '1']), patch('sys.stdout', new_callable=io.StringIO):
+            result = select_team('/seasons', "Select:")
+            assert result == '/seasons/2026/Bears'
 
     def test_select_team_displays_prompt(self):
         """Should display the provided prompt."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-        ]):
-            with patch('builtins.input', return_value='1'):
-                with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                    select_team('/seasons', "Choose your team:")
-                    output = mock_stdout.getvalue()
-                    assert 'Choose your team' in output
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears')]), patch('builtins.input', return_value='1'), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            select_team('/seasons', "Choose your team:")
+            output = mock_stdout.getvalue()
+            assert 'Choose your team' in output
 
     def test_select_team_shows_team_info(self):
         """Should display team year and name."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-            ('2026', 'Packers', '/seasons/2026/Packers'),
-        ]):
-            with patch('builtins.input', return_value='1'):
-                with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                    select_team('/seasons', "Select:")
-                    output = mock_stdout.getvalue()
-                    assert '2026' in output
-                    assert 'Bears' in output
-                    assert 'Packers' in output
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears'), ('2026', 'Packers', '/seasons/2026/Packers')]), patch('builtins.input', return_value='1'), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            select_team('/seasons', "Select:")
+            output = mock_stdout.getvalue()
+            assert '2026' in output
+            assert 'Bears' in output
+            assert 'Packers' in output
 
     def test_select_team_no_charts_exits(self):
         """Should exit if no charts found."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[]):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                with pytest.raises(SystemExit) as exc_info:
-                    select_team('/seasons', "Select:")
-                assert exc_info.value.code == 1
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[]), patch('sys.stdout', new_callable=io.StringIO):
+            with pytest.raises(SystemExit) as exc_info:
+                select_team('/seasons', "Select:")
+            assert exc_info.value.code == 1
 
 
 class TestQuickDemo:
@@ -482,11 +463,10 @@ class TestQuickDemo:
 
     def test_quick_demo_no_charts(self):
         """Should handle missing charts gracefully."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[]):
-            with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                quick_demo('/seasons')
-                output = mock_stdout.getvalue()
-                assert 'No team charts found' in output
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[]), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            quick_demo('/seasons')
+            output = mock_stdout.getvalue()
+            assert 'No team charts found' in output
 
     def test_quick_demo_shows_team_info(self):
         """Should display team information."""
@@ -501,20 +481,16 @@ class TestQuickDemo:
         mock_chart.offense.short_pass = {10: '8', 11: '9'}
         mock_chart.offense.long_pass = {10: '12', 11: '15'}
         
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-        ]):
-            with patch('paydirt.cli_charts.load_team_chart', return_value=mock_chart):
-                with patch('paydirt.cli_charts.PaydirtGameEngine') as mock_engine:
-                    mock_game = MagicMock()
-                    mock_game.state.game_over = True
-                    mock_engine.return_value = mock_game
-                    
-                    with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                        quick_demo('/seasons')
-                        output = mock_stdout.getvalue()
-                        assert 'Chicago Bears' in output or 'Bears' in output
-                        assert '85' in output or 'Power Rating' in output
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears')]), patch('paydirt.cli_charts.load_team_chart', return_value=mock_chart), patch('paydirt.cli_charts.PaydirtGameEngine') as mock_engine:
+            mock_game = MagicMock()
+            mock_game.state.game_over = True
+            mock_engine.return_value = mock_game
+                
+            with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+                quick_demo('/seasons')
+                output = mock_stdout.getvalue()
+                assert 'Chicago Bears' in output or 'Bears' in output
+                assert '85' in output or 'Power Rating' in output
 
     def test_quick_demo_shows_sample_plays(self):
         """Should run sample plays."""
@@ -535,20 +511,16 @@ class TestQuickDemo:
         mock_outcome.yards_gained = 5
         mock_outcome.field_position_after = 'CHI 30'
         
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-        ]):
-            with patch('paydirt.cli_charts.load_team_chart', return_value=mock_chart):
-                with patch('paydirt.cli_charts.PaydirtGameEngine') as mock_engine:
-                    mock_game = MagicMock()
-                    mock_game.run_play.return_value = mock_outcome
-                    mock_engine.return_value = mock_game
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears')]), patch('paydirt.cli_charts.load_team_chart', return_value=mock_chart), patch('paydirt.cli_charts.PaydirtGameEngine') as mock_engine:
+            mock_game = MagicMock()
+            mock_game.run_play.return_value = mock_outcome
+            mock_engine.return_value = mock_game
                     
-                    with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                        quick_demo('/seasons')
-                        output = mock_stdout.getvalue()
-                        # Should show sample plays section
-                        assert 'Sample' in output or 'line_plunge' in output.lower() or 'LINE_PLUNGE' in output
+            with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+                quick_demo('/seasons')
+                output = mock_stdout.getvalue()
+                # Should show sample plays section
+                assert 'Sample' in output or 'line_plunge' in output.lower() or 'LINE_PLUNGE' in output
 
 
 class TestEdgeCases:
@@ -556,28 +528,21 @@ class TestEdgeCases:
 
     def test_get_play_choice_whitespace_input(self):
         """Should handle whitespace in input."""
-        with patch('builtins.input', side_effect=['  5  ', '5']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_play_choice()
-                assert result == PlayType.SCREEN
+        with patch('builtins.input', side_effect=['  5  ', '5']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_play_choice()
+            assert result == PlayType.SCREEN
 
     def test_get_defense_choice_whitespace_input(self):
         """Should handle whitespace in input."""
-        with patch('builtins.input', side_effect=['  B  ', 'B']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_defense_choice()
-                assert result == DefenseType.SHORT_YARDAGE
+        with patch('builtins.input', side_effect=['  B  ', 'B']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_defense_choice()
+            assert result == DefenseType.SHORT_YARDAGE
 
     def test_select_team_non_numeric_input(self):
         """Should handle non-numeric input."""
-        with patch('paydirt.cli_charts.find_team_charts', return_value=[
-            ('2026', 'Bears', '/seasons/2026/Bears'),
-            ('2026', 'Packers', '/seasons/2026/Packers'),
-        ]):
-            with patch('builtins.input', side_effect=['abc', '1']):
-                with patch('sys.stdout', new_callable=io.StringIO):
-                    result = select_team('/seasons', "Select:")
-                    assert result == '/seasons/2026/Bears'
+        with patch('paydirt.cli_charts.find_team_charts', return_value=[('2026', 'Bears', '/seasons/2026/Bears'), ('2026', 'Packers', '/seasons/2026/Packers')]), patch('builtins.input', side_effect=['abc', '1']), patch('sys.stdout', new_callable=io.StringIO):
+            result = select_team('/seasons', "Select:")
+            assert result == '/seasons/2026/Bears'
 
     def test_print_play_result_no_gain(self):
         """Play with zero yards should not show gain or loss."""

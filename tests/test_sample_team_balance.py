@@ -12,7 +12,6 @@ from paydirt.chart_loader import load_team_chart
 from paydirt.play_resolver import DefenseType, get_defense_modifier
 from paydirt.priority_chart import apply_priority_chart
 
-
 SEASON = Path(__file__).resolve().parents[1] / "seasons" / "2026"
 TEAMS = ("Thunderhawks", "Ironclads")
 PLAYS = ("Line Plunge", "Off Tackle", "End Run", "Draw", "Screen", "Short", "Med", "Long", "T/E S/L")

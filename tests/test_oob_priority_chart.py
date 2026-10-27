@@ -10,8 +10,10 @@ Fix: apply_priority_chart() now detects * in the raw offense_result string
 and sets CombinedResult.out_of_bounds. Callers propagate this to PlayResult.
 """
 from paydirt.priority_chart import (
-    apply_priority_chart, categorize_result,
-    ResultCategory, CombinedResult,
+    CombinedResult,
+    ResultCategory,
+    apply_priority_chart,
+    categorize_result,
 )
 
 
@@ -114,8 +116,9 @@ class TestResolvePlayOOBPropagation:
 
     def test_resolve_play_sets_oob_from_combined(self):
         """When combined.out_of_bounds is True, PlayResult.out_of_bounds should be True."""
-        from unittest.mock import patch, MagicMock
-        from paydirt.play_resolver import resolve_play, PlayType, DefenseType
+        from unittest.mock import MagicMock, patch
+
+        from paydirt.play_resolver import DefenseType, PlayType, resolve_play
 
         mock_combined = CombinedResult(
             priority=None,
@@ -150,8 +153,9 @@ class TestResolvePlayOOBPropagation:
 
     def test_resolve_play_no_oob_when_not_asterisk(self):
         """When combined.out_of_bounds is False, PlayResult.out_of_bounds should be False."""
-        from unittest.mock import patch, MagicMock
-        from paydirt.play_resolver import resolve_play, PlayType, DefenseType
+        from unittest.mock import MagicMock, patch
+
+        from paydirt.play_resolver import DefenseType, PlayType, resolve_play
 
         mock_combined = CombinedResult(
             priority=None,

@@ -5,15 +5,18 @@ Usage:
     python -m paydirt -auto Bears Cowboys           # Simple team names (uses default season)
     python -m paydirt -auto seasons/1983/Bears seasons/1985/Cowboys  # Full paths for cross-season
 """
+from __future__ import annotations
+
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
-from .packaging import get_seasons_path
+from typing import Optional
 
 from .chart_loader import find_team_charts, load_team_chart
-from .game_engine import PaydirtGameEngine, PlayOutcome
 from .computer_ai import ComputerAI
+from .game_engine import PaydirtGameEngine, PlayOutcome
 from .interactive_game import display_box_score
+from .packaging import get_seasons_path
 from .play_resolver import DefenseType, PlayType
 
 
@@ -109,7 +112,7 @@ def _resolve_auto_penalties(
 def _complete_auto_outcome(
     game: PaydirtGameEngine, outcome: PlayOutcome, offense_home: bool,
     quarter_before: int, home_ai: ComputerAI, away_ai: ComputerAI,
-    on_result: Optional[Callable[[PaydirtGameEngine, PlayOutcome], None]] = None,
+    on_result: Callable[[PaydirtGameEngine, PlayOutcome], None] | None = None,
 ) -> None:
     """Display finalized engine results and complete any scoring/kickoff chain."""
     for _ in range(500):
@@ -152,11 +155,11 @@ def _complete_auto_outcome(
 
 def run_auto_game(
     team1_spec: str, team2_spec: str, delay: float = 0.0, is_playoff: bool = False, *,
-    ai_factory: Optional[Callable[[PaydirtGameEngine, bool], ComputerAI]] = None,
-    on_decision: Optional[Callable[[PaydirtGameEngine, ComputerAI, PlayType, DefenseType], None]] = None,
-    on_result: Optional[Callable[[PaydirtGameEngine, PlayOutcome], None]] = None,
+    ai_factory: Callable[[PaydirtGameEngine, bool], ComputerAI] | None = None,
+    on_decision: Callable[[PaydirtGameEngine, ComputerAI, PlayType, DefenseType], None] | None = None,
+    on_result: Callable[[PaydirtGameEngine, PlayOutcome], None] | None = None,
     play_limit: int = 500,
-) -> Optional[PaydirtGameEngine]:
+) -> PaydirtGameEngine | None:
     """
     Run a CPU vs CPU game between two teams.
     

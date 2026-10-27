@@ -52,9 +52,9 @@ def test_cli_cpu_defense_spends_its_own_timeout(
     charts = [game.state.home_chart, game.state.away_chart] if human_home else [
         game.state.away_chart, game.state.home_chart]
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=charts))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="test", away_team="AWAY", home_team="HOME", away_score=0,
-        home_score=0, quarter=4, time_remaining=1))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "test", "away_team": "AWAY", "home_team": "HOME", "away_score": 0,
+        "home_score": 0, "quarter": 4, "time_remaining": 1})
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, not human_home, human_home, None))
 
     def play(*args, **kwargs):

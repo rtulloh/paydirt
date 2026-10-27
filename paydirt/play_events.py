@@ -11,9 +11,11 @@ Design Philosophy:
 - Decision points (penalties) create branches in the event chain
 - Final game state is computed from the resolved event chain
 """
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 from .utils import format_dice_roll
 
@@ -78,13 +80,13 @@ class PlayEvent:
     description: str  # Human-readable action (e.g., "INTERCEPTED!")
     
     # Dice mechanics (optional - not all events have dice)
-    dice_roll: Optional[int] = None
-    dice_desc: Optional[str] = None  # e.g., "B2+W3+W1=24"
-    chart_result: Optional[str] = None  # Raw chart value (e.g., "INT 13")
+    dice_roll: int | None = None
+    dice_desc: str | None = None  # e.g., "B2+W3+W1=24"
+    chart_result: str | None = None  # Raw chart value (e.g., "INT 13")
     
     # Outcome details
     yards: int = 0
-    spot: Optional[int] = None  # Field position where event occurred
+    spot: int | None = None  # Field position where event occurred
     
     # For turnovers - who has the ball after this event
     possession_change: bool = False
@@ -124,7 +126,7 @@ class PendingDecision:
     """
     decision_type: str  # "penalty_choice", "onside_kick", etc.
     deciding_team: str  # Who makes the decision
-    options: List[DecisionOption] = field(default_factory=list)
+    options: list[DecisionOption] = field(default_factory=list)
     prompt: str = ""  # Question to display
     
     # Events that would occur for each option (computed but not committed)
@@ -146,10 +148,10 @@ class PlayTransaction:
     at which point the final state is computed and committed.
     """
     # Event chain - what happened (in order)
-    events: List[PlayEvent] = field(default_factory=list)
+    events: list[PlayEvent] = field(default_factory=list)
     
     # Decision point (if any) - must be resolved before completing
-    pending_decision: Optional[PendingDecision] = None
+    pending_decision: PendingDecision | None = None
     
     # Is this transaction fully resolved?
     is_complete: bool = False
@@ -174,7 +176,7 @@ class PlayTransaction:
         """Add an event to the transaction chain."""
         self.events.append(event)
     
-    def get_events_by_type(self, event_type: EventType) -> List[PlayEvent]:
+    def get_events_by_type(self, event_type: EventType) -> list[PlayEvent]:
         """Get all events of a specific type."""
         return [e for e in self.events if e.event_type == event_type]
     
@@ -182,7 +184,7 @@ class PlayTransaction:
         """Check if an event type occurred."""
         return any(e.event_type == event_type for e in self.events)
     
-    def format_display(self) -> List[tuple[str, str]]:
+    def format_display(self) -> list[tuple[str, str]]:
         """
         Format all events for display.
         

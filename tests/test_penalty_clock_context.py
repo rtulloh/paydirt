@@ -9,7 +9,12 @@ import pytest
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from tests.game_fixtures import make_sample_game
 

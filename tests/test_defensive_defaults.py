@@ -36,7 +36,7 @@ class TestDefensiveDefaults:
     
     def test_first_and_5_is_standard(self):
         """1st and 5 (after penalty) should default to Standard (A)."""
-        default_key, default_name = get_defensive_default(down=1, yards_to_go=5)
+        default_key, _default_name = get_defensive_default(down=1, yards_to_go=5)
         assert default_key == 'A'
     
     def test_second_and_10_is_short_pass(self):
@@ -47,12 +47,12 @@ class TestDefensiveDefaults:
     
     def test_second_and_6_is_short_pass(self):
         """2nd and 6 should default to Short Pass (D)."""
-        default_key, default_name = get_defensive_default(down=2, yards_to_go=6)
+        default_key, _default_name = get_defensive_default(down=2, yards_to_go=6)
         assert default_key == 'D'
     
     def test_second_and_5_is_standard(self):
         """2nd and 5 should default to Standard (A)."""
-        default_key, default_name = get_defensive_default(down=2, yards_to_go=5)
+        default_key, _default_name = get_defensive_default(down=2, yards_to_go=5)
         assert default_key == 'A'
     
     def test_third_and_long_is_long_pass(self):
@@ -63,22 +63,22 @@ class TestDefensiveDefaults:
     
     def test_third_and_12_is_long_pass(self):
         """3rd and 12 should default to Long Pass (E)."""
-        default_key, default_name = get_defensive_default(down=3, yards_to_go=12)
+        default_key, _default_name = get_defensive_default(down=3, yards_to_go=12)
         assert default_key == 'E'
     
     def test_third_and_7_is_short_pass(self):
         """3rd and 7 should default to Short Pass (D)."""
-        default_key, default_name = get_defensive_default(down=3, yards_to_go=7)
+        default_key, _default_name = get_defensive_default(down=3, yards_to_go=7)
         assert default_key == 'D'
     
     def test_third_and_3_is_standard(self):
         """3rd and 3 should default to Standard (A)."""
-        default_key, default_name = get_defensive_default(down=3, yards_to_go=3)
+        default_key, _default_name = get_defensive_default(down=3, yards_to_go=3)
         assert default_key == 'A'
     
     def test_fourth_and_long_is_long_pass(self):
         """4th and 10 should default to Long Pass (E)."""
-        default_key, default_name = get_defensive_default(down=4, yards_to_go=10)
+        default_key, _default_name = get_defensive_default(down=4, yards_to_go=10)
         assert default_key == 'E'
     
     def test_fourth_and_1_is_short_yardage(self):
@@ -89,17 +89,17 @@ class TestDefensiveDefaults:
     
     def test_fourth_and_2_is_short_yardage(self):
         """4th and 2 should default to Short Yardage (B)."""
-        default_key, default_name = get_defensive_default(down=4, yards_to_go=2)
+        default_key, _default_name = get_defensive_default(down=4, yards_to_go=2)
         assert default_key == 'B'
     
     def test_goal_line_short_yardage(self):
         """Goal line (1st and goal from 2) should default to Short Yardage (B)."""
-        default_key, default_name = get_defensive_default(down=1, yards_to_go=2)
+        default_key, _default_name = get_defensive_default(down=1, yards_to_go=2)
         assert default_key == 'B'
     
     def test_second_and_1_is_short_yardage(self):
         """2nd and 1 should default to Short Yardage (B)."""
-        default_key, default_name = get_defensive_default(down=2, yards_to_go=1)
+        default_key, _default_name = get_defensive_default(down=2, yards_to_go=1)
         assert default_key == 'B'
 
 

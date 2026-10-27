@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 from paydirt import interactive_game as cli
-from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome, ScoringPlay
 from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture
@@ -218,12 +218,8 @@ def test_nonwinning_field_goal_still_gets_kickoff(game, monkeypatch, mode, offen
 
     kickoff = Mock(side_effect=KickoffReached)
     monkeypatch.setattr(game, "kickoff", kickoff)
-    with (
-        patch("paydirt.game_engine.roll_chart_dice", return_value=(10, "Roll10")),
-        patch("paydirt.play_resolver.roll_chart_dice", return_value=(10, "Roll10")),
-    ):
-        with pytest.raises(KickoffReached):
-            cli.resume_game("test-save.json", compact=True)
+    with patch('paydirt.game_engine.roll_chart_dice', return_value=(10, 'Roll10')), patch('paydirt.play_resolver.roll_chart_dice', return_value=(10, 'Roll10')), pytest.raises(KickoffReached):
+        cli.resume_game("test-save.json", compact=True)
     assert not game.state.game_over
     kickoff.assert_called_once_with(kicking_home=offense_home)
 

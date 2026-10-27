@@ -2,9 +2,8 @@
 Tests for the core game models.
 """
 import pytest
-from paydirt.models import (
-    Team, GameState, PlayResult, PlayOutcome
-)
+
+from paydirt.models import GameState, PlayOutcome, PlayResult, Team
 
 
 class TestTeam:
@@ -167,14 +166,15 @@ class TestGameState:
         from paydirt.utils import yards_to_goal
         ytg = yards_to_goal(game_state.ball_position)
         # Display should not show "Goal @ 0" - it should check ytg > 0
-        assert not (game_state.yards_to_go >= ytg and ytg > 0), \
+        assert not (game_state.yards_to_go >= ytg > 0), \
             "Display should not show 'Goal @ 0'"
     
     def test_field_position_str_uses_team_context(self):
         """field_position_str should show position from possessing team's perspective."""
-        from paydirt.game_engine import PaydirtGameEngine
-        from paydirt.chart_loader import TeamChart, PeripheralData
         from unittest.mock import MagicMock
+
+        from paydirt.chart_loader import PeripheralData, TeamChart
+        from paydirt.game_engine import PaydirtGameEngine
         
         # Create mock charts
         home_chart = TeamChart(

@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-88 issues: 51 open, 32 resolved, 5 closed.
+89 issues: 52 open, 31 resolved, 6 closed.
 
-## Open (51)
+## Open (52)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -59,6 +59,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-004](issues/VAL/VAL-004.md) | Medium | Local tag v1.9.0 points behind the pushed v1.8.1; git push --tags would build a stale 1.9.0 | created 2026-10-19 | — |
 | [VAL-005](issues/VAL/VAL-005.md) | Medium | Corrupt offensive_call_history in a save aborts --load with a traceback instead of the "Failed to load" message | created 2026-10-19 | — |
 | [VAL-006](issues/VAL/VAL-006.md) | Medium | CI matrix includes Python 3.9 while requires-python >= 3.10 and the audit harness uses 3.10 syntax | created 2026-10-19 | — |
+| [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -68,7 +69,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 
 
-## Resolved (awaiting play-test confirmation) (32)
+## Resolved (awaiting play-test confirmation) (31)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -88,7 +89,6 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-005](issues/AI/AI-005.md) | Medium | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003 |
 | [AI-008](issues/AI/AI-008.md) | Medium | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
-| [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18 | AI-012 |
 | [AI-011](issues/AI/AI-011.md) | Medium | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18 | — |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |
@@ -108,7 +108,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
 
 
-## Closed (5)
+## Closed (6)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -117,5 +117,6 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-014](issues/AI/AI-014.md) | High | CPU preserves an opponent touchdown instead of accepting an eligible offensive foul that erases it | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | — |
 | [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
+| [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18, resolved 2026-10-20, closed 2026-10-20 | TRACE-007 |

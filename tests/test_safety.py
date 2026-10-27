@@ -5,11 +5,18 @@ Official rules:
 - Touchback: No points, defending team gets ball 1st and 10 at their 20
 - Safety: 2 points for defense, victims get free kick (kickoff or punt) from own 20
 """
-import pytest
 from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, PlayType, DefenseType
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
+from paydirt.game_engine import DefenseType, PaydirtGameEngine, PlayType
 
 
 @pytest.fixture
@@ -242,7 +249,7 @@ class TestTouchbackRules:
         initial_away = game.state.away_score
         
         # Simulate touchback via end zone return
-        final_pos, is_touchback = game._handle_end_zone_return(5, 3, elect_touchback=True)
+        _final_pos, _is_touchback = game._handle_end_zone_return(5, 3, elect_touchback=True)
         
         assert game.state.home_score == initial_home
         assert game.state.away_score == initial_away

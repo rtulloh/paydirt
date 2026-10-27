@@ -9,11 +9,12 @@ Bug context:
   in Q1/Q3.
 - No-huddle flag was purely cosmetic — toggled in UI but never passed to game engine.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture
@@ -152,10 +153,9 @@ class TestOOBDesignationForces10SecAllQuarters:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play', return_value=_make_sack_result()):
-            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
-                              out_of_bounds_designation=True)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_sack_result()), patch('paydirt.game_engine.random.uniform', return_value=30.0):
+            game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
+                          out_of_bounds_designation=True)
 
         time_used_min = 10.0 - game.state.time_remaining
         time_used_sec = time_used_min * 60
@@ -171,11 +171,10 @@ class TestOOBDesignationForces10SecAllQuarters:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()):
-            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
-                              out_of_bounds_designation=True,
-                              in_bounds_designation=True)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()), patch('paydirt.game_engine.random.uniform', return_value=30.0):
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
+                          out_of_bounds_designation=True,
+                          in_bounds_designation=True)
 
         time_used_min = 10.0 - game.state.time_remaining
         time_used_sec = time_used_min * 60
@@ -242,10 +241,8 @@ class TestNaturalOOBMarkerStillGated:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play',
-                    return_value=_make_yards_result(out_of_bounds=True)):
-            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result(out_of_bounds=True)), patch('paydirt.game_engine.random.uniform', return_value=30.0):
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
 
         time_used_min = 10.0 - game.state.time_remaining
         time_used_sec = time_used_min * 60
@@ -261,10 +258,8 @@ class TestNaturalOOBMarkerStillGated:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play',
-                    return_value=_make_yards_result(out_of_bounds=True)):
-            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result(out_of_bounds=True)), patch('paydirt.game_engine.random.uniform', return_value=30.0):
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
 
         time_used_min = 3.0 - game.state.time_remaining
         time_used_sec = time_used_min * 60
@@ -287,10 +282,9 @@ class TestNoHuddleReducesPlayTime:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()):
-            with patch('paydirt.game_engine.random.uniform', return_value=15.0) as mock_rand:
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
-                              no_huddle=True)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()), patch('paydirt.game_engine.random.uniform', return_value=15.0) as mock_rand:
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
+                          no_huddle=True)
 
         # Verify random.uniform was called with (15, 25) range
         mock_rand.assert_called_with(15, 25)
@@ -308,10 +302,9 @@ class TestNoHuddleReducesPlayTime:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()):
-            with patch('paydirt.game_engine.random.uniform', return_value=25.0) as mock_rand:
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
-                              no_huddle=False)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()), patch('paydirt.game_engine.random.uniform', return_value=25.0) as mock_rand:
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD,
+                          no_huddle=False)
 
         mock_rand.assert_called_with(25, 45)
 
@@ -388,11 +381,10 @@ class TestOOBDesignationOverridesNoHuddle:
         game.state.yards_to_go = 10
         game.state.is_home_possession = True
 
-        with patch('paydirt.game_engine.resolve_play', return_value=_make_sack_result()):
-            with patch('paydirt.game_engine.random.uniform', return_value=15.0) as mock_rand:
-                game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
-                              out_of_bounds_designation=True,
-                              no_huddle=True)
+        with patch('paydirt.game_engine.resolve_play', return_value=_make_sack_result()), patch('paydirt.game_engine.random.uniform', return_value=15.0) as mock_rand:
+            game.run_play(PlayType.MEDIUM_PASS, DefenseType.STANDARD,
+                          out_of_bounds_designation=True,
+                          no_huddle=True)
 
         # Sack ignores OOB designation, falls through to no_huddle range (15, 25)
         mock_rand.assert_called_with(15, 25)
@@ -413,13 +405,12 @@ class TestPenaltyProcedurePassesNoHuddle:
         game.state.yards_to_go = 1
         game.state.is_home_possession = True
 
-        with patch.object(game, 'run_play', wraps=game.run_play) as mock_run_play:
-            with patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()):
-                # QB_SNEAK goes through run_play directly (special teams path)
-                game.run_play_with_penalty_procedure(
-                    PlayType.QB_SNEAK, DefenseType.STANDARD,
-                    no_huddle=True,
-                )
+        # QB_SNEAK goes through run_play directly (special teams path)
+        with patch.object(game, 'run_play', wraps=game.run_play) as mock_run_play, patch('paydirt.game_engine.resolve_play', return_value=_make_yards_result()):
+            game.run_play_with_penalty_procedure(
+                PlayType.QB_SNEAK, DefenseType.STANDARD,
+                no_huddle=True,
+            )
 
         # Verify no_huddle=True was passed to run_play
         assert mock_run_play.called

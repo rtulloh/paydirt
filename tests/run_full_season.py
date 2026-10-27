@@ -5,11 +5,13 @@ Run from the repository root: python3 tests/run_full_season.py
 Uses real engine rules/dice and CLI flow, with AI supplying human decisions.
 Requires the test dependencies (pytest). Never writes saved standings.
 """
+from __future__ import annotations
 
 import contextlib
 import io
-from pathlib import Path
+import logging
 import sys
+from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
@@ -18,12 +20,11 @@ import pytest
 # Support direct execution as well as importing this runner in unit tests.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from paydirt.game_engine import PaydirtGameEngine
 from paydirt.computer_ai import ComputerAI
+from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType
 from paydirt.standings import Season
 from tests.test_untimed_down_flow import run_seeded_cli_game
-
 
 SEASON_DIR = Path(__file__).resolve().parents[1] / "seasons" / "1983"
 
@@ -98,6 +99,7 @@ def run_full_season(teams: list[str]) -> int:
                 overtime += engine.state.ot_period > 0
                 ties += engine.state.home_score == engine.state.away_score
             except Exception as error:
+                logging.getLogger(__name__).debug("Operation failed", exc_info=True)
                 failures += 1
                 print(
                     f"FAIL week={week} matchup={matchup} {away}@{home} seed={seed}: "
@@ -159,7 +161,7 @@ def run_playoffs(season: Season) -> int:
             raise ValueError("Kickoff attempted after game over")
         return original_kickoff(engine, *args, **kwargs)
 
-    def play(round_name: str, away: str, home: str, seed: int) -> Optional[str]:
+    def play(round_name: str, away: str, home: str, seed: int) -> str | None:
         nonlocal attempted, failures, overtime, ties
         attempted += 1
         output = io.StringIO()
@@ -178,6 +180,7 @@ def run_playoffs(season: Season) -> int:
                   f"{home} {engine.state.home_score}; winner={winner}; seed={seed}", flush=True)
             return winner
         except Exception as error:
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
             failures += 1
             print(f"FAIL {round_name} {away}@{home} seed={seed}: "
                   f"{type(error).__name__}: {error}", file=sys.stderr)
@@ -264,27 +267,31 @@ def run_historical_reproductions() -> int:
         # The receiving team now rolls its own kickoff return (RULE-010), which
         # changed the 19831107 trajectory. Retain it as a complete game and require
         # the untimed down in an independently verified supplement.
-        ("Raiders", "Eagles", 19831127, True),
+        ("Raiders", "Eagles", 19831127, False),
+        # Corrected offensive dice (1d34a45) change both prior extension seeds.
+        # Keep those full games; these supplements award and play real untimed downs.
+        ("Raiders", "Eagles", 19831141, True),
         # Retain prior reproductions when corrected commentary/timing changes
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),
         ("Chiefs", "Giants", 19831607, False),
         ("Chiefs", "Giants", 19831621, False),
         ("Chiefs", "Giants", 19831623, False),
-        ("Chiefs", "Giants", 19831624, True),
+        ("Chiefs", "Giants", 19831624, False),
+        ("Chiefs", "Giants", 19831631, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )
     for away, home, seed, needs_untimed in cases:
         output = io.StringIO()
         try:
-            with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
-                with patch.object(ComputerAI, "select_offense_with_clock_management", play_on):
-                    engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
+            with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output), patch.object(ComputerAI, 'select_offense_with_clock_management', play_on):
+                engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
             validate_game(engine, output.getvalue())
             if needs_untimed and "UNTIMED DOWN" not in output.getvalue():
                 raise ValueError("Expected untimed-down reproduction was not exercised")
         except Exception as error:
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
             failures += 1
             print(f"FAIL {away}@{home} seed={seed}: {error}", file=sys.stderr)
             print(output.getvalue(), file=sys.stderr)

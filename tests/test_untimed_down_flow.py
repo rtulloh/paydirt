@@ -6,12 +6,17 @@ from unittest.mock import Mock
 import pytest
 
 from paydirt import interactive_game as cli
-from tests.game_fixtures import make_sample_game
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture
@@ -163,7 +168,7 @@ def run_seeded_cli_game(
         nonlocal choices
         choices += 1
         assert choices < 1000, "Excessive plays"
-        play, oob, no_huddle, short_drop, coffin, spike = ai.select_offense_with_clock_management(engine)
+        play, oob, no_huddle, _short_drop, _coffin, spike = ai.select_offense_with_clock_management(engine)
         return play, no_huddle, oob, False, False, spike
 
     def defense(engine, *args) -> tuple:

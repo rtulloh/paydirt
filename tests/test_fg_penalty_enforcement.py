@@ -5,9 +5,9 @@ from unittest.mock import patch
 import pytest
 
 from paydirt import interactive_game as cli
-from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.play_resolver import DefenseType, PlayType
+from tests.game_fixtures import make_sample_game
 
 
 @pytest.fixture(params=[True, False], ids=["home-kicking", "away-kicking"])

@@ -1,7 +1,7 @@
 """Exact coaching-score arithmetic and bounded history, not gameplay odds."""
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 
 import pytest
 

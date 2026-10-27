@@ -7,13 +7,12 @@ Usage:
 """
 
 import argparse
-from .packaging import get_seasons_path
 
 from .chart_loader import find_team_charts, load_team_chart
-from .game_engine import PaydirtGameEngine
 from .computer_ai import ComputerAI
+from .game_engine import PaydirtGameEngine
+from .packaging import get_seasons_path
 from .standings import StandingsManager, display_standings
-
 
 # 1983 NFL Week 1 Schedule (actual historical matchups)
 # Format: (away_team, home_team)

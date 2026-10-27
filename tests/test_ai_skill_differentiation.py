@@ -1,8 +1,8 @@
 """Synthetic regressions for Medium team awareness and Easy coaching."""
 
+import random
 from copy import deepcopy
 from types import SimpleNamespace
-import random
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +13,6 @@ from paydirt.chart_loader import OffenseChart
 from paydirt.computer_ai import create_computer_ai
 from paydirt.play_resolver import PlayType, chart_roll_weights, is_passing_play
 from tests.game_fixtures import make_sample_game
-
 
 RUN_COLUMNS = ("line_plunge", "off_tackle", "end_run", "draw")
 PASS_COLUMNS = ("screen", "short_pass", "medium_pass", "long_pass", "te_short_long")

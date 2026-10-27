@@ -1,16 +1,18 @@
 """
 Tests for play modifiers functionality: suffix parsing and modifier handling.
 """
-import pytest
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from routes import parse_play_with_modifiers
-from paydirt.play_resolver import PlayType
 from fastapi.testclient import TestClient
 from main import app
+from routes import parse_play_with_modifiers
+
+from paydirt.play_resolver import PlayType
 
 
 class TestParsePlayWithModifiers:
@@ -107,7 +109,7 @@ class TestParsePlayWithModifiers:
             ("F", PlayType.FIELD_GOAL),
         ]
         for play_char, expected_type in plays:
-            play_type, modifiers = parse_play_with_modifiers(play_char)
+            play_type, _modifiers = parse_play_with_modifiers(play_char)
             assert play_type == expected_type, f"Play {play_char} should map to {expected_type}"
     
     def test_empty_string_raises_error(self):
@@ -136,19 +138,19 @@ class TestModifierEdgeCases:
         """Backend should allow spike on any down (UI may restrict)."""
         # This tests that backend doesn't reject spike on 4th down
         # The engine will handle the turnover if needed
-        play_type, modifiers = parse_play_with_modifiers("7S")
+        _play_type, modifiers = parse_play_with_modifiers("7S")
         assert modifiers['call_spike'] is True
     
     def test_timeout_without_timeouts_backend(self):
         """Backend should allow timeout modifier even if no timeouts left."""
         # The engine will handle whether timeout succeeds
-        play_type, modifiers = parse_play_with_modifiers("7T")
+        _play_type, modifiers = parse_play_with_modifiers("7T")
         assert modifiers['call_timeout'] is True
     
     def test_out_of_bounds_with_in_bounds(self):
         """Both out-of-bounds and in-bounds modifiers can be set."""
         # This is technically possible but UI should prevent it
-        play_type, modifiers = parse_play_with_modifiers("7+-")
+        _play_type, modifiers = parse_play_with_modifiers("7+-")
         assert modifiers['out_of_bounds'] is True
         assert modifiers['in_bounds'] is True
 

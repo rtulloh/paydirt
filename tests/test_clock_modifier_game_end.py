@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.game_fixtures import make_sample_game
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType
+from tests.game_fixtures import make_sample_game
 from tests.test_untimed_down_flow import run_seeded_cli_game
 
 

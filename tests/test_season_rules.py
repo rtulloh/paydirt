@@ -4,25 +4,26 @@ Tests for season rules configuration.
 Tests loading YAML files, scaffolding, validation,
 and integration with the game engine.
 """
-import pytest
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
 
-from paydirt.season_rules import (
-    SeasonRules,
-    OvertimeConfig,
-    load_season_rules,
-    season_rules_to_overtime_rules,
-    scaffold_season_rules,
-    load_ai_behavior,
-    AIBehavior,
-    TwoMinuteDrill,
-    HurryUp,
-    ClockKilling,
-    AIStrategic,
-)
+import pytest
+
 from paydirt.overtime_rules import OvertimeFormat, OvertimeRules
+from paydirt.season_rules import (
+    AIBehavior,
+    AIStrategic,
+    ClockKilling,
+    HurryUp,
+    OvertimeConfig,
+    SeasonRules,
+    TwoMinuteDrill,
+    load_ai_behavior,
+    load_season_rules,
+    scaffold_season_rules,
+    season_rules_to_overtime_rules,
+)
 
 
 @pytest.fixture

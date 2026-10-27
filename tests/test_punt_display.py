@@ -106,7 +106,8 @@ class TestPuntDescriptionParsing:
     
     def test_touchback_detected(self):
         """Touchback keyword should be detected."""
-        assert "Touchback" in "Punt 55 yards into the end zone - Touchback at the 20"
+        description = "Punt 55 yards into the end zone - Touchback at the 20"
+        assert "Touchback" in description
     
     def test_fair_catch_detected(self):
         """Fair catch should be detected case-insensitively."""

@@ -2,8 +2,9 @@
 Tests for the teams module.
 """
 import pytest
-from paydirt.teams import get_team, list_teams, get_sample_teams
+
 from paydirt.models import Team
+from paydirt.teams import get_sample_teams, get_team, list_teams
 
 
 class TestGetSampleTeams:

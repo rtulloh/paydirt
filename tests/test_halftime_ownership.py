@@ -4,7 +4,14 @@ from unittest.mock import patch
 
 import pytest
 
-from paydirt.play_resolver import DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType
+from paydirt.play_resolver import (
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
+)
 from paydirt.save_game import load_game, save_game
 from tests.game_fixtures import make_sample_game
 

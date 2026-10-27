@@ -1,16 +1,15 @@
 """
 Tests for game save/load functionality.
 """
-import os
 import json
+import os
 import tempfile
+
 import pytest
 
-from paydirt.save_game import save_game, load_game, get_save_info
+from paydirt.chart_loader import load_team_chart
 from paydirt.game_engine import PaydirtGameEngine, ScoringPlay
-from paydirt.chart_loader import (
-    load_team_chart
-)
+from paydirt.save_game import get_save_info, load_game, save_game
 
 
 @pytest.fixture

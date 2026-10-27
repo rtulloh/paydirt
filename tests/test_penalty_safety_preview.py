@@ -1,7 +1,7 @@
 """Penalty choices must preview an end-zone loss as a safety, not own one."""
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 from unittest.mock import patch
 
 import pytest

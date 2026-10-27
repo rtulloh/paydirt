@@ -7,11 +7,12 @@ to stop the clock. Per Paydirt rules:
 - Only useful when clock is running (not after incomplete, OOB, turnover)
 - Saves time for two-minute drill scenarios
 """
-import pytest
 from unittest.mock import MagicMock
 
-from paydirt.play_resolver import ResultType
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import ResultType
 
 # Methods are now on the game engine:
 # game._apply_spike(time_before_play, quarter_before_play)
@@ -130,7 +131,7 @@ class TestShouldApplySpikeAfterPlay:
     def test_spike_applied_after_breakaway(self, game):
         """Spike should be applied after breakaway play."""
         outcome = self.create_outcome(ResultType.BREAKAWAY)
-        should_apply, msg = game._should_apply_spike_after_play(outcome, play_seconds=20)
+        should_apply, _msg = game._should_apply_spike_after_play(outcome, play_seconds=20)
         
         assert should_apply is True
     

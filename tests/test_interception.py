@@ -6,12 +6,19 @@ Official rules:
 - Defense rolls offensive dice and consults Interception Return column
 - Defense may decline the interception (treat as incompletion) - handled in interactive mode
 """
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture
@@ -89,12 +96,11 @@ class TestInterceptionSpot:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 10 (5 yard return)
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        # Return roll of 10 (5 yard return)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # INT 8 from 50 = ball at 58 from offense view
         # From defense view = 100 - 58 = 42
@@ -114,11 +120,10 @@ class TestInterceptionSpot:
             dice_roll=11,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (12, "B1+W2+W0=12")  # 0 yard return
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (12, "B1+W2+W0=12")  # 0 yard return
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # INT -5 from 50 = ball at 45 from offense view
         # From defense view = 100 - 45 = 55
@@ -142,12 +147,11 @@ class TestInterceptionReturn:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 14 (20 yard return)
-                mock_dice.return_value = (14, "B1+W4+W0=14")
+        # Return roll of 14 (20 yard return)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (14, "B1+W4+W0=14")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         assert outcome.result.int_return_yards == 20
         assert outcome.result.int_return_dice == 14
@@ -165,12 +169,11 @@ class TestInterceptionReturn:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 15 (-5 yard return)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Return roll of 15 (-5 yard return)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         assert outcome.result.int_return_yards == -5
 
@@ -192,12 +195,11 @@ class TestInterceptionReturnTouchdown:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 16 (TD)
-                mock_dice.return_value = (16, "B1+W6+W0=16")
+        # Return roll of 16 (TD)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (16, "B1+W6+W0=16")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         assert outcome.touchdown is True
         # Away team (defense) should have scored
@@ -222,12 +224,11 @@ class TestInterceptionReturnIntoEndZone:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 15 (-5 yard return) - pushes into end zone
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Return roll of 15 (-5 yard return) - pushes into end zone
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # INT at defense's 2, return -5 = position -3 (in end zone)
         # Per momentum rule, this is a TOUCHBACK at 20
@@ -253,14 +254,13 @@ class TestInterceptionReturnIntoEndZone:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # -6 yard return (like NYG/LAR roll 12)
-                mock_dice.return_value = (12, "B1+W2+W0=12")
-                # Temporarily set return chart to have -6
-                game.state.away_chart.special_teams.interception_return[12] = "-6"
+        # -6 yard return (like NYG/LAR roll 12)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (12, "B1+W2+W0=12")
+            # Temporarily set return chart to have -6
+            game.state.away_chart.special_teams.interception_return[12] = "-6"
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # INT at 2, return -6 = -4 (in end zone) -> touchback at 20
         assert game.state.ball_position == 20
@@ -283,11 +283,10 @@ class TestInterceptionPossessionChange:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # Home was on offense, so away should now have possession
         assert game.state.is_home_possession is False
@@ -308,11 +307,10 @@ class TestInterceptionPossessionChange:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         assert game.state.down == 1
         assert game.state.yards_to_go == 10
@@ -336,11 +334,10 @@ class TestInterceptionStats:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
                 
-                game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # After interception, possession switched, so check home_stats directly
         assert game.state.home_stats.interceptions_thrown == initial_ints + 1
@@ -366,12 +363,11 @@ class TestInterceptionInEndZone:
             dice_roll=11,
         )
 
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll shouldn't matter - touchback has no return
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        # Return roll shouldn't matter - touchback has no return
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
 
         # Should be a touchback, NOT a touchdown
         assert outcome.touchdown is False
@@ -395,11 +391,10 @@ class TestInterceptionInEndZone:
             dice_roll=11,
         )
 
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
 
         assert outcome.touchdown is False
         assert game.state.away_score == initial_away_score
@@ -445,12 +440,11 @@ class TestInterceptionInEndZone:
             dice_roll=11,
         )
 
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Return roll of 10 = 5 yard return
-                mock_dice.return_value = (10, "B1+W0+W0=10")
+        # Return roll of 10 = 5 yard return
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")
 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
 
         # Should have a return (not touchback, not TD)
         # INT spot from defense = 100 - 15 = 85, plus 5 return = 90

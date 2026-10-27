@@ -5,8 +5,8 @@ import json
 import os
 import tempfile
 
-from paydirt.ai_save import get_ai_filepath, save_ai_data, load_ai_data
 from paydirt.ai_analysis import OpponentModel
+from paydirt.ai_save import get_ai_filepath, load_ai_data, save_ai_data
 
 
 class MockCpuAI:

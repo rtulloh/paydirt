@@ -1,11 +1,12 @@
 """
 Tests for the ResultFormatter class.
 """
-import pytest
 from unittest.mock import MagicMock
 
-from paydirt.result_formatter import ResultFormatter
+import pytest
+
 from paydirt.play_resolver import PlayType, ResultType
+from paydirt.result_formatter import ResultFormatter
 
 
 class TestResultFormatterFumbleCommentary:

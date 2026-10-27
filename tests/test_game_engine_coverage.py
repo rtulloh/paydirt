@@ -2,18 +2,19 @@
 Tests for game_engine.py to improve coverage for specific functions.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from paydirt.game_engine import PaydirtGameEngine
-from paydirt.play_resolver import PlayType, DefenseType
+import pytest
+
 from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
     DefenseChart,
+    OffenseChart,
+    PeripheralData,
     SpecialTeamsChart,
+    TeamChart,
 )
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType
 
 
 def create_mock_chart(short_name: str = "TEST", year: int = 1983) -> TeamChart:

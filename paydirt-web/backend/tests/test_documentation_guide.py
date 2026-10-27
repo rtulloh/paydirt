@@ -1,14 +1,13 @@
 """Offline guide loading and packaging regressions."""
 
 import ast
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
-from main import app
 import routes
+from fastapi.testclient import TestClient
+from main import app
 
 PAGES = (
     "installation", "web-interface", "playing", "priority-chart", "clock-management",
@@ -93,9 +92,7 @@ def test_packaging_includes_markdown_guides_and_images(spec: str) -> None:
     tree = ast.parse((root / spec).read_text())
     data = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "datas" for t in node.targets):
-            data.extend(ast.literal_eval(node.value))
-        elif isinstance(node, ast.keyword) and node.arg == "datas" and isinstance(node.value, ast.List):
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "datas" for t in node.targets) or isinstance(node, ast.keyword) and node.arg == "datas" and isinstance(node.value, ast.List):
             data.extend(ast.literal_eval(node.value))
     assert ("docs/*.md", "docs") in data
     assert ("docs/images", "docs/images") in data

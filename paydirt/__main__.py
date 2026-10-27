@@ -3,16 +3,18 @@ Entry point for running the paydirt package as a module.
 Usage: python -m paydirt [--play [-d easy|medium|hard] [--compact] | --load [file] | --auto away home | --web [--port PORT]]
 """
 
-import sys
+import logging
 import os
-import webbrowser
+import sys
 import threading
 import time
+import webbrowser
+
 from .packaging import get_all_season_paths, get_seasons_path
 
 # Pre-import uvicorn for PyInstaller bundling
 try:
-    import uvicorn  # noqa: F401
+    import uvicorn
 except ImportError as e:
     print(f"Warning: uvicorn not available: {e}")
 
@@ -101,10 +103,11 @@ def start_web_server(port=8000, open_browser=True):
                 if hasattr(backend_routes, "router"):
                     app.include_router(backend_routes.router)
                 else:
-                    raise Exception("routes.py has no router")
+                    raise RuntimeError("routes.py has no router")
             else:
-                raise Exception(f"routes.py not found at {routes_file}")
+                raise FileNotFoundError(f"routes.py not found at {routes_file}")
         except Exception as e:
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
             print(f"ERROR loading routes.py: {e}", flush=True)
             import traceback
 

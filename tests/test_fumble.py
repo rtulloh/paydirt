@@ -11,12 +11,19 @@ Official rules:
   - Note: Auto TD on roll 19/39 only applies to BLOCKED KICKS, not regular fumbles (RULE-015)
 - If offense recovers on 4th down but fails to make first down yardage, defense takes over
 """
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture
@@ -101,12 +108,11 @@ class TestFumbleRecovery:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (within 10-27 range = recovered)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (within 10-27 range = recovered)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert outcome.turnover is False
@@ -125,12 +131,11 @@ class TestFumbleRecovery:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 30 (within 28-39 range = lost)
-                mock_dice.return_value = (30, "B2+W5+W4=30")
+        # Recovery roll of 30 (within 28-39 range = lost)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (30, "B2+W5+W4=30")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is False
         assert outcome.turnover is True
@@ -153,11 +158,10 @@ class TestFumbleSpot:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Fumble at 50 + 5 = 55
         assert outcome.result.fumble_spot == 55
@@ -175,11 +179,10 @@ class TestFumbleSpot:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Fumble at 50 - 3 = 47
         assert outcome.result.fumble_spot == 47
@@ -201,13 +204,12 @@ class TestFumbleSpecialReturns:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # First call: recovery roll of 17 (triggers return)
-                # Second call: return roll of 14 (20 yard return)
-                mock_dice.side_effect = [(17, "B1+W7+W0=17"), (14, "B1+W4+W0=14")]
+        # First call: recovery roll of 17 (triggers return)
+        # Second call: return roll of 14 (20 yard return)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(17, "B1+W7+W0=17"), (14, "B1+W4+W0=14")]
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert outcome.result.fumble_return_yards == 20
@@ -227,12 +229,11 @@ class TestFumbleSpecialReturns:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 19, then INT return roll of 14 -> 20 yards
-                mock_dice.side_effect = [(19, "B1+W9+W0=19"), (14, "B1+W4+W0=14")]
+        # Recovery roll of 19, then INT return roll of 14 -> 20 yards
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(19, "B1+W9+W0=19"), (14, "B1+W4+W0=14")]
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should NOT be auto TD - should use INT return chart
         # Fumble at 53, return of 20 yards = position 73, not a TD
@@ -254,13 +255,12 @@ class TestFumbleSpecialReturns:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # First call: recovery roll of 37 (triggers return)
-                # Second call: return roll of 14 (20 yard return)
-                mock_dice.side_effect = [(37, "B3+W5+W3=37"), (14, "B1+W4+W0=14")]
+        # First call: recovery roll of 37 (triggers return)
+        # Second call: return roll of 14 (20 yard return)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(37, "B3+W5+W3=37"), (14, "B1+W4+W0=14")]
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is False
         assert outcome.result.fumble_return_yards == 20
@@ -280,12 +280,11 @@ class TestFumbleSpecialReturns:
             dice_roll=10,
         )
 
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 39, then the return roll of 10 -> 5 yards
-                mock_dice.side_effect = [(39, "B3+W5+W5=39"), (10, "B1+W0+W0=10")]
+        # Recovery roll of 39, then the return roll of 10 -> 5 yards
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(39, "B3+W5+W5=39"), (10, "B1+W0+W0=10")]
 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
 
         assert outcome.touchdown is False
         assert game.state.away_score == initial_away_score
@@ -300,10 +299,9 @@ class TestFumbleSpecialReturns:
         mock_result = PlayResult(
             result_type=ResultType.FUMBLE, yards=3, turnover=True, raw_result="F + 3", dice_roll=10,
         )
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.side_effect = [(39, "B3+W5+W5=39"), (16, "B1+W3+W3=16")]  # Cell 16 is "TD".
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(39, "B3+W5+W5=39"), (16, "B1+W3+W3=16")]  # Cell 16 is "TD".
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         assert outcome.touchdown is True
         assert game.state.away_score == 6
 
@@ -326,12 +324,11 @@ class TestFumbleFourthDown:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (recovered)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (recovered)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Offense recovered but short of first down on 4th down
         assert outcome.result.fumble_recovered is True
@@ -353,12 +350,11 @@ class TestFumbleFourthDown:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (recovered)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (recovered)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Offense recovered past first down marker
         assert outcome.result.fumble_recovered is True
@@ -383,12 +379,11 @@ class TestFumbleStats:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 30 (lost)
-                mock_dice.return_value = (30, "B2+W5+W4=30")
+        # Recovery roll of 30 (lost)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (30, "B2+W5+W4=30")
                 
-                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert game.state.home_stats.fumbles_lost == initial_fumbles + 1
     
@@ -406,12 +401,11 @@ class TestFumbleStats:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (recovered)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (recovered)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert game.state.home_stats.fumbles_lost == initial_fumbles  # No change
 
@@ -527,12 +521,11 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (within 10-27 range = recovered)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (within 10-27 range = recovered)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert outcome.turnover is False
@@ -554,11 +547,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert game.state.down == 3  # 2nd -> 3rd
@@ -579,11 +571,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert game.state.down == 4  # 3rd -> 4th
@@ -604,11 +595,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert game.state.ball_position == 53  # 50 + 3
@@ -630,11 +620,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert game.state.ball_position == 47  # 50 - 3
@@ -656,11 +645,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         assert outcome.first_down is True
@@ -683,12 +671,11 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 30 (within 28-39 range = lost)
-                mock_dice.side_effect = [(30, "B2+W5+W4=30"), (10, "B1+W0+W0=10")]
+        # Recovery roll of 30 (within 28-39 range = lost)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.side_effect = [(30, "B2+W5+W4=30"), (10, "B1+W0+W0=10")]
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is False
         assert outcome.turnover is True
@@ -712,11 +699,10 @@ class TestFumbleRecoveryDownAdvancement:
             dice_roll=10,
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.result.fumble_recovered is True
         # Fumbles lost should not increase when offense recovers
@@ -728,7 +714,7 @@ class TestFumbleActionLine:
 
     def test_fumble_turnover_zero_return_shows_spot(self, game):
         """Defense fumble recovery with 0 return yards should show the fumble spot."""
-        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
         
         # Create a transaction with fumble turnover and 0 return yards
         txn = PlayTransaction()
@@ -766,7 +752,7 @@ class TestFumbleActionLine:
 
     def test_fumble_turnover_with_return_yards(self, game):
         """Defense fumble recovery with positive return yards."""
-        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
         
         txn = PlayTransaction()
         txn.add_event(PlayEvent(
@@ -947,7 +933,7 @@ class TestFumbleFieldPositionDisplay:
 
     def test_fumble_in_own_territory_shows_own(self):
         """Fumble at own 36 should display as 'own 36'."""
-        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
         
         txn = PlayTransaction()
         txn.add_event(PlayEvent(
@@ -971,7 +957,7 @@ class TestFumbleFieldPositionDisplay:
 
     def test_fumble_in_opponent_territory_shows_opponent(self):
         """Fumble at position 72 (opponent's 28) should display as 'opponent's 28'."""
-        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
         
         txn = PlayTransaction()
         txn.add_event(PlayEvent(
@@ -995,7 +981,7 @@ class TestFumbleFieldPositionDisplay:
 
     def test_fumble_at_midfield_shows_midfield(self):
         """Fumble at position 50 (midfield) should display as 'midfield'."""
-        from paydirt.play_events import PlayTransaction, EventType, PlayEvent
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
         
         txn = PlayTransaction()
         txn.add_event(PlayEvent(

@@ -10,8 +10,8 @@ This is a PROTOTYPE to evaluate the viability of the transaction approach.
 
 from .play_events import (
     EventType,
-    PlayTransaction,
     PendingDecision,
+    PlayTransaction,
 )
 
 

@@ -1,6 +1,7 @@
 """
 Shared utility functions for Paydirt.
 """
+from __future__ import annotations
 
 
 def ordinal_suffix(n: int) -> str:
@@ -51,7 +52,7 @@ def ordinal(n: int) -> str:
     return f"{n}{ordinal_suffix(n)}"
 
 
-def format_down_and_distance(down: int, yards_to_go: int, yards_to_goal: int = None) -> str:
+def format_down_and_distance(down: int, yards_to_go: int, yards_to_goal: int | None = None) -> str:
     """
     Format down and distance for display.
     
@@ -165,7 +166,7 @@ def format_field_position_with_team(position: int, off_team: str, def_team: str)
         return f"{def_abbrev} {100 - position}"
 
 
-def format_dice_roll(roll: int, dice_desc: str = None, result: str = None, 
+def format_dice_roll(roll: int, dice_desc: str | None = None, result: str | None = None, 
                      prefix: str = "", style: str = "standard") -> str:
     """
     Format a dice roll for display in a standardized way.
@@ -211,8 +212,8 @@ def format_dice_roll(roll: int, dice_desc: str = None, result: str = None,
 
 
 def format_play_dice_line(off_roll: int, off_result: str, def_row: str, def_result: str,
-                          off_dice_desc: str = None, def_dice_desc: str = None,
-                          priority: str = None, extra_info: str = "") -> str:
+                          off_dice_desc: str | None = None, def_dice_desc: str | None = None,
+                          priority: str | None = None, extra_info: str = "") -> str:
     """
     Format the standard dice line for a play showing offense and defense rolls.
     
@@ -250,7 +251,7 @@ def format_play_dice_line(off_roll: int, off_result: str, def_row: str, def_resu
     return result
 
 
-def parse_field_position(field_str: str, off_team: str = None) -> int:
+def parse_field_position(field_str: str, off_team: str | None = None) -> int:
     """
     Convert human-readable field position to internal position (1-99).
     
@@ -279,7 +280,7 @@ def parse_field_position(field_str: str, off_team: str = None) -> int:
     if field_str.startswith("own "):
         return int(field_str.replace("own ", ""))
     
-    if field_str.startswith("opponent's ") or field_str.startswith("opp "):
+    if field_str.startswith(("opponent's ", "opp ")):
         yard_line = int(field_str.replace("opponent's ", "").replace("opp ", ""))
         return 100 - yard_line
     

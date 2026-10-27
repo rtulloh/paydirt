@@ -1,0 +1,205 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permissions": [
+    {
+      "action": "shell",
+      "resource": "*",
+      "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "git init *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git status *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git diff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git log *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git show *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git add *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git commit *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git branch *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "mkdir *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 -m pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 -m pip install *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "ruff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/ruff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "*/.venv/bin/ruff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/python -m pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "*/.venv/bin/python -m pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/run_ai_audit.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/run_all_games.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/run_full_season.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/run_sample_balance.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/run_trailing_defense.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 tests/simulate_special_plays.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 scripts/build_issue_index.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm ci *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm run test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm run test:coverage *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm run test:e2e *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npm run build *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx vitest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx vite build *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx playwright *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "pwd",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "date *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git push *",
+      "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "git reset *",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "git rebase *",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "git checkout *",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm *",
+      "effect": "deny"
+    }
+  ]
+}

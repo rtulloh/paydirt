@@ -9,27 +9,28 @@ Tests the full penalty procedure per Paydirt rules:
 - If PI, no rerolls - defensive result cancelled, incomplete pass
 """
 
-import pytest
 from unittest.mock import patch
 
-from paydirt.play_resolver import (
-    PlayType,
-    DefenseType,
-    ResultType,
-    PlayResult,
-    PenaltyChoice,
-    PenaltyOption,
-    _is_penalty_result,
-    _create_penalty_option,
-    resolve_play_with_penalties,
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
-from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
-    DefenseChart,
-    SpecialTeamsChart,
+from paydirt.play_resolver import (
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
+    _create_penalty_option,
+    _is_penalty_result,
+    resolve_play_with_penalties,
 )
 
 
@@ -1169,8 +1170,8 @@ class TestPenaltyChoiceTransaction:
 
     def test_penalty_choice_has_transaction(self, game_engine):
         """PenaltyChoice should include a transaction with play events."""
-        from paydirt.play_resolver import resolve_play_with_penalties, PlayType, DefenseType
         from paydirt.play_events import EventType
+        from paydirt.play_resolver import DefenseType, PlayType, resolve_play_with_penalties
 
         offense_chart = game_engine.state.possession_team
         defense_chart = game_engine.state.defense_team
@@ -1198,8 +1199,8 @@ class TestPenaltyChoiceTransaction:
     def test_fumble_transaction_has_recovery_info(self):
         """Fumble transaction should capture recovery roll details."""
         from paydirt.play_events import (
-            PlayTransaction,
             EventType,
+            PlayTransaction,
             create_fumble_event,
             create_recovery_event,
         )
@@ -1236,8 +1237,8 @@ class TestPenaltyChoiceTransaction:
     def test_turnover_fumble_transaction(self):
         """Fumble with defense recovery should show possession change."""
         from paydirt.play_events import (
-            PlayTransaction,
             EventType,
+            PlayTransaction,
             create_fumble_event,
             create_recovery_event,
         )

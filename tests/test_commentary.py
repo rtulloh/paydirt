@@ -3,14 +3,12 @@ Tests for the commentary system and roster loading.
 """
 import json
 import os
-import pytest
 import tempfile
 from pathlib import Path
 
-from paydirt.commentary import (
-    TeamRoster, get_roster, load_roster_from_file,
-    Commentary
-)
+import pytest
+
+from paydirt.commentary import Commentary, TeamRoster, get_roster, load_roster_from_file
 from paydirt.play_resolver import PlayType, ResultType
 
 # Check if 1972/Dolphins season data exists

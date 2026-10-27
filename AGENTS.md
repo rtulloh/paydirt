@@ -95,7 +95,8 @@ It never saves standings. Failures include the matchup and seed for reproduction
 and the script exits nonzero. Playoffs do not run after regular-season failures.
 The runner requires pytest and private, local-only 1983 team data; these files
 are intentionally ignored and must never be committed or exported. It also runs
-nine historical full-game reproductions outside the unit suite.
+twelve historical full-game reproductions outside the unit suite, including two
+mandatory untimed-down scenarios verified with the corrected offensive dice.
 
 **When writing unit tests, use only synthetic fixtures or the public sample
 teams under `seasons/2026/`. Never load or depend on any other season data,

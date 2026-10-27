@@ -6,11 +6,18 @@ Official rules:
 - If result has † (downed/out of bounds) or * (fair catch), no return allowed
 - Otherwise, receiving team rolls offensive dice and consults Punt Return column
 """
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType
 
 

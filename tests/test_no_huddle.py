@@ -9,9 +9,7 @@ No Huddle Offense:
 """
 from unittest.mock import patch
 
-from paydirt.penalty_handler import (
-    PenaltyType, roll_no_huddle_penalty_yardage
-)
+from paydirt.penalty_handler import PenaltyType, roll_no_huddle_penalty_yardage
 
 
 class TestNoHuddleOffensiveScrimmage:

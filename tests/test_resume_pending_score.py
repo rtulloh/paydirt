@@ -7,17 +7,17 @@ possession flip caused the non-scoring team to kick off instead of the
 scoring team.
 """
 
-import os
 import json
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
 
-from paydirt.save_game import save_game, load_game
-from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
-
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.save_game import load_game, save_game
 
 # Check if 1972 season data exists for skipif markers
 _seasons_dir = Path(__file__).parent.parent / "seasons"
@@ -67,7 +67,7 @@ class TestResumePendingTouchdown:
         game.state.time_remaining = 10.0
         save_game(game, filepath=temp_save_file, human_is_away=True, human_is_home=False)
 
-        loaded_game, human_is_away, human_is_home, pending_score = load_game(temp_save_file)
+        loaded_game, _human_is_away, _human_is_home, pending_score = load_game(temp_save_file)
         assert pending_score == "touchdown"
 
         # Simulate the resume logic from interactive_game.py
@@ -131,7 +131,7 @@ class TestResumePendingTouchdown:
         game.state.away_score = 35
         save_game(game, filepath=temp_save_file, human_is_away=True, human_is_home=False)
 
-        loaded_game, _, _, pending_score = load_game(temp_save_file)
+        loaded_game, _, _, _pending_score = load_game(temp_save_file)
 
         # Reproduce the resume flow
         scoring_team_is_home = loaded_game.state.is_home_possession
@@ -438,7 +438,7 @@ class TestScoringSummaryLogging:
         game.state.time_remaining = 5.0
         save_game(game, filepath=temp_save_file)
 
-        loaded_game, _, _, pending_score = load_game(temp_save_file)
+        loaded_game, _, _, _pending_score = load_game(temp_save_file)
 
         # Log TD (the fix)
         from paydirt.game_state import ScoringPlay

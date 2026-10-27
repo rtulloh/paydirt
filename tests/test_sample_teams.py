@@ -1,5 +1,7 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from paydirt.chart_loader import load_team_chart
 from paydirt.game_engine import PaydirtGameEngine
 

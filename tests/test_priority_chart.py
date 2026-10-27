@@ -8,11 +8,14 @@ Key rules:
 - QT (quarterback trouble) should override breakaway
 """
 
-from paydirt.priority_chart import (
-    apply_priority_chart, categorize_result, 
-    ResultCategory, PriorityResult, PRIORITY_CHART
-)
 from paydirt.play_resolver import PlayType, is_passing_play
+from paydirt.priority_chart import (
+    PRIORITY_CHART,
+    PriorityResult,
+    ResultCategory,
+    apply_priority_chart,
+    categorize_result,
+)
 
 
 class TestCategorizeResult:
@@ -38,7 +41,7 @@ class TestCategorizeResult:
     
     def test_breakaway(self):
         """B should be categorized as breakaway."""
-        cat, val = categorize_result("B")
+        cat, _val = categorize_result("B")
         assert cat == ResultCategory.BREAKAWAY
     
     def test_parentheses_number(self):
@@ -55,12 +58,12 @@ class TestCategorizeResult:
     
     def test_qt(self):
         """QT should be categorized as quarterback trouble."""
-        cat, val = categorize_result("QT")
+        cat, _val = categorize_result("QT")
         assert cat == ResultCategory.QT
     
     def test_interception(self):
         """INT should be categorized as interception."""
-        cat, val = categorize_result("INT 15")
+        cat, _val = categorize_result("INT 15")
         assert cat == ResultCategory.INT
 
     def test_black_not_breakaway(self):

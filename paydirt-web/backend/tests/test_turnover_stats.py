@@ -1,6 +1,6 @@
 """The API exposes engine turnover counts without recalculating football stats."""
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from main import app
 from routes import games
+
 from paydirt.play_resolver import DefenseType, PlayType
 
 

@@ -5,9 +5,15 @@ from unittest.mock import patch
 
 import pytest
 
-from paydirt import commentary, interactive_game as cli
+from paydirt import commentary
+from paydirt import interactive_game as cli
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from paydirt.result_formatter import ResultFormatter
 from tests.game_fixtures import make_sample_game

@@ -4,12 +4,14 @@ Result Formatter for Paydirt Web UI.
 Pure presentation layer - takes PlayOutcome and returns UI-ready formatted result.
 No game logic here - purely formatting for display purposes.
 """
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
+from __future__ import annotations
 
-from .play_resolver import ResultType, PlayType
-from .game_state import PlayOutcome
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
 from .commentary import Commentary, TeamRoster
+from .game_state import PlayOutcome
+from .play_resolver import PlayType, ResultType
 
 
 @dataclass
@@ -41,7 +43,7 @@ class FormattedPlayResult:
 
     pending_penalty: bool = False
     penalty_description: str = ""
-    penalty_options: List[Dict[str, Any]] = field(default_factory=list)
+    penalty_options: list[dict[str, Any]] = field(default_factory=list)
     penalty_offended_team: str = ""
 
 
@@ -54,8 +56,8 @@ class ResultFormatter:
     """
 
     def __init__(self, offense_team: str, defense_team: str,
-                 offense_roster: Optional[Dict] = None,
-                 defense_roster: Optional[Dict] = None):
+                 offense_roster: dict | None = None,
+                 defense_roster: dict | None = None):
         self.offense_team = offense_team
         self.defense_team = defense_team
         self.offense_roster = offense_roster or {}
@@ -339,8 +341,8 @@ class ResultFormatter:
 def format_play_result(outcome: PlayOutcome,
                       offense_team: str,
                       defense_team: str,
-                      offense_roster: Optional[Dict] = None,
-                      defense_roster: Optional[Dict] = None) -> FormattedPlayResult:
+                      offense_roster: dict | None = None,
+                      defense_roster: dict | None = None) -> FormattedPlayResult:
     """
     Convenience function to format a play result.
 

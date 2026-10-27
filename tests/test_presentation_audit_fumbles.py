@@ -37,6 +37,7 @@ def test_offensive_fumble_advance_safety_announced_once(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, home: bool, view: str,
 ) -> None:
     from unittest.mock import patch
+
     from paydirt.play_resolver import PenaltyChoice, PlayResult, ResultType
     from tests.game_fixtures import make_sample_game
 

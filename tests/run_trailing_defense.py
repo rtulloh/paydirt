@@ -9,18 +9,18 @@ the default uses the actual public sample charts.
 """
 
 import argparse
+import random
+import sys
 from collections import Counter
 from copy import deepcopy
 from pathlib import Path
-import random
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from paydirt.computer_ai import create_computer_ai  # noqa: E402
-from paydirt.game_engine import PaydirtGameEngine  # noqa: E402
-from paydirt.play_resolver import DefenseType, PlayType  # noqa: E402
-from tests.game_fixtures import make_sample_game  # noqa: E402
+from paydirt.computer_ai import create_computer_ai
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType
+from tests.game_fixtures import make_sample_game
 
 
 def configure_synthetic_defense(game: PaydirtGameEngine) -> None:

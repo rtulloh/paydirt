@@ -5,14 +5,15 @@ Random isolation is serial/in-process, not thread-safe. No chart cells or narrat
 logs are exported. Reports are local developer evidence, not usage quotas.
 """
 
-from collections import Counter, defaultdict
 import contextlib
-from dataclasses import asdict, dataclass
 import hashlib
 import io
+import logging
 import platform
 import random
-from typing import Iterable
+from collections import Counter, defaultdict
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 from unittest.mock import patch
 
 from paydirt.auto_game import run_auto_game
@@ -22,7 +23,6 @@ from paydirt.game_state import PlayOutcome
 from paydirt.offense_strategy import situation_key
 from paydirt.play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType
 from tests.run_full_season import validate_game
-
 from tests.semantic_audit import SemanticAudit
 
 DIFFICULTIES = ("easy", "medium", "hard", "balanced")
@@ -180,6 +180,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     except Exception as error:
         # Never serialize engine exception text: malformed chart errors can
         # contain private cells/paths. Matchup/seed reproduce the local failure.
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
         limits = {
             "Auto-game play limit reached before game completion",
             "Auto-game penalty decision limit reached",

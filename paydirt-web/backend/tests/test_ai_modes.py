@@ -1,17 +1,25 @@
 """Web AI configuration and learning use only public sample teams."""
 
-from pathlib import Path
 import sys
-from typing import Any, Iterator
-from fastapi.testclient import TestClient
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
+
 import pytest
+from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from main import app
 import routes
+from main import app
+
 from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PlayType, PenaltyChoice, PlayResult, ResultType, parse_result_string,
+    DefenseType,
+    PenaltyChoice,
+    PlayResult,
+    PlayType,
+    ResultType,
+    parse_result_string,
 )
 
 

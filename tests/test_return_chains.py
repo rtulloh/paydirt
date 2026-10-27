@@ -12,6 +12,7 @@ the ball, an OFF foul is that team's choice (kickoffs prompt; the CPU keeps the
 recovery) and a DEF foul is always taken by the offended returner.
 Kickoff from the 35, 60 yards → lands at the 5; AWAY returns, HOME kicked.
 """
+from __future__ import annotations
 
 from typing import Optional
 from unittest.mock import patch
@@ -21,7 +22,7 @@ from tests.test_kickoff_return_penalties import kick, kick_game
 from tests.test_return_chart_rules import game_with_return_chart, interception, run
 
 
-def chain_game(return_cells: dict, away_fr: Optional[dict] = None, home_fr: Optional[dict] = None):
+def chain_game(return_cells: dict, away_fr: dict | None = None, home_fr: dict | None = None):
     game, kicker, receiver = kick_game()
     kicker.kickoff[24] = "60"
     receiver.kickoff_return.update(return_cells)

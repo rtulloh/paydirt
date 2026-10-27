@@ -1,17 +1,22 @@
 """Semantic audit regressions: expected decisions and actions, not just totals."""
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
 
+from paydirt import interactive_game as cli
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
-from paydirt import interactive_game as cli
 from paydirt.result_formatter import ResultFormatter
 from tests.game_fixtures import make_sample_game
 

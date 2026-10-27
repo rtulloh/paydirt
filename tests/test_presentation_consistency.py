@@ -227,6 +227,7 @@ def test_edge_announcements_use_one_player_facing_result(
 def test_core_roster_selection_preserves_seeded_engine_contract() -> None:
     """Isolating rendering must not change core scoring-name RNG consumption."""
     import random
+
     from paydirt.commentary import TeamRoster
 
     before = random.getstate()

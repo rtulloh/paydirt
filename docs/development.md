@@ -15,6 +15,12 @@ For browser development, follow the [web setup guide](../paydirt-web/README.md).
 Backend dependencies are separate from core dependencies. The release workflow currently uses Python 3.10 and Node.js 24.22.1;
 use a Python version compatible with the pinned backend packages and available wheels.
 
+Run `ruff check paydirt/ tests/ paydirt-web/backend/` for Python lint checks.
+Runtime-inspected API annotations retain Python 3.9-compatible typing for the
+existing local checks; this does not lower the declared Python 3.10+ requirement.
+Optional-operation fallback failures emit traceback diagnostics at DEBUG level
+without enabling debug logging by default or changing their existing fallback.
+
 ## Architecture and Project Structure
 
 The core engine is authoritative for game rules, state, scoring, descriptions, and timing.
@@ -123,3 +129,17 @@ kickoff still owed) and `second_half_kicking_home()`. `prepare_second_half_kicko
 hands the ball to that kicker at the kickoff spot. UI layers must use these queries
 rather than inferring halftime from one API path or guessing the kicker from
 possession; the web API reports `halftime_pending` in every game state.
+
+## OpenCode project permissions
+
+`opencode.json` adapts the Bowl Bound project template to native OpenCode V2
+permissions. It allows the named pytest, Ruff, frontend test/build, Playwright,
+and standalone game/AI-audit commands used above, including
+`python3 tests/run_ai_audit.py` with arguments. Run frontend commands from
+`paydirt-web/frontend` and backend pytest from `paydirt-web/backend`.
+
+Other shell commands require approval. Git pushes also require approval; reset,
+rebase, checkout, and `rm` remain denied. Unlike the source template, this file
+does not blanket-allow arbitrary `python3` scripts or retain Bowl Bound-specific
+frontend paths/environment variables. These permissions are convenience rules,
+not a sandbox or a replacement for the required pre-push validation.

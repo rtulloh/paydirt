@@ -1,8 +1,9 @@
 """Tests for penalty decision state calculation."""
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add parent directories to path
 backend_dir = Path(__file__).parent.parent
@@ -228,10 +229,11 @@ class TestPuntPenaltyDecision:
         'replay punt' (index 0).
         """
         from unittest.mock import MagicMock
+
         from paydirt.game_engine import PaydirtGameEngine
         from paydirt.game_state import PlayOutcome
-        from paydirt.models import PlayType, DefenseType
-        from paydirt.play_resolver import PlayResult, ResultType, PenaltyChoice, PenaltyOption
+        from paydirt.models import DefenseType, PlayType
+        from paydirt.play_resolver import PenaltyChoice, PenaltyOption, PlayResult, ResultType
 
         # Create mock charts
         home_chart = MagicMock()
@@ -322,10 +324,11 @@ class TestPuntPenaltyDecision:
         re-punt from a new position (LOS - penalty yards).
         """
         from unittest.mock import MagicMock
+
         from paydirt.game_engine import PaydirtGameEngine
         from paydirt.game_state import PlayOutcome
-        from paydirt.models import PlayType, DefenseType
-        from paydirt.play_resolver import PlayResult, ResultType, PenaltyChoice, PenaltyOption
+        from paydirt.models import DefenseType, PlayType
+        from paydirt.play_resolver import PenaltyChoice, PenaltyOption, PlayResult, ResultType
 
         home_chart = MagicMock()
         home_chart.peripheral.team_name = "Home"

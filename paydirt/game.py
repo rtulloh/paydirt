@@ -1,14 +1,18 @@
 """
 Main game engine for Paydirt football simulation.
 """
+from __future__ import annotations
+
 import random
 
-from .models import (
-    GameState, Team, PlayType, DefenseType, PlayOutcome, PlayResult
-)
+from .models import DefenseType, GameState, PlayOutcome, PlayResult, PlayType, Team
 from .team_charts import (
-    resolve_play, resolve_field_goal, resolve_punt,
-    resolve_extra_point, resolve_two_point_conversion, roll_dice
+    resolve_extra_point,
+    resolve_field_goal,
+    resolve_play,
+    resolve_punt,
+    resolve_two_point_conversion,
+    roll_dice,
 )
 
 
@@ -315,7 +319,7 @@ class PaydirtGame:
         self.state.switch_possession()
         self.state.ball_position = 20
 
-    def _use_play_time(self, seconds: float = None):
+    def _use_play_time(self, seconds: float | None = None):
         """Use game clock time for a play."""
         if seconds is None:
             # Random time between 5 and 40 seconds per play

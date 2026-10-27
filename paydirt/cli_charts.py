@@ -1,13 +1,15 @@
 """
 Command-line interface for Paydirt using actual team charts.
 """
+from __future__ import annotations
+
 import sys
 from typing import Optional
-from .packaging import get_seasons_path
 
-from .chart_loader import load_team_chart, find_team_charts
+from .chart_loader import find_team_charts, load_team_chart
 from .game_engine import PaydirtGameEngine, PlayOutcome
-from .play_resolver import PlayType, DefenseType
+from .packaging import get_seasons_path
+from .play_resolver import DefenseType, PlayType
 from .utils import ordinal
 
 
@@ -62,7 +64,7 @@ def print_defense_menu():
     print("  [C] Spread         [F] Blitz")
 
 
-def get_play_choice() -> Optional[PlayType]:
+def get_play_choice() -> PlayType | None:
     """Get the user's play selection."""
     play_map = {
         "1": PlayType.LINE_PLUNGE,
@@ -169,7 +171,7 @@ def select_team(seasons_dir: str, prompt: str) -> str:
         print("Invalid choice. Please enter a valid team number.")
 
 
-def play_interactive_game(seasons_dir: Optional[str] = None):
+def play_interactive_game(seasons_dir: str | None = None):
     """Run an interactive game using team charts."""
     if seasons_dir is None:
         seasons_dir = str(get_seasons_path())
@@ -280,7 +282,7 @@ def play_interactive_game(seasons_dir: Optional[str] = None):
     print(f"  First Downs: {game.state.home_stats.first_downs}")
 
 
-def quick_demo(seasons_dir: Optional[str] = None):
+def quick_demo(seasons_dir: str | None = None):
     """Run a quick demo showing the chart system."""
     if seasons_dir is None:
         seasons_dir = str(get_seasons_path())

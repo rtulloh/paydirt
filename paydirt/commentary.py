@@ -2,6 +2,8 @@
 Colorful commentary system for Paydirt football simulation.
 Generates play-by-play descriptions with player names and exciting language.
 """
+from __future__ import annotations
+
 import json
 import os
 import random
@@ -33,34 +35,34 @@ class TeamRoster:
     p: list[str] = field(default_factory=list)   # Punters
     kr: list[str] = field(default_factory=list)  # Kick returners
 
-    def random_qb(self, rng: Optional[random.Random] = None) -> str:
+    def random_qb(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.qb) if self.qb else "The quarterback"
 
-    def random_rb(self, rng: Optional[random.Random] = None) -> str:
+    def random_rb(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.rb) if self.rb else "The running back"
 
-    def random_wr(self, rng: Optional[random.Random] = None) -> str:
+    def random_wr(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.wr) if self.wr else "The receiver"
 
-    def random_te(self, rng: Optional[random.Random] = None) -> str:
+    def random_te(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.te) if self.te else "The tight end"
 
-    def random_dl(self, rng: Optional[random.Random] = None) -> str:
+    def random_dl(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.dl) if self.dl else "The defensive lineman"
 
-    def random_lb(self, rng: Optional[random.Random] = None) -> str:
+    def random_lb(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.lb) if self.lb else "The linebacker"
 
-    def random_db(self, rng: Optional[random.Random] = None) -> str:
+    def random_db(self, rng: random.Random | None = None) -> str:
         return (rng or random).choice(self.db) if self.db else "The defensive back"
 
-    def random_defender(self, rng: Optional[random.Random] = None) -> str:
+    def random_defender(self, rng: random.Random | None = None) -> str:
         """Return a random defensive player."""
         all_defenders = self.dl + self.lb + self.db
         return (rng or random).choice(all_defenders) if all_defenders else "The defender"
 
 
-def load_roster_from_file(team_dir: str) -> Optional[TeamRoster]:
+def load_roster_from_file(team_dir: str) -> TeamRoster | None:
     """Load roster from a JSON file in the team directory."""
     roster_path = os.path.join(team_dir, "roster.json")
     if os.path.exists(roster_path):
@@ -80,7 +82,7 @@ def load_roster_from_file(team_dir: str) -> Optional[TeamRoster]:
                 p=data.get("p", []),
                 kr=data.get("kr", []),
             )
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             pass
     return None
 
@@ -89,7 +91,7 @@ def load_roster_from_file(team_dir: str) -> Optional[TeamRoster]:
 _roster_cache: dict[str, TeamRoster] = {}
 
 
-def get_roster(team_full_name: str, team_dir: str = None) -> TeamRoster:
+def get_roster(team_full_name: str, team_dir: str | None = None) -> TeamRoster:
     """
     Get roster for a team. Loads from team directory JSON file.
     

@@ -5,14 +5,21 @@ Bug fix: On 4th down failure (turnover on downs), the display was showing the wr
 team on offense because possession had already switched before display_play_result
 was called.
 """
-import pytest
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
 
-from paydirt.game_engine import PlayOutcome
-from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+import pytest
+
 import paydirt.interactive_game as ig
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
+from paydirt.game_engine import PlayOutcome
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture(autouse=True)
@@ -45,8 +52,8 @@ class TestCompactPuntFumbleTrace:
     """Compact punt traces must show the chart result that caused a fumble."""
 
     def test_punt_return_fumble_shows_raw_return_cell_without_recovery_roll(self):
-        from paydirt.interactive_game import display_play_result
         from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("HOM", "Home Team")
         away_chart = create_mock_chart("AWY", "Away Team")
@@ -85,8 +92,8 @@ class TestCompactOrdinaryFumbleTrace:
     """Compact fumble traces show only chart facts the engine actually resolved."""
 
     def test_defensive_recovery_shows_defensive_row_without_fake_return_roll(self):
-        from paydirt.interactive_game import display_play_result
         from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
         from paydirt.play_events import EventType, PlayEvent, PlayTransaction
 
         home_chart = create_mock_chart("HOM", "Home Team")
@@ -135,8 +142,8 @@ class TestCompactOrdinaryFumbleTrace:
     def test_offense_was_home_parameter_used_when_provided(self):
         """When offense_was_home is explicitly passed, it should be used."""
         # This tests the fix for the turnover on downs bug
-        from paydirt.interactive_game import display_play_result
         from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
         
         # Create mock charts
         home_chart = create_mock_chart("Wash 83", "Washington Redskins")
@@ -181,8 +188,8 @@ class TestCompactOrdinaryFumbleTrace:
     
     def test_away_team_on_offense_with_explicit_parameter(self):
         """When away team was on offense, display should show away team."""
-        from paydirt.interactive_game import display_play_result
         from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
         
         home_chart = create_mock_chart("Wash 83", "Washington Redskins")
         away_chart = create_mock_chart("NYG '83", "New York Giants")
@@ -223,9 +230,9 @@ class TestCompactDisplayTouchdown:
 
     def test_touchdown_not_shown_as_no_gain(self):
         """TD with yards_gained=0 should show 'TOUCHDOWN!' not 'No gain'."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("PHI '83", "Philadelphia Eagles")
         away_chart = create_mock_chart("SF '83", "San Francisco 49ers")
@@ -269,9 +276,9 @@ class TestCompactDisplayTouchdown:
 
     def test_touchdown_via_outcome_flag_not_result_type(self):
         """TD via outcome.touchdown=True (not result_type) should also show correctly."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("PHI '83", "Philadelphia Eagles")
         away_chart = create_mock_chart("SF '83", "San Francisco 49ers")
@@ -318,9 +325,9 @@ class TestCompactDisplayTurnoverReturns:
 
     def test_fumble_return_shows_yardage(self):
         """Fumble with return yardage should show the return distance."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -368,9 +375,9 @@ class TestCompactDisplayTurnoverReturns:
 
     def test_fumble_return_td_shows_scoop_and_score(self):
         """Fumble returned for TD should show SCOOP AND SCORE."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -413,9 +420,9 @@ class TestCompactDisplayTurnoverReturns:
 
     def test_interception_return_shows_yardage(self):
         """Interception with return yardage should show the return distance."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -460,9 +467,9 @@ class TestCompactDisplayTurnoverReturns:
 
     def test_fumble_touchback_shows_touchback(self):
         """Fumble in end zone recovered by defense should show TOUCHBACK."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -515,10 +522,10 @@ class TestFumbleReturnDiceDisplay:
     
     def test_fumble_return_td_shows_dice_roll(self):
         """Fumble returned for TD should show the return dice roll (e.g., Ret:38→99)."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
-        from paydirt.play_events import PlayTransaction, PlayEvent, EventType
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
+        from paydirt.play_events import EventType, PlayEvent, PlayTransaction
 
         home_chart = create_mock_chart("SF '83", "San Francisco 49ers")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -611,9 +618,9 @@ class TestPuntReturnFumbleDisplay:
     
     def test_punt_return_fumble_shows_dice_rolls(self):
         """Punt return fumble should show both punt and return dice rolls."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")
@@ -660,9 +667,9 @@ class TestPuntReturnFumbleDisplay:
     
     def test_punt_return_fumble_no_dice_when_not_set(self):
         """Punt return fumble without return dice set should not show dice breakdown."""
-        from paydirt.interactive_game import display_play_result
-        from paydirt.game_engine import PaydirtGameEngine
         import paydirt.interactive_game as ig
+        from paydirt.game_engine import PaydirtGameEngine
+        from paydirt.interactive_game import display_play_result
 
         home_chart = create_mock_chart("CHI '83", "Chicago Bears")
         away_chart = create_mock_chart("ATL '83", "Atlanta Falcons")

@@ -1,16 +1,17 @@
 """
 Save and load game state for resuming games.
 """
+from __future__ import annotations
+
 import json
 import os
 from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
 
-from .game_engine import TeamStats, ScoringPlay, PaydirtGameEngine
-from .chart_loader import load_team_chart
 from .ai_save import save_ai_data
-
+from .chart_loader import load_team_chart
+from .game_engine import PaydirtGameEngine, ScoringPlay, TeamStats
 
 DEFAULT_SAVE_FILE = "paydirt_save.json"
 
@@ -123,7 +124,7 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
     return filepath
 
 
-def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
+def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
     """
     Load a saved game state from a JSON file.
     
@@ -227,7 +228,7 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> Optional[tuple]:
     return engine, human_is_away, human_is_home, pending_score
 
 
-def get_save_info(filepath: str = DEFAULT_SAVE_FILE) -> Optional[dict]:
+def get_save_info(filepath: str = DEFAULT_SAVE_FILE) -> dict | None:
     """
     Get summary info about a save file without fully loading it.
     

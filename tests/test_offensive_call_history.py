@@ -8,7 +8,12 @@ import pytest
 
 from paydirt.computer_ai import create_computer_ai
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from paydirt.save_game import load_game, save_game
 from tests.game_fixtures import make_sample_game

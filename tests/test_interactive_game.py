@@ -2,9 +2,10 @@
 Tests for interactive_game.py functions that don't require user input.
 """
 
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Skipif markers for tests requiring specific seasons
 requires_1972_season = pytest.mark.skipif(
@@ -14,24 +15,24 @@ requires_1983_season = pytest.mark.skipif(
     not Path("seasons/1983").exists(), reason="1983 season data not available"
 )
 
-from paydirt.interactive_game import (
-    analyze_team_strength,
-    cpu_should_go_for_two,
-    cpu_should_onside_kick,
-    computer_select_offense,
-    computer_select_defense,
-)
-from paydirt.utils import format_time
-from paydirt.game_engine import PaydirtGameEngine
-from paydirt.play_resolver import PlayType, DefenseType
 from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
     DefenseChart,
+    OffenseChart,
+    PeripheralData,
     SpecialTeamsChart,
+    TeamChart,
 )
 from paydirt.computer_ai import ComputerAI
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.interactive_game import (
+    analyze_team_strength,
+    computer_select_defense,
+    computer_select_offense,
+    cpu_should_go_for_two,
+    cpu_should_onside_kick,
+)
+from paydirt.play_resolver import DefenseType, PlayType
+from paydirt.utils import format_time
 
 
 def create_mock_chart(short_name: str = "TEST") -> TeamChart:
@@ -498,7 +499,7 @@ class TestDisplayPlayResultOffsettingPenalties:
         """Offsetting penalties should not change game state."""
         from paydirt.chart_loader import load_team_chart
         from paydirt.game_engine import PaydirtGameEngine
-        from paydirt.play_resolver import PlayType, DefenseType
+        from paydirt.play_resolver import DefenseType, PlayType
 
         # Load real teams for integration test
         home = load_team_chart("seasons/2026/Ironclads")
@@ -728,8 +729,8 @@ class TestAIOpponentAnalysis:
 
     def test_opponent_tracker_detects_streak(self):
         """Opponent tracker should detect streaks of same play types."""
-        from paydirt.computer_ai import ComputerAI
         from paydirt.ai_analysis import PlayCategory
+        from paydirt.computer_ai import ComputerAI
 
         ai = ComputerAI(aggression=0.7, use_analysis=True)
 
@@ -899,9 +900,8 @@ class TestReturnValueSignature:
         game.state.time_remaining = 10.0
         game.state.quarter = 2
 
-        with patch("paydirt.interactive_game.analyze_team_strength", return_value="balanced"):
-            with patch("builtins.input", side_effect=["7"]):
-                result = get_human_offense_play(game, no_huddle=False, easy_helper=None)
+        with patch('paydirt.interactive_game.analyze_team_strength', return_value='balanced'), patch('builtins.input', side_effect=['7']):
+            result = get_human_offense_play(game, no_huddle=False, easy_helper=None)
 
         assert len(result) == 6, f"Expected 6 return values, got {len(result)}"
 
@@ -915,9 +915,8 @@ class TestReturnValueSignature:
         game.state.time_remaining = 10.0
         game.state.quarter = 2
 
-        with patch("paydirt.interactive_game.analyze_team_strength", return_value="balanced"):
-            with patch("builtins.input", side_effect=["7"]):
-                result = get_human_offense_play(game, no_huddle=False, easy_helper=None)
+        with patch('paydirt.interactive_game.analyze_team_strength', return_value='balanced'), patch('builtins.input', side_effect=['7']):
+            result = get_human_offense_play(game, no_huddle=False, easy_helper=None)
 
         play_type, no_huddle_for_next, out_of_bounds, in_bounds, call_timeout, call_spike = result
 

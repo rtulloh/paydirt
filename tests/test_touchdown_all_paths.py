@@ -6,13 +6,18 @@ _apply_play_result (the run_play_with_penalty_procedure code path used
 by the interactive game). This prevents regressions where a TD check
 is present in run_play but missing in _apply_play_result.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, PlayResult, PenaltyChoice,
-)
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import (
+    DefenseType,
+    PenaltyChoice,
+    PlayResult,
+    PlayType,
+    ResultType,
+)
 
 
 @pytest.fixture

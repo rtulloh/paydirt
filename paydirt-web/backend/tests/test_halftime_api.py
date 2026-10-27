@@ -1,7 +1,7 @@
 """Halftime after a quarter-ending score or decision in the web API."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

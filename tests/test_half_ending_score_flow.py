@@ -48,10 +48,10 @@ def drive(monkeypatch: pytest.MonkeyPatch, game, *, resumed: bool, result: PlayR
     monkeypatch.setattr(cli, "PaydirtGameEngine", lambda *args: game)
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=[game.state.home_chart, game.state.away_chart]))
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, False, True, None))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="synthetic", away_team="AWAY", home_team="HOME",
-        away_score=game.state.away_score, home_score=game.state.home_score,
-        quarter=game.state.quarter, time_remaining=game.state.time_remaining))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "synthetic", "away_team": "AWAY", "home_team": "HOME",
+        "away_score": game.state.away_score, "home_score": game.state.home_score,
+        "quarter": game.state.quarter, "time_remaining": game.state.time_remaining})
     monkeypatch.setattr(cli, "clear_screen", lambda: None)
     monkeypatch.setattr(cli, "display_play_result", lambda *args: None)
     monkeypatch.setattr(cli, "display_box_score", lambda *args: None)
@@ -74,10 +74,10 @@ def drive(monkeypatch: pytest.MonkeyPatch, game, *, resumed: bool, result: PlayR
 
     def kickoff(*, kicking_home: bool, kickoff_spot: int = 35) -> PlayOutcome:
         opening = not resumed and not record["kicks"]
-        record["kicks"].append(dict(
-            quarter=game.state.quarter, after_halftime_prompt=bool(record["halves"]),
-            opening=opening, kicking_home=kicking_home, spot=kickoff_spot,
-            clock=round(game.state.time_remaining * 60, 3)))
+        record["kicks"].append({
+            "quarter": game.state.quarter, "after_halftime_prompt": bool(record["halves"]),
+            "opening": opening, "kicking_home": kicking_home, "spot": kickoff_spot,
+            "clock": round(game.state.time_remaining * 60, 3)})
         if not opening:
             game._use_time(7.5)
             game.state.is_home_possession = not kicking_home

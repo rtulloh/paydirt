@@ -1,12 +1,14 @@
 """
 Command-line interface for Paydirt football game.
 """
+from __future__ import annotations
+
 import sys
 from typing import Optional
 
-from .models import PlayType, DefenseType
-from .teams import get_team, list_teams
 from .game import PaydirtGame, simulate_drive
+from .models import DefenseType, PlayType
+from .teams import get_team, list_teams
 from .utils import ordinal
 
 
@@ -60,7 +62,7 @@ def print_defense_menu():
     print("  [3] Blitz     [4] Goal Line")
 
 
-def get_play_choice() -> Optional[PlayType]:
+def get_play_choice() -> PlayType | None:
     """Get the user's play selection."""
     play_map = {
         "1": PlayType.RUN_LEFT,
@@ -350,9 +352,7 @@ def main():
 
     if choice == "1":
         play_interactive_game()
-    elif choice == "2":
-        play_simulated_game()
-    elif choice == "3":
+    elif choice == "2" or choice == "3":
         play_simulated_game()
     elif choice == "0":
         print("Goodbye!")

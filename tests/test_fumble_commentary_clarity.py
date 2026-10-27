@@ -9,7 +9,12 @@ from paydirt import interactive_game as cli
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from paydirt.result_formatter import ResultFormatter
 from tests.game_fixtures import make_sample_game
@@ -153,9 +158,9 @@ def test_defense_call_is_named_and_confirmed_once(
     charts = [game.state.home_chart, game.state.away_chart] if human_home else [
         game.state.away_chart, game.state.home_chart]
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=charts))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="test", away_team="AWAY", home_team="HOME", away_score=0, home_score=0,
-        quarter=1, time_remaining=15))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "test", "away_team": "AWAY", "home_team": "HOME", "away_score": 0, "home_score": 0,
+        "quarter": 1, "time_remaining": 15})
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, not human_home, human_home, None))
     monkeypatch.setattr(game, "run_play_with_penalty_procedure", Mock(side_effect=ReachedEngine))
     with pytest.raises(ReachedEngine):

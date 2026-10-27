@@ -3,23 +3,23 @@ Tests for packaging.py functions.
 """
 
 import os
+import shutil
 import sys
 import tempfile
-import shutil
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from paydirt.packaging import (
-    is_bundled,
+    get_all_season_paths,
+    get_builtin_seasons_path,
+    get_season_path,
+    get_seasons_path,
+    get_team_path,
     get_user_data_path,
     get_user_seasons_path,
-    get_builtin_seasons_path,
-    get_seasons_path,
-    get_all_season_paths,
-    get_season_path,
-    get_team_path,
+    is_bundled,
 )
 
 
@@ -33,9 +33,8 @@ class TestIsBundled:
 
     def test_bundled_when_frozen_and_meipass(self):
         """Should return True when sys.frozen and sys._MEIPASS are set."""
-        with patch.object(sys, "frozen", True, create=True):
-            with patch.object(sys, "_MEIPASS", "/tmp/meipass", create=True):
-                assert is_bundled() is True
+        with patch.object(sys, 'frozen', True, create=True), patch.object(sys, '_MEIPASS', '/tmp/meipass', create=True):
+            assert is_bundled() is True
 
     def test_not_bundled_when_frozen_without_meipass(self):
         """Should return False when frozen but no _MEIPASS (e.g., cx_Freeze)."""
@@ -59,60 +58,53 @@ class TestGetUserDataPath:
         """Should return Application Support path on macOS."""
         mock_bundled.return_value = True
 
-        with patch.object(sys, "platform", "darwin"):
-            with patch.object(Path, "home", return_value=tmp_path):
-                result = get_user_data_path()
-                expected = tmp_path / "Library" / "Application Support" / "Paydirt"
-                assert result == expected
-                assert result.exists()  # Directory should be created
+        with patch.object(sys, 'platform', 'darwin'), patch.object(Path, 'home', return_value=tmp_path):
+            result = get_user_data_path()
+            expected = tmp_path / "Library" / "Application Support" / "Paydirt"
+            assert result == expected
+            assert result.exists()  # Directory should be created
 
     @patch("paydirt.packaging.is_bundled")
     def test_windows_path_with_localappdata(self, mock_bundled, tmp_path):
         """Should use LOCALAPPDATA environment variable on Windows."""
         mock_bundled.return_value = True
 
-        with patch.object(sys, "platform", "win32"):
-            with patch.dict(os.environ, {"LOCALAPPDATA": str(tmp_path)}):
-                result = get_user_data_path()
-                expected = tmp_path / "Paydirt"
-                assert result == expected
-                assert result.exists()
+        with patch.object(sys, 'platform', 'win32'), patch.dict(os.environ, {'LOCALAPPDATA': str(tmp_path)}):
+            result = get_user_data_path()
+            expected = tmp_path / "Paydirt"
+            assert result == expected
+            assert result.exists()
 
     @patch("paydirt.packaging.is_bundled")
     def test_windows_path_fallback(self, mock_bundled, tmp_path):
         """Should fall back to AppData/Local on Windows without LOCALAPPDATA."""
         mock_bundled.return_value = True
 
-        with patch.object(sys, "platform", "win32"):
-            with patch.dict(os.environ, {}, clear=True):
-                with patch.object(Path, "home", return_value=tmp_path):
-                    result = get_user_data_path()
-                    expected = tmp_path / "AppData" / "Local" / "Paydirt"
-                    assert result == expected
+        with patch.object(sys, 'platform', 'win32'), patch.dict(os.environ, {}, clear=True), patch.object(Path, 'home', return_value=tmp_path):
+            result = get_user_data_path()
+            expected = tmp_path / "AppData" / "Local" / "Paydirt"
+            assert result == expected
 
     @patch("paydirt.packaging.is_bundled")
     def test_linux_path_with_xdg(self, mock_bundled, tmp_path):
         """Should use XDG_DATA_HOME on Linux when set."""
         mock_bundled.return_value = True
 
-        with patch.object(sys, "platform", "linux"):
-            with patch.dict(os.environ, {"XDG_DATA_HOME": str(tmp_path)}):
-                result = get_user_data_path()
-                expected = tmp_path / "Paydirt"
-                assert result == expected
-                assert result.exists()
+        with patch.object(sys, 'platform', 'linux'), patch.dict(os.environ, {'XDG_DATA_HOME': str(tmp_path)}):
+            result = get_user_data_path()
+            expected = tmp_path / "Paydirt"
+            assert result == expected
+            assert result.exists()
 
     @patch("paydirt.packaging.is_bundled")
     def test_linux_path_fallback(self, mock_bundled, tmp_path):
         """Should fall back to ~/.local/share on Linux without XDG_DATA_HOME."""
         mock_bundled.return_value = True
 
-        with patch.object(sys, "platform", "linux"):
-            with patch.dict(os.environ, {}, clear=True):
-                with patch.object(Path, "home", return_value=tmp_path):
-                    result = get_user_data_path()
-                    expected = tmp_path / ".local" / "share" / "Paydirt"
-                    assert result == expected
+        with patch.object(sys, 'platform', 'linux'), patch.dict(os.environ, {}, clear=True), patch.object(Path, 'home', return_value=tmp_path):
+            result = get_user_data_path()
+            expected = tmp_path / ".local" / "share" / "Paydirt"
+            assert result == expected
 
 
 class TestGetUserSeasonsPath:

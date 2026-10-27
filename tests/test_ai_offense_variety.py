@@ -1,9 +1,9 @@
 """Play-independent Hard offense regressions using complete synthetic charts."""
 
+import random
 from collections import Counter
 from collections.abc import Iterator
 from copy import deepcopy
-import random
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +14,6 @@ from paydirt.computer_ai import ComputerAI, create_computer_ai
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType
 from tests.game_fixtures import make_sample_game
-
 
 COLUMNS = {
     PlayType.LINE_PLUNGE: "line_plunge", PlayType.OFF_TACKLE: "off_tackle",

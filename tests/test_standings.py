@@ -1,14 +1,12 @@
 """
 Tests for season and standings tracking.
 """
-import pytest
-import tempfile
 import shutil
+import tempfile
 
-from paydirt.standings import (
-    GameResult, TeamRecord, Season, StandingsManager,
-    normalize_team_name
-)
+import pytest
+
+from paydirt.standings import GameResult, Season, StandingsManager, TeamRecord, normalize_team_name
 
 
 class TestGameResult:

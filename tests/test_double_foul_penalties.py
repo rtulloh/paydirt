@@ -7,12 +7,19 @@ This rule states that when both teams commit fouls on a special teams play:
 - Otherwise: Penalties offset, replay the down
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine as GameEngine
 from paydirt.models import Team
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 from paydirt.play_resolver import PlayType
 
 

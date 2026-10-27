@@ -7,11 +7,12 @@ Out of Bounds designation:
 - NOT subtracted from: penalties, incomplete passes, TD results, or already out of bounds
 - Cannot be used on punts
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture

@@ -1,12 +1,12 @@
 """
 Tests for AI Analysis module.
 """
-import pytest
 from pathlib import Path
+
+import pytest
+
+from paydirt.ai_analysis import OffenseAnalyzer, analyze_team
 from paydirt.chart_loader import load_team_chart
-from paydirt.ai_analysis import (
-    OffenseAnalyzer, analyze_team
-)
 
 
 @pytest.fixture
@@ -21,11 +21,9 @@ class TestPlayOutcomeParsing:
     def test_parses_positive_number(self):
         """Parse positive yardage result."""
         # Would need to test via analyzer
-        pass
     
     def test_excludes_penalties(self):
         """Penalties should be excluded from success calculation."""
-        pass
 
 
 class TestOffenseAnalyzer:
@@ -145,7 +143,7 @@ class TestOpponentTendencyTracker:
     
     def test_situation_type_categorization(self):
         """Should correctly categorize situations."""
-        from paydirt.ai_analysis import get_situation_type, SituationType
+        from paydirt.ai_analysis import SituationType, get_situation_type
         
         assert get_situation_type(1, 10) == SituationType.FIRST_DOWN
         assert get_situation_type(2, 3) == SituationType.SECOND_SHORT
@@ -268,8 +266,9 @@ class TestEasyModeHelper:
     
     def test_create_helper(self):
         """Should create easy mode helper."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -280,8 +279,9 @@ class TestEasyModeHelper:
     
     def test_suggest_offense_plays(self):
         """Should suggest offense plays."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -297,8 +297,9 @@ class TestEasyModeHelper:
     
     def test_suggest_defense(self):
         """Should suggest defense formation."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -310,8 +311,9 @@ class TestEasyModeHelper:
     
     def test_get_situation_tip(self):
         """Should get situational tip."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -327,8 +329,9 @@ class TestEasyModeHelper:
     
     def test_explain_play(self):
         """Should explain why a play is good."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -341,8 +344,9 @@ class TestEasyModeHelper:
     
     def test_warn_danger(self):
         """Should warn about opponent tendencies."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -358,8 +362,9 @@ class TestBreakawayExclusion:
     
     def test_breakaway_not_in_suggestions(self):
         """Breakaway 'B' should not be in play suggestions."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -372,8 +377,9 @@ class TestBreakawayExclusion:
     
     def test_breakaway_column_has_stats_but_not_suggested(self):
         """Breakaway column can have stats but shouldn't be suggested."""
-        from paydirt.ai_analysis import OffenseAnalyzer, create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer, create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -391,8 +397,9 @@ class TestBreakawayExclusion:
     
     def test_breakaway_results_excluded_from_other_plays(self):
         """Breakaway 'B' results in other columns should be excluded."""
-        from paydirt.ai_analysis import OffenseAnalyzer
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -411,8 +418,9 @@ class TestPlayOutcomeBreakaway:
     
     def test_parse_breakaway_result(self):
         """Parse 'B' as breakaway result."""
-        from paydirt.ai_analysis import OffenseAnalyzer
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -425,8 +433,9 @@ class TestPlayOutcomeBreakaway:
     
     def test_breakaway_not_valid_play(self):
         """Breakaway should not be counted as valid play."""
-        from paydirt.ai_analysis import OffenseAnalyzer
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -438,8 +447,9 @@ class TestPlayOutcomeBreakaway:
     
     def test_breakaway_result_in_other_columns_excluded(self):
         """Breakaway 'B' results in other play columns should be excluded from stats."""
-        from paydirt.ai_analysis import OffenseAnalyzer
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -456,8 +466,9 @@ class TestPlayOutcomeBreakaway:
     
     def test_breakaway_column_has_100_percent_success_rate(self):
         """Breakaway column has 100% success because B means big gain."""
-        from paydirt.ai_analysis import OffenseAnalyzer
         from pathlib import Path
+
+        from paydirt.ai_analysis import OffenseAnalyzer
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))
@@ -469,8 +480,9 @@ class TestPlayOutcomeBreakaway:
     
     def test_breakaway_in_all_situations_excluded(self):
         """Breakaway should be excluded from suggestions in all down/distance situations."""
-        from paydirt.ai_analysis import create_easy_mode_helper
         from pathlib import Path
+
+        from paydirt.ai_analysis import create_easy_mode_helper
         from paydirt.chart_loader import load_team_chart
         
         bears = load_team_chart(Path('seasons/2026/Ironclads'))

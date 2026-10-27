@@ -1,8 +1,8 @@
 """Late multi-score Hard defense mixes risks without spending engine dice."""
 
+import random
 from collections import Counter
 from copy import deepcopy
-import random
 from unittest.mock import Mock, patch
 
 import pytest
@@ -11,7 +11,6 @@ from paydirt.computer_ai import ComputerAI, create_computer_ai
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType
 from tests.game_fixtures import make_sample_game
-
 
 A, B, F = DefenseType.STANDARD, DefenseType.SHORT_YARDAGE, DefenseType.BLITZ
 

@@ -16,11 +16,12 @@ Final seconds rules:
 - Spike ball can be called when less than 40 seconds remain
 - These allow for final plays in close games
 """
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.play_resolver import PlayType, DefenseType
+from paydirt.play_resolver import DefenseType, PlayType
 
 
 @pytest.fixture

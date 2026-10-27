@@ -1,7 +1,7 @@
 """The API must expose enforced FG penalties, not the discarded kick's result."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import app
 from routes import games
+
 from paydirt.play_resolver import DefenseType, PlayType
 
 

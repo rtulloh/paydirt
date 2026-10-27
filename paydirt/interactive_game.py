@@ -2,42 +2,44 @@
 Interactive Paydirt game for human vs computer play.
 Allows player to select team and make play calls on offense and defense.
 """
+from __future__ import annotations
 
+import logging
 import os
 import random
 import re
 from pathlib import Path
 from typing import Optional
 
-from .chart_loader import load_team_chart, TeamChart, OffenseChart
-from .packaging import get_seasons_path, get_all_season_paths
-from .game_engine import PaydirtGameEngine, PlayOutcome
-from .play_resolver import PlayType, DefenseType, ResultType, is_passing_play
-from .priority_chart import categorize_result, apply_priority_chart, ResultCategory
-from .computer_ai import (
-    ComputerAI,
-    create_computer_ai,
-    cpu_should_go_for_two,
-    cpu_should_onside_kick,
-    cpu_should_accept_penalty,
-)
-from .penalty_handler import apply_half_distance_rule
-from .commentary import Commentary, get_roster
-from .utils import (
-    ordinal_suffix,
-    ordinal,
-    format_field_position,
-    format_field_position_with_team,
-    format_dice_roll,
-    format_time,
-    clamp_ball_position,
-    yards_to_goal,
-    fg_distance,
-)
-from .play_events import EventType
-from .save_game import save_game, load_game, get_save_info, DEFAULT_SAVE_FILE
 from .ai_analysis import create_easy_mode_helper
 from .ai_save import load_ai_data
+from .chart_loader import OffenseChart, TeamChart, load_team_chart
+from .commentary import Commentary, get_roster
+from .computer_ai import (
+    ComputerAI,
+    cpu_should_accept_penalty,
+    cpu_should_go_for_two,
+    cpu_should_onside_kick,
+    create_computer_ai,
+)
+from .game_engine import PaydirtGameEngine, PlayOutcome
+from .packaging import get_all_season_paths, get_seasons_path
+from .penalty_handler import apply_half_distance_rule
+from .play_events import EventType
+from .play_resolver import DefenseType, PlayType, ResultType, is_passing_play
+from .priority_chart import ResultCategory, apply_priority_chart, categorize_result
+from .save_game import DEFAULT_SAVE_FILE, get_save_info, load_game, save_game
+from .utils import (
+    clamp_ball_position,
+    fg_distance,
+    format_dice_roll,
+    format_field_position,
+    format_field_position_with_team,
+    format_time,
+    ordinal,
+    ordinal_suffix,
+    yards_to_goal,
+)
 
 # Global display mode flag (set by run_interactive_game)
 COMPACT_MODE = False
@@ -131,7 +133,7 @@ def select_season(prompt: str = "Select Season:") -> str:
         print("Invalid choice. Please enter a number from the list.")
 
 
-def get_available_teams(season: Optional[str] = None) -> list[tuple[str, str]]:
+def get_available_teams(season: str | None = None) -> list[tuple[str, str]]:
     """Find all available team chart directories (user + built-in)."""
     teams = []
     for seasons_path in get_all_season_paths():
@@ -164,7 +166,7 @@ def get_available_teams(season: Optional[str] = None) -> list[tuple[str, str]]:
     return teams
 
 
-def select_team(prompt: str, exclude: Optional[str] = None) -> TeamChart:
+def select_team(prompt: str, exclude: str | None = None) -> TeamChart:
     """Let user select a team from available teams."""
     selected_season = select_season("Select Season:")
     teams = get_available_teams(selected_season)
@@ -521,10 +523,9 @@ def _get_human_offense_play_compact(
         call_spike = "S" in choice_clean
         choice_clean = choice_clean.replace("S", "").strip()
 
-        if call_spike:
-            # If user entered just 'S' without a play, they want standalone spike ball
-            if not choice_clean:
-                call_spike = False  # Reset - this is standalone spike, not modifier
+        # If user entered just 'S' without a play, they want standalone spike ball
+        if (call_spike) and (not choice_clean):
+            call_spike = False  # Reset - this is standalone spike, not modifier
                 # Will be handled below by the standalone 'S' check
 
         # Handle choices
@@ -608,12 +609,12 @@ def _show_full_offense_menu(state, no_huddle: bool):
 
     print("  RUNNING PLAYS:")
     for key in ["1", "2", "3", "4"]:
-        play_type, name, desc = OFFENSE_PLAYS[key]
+        _play_type, name, desc = OFFENSE_PLAYS[key]
         print(f"    [{key}] {name:15} - {desc}")
 
     print("\n  PASSING PLAYS:")
     for key in ["5", "6", "7", "8", "9"]:
-        play_type, name, desc = OFFENSE_PLAYS[key]
+        _play_type, name, desc = OFFENSE_PLAYS[key]
         print(f"    [{key}] {name:15} - {desc}")
 
     print("\n  SPECIAL PLAYS:")
@@ -852,10 +853,9 @@ def get_human_offense_play(
         call_spike = "S" in choice_clean
         choice_clean = choice_clean.replace("S", "").strip()
 
-        if call_spike:
-            # If user entered just 'S' without a play, they want standalone spike ball
-            if not choice_clean:
-                call_spike = False  # Reset - this is standalone spike, not modifier
+        # If user entered just 'S' without a play, they want standalone spike ball
+        if (call_spike) and (not choice_clean):
+            call_spike = False  # Reset - this is standalone spike, not modifier
                 # Will be handled below by the standalone 'S' check
 
         if choice_clean in ["1", "2", "3", "4", "5", "6", "7", "8", "9"]:
@@ -1165,10 +1165,9 @@ def _get_human_defense_play_compact(
             print("  Timeout - now pick defense (A-F):")
             continue
 
-        if call_timeout:
-            if state.defense_timeouts <= 0:
-                print("  No timeouts!")
-                continue
+        if call_timeout and state.defense_timeouts <= 0:
+            print("  No timeouts!")
+            continue
 
         if choice_clean == "/":
             display_box_score(game, "CURRENT STATS")
@@ -1192,7 +1191,7 @@ def _get_human_defense_play_compact(
             return None, False
 
         if choice_clean in DEFENSE_PLAYS:
-            def_type, name, _ = DEFENSE_PLAYS[choice_clean]
+            def_type, _name, _ = DEFENSE_PLAYS[choice_clean]
             return def_type, call_timeout
 
         print("  Invalid. A-F, T, W, / or ? for help")
@@ -1214,7 +1213,7 @@ def _show_full_defense_menu(state):
 
     print()
     for key in ["A", "B", "C", "D", "E", "F"]:
-        def_type, name, desc = DEFENSE_PLAYS[key]
+        _def_type, name, desc = DEFENSE_PLAYS[key]
         print(f"    [{key}] {name:20} - {desc}")
 
     print("\n    [T] Call Timeout      - Stop clock after this play")
@@ -1355,7 +1354,7 @@ def display_play_result(
     play_type: PlayType,
     def_type: DefenseType,
     human_team: TeamChart,
-    offense_was_home: bool = None,
+    offense_was_home: bool | None = None,
 ):
     """Display the detailed play result with colorful commentary.
 
@@ -1446,7 +1445,7 @@ def display_play_result(
             if roster and roster.p:
                 punter = roster.p[0]
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 
         if COMPACT_MODE:
             # Compact punt display with dice details
@@ -1529,7 +1528,7 @@ def display_play_result(
             if roster and roster.k:
                 kicker = roster.k[0]  # Use first kicker in list
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 
         # Parse the result to show details like other plays
         dice_roll = outcome.result.dice_roll if outcome.result else 0
@@ -2205,9 +2204,7 @@ def display_play_result(
         def_cat, _ = categorize_result(outcome.result.defense_modifier)
         is_check_down = def_cat == ResultCategory.PARENS_NUMBER
 
-    if play_type == PlayType.QB_KNEEL:
-        print(f"\n  >> {game.get_play_narrative(outcome)}")
-    elif outcome.touchdown and not outcome.turnover and not explained_offensive_fumble:
+    if play_type == PlayType.QB_KNEEL or outcome.touchdown and not outcome.turnover and not explained_offensive_fumble:
         print(f"\n  >> {game.get_play_narrative(outcome)}")
     elif not skip_commentary:
         comment = commentary.generate(
@@ -2683,7 +2680,7 @@ def _complete_touchdown_sequence(
     game: PaydirtGameEngine,
     outcome: PlayOutcome,
     human_is_home: bool,
-    cpu_ai: Optional[ComputerAI] = None,
+    cpu_ai: ComputerAI | None = None,
 ) -> PlayOutcome:
     """Collect conversion/kickoff choices until the engine returns a non-TD result.
 
@@ -2786,7 +2783,7 @@ def _offer_record_to_standings(
 
 
 def resume_game(
-    save_file: str = None, difficulty: str = "medium", compact: bool = True, week: int = 0
+    save_file: str | None = None, difficulty: str = "medium", compact: bool = True, week: int = 0
 ):
     """
     Resume a saved game from a save file.
@@ -2834,7 +2831,7 @@ def resume_game(
         print("Failed to load save file.")
         return
 
-    game, human_is_away, human_is_home, pending_score = result
+    game, _human_is_away, human_is_home, pending_score = result
 
     # Determine human's team
     if human_is_home:
@@ -2923,16 +2920,16 @@ def resume_game(
             if choice == "2" and two_point_allowed:
                 print("\n  Select play for 2-point conversion:")
                 play_type = get_human_offense_play_for_conversion(game)
-                success, def_points, description = game.attempt_two_point(play_type)
+                _success, def_points, description = game.attempt_two_point(play_type)
                 print(f"\n  {description}")
                 if def_points > 0:
                     print(f"  Defense scores {def_points} points on the return!")
             else:
-                success, description = game.attempt_extra_point()
+                _success, description = game.attempt_extra_point()
                 print(f"\n  {description}")
         else:
             # CPU scored - auto kick extra point
-            success, description = game.attempt_extra_point()
+            _success, description = game.attempt_extra_point()
             print(f"\n  {scoring_team_name} kicks the extra point...")
             print(f"  {description}")
 
@@ -3140,7 +3137,7 @@ def resume_game(
 
         # Get play calls
         if is_human_offense:
-            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout, call_spike = (
+            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout, _call_spike = (
                 get_human_offense_play(game, no_huddle_mode, easy_mode_helper)
             )
 
@@ -3171,7 +3168,7 @@ def resume_game(
                     cpu_no_huddle,
                     cpu_punt_short_drop,
                     cpu_punt_coffin_yards,
-                    cpu_call_spike,
+                    _cpu_call_spike,
                 ) = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
@@ -3235,7 +3232,7 @@ def resume_game(
                     cpu_no_huddle,
                     cpu_punt_short_drop,
                     cpu_punt_coffin_yards,
-                    cpu_call_spike,
+                    _cpu_call_spike,
                 ) = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
@@ -3298,17 +3295,16 @@ def resume_game(
             )
             print(f"\n  *** {team_name}TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
 
-        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
-            if is_human_offense:
-                from paydirt.play_resolver import is_passing_play
+        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model and is_human_offense:
+            from paydirt.play_resolver import is_passing_play
 
-                cpu_ai.opponent_model.record_opponent_play(
-                    down=down_before_play,
-                    distance=distance_before_play,
-                    play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
-                    yards_gained=outcome.yards_gained,
-                    is_pass=is_passing_play(play_type),
-                )
+            cpu_ai.opponent_model.record_opponent_play(
+                down=down_before_play,
+                distance=distance_before_play,
+                play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
+                yards_gained=outcome.yards_gained,
+                is_pass=is_passing_play(play_type),
+            )
 
         if not two_min_warning_before and game.state.two_minute_warning_called:
             quarter_name = "first half" if game.state.quarter == 2 else "second half"
@@ -3401,7 +3397,7 @@ def resume_game(
         if total_plays > 0:
             total_runs = 0
             total_passes = 0
-            for situation, plays in tracker.situation_plays.items():
+            for plays in tracker.situation_plays.values():
                 for play in plays:
                     if play.value == "run":
                         total_runs += 1
@@ -3473,8 +3469,8 @@ def run_interactive_game(
     difficulty: str = "medium",
     compact: bool = False,
     week: int = 0,
-    home_team: Optional[str] = None,
-    away_team: Optional[str] = None,
+    home_team: str | None = None,
+    away_team: str | None = None,
     human_is_home: bool = True,
     is_playoff: bool = False,
 ):
@@ -3515,9 +3511,10 @@ def run_interactive_game(
     # Select teams - either from command line or interactive prompt
     if home_team or away_team:
         # Load teams from command line arguments
+        from pathlib import Path
+
         from .chart_loader import find_team_charts, load_team_chart
         from .packaging import get_seasons_path
-        from pathlib import Path
 
         # Find available teams
         seasons_dir = str(get_seasons_path())
@@ -3537,7 +3534,7 @@ def run_interactive_game(
                 team_lookup[parts[-1]] = path  # last word (e.g., "cowboys")
 
         # Helper to find team path
-        def find_team_path(team_name: str) -> Optional[str]:
+        def find_team_path(team_name: str) -> str | None:
             if not team_name:
                 return None
             # Try exact path first - check in all season paths
@@ -4150,17 +4147,16 @@ def run_interactive_game(
                 print(f"  {skip_msg}")
 
         # Record opponent play for tendency tracking (if AI is using analysis)
-        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model:
-            if is_human_offense:
-                from paydirt.play_resolver import is_passing_play
+        if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model and is_human_offense:
+            from paydirt.play_resolver import is_passing_play
 
-                cpu_ai.opponent_model.record_opponent_play(
-                    down=down_before_play,
-                    distance=distance_before_play,
-                    play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
-                    yards_gained=outcome.yards_gained,
-                    is_pass=is_passing_play(play_type),
-                )
+            cpu_ai.opponent_model.record_opponent_play(
+                down=down_before_play,
+                distance=distance_before_play,
+                play_type=play_type.value if hasattr(play_type, "value") else str(play_type),
+                yards_gained=outcome.yards_gained,
+                is_pass=is_passing_play(play_type),
+            )
 
         if not two_min_warning_before and game.state.two_minute_warning_called:
             quarter_name = "first half" if game.state.quarter == 2 else "second half"
@@ -4259,7 +4255,7 @@ def run_interactive_game(
         if total_plays > 0:
             total_runs = 0
             total_passes = 0
-            for situation, plays in tracker.situation_plays.items():
+            for plays in tracker.situation_plays.values():
                 for play in plays:
                     if play.value == "run":
                         total_runs += 1

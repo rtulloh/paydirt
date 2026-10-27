@@ -6,11 +6,18 @@ Official rules:
 - Receiving team recovers on any other total
 - Ball travels 12 yards, no advance or return
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
+from paydirt.game_engine import GameState, PaydirtGameEngine
 from paydirt.interactive_game import cpu_should_onside_kick
 
 

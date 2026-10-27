@@ -5,9 +5,13 @@ Tests the Full Feature Method penalty resolution per official Paydirt rules.
 from unittest.mock import patch
 
 from paydirt.penalty_handler import (
-    PenaltyType, roll_penalty_yardage, apply_half_distance_rule,
-    calculate_penalty_spot, resolve_penalty, resolve_pass_interference,
-    check_offsetting_penalties
+    PenaltyType,
+    apply_half_distance_rule,
+    calculate_penalty_spot,
+    check_offsetting_penalties,
+    resolve_pass_interference,
+    resolve_penalty,
+    roll_penalty_yardage,
 )
 
 
@@ -187,7 +191,7 @@ class TestResolveFullPenalty:
     def test_offensive_penalty_repeats_down(self):
         """Offensive penalty should repeat the down."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, _new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "OFF S", ball_position=50, yards_gained=0,
                 is_return=False, yards_to_go=10, down=2
             )
@@ -198,7 +202,7 @@ class TestResolveFullPenalty:
     def test_defensive_penalty_auto_first_down(self):
         """Defensive penalty with auto first down should reset to 1st and 10."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(37, "B3+W3+W4=37")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, _new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_gained=0,
                 is_return=False, yards_to_go=10, down=3
             )
@@ -209,7 +213,7 @@ class TestResolveFullPenalty:
     def test_defensive_penalty_no_auto_first_down(self):
         """Defensive penalty without auto first down should keep same down."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, _new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_gained=0,
                 is_return=False, yards_to_go=10, down=2
             )
@@ -220,7 +224,7 @@ class TestResolveFullPenalty:
     def test_defensive_penalty_achieves_first_down(self):
         """Defensive penalty that exceeds yards to go should award first down."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, _new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_gained=0,
                 is_return=False, yards_to_go=3, down=3
             )
@@ -232,7 +236,7 @@ class TestResolveFullPenalty:
         """Ball position should stay between 1 and 99."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(38, "B3+W4+W4=38")):
             # Offensive penalty near own goal
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=5, yards_gained=0,
                 is_return=False, yards_to_go=10, down=1
             )
@@ -240,7 +244,7 @@ class TestResolveFullPenalty:
         
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(37, "B3+W3+W4=37")):
             # Defensive penalty near opponent's goal
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=95, yards_gained=0,
                 is_return=False, yards_to_go=5, down=1
             )
@@ -252,27 +256,27 @@ class TestPassInterference:
     
     def test_pi_always_first_down(self):
         """Pass interference should always result in first down."""
-        new_pos, new_down, new_ytg = resolve_pass_interference(15, ball_position=30)
+        _new_pos, new_down, _new_ytg = resolve_pass_interference(15, ball_position=30)
         assert new_down == 1
     
     def test_pi_advances_ball(self):
         """Pass interference should advance ball by PI yards."""
-        new_pos, new_down, new_ytg = resolve_pass_interference(20, ball_position=40)
+        new_pos, _new_down, _new_ytg = resolve_pass_interference(20, ball_position=40)
         assert new_pos == 60  # 40 + 20
     
     def test_pi_caps_at_99(self):
         """PI near goal line should cap at 99 (1st and goal at 1)."""
-        new_pos, new_down, new_ytg = resolve_pass_interference(30, ball_position=85)
+        new_pos, _new_down, new_ytg = resolve_pass_interference(30, ball_position=85)
         assert new_pos == 99
         assert new_ytg == 1  # Goal to go
     
     def test_pi_yards_to_go_calculation(self):
         """PI should set yards to go correctly."""
-        new_pos, new_down, new_ytg = resolve_pass_interference(15, ball_position=30)
+        _new_pos, _new_down, new_ytg = resolve_pass_interference(15, ball_position=30)
         assert new_ytg == 10  # Standard first down
         
         # Near goal line
-        new_pos, new_down, new_ytg = resolve_pass_interference(10, ball_position=85)
+        _new_pos, _new_down, new_ytg = resolve_pass_interference(10, ball_position=85)
         assert new_ytg == 5  # 100 - 95 = 5 yards to goal
 
 
@@ -310,7 +314,7 @@ class TestRuleExamples:
         """
         # Simulate DEF 15 (roll 37-39)
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(37, "B3+W3+W4=37")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=56, yards_gained=3,
                 is_return=False, yards_to_go=19, down=3
             )
@@ -333,7 +337,7 @@ class TestRuleExamples:
         """
         # This example shows DEF 5 without auto first down
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, _new_pos, new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=93, yards_gained=0,
                 is_return=False, yards_to_go=5, down=3
             )
@@ -354,7 +358,7 @@ class TestRuleExamples:
         Yards to go: 10 + 8 = 18
         """
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(38, "B3+W4+W4=38")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            _result, new_pos, new_down, new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=17, yards_gained=0,
                 is_return=False, yards_to_go=10, down=1
             )
@@ -396,7 +400,7 @@ class TestChartYardagePenalties:
     
     def test_offensive_penalty_uses_chart_yardage(self):
         """When chart specifies 'OFF 10', should use 10 yards, not re-roll."""
-        result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+        result, new_pos, new_down, new_ytg, _first_down = resolve_penalty(
             "OFF 10", ball_position=50, yards_gained=0,
             is_return=False, yards_to_go=8, down=2,
             chart_yards=10, auto_first_down=False
@@ -423,7 +427,7 @@ class TestChartYardagePenalties:
     def test_chart_yardage_none_falls_back_to_roll(self):
         """When chart_yards is None, should roll for yardage."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(20, "B2+W0+W0=20")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_gained=0,
                 is_return=False, yards_to_go=10, down=2,
                 chart_yards=None  # Explicitly None - should roll

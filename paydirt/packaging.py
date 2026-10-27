@@ -2,6 +2,7 @@
 Packaging utilities for Paydirt standalone executables.
 Provides path resolution for bundled data (PyInstaller) and development.
 """
+from __future__ import annotations
 
 import os
 import sys
@@ -14,7 +15,7 @@ def is_bundled() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def get_user_data_path() -> Optional[Path]:
+def get_user_data_path() -> Path | None:
     """
     Get the platform-specific user data directory for Paydirt.
     
@@ -59,7 +60,7 @@ def get_user_data_path() -> Optional[Path]:
     return user_data_path
 
 
-def get_user_seasons_path() -> Optional[Path]:
+def get_user_seasons_path() -> Path | None:
     """
     Get the path to the user's custom seasons directory.
     

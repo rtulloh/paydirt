@@ -7,12 +7,19 @@ Official rules:
 - In those final minutes, only 10 seconds elapse on out-of-bounds plays
 - Play is NOT out of bounds if defense overrules or if play results in fumble
 """
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult, parse_result_string
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType, parse_result_string
 
 
 class TestOutOfBoundsParsing:
@@ -214,13 +221,12 @@ class TestOutOfBoundsExceptions:
             out_of_bounds=True,  # Has marker but fumble negates it
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
                 
-                with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                    initial_time = game.state.time_remaining
-                    game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
+                initial_time = game.state.time_remaining
+                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should use full time, not reduced (fumble negates out of bounds)
         # Time used should be 30 seconds = 0.5 minutes
@@ -242,10 +248,9 @@ class TestOutOfBoundsExceptions:
             defense_modifier="(3)",  # Defense overruled
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.random.uniform', return_value=30.0):
-                initial_time = game.state.time_remaining
-                game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.random.uniform', return_value=30.0):
+            initial_time = game.state.time_remaining
+            game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should use full time, not reduced (defense overruled)
         assert game.state.time_remaining < initial_time - 0.3  # Used more than 10 seconds

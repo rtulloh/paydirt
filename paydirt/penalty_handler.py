@@ -48,9 +48,11 @@ MARKING OFF PENALTIES:
 - DEF 5X: Automatic first down, marked from end of gain if play gained yardage  
 - DEF 15: Automatic first down, marked from end of gain if play gained yardage
 """
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional
 
 from .play_resolver import roll_chart_dice
 
@@ -193,7 +195,7 @@ class NoHuddlePenaltyResult:
     is_bad_snap: bool = False  # True if penalty becomes fumbled snap
     fumble_yards: int = 0  # F-2, F-7, or F-13
     is_false_start: bool = False  # True if DEF penalty becomes OFF 5 (false start)
-    normal_penalty: Optional[PenaltyResult] = None  # Normal penalty if not converted
+    normal_penalty: PenaltyResult | None = None  # Normal penalty if not converted
     description: str = ""
 
 
@@ -472,8 +474,8 @@ def calculate_penalty_spot(ball_position: int, yards_gained: int,
 def resolve_penalty(penalty_code: str, ball_position: int,
                     yards_gained: int = 0, is_return: bool = False,
                     yards_to_go: int = 10, down: int = 1,
-                    chart_yards: int = None, auto_first_down: bool = False,
-                    no_huddle: bool = False, play_type: str = "normal") -> Tuple[PenaltyResult, int, int, int, bool]:
+                    chart_yards: int | None = None, auto_first_down: bool = False,
+                    no_huddle: bool = False, play_type: str = "normal") -> tuple[PenaltyResult, int, int, int, bool]:
     """
     Fully resolve a penalty using the Full Feature Method.
     
@@ -596,7 +598,7 @@ def resolve_penalty(penalty_code: str, ball_position: int,
     return penalty_result, new_position, new_down, new_yards_to_go, first_down
 
 
-def resolve_pass_interference(pi_yards: int, ball_position: int) -> Tuple[int, int, int]:
+def resolve_pass_interference(pi_yards: int, ball_position: int) -> tuple[int, int, int]:
     """
     Resolve pass interference penalty.
     
@@ -635,6 +637,4 @@ def check_offsetting_penalties(off_penalty: bool, def_penalty: bool,
         True if penalties offset
     """
     # Offensive penalty + defensive penalty (including PI) = offsetting
-    if off_penalty and (def_penalty or pi_penalty):
-        return True
-    return False
+    return bool(off_penalty and (def_penalty or pi_penalty))

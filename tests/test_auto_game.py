@@ -3,11 +3,14 @@ Unit tests for auto_game.py game loop logic.
 """
 import pytest
 
-from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import (
-    TeamChart, PeripheralData, OffenseChart,
-    DefenseChart, SpecialTeamsChart
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
+from paydirt.game_engine import PaydirtGameEngine
 
 
 @pytest.fixture

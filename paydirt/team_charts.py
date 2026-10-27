@@ -3,16 +3,14 @@ Team charts that determine play outcomes based on dice rolls.
 These charts are inspired by the Paydirt board game mechanics.
 """
 import random
-from typing import Dict, Tuple
 
-from .models import PlayType, DefenseType, PlayOutcome, PlayResult, Team
-
+from .models import DefenseType, PlayOutcome, PlayResult, PlayType, Team
 
 # Dice roll ranges: 2-12 (two six-sided dice)
 # Each entry maps (play_type, defense_type) -> list of (roll_range, outcome)
 # Roll ranges are tuples of (min_roll, max_roll)
 
-def get_base_rushing_chart() -> Dict[Tuple[int, int], PlayOutcome]:
+def get_base_rushing_chart() -> dict[tuple[int, int], PlayOutcome]:
     """
     Base rushing play outcomes by dice roll.
     Returns dict mapping dice roll to PlayOutcome.
@@ -32,7 +30,7 @@ def get_base_rushing_chart() -> Dict[Tuple[int, int], PlayOutcome]:
     }
 
 
-def get_base_short_pass_chart() -> Dict[int, PlayOutcome]:
+def get_base_short_pass_chart() -> dict[int, PlayOutcome]:
     """Base short pass outcomes by dice roll."""
     return {
         2: PlayOutcome(PlayResult.INTERCEPTION, 0, "Intercepted! Defender jumped the route!", turnover=True),
@@ -49,7 +47,7 @@ def get_base_short_pass_chart() -> Dict[int, PlayOutcome]:
     }
 
 
-def get_base_medium_pass_chart() -> Dict[int, PlayOutcome]:
+def get_base_medium_pass_chart() -> dict[int, PlayOutcome]:
     """Base medium pass outcomes by dice roll."""
     return {
         2: PlayOutcome(PlayResult.INTERCEPTION, -5, "Picked off! Returned for yards!", turnover=True),
@@ -66,7 +64,7 @@ def get_base_medium_pass_chart() -> Dict[int, PlayOutcome]:
     }
 
 
-def get_base_long_pass_chart() -> Dict[int, PlayOutcome]:
+def get_base_long_pass_chart() -> dict[int, PlayOutcome]:
     """Base long pass (deep ball) outcomes by dice roll."""
     return {
         2: PlayOutcome(PlayResult.INTERCEPTION, -10, "Intercepted deep! Big return!", turnover=True),
@@ -83,7 +81,7 @@ def get_base_long_pass_chart() -> Dict[int, PlayOutcome]:
     }
 
 
-def get_base_screen_pass_chart() -> Dict[int, PlayOutcome]:
+def get_base_screen_pass_chart() -> dict[int, PlayOutcome]:
     """Base screen pass outcomes by dice roll."""
     return {
         2: PlayOutcome(PlayResult.LOSS, -5, "Screen blown up! Big loss"),
@@ -100,7 +98,7 @@ def get_base_screen_pass_chart() -> Dict[int, PlayOutcome]:
     }
 
 
-def get_base_draw_chart() -> Dict[int, PlayOutcome]:
+def get_base_draw_chart() -> dict[int, PlayOutcome]:
     """Base draw play outcomes by dice roll."""
     return {
         2: PlayOutcome(PlayResult.FUMBLE, -3, "Fumble on the draw!", turnover=True),
@@ -152,28 +150,25 @@ def apply_defense_modifier(outcome: PlayOutcome, defense_type: DefenseType,
             # Blitz is bad vs run
             if outcome.result == PlayResult.GAIN:
                 yards = int(yards * 1.3)
-        elif play_type in [PlayType.SCREEN_PASS, PlayType.DRAW]:
-            # Blitz is terrible vs screens and draws
-            if outcome.result == PlayResult.GAIN:
-                yards = int(yards * 1.5)
+        # Blitz is terrible vs screens and draws
+        elif (play_type in [PlayType.SCREEN_PASS, PlayType.DRAW]) and (outcome.result == PlayResult.GAIN):
+            yards = int(yards * 1.5)
 
     # Prevent defense is good vs long pass but bad vs run
     elif defense_type == DefenseType.PREVENT:
         if play_type == PlayType.LONG_PASS:
             if outcome.result == PlayResult.GAIN:
                 yards = int(yards * 0.7)  # Reduce big plays
-        elif play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
-            if outcome.result == PlayResult.GAIN:
-                yards = int(yards * 1.4)  # Easy runs vs prevent
+        elif (play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]) and (outcome.result == PlayResult.GAIN):
+            yards = int(yards * 1.4)  # Easy runs vs prevent
 
     # Goal line defense is good vs short yardage
     elif defense_type == DefenseType.GOAL_LINE:
         if play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
             if outcome.result == PlayResult.GAIN:
                 yards = max(1, int(yards * 0.5))  # Harder to run
-        elif play_type in [PlayType.MEDIUM_PASS, PlayType.LONG_PASS]:
-            if outcome.result == PlayResult.GAIN:
-                yards = int(yards * 1.3)  # Vulnerable deep
+        elif (play_type in [PlayType.MEDIUM_PASS, PlayType.LONG_PASS]) and (outcome.result == PlayResult.GAIN):
+            yards = int(yards * 1.3)  # Vulnerable deep
 
     return PlayOutcome(
         result=outcome.result,
@@ -190,7 +185,7 @@ def roll_dice() -> int:
     return random.randint(1, 6) + random.randint(1, 6)
 
 
-def get_play_chart(play_type: PlayType) -> Dict[int, PlayOutcome]:
+def get_play_chart(play_type: PlayType) -> dict[int, PlayOutcome]:
     """Get the appropriate chart for a play type."""
     if play_type in [PlayType.RUN_LEFT, PlayType.RUN_RIGHT, PlayType.RUN_MIDDLE]:
         return get_base_rushing_chart()
@@ -210,7 +205,7 @@ def get_play_chart(play_type: PlayType) -> Dict[int, PlayOutcome]:
 
 
 def resolve_play(play_type: PlayType, defense_type: DefenseType,
-                offense: Team, defense: Team) -> Tuple[int, PlayOutcome]:
+                offense: Team, defense: Team) -> tuple[int, PlayOutcome]:
     """
     Resolve a play and return the dice roll and outcome.
     
@@ -254,7 +249,7 @@ def resolve_play(play_type: PlayType, defense_type: DefenseType,
     return dice_roll, final_outcome
 
 
-def resolve_field_goal(distance: int, kicker_rating: int) -> Tuple[int, bool]:
+def resolve_field_goal(distance: int, kicker_rating: int) -> tuple[int, bool]:
     """
     Resolve a field goal attempt.
     
@@ -289,7 +284,7 @@ def resolve_field_goal(distance: int, kicker_rating: int) -> Tuple[int, bool]:
     return dice_roll, success
 
 
-def resolve_punt(punter_rating: int) -> Tuple[int, int]:
+def resolve_punt(punter_rating: int) -> tuple[int, int]:
     """
     Resolve a punt.
     
@@ -325,7 +320,7 @@ def resolve_punt(punter_rating: int) -> Tuple[int, int]:
     return dice_roll, final_distance
 
 
-def resolve_extra_point(kicker_rating: int) -> Tuple[int, bool]:
+def resolve_extra_point(kicker_rating: int) -> tuple[int, bool]:
     """
     Resolve an extra point attempt.
     
@@ -346,7 +341,7 @@ def resolve_extra_point(kicker_rating: int) -> Tuple[int, bool]:
 
 
 def resolve_two_point_conversion(play_type: PlayType, offense: Team,
-                                 defense: Team) -> Tuple[int, bool]:
+                                 defense: Team) -> tuple[int, bool]:
     """
     Resolve a two-point conversion attempt.
     

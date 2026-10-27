@@ -11,13 +11,14 @@ Usage:
     python -m paydirt.standings show 1983
     python -m paydirt.standings games 1983
 """
+from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+import sys
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-
+from typing import Optional
 
 # 1983 NFL Division structure
 # AFC and NFC each had 3 divisions: East, Central, West
@@ -45,7 +46,7 @@ class GameResult:
     away_score: int
 
     @property
-    def winner(self) -> Optional[str]:
+    def winner(self) -> str | None:
         """Return the winning team, or None if tie."""
         if self.home_score > self.away_score:
             return self.home_team
@@ -54,7 +55,7 @@ class GameResult:
         return None
 
     @property
-    def loser(self) -> Optional[str]:
+    def loser(self) -> str | None:
         """Return the losing team, or None if tie."""
         if self.home_score > self.away_score:
             return self.away_team
@@ -130,15 +131,15 @@ class Season:
             # Default to 1983 structure for now
             self.divisions = NFL_DIVISIONS_1983
 
-    def get_team_conference(self, team: str) -> Optional[str]:
+    def get_team_conference(self, team: str) -> str | None:
         """Get the conference for a team."""
         for conf, divs in self.divisions.items():
-            for div, teams in divs.items():
+            for teams in divs.values():
                 if team in teams:
                     return conf
         return None
 
-    def get_team_division(self, team: str) -> Optional[tuple]:
+    def get_team_division(self, team: str) -> tuple | None:
         """Get the (conference, division) for a team."""
         for conf, divs in self.divisions.items():
             for div, teams in divs.items():
@@ -166,8 +167,8 @@ class Season:
         """Calculate standings for all teams."""
         # Initialize records for all teams
         records = {}
-        for conf, divs in self.divisions.items():
-            for div, teams in divs.items():
+        for divs in self.divisions.values():
+            for teams in divs.values():
                 for team in teams:
                     records[team] = TeamRecord(team=team)
 
@@ -233,7 +234,7 @@ class Season:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Season":
+    def from_dict(cls, data: dict) -> Season:
         """Create from dictionary."""
         season = cls(year=data["year"])
         for g in data.get("games", []):
@@ -272,7 +273,7 @@ def add_game_result(year: int, home_team: str, home_score: int,
 class StandingsManager:
     """Manages season data persistence."""
 
-    def __init__(self, data_dir: str = None):
+    def __init__(self, data_dir: str | None = None):
         if data_dir is None:
             # Default to seasons directory in project
             data_dir = Path(__file__).parent.parent / "standings_data"
@@ -379,12 +380,12 @@ def display_games(season: Season):
     print()
 
 
-def normalize_team_name(name: str, season: Season) -> Optional[str]:
+def normalize_team_name(name: str, season: Season) -> str | None:
     """Try to match a team name to the official name."""
     name_lower = name.lower()
 
-    for conf, divs in season.divisions.items():
-        for div, teams in divs.items():
+    for divs in season.divisions.values():
+        for teams in divs.values():
             for team in teams:
                 if team.lower() == name_lower:
                     return team
@@ -583,4 +584,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

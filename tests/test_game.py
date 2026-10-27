@@ -2,11 +2,12 @@
 Tests for the main game engine.
 """
 
-import pytest
 from unittest.mock import patch
 
-from paydirt.models import Team, PlayType, DefenseType, PlayResult
+import pytest
+
 from paydirt.game import PaydirtGame, simulate_drive
+from paydirt.models import DefenseType, PlayResult, PlayType, Team
 
 
 class TestPaydirtGame:
@@ -270,8 +271,8 @@ class TestUsePlayTime:
 
     def test_use_play_time_with_specific_value(self):
         """_use_play_time should reduce time."""
-        from paydirt.models import Team
         from paydirt.game import PaydirtGame
+        from paydirt.models import Team
 
         home = Team(name="Home", abbreviation="HOM")
         away = Team(name="Away", abbreviation="AWY")
@@ -284,8 +285,8 @@ class TestUsePlayTime:
 
     def test_use_play_time_default_random(self):
         """_use_play_time with no args should use random time in valid range."""
-        from paydirt.models import Team
         from paydirt.game import PaydirtGame
+        from paydirt.models import Team
 
         home = Team(name="Home", abbreviation="HOM")
         away = Team(name="Away", abbreviation="AWY")
@@ -304,8 +305,8 @@ class TestAISelectPlay:
 
     def test_game_has_ai_methods(self):
         """Game should have AI-related methods."""
-        from paydirt.models import Team
         from paydirt.game import PaydirtGame
+        from paydirt.models import Team
 
         home = Team(name="Home", abbreviation="HOM", rushing_offense=7, passing_offense=5)
         away = Team(name="Away", abbreviation="AWY", rushing_defense=5, passing_defense=7)
@@ -325,8 +326,8 @@ class TestAISelectDefense:
 
     def test_game_has_defense_methods(self):
         """Game should have methods for handling defense."""
-        from paydirt.models import Team
         from paydirt.game import PaydirtGame
+        from paydirt.models import Team
 
         home = Team(name="Home", abbreviation="HOM")
         away = Team(name="Away", abbreviation="AWY")

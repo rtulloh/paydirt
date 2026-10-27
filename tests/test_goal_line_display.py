@@ -5,8 +5,9 @@ When the ball is inside the opponent's 10-yard line and the goal line
 is closer than the first down marker, the display should show "Goal"
 instead of the yards to go (e.g., "1st and Goal" instead of "1st and 8").
 """
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from paydirt.game_engine import PaydirtGameEngine
 

@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-from .overtime_rules import OvertimeRules, OvertimeFormat
+from .overtime_rules import OvertimeFormat, OvertimeRules
 
 
 @dataclass

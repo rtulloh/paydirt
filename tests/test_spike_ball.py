@@ -7,11 +7,12 @@ Spiking the ball:
 - Combined with previous 40-second play, total time is only 20 seconds
 - Avoids the hazards of the quick huddle (no penalty risks)
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import PlayType, DefenseType, ResultType
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType, ResultType
 
 
 @pytest.fixture

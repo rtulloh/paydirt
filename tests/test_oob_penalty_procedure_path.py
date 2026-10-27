@@ -7,13 +7,18 @@ game uses run_play_with_penalty_procedure() which delegates to
 _apply_play_result() — a separate method that was missing both the
 OOB 5-yard deduction and the QB_SCRAMBLE touchdown check.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, PlayResult, PenaltyChoice,
-)
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import (
+    DefenseType,
+    PenaltyChoice,
+    PlayResult,
+    PlayType,
+    ResultType,
+)
 
 
 @pytest.fixture

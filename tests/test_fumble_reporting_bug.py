@@ -8,15 +8,22 @@ BEFORE the play, not the team that scored.
 The fix: Added `scoring_team` field to PlayResult, set it in the game engine
 when touchdowns are scored, and updated display_play_result to use it.
 """
-import pytest
-from unittest.mock import patch
-from io import StringIO
 import sys
+from io import StringIO
+from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
-from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType, PenaltyChoice
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
+import pytest
+
 import paydirt.interactive_game as ig
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
+from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
+from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture(autouse=True)

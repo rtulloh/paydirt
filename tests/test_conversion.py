@@ -9,19 +9,20 @@ Official rules:
     If defense returns turnover to/beyond opponent's goal line = 2 points for defense.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.game_engine import PaydirtGameEngine, GameState
+import pytest
+
 from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
     DefenseChart,
+    OffenseChart,
+    PeripheralData,
     SpecialTeamsChart,
+    TeamChart,
 )
-from paydirt.play_resolver import PlayType
+from paydirt.game_engine import GameState, PaydirtGameEngine
 from paydirt.interactive_game import cpu_should_go_for_two
+from paydirt.play_resolver import PlayType
 from tests.game_fixtures import make_sample_game
 
 
@@ -114,7 +115,7 @@ class TestExtraPoint:
         with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (20, "B2+W3+W5=20")
 
-            success, description = game.attempt_extra_point()
+            success, _description = game.attempt_extra_point()
 
             assert success is True
             assert game.state.away_score == initial_score + 1
@@ -126,7 +127,7 @@ class TestExtraPoint:
         with patch("paydirt.game_engine.roll_chart_dice") as mock_dice:
             mock_dice.return_value = (25, "B2+W4+W4=25")
 
-            success, description = game.attempt_extra_point()
+            _success, description = game.attempt_extra_point()
 
             assert "25" in description
 
@@ -166,7 +167,7 @@ class TestTwoPointConversion:
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
 
-            success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
+            success, _def_points, _description = game.attempt_two_point(PlayType.SHORT_PASS)
 
             assert success is True
             assert game.state.home_score == initial_score + 2
@@ -204,7 +205,7 @@ class TestTwoPointConversion:
             # Ball position after turnover is not at goal line
             game.state.ball_position = 50
 
-            success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
+            success, _def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
 
             assert success is False
             assert "turnover" in description.lower()
@@ -222,7 +223,7 @@ class TestTwoPointConversion:
             mock_outcome.touchdown = True
             mock_play.return_value = mock_outcome
 
-            success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
+            success, _def_points, _description = game.attempt_two_point(PlayType.SHORT_PASS)
 
             assert success is True
             assert game.state.home_score == initial_score + 2
@@ -239,7 +240,7 @@ class TestTwoPointConversion:
             mock_outcome.touchdown = False
             mock_play.return_value = mock_outcome
 
-            success, def_points, description = game.attempt_two_point(PlayType.LINE_PLUNGE)
+            success, _def_points, _description = game.attempt_two_point(PlayType.LINE_PLUNGE)
 
             assert success is True
             assert game.state.away_score == initial_score + 2
@@ -312,7 +313,7 @@ class TestDefensiveTwoPointReturn:
             return mock_outcome
 
         with patch.object(game, "run_play", side_effect=mock_run_play_with_return):
-            success, def_points, description = game.attempt_two_point(PlayType.SHORT_PASS)
+            success, def_points, _description = game.attempt_two_point(PlayType.SHORT_PASS)
 
             assert success is False
             assert def_points == 2

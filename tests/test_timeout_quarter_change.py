@@ -2,19 +2,20 @@
 Tests for _should_apply_timeout_after_play to verify quarter-change behavior.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from paydirt.game_engine import PaydirtGameEngine
-from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
-from paydirt.models import PlayOutcome
+import pytest
+
 from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
     DefenseChart,
+    OffenseChart,
+    PeripheralData,
     SpecialTeamsChart,
+    TeamChart,
 )
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.models import PlayOutcome
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 def create_mock_chart(short_name: str = "TEST", year: int = 1983) -> TeamChart:

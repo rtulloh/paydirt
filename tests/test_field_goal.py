@@ -9,12 +9,19 @@ Official rules:
 - Chart yardages are distance from LOS to goal line, NOT the statistical length
   (which is 17 yards greater: 10 yards end zone + 7 yards to spot of hold)
 """
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, FieldGoalResult
+from paydirt.play_resolver import FieldGoalResult, PlayType
 
 
 def create_fg_result(dice_roll: int, raw_result: str, chart_yards: int = 0,

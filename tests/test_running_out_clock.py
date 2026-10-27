@@ -6,11 +6,12 @@ A) QB Kneel Down - Automatic -2 yards, 40 seconds consumed
 B) Delay of Game - Take intentional 5-yard penalty, adds 10 seconds (not implemented yet)
 C) In Bounds - Keeps clock running, costs 5 yards from plays not already in bounds
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 @pytest.fixture

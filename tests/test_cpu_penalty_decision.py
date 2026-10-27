@@ -5,15 +5,23 @@ from unittest.mock import patch
 import pytest
 
 from paydirt.chart_loader import (
-    DefenseChart, OffenseChart, PeripheralData, SpecialTeamsChart, TeamChart,
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine, PlayOutcome
 from paydirt.interactive_game import handle_penalty_decision
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
-
 
 PLAY_TYPES = [
     PlayType.LINE_PLUNGE, PlayType.FIELD_GOAL, PlayType.PUNT, PlayType.KICKOFF,

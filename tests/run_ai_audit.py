@@ -1,22 +1,30 @@
 #!/usr/bin/env python3
 """Run testing-only play-selection audits; see docs/ai-auditing.md."""
+from __future__ import annotations
 
 import argparse
 import csv
-from dataclasses import replace
 import json
-from pathlib import Path
 import sys
+from dataclasses import replace
+from pathlib import Path
 from typing import Optional
 
 # Support execution from the repository root without installing test utilities.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from paydirt.packaging import get_seasons_path
-from tests.ai_audit import DIFFICULTIES, GameSpec, game_seed, generated_schedule, make_report, run_games
+from tests.ai_audit import (
+    DIFFICULTIES,
+    GameSpec,
+    game_seed,
+    generated_schedule,
+    make_report,
+    run_games,
+)
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Return nonzero on any incomplete game; concentration warnings are advisory."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("teams", nargs="*", metavar="TEAM", help="away then home, e.g. 2026/Ironclads 2026/Thunderhawks")

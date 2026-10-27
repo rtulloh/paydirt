@@ -15,7 +15,6 @@ from paydirt.computer_ai import create_computer_ai
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType
 
-
 AWAY = "2026/Ironclads"
 HOME = "2026/Thunderhawks"
 
@@ -61,7 +60,7 @@ def audit_module():
 
 
 def spec(**overrides):
-    values = dict(away=AWAY, home=HOME, seed=731, away_difficulty="hard", home_difficulty="hard")
+    values = {"away": AWAY, "home": HOME, "seed": 731, "away_difficulty": "hard", "home_difficulty": "hard"}
     values.update(overrides)
     return audit_module().GameSpec(**values)
 

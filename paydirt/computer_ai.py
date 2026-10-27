@@ -9,17 +9,19 @@ Makes intelligent decisions based on:
 - Team chart analysis (Phase 1)
 - Opponent tendencies (Phase 2)
 """
+from __future__ import annotations
 
+import logging
 import random
 from math import ceil, exp
 from typing import Optional
 
-from .play_resolver import CHART_PLAY_TYPES, PlayType, DefenseType, ResultType, is_passing_play
-from .game_engine import PaydirtGameEngine
-from .ai_analysis import TeamAnalyzer, OpponentModel, OffenseAnalyzer
+from .ai_analysis import OffenseAnalyzer, OpponentModel, TeamAnalyzer
 from .chart_loader import OffenseChart
-from .season_rules import AIBehavior
+from .game_engine import PaydirtGameEngine
 from .offense_strategy import OffensiveStrategy
+from .play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType, ResultType, is_passing_play
+from .season_rules import AIBehavior
 
 
 class ComputerAI:
@@ -38,7 +40,7 @@ class ComputerAI:
         self,
         aggression: float = 0.5,
         use_analysis: bool = False,
-        ai_behavior: Optional[AIBehavior] = None,
+        ai_behavior: AIBehavior | None = None,
     ):
         """
         Initialize AI with aggression level.
@@ -57,9 +59,9 @@ class ComputerAI:
         # For opponent modeling (shared across offense and defense)
         self.opponent_model = OpponentModel() if use_analysis else None
         self.team_analyzer = None  # Set when we know our team
-        self._defense_rng: Optional[random.Random] = None  # Lazy, separate from engine dice.
-        self._offense_rng: Optional[random.Random] = None
-        self.offense_strategy: Optional[OffensiveStrategy] = None
+        self._defense_rng: random.Random | None = None  # Lazy, separate from engine dice.
+        self._offense_rng: random.Random | None = None
+        self.offense_strategy: OffensiveStrategy | None = None
         self.use_team_strength = False  # Explicit Medium capability, enabled by the factory.
         self._run_bias = 0.0
 
@@ -99,6 +101,7 @@ class ComputerAI:
             suggestion = self.team_analyzer.suggest_play(down, distance)
             return suggestion.get("recommended_play") or None
         except Exception:
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
             return None
 
     def _ai_play_to_play_type(self, play_name):
@@ -183,9 +186,8 @@ class ComputerAI:
                     PlayType.MEDIUM_PASS,
                     PlayType.LONG_PASS,
                     PlayType.SCREEN,
-                ]:
-                    if random.random() < self.ai_behavior.strategic.oob_designation_aggression:
-                        use_oob = True
+                ] and random.random() < self.ai_behavior.strategic.oob_designation_aggression:
+                    use_oob = True
             return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards, False)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
@@ -197,14 +199,8 @@ class ComputerAI:
             play = self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
             use_no_huddle = True
             # Use OOB designation on passing plays based on aggression
-            if play in [
-                PlayType.SHORT_PASS,
-                PlayType.MEDIUM_PASS,
-                PlayType.LONG_PASS,
-                PlayType.SCREEN,
-            ]:
-                if self._offense_rng.random() < self.ai_behavior.strategic.oob_designation_aggression:
-                    use_oob = True
+            if (play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]) and (self._offense_rng.random() < self.ai_behavior.strategic.oob_designation_aggression):
+                use_oob = True
             # Spike modifier: add spike to stop clock after play (only on 1st/2nd down, not 3rd)
             # On 3rd down, spiking wastes the down and we need to punt/kick on 4th
             spike_chance = self.ai_behavior.strategic.spike_ball_chance
@@ -305,22 +301,20 @@ class ComputerAI:
         punt_coffin_corner_yards = 0
 
         # Check for short-drop punt (inside own 5-yard line)
-        if field_pos <= 5:
-            # Short-drop punt: small chance to use it
-            if self.aggression < 0.3:  # Conservative coaches more likely to use it
-                punt_short_drop = True
+        # Short-drop punt: small chance to use it
+        # Conservative coaches more likely to use it
+        if (field_pos <= 5) and (self.aggression < 0.3):
+            punt_short_drop = True
 
         # Check for coffin corner punt (in opponent's territory, late in half)
         # Use coffin corner when: opponent has good field position, late in half/game
-        if field_pos >= 50:
-            # Calculate opponent's starting field position if we punt normally
-            # (simplified - actual logic would use chart data)
-            if quarter >= 2 and time_left < 5.0:
-                # Late in half/game - use coffin corner to pin them deep
-                # More aggressive AI uses it more
-                if self.aggression > 0.6 and random.random() < 0.3:
-                    # Subtract 15-20 yards to force out of bounds
-                    punt_coffin_corner_yards = random.choice([15, 18, 20])
+        # Calculate opponent's starting field position if we punt normally
+        # (simplified - actual logic would use chart data)
+        # Late in half/game - use coffin corner to pin them deep
+        # More aggressive AI uses it more
+        # Subtract 15-20 yards to force out of bounds
+        if (field_pos >= 50) and ((quarter >= 2 and time_left < 5.0) and (self.aggression > 0.6 and random.random() < 0.3)):
+            punt_coffin_corner_yards = random.choice([15, 18, 20])
 
         # 1983-era field goal probability tiers
         fg_easy = fg_distance <= 35  # ~80%+ make rate (chip shot)
@@ -704,9 +698,8 @@ class ComputerAI:
     def _is_two_minute_drill(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be in hurry-up mode."""
         tmd = self.ai_behavior.two_minute_drill
-        if quarter == 2 and time_left < 2.0:
-            if score_diff < tmd.skip_when_leading_by:
-                return True
+        if quarter == 2 and time_left < 2.0 and score_diff < tmd.skip_when_leading_by:
+            return True
         if quarter == 4 and score_diff < 0:
             if score_diff <= -9 and time_left < tmd.q4_deficit_9_minutes:
                 return True
@@ -714,9 +707,7 @@ class ComputerAI:
                 return True
             if time_left < tmd.q4_always_minutes:
                 return True
-        if quarter == 4 and score_diff <= -14:
-            return True
-        return False
+        return bool(quarter == 4 and score_diff <= -14)
 
     def _needs_hurry_up(self, time_left, quarter, score_diff) -> bool:
         """Check if we need to hurry (no-huddle, OOB designation)."""
@@ -728,22 +719,17 @@ class ComputerAI:
                 return True
             if time_left < hur.q4_any_minutes:
                 return True
-        if quarter == 2 and time_left < 2.0 and score_diff < 0:
-            return True
-        return False
+        return bool(quarter == 2 and time_left < 2.0 and score_diff < 0)
 
     def _should_run_clock(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be killing clock."""
         clk = self.ai_behavior.clock_killing
         if quarter == 4 and score_diff > 0:
-            if clk.clock_run_on_any_lead:
-                if time_left < clk.q4_any_lead_minutes:
-                    return True
+            if clk.clock_run_on_any_lead and time_left < clk.q4_any_lead_minutes:
+                return True
             if score_diff >= 14 and time_left < clk.q4_big_lead_minutes:
                 return True
-        if quarter >= 3 and score_diff >= 14:
-            return True
-        return False
+        return bool(quarter >= 3 and score_diff >= 14)
 
     @staticmethod
     def analyze_team_strength(offense: OffenseChart) -> str:
@@ -759,7 +745,7 @@ class ComputerAI:
         def count_positive_results(chart_column: dict) -> int:
             """Count results that are likely positive (yardage gains, breakaways)."""
             positive = 0
-            for roll, result in chart_column.items():
+            for result in chart_column.values():
                 if not result:
                     continue
                 result_str = str(result).upper()
@@ -864,10 +850,7 @@ class ComputerAI:
         if time_left <= 2.0 and score_diff < 0:
             return True
 
-        if time_left < 5.0 and score_diff <= -9:
-            return True
-
-        return False
+        return bool(time_left < 5.0 and score_diff <= -9)
 
     def select_defense(self, game: PaydirtGameEngine) -> DefenseType:
         """
@@ -953,7 +936,7 @@ class ComputerAI:
 
     def _late_trailing_defense(
         self, game: PaydirtGameEngine, score_diff: int,
-    ) -> Optional[DefenseType]:
+    ) -> DefenseType | None:
         """Mix calculated risks when Hard's defense needs multiple late stops.
 
         Args:
@@ -1103,9 +1086,7 @@ class ComputerAI:
         if quarter == 4 and time_left < 5.0 and score_diff >= 14:
             return True
         # Comfortable lead at end of half
-        if quarter == 2 and time_left < 1.0 and score_diff >= 10:
-            return True
-        return False
+        return bool(quarter == 2 and time_left < 1.0 and score_diff >= 10)
 
     def _opponent_in_hurry_up(self, time_left, quarter, score_diff) -> bool:
         """Check if opponent is likely in hurry-up mode."""
@@ -1113,9 +1094,7 @@ class ComputerAI:
         if quarter == 2 and time_left < 2.0 and score_diff > 0:
             return True
         # End of game, they're trailing
-        if quarter == 4 and time_left < 4.0 and score_diff > 0:
-            return True
-        return False
+        return bool(quarter == 4 and time_left < 4.0 and score_diff > 0)
 
     def should_call_timeout_on_defense(self, game: PaydirtGameEngine) -> bool:
         """
@@ -1153,24 +1132,22 @@ class ComputerAI:
             return False
 
         # End of 4th quarter - trailing and need to get ball back
-        if quarter == 4:
-            # Trailing by any amount with < 5 minutes left
-            if score_diff < 0 and time_left <= 5.0:
-                # More aggressive timeout usage when further behind or less time
-                if time_left <= 2.0:
-                    return True  # Always use timeouts in final 2 minutes when trailing
-                if score_diff <= -8 and time_left <= 4.0:
-                    return True  # Down by more than a TD with < 4 min
-                if score_diff <= -14 and time_left <= 5.0:
-                    return True  # Down by 2+ TDs with < 5 min
+        # Trailing by any amount with < 5 minutes left
+        # More aggressive timeout usage when further behind or less time
+        if (quarter == 4) and (score_diff < 0 and time_left <= 5.0):
+            if time_left <= 2.0:
+                return True  # Always use timeouts in final 2 minutes when trailing
+            if score_diff <= -8 and time_left <= 4.0:
+                return True  # Down by more than a TD with < 4 min
+            if score_diff <= -14 and time_left <= 5.0:
+                return True  # Down by 2+ TDs with < 5 min
 
         # End of 2nd quarter - trailing and want to get ball before half
-        if quarter == 2:
-            if score_diff < 0 and time_left <= 2.0:
-                if time_left <= 1.0:
-                    return True  # Final minute of half when trailing
-                if score_diff <= -7:
-                    return True  # Down by TD+ with < 2 min in half
+        if quarter == 2 and score_diff < 0 and time_left <= 2.0:
+            if time_left <= 1.0:
+                return True  # Final minute of half when trailing
+            if score_diff <= -7:
+                return True  # Down by TD+ with < 2 min in half
 
         return False
 
@@ -1210,10 +1187,9 @@ class ComputerAI:
             return False
 
         # End of Q2 - use timeouts to try to score before half
-        if quarter == 2 and time_left <= 1.0:
-            # Use timeout if not leading by a lot (still want to score)
-            if score_diff < 14:
-                return True
+        # Use timeout if not leading by a lot (still want to score)
+        if (quarter == 2 and time_left <= 1.0) and (score_diff < 14):
+            return True
 
         # End of Q4 - use timeouts when trailing to preserve clock
         if quarter == 4:
@@ -1226,7 +1202,7 @@ class ComputerAI:
 
     def should_accept_penalty(
         self, outcome, is_human_offense: bool, human_is_home: bool
-    ) -> tuple[bool, Optional[int]]:
+    ) -> tuple[bool, int | None]:
         """
         Decide if CPU should accept the play result or the penalty.
 
@@ -1321,10 +1297,9 @@ class ComputerAI:
                 filtered_penalties.sort(key=lambda p: (p.auto_first_down, p.yards), reverse=True)
                 best_penalty = filtered_penalties[0]
 
-            if best_penalty:
-                if best_penalty.auto_first_down or best_penalty.yards > play_yards:
-                    accept_play = False
-                    best_penalty_idx = penalty_choice.penalty_options.index(best_penalty)
+            if (best_penalty) and (best_penalty.auto_first_down or best_penalty.yards > play_yards):
+                accept_play = False
+                best_penalty_idx = penalty_choice.penalty_options.index(best_penalty)
         else:
             if play_yards > 0:
                 accept_play = False
@@ -1384,7 +1359,7 @@ def computer_should_call_timeout_on_offense(game: PaydirtGameEngine) -> bool:
     return ai.should_call_timeout_on_offense(game)
 
 
-def cpu_should_go_for_two(game: PaydirtGameEngine, ai: Optional[ComputerAI] = None) -> bool:
+def cpu_should_go_for_two(game: PaydirtGameEngine, ai: ComputerAI | None = None) -> bool:
     """
     Determine if CPU should go for 2-point conversion.
 
@@ -1400,7 +1375,7 @@ def cpu_should_go_for_two(game: PaydirtGameEngine, ai: Optional[ComputerAI] = No
     return ai.should_go_for_two(game)
 
 
-def cpu_should_onside_kick(game: PaydirtGameEngine, ai: Optional[ComputerAI] = None) -> bool:
+def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI | None = None) -> bool:
     """
     Determine if CPU should attempt an onside kick.
 
@@ -1417,8 +1392,8 @@ def cpu_should_onside_kick(game: PaydirtGameEngine, ai: Optional[ComputerAI] = N
 
 
 def cpu_should_accept_penalty(
-    outcome, is_human_offense: bool, human_is_home: bool, ai: Optional[ComputerAI] = None
-) -> tuple[bool, Optional[int]]:
+    outcome, is_human_offense: bool, human_is_home: bool, ai: ComputerAI | None = None
+) -> tuple[bool, int | None]:
     """
     Decide if CPU should accept the play result or the penalty.
 

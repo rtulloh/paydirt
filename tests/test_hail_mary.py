@@ -17,14 +17,19 @@ Dice Total | Result
 
 T1 = tens digit of dice roll (1, 2, or 3)
 """
-import pytest
 from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, resolve_hail_mary
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType, ResultType, resolve_hail_mary
 
 
 @pytest.fixture

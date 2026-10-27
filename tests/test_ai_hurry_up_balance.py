@@ -1,15 +1,15 @@
 """Hurry-up pace is not a requirement to call only deep passes."""
 
+import random
 from collections import Counter
 from copy import deepcopy
-import random
 from unittest.mock import patch
 
 import pytest
 
 from paydirt.computer_ai import create_computer_ai
 from paydirt.play_resolver import CHART_PLAY_TYPES, PlayType, is_passing_play
-from tests.test_ai_offense_variety import synthetic_ai, COLUMNS
+from tests.test_ai_offense_variety import COLUMNS, synthetic_ai
 
 
 @pytest.fixture(autouse=True)

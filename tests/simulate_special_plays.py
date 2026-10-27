@@ -12,17 +12,17 @@ Runs many simulated games and logs all:
 This helps find bugs that are hard to hit during manual playtesting.
 """
 
-import sys
+import logging
 import random
-from pathlib import Path
+import sys
 from dataclasses import dataclass, field
-from typing import List
+from pathlib import Path
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from paydirt.chart_loader import load_team_chart
-from paydirt.game_engine import PaydirtGameEngine, PlayType, DefenseType
+from paydirt.game_engine import DefenseType, PaydirtGameEngine, PlayType
 
 
 @dataclass
@@ -61,8 +61,8 @@ class SimulationStats:
     blocked_kick_returns: int = 0
     blocked_kick_tds: int = 0
     touchbacks: int = 0
-    errors: List[str] = field(default_factory=list)
-    events: List[SpecialPlayEvent] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    events: list[SpecialPlayEvent] = field(default_factory=list)
 
 
 def run_simulated_game(home_chart, away_chart, game_num: int, stats: SimulationStats, verbose: bool = False):
@@ -256,7 +256,8 @@ def run_simulated_game(home_chart, away_chart, game_num: int, stats: SimulationS
                     stats.errors.append(f"Game {game_num} Play {play_num}: TD but score increased by {score_diff} - {score_before} -> {score_after}")
             
         except Exception as e:
-            stats.errors.append(f"Game {game_num} Play {play_num}: Exception - {str(e)}")
+            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
+            stats.errors.append(f"Game {game_num} Play {play_num}: Exception - {e!s}")
             if verbose:
                 print(f"  ERROR: {e}")
             break
@@ -297,7 +298,7 @@ def main():
     print()
     
     for game_num in range(1, num_games + 1):
-        home_score, away_score = run_simulated_game(
+        _home_score, _away_score = run_simulated_game(
             home_chart, away_chart, game_num, stats, verbose=False
         )
         

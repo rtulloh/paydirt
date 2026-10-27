@@ -4,13 +4,15 @@ AI data persistence for opponent model learning.
 This module handles saving and loading AI opponent model data to separate files,
 allowing the AI to maintain learned tendencies across multiple games between the same teams.
 """
+from __future__ import annotations
+
 import json
+import logging
 import os
 from datetime import datetime
 from typing import Optional
 
 from paydirt.ai_analysis import OpponentModel
-
 
 AI_DATA_VERSION = 1
 
@@ -38,7 +40,7 @@ def get_ai_filepath(away_team_path: str, home_team_path: str, save_dir: str = ".
 
 
 def save_ai_data(cpu_ai, away_team_path: str, home_team_path: str, 
-                 save_dir: str = ".") -> Optional[str]:
+                 save_dir: str = ".") -> str | None:
     """
     Save AI opponent model data to a team-pair specific file.
     
@@ -67,7 +69,7 @@ def save_ai_data(cpu_ai, away_team_path: str, home_team_path: str,
             with open(filepath, 'r') as f:
                 existing_data = json.load(f)
                 created_at = existing_data.get("metadata", {}).get("created_at", created_at)
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             pass  # Use current time if can't read existing
     
     # Build save data
@@ -87,13 +89,13 @@ def save_ai_data(cpu_ai, away_team_path: str, home_team_path: str,
             json.dump(save_data, f, indent=2)
             f.flush()
         return filepath
-    except IOError as e:
+    except OSError as e:
         print(f"  [WARNING] Failed to save AI data: {e}")
         return None
 
 
 def load_ai_data(away_team_path: str, home_team_path: str, 
-                 save_dir: str = ".") -> Optional[OpponentModel]:
+                 save_dir: str = ".") -> OpponentModel | None:
     """
     Load AI opponent model data if metadata matches current game.
     
@@ -113,7 +115,7 @@ def load_ai_data(away_team_path: str, home_team_path: str,
     try:
         with open(filepath, 'r') as f:
             save_data = json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         print(f"  [WARNING] Failed to load AI data from {filepath}: {e}")
         return None
     
@@ -145,5 +147,6 @@ def load_ai_data(away_team_path: str, home_team_path: str,
         print(f"  [INFO] Loaded AI opponent model from {filepath}")
         return opponent_model
     except Exception as e:
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
         print(f"  [WARNING] Failed to restore opponent model: {e}, creating fresh model")
         return None

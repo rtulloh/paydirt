@@ -48,9 +48,9 @@ def test_cpu_no_huddle_reaches_engine(
     charts = [game.state.home_chart, game.state.away_chart] if human_home else [
         game.state.away_chart, game.state.home_chart]
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=charts))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="test", away_team="AWAY", home_team="HOME", away_score=0, home_score=0,
-        quarter=1, time_remaining=15))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "test", "away_team": "AWAY", "home_team": "HOME", "away_score": 0, "home_score": 0,
+        "quarter": 1, "time_remaining": 15})
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, not human_home, human_home, None))
     captured = {}
 
@@ -205,7 +205,7 @@ def test_ordinary_punt_penalties_charge_only_applied_yardage(
 @pytest.mark.parametrize("penalty", ["DEF 5", "DEF 5X", "OFF 10"])
 def test_cpu_preserves_punt_recovery_or_erases_return_fumble(penalty: str) -> None:
     from paydirt.computer_ai import ComputerAI
-    game, outcome = punt_game(True, penalty)
+    _game, outcome = punt_game(True, penalty)
     assert outcome.pending_penalty_decision
     accept_play, _ = ComputerAI().should_accept_penalty(outcome, False, False)
     assert accept_play is penalty.startswith("DEF")

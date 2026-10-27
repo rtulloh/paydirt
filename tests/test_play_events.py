@@ -3,17 +3,17 @@ Tests for the transaction-based play event model.
 """
 
 from paydirt.play_events import (
+    DecisionOption,
     EventType,
+    PendingDecision,
     PlayEvent,
     PlayTransaction,
-    PendingDecision,
-    DecisionOption,
     create_chart_lookup_event,
     create_fumble_event,
-    create_recovery_event,
     create_interception_event,
-    create_return_event,
     create_penalty_event,
+    create_recovery_event,
+    create_return_event,
 )
 
 

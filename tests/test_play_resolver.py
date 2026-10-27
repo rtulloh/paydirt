@@ -2,17 +2,18 @@
 Tests for play_resolver.py to improve coverage.
 """
 
-import pytest
 from unittest.mock import patch
 
+import pytest
+
+from paydirt.chart_loader import SpecialTeamsChart
 from paydirt.play_resolver import (
     PlayType,
     is_passing_play,
-    roll_chart_dice,
-    resolve_field_goal_with_penalties,
     parse_result_string,
+    resolve_field_goal_with_penalties,
+    roll_chart_dice,
 )
-from paydirt.chart_loader import SpecialTeamsChart
 
 
 class TestIsPassingPlay:
@@ -302,7 +303,7 @@ class TestRollWhiteDice:
         """roll_white_dice should return description string."""
         from paydirt.play_resolver import roll_white_dice
 
-        result, desc = roll_white_dice()
+        _result, desc = roll_white_dice()
         assert isinstance(desc, str)
         assert "W" in desc
 
@@ -337,7 +338,7 @@ class TestRollOffensiveDiceDetailed:
         from paydirt.play_resolver import roll_offensive_dice_detailed
 
         for _ in range(100):
-            total, black, white1, white2, direct_sum, _ = roll_offensive_dice_detailed()
+            total, black, white1, white2, _direct_sum, _ = roll_offensive_dice_detailed()
             white_sum = white1 + white2
             expected_total = (black * 10) + min(white_sum, 9)
             assert total == expected_total
@@ -433,8 +434,9 @@ class TestResolveQBScramble:
 
     def test_resolve_qb_scramble_signature(self):
         """resolve_qb_scramble requires chart and dice_roll."""
-        from paydirt.play_resolver import resolve_qb_scramble
         import inspect
+
+        from paydirt.play_resolver import resolve_qb_scramble
 
         sig = inspect.signature(resolve_qb_scramble)
         params = list(sig.parameters.keys())

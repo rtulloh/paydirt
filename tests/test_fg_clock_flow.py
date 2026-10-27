@@ -90,10 +90,10 @@ def test_cli_field_goal_does_not_spend_next_half_on_a_duplicate_kickoff(
     monkeypatch.setattr(cli, "PaydirtGameEngine", lambda *args: game)
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=[game.state.home_chart, game.state.away_chart]))
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, False, True, None))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="synthetic", away_team="AWAY", home_team="HOME", away_score=2, home_score=14,
-        quarter=2, time_remaining=seconds / 60,
-    ))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "synthetic", "away_team": "AWAY", "home_team": "HOME", "away_score": 2, "home_score": 14,
+        "quarter": 2, "time_remaining": seconds / 60,
+    })
     monkeypatch.setattr(cli, "clear_screen", lambda: None)
     monkeypatch.setattr(cli, "display_play_result", lambda *args: None)
     monkeypatch.setattr(cli, "display_box_score", lambda *args: None)

@@ -1,7 +1,7 @@
 """API regression coverage for engine-authored special-rule explanations."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

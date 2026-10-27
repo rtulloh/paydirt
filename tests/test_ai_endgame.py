@@ -1,6 +1,6 @@
 """Deterministic endgame decisions across difficulties and possession orientations."""
 
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import Mock
 
 import pytest

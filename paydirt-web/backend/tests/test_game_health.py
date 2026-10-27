@@ -186,7 +186,7 @@ class TestGameHealth:
         # Run multiple games to increase chance of seeing FGs
         all_scores = []
         for _ in range(3):
-            plays, home_score, away_score = _run_game(cpu_controls_both=True)
+            _plays, home_score, away_score = _run_game(cpu_controls_both=True)
             all_scores.extend([home_score, away_score])
         
         # Check that at least some scores include 3 (FG) not just multiples of 7
@@ -231,7 +231,7 @@ class TestGameHealth:
 
     def test_touchdowns_and_scores_happen(self):
         """Verify that scoring occurs in games."""
-        plays, home_score, away_score = _run_game(cpu_controls_both=True)
+        _plays, home_score, away_score = _run_game(cpu_controls_both=True)
         
         total_score = home_score + away_score
         assert total_score >= 0, "Scores should be non-negative"

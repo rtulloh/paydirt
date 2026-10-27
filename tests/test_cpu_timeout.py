@@ -5,9 +5,15 @@ The CPU should call timeouts when trailing late in the game to stop the clock
 and get the ball back.
 """
 
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.computer_ai import ComputerAI, computer_should_call_timeout_on_defense
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
 
 
 def create_mock_chart(short_name: str, full_name: str) -> TeamChart:
@@ -288,8 +294,8 @@ class TestCPUTimeoutAfterTurnover:
         
         After the fix: CPU timeout logic is skipped when outcome.turnover=True.
         """
-        from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
         from paydirt.game_engine import PlayOutcome
+        from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
         
         home_chart = create_mock_chart("NE '83", "New England Patriots")
         away_chart = create_mock_chart("BAL '83", "Baltimore Colts")
@@ -340,8 +346,8 @@ class TestCPUTimeoutAfterTurnover:
         Similar to interception - after fumble, possession changes and
         timeout logic should be skipped.
         """
-        from paydirt.play_resolver import PlayType, DefenseType, PlayResult, ResultType
         from paydirt.game_engine import PlayOutcome
+        from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
         
         home_chart = create_mock_chart("NE '83", "New England Patriots")
         away_chart = create_mock_chart("BAL '83", "Baltimore Colts")
@@ -389,8 +395,8 @@ class TestCPUTimeoutSkipsAfterPenalty:
     
     def test_cpu_skips_timeout_after_penalty_on_defense(self):
         """CPU should NOT call timeout after penalty - clock already stopped."""
+        from paydirt.game_engine import DefenseType, PlayOutcome, PlayType
         from paydirt.play_resolver import PlayResult, ResultType
-        from paydirt.game_engine import PlayOutcome, PlayType, DefenseType
         
         home_chart = create_mock_chart("PHI '83", "Philadelphia Eagles")
         away_chart = create_mock_chart("SF '83", "San Francisco 49ers")

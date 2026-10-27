@@ -10,7 +10,6 @@ from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import DefenseType, PlayType
 from tests.game_fixtures import make_sample_game
 
-
 # Original position, chart result, subtraction, final receiving position.
 PUNT_CASES = [
     pytest.param(51, "49", 0, 20, id="touchback"),

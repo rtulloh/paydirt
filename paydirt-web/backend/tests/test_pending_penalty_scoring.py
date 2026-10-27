@@ -4,8 +4,8 @@ Synthetic chart cells on public 2026 teams; dice are patched. The engine owns
 every spot/score change; the API may only react to finalized outcomes.
 """
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

@@ -1,7 +1,7 @@
 """A clock-expiring touchdown still offers its try through the web API."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

@@ -3,23 +3,24 @@ Play resolver that uses actual Paydirt team chart data.
 Parses chart result strings and determines play outcomes.
 Uses the Priority Chart to combine offensive and defensive results.
 """
+from __future__ import annotations
 
-from collections import Counter
-from itertools import product
 import random
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from itertools import product
+from typing import Optional
 
-from .chart_loader import TeamChart, OffenseChart, DefenseChart
-from .priority_chart import apply_priority_chart, categorize_result
+from .chart_loader import DefenseChart, OffenseChart, TeamChart
 from .play_events import (
     PlayTransaction,
     create_chart_lookup_event,
     create_fumble_event,
     create_recovery_event,
 )
+from .priority_chart import apply_priority_chart, categorize_result
 
 
 class PlayType(Enum):
@@ -123,9 +124,9 @@ class PlayResult:
     offense_yards: int = 0
     # Team that scored the touchdown (set by game engine when touchdown occurs)
     # Use team peripheral.short_name, or None if not a touchdown
-    scoring_team: Optional[str] = None
+    scoring_team: str | None = None
     # Authoritative explanation when special rules reinterpret a chart result.
-    rule_explanation: Optional[str] = None
+    rule_explanation: str | None = None
     # Defense recovered in the original offense's end zone; no return occurred.
     fumble_end_zone_touchdown: bool = False
     # Offsetting fouls on a return nullified the play: replay the down, ten seconds.
@@ -142,7 +143,7 @@ class PenaltyOption:
     description: str  # Human-readable description
     auto_first_down: bool = False  # Whether penalty gives automatic first down
     is_pass_interference: bool = False  # PI has special handling
-    result_preview: Optional[str] = None  # Engine-generated state after choosing this option
+    result_preview: str | None = None  # Engine-generated state after choosing this option
 
 
 @dataclass
@@ -162,7 +163,7 @@ class PenaltyChoice:
     # The play result after rerolling (if applicable)
     play_result: PlayResult
     # Available penalty options (may be multiple if offense rerolled into more penalties)
-    penalty_options: List[PenaltyOption] = field(default_factory=list)
+    penalty_options: list[PenaltyOption] = field(default_factory=list)
     # Who is the offended team? "offense" or "defense"
     offended_team: str = ""
     # Are there offsetting penalties?
@@ -172,14 +173,14 @@ class PenaltyChoice:
     # Original defense result (kept during rerolls)
     original_defense_result: str = ""
     # All reroll descriptions for logging
-    reroll_log: List[str] = field(default_factory=list)
+    reroll_log: list[str] = field(default_factory=list)
     # Transaction capturing all play events (chart lookup, fumble recovery, etc.)
-    transaction: Optional[PlayTransaction] = None
+    transaction: PlayTransaction | None = None
     # Kick plays: "kick" (penalty on the kick chart, re-kick if accepted) or
     # "return" (penalty on the return chart, enforced from the return).
     kick_phase: str = ""
     # Engine-generated description of the state if the play result is taken.
-    play_result_preview: Optional[str] = None
+    play_result_preview: str | None = None
 
 
 def roll_dice() -> int:
@@ -327,7 +328,7 @@ def resolve_variable_yardage(result_str: str) -> tuple[int, str]:
 
     if clean_str == "DS":
         # Direct Sum: add the three dice values
-        total, black, white1, white2, direct_sum, roll_desc = roll_offensive_dice_detailed()
+        total, _black, _white1, _white2, direct_sum, roll_desc = roll_offensive_dice_detailed()
         yards = direct_sum
         desc = f"DS={direct_sum} ({roll_desc})"
 
@@ -345,16 +346,16 @@ def resolve_variable_yardage(result_str: str) -> tuple[int, str]:
 
     elif clean_str == "T2":
         # T2 = sum of two consecutive rolls
-        total1, desc1 = roll_chart_dice()
-        total2, desc2 = roll_chart_dice()
+        total1, _desc1 = roll_chart_dice()
+        total2, _desc2 = roll_chart_dice()
         yards = total1 + total2
         desc = f"T2={total1}+{total2}={yards}"
 
     elif clean_str == "T3":
         # T3 = sum of three consecutive rolls
-        total1, desc1 = roll_chart_dice()
-        total2, desc2 = roll_chart_dice()
-        total3, desc3 = roll_chart_dice()
+        total1, _desc1 = roll_chart_dice()
+        total2, _desc2 = roll_chart_dice()
+        total3, _desc3 = roll_chart_dice()
         yards = total1 + total2 + total3
         desc = f"T3={total1}+{total2}+{total3}={yards}"
 
@@ -1070,7 +1071,7 @@ def _play_type_to_column(play_type: PlayType) -> int:
 
 def resolve_special_teams(chart: TeamChart, play_type: PlayType) -> PlayResult:
     """Resolve a special teams play (kickoff, punt, field goal)."""
-    dice_roll, dice_desc = roll_chart_dice()
+    dice_roll, _dice_desc = roll_chart_dice()
     special = chart.special_teams
 
     if play_type == PlayType.KICKOFF:
@@ -1200,10 +1201,10 @@ class FieldGoalResult:
     is_blocked: bool = False
     is_fumble: bool = False
     is_penalty: bool = False
-    penalty_options: List[PenaltyOption] = field(default_factory=list)
+    penalty_options: list[PenaltyOption] = field(default_factory=list)
     offsetting: bool = False
     offended_team: str = ""  # "offense" or "defense"
-    reroll_log: List[str] = field(default_factory=list)
+    reroll_log: list[str] = field(default_factory=list)
 
 
 def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:
@@ -1222,8 +1223,8 @@ def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:
     Returns:
         FieldGoalResult with the outcome and any penalty options
     """
-    penalty_options: List[PenaltyOption] = []
-    reroll_log: List[str] = []
+    penalty_options: list[PenaltyOption] = []
+    reroll_log: list[str] = []
     has_off_penalty = False
     has_def_penalty = False
 
@@ -1333,13 +1334,13 @@ def resolve_play_with_penalties(
     def_dice_desc = f"R{def_red}+G{def_green}={sub_row}"
 
     # Track penalties encountered
-    penalty_options: List[PenaltyOption] = []
-    reroll_log: List[str] = []
+    penalty_options: list[PenaltyOption] = []
+    reroll_log: list[str] = []
     has_off_penalty = False
     has_def_penalty = False
 
     # Check if defense result is a penalty
-    is_def_pen, def_pen_type = _is_penalty_result(def_result_str)
+    is_def_pen, _def_pen_type = _is_penalty_result(def_result_str)
     if is_def_pen:
         has_def_penalty = True
         penalty_options.append(_create_penalty_option(def_result_str))
@@ -1457,7 +1458,7 @@ def resolve_play_with_penalties(
     # Store original offense yards before penalty override
     # When defense commits a penalty, priority chart returns penalty yards as final_yards
     # but we need the original offense result for "accept play" (decline penalty) option
-    off_category, off_yards = categorize_result(off_result_str)
+    _off_category, off_yards = categorize_result(off_result_str)
     if off_yards is not None:
         play_result.offense_yards = off_yards
 

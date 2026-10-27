@@ -1,7 +1,7 @@
 """Kickoff return penalties in the web API: assessed automatically; the recovered-fumble choice is offered."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

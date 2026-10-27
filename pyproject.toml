@@ -45,8 +45,15 @@ filterwarnings = [
 ]
 
 [tool.ruff]
-ignore = ["E402", "F401"]
 line-length = 100
+# Pydantic evaluates API annotations at runtime, including in local Python 3.9 checks.
+per-file-target-version = {"paydirt-web/backend/routes.py" = "py39"}
+
+[tool.ruff.lint]
+ignore = ["E402", "F401"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
 
 [tool.coverage.run]
 source = ["paydirt"]

@@ -6,7 +6,11 @@ import pytest
 
 from paydirt import interactive_game
 from paydirt.chart_loader import (
-    DefenseChart, OffenseChart, PeripheralData, SpecialTeamsChart, TeamChart,
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType, PlayType
@@ -76,17 +80,8 @@ def test_cli_return_td_requires_pat_and_another_kickoff(
             raise NextScrimmage
 
     monkeypatch.setattr(interactive_game, "display_game_status", stop_before_next_scrimmage)
-    with (
-        patch("paydirt.play_resolver.roll_chart_dice", return_value=(16, "B1+W2+W3=16")),
-        patch("paydirt.play_resolver.roll_white_dice", return_value=(2, "R2+G0=2")),
-        patch("paydirt.game_engine.roll_chart_dice", side_effect=[
-            (37, "PAT=37"), (28, "KO=28"), (28, "RT=28"), (37, "PAT=37"), (10, "KO=10"), (10, "RT=10"),
-        ]),
-        patch.object(game, "attempt_extra_point", wraps=game.attempt_extra_point) as pat,
-        patch.object(game, "kickoff", wraps=game.kickoff) as kickoff,
-    ):
-        with pytest.raises(NextScrimmage):
-            interactive_game.resume_game("test-save.json", compact=True)
+    with patch('paydirt.play_resolver.roll_chart_dice', return_value=(16, 'B1+W2+W3=16')), patch('paydirt.play_resolver.roll_white_dice', return_value=(2, 'R2+G0=2')), patch('paydirt.game_engine.roll_chart_dice', side_effect=[(37, 'PAT=37'), (28, 'KO=28'), (28, 'RT=28'), (37, 'PAT=37'), (10, 'KO=10'), (10, 'RT=10')]), patch.object(game, 'attempt_extra_point', wraps=game.attempt_extra_point) as pat, patch.object(game, 'kickoff', wraps=game.kickoff) as kickoff, pytest.raises(NextScrimmage):
+        interactive_game.resume_game("test-save.json", compact=True)
 
     output = capsys.readouterr().out
     assert "RETURNED FOR A TOUCHDOWN!" in output, output
@@ -163,16 +158,8 @@ def test_new_game_loop_handles_return_td_before_next_scrimmage(
         return real_kickoff(kicking_home=kicking_home)
 
     monkeypatch.setattr(game, "kickoff", kickoff_from_scenario)
-    with (
-        patch("paydirt.play_resolver.roll_chart_dice", return_value=(16, "B1+W2+W3=16")),
-        patch("paydirt.play_resolver.roll_white_dice", return_value=(2, "R2+G0=2")),
-        patch("paydirt.game_engine.roll_chart_dice", side_effect=[
-            (37, "PAT=37"), (28, "KO=28"), (28, "RT=28"), (37, "PAT=37"), (10, "KO=10"), (10, "RT=10"),
-        ]),
-        patch.object(game, "attempt_extra_point", wraps=game.attempt_extra_point) as pat,
-    ):
-        with pytest.raises(NextScrimmage):
-            interactive_game.run_interactive_game(compact=True)
+    with patch('paydirt.play_resolver.roll_chart_dice', return_value=(16, 'B1+W2+W3=16')), patch('paydirt.play_resolver.roll_white_dice', return_value=(2, 'R2+G0=2')), patch('paydirt.game_engine.roll_chart_dice', side_effect=[(37, 'PAT=37'), (28, 'KO=28'), (28, 'RT=28'), (37, 'PAT=37'), (10, 'KO=10'), (10, 'RT=10')]), patch.object(game, 'attempt_extra_point', wraps=game.attempt_extra_point) as pat, pytest.raises(NextScrimmage):
+        interactive_game.run_interactive_game(compact=True)
     assert pat.call_count == 2
     assert kickers[1:] == [initial_scoring_is_home, not initial_scoring_is_home]
     assert (game.state.home_score, game.state.away_score) == (initial_score[0] + 7, initial_score[1] + 7)

@@ -1,8 +1,8 @@
 """Exact chart-dice probabilities, conditional analysis, and AI ranking regressions."""
 
+import random
 from collections import Counter
 from itertools import product
-import random
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +12,6 @@ from paydirt.chart_loader import OffenseChart
 from paydirt.computer_ai import create_computer_ai
 from paydirt.play_resolver import PlayType, roll_chart_dice
 from tests.game_fixtures import make_sample_game
-
 
 # Standard Paydirt dice faces (must match play_resolver.py)
 BLACK_DIE_FACES = (1, 2, 2, 3, 3, 3)

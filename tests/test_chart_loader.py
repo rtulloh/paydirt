@@ -2,8 +2,8 @@
 Tests for chart_loader.py functions.
 """
 
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -134,6 +134,7 @@ class TestSpecialChartValidation:
 
     def test_valid_cells_raise_no_warning(self, tmp_path: Path) -> None:
         import warnings
+
         from paydirt.chart_loader import parse_special_csv
         path = self._write(tmp_path, "10,60,OFF 15,38*,F - 2,TD,BK -8,NG\n11,OB,F + 17,32*,DEF 10,-5,45,\n12,TB,25,BK -13,12*,OFF 10,OFF 10,\n")
         with warnings.catch_warnings():

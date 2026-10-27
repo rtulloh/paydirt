@@ -1,7 +1,7 @@
 """Declining a kicking-team foul must keep the unpenalized punt and return."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import app
 from routes import games
+
 from paydirt.play_resolver import PlayType
 
 

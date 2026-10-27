@@ -9,14 +9,19 @@ Official rules:
   - Red boxes (fumble) = Fumble at line of scrimmage
 - Defense doesn't participate (no defensive dice roll)
 """
-import pytest
 from unittest.mock import patch
 
-from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import (
-    PlayType, DefenseType, ResultType, resolve_qb_sneak
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
 )
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType, ResultType, resolve_qb_sneak
 
 
 @pytest.fixture

@@ -4,6 +4,8 @@ NFL Overtime Rules by Season.
 Overtime rules have changed over the years. This module provides
 the correct overtime rules based on the season year.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -122,7 +124,7 @@ def check_overtime_winner(home_score: int, away_score: int,
                           is_playoff: bool,
                           first_possession_team_scored: bool,
                           first_possession_was_td: bool,
-                          ot_period: int) -> Optional[str]:
+                          ot_period: int) -> str | None:
     """
     Check if there's an overtime winner based on the rules.
     
@@ -141,9 +143,8 @@ def check_overtime_winner(home_score: int, away_score: int,
     if home_score == away_score:
         # Still tied - check if we've exceeded max periods
         max_periods = rules.get_max_periods(is_playoff)
-        if max_periods > 0 and ot_period >= max_periods:
-            if rules.can_end_in_tie_regular and not is_playoff:
-                return "tie"
+        if (max_periods > 0 and ot_period >= max_periods) and (rules.can_end_in_tie_regular and (not is_playoff)):
+            return "tie"
         return None  # Game continues
 
     # Someone is ahead

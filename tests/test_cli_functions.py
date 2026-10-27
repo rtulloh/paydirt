@@ -9,24 +9,24 @@ These tests cover the interactive CLI functions including:
 - Play result display
 - Team selection
 """
-from unittest.mock import patch, MagicMock
 import io
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from paydirt.cli import (
-    clear_screen,
-    print_header,
-    print_scoreboard,
-    print_play_menu,
-    print_defense_menu,
-    get_play_choice,
-    get_defense_choice,
-    print_play_result,
-    select_team,
     _ordinal,
+    clear_screen,
+    get_defense_choice,
+    get_play_choice,
+    print_defense_menu,
+    print_header,
+    print_play_menu,
+    print_play_result,
+    print_scoreboard,
+    select_team,
 )
-from paydirt.models import PlayType, DefenseType
+from paydirt.models import DefenseType, PlayType
 
 
 class TestClearScreen:
@@ -222,10 +222,9 @@ class TestGetPlayChoice:
 
     def test_get_play_choice_invalid_then_valid(self):
         """Invalid choice should prompt again."""
-        with patch('builtins.input', side_effect=['99', '5']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_play_choice()
-                assert result == PlayType.MEDIUM_PASS
+        with patch('builtins.input', side_effect=['99', '5']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_play_choice()
+            assert result == PlayType.MEDIUM_PASS
 
 
 class TestGetDefenseChoice:
@@ -251,10 +250,9 @@ class TestGetDefenseChoice:
 
     def test_get_defense_choice_invalid_then_valid(self):
         """Invalid choice should prompt again."""
-        with patch('builtins.input', side_effect=['0', '2']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_defense_choice()
-                assert result == DefenseType.PREVENT
+        with patch('builtins.input', side_effect=['0', '2']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_defense_choice()
+            assert result == DefenseType.PREVENT
 
 
 class TestPrintPlayResult:
@@ -485,10 +483,9 @@ class TestSelectTeam:
             ('CHI', 'Chicago Bears', 85),
             ('GB', 'Green Bay Packers', 88),
             ('MIN', 'Minnesota Vikings', 82)
-        ]):
-            with patch('builtins.input', return_value='1'):
-                result = select_team("Select team:")
-                assert result == 'CHI'
+        ]), patch('builtins.input', return_value='1'):
+            result = select_team("Select team:")
+            assert result == 'CHI'
 
     def test_select_team_second_option(self):
         """Should return second team when 2 is selected."""
@@ -496,45 +493,32 @@ class TestSelectTeam:
             ('CHI', 'Chicago Bears', 85),
             ('GB', 'Green Bay Packers', 88),
             ('MIN', 'Minnesota Vikings', 82)
-        ]):
-            with patch('builtins.input', return_value='2'):
-                result = select_team("Select team:")
-                assert result == 'GB'
+        ]), patch('builtins.input', return_value='2'):
+            result = select_team("Select team:")
+            assert result == 'GB'
 
     def test_select_team_invalid_then_valid(self):
         """Should reprompt for invalid selection."""
-        with patch('paydirt.cli.list_teams', return_value=[
-            ('CHI', 'Chicago Bears', 85),
-            ('GB', 'Green Bay Packers', 88)
-        ]):
-            with patch('builtins.input', side_effect=['99', '1']):
-                with patch('sys.stdout', new_callable=io.StringIO):
-                    result = select_team("Select team:")
-                    assert result == 'CHI'
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Chicago Bears', 85), ('GB', 'Green Bay Packers', 88)]), patch('builtins.input', side_effect=['99', '1']), patch('sys.stdout', new_callable=io.StringIO):
+            result = select_team("Select team:")
+            assert result == 'CHI'
 
     def test_select_team_displays_prompt(self):
         """Should display the provided prompt."""
-        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Chicago Bears', 85)]):
-            with patch('builtins.input', return_value='1'):
-                with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                    select_team("Choose your team:")
-                    output = mock_stdout.getvalue()
-                    assert 'Choose your team' in output
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Chicago Bears', 85)]), patch('builtins.input', return_value='1'), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            select_team("Choose your team:")
+            output = mock_stdout.getvalue()
+            assert 'Choose your team' in output
 
     def test_select_team_shows_team_info(self):
         """Should display team names and ratings."""
-        with patch('paydirt.cli.list_teams', return_value=[
-            ('CHI', 'Chicago Bears', 85),
-            ('GB', 'Green Bay Packers', 88)
-        ]):
-            with patch('builtins.input', return_value='1'):
-                with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                    select_team("Select:")
-                    output = mock_stdout.getvalue()
-                    assert 'Chicago Bears' in output
-                    assert 'CHI' in output
-                    assert '85' in output
-                    assert 'Green Bay Packers' in output
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Chicago Bears', 85), ('GB', 'Green Bay Packers', 88)]), patch('builtins.input', return_value='1'), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            select_team("Select:")
+            output = mock_stdout.getvalue()
+            assert 'Chicago Bears' in output
+            assert 'CHI' in output
+            assert '85' in output
+            assert 'Green Bay Packers' in output
 
 
 class TestEdgeCases:
@@ -542,28 +526,21 @@ class TestEdgeCases:
 
     def test_get_play_choice_whitespace_input(self):
         """Should handle whitespace in input."""
-        with patch('builtins.input', side_effect=['  5  ', '5']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_play_choice()
-                assert result == PlayType.MEDIUM_PASS
+        with patch('builtins.input', side_effect=['  5  ', '5']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_play_choice()
+            assert result == PlayType.MEDIUM_PASS
 
     def test_get_defense_choice_whitespace_input(self):
         """Should handle whitespace in input."""
-        with patch('builtins.input', side_effect=['  2  ', '2']):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                result = get_defense_choice()
-                assert result == DefenseType.PREVENT
+        with patch('builtins.input', side_effect=['  2  ', '2']), patch('sys.stdout', new_callable=io.StringIO):
+            result = get_defense_choice()
+            assert result == DefenseType.PREVENT
 
     def test_select_team_non_numeric_input(self):
         """Should handle non-numeric input."""
-        with patch('paydirt.cli.list_teams', return_value=[
-            ('CHI', 'Chicago Bears', 85),
-            ('GB', 'Green Bay Packers', 88)
-        ]):
-            with patch('builtins.input', side_effect=['abc', '1']):
-                with patch('sys.stdout', new_callable=io.StringIO):
-                    result = select_team("Select:")
-                    assert result == 'CHI'
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Chicago Bears', 85), ('GB', 'Green Bay Packers', 88)]), patch('builtins.input', side_effect=['abc', '1']), patch('sys.stdout', new_callable=io.StringIO):
+            result = select_team("Select:")
+            assert result == 'CHI'
 
     def test_print_play_result_no_gain(self):
         """Play with zero yards should show no gain."""
@@ -601,31 +578,28 @@ class TestMainFunction:
     def test_main_exit_choice(self):
         """Choice 0 should exit cleanly."""
         from paydirt.cli import main
-        with patch('builtins.input', return_value='0'):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                with pytest.raises(SystemExit) as exc_info:
-                    main()
-                assert exc_info.value.code == 0
+        with patch('builtins.input', return_value='0'), patch('sys.stdout', new_callable=io.StringIO):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            assert exc_info.value.code == 0
 
     def test_main_invalid_choice(self):
         """Invalid choice should exit with error code."""
         from paydirt.cli import main
-        with patch('builtins.input', return_value='99'):
-            with patch('sys.stdout', new_callable=io.StringIO):
-                with pytest.raises(SystemExit) as exc_info:
-                    main()
-                assert exc_info.value.code == 1
+        with patch('builtins.input', return_value='99'), patch('sys.stdout', new_callable=io.StringIO):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            assert exc_info.value.code == 1
 
     def test_main_shows_menu(self):
         """Main should display game mode menu."""
         from paydirt.cli import main
-        with patch('builtins.input', return_value='0'):
-            with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                with pytest.raises(SystemExit):
-                    main()
-                output = mock_stdout.getvalue()
-                assert 'Interactive' in output or 'Simulated' in output
-                assert 'Exit' in output or 'exit' in output
+        with patch('builtins.input', return_value='0'), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            with pytest.raises(SystemExit):
+                main()
+            output = mock_stdout.getvalue()
+            assert 'Interactive' in output or 'Simulated' in output
+            assert 'Exit' in output or 'exit' in output
 
 
 class TestPlaySimulatedGame:
@@ -656,16 +630,12 @@ class TestPlaySimulatedGame:
             'home': {'team': 'Packers', 'total_yards': 200, 'rushing_yards': 80, 'passing_yards': 120, 'turnovers': 2}
         }
         
-        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Bears', 85), ('GB', 'Packers', 88)]):
-            with patch('paydirt.cli.get_team', side_effect=[mock_team1, mock_team2]):
-                with patch('paydirt.cli.PaydirtGame', return_value=mock_game):
-                    with patch('builtins.input', side_effect=['1', '2']):
-                        with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                            play_simulated_game()
-                            output = mock_stdout.getvalue()
-                            assert 'FINAL SCORE' in output
-                            assert 'Bears' in output
-                            assert 'Packers' in output
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Bears', 85), ('GB', 'Packers', 88)]), patch('paydirt.cli.get_team', side_effect=[mock_team1, mock_team2]), patch('paydirt.cli.PaydirtGame', return_value=mock_game), patch('builtins.input', side_effect=['1', '2']), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            play_simulated_game()
+            output = mock_stdout.getvalue()
+            assert 'FINAL SCORE' in output
+            assert 'Bears' in output
+            assert 'Packers' in output
 
     def test_play_simulated_game_shows_statistics(self):
         """Simulated game should display team statistics."""
@@ -692,14 +662,10 @@ class TestPlaySimulatedGame:
             'home': {'team': 'Packers', 'total_yards': 250, 'rushing_yards': 90, 'passing_yards': 160, 'turnovers': 1}
         }
         
-        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Bears', 85), ('GB', 'Packers', 88)]):
-            with patch('paydirt.cli.get_team', side_effect=[mock_team1, mock_team2]):
-                with patch('paydirt.cli.PaydirtGame', return_value=mock_game):
-                    with patch('builtins.input', side_effect=['1', '2']):
-                        with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-                            play_simulated_game()
-                            output = mock_stdout.getvalue()
-                            assert 'Total Yards' in output or 'total_yards' in output
-                            assert 'Rushing' in output or 'rushing_yards' in output
-                            assert 'Passing' in output or 'passing_yards' in output
-                            assert 'Turnovers' in output or 'turnovers' in output
+        with patch('paydirt.cli.list_teams', return_value=[('CHI', 'Bears', 85), ('GB', 'Packers', 88)]), patch('paydirt.cli.get_team', side_effect=[mock_team1, mock_team2]), patch('paydirt.cli.PaydirtGame', return_value=mock_game), patch('builtins.input', side_effect=['1', '2']), patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            play_simulated_game()
+            output = mock_stdout.getvalue()
+            assert 'Total Yards' in output or 'total_yards' in output
+            assert 'Rushing' in output or 'rushing_yards' in output
+            assert 'Passing' in output or 'passing_yards' in output
+            assert 'Turnovers' in output or 'turnovers' in output

@@ -1,17 +1,20 @@
+from __future__ import annotations
+
+import logging
+import os
+import posixpath
+import random
+import re
+import sys
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
+
+import yaml
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from pathlib import Path
-import yaml
-import random
-import uuid
-import re
-import os
-import posixpath
-from datetime import datetime
-
-import sys
 
 # Handle both development and bundled (PyInstaller) environments
 if getattr(sys, "frozen", False):
@@ -32,15 +35,15 @@ from paydirt.packaging import get_all_season_paths, get_builtin_seasons_path
 # For backwards compatibility - SEASONS_DIR points to built-in seasons
 SEASONS_DIR = get_builtin_seasons_path()
 
-from paydirt.game_engine import PaydirtGameEngine
 from paydirt.chart_loader import load_team_chart
-from paydirt.play_resolver import PlayType, DefenseType, is_passing_play
-from paydirt.computer_ai import create_computer_ai, cpu_should_accept_penalty
+from paydirt.computer_ai import cpu_should_accept_penalty, create_computer_ai
+from paydirt.game_engine import PaydirtGameEngine
+from paydirt.play_resolver import DefenseType, PlayType, is_passing_play
 from paydirt.season_rules import load_season_rules
 
 router = APIRouter()
 
-games: Dict[str, Dict[str, Any]] = {}
+games: dict[str, dict[str, Any]] = {}
 
 
 @router.get("/api/health")
@@ -131,7 +134,7 @@ def _assemble_guide(docs_path: Path) -> str:
         for line, in_code in _guide_lines(content):
             contents.append(line if in_code else re.sub(
                 r"(?<!!)\[([^\]]+)\]\(([^)]+)\)",
-                lambda match: rewrite_link(match, page), line,
+                lambda match, page=page: rewrite_link(match, page), line,
             ))
     return _filter_readme_for_guide("\n".join(contents))
 
@@ -194,6 +197,7 @@ async def get_guide():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Guide topic not available")
     except Exception as error:
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error reading guide: {error}")
 
 
@@ -276,11 +280,11 @@ class PenaltyOptionModel(BaseModel):
 
 
 class PenaltyChoiceModel(BaseModel):
-    penalty_options: List[PenaltyOptionModel]
+    penalty_options: list[PenaltyOptionModel]
     offended_team: str
     offsetting: bool = False
     is_pass_interference: bool = False
-    reroll_log: List[str] = []
+    reroll_log: list[str] = []
     kick_phase: str = ""
     play_result_preview: Optional[str] = None
 
@@ -350,7 +354,7 @@ class ExtraPointResponse(BaseModel):
     description: str
     new_score_home: int
     new_score_away: int
-    game_state: Dict[str, Any]
+    game_state: dict[str, Any]
     is_kickoff: bool = True
 
 
@@ -361,11 +365,11 @@ class PATChoiceResponse(BaseModel):
 
 
 class SeasonsResponse(BaseModel):
-    seasons: List[str]
+    seasons: list[str]
 
 
 class TeamsResponse(BaseModel):
-    teams: List[Team]
+    teams: list[Team]
 
 
 class NewGameRequest(BaseModel):
@@ -402,8 +406,8 @@ class GameStateResponse(BaseModel):
     can_go_for_two: bool = False
     is_overtime: bool = False
     ot_period: int = 0
-    home_stats: Optional[Dict[str, int]] = None
-    away_stats: Optional[Dict[str, int]] = None
+    home_stats: Optional[dict[str, int]] = None
+    away_stats: Optional[dict[str, int]] = None
     season: str = "1983"  # Season year for replay saving
     # Engine-owned: the first half has ended and the second-half kickoff is still owed.
     halftime_pending: bool = False
@@ -439,12 +443,12 @@ class ExecutePlayResponse(BaseModel):
     cpu_play: str
     dice_roll_offense: int
     dice_roll_defense: int
-    dice_details: Optional[Dict[str, Any]] = None  # Full dice breakdown
+    dice_details: Optional[dict[str, Any]] = None  # Full dice breakdown
     result: PlayResult
     game_state: GameStateResponse
 
 
-def parse_dice_from_description(description: str) -> Dict[str, Any]:
+def parse_dice_from_description(description: str) -> dict[str, Any]:
     """Parse dice values from play description like 'B1+W4+W3=17 [Off: B1+W1+W4=15, Def: R2+G1=3]'"""
     import re
 
@@ -530,7 +534,7 @@ def _calculate_post_play_state(
         }
 
 
-def _arm_follow_up_state(game: Dict[str, Any], engine, outcome) -> tuple:
+def _arm_follow_up_state(game: dict[str, Any], engine, outcome) -> tuple:
     """Record pending PAT/kickoff bookkeeping for a FINALIZED engine outcome.
 
     A pending penalty choice has recorded no score, so it leaves the spot,
@@ -559,7 +563,7 @@ def _arm_follow_up_state(game: Dict[str, Any], engine, outcome) -> tuple:
     return scoring, is_pending_pat, pre_kickoff_ball_position
 
 
-def _arm_kickoff(game: Dict[str, Any], engine, *, from_safety: bool = False) -> None:
+def _arm_kickoff(game: dict[str, Any], engine, *, from_safety: bool = False) -> None:
     """Place the ball for the next kick the engine says is owed.
 
     A half-ending score is followed by the scheduled second-half kickoff by the
@@ -577,7 +581,7 @@ def _arm_kickoff(game: Dict[str, Any], engine, *, from_safety: bool = False) -> 
         engine.setup_for_kickoff(from_safety=from_safety)
     game["is_kickoff"] = True
 
-def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> GameStateResponse:
+def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = None) -> GameStateResponse:
     human_is_home = game["home_team"].id == game.get("player_team_id")
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
@@ -611,7 +615,7 @@ def game_state_to_response(game: Dict[str, Any], is_kickoff: bool = None) -> Gam
                 "penalties": engine.state.away_stats.penalties,
             }
     except Exception:
-        pass
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 
     response = GameStateResponse(
         game_id=game["game_id"],
@@ -1464,7 +1468,7 @@ async def get_pat_choice(game_id: str):
 
         cpu_should_go_for_two = cpu_2pt_func(engine)
     except Exception:
-        pass  # Default to False if AI module not available
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 
     return PATChoiceResponse(
         can_go_for_two=engine.season_rules.two_point_conversion,
@@ -1648,7 +1652,7 @@ async def attempt_two_point(request: TwoPointRequest):
     offense_play = get_play_type_from_key(request.offense_play)
     defense_play = get_defense_type_from_key(request.defense_play)
 
-    success, defense_points, description = engine.attempt_two_point(offense_play, defense_play)
+    _success, _defense_points, description = engine.attempt_two_point(offense_play, defense_play)
 
     # Log two-point conversion
     scoring_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
@@ -1798,13 +1802,13 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
 class SaveReplayResponse(BaseModel):
     replay_id: str
     game_state: GameStateResponse
-    play_history: List[Dict[str, Any]]
+    play_history: list[dict[str, Any]]
     created_at: str
     season: str
 
 
 class LoadReplayRequest(BaseModel):
-    replay_data: Dict[str, Any]
+    replay_data: dict[str, Any]
 
 
 @router.post("/api/game/save-replay/{game_id}", response_model=SaveReplayResponse)

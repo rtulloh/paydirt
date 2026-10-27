@@ -11,8 +11,10 @@ Covers:
 from unittest.mock import MagicMock
 
 from paydirt.play_resolver import (
-    resolve_breakaway, resolve_qb_scramble,
-    _parse_column_value, ColumnResult,
+    ColumnResult,
+    _parse_column_value,
+    resolve_breakaway,
+    resolve_qb_scramble,
 )
 
 
@@ -206,8 +208,9 @@ class TestCallerIntegration:
 
     def test_qt_fumble_produces_fumble_result_type(self):
         """When resolve_qb_scramble returns a fumble, resolve_play should set FUMBLE."""
-        from paydirt.play_resolver import ResultType, PlayResult
         from unittest.mock import patch
+
+        from paydirt.play_resolver import PlayResult, ResultType
 
         # Build a minimal PlayResult that the caller code will mutate
         base_result = PlayResult(
@@ -233,7 +236,7 @@ class TestCallerIntegration:
 
     def test_qt_oob_sets_out_of_bounds(self):
         """When resolve_qb_scramble returns OOB, PlayResult.out_of_bounds should be True."""
-        from paydirt.play_resolver import ResultType, PlayResult
+        from paydirt.play_resolver import PlayResult, ResultType
 
         base_result = PlayResult(
             result_type=ResultType.YARDS, yards=0,
@@ -254,7 +257,7 @@ class TestCallerIntegration:
 
     def test_breakaway_oob_sets_out_of_bounds(self):
         """When resolve_breakaway returns OOB, PlayResult.out_of_bounds should be True."""
-        from paydirt.play_resolver import ResultType, PlayResult
+        from paydirt.play_resolver import PlayResult, ResultType
 
         base_result = PlayResult(
             result_type=ResultType.YARDS, yards=0,

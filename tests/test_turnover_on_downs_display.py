@@ -9,7 +9,12 @@ from paydirt import interactive_game as cli
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.game_state import PlayOutcome
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from tests.game_fixtures import make_sample_game
 
@@ -135,9 +140,9 @@ def test_cli_loop_announces_only_actual_turnover_on_downs(
     monkeypatch.setattr(cli, "select_team", Mock(side_effect=[game.state.home_chart, game.state.away_chart]))
     monkeypatch.setattr(game, "kickoff", lambda **kwargs: SimpleNamespace(
         pending_penalty_decision=False, touchdown=False, description="Synthetic kickoff"))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="test", away_team="AWAY", home_team="HOME", away_score=0,
-        home_score=0, quarter=1, time_remaining=10))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "test", "away_team": "AWAY", "home_team": "HOME", "away_score": 0,
+        "home_score": 0, "quarter": 1, "time_remaining": 10})
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, False, True, None))
     original_run = game.run_play_with_penalty_procedure
     displayed = False

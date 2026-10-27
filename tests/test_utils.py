@@ -2,10 +2,18 @@
 Tests for shared utility functions.
 """
 from paydirt.utils import (
-    ordinal_suffix, ordinal, format_down_and_distance, format_time,
-    format_field_position, format_field_position_with_team, parse_field_position,
-    format_dice_roll, format_play_dice_line,
-    clamp_ball_position, yards_to_goal, fg_distance
+    clamp_ball_position,
+    fg_distance,
+    format_dice_roll,
+    format_down_and_distance,
+    format_field_position,
+    format_field_position_with_team,
+    format_play_dice_line,
+    format_time,
+    ordinal,
+    ordinal_suffix,
+    parse_field_position,
+    yards_to_goal,
 )
 
 

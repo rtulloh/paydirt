@@ -2,14 +2,17 @@
 Loader for Paydirt team chart CSV files.
 Parses the actual team chart format used in the board game.
 """
+from __future__ import annotations
 
 import csv
+import logging
 import os
 import re
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-import warnings
+
 import yaml
 
 # Every form a special-teams chart cell may take: yardage (with sideline markers),
@@ -68,7 +71,7 @@ class TeamMetadata:
     history: list[dict] = field(default_factory=list)
 
 
-def load_team_metadata(team_dir: str) -> Optional[TeamMetadata]:
+def load_team_metadata(team_dir: str) -> TeamMetadata | None:
     """
     Load team metadata from team.yaml file in the team directory.
 
@@ -94,6 +97,7 @@ def load_team_metadata(team_dir: str) -> Optional[TeamMetadata]:
             history=data.get("history", []),
         )
     except Exception:
+        logging.getLogger(__name__).debug("Operation failed", exc_info=True)
         return None
 
 
@@ -415,7 +419,7 @@ def parse_offense_chart(filepath: str) -> tuple[OffenseChart, PeripheralData]:
             continue
 
         # Parse each play type column
-        def get_cell(idx):
+        def get_cell(idx, row=row):
             return row[idx].strip() if len(row) > idx and row[idx] else ""
 
         chart.line_plunge[dice_roll] = get_cell(2)
@@ -492,7 +496,7 @@ def parse_defense_chart(filepath: str) -> tuple[DefenseChart, SpecialTeamsChart]
 
         # Parse special teams data (columns 13-18)
         # The dice roll is in column 19, or we can use sequential numbering
-        def get_cell(idx):
+        def get_cell(idx, row=row):
             return row[idx].strip() if len(row) > idx and row[idx] else ""
 
         # Try to get dice roll from column 19
@@ -640,7 +644,7 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
                     parts = range_str.split("-")
                     peripheral.fumble_recovered_range = (int(parts[0]), int(parts[1]))
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).debug("Operation failed", exc_info=True)
         elif first_cell == "# Lost" and len(row) > 1:
             range_str = str(row[1]).strip()
             if "-" in range_str:
@@ -648,7 +652,7 @@ def parse_offense_csv(filepath: str) -> tuple[OffenseChart, PeripheralData]:
                     parts = range_str.split("-")
                     peripheral.fumble_lost_range = (int(parts[0]), int(parts[1]))
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 
     # Set fumble ranges from the data (fallback if comments not found)
     if peripheral.fumble_recovered_range == (0, 0) and fumble_recovered_rolls:

@@ -6,18 +6,18 @@ Run from repository root: python3 tests/run_sample_balance.py --seeds 100
 """
 
 import argparse
-from collections import Counter
 import contextlib
 import io
-from pathlib import Path
 import sys
+from collections import Counter
+from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tests.run_full_season import validate_game  # noqa: E402
-from tests.test_untimed_down_flow import run_seeded_cli_game  # noqa: E402
+from tests.run_full_season import validate_game
+from tests.test_untimed_down_flow import run_seeded_cli_game
 
 
 def evaluate(seeds: int) -> dict:

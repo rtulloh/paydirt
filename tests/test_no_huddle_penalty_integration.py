@@ -26,14 +26,13 @@ Covers the complete No Huddle Penalty Chart matrix:
   +   Prior to the change of possession
   ++  Marked from end of any gain or previous spot (Off. Player's Choice)
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from paydirt.penalty_handler import (
-    PenaltyType, PenaltyResult, resolve_penalty
-)
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult
+import pytest
+
 from paydirt.game_engine import PaydirtGameEngine
+from paydirt.penalty_handler import PenaltyResult, PenaltyType, resolve_penalty
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +130,7 @@ class TestResolvePenaltyNoHuddle_OFF_S:
     def test_30_36_is_10_yards(self, roll):
         """Rolls 30-36: 10-yard offensive penalty."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -144,7 +143,7 @@ class TestResolvePenaltyNoHuddle_OFF_S:
     def test_37_39_is_15_yards(self, roll):
         """Rolls 37-39: 15-yard offensive penalty."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -179,7 +178,7 @@ class TestResolvePenaltyNoHuddle_DEF_S:
     def test_15_24_is_def_5(self, roll):
         """Rolls 15-24: normal DEF 5 yards."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, new_down, new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_to_go=10, down=2,
                 no_huddle=True
             )
@@ -194,7 +193,7 @@ class TestResolvePenaltyNoHuddle_DEF_S:
     def test_25_29_is_5y(self, roll):
         """Rolls 25-29: 5Y yards (mark from end of gain)."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_to_go=10, down=2,
                 no_huddle=True
             )
@@ -207,7 +206,7 @@ class TestResolvePenaltyNoHuddle_DEF_S:
     def test_30_35_is_5x_auto_first_down(self, roll):
         """Rolls 30-35: 5X (auto first down + mark from gain)."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, new_down, new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_to_go=10, down=3,
                 no_huddle=True
             )
@@ -223,7 +222,7 @@ class TestResolvePenaltyNoHuddle_DEF_S:
     def test_36_39_is_15_auto_first_down(self, roll):
         """Rolls 36-39: 15 yards + auto first down + mark from gain."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, new_down, _new_ytg, first_down = resolve_penalty(
                 "DEF S", ball_position=50, yards_to_go=10, down=3,
                 no_huddle=True
             )
@@ -242,7 +241,7 @@ class TestResolvePenaltyNoHuddle_OFF_R:
     def test_roll_10_is_5_yards(self):
         """Roll 10: 5 yards (prior to change of possession)."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(10, "dice=10")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF R", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -254,7 +253,7 @@ class TestResolvePenaltyNoHuddle_OFF_R:
     def test_11_34_is_10_yards(self, roll):
         """Rolls 11-34: 10 yards."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF R", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -266,7 +265,7 @@ class TestResolvePenaltyNoHuddle_OFF_R:
     def test_35_39_is_15_yards(self, roll):
         """Rolls 35-39: 15 yards."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF R", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -281,7 +280,7 @@ class TestResolvePenaltyNoHuddle_DEF_R:
     def test_roll_10_is_5_yards_no_auto_fd(self):
         """Roll 10: 5 yards (-- in table), no auto first down."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(10, "dice=10")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF R", ball_position=50, yards_to_go=10, down=2,
                 no_huddle=True
             )
@@ -294,7 +293,7 @@ class TestResolvePenaltyNoHuddle_DEF_R:
     def test_11_16_is_5y(self, roll):
         """Rolls 11-16: 5Y (mark from gain, no auto first down)."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF R", ball_position=50, yards_to_go=10, down=2,
                 no_huddle=True
             )
@@ -307,7 +306,7 @@ class TestResolvePenaltyNoHuddle_DEF_R:
     def test_17_19_is_5x_auto_first_down(self, roll):
         """Rolls 17-19: 5X (auto first down + mark from gain)."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, new_down, _new_ytg, first_down = resolve_penalty(
                 "DEF R", ball_position=50, yards_to_go=10, down=3,
                 no_huddle=True
             )
@@ -321,7 +320,7 @@ class TestResolvePenaltyNoHuddle_DEF_R:
     def test_20_39_is_15_auto_first_down(self, roll):
         """Rolls 20-39: 15 yards + auto first down + mark from gain."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(roll, f"dice={roll}")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, first_down = resolve_penalty(
                 "DEF R", ball_position=50, yards_to_go=10, down=3,
                 no_huddle=True
             )
@@ -342,7 +341,7 @@ class TestResolvePenaltyNoHuddleEdgeCases:
     def test_half_distance_rule_applies_to_no_huddle(self):
         """Half-distance rule should still apply to no-huddle penalties."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(38, "dice=38")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=8, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -354,7 +353,7 @@ class TestResolvePenaltyNoHuddleEdgeCases:
     def test_false_start_half_distance(self):
         """False start (OFF 5) should apply half-distance when close to own goal."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(12, "dice=12")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "DEF S", ball_position=3, yards_to_go=10, down=1,
                 no_huddle=True
             )
@@ -372,7 +371,7 @@ class TestResolvePenaltyNoHuddleEdgeCases:
                 description="Normal penalty",
                 dice_roll=15,
             )
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=50, yards_to_go=10, down=1,
                 no_huddle=False
             )
@@ -383,7 +382,7 @@ class TestResolvePenaltyNoHuddleEdgeCases:
     def test_chart_yards_overrides_no_huddle(self):
         """When chart_yards is provided, no_huddle is bypassed (explicit yardage)."""
         with patch('paydirt.penalty_handler.roll_no_huddle_penalty_yardage') as mock_nh:
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, _new_pos, _new_down, _new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=50, yards_to_go=10, down=1,
                 chart_yards=10, no_huddle=True
             )
@@ -395,7 +394,7 @@ class TestResolvePenaltyNoHuddleEdgeCases:
     def test_bad_snap_preserves_ball_position(self):
         """Bad snap should NOT move the ball — the caller handles the fumble."""
         with patch('paydirt.penalty_handler.roll_chart_dice', return_value=(10, "dice=10")):
-            result, new_pos, new_down, new_ytg, first_down = resolve_penalty(
+            result, new_pos, new_down, new_ytg, _first_down = resolve_penalty(
                 "OFF S", ball_position=75, yards_to_go=7, down=3,
                 no_huddle=True, play_type="normal"
             )

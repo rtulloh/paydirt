@@ -1,13 +1,15 @@
 """
 Pytest configuration and shared fixtures for paydirt tests.
 """
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
 import pytest
 
 
-def season_data_exists(year: int, team: str = None) -> bool:
+def season_data_exists(year: int, team: str | None = None) -> bool:
     """
     Check if season data exists for testing.
     

@@ -1,6 +1,8 @@
 """AI wiring regressions using public sample charts and deterministic plays."""
+from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 from unittest.mock import Mock
 
 import pytest
@@ -37,10 +39,10 @@ def cli_session(monkeypatch: pytest.MonkeyPatch) -> Callable[..., tuple]:
     monkeypatch.setattr(ComputerAI, "select_defense", defend)
     monkeypatch.setattr(cli, "PaydirtGameEngine", lambda *args: game)
     monkeypatch.setattr(cli, "load_game", lambda *args: (game, not human_home[0], human_home[0], None))
-    monkeypatch.setattr(cli, "get_save_info", lambda *args: dict(
-        saved_at="test", away_team="AWAY", home_team="HOME", away_score=0,
-        home_score=0, quarter=1, time_remaining=15.0,
-    ))
+    monkeypatch.setattr(cli, "get_save_info", lambda *args: {
+        "saved_at": "test", "away_team": "AWAY", "home_team": "HOME", "away_score": 0,
+        "home_score": 0, "quarter": 1, "time_remaining": 15.0,
+    })
     monkeypatch.setattr(cli, "load_ai_data", lambda *args: None)
     monkeypatch.setattr(cli, "clear_screen", lambda: None)
     monkeypatch.setattr(cli, "display_play_result", lambda *args: None)
@@ -56,7 +58,7 @@ def cli_session(monkeypatch: pytest.MonkeyPatch) -> Callable[..., tuple]:
 
     def run(
         resume: bool, difficulty: str, is_home: bool,
-        after_play: Optional[Callable[[PaydirtGameEngine], None]] = None,
+        after_play: Callable[[PaydirtGameEngine], None] | None = None,
     ) -> tuple:
         human_home[0] = is_home
         game.state.is_home_possession = is_home

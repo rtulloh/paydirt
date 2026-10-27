@@ -1,6 +1,8 @@
 """
 Core game models for Paydirt football simulation.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -97,7 +99,7 @@ class GameState:
     away_score: int = 0
     quarter: int = 1
     time_remaining: float = 15.0  # Minutes remaining in quarter
-    possession: Optional[Team] = None
+    possession: Team | None = None
     ball_position: int = 20  # Yard line (0-100, where 100 is opponent's end zone)
     down: int = 1
     yards_to_go: int = 10

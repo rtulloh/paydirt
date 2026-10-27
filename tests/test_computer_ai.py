@@ -4,21 +4,21 @@ Tests for computer AI offensive and defensive play selection.
 
 import os
 import random
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.play_resolver import PlayType, DefenseType
-from paydirt.chart_loader import (
-    TeamChart,
-    PeripheralData,
-    OffenseChart,
-    DefenseChart,
-    SpecialTeamsChart,
-)
-from paydirt.season_rules import AIBehavior, TwoMinuteDrill, HurryUp, ClockKilling, AIStrategic
-
+from paydirt.play_resolver import DefenseType, PlayType
+from paydirt.season_rules import AIBehavior, AIStrategic, ClockKilling, HurryUp, TwoMinuteDrill
 from tests.game_fixtures import make_sample_game
 
 
@@ -484,7 +484,7 @@ class TestClockManagement:
         game.state.home_score = 14
         game.state.away_score = 21  # Trailing by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -504,7 +504,7 @@ class TestClockManagement:
         # Run multiple times to get passing plays
         oob_count = 0
         for _ in range(20):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            play, use_oob, _use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play in [
@@ -512,9 +512,8 @@ class TestClockManagement:
                 PlayType.MEDIUM_PASS,
                 PlayType.LONG_PASS,
                 PlayType.SCREEN,
-            ]:
-                if use_oob:
-                    oob_count += 1
+            ] and use_oob:
+                oob_count += 1
 
         # Should use OOB on most passing plays
         assert oob_count > 0
@@ -530,7 +529,7 @@ class TestClockManagement:
         game.state.home_score = 10
         game.state.away_score = 20  # Trailing by 10
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -548,7 +547,7 @@ class TestClockManagement:
         game.state.home_score = 21
         game.state.away_score = 14  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -598,7 +597,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 21
         game.state.away_score = 17  # Leading by 4
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -626,7 +625,7 @@ class TestEndOfHalfClockManagement:
         oob_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            play, use_oob, _use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play in [
@@ -659,7 +658,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 10  # Leading by 7
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -681,7 +680,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 17
         game.state.away_score = 20  # Trailing by 3
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -704,7 +703,7 @@ class TestEndOfHalfClockManagement:
         game.state.home_score = 14
         game.state.away_score = 14  # Tied
 
-        play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+        _play, _use_oob, use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
             cpu_ai.select_offense_with_clock_management(game)
         )
 
@@ -730,7 +729,7 @@ class TestEndOfHalfClockManagement:
         # Run multiple times - should never get LONG_PASS from goal line
         long_pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            play, _use_oob, _use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play == PlayType.LONG_PASS:
@@ -758,7 +757,7 @@ class TestEndOfHalfClockManagement:
         long_pass_count = 0
         pass_count = 0
         for _ in range(30):
-            play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_yards, _ = (
+            play, _use_oob, _use_no_huddle, _punt_short_drop, _punt_coffin_yards, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play in [
@@ -795,7 +794,7 @@ class TestCPUPuntOptions:
         short_drop_count = 0
         for _ in range(20):
             cpu_ai.aggression = 0.2  # Conservative
-            play, _, _, punt_short_drop, punt_coffin, _ = (
+            play, _, _, punt_short_drop, _punt_coffin, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play == PlayType.PUNT and punt_short_drop:
@@ -819,7 +818,7 @@ class TestCPUPuntOptions:
         coffin_corner_count = 0
         for _ in range(30):
             cpu_ai.aggression = 0.8  # Aggressive
-            play, _, _, punt_short_drop, punt_coffin, _ = (
+            play, _, _, _punt_short_drop, punt_coffin, _ = (
                 cpu_ai.select_offense_with_clock_management(game)
             )
             if play == PlayType.PUNT and punt_coffin >= 15:
@@ -837,7 +836,7 @@ class TestCPUPuntOptions:
         game.state.time_remaining = 10.0
         game.state.is_home_possession = True
 
-        play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(
+        _play, _, _, punt_short_drop, punt_coffin, _ = cpu_ai.select_offense_with_clock_management(
             game
         )
 
@@ -1209,7 +1208,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = True
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1232,7 +1231,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1255,7 +1254,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1278,7 +1277,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1301,7 +1300,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=True, human_is_home=True
         )
 
@@ -1310,6 +1309,7 @@ class TestShouldAcceptPenalty:
     def test_fg_made_accepts_play(self, game, cpu_ai):
         """CPU should accept FG when field goal is made."""
         from unittest.mock import MagicMock
+
         from paydirt.play_resolver import PlayType
 
         outcome = MagicMock()
@@ -1323,7 +1323,7 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.FIELD_GOAL
         outcome.field_goal_made = True
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1332,6 +1332,7 @@ class TestShouldAcceptPenalty:
     def test_fg_not_made_accepts_penalty(self, game, cpu_ai):
         """CPU should accept penalty when FG is missed and offense is offended."""
         from unittest.mock import MagicMock
+
         from paydirt.play_resolver import PlayType
 
         outcome = MagicMock()
@@ -1348,7 +1349,7 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.FIELD_GOAL
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1357,6 +1358,7 @@ class TestShouldAcceptPenalty:
     def test_punt_penalty_with_auto_first_down(self, game, cpu_ai):
         """CPU should accept punt penalty when it gives auto first down."""
         from unittest.mock import MagicMock
+
         from paydirt.play_resolver import PlayType
 
         outcome = MagicMock()
@@ -1373,7 +1375,7 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.PUNT
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1382,6 +1384,7 @@ class TestShouldAcceptPenalty:
     def test_punt_penalty_offense_offended(self, game, cpu_ai):
         """CPU should accept punt penalty when offense is offended."""
         from unittest.mock import MagicMock
+
         from paydirt.play_resolver import PlayType
 
         outcome = MagicMock()
@@ -1398,7 +1401,7 @@ class TestShouldAcceptPenalty:
         outcome.play_type = PlayType.PUNT
         outcome.field_goal_made = False
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 
@@ -1452,7 +1455,7 @@ class TestShouldAcceptPenalty:
         outcome.penalty_choice.play_result.touchdown = False
         outcome.play_type = MagicMock()
 
-        accept_play, penalty_idx = cpu_ai.should_accept_penalty(
+        accept_play, _penalty_idx = cpu_ai.should_accept_penalty(
             outcome, is_human_offense=False, human_is_home=True
         )
 

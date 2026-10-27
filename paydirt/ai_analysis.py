@@ -6,14 +6,17 @@ best plays for different situations. Offense averages/rates are dice-weighted an
 conditional on included chart outcomes, excluding penalties, turnovers, and
 breakaway results. They are not full engine-resolved play expectations.
 """
+from __future__ import annotations
+
+import math
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-import math
-import re
-from typing import Optional
+from typing import ClassVar, Optional
 
-from paydirt.chart_loader import OffenseChart, DefenseChart, TeamChart
+from paydirt.chart_loader import DefenseChart, OffenseChart, TeamChart
+
 from .play_resolver import chart_roll_weights
 
 _CHART_ROLL_WEIGHTS = chart_roll_weights()
@@ -82,9 +85,9 @@ class SituationStats:
     play_stats: dict[str, PlayTypeStats] = field(default_factory=dict)
     
     # Best play recommendations
-    best_play_overall: Optional[str] = None
-    best_run_play: Optional[str] = None
-    best_pass_play: Optional[str] = None
+    best_play_overall: str | None = None
+    best_run_play: str | None = None
+    best_pass_play: str | None = None
     
     def get_best_plays(self, count: int = 3) -> list[tuple[str, float]]:
         """Return top plays by success rate."""
@@ -107,7 +110,7 @@ class OffenseAnalyzer:
     """Analyzes an offense chart to find best plays for situations."""
     
     # Map column names to play types
-    PLAY_TYPE_MAP = {
+    PLAY_TYPE_MAP: ClassVar[dict[str, str]] = {
         'Line Plunge': 'run',
         'Off Tackle': 'run', 
         'End Run': 'run',
@@ -147,7 +150,7 @@ class OffenseAnalyzer:
         result_upper = result.upper()
         
         # Check for penalty (OFF, DEF)
-        if result_upper.startswith('OFF ') or result_upper.startswith('DEF '):
+        if result_upper.startswith(('OFF ', 'DEF ')):
             return PlayOutcome(
                 result=result,
                 yards=0,
@@ -534,7 +537,7 @@ class DefenseAnalyzer:
             total_modifier = 0
             valid_count = 0
             
-            for dice, mod in modifiers.items():
+            for mod in modifiers.values():
                 if mod and mod.lstrip('(-').rstrip(')').isdigit():
                     total_modifier += int(mod.lstrip('(-').rstrip(')'))
                     valid_count += 1
@@ -702,7 +705,7 @@ class OpponentTendencyTracker:
         )
     
     def record_play(self, down: int, distance: int, play_type: str, 
-                    yards_gained: int, is_pass: bool = None):
+                    yards_gained: int, is_pass: bool | None = None):
         """
         Record an opponent's play choice.
         
@@ -759,7 +762,7 @@ class OpponentTendencyTracker:
         else:
             return PlayCategory.PASS
     
-    def get_streak(self) -> Optional[PlayCategory]:
+    def get_streak(self) -> PlayCategory | None:
         """Get the current streak of same play types."""
         if len(self.recent_plays) < 3:
             return None
@@ -818,7 +821,7 @@ class OpponentTendencyTracker:
         }
     
     @classmethod
-    def from_dict(cls, data: dict) -> 'OpponentTendencyTracker':
+    def from_dict(cls, data: dict) -> OpponentTendencyTracker:
         """
         Create tracker from JSON-serializable dict.
         
@@ -890,7 +893,7 @@ class OpponentModel:
         return self.tracker.get_defense_recommendation(down, distance)
     
     def record_opponent_play(self, down: int, distance: int, play_type: str,
-                            yards_gained: int, is_pass: bool = None):
+                            yards_gained: int, is_pass: bool | None = None):
         """Record an opponent's play for tendency tracking."""
         self.tracker.record_play(down, distance, play_type, yards_gained, is_pass)
     
@@ -909,7 +912,7 @@ class OpponentModel:
         }
     
     @classmethod
-    def from_dict(cls, data: dict) -> 'OpponentModel':
+    def from_dict(cls, data: dict) -> OpponentModel:
         """
         Create opponent model from JSON-serializable dict.
         

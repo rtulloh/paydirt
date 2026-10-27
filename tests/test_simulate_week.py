@@ -1,14 +1,15 @@
 """
 Tests for simulate_week.py.
 """
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from paydirt.simulate_week import (
+    NFL_1972_WEEK_1,
+    NFL_1983_WEEK_1_BALANCED,
     find_team_chart_path,
     simulate_game,
-    NFL_1983_WEEK_1_BALANCED,
-    NFL_1972_WEEK_1,
 )
 
 

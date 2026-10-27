@@ -1,7 +1,7 @@
 """Deterministic auto-mode orchestration using real engine rules and public charts."""
 
+from collections.abc import Callable
 from itertools import chain, repeat
-from typing import Callable
 from unittest.mock import Mock, create_autospec
 
 import pytest

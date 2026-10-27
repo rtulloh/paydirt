@@ -5,14 +5,16 @@ Tests the overtime rules by season and the game engine's overtime handling.
 """
 import pytest
 
-from paydirt.overtime_rules import (
-    get_overtime_rules, OvertimeFormat, check_overtime_winner
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+    load_team_chart,
 )
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import load_team_chart
-from paydirt.chart_loader import (
-    TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-)
+from paydirt.overtime_rules import OvertimeFormat, check_overtime_winner, get_overtime_rules
 
 
 @pytest.fixture

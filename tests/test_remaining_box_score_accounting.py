@@ -7,7 +7,12 @@ import pytest
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.game_state import TeamStats
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    DefenseType,
+    PenaltyChoice,
+    PenaltyOption,
+    PlayResult,
+    PlayType,
+    ResultType,
 )
 from tests.game_fixtures import make_sample_game
 from tests.test_box_score_accounting import play
@@ -119,7 +124,7 @@ def test_real_qb_time_fumble_classifies_sack_or_rush(
     assert offense.passing_yards == 0
     assert offense.sacks == int(yards <= 0)
     assert offense.sack_yards == (-yards if yards < 0 else 0)
-    assert offense.rushing_yards == (yards if yards > 0 else 0)
+    assert offense.rushing_yards == (max(0, yards))
     assert defense.total_yards == defense.sacks == 0
 
 

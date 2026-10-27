@@ -12,12 +12,19 @@ Official rules:
 - Fumble at/behind own end line (pos <= 0): safety (regardless of recovery)
 - Fumble on normal field (pos 1-99): normal fumble rules apply, no special end zone scoring
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from paydirt.chart_loader import (
+    DefenseChart,
+    OffenseChart,
+    PeripheralData,
+    SpecialTeamsChart,
+    TeamChart,
+)
 from paydirt.game_engine import PaydirtGameEngine
-from paydirt.chart_loader import TeamChart, PeripheralData, OffenseChart, DefenseChart, SpecialTeamsChart
-from paydirt.play_resolver import PlayType, DefenseType, ResultType, PlayResult, roll_white_dice
+from paydirt.play_resolver import DefenseType, PlayResult, PlayType, ResultType, roll_white_dice
 
 
 class TestRollWhiteDice:
@@ -26,12 +33,12 @@ class TestRollWhiteDice:
     def test_roll_white_dice_range(self):
         """White dice should produce values 0-10."""
         for _ in range(100):
-            result, desc = roll_white_dice()
+            result, _desc = roll_white_dice()
             assert 0 <= result <= 10
     
     def test_roll_white_dice_description(self):
         """Description should show both dice values."""
-        result, desc = roll_white_dice()
+        _result, desc = roll_white_dice()
         assert "W" in desc
         assert "=" in desc
 
@@ -107,12 +114,11 @@ class TestFumbleInOpponentEndZone:
             raw_result="F + 8",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (recovered by offense)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (recovered by offense)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.touchdown is True
         assert game.state.home_score == initial_score + 6
@@ -130,12 +136,11 @@ class TestFumbleInOpponentEndZone:
             raw_result="F + 8",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 30 (lost by offense)
-                mock_dice.return_value = (30, "B2+W5+W4=30")
+        # Recovery roll of 30 (lost by offense)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (30, "B2+W5+W4=30")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.turnover is True
         assert game.state.is_home_possession is False
@@ -159,14 +164,13 @@ class TestFumbleBeyondEndLine:
             raw_result="F + 20",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
                 
-                with patch('paydirt.game_engine.roll_white_dice') as mock_white:
-                    mock_white.return_value = (5, "W2+W3=5")  # 5 yards into end zone
+            with patch('paydirt.game_engine.roll_white_dice') as mock_white:
+                mock_white.return_value = (5, "W2+W3=5")  # 5 yards into end zone
                     
-                    outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Offense recovers in end zone = TD
         assert outcome.touchdown is True
@@ -190,11 +194,10 @@ class TestFumbleAtOwnEndLine:
             raw_result="F - 10",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.safety is True
         assert game.state.away_score == initial_away_score + 2
@@ -217,12 +220,11 @@ class TestFumbleInOwnEndZone:
             raw_result="F - 10",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll doesn't matter - fumble out of end zone is safety
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll doesn't matter - fumble out of end zone is safety
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.safety is True
         assert game.state.away_score == initial_away_score + 2
@@ -241,12 +243,11 @@ class TestFumbleInOwnEndZone:
             raw_result="F - 10",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 15 (recovered by offense)
-                mock_dice.return_value = (15, "B1+W5+W0=15")
+        # Recovery roll of 15 (recovered by offense)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Position 5 is the 5 yard line, NOT the end zone - no safety
         assert outcome.safety is False
@@ -267,12 +268,11 @@ class TestFumbleInOwnEndZone:
             raw_result="F - 10",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                # Recovery roll of 30 (lost by offense)
-                mock_dice.return_value = (30, "B2+W5+W4=30")
+        # Recovery roll of 30 (lost by offense)
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (30, "B2+W5+W4=30")
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Position 5 is NOT the end zone - just a turnover, not TD
         assert outcome.turnover is True
@@ -296,11 +296,10 @@ class TestNormalFieldFumble:
             raw_result="F + 3",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (15, "B1+W5+W0=15")  # Recovered
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         assert outcome.touchdown is False
         assert outcome.safety is False
@@ -343,18 +342,17 @@ class TestTouchdownRules:
             raw_result="DEF 15",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.resolve_penalty') as mock_penalty:
-                # Penalty should be half the distance to goal
-                mock_penalty.return_value = (
-                    MagicMock(yards=2, description="Defensive penalty"),
-                    97,  # New position (half distance to goal)
-                    1,   # Down
-                    3,   # Yards to go
-                    True # First down
-                )
+        # Penalty should be half the distance to goal
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.resolve_penalty') as mock_penalty:
+            mock_penalty.return_value = (
+                MagicMock(yards=2, description="Defensive penalty"),
+                97,  # New position (half distance to goal)
+                1,   # Down
+                3,   # Yards to go
+                True # First down
+            )
                 
-                outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
         
         # Should NOT be a touchdown
         assert outcome.touchdown is False
@@ -377,11 +375,10 @@ class TestInterceptionEndZoneRules:
             raw_result="INT 25",
         )
         
-        with patch('paydirt.game_engine.resolve_play', return_value=mock_result):
-            with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-                mock_dice.return_value = (10, "B1+W0+W0=10")  # 5 yard return
+        with patch('paydirt.game_engine.resolve_play', return_value=mock_result), patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
+            mock_dice.return_value = (10, "B1+W0+W0=10")  # 5 yard return
                 
-                outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         
         # INT spot should be 9 yards deep (position 109 from offense = position 91 from defense)
         # After return, defense should have ball

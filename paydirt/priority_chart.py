@@ -30,10 +30,12 @@ have results that need to be reconciled.
 # +-----------+-----------------------------------------------------------------------+
 # *INT Shortest Yards
 """
+from __future__ import annotations
+
 import re
-from enum import Enum
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from enum import Enum
+from typing import Optional
 
 
 class ResultCategory(Enum):
@@ -75,7 +77,7 @@ class PriorityResult(Enum):
     BLACK = "black"               # Incomplete/no result
 
 
-def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
+def categorize_result(result_str: str) -> tuple[ResultCategory, int | None]:
     """
     Categorize a result string into a ResultCategory.
     
@@ -91,7 +93,7 @@ def categorize_result(result_str: str) -> Tuple[ResultCategory, Optional[int]]:
     result_str = result_str.strip()
 
     # Check for penalties first (always take priority)
-    if result_str.startswith("OFF") or result_str.startswith("DEF"):
+    if result_str.startswith(("OFF", "DEF")):
         return ResultCategory.PENALTY, None
 
     # Check for pass interference
@@ -355,8 +357,8 @@ class CombinedResult:
 
 
 def apply_priority_chart(offense_result: str, defense_result: str,
-                         offense_yards: Optional[int] = None,
-                         defense_yards: Optional[int] = None,
+                         offense_yards: int | None = None,
+                         defense_yards: int | None = None,
                          is_passing_play: bool = True) -> CombinedResult:
     """
     Apply the Priority Chart to combine offensive and defensive results.

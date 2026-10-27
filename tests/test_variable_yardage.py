@@ -13,8 +13,11 @@ Negative versions (-DS, -X, -T1, etc.) return negative yardage.
 from unittest.mock import patch
 
 from paydirt.play_resolver import (
-    resolve_variable_yardage, is_variable_yardage, parse_result_string,
-    roll_offensive_dice_detailed, ResultType
+    ResultType,
+    is_variable_yardage,
+    parse_result_string,
+    resolve_variable_yardage,
+    roll_offensive_dice_detailed,
 )
 
 
@@ -138,7 +141,7 @@ class TestResolveVariableYardage:
         with patch('paydirt.play_resolver.roll_offensive_dice_detailed') as mock_roll:
             mock_roll.return_value = (27, 2, 3, 4, 9, "B2+W3+W4=27 (DS=9)")
             
-            yards, desc = resolve_variable_yardage("DS-")
+            yards, _desc = resolve_variable_yardage("DS-")
             
             assert yards == -9
 
@@ -148,7 +151,7 @@ class TestRollOffensiveDiceDetailed:
     
     def test_returns_all_components(self):
         """Should return total, black, white1, white2, direct_sum, desc."""
-        total, black, white1, white2, direct_sum, desc = roll_offensive_dice_detailed()
+        total, black, white1, white2, direct_sum, _desc = roll_offensive_dice_detailed()
         
         # Verify ranges
         assert 10 <= total <= 39
@@ -161,7 +164,7 @@ class TestRollOffensiveDiceDetailed:
     def test_total_calculation(self):
         """Total should be black*10 + min(white1+white2, 9)."""
         for _ in range(20):
-            total, black, white1, white2, direct_sum, desc = roll_offensive_dice_detailed()
+            total, black, white1, white2, _direct_sum, _desc = roll_offensive_dice_detailed()
             expected_total = (black * 10) + min(white1 + white2, 9)
             assert total == expected_total
 
@@ -217,29 +220,29 @@ class TestVariableYardageRanges:
     def test_ds_range(self):
         """DS should be in range 1-13."""
         for _ in range(50):
-            yards, desc = resolve_variable_yardage("DS")
+            yards, _desc = resolve_variable_yardage("DS")
             assert 1 <= yards <= 13, f"DS={yards} out of range 1-13"
     
     def test_x_range(self):
         """X should be in range 1-30 (40-39 to 40-10)."""
         for _ in range(50):
-            yards, desc = resolve_variable_yardage("X")
+            yards, _desc = resolve_variable_yardage("X")
             assert 1 <= yards <= 30, f"X={yards} out of range 1-30"
     
     def test_t1_range(self):
         """T1 should be in range 10-39."""
         for _ in range(50):
-            yards, desc = resolve_variable_yardage("T1")
+            yards, _desc = resolve_variable_yardage("T1")
             assert 10 <= yards <= 39, f"T1={yards} out of range 10-39"
     
     def test_t2_range(self):
         """T2 should be in range 20-78."""
         for _ in range(50):
-            yards, desc = resolve_variable_yardage("T2")
+            yards, _desc = resolve_variable_yardage("T2")
             assert 20 <= yards <= 78, f"T2={yards} out of range 20-78"
     
     def test_t3_range(self):
         """T3 should be in range 30-117."""
         for _ in range(50):
-            yards, desc = resolve_variable_yardage("T3")
+            yards, _desc = resolve_variable_yardage("T3")
             assert 30 <= yards <= 117, f"T3={yards} out of range 30-117"
