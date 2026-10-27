@@ -6,7 +6,7 @@ See also the [documentation index](../docs/README.md) and [development guide](..
 
 ## Requirements
 
-- Node.js 18+; the release workflow uses Node.js 20.
+- Node.js 24.22.1 or a newer patched 24.x release; release builds and browser CI use Node.js 24.22.1.
 - A Python version compatible with the pinned backend requirements. Python 3.12 is a practical development choice;
   the release workflow uses Python 3.10. Newer Python versions may lack wheels for pinned dependencies.
 - The repository checkout, including the public `seasons/2026/` data and `docs/`.

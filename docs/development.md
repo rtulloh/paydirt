@@ -12,7 +12,7 @@ python -m pytest tests/ -q -o addopts= --tb=short
 ```
 
 For browser development, follow the [web setup guide](../paydirt-web/README.md).
-Backend dependencies are separate from core dependencies. The release workflow currently uses Python 3.10 and Node.js 20;
+Backend dependencies are separate from core dependencies. The release workflow currently uses Python 3.10 and Node.js 24.22.1;
 use a Python version compatible with the pinned backend packages and available wheels.
 
 ## Architecture and Project Structure
