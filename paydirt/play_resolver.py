@@ -193,23 +193,28 @@ def roll_d10() -> int:
     return 10 if result == 0 else result
 
 
-# Shared by actual rolls and deterministic AI probability analysis.
-_CHART_BLACK_DIE_FACES = (1, 1, 2, 2, 3, 3)
-_CHART_WHITE_DIE_MIN = 0
-_CHART_WHITE_DIE_MAX = 5
-_CHART_ONES_CAP = 9
+# Standard Paydirt offensive dice faces (shared by rolls and AI probability analysis).
+# Reference: https://wizardofvegas.com/forum/off-topic/general/16854-pay-dirt-dice-percentages/
+# - Black die: 1,2,2,3,3,3 (1 appears 1/6, 2 appears 2/6, 3 appears 3/6)
+# - White die 1: 0,0,1,2,3,4
+# - White die 2: 0,1,2,3,4,5
+# Result = (Black * 10) + White1 + White2, range 10-39
+_CHART_BLACK_DIE_FACES = (1, 2, 2, 3, 3, 3)
+_CHART_WHITE_DIE_1_FACES = (0, 0, 1, 2, 3, 4)
+_CHART_WHITE_DIE_2_FACES = (0, 1, 2, 3, 4, 5)
 
 
 def chart_roll_weights() -> dict[int, int]:
     """Return face-combination counts for each chart row, without rolling dice.
 
     Returns:
-        Row weights totaling 216, including white sums 9 and 10 in row x9.
+        Row weights totaling 216 (6 * 6 * 6 combinations).
     """
-    whites = range(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX + 1)
     return dict(Counter(
-        black * 10 + min(white1 + white2, _CHART_ONES_CAP)
-        for black, white1, white2 in product(_CHART_BLACK_DIE_FACES, whites, whites)
+        black * 10 + white1 + white2
+        for black, white1, white2 in product(
+            _CHART_BLACK_DIE_FACES, _CHART_WHITE_DIE_1_FACES, _CHART_WHITE_DIE_2_FACES
+        )
     ))
 
 
@@ -217,29 +222,28 @@ def roll_chart_dice() -> tuple[int, str]:
     """
     Roll dice for chart lookup (10-39).
 
-    Paydirt offensive dice:
-    - Black die (tens digit): faces 1, 1, 2, 2, 3, 3 -> determines 10s, 20s, or 30s
-    - Two White dice (ones digit): each 0-5, with their sum capped at 9
+    Standard Paydirt offensive dice:
+    - Black die (tens digit): faces 1,2,2,3,3,3 (1 appears 1/6, 2 appears 2/6, 3 appears 3/6)
+    - White die 1 (ones digit): faces 0,0,1,2,3,4
+    - White die 2 (ones digit): faces 0,1,2,3,4,5
 
-    Result = (Black * 10) + min(White1 + White2, 9)
-    Range: 10+0=10 to 30+9=39
+    Result = (Black * 10) + White1 + White2
+    Range: 10+0+0=10 to 30+4+5=39
 
     Probability distribution:
-    - 10s (Black=1): 2/6 = 33%
-    - 20s (Black=2): 2/6 = 33%
-    - 30s (Black=3): 2/6 = 33%
+    - 10s (Black=1): 1/6 = 16.7%
+    - 20s (Black=2): 2/6 = 33.3%
+    - 30s (Black=3): 3/6 = 50.0%
 
     Returns:
         Tuple of (result, description string showing dice breakdown)
     """
     black = random.choice(_CHART_BLACK_DIE_FACES)
-
-    white1 = random.randint(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX)
-    white2 = random.randint(_CHART_WHITE_DIE_MIN, _CHART_WHITE_DIE_MAX)
-    white_sum = min(white1 + white2, _CHART_ONES_CAP)
+    white1 = random.choice(_CHART_WHITE_DIE_1_FACES)
+    white2 = random.choice(_CHART_WHITE_DIE_2_FACES)
 
     # Combine: tens digit from black, ones digit from sum of whites
-    result = (black * 10) + white_sum
+    result = (black * 10) + white1 + white2
     desc = f"B{black}+W{white1}+W{white2}={result}"
     return result, desc
 
@@ -248,13 +252,16 @@ def roll_white_dice() -> tuple[int, str]:
     """
     Roll only the white offensive dice (for end zone distance per rule VI-12-D-ii).
 
-    Two white dice: each 0-5, sum gives 0-10.
-    Used to determine how far into the end zone a fumble is recovered.
+    Standard Paydirt white dice:
+    - White die 1: faces 0,0,1,2,3,4
+    - White die 2: faces 0,1,2,3,4,5
+
+    Sum gives 0-9. Used to determine how far into the end zone a fumble is recovered.
 
     Returns: (total, description)
     """
-    white1 = random.randint(0, 5)
-    white2 = random.randint(0, 5)
+    white1 = random.choice(_CHART_WHITE_DIE_1_FACES)
+    white2 = random.choice(_CHART_WHITE_DIE_2_FACES)
     total = white1 + white2
     desc = f"W{white1}+W{white2}={total}"
     return total, desc
@@ -264,22 +271,25 @@ def roll_offensive_dice_detailed() -> tuple[int, int, int, int, int, str]:
     """
     Roll offensive dice and return all components for variable yardage calculations.
 
+    Standard Paydirt offensive dice:
+    - Black die: faces 1,2,2,3,3,3 (1 appears 1/6, 2 appears 2/6, 3 appears 3/6)
+    - White die 1: faces 0,0,1,2,3,4
+    - White die 2: faces 0,1,2,3,4,5
+
     Returns:
         Tuple of (total, black, white1, white2, direct_sum, description)
         - total: Normal offensive total (10-39)
         - black: Black die value (1, 2, or 3)
-        - white1: First white die value (0-5)
-        - white2: Second white die value (0-5)
+        - white1: First white die value (from die 1)
+        - white2: Second white die value (from die 2)
         - direct_sum: Sum of all three dice (black + white1 + white2)
         - description: String showing dice breakdown
     """
-    black_die_faces = [1, 1, 2, 2, 3, 3]
-    black = random.choice(black_die_faces)
-    white1 = random.randint(0, 5)
-    white2 = random.randint(0, 5)
-    white_sum = min(white1 + white2, 9)
+    black = random.choice(_CHART_BLACK_DIE_FACES)
+    white1 = random.choice(_CHART_WHITE_DIE_1_FACES)
+    white2 = random.choice(_CHART_WHITE_DIE_2_FACES)
 
-    total = (black * 10) + white_sum
+    total = (black * 10) + white1 + white2
     direct_sum = black + white1 + white2
     desc = f"B{black}+W{white1}+W{white2}={total} (DS={direct_sum})"
 

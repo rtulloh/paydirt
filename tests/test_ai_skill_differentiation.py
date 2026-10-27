@@ -207,7 +207,10 @@ def test_cli_easy_advice_labels_chart_estimates_and_exclusions(capsys: pytest.Ca
 
 def test_existing_hard_chart_metric_is_not_redefined() -> None:
     analyzer = OffenseAnalyzer(OffenseChart(line_plunge={15: "BLACK", 10: "5"}))
-    assert analyzer.analyze_play_type("Line Plunge").success_rate == pytest.approx(100 / 7)
+    # With correct Paydirt dice: row 10 has weight 2, row 15 has weight 6
+    # BLACK is a 0-yard failure (included in valid_rolls)
+    # success_rate = (2 / (2+6)) * 100 = 25%
+    assert analyzer.analyze_play_type("Line Plunge").success_rate == pytest.approx(25)
 
 
 @pytest.mark.parametrize("favored,expected", [("run", .1), ("pass", -.1)])
@@ -215,8 +218,11 @@ def test_medium_category_summary_uses_dice_weights(favored: str, expected: float
     chart = strength_chart("balanced")
     for category, columns in (("run", RUN_COLUMNS), ("pass", PASS_COLUMNS)):
         for column in columns:
-            # More winning rows is not necessarily more likely: 3 rare < 2 common.
-            winners = (15, 25) if category == favored else (10, 20, 30)
+            # With correct Paydirt dice weights:
+            # - Rows (34, 35): weight 18+18=36 (most likely in 30s)
+            # - Rows (10, 11, 12): weight 2+3+4=9 (rare in 10s)
+            # The favored category gets the high-weight rows for more positive probability.
+            winners = (34, 35) if category == favored else (10, 11, 12)
             setattr(chart, column, {roll: "4" if roll in winners else "0"
                                     for roll in range(10, 40)})
     original = deepcopy(chart)
@@ -228,8 +234,11 @@ def test_medium_category_summary_uses_dice_weights(favored: str, expected: float
     assert random.getstate() == before
 
 
-@pytest.mark.parametrize("positive_rows", [(10,), (10, 20, 30)])
+@pytest.mark.parametrize("positive_rows", [(10,), (10, 19)])
 def test_medium_does_not_tilt_for_small_strength_gaps(positive_rows: tuple) -> None:
+    # Test that small differences in category strength don't trigger bias.
+    # With correct Paydirt dice, we need to use rows with similar small weights.
+    # Row 10: weight 2, Row 19: weight 1 - both are rare/low probability rows.
     chart = strength_chart("balanced")
     for column in PASS_COLUMNS:
         setattr(chart, column, {roll: "0" if roll in positive_rows else "5"

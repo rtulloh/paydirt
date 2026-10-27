@@ -7,32 +7,19 @@ const DICE_COLORS = {
   green: { bg: 'bg-green-600', text: 'text-white', border: 'border-green-800' },
 }
 
-const PIP_PATTERNS = {
-  0: [],
-  1: [[50, 50]],
-  2: [[25, 25], [75, 75]],
-  3: [[25, 25], [50, 50], [75, 75]],
-  4: [[25, 25], [75, 25], [25, 75], [75, 75]],
-  5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
-}
-
-function Pip({ x, y, color }) {
-  const pipColor = color === 'black' || color === 'red' || color === 'green' ? 'bg-white' : 'bg-gray-900'
-  return (
-    <div
-      className={`absolute w-2 h-2 rounded-full ${pipColor}`}
-      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-    />
-  )
-}
-
+/**
+ * Paydirt uses custom dice with specific number faces, not standard d6 pips.
+ * Display numbers instead of dots since dice can show 0, and the faces are:
+ * - Black die: 1,2,2,3,3,3
+ * - White die 1: 0,0,1,2,3,4
+ * - White die 2: 0,1,2,3,4,5
+ * - Red die: 1,1,1,2,2,3
+ * - Green die: 0,0,0,0,1,2
+ */
 function Die({ value, color, size = 'md', animate, settled }) {
   const colorClass = DICE_COLORS[color] || DICE_COLORS.white
   const sizeClass = size === 'lg' ? 'w-16 h-16' : size === 'sm' ? 'w-10 h-10' : 'w-12 h-12'
-  const pipSizeClass = size === 'lg' ? 'w-3 h-3' : size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2'
-  
-  // Use nullish coalescing to handle 0 correctly (empty array is falsy!)
-  const pips = PIP_PATTERNS[value] ?? PIP_PATTERNS[1]
+  const textSizeClass = size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-lg' : 'text-2xl'
   
   return (
     <div
@@ -43,11 +30,9 @@ function Die({ value, color, size = 'md', animate, settled }) {
       `}
       data-testid={`die-${color}`}
     >
-      <div className={`relative w-full h-full ${pipSizeClass}`}>
-        {pips.map(([px, py], index) => (
-          <Pip key={index} x={px} y={py} color={color} />
-        ))}
-      </div>
+      <span className={`${textSizeClass} font-bold ${colorClass.text}`}>
+        {value}
+      </span>
     </div>
   )
 }
@@ -112,13 +97,15 @@ export function DiceDisplay({
   )
 }
 
-const BLACK_DIE = [1, 1, 2, 2, 3, 3]
-const WHITE_DIE = [0, 1, 2, 3, 4, 5]
+// Standard Paydirt dice faces
+// Reference: https://wizardofvegas.com/forum/off-topic/general/16854-pay-dirt-dice-percentages/
+const BLACK_DIE = [1, 2, 2, 3, 3, 3]      // 1 appears 1/6, 2 appears 2/6, 3 appears 3/6
+const WHITE_DIE_1 = [0, 0, 1, 2, 3, 4]    // First white die
+const WHITE_DIE_2 = [0, 1, 2, 3, 4, 5]    // Second white die
 const RED_DIE = [1, 1, 1, 2, 2, 3]
 const GREEN_DIE = [0, 0, 0, 0, 1, 2]
 
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)]
-const randomFromRange = (min, max) => min + Math.floor(Math.random() * (max - min + 1))
 
 export function DiceRoller({ onComplete }) {
   const [rolling, setRolling] = useState(true)
@@ -134,8 +121,8 @@ export function DiceRoller({ onComplete }) {
     const interval = setInterval(() => {
       setValues({
         black: randomFrom(BLACK_DIE),
-        white1: randomFrom(WHITE_DIE),
-        white2: randomFrom(WHITE_DIE),
+        white1: randomFrom(WHITE_DIE_1),
+        white2: randomFrom(WHITE_DIE_2),
         red: randomFrom(RED_DIE),
         green: randomFrom(GREEN_DIE),
       })

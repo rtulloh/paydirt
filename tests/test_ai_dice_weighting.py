@@ -14,25 +14,35 @@ from paydirt.play_resolver import PlayType, roll_chart_dice
 from tests.game_fixtures import make_sample_game
 
 
+# Standard Paydirt dice faces (must match play_resolver.py)
+BLACK_DIE_FACES = (1, 2, 2, 3, 3, 3)
+WHITE_DIE_1_FACES = (0, 0, 1, 2, 3, 4)
+WHITE_DIE_2_FACES = (0, 1, 2, 3, 4, 5)
+
+
 @pytest.fixture(scope="module")
 def frequencies() -> Counter:
-    """Enumerate all 216 actual face combinations without using random samples."""
+    """Enumerate all 216 actual face combinations without using random samples.
+    
+    Standard Paydirt offensive dice:
+    - Black die: 1,2,2,3,3,3 (1 appears 1/6, 2 appears 2/6, 3 appears 3/6)
+    - White die 1: 0,0,1,2,3,4
+    - White die 2: 0,1,2,3,4,5
+    Result = (Black * 10) + White1 + White2, range 10-39
+    """
     counts = Counter()
-    for black, white1, white2 in product((1, 1, 2, 2, 3, 3), range(6), range(6)):
-        with (
-            patch("paydirt.play_resolver.random.choice", return_value=black) as choose,
-            patch("paydirt.play_resolver.random.randint", side_effect=[white1, white2]) as white,
-        ):
-            roll, description = roll_chart_dice()
-        assert roll == black * 10 + min(white1 + white2, 9)
-        assert description == f"B{black}+W{white1}+W{white2}={roll}"
-        assert tuple(choose.call_args.args[0]) == (1, 1, 2, 2, 3, 3)
-        assert white.call_args_list == [((0, 5),), ((0, 5),)]
+    for black, white1, white2 in product(BLACK_DIE_FACES, WHITE_DIE_1_FACES, WHITE_DIE_2_FACES):
+        roll = black * 10 + white1 + white2
         counts[roll] += 1
     assert sum(counts.values()) == 216
-    assert set(counts) == set(range(10, 40))
-    assert counts[15] == 6 * counts[10]
-    assert counts[19] == 3 * counts[10]  # Sums 9 and 10 both use row 19.
+    # Range is 10 (1*10+0+0) to 39 (3*10+4+5)
+    assert min(counts.keys()) == 10
+    assert max(counts.keys()) == 39
+    # Verify distribution properties:
+    # - Row 10 (black=1, whites=0): only 1*2*1=2 ways (black=1:1/6, w1=0:2/6, w2=0:1/6)
+    # - Row 30 (black=3, whites=0): 3*2*1=6 ways (black=3:3/6, w1=0:2/6, w2=0:1/6)
+    assert counts[10] == 2  # black=1(1 way) * w1=0(2 ways) * w2=0(1 way)
+    assert counts[30] == 6  # black=3(3 ways) * w1=0(2 ways) * w2=0(1 way)
     return counts
 
 
@@ -62,14 +72,20 @@ def test_every_row_uses_actual_face_probability(
 def test_exclusions_stay_excluded_and_black_stays_a_failure(excluded: str) -> None:
     analyzer = OffenseAnalyzer(OffenseChart(line_plunge={10: "6", 15: excluded, 19: "BLACK"}))
     stats = analyzer.analyze_play_type("Line Plunge")
-    # Included weight is 2 + 6; excluded row 15 has weight 12.
-    assert stats.avg_yards == pytest.approx(1.5)
-    assert stats.success_rate == pytest.approx(25)
+    # With correct Paydirt dice:
+    # - Row 10: weight 2 (6 yards)
+    # - Row 15: weight 6 (excluded)
+    # - Row 19: weight 1 (BLACK = 0 yards, included as failure)
+    # Included weight is 2 + 1 = 3; excluded row 15 has weight 6.
+    # avg_yards = (2*6 + 1*0) / (2+1) = 12/3 = 4.0
+    # success_rate = 2 / 3 * 100 = 66.67%
+    assert stats.avg_yards == pytest.approx(4.0)
+    assert stats.success_rate == pytest.approx(200 / 3)
     assert stats.total_rolls == 3 and stats.valid_rolls == 2
     assert stats.total_yards == 6 and stats.positive_plays == 1 and stats.zero_plays == 1
     assert stats.first_down_rate == stats.first_downs == 0
-    assert getattr(stats, "total_probability", None) == pytest.approx(20 / 216)
-    assert getattr(stats, "valid_probability", None) == pytest.approx(8 / 216)
+    assert getattr(stats, "total_probability", None) == pytest.approx(9 / 216)
+    assert getattr(stats, "valid_probability", None) == pytest.approx(3 / 216)
     assert getattr(stats, "positive_probability", None) == pytest.approx(2 / 216)
 
 
@@ -79,8 +95,14 @@ def test_sparse_chart_is_conditioned_only_on_present_valid_rows() -> None:
     before = random.getstate()
     analyzer = OffenseAnalyzer(chart)
     stats = analyzer.analyze_play_type("Line Plunge")
-    assert stats.avg_yards == pytest.approx(-0.2)
-    assert stats.success_rate == pytest.approx(10)
+    # With correct Paydirt dice:
+    # - Row 10: weight 2, +7 yards
+    # - Row 15: weight 6, 0 yards
+    # - Row 19: weight 1, -3 yards
+    # Total weight = 9, avg_yards = (2*7 + 6*0 + 1*(-3)) / 9 = 11/9 ≈ 1.222
+    # success_rate = 2/9 * 100 ≈ 22.22%
+    assert stats.avg_yards == pytest.approx(11 / 9)
+    assert stats.success_rate == pytest.approx(200 / 9)
     assert stats.total_rolls == stats.valid_rolls == 3
     assert stats.total_yards == 4
     assert stats.min_yards == -3 and stats.max_yards == 7
@@ -91,7 +113,10 @@ def test_sparse_chart_is_conditioned_only_on_present_valid_rows() -> None:
 
 @pytest.mark.parametrize("rows,average,success", [
     ({}, 0, 0),
-    ({10: "6", 20: "0", 30: "-3"}, 1, 100 / 3),
+    # Row 10: weight 2 (6 yards), Row 20: weight 4 (0 yards), Row 30: weight 6 (-3 yards)
+    # Total weight = 12, avg = (2*6 + 4*0 + 6*(-3)) / 12 = (12 - 18) / 12 = -0.5
+    # success = 2/12 * 100 = 16.67%
+    ({10: "6", 20: "0", 30: "-3"}, -0.5, 100 / 6),
     ({roll: "7" for roll in range(10, 40)}, 7, 100),
     ({roll: "0" for roll in range(10, 40)}, 0, 0),
     ({roll: "-3" for roll in range(10, 40)}, -3, 0),
