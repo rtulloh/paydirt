@@ -1,5 +1,23 @@
 # Paydirt Release Notes
 
+## v1.9.5
+
+### Build Reliability and Developer Validation
+
+- Build the frontend with Node.js 24.22.1 and use native Node 24 GitHub Actions.
+- Pin test jobs to Ubuntu 24.04 to retain Python 3.9 matrix availability and Playwright support; show dependency installation failures in separate steps.
+- Clear the Python lint backlog and add DEBUG traceback diagnostics at optional-operation fallback boundaries, without changing intended gameplay.
+- Retain all previous historical regression games and add two corrected-dice supplements that must award and play untimed downs.
+- Add scoped OpenCode validation permissions, with pushes requiring approval and destructive commands blocked.
+- Synchronize package, API, frontend, and installer version metadata to 1.9.5.
+
+### Validation
+
+- Before release metadata changes, upstream tests and all four standalone builds passed on `254746e` (runs #82 and #97).
+- Release-metadata regression: core 5,448 passed (8 existing skips), backend 218, frontend 255 (1 existing skip), build, both browser checks, and Ruff passed. Clean tracked-source checks passed 5,431 core (25 existing private-data skips) and 218 backend.
+- All 12 historical cases, 224 regular-season games, nine playoffs, and public/local AI audits (32/32 and 448/448 games) passed; no Hard concentration warning and one existing legacy-balanced advisory. No standings persisted.
+- Existing private-data skips, Pydantic deprecations, stale Browserslist data, and npm vulnerabilities remain; dependency vulnerability remediation is not included in this release.
+
 ## v1.9.2
 
 ### Trace Accuracy and Developer Validation

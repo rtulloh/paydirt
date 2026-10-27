@@ -3,7 +3,7 @@ set -e
 
 APP_NAME="Paydirt"
 EXECUTABLE="paydirt"
-VERSION="${GITHUB_REF_NAME:-1.9.2}"
+VERSION="${GITHUB_REF_NAME:-1.9.5}"
 APP_DIR="${APP_NAME}.AppDir"
 
 # Create AppDir structure with all required icon directories

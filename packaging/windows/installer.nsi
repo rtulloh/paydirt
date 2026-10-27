@@ -3,7 +3,7 @@
 
 ; General
 !define PRODUCT_NAME "Paydirt"
-!define PRODUCT_VERSION "1.9.2"
+!define PRODUCT_VERSION "1.9.5"
 !define PRODUCT_PUBLISHER "Paydirt Fan"
 !define PRODUCT_WEB_SITE "https://github.com/rtulloh/paydirt"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\paydirt.exe"
