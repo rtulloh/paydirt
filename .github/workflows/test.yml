@@ -8,8 +8,10 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Keep Python 3.9 available when ubuntu-latest advances to a newer LTS.
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
@@ -44,7 +46,7 @@ jobs:
         continue-on-error: true
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +63,7 @@ jobs:
         continue-on-error: true
 
   browser-games:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
@@ -76,11 +78,12 @@ jobs:
           node-version: '24.22.1'
           cache: npm
           cache-dependency-path: paydirt-web/frontend/package-lock.json
-      - name: Install real backend and browser dependencies
-        run: |
-          python3 -m pip install -r ../backend/requirements.txt
-          npm ci
-          npx playwright install --with-deps chromium
+      - name: Install backend dependencies
+        run: python3 -m pip install -r ../backend/requirements.txt
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
       - name: Frontend unit regressions and coverage
         run: npm run test:coverage -- --run
       - name: Build frontend

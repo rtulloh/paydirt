@@ -143,3 +143,10 @@ rebase, checkout, and `rm` remain denied. Unlike the source template, this file
 does not blanket-allow arbitrary `python3` scripts or retain Bowl Bound-specific
 frontend paths/environment variables. These permissions are convenience rules,
 not a sandbox or a replacement for the required pre-push validation.
+
+The hosted test jobs pin Ubuntu 24.04 rather than following `ubuntu-latest`: the
+Ubuntu 26.04 transition removed the Python 3.9 builds used by the existing
+matrix. All four Python versions remain tested, and matrix failures no longer
+cancel the other versions. Browser backend, npm, and Chromium/system dependency
+installs have separate required steps so setup failures are identifiable even
+from the job summary. Local macOS success does not prove hosted Linux setup.
