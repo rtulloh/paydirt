@@ -176,8 +176,8 @@ test('two complete real-engine games in one browser session, home then away', as
   const ids = []
   try {
     for (const options of [
-      { home: true, seed: 20261017, player: 'Ironclads', receives: true },
-      { home: false, seed: 20261018, player: 'Thunderhawks', receives: false },
+      { home: true, seed: 20261026, player: 'Ironclads', receives: true },
+      { home: false, seed: 20261027, player: 'Thunderhawks', receives: false },
     ]) {
       const id = await startGame(page, options)
       expect(ids).not.toContain(id)
