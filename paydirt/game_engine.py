@@ -5343,6 +5343,15 @@ class PaydirtGameEngine:
                 or not self.season_rules.overtime.enabled
             )
 
+    def get_two_point_situation(self) -> dict:
+        """Describe the untimed try independently of the preceding touchdown."""
+        return {
+            "ball_position": 98, "down": 1, "yards_to_go": 2,
+            "time_remaining": None, "points": 2,
+            "legal_plays": tuple(CHART_PLAY_TYPES),
+            "legal_defenses": tuple(DefenseType),
+        }
+
     def attempt_two_point(
         self, play_type: PlayType, defense_type: DefenseType = None
     ) -> tuple[bool, int, str]:
@@ -5363,9 +5372,10 @@ class PaydirtGameEngine:
 
         # Set up for 2-point conversion from the 2-yard line
         # Position 98 = 2 yards from opponent's goal line
-        self.state.ball_position = 98
-        self.state.down = 1
-        self.state.yards_to_go = 2
+        situation = self.get_two_point_situation()
+        self.state.ball_position = situation["ball_position"]
+        self.state.down = situation["down"]
+        self.state.yards_to_go = situation["yards_to_go"]
 
         # Use default defense if not specified
         if defense_type is None:

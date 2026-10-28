@@ -2247,3 +2247,27 @@ def test_get_doc_image_returns_404_for_missing():
     """Test that missing images return 404."""
     response = client.get("/api/docs/images/nonexistent.png")
     assert response.status_code == 404
+
+
+def test_cpu_two_point_choice_with_pending_try_at_zero() -> None:
+    from routes import games
+
+    created = client.post("/api/game/new", json={"player_team": "Ironclads", "season": "2026"})
+    assert created.status_code == 200
+    game_id = created.json()["game_id"]
+    game = games[game_id]
+    engine = game["engine"]
+    engine.season_rules.two_point_conversion = True
+    engine.state.is_home_possession = True
+    engine.state.home_score, engine.state.away_score = 6, 8
+    engine.state.quarter, engine.state.time_remaining = 4, 0
+    engine.state.game_over = True
+    try:
+        game["pending_pat"] = True
+        response = client.get(f"/api/game/pat-choice/{game_id}")
+        assert response.status_code == 200
+        assert response.json()["cpu_should_go_for_two"] is True
+        game["pending_pat"] = False
+        assert client.get(f"/api/game/pat-choice/{game_id}").json()["cpu_should_go_for_two"] is False
+    finally:
+        games.pop(game_id)

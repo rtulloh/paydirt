@@ -80,6 +80,40 @@ class OffensiveStrategy:
         self._score_cache[key] = scores
         return dict(scores)
 
+    def conversion_scores(self, distance: int, points: int) -> dict[PlayType, float]:
+        """Bounded try utilities, not defense-adjusted success probabilities.
+
+        Extra yards have no value beyond the goal. Unknown cells keep neutral
+        utility and their full dice mass; turnovers/fumbles retain risk costs.
+        """
+        weights = chart_roll_weights()
+        total = sum(weights.values())
+        scores = {}
+        for play in CHART_PLAY_TYPES:
+            rows = getattr(self.chart, play.value)
+            if not any(roll in weights for roll in rows):
+                continue
+            utility = 0.0
+            for roll, raw in rows.items():
+                if roll not in weights:
+                    continue
+                text = str(raw).strip().upper()
+                category, yards = categorize_result(text.rstrip("*†+"))
+                value = 0.0
+                if category in (
+                    ResultCategory.GREEN_NUMBER, ResultCategory.WHITE_NUMBER, ResultCategory.RED_NUMBER,
+                ) and yards is not None:
+                    value = points if yards >= distance else 0.0
+                elif category == ResultCategory.TD:
+                    value = points
+                elif category == ResultCategory.INT:
+                    value = -points
+                elif category in (ResultCategory.FUMBLE, ResultCategory.FUMBLE_PLUS, ResultCategory.FUMBLE_MINUS):
+                    value = -points / 2
+                utility += weights[roll] / total * value
+            scores[play] = utility
+        return scores
+
     def weights(
         self, down: int, distance: int, history: list[dict], is_home: bool,
     ) -> dict[PlayType, float]:

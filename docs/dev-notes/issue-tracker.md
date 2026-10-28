@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-93 issues: 50 open, 36 resolved, 7 closed.
+94 issues: 50 open, 37 resolved, 7 closed.
 
 ## Open (50)
 
@@ -37,7 +37,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
-| [RULE-001](issues/RULE/RULE-001.md) | Medium | Two-point tries run through run_play | created 2026-10-19 | RULE-002, RULE-007, STAT-003 |
+| [RULE-001](issues/RULE/RULE-001.md) | Medium | Two-point tries run through run_play | created 2026-10-19 | RULE-002, RULE-007, STAT-003, AI-022 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -67,7 +67,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 
 
-## Resolved (awaiting play-test confirmation) (36)
+## Resolved (awaiting play-test confirmation) (37)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -94,6 +94,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-008](issues/AI/AI-008.md) | Medium | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18 | AI-012 |
 | [AI-011](issues/AI/AI-011.md) | Medium | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18 | — |
+| [AI-022](issues/AI/AI-022.md) | Medium | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-008](issues/AUD/AUD-008.md) | Medium | Full interception-TD output can name the original offense as scorer because the engine omits result scoring-team… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19 | — |

@@ -1466,7 +1466,7 @@ async def get_pat_choice(game_id: str):
     try:
         from paydirt.computer_ai import cpu_should_go_for_two as cpu_2pt_func
 
-        cpu_should_go_for_two = cpu_2pt_func(engine)
+        cpu_should_go_for_two = cpu_2pt_func(engine, try_pending=bool(game.get("pending_pat")))
     except Exception:
         logging.getLogger(__name__).debug("Operation failed", exc_info=True)
 

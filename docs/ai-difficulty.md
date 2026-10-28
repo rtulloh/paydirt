@@ -101,6 +101,26 @@ selections after save/resume. Easy and Medium do not use Hard's recent-call poli
 Analysis does not change gameplay dice odds or base timing, and a sensible call can still fail.
 For experiment history, see the [AI play-testing notes](dev-notes/ai-playtesting.md).
 
+## Two-Point Tries
+
+CLI two-point play selection uses a separate, untimed conversion situation from
+the engine: first-and-two at the opponent's two-yard line, worth two points.
+The previous touchdown's field position, down, and clock cannot trigger a kneel,
+spike, punt, or field-goal call. Easy samples the nine primary chart plays;
+Medium and Hard weight competitive plays by bounded try-specific chart utility.
+Reaching the goal is what matters: extra yards beyond it add no coaching value.
+Missing/unresolved results keep their full dice mass with neutral value; known
+turnover and fumble risks reduce the score. These remain coaching heuristics,
+not defense-adjusted conversion odds. No hypothetical gameplay dice are rolled.
+
+When the human goes for two in the CLI, the CPU chooses a goal-line formation
+with a short-yardage preference, rather than always using Standard. When the
+CPU goes for two, the human chooses A–F for the try. Ordinary clock-management
+selection is not used by either conversion selector. A regulation touchdown
+with a try still owed at 0:00 can prompt a two-point attempt when the season
+rules allow it; a game-ending overtime touchdown cannot. The API PAT-choice
+query also distinguishes an owed try from an already finished game.
+
 ## Shared Clock Policy
 
 All three modes use the same offensive and defensive timeout thresholds and accounting.

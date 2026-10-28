@@ -2676,6 +2676,20 @@ def handle_penalty_decision(
                 )
 
 
+def get_human_defense_for_conversion(game: PaydirtGameEngine) -> DefenseType:
+    """Collect a formation for the engine-provided untimed try situation."""
+    legal = game.get_two_point_situation()["legal_defenses"]
+    print("\n  Select defense for the two-point try:")
+    for key, (formation, name, description) in DEFENSE_PLAYS.items():
+        if formation in legal:
+            print(f"    [{key}] {name}: {description}")
+    while True:
+        choice = input("\n  Your try defense (A-F): ").strip().upper()
+        if choice in DEFENSE_PLAYS and DEFENSE_PLAYS[choice][0] in legal:
+            return DEFENSE_PLAYS[choice][0]
+        print("  Invalid defense. Choose A-F.")
+
+
 def _complete_touchdown_sequence(
     game: PaydirtGameEngine,
     outcome: PlayOutcome,
@@ -2701,18 +2715,18 @@ def _complete_touchdown_sequence(
             choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
             go_for_two = choice == "2"
         elif not human_scored:
-            go_for_two = two_point_allowed and cpu_should_go_for_two(game, cpu_ai)
+            go_for_two = two_point_allowed and cpu_should_go_for_two(game, cpu_ai, try_pending=True)
 
         if go_for_two:
             if human_scored:
                 play_type = get_human_offense_play_for_conversion(game)
+                defense_type = (cpu_ai or ComputerAI()).select_two_point_defense(game)
             else:
                 team = game.state.possession_team.peripheral.short_name
                 print(f"\n  {team} elects to go for 2-point conversion!")
-                play_type = cpu_ai.select_offense(game) if cpu_ai else PlayType.LINE_PLUNGE
-                if play_type in [PlayType.PUNT, PlayType.FIELD_GOAL]:
-                    play_type = PlayType.LINE_PLUNGE
-            _, _, description = game.attempt_two_point(play_type)
+                play_type = (cpu_ai or ComputerAI()).select_two_point_offense(game)
+                defense_type = get_human_defense_for_conversion(game)
+            _, _, description = game.attempt_two_point(play_type, defense_type)
         else:
             _, description = game.attempt_extra_point()
         print(f"\n  {description}")
@@ -2920,7 +2934,8 @@ def resume_game(
             if choice == "2" and two_point_allowed:
                 print("\n  Select play for 2-point conversion:")
                 play_type = get_human_offense_play_for_conversion(game)
-                _success, def_points, description = game.attempt_two_point(play_type)
+                defense_type = cpu_ai.select_two_point_defense(game)
+                _success, def_points, description = game.attempt_two_point(play_type, defense_type)
                 print(f"\n  {description}")
                 if def_points > 0:
                     print(f"  Defense scores {def_points} points on the return!")

@@ -10,6 +10,7 @@ links:
   - RULE-002
   - RULE-007
   - STAT-003
+  - AI-022
 tags:
   - reproduced
 ---

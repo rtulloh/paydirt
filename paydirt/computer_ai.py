@@ -88,6 +88,36 @@ class ComputerAI:
         play_type, _, _, _, _, _ = self.select_offense_with_clock_management(game)
         return play_type
 
+    def select_two_point_offense(self, game: PaydirtGameEngine) -> PlayType:
+        """Choose a scoring play for an untimed try, never a clock-management call."""
+        situation = game.get_two_point_situation()
+        legal = situation["legal_plays"]
+        weights = {play: 1.0 for play in legal}
+        if self.use_analysis or self.use_team_strength:
+            strategy = OffensiveStrategy(game.state.possession_team.offense)
+            scores = strategy.conversion_scores(situation["yards_to_go"], situation["points"])
+            if scores:
+                best = max(scores.values())
+                weights = {
+                    play: exp((score - best) / OffensiveStrategy.TEMPERATURE)
+                    for play, score in scores.items()
+                    if play in legal and best - score <= OffensiveStrategy.COMPETITIVE_GAP
+                }
+        if self._offense_rng is None:
+            self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
+        self.last_mode = "Two-Point Try"
+        return self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
+
+    def select_two_point_defense(self, game: PaydirtGameEngine) -> DefenseType:
+        """Choose a goal-line formation without inspecting the stale game clock."""
+        situation = game.get_two_point_situation()
+        formations = situation["legal_defenses"]
+        weights = [3 if defense == DefenseType.SHORT_YARDAGE else 1 for defense in formations]
+        if self._defense_rng is None:
+            self._defense_rng = random.Random(f"paydirt-defense:{random.getstate()!r}")
+        self.last_mode = "Two-Point Try"
+        return self._defense_rng.choices(formations, weights=weights, k=1)[0]
+
     def _get_ai_play_suggestion(self, down: int, distance: int):
         """
         Use chart analysis to get AI's play suggestion.
@@ -792,7 +822,7 @@ class ComputerAI:
         else:
             return "balanced"
 
-    def should_go_for_two(self, game: PaydirtGameEngine) -> bool:
+    def should_go_for_two(self, game: PaydirtGameEngine, *, try_pending: bool = False) -> bool:
         """
         Determine if CPU should go for 2-point conversion.
 
@@ -801,9 +831,18 @@ class ComputerAI:
         - Down by 2 (2-point makes it a tie)
         - Down by 8 or 9 (need 2 to have chance to tie with another TD)
         - Up by 1 (2-point makes it a 3-point lead)
+
+        Args:
+            game: Engine supplying the score, clock and season rules.
+            try_pending: Caller confirms a touchdown try is still owed. This
+                permits a regulation try at 0:00, never an overtime-winning try.
         """
         state = game.state
-        if not game.season_rules.two_point_conversion or state.game_over:
+        if not game.season_rules.two_point_conversion:
+            return False
+        if try_pending and not game.can_attempt_conversion_after_touchdown():
+            return False
+        if state.game_over and not try_pending:
             return False
 
         if state.is_home_possession:
@@ -1359,20 +1398,23 @@ def computer_should_call_timeout_on_offense(game: PaydirtGameEngine) -> bool:
     return ai.should_call_timeout_on_offense(game)
 
 
-def cpu_should_go_for_two(game: PaydirtGameEngine, ai: ComputerAI | None = None) -> bool:
+def cpu_should_go_for_two(
+    game: PaydirtGameEngine, ai: ComputerAI | None = None, *, try_pending: bool = False,
+) -> bool:
     """
     Determine if CPU should go for 2-point conversion.
 
     Args:
         game: The game engine
         ai: Optional ComputerAI instance (creates default if not provided)
+        try_pending: True only when a touchdown conversion is still owed.
 
     Returns:
         True if should go for 2, False to kick extra point
     """
     if ai is None:
         ai = ComputerAI(aggression=0.5)
-    return ai.should_go_for_two(game)
+    return ai.should_go_for_two(game, try_pending=try_pending)
 
 
 def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI | None = None) -> bool:
