@@ -121,7 +121,14 @@ penalty, and there is nothing to accept or decline. Two fouls by the same team k
 one; fouls by both teams nullify the whole play: a kick is re-kicked and a turnover or blocked
 kick is replayed from the previous spot, with ten seconds run off. A fumble cell on a return is
 resolved with the returning team's recovery roll; 17–19 (kept) or 37–39 (lost) give the
-recovering team a fumble return on its interception-return chart, which can chain further.
+recovering team a fumble return on its interception-return chart, which can chain further,
+provided the recovery is on the field. End-zone recoveries end that return: in the
+opponent's end zone, the returning team's recovery is a touchdown and the other
+team's recovery is a touchback; in the returning team's end zone, the other
+team's recovery is a touchdown. A returning team recovering in its own end zone
+gets a safety unless the original kick/interception end-zone rule allows a
+touchback. Fumbles beyond the opponent's end line use the white-dice depth roll,
+which remains visible in the trace.
 The one decision on a return: when the reroll after a returning-team foul is a fumble that the
 other team recovers, that team keeps the recovery or takes the penalty (which gives the ball
 back to the returning team, backed up). Kickoffs prompt for it; the CPU keeps the recovery.

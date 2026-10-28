@@ -9,6 +9,7 @@ closed-at:
 links:
   - FLOW-009
   - RULE-010
+  - RULE-018
 commits:
   - 9be5487
 ---

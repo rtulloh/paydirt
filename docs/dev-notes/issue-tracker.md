@@ -7,14 +7,15 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-90 issues: 50 open, 33 resolved, 7 closed.
+91 issues: 51 open, 33 resolved, 7 closed.
 
-## Open (50)
+## Open (51)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
+| [RULE-018](issues/RULE/RULE-018.md) | High | Return-chain fumbles in or beyond an end zone are clamped to the 1 with no touchdown, touchback or safety | created 2026-10-27 | RULE-014 |
 | [SPIKE-001](issues/SPIKE/SPIKE-001.md) | High | The S modifier adjusts time without charging the agreed additional down | created 2026-10-18 | SPIKE-003 |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18 | AI-003, AI-018 |
 | [AI-002](issues/AI/AI-002.md) | Medium | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
@@ -79,7 +80,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-003](issues/FLOW/FLOW-003.md) | High | Web execute_play called setup_for_pat() and set pending_pat from result.touchdown without checking… | created 2026-10-19, resolved 2026-10-19 | RULE-003 |
 | [FLOW-004](issues/FLOW/FLOW-004.md) | High | CheckPendingPat fallback references the deleted isHomeScoring | created 2026-10-19, resolved 2026-10-20 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
-| [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010 |
+| [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010, RULE-018 |
 | [RULE-015](issues/RULE/RULE-015.md) | High | Recovery roll 39 on an ordinary fumble was an automatic defensive touchdown (R:39→"lost" | Ret:35→97 in the… | created 2026-10-20, resolved 2026-10-20 | — |
 | [RULE-016](issues/RULE/RULE-016.md) | High | Penalty cells on the Int. Return chart were read as yardage | created 2026-10-20, resolved 2026-10-20 | — |
 | [RULE-017](issues/RULE/RULE-017.md) | High | Own-recovery fumble advance resets the down to second regardless of the down before | created 2026-10-27, resolved 2026-10-27 | — |

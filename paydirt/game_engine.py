@@ -813,13 +813,23 @@ class PaydirtGameEngine:
         kind = f"{'OFF' if roll.returner_foul else 'DEF'} {roll.penalty_yards}"
 
         if roll.fumble:
-            spot = max(1, min(99, start + yards))
+            spot = start + yards
             chain.fumbled = True
             recovery_roll, _ = roll_chart_dice()
             low, high = returner.peripheral.fumble_recovered_range
             recovered = low <= recovery_roll <= high
             chain.trace.append(f'R:{recovery_roll}→"{"recovered" if recovered else "lost"}"')
-            spot_text = format_field_position_with_team(spot, returner_name, other_name)
+            if spot >= 110:
+                # VI-12-D-ii: relocate a fumble beyond the end line into the end zone.
+                depth_yards, depth_desc = roll_white_dice()
+                spot = 100 + depth_yards
+                chain.trace.append(f"End-zone depth:{depth_desc}")
+            if spot <= 0:
+                spot_text = f"{returner_name} end zone"
+            elif spot >= 100:
+                spot_text = f"{other_name} end zone"
+            else:
+                spot_text = format_field_position_with_team(spot, returner_name, other_name)
             if roll.penalty_yards:
                 chain.live.append((
                     returning_home, roll.returner_foul, roll.penalty_yards, spot,
@@ -827,7 +837,16 @@ class PaydirtGameEngine:
                 ))
             if recovered:
                 chain.notes.append(f"FUMBLE on the return at {spot_text}! {returner_name} recovers")
-                if 17 <= recovery_roll <= 19 and depth < 3:
+                if spot <= 0:
+                    # Kick/interception momentum may make this a touchback rather
+                    # than a safety; only the original return has that end rule.
+                    chain.touchback = end_rule is not None and end_rule(yards)[1]
+                    chain.spot = 20 if chain.touchback else 0
+                    chain.notes.append("TOUCHBACK" if chain.touchback else "SAFETY")
+                elif spot >= 100:
+                    chain.spot = 100
+                    chain.notes.append("TOUCHDOWN")
+                elif 17 <= recovery_roll <= 19 and depth < 3:
                     self._merge_chain(chain, self._resolve_return_chain(
                         returning_home, spot, returner.special_teams.interception_return, "FR",
                         depth=depth + 1,
@@ -837,7 +856,16 @@ class PaydirtGameEngine:
             else:
                 chain.fumbles_lost.append(returning_home)
                 chain.notes.append(f"FUMBLE on the return at {spot_text}! {other_name} recovers")
-                if 37 <= recovery_roll <= 39 and depth < 3:
+                if spot <= 0:
+                    chain.possession_home = not returning_home
+                    chain.spot = 100
+                    chain.notes.append("TOUCHDOWN")
+                elif spot >= 100:
+                    chain.possession_home = not returning_home
+                    chain.spot = 20
+                    chain.touchback = True
+                    chain.notes.append("TOUCHBACK")
+                elif 37 <= recovery_roll <= 39 and depth < 3:
                     self._merge_chain(chain, self._resolve_return_chain(
                         not returning_home, 100 - spot, other.special_teams.interception_return, "FR",
                         depth=depth + 1,
@@ -870,6 +898,7 @@ class PaydirtGameEngine:
     def _merge_chain(chain: ReturnChain, sub: ReturnChain) -> None:
         chain.possession_home = sub.possession_home
         chain.spot = sub.spot
+        chain.touchback = sub.touchback
         chain.offsetting = chain.offsetting or sub.offsetting
         chain.td_wiped = chain.td_wiped or sub.td_wiped
         chain.fumbled = chain.fumbled or sub.fumbled
@@ -952,6 +981,8 @@ class PaydirtGameEngine:
         touchdown = spot >= 100
         if touchdown:
             self._score_touchdown()
+        elif spot <= 0:
+            self._score_safety()
         return touchdown
 
     def _blocked_kick_return(
@@ -1042,6 +1073,7 @@ class PaydirtGameEngine:
             turnover = self.state.is_home_possession == kicking_home
             is_touchback = is_touchback or chain.touchback
             return_trace = " | ".join(chain.trace)
+        safety = chain is not None and chain.spot <= 0 and not (accept_choice and chain.choice)
         if touchdown and ctx.get("declined_kick_penalty"):
             # A declined kick-chart penalty carries over to the next kickoff.
             yards, is_offense = ctx["declined_kick_penalty"]
@@ -1060,6 +1092,8 @@ class PaydirtGameEngine:
                 f"{kick_text}. FUMBLE on the return; {kicker} takes the OFF {chain.choice['yards']} "
                 f"penalty instead of the recovery. {receiver} ball at {spot_text}."
             )
+        elif safety:
+            description = f"{kick_text}. {receiver} recovers in its own end zone. SAFETY!"
         elif touchdown and turnover:
             description = f"{kick_text}. {kicker} returns the fumble for a TOUCHDOWN!"
         elif touchdown:
@@ -1101,6 +1135,7 @@ class PaydirtGameEngine:
             yards_gained=self.state.ball_position,
             turnover=turnover,
             touchdown=touchdown,
+            safety=bool(safety),
             field_position_before=f"Kickoff from {kickoff_spot}",
             field_position_after=self.state.field_position_str(),
             description=description,
@@ -1394,6 +1429,7 @@ class PaydirtGameEngine:
 
         self._record_turnover(interception=True)
         touchdown = self._apply_return_chain(chain, accept_choice=False)
+        safety = chain.spot <= 0
         turnover = self.state.is_home_possession != offense_home
         plain_return = turnover and not chain.penalties and not chain.fumbled
         return_yards = chain.yards if plain_return else (chain.spot - int_spot_from_defense) if turnover else 0
@@ -1414,7 +1450,7 @@ class PaydirtGameEngine:
             self.state.ball_position = 97
             if txn:
                 txn.add_event(create_touchdown_event(acting_team=result.scoring_team))
-        elif chain.touchback and not chain.fumbled:
+        elif chain.touchback:
             result.description = (
                 "INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
             )
@@ -1588,16 +1624,12 @@ class PaydirtGameEngine:
                         )
                         result.rule_explanation = result.description
                         return (False, False, False, False)
-                    if chain.spot <= 0 and chain.possession_home == offense_home:
-                        new_position = 0
-                        safety = True
-                        self._score_safety()
-                    else:
-                        touchdown = self._apply_return_chain(chain, accept_choice=False)
-                        new_position = chain.spot
-                        if touchdown:
-                            result.scoring_team = self.state.possession_team.peripheral.short_name
-                            self.state.ball_position = 97
+                    touchdown = self._apply_return_chain(chain, accept_choice=False)
+                    safety = chain.spot <= 0
+                    new_position = chain.spot
+                    if touchdown:
+                        result.scoring_team = self.state.possession_team.peripheral.short_name
+                        self.state.ball_position = 97
                     turnover = self.state.is_home_possession != offense_home
                     if turnover:
                         result.fumble_recovered = False  # Lost on the advance after all.
@@ -1717,6 +1749,7 @@ class PaydirtGameEngine:
                         return (False, False, False, False)
                     self._record_turnover(interception=False)
                     touchdown = self._apply_return_chain(chain, accept_choice=False)
+                    safety = chain.spot <= 0
                     turnover = self.state.is_home_possession != offense_home
                     if touchdown:
                         result.scoring_team = self.state.possession_team.peripheral.short_name
@@ -3503,6 +3536,7 @@ class PaydirtGameEngine:
                                 block_spot, (return_dice, int_return_result), "BLOCKED PUNT",
                                 recovery_roll, "Kicking team",
                             )
+                            safety = not chain.offsetting and chain.spot <= 0
                             if chain.offsetting:
                                 nullified = True
                                 description = self._nullify_kick_play(
@@ -3518,7 +3552,7 @@ class PaydirtGameEngine:
 
                     # On 4th down, check if kicking team reached first down marker
                     # If not, it's turnover on downs (unless TD scored)
-                    if nullified or turnover:
+                    if nullified or turnover or safety:
                         pass
                     elif down_before == 4 and not touchdown and final_spot < first_down_marker:
                         turnover = True
@@ -3557,6 +3591,7 @@ class PaydirtGameEngine:
                                 block_spot_defense, (return_dice, int_return_result), "BLOCKED PUNT",
                                 recovery_roll, "Defense",
                             )
+                            safety = not chain.offsetting and chain.spot <= 0
                             if chain.offsetting:
                                 nullified = True
                                 turnover = False
@@ -5057,6 +5092,7 @@ class PaydirtGameEngine:
         success = False
         blocked = False
         touchdown = False
+        safety = False
         is_penalty = False
         is_fumble = False
         description = ""
@@ -5131,6 +5167,7 @@ class PaydirtGameEngine:
                             block_spot, (return_dice, int_return_result), "BLOCKED FG",
                             recovery_roll, "Kicking team",
                         )
+                        safety = not chain.offsetting and chain.spot <= 0
                         if chain.offsetting:
                             nullified = True
                             description = self._nullify_kick_play(
@@ -5143,7 +5180,7 @@ class PaydirtGameEngine:
                     description = f"BLOCKED FG! Kicking team recovers (roll {recovery_roll}) at {self.state.field_position_str()}"
 
                 # Check if kicking team reached line to gain or scored
-                if nullified or self.state.is_home_possession != fg_kicking_home:
+                if nullified or safety or self.state.is_home_possession != fg_kicking_home:
                     pass  # Nullified, or lost again on the return: nothing more to settle.
                 elif not touchdown and final_position < line_to_gain:
                     # Only turnover on downs if it was 4th down
@@ -5193,6 +5230,7 @@ class PaydirtGameEngine:
                             block_spot_defense, (return_dice, int_return_result), "BLOCKED FG",
                             recovery_roll, "Defense",
                         )
+                        safety = not chain.offsetting and chain.spot <= 0
                         if chain.offsetting:
                             nullified = True
                             description = self._nullify_kick_play(
@@ -5260,6 +5298,7 @@ class PaydirtGameEngine:
                         fumble_spot_defense, (return_dice, int_return_result), "FUMBLED SNAP",
                         recovery_roll, "Defense",
                     )
+                    safety = not chain.offsetting and chain.spot <= 0
                     if chain.offsetting:
                         nullified = True
                         description = self._nullify_kick_play(
@@ -5343,6 +5382,7 @@ class PaydirtGameEngine:
             result=parsed,
             yards_gained=0,
             touchdown=touchdown,
+            safety=safety,
             field_goal_made=success and not blocked,
             field_position_before=field_pos_before,
             field_position_after=self.state.field_position_str(),
