@@ -231,6 +231,8 @@ class PlayOutcome:
     projected_touchdown: bool = False
     # Engine-owned request context, retained only while a scrimmage foul is pending.
     spike_context: dict | None = field(default=None, repr=False, compare=False)
+    defensive_timeout_context: dict | None = field(default=None, repr=False, compare=False)
+    defensive_timeout_used: bool = False
     # Optional coaching observations, not a scored/applied play result.
     retained_play_situation: PenaltySituation | None = None
     penalty_situations: dict[int, PenaltySituation] = field(default_factory=dict)

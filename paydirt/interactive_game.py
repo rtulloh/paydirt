@@ -3152,7 +3152,7 @@ def resume_game(
 
         # Get play calls
         if is_human_offense:
-            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout, _call_spike = (
+            play_type, no_huddle_mode, out_of_bounds, in_bounds, call_timeout, call_spike = (
                 get_human_offense_play(game, no_huddle_mode, easy_mode_helper)
             )
 
@@ -3183,7 +3183,7 @@ def resume_game(
                     cpu_no_huddle,
                     cpu_punt_short_drop,
                     cpu_punt_coffin_yards,
-                    _cpu_call_spike,
+                    call_spike,
                 ) = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
@@ -3247,7 +3247,7 @@ def resume_game(
                     cpu_no_huddle,
                     cpu_punt_short_drop,
                     cpu_punt_coffin_yards,
-                    _cpu_call_spike,
+                    call_spike,
                 ) = cpu_ai.select_offense_with_clock_management(game)
                 if cpu_oob:
                     out_of_bounds = True
@@ -3287,20 +3287,22 @@ def resume_game(
             punt_coffin_corner_yards=punt_coffin_corner_yards,
             no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
             call_timeout=(call_timeout if is_human_offense else cpu_call_timeout),
+            call_spike=call_spike,
+            call_defensive_timeout=cpu_defensive_timeout or (call_timeout and not is_human_offense),
         )
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
         defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
-        defense_timeout_used = defensive_timeout_requested and game.apply_defensive_timeout(
+        defense_timeout_used = outcome.defensive_timeout_used or (defensive_timeout_requested and game.apply_defensive_timeout(
             outcome,
             time_before_play=time_before_play,
             quarter_before_play=quarter_before_play,
             offense_was_home=offense_was_home,
             two_minute_warning_before=two_min_warning_before,
             timeouts_before_play=timeouts_before_play,
-        )
+        ))
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
         if outcome.timeout_used:
             mins = int(game.state.time_remaining)
@@ -4114,20 +4116,21 @@ def run_interactive_game(
             no_huddle=no_huddle_mode if is_human_offense else cpu_no_huddle,
             call_spike=call_spike,
             call_timeout=(call_timeout if is_human_offense else False) or cpu_call_timeout,
+            call_defensive_timeout=cpu_defensive_timeout or (call_timeout and not is_human_offense),
         )
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
         defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
-        defense_timeout_used = defensive_timeout_requested and game.apply_defensive_timeout(
+        defense_timeout_used = outcome.defensive_timeout_used or (defensive_timeout_requested and game.apply_defensive_timeout(
             outcome,
             time_before_play=time_before_play,
             quarter_before_play=quarter_before_play,
             offense_was_home=offense_was_home,
             two_minute_warning_before=two_min_warning_before,
             timeouts_before_play=timeouts_before_play,
-        )
+        ))
         display_play_result(game, outcome, play_type, def_type, human_chart, offense_was_home)
 
         # Display modifier results

@@ -82,3 +82,10 @@ unchanged. The scoped local commit includes only this fix, tests, guidance
 and tracker/audit evidence; unrelated permission and ticket work stays unstaged.
 Full regression and issue-specific play-test confirmation are complete.
 No push, tag or release performed.
+
+--- 2026-10-28 11:48 ---
+SPIKE-002 full-game revalidation observed 18 S requests: seven applied,
+nine ineligible, and two correctly cancelled by useful defensive timeouts
+before charging a down. Both cancelled cases preserved the post-play down.
+The existing additional-down regressions still pass. SPIKE-002 is now
+confirmed separately; this does not claim new SPIKE-003 expiration evidence.

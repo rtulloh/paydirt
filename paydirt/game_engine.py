@@ -2184,6 +2184,7 @@ class PaydirtGameEngine:
         no_huddle: bool = False,
         call_spike: bool = False,
         call_timeout: bool = False,
+        call_defensive_timeout: bool = False,
     ) -> PlayOutcome:
         """
         Execute an offensive play with full penalty procedure per Paydirt rules.
@@ -2196,6 +2197,8 @@ class PaydirtGameEngine:
         POST-PLAY MODIFIERS:
         - call_spike: If True, apply spike modifier after play (caps play + spike at 20 sec)
         - call_timeout: If True, apply timeout after play (reduces play time to 10 sec)
+        - call_defensive_timeout: Resolve a useful defensive timeout before any spike,
+          after the penalty decision. Requests cannot charge a timeout twice.
 
         Returns:
             PlayOutcome with penalty_choice populated if a penalty occurred.
@@ -2205,6 +2208,17 @@ class PaydirtGameEngine:
             raise ValueError("Game is over")
         self._record_play_start()
 
+        time_before_play = self.state.time_remaining
+        quarter_before_play = self.state.quarter
+        offense_was_home = self.state.is_home_possession
+        two_minute_warning_before = self.state.two_minute_warning_called
+        timeouts_before_play = (self.state.home_timeouts, self.state.away_timeouts)
+        defensive_timeout_context = {
+            "time_before_play": time_before_play, "quarter_before_play": quarter_before_play,
+            "offense_was_home": offense_was_home,
+            "two_minute_warning_before": two_minute_warning_before,
+            "timeouts_before_play": timeouts_before_play,
+        } if call_defensive_timeout else None
         # Special teams don't use penalty procedure
         if play_type in [
             PlayType.PUNT,
@@ -2214,7 +2228,7 @@ class PaydirtGameEngine:
             PlayType.SPIKE_BALL,
             PlayType.QB_KNEEL,
         ]:
-            return self.run_play(
+            outcome = self.run_play(
                 play_type,
                 defense_type,
                 out_of_bounds_designation,
@@ -2223,17 +2237,16 @@ class PaydirtGameEngine:
                 punt_coffin_corner_yards=punt_coffin_corner_yards,
                 no_huddle=no_huddle,
             )
-
+            if defensive_timeout_context is not None:
+                if outcome.pending_penalty_decision:
+                    outcome.defensive_timeout_context = defensive_timeout_context
+                else:
+                    self._apply_defensive_timeout_before_spike(outcome, defensive_timeout_context, False)
+            return outcome
         # The engine, not its callers, owns the lifetime of an untimed down.
         if self.state.time_remaining <= 0 and self.has_untimed_down():
             self.clear_untimed_down()
 
-        # Capture time before play for spike/timeout calculations
-        time_before_play = self.state.time_remaining
-        quarter_before_play = self.state.quarter
-        offense_was_home = self.state.is_home_possession
-        two_minute_warning_before = self.state.two_minute_warning_called
-        timeouts_before_play = (self.state.home_timeouts, self.state.away_timeouts)
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
         ball_pos_before = self.state.ball_position
@@ -2242,6 +2255,8 @@ class PaydirtGameEngine:
             "time_before": time_before_play, "quarter_before": quarter_before_play,
             "offense_home": offense_was_home, "down_before": down_before,
             "forced_oob": out_of_bounds_designation and not in_bounds_designation,
+            "two_minute_warning_before": two_minute_warning_before,
+            "timeouts_before_play": timeouts_before_play,
         } if call_spike and not call_timeout else None
 
         # Use the new penalty procedure
@@ -2280,6 +2295,7 @@ class PaydirtGameEngine:
                 pending_penalty_decision=True,
                 no_huddle=no_huddle,
                 spike_context=spike_context,
+                defensive_timeout_context=defensive_timeout_context,
             )
             self._set_first_down_penalty_situations(outcome)
             return outcome
@@ -2323,7 +2339,10 @@ class PaydirtGameEngine:
                 no_huddle=no_huddle,
             )
 
-            # Apply post-play modifiers (timeout or spike)
+            if defensive_timeout_context is not None:
+                self._apply_defensive_timeout_before_spike(outcome, defensive_timeout_context, call_spike)
+
+            # Apply remaining offensive modifiers only after defensive priority.
             # Note: Only one modifier should be applied - timeout takes precedence
             if call_timeout and not outcome.touchdown and not outcome.turnover:
                 self._apply_requested_timeout(
@@ -2476,6 +2495,8 @@ class PaydirtGameEngine:
 
             spike_context = outcome.spike_context
             outcome.spike_context = None
+            defensive_context = outcome.defensive_timeout_context
+            outcome.defensive_timeout_context = None
             final_outcome = self._apply_play_result(
                 outcome.play_type,
                 outcome.defense_type,
@@ -2488,12 +2509,17 @@ class PaydirtGameEngine:
                 in_bounds_designation=False,
                 no_huddle=outcome.no_huddle,
             )
+            if defensive_context is not None:
+                self._apply_defensive_timeout_before_spike(
+                    final_outcome, defensive_context, spike_context is not None,
+                )
             if spike_context is not None:
                 self._apply_requested_spike(final_outcome, spike_context)
             return final_outcome
         else:
             # Accept the penalty - down is replayed; no subsequent spike is owed.
             outcome.spike_context = None
+            outcome.defensive_timeout_context = None
             if penalty_index >= len(penalty_choice.penalty_options):
                 penalty_index = 0
 
@@ -2924,6 +2950,13 @@ class PaydirtGameEngine:
 
         return outcome
 
+    def _apply_defensive_timeout_before_spike(
+        self, outcome: PlayOutcome, context: dict, spike_requested: bool,
+    ) -> None:
+        """Arbitrate a finalized play before a spike can consume a down."""
+        if self.apply_defensive_timeout(outcome, **context) and spike_requested:
+            outcome.description += " Spike cancelled; no spike down charged."
+
     def apply_defensive_timeout(
         self,
         outcome: PlayOutcome,
@@ -2947,13 +2980,17 @@ class PaydirtGameEngine:
         Returns:
             True if a timeout was charged and the play's clock adjusted.
         """
-        return self._apply_requested_timeout(
+        used = self._apply_requested_timeout(
             outcome, timeout_is_home=not offense_was_home,
             time_before_play=time_before_play, quarter_before_play=quarter_before_play,
             offense_was_home=offense_was_home,
             two_minute_warning_before=two_minute_warning_before,
             timeouts_before_play=timeouts_before_play,
         )
+        if used:
+            outcome.defensive_timeout_used = True
+            outcome.description += " | Defensive timeout: clock stopped."
+        return used
 
     def _apply_requested_timeout(
         self,
@@ -3096,7 +3133,7 @@ class PaydirtGameEngine:
 
     def _apply_requested_spike(self, outcome: PlayOutcome, context: dict) -> None:
         """Charge an eligible post-play spike once, after the foul decision."""
-        if (outcome.spike_used or outcome.pending_penalty_decision or outcome.penalty_applied
+        if (outcome.spike_used or outcome.timeout_used or outcome.pending_penalty_decision or outcome.penalty_applied
                 or outcome.touchdown or outcome.safety or outcome.turnover or outcome.turnover_on_downs
                 or self.state.is_home_possession != context["offense_home"]):
             return
@@ -3105,11 +3142,21 @@ class PaydirtGameEngine:
                        and result.result_type not in (ResultType.FUMBLE, ResultType.SACK))
         if natural_oob or context["forced_oob"] or getattr(result, "replay_down", False):
             return
+        if not context["two_minute_warning_before"] and self.state.two_minute_warning_called:
+            return
+        crossed_halftime = context["quarter_before"] == 2 and self.state.quarter == 3
         play_seconds = (context["time_before"] - self.state.time_remaining) * 60
+        if self.state.quarter != context["quarter_before"]:
+            if context["time_before"] <= .333:
+                return  # The 20-second cap cannot preserve the ended period.
+            play_seconds = context["time_before"] * 60
         should_apply, _ = self._should_apply_spike_after_play(outcome, play_seconds)
         if not should_apply:
             return
         self._apply_spike(context["time_before"], context["quarter_before"])
+        if crossed_halftime and self.state.quarter == 2:
+            self.state.home_timeouts, self.state.away_timeouts = context["timeouts_before_play"]
+            self.state.two_minute_warning_called = context["two_minute_warning_before"]
         # Agreed first-down-call exception: completion + spike leaves third
         # even if the completion established a new series. Other plays charge
         # the additional down against the series established by the play.
@@ -3152,7 +3199,8 @@ class PaydirtGameEngine:
 
         # Calculate how much time the play actually used
         clock_before_spike = self.state.time_remaining
-        play_used_seconds = time_before_play - clock_before_spike
+        play_used_seconds = (time_before_play if self.state.quarter != quarter_before_play
+                             else time_before_play - clock_before_spike)
 
         # If the play used more than 17 seconds, cap it
         play_max_seconds = 0.283  # 17 seconds

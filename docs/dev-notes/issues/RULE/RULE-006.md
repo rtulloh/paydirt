@@ -32,3 +32,9 @@ then apply an eligible spike, including its down cost. Enforcing the penalty
 or offsetting fouls does not spike. Offensive T (and the T/S precedence path)
 still needs its full timeout snapshot and remains open here. This partial S
 fix does not close RULE-006 or change defensive AT priority (SPIKE-002).
+
+--- 2026-10-28 11:45 ---
+SPIKE-002 now also preserves a defensive AT request and its pre-snap budgets
+across a scrimmage foul. A retained eligible play resolves defensive AT
+before S; enforcing a penalty or offsetting fouls charges neither. Offensive
+T/T+S snapshot handling remains outside the fix and this ticket stays open.

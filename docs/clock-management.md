@@ -66,9 +66,9 @@ A pending foul preserves the S request without applying its down/clock effect
 early. If the play is retained, eligibility is checked against that finalized
 play; if the penalty is enforced or fouls offset, there is no subsequent spike.
 
-**Remaining implementation mismatch:** offensive spike versus defensive timeout
-priority is still tracked separately (SPIKE-002). The agreed timeout-priority
-procedure below is not a claim that this remaining fix has shipped.
+The same engine ordering is used for new and resumed CLI games, whether the
+defensive request comes from a human `AT` call or CPU coaching. The request
+and pre-snap timeout budgets survive a pending foul without early charges.
 
 For an applied spike modifier, the existing timing procedure caps the first play at 17 seconds and
 adds three seconds for the spike, for at most 20 seconds total. This timing cap does not make the spike free.
@@ -82,17 +82,23 @@ The agreed resolution order is **penalty decision, applicable timeout, then the 
 An applicable defensive `AT` stops the clock before the spike: charge the defense's timeout and
 cancel the spike, without charging a spike-related down. A request with no timeout available cannot cancel it.
 On an incompletion, neither a spike nor a clock-saving timeout is needed.
-The game log should identify the winning procedure, for example: **Defensive timeout; planned spike canceled.**
+The engine log identifies the winning procedure: **Defensive timeout: clock
+stopped. Spike cancelled; no spike down charged.** A newly reached two-minute
+warning needs neither procedure. If a clock-saving procedure restores time
+before halftime, it also restores that half's timeout budgets; fresh
+second-half timeouts cannot pay for a first-half request. An unavailable
+timeout leaves an otherwise eligible spike intact. If even the spike's
+20-second cap cannot preserve an already ended period, no late spike is charged.
 
-The current engine already gives an offensive timeout request precedence over a spike when both are requested
-on the offensive call, such as `7ST`. Extending that priority to defensive requests is a pending fix;
-do not infer that `7S` against `AT` is currently resolved correctly.
+The engine also gives an offensive timeout request precedence over a spike
+when both are requested on the offensive call, such as `7ST`. Preserving
+offensive `T`/`T+S` across a penalty choice remains separate work (RULE-006).
 
 ### Worked Spike Examples
 
 All examples start on **first down**, with possession retained, no score ending the sequence,
 and enough time for the stated actions. Rows without penalties assume none occurs.
-Downs in this table describe the **agreed behavior**, subject to the implementation mismatch above.
+Downs in this table describe the implemented spike/defensive-timeout procedure.
 
 | Calls and outcome | Spike / timeout treatment | Next play |
 |-------------------|---------------------------|-----------|
@@ -106,9 +112,9 @@ Downs in this table describe the **agreed behavior**, subject to the implementat
 
 For the first row, starting at 0:30 and using the full 20-second sequence leaves 0:10.
 Starting with exactly 0:20 can leave **zero**, so a field-goal attempt is not guaranteed.
-An out-of-bounds designation is not, by itself, the agreed reason to waive a called spike's down cost;
-incompletions and penalty resolution must be distinguished from a completed pass. The defensive-timeout
-cancellation above is the separately agreed exception.
+An already stopped out-of-bounds play needs no additional spike. Check the
+engine's finalized result: an incompletion, enforced penalty, or useful
+defensive timeout must not be mistaken for a completed play followed by a spike.
 
 ## Final Seconds Strategy
 

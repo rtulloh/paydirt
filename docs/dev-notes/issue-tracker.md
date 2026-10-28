@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-94 issues: 48 open, 37 resolved, 9 closed.
+94 issues: 47 open, 37 resolved, 10 closed.
 
-## Open (48)
+## Open (47)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -43,7 +43,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-007](issues/RULE/RULE-007.md) | Medium | Uncommitted _log_score try attribution relies on scoring_plays[-1] being the TD | created 2026-10-19 | RULE-001 |
 | [RULE-011](issues/RULE/RULE-011.md) | Medium | Kickoff spot is a constant 35 (kickoff(kickoff_spot=35), web KickoffRequest.kickoff_spot=35) and the touchback… | created 2026-10-19 | — |
 | [RULE-012](issues/RULE/RULE-012.md) | Medium | The final-try rule is era-dependent and the engine currently applies the pre-2018 rule to every season | created 2026-10-19 | RULE-002 |
-| [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18 | AI-005, RULE-006 |
 | [STAT-001](issues/STAT/STAT-001.md) | Medium | Enforced 15-yard punt double-foul penalty moves the ball but is absent from penalty count/yardage stats | created 2026-10-19 | STAT-003 |
 | [STAT-003](issues/STAT/STAT-003.md) | Medium | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
 | [TRACE-001](issues/TRACE/TRACE-001.md) | Medium | Secondary QB-time rolls/results are not visible consistently, especially QB-time fumbles and transaction-based… | created 2026-10-18 | TRACE-007 |
@@ -110,7 +109,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
 
 
-## Closed (9)
+## Closed (10)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -124,4 +123,5 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-003, AI-018 |
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
+| [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18, resolved 2026-10-20, closed 2026-10-20 | TRACE-007 |

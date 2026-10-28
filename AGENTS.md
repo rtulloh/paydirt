@@ -407,15 +407,16 @@ def run_play_with_penalty_procedure(
     in_bounds_designation: bool = False,      # - modifier
     no_huddle: bool = False,
     call_spike: bool = False,                 # S modifier
-    call_timeout: bool = False                # T modifier
+    call_timeout: bool = False,               # T modifier
+    call_defensive_timeout: bool = False      # pre-snap defensive AT request
 ) -> PlayOutcome:
 ```
 
 The engine internally:
 1. Executes the play
-2. Checks if modifier should apply (based on outcome)
-3. Adjusts clock accordingly
-4. Sets `outcome.spike_used` or `outcome.timeout_used` flags
+2. Resolves any pending penalty choice before applying clock-saving procedures
+3. Applies a useful defensive timeout before any planned spike; otherwise checks the offensive modifier
+4. Sets `outcome.spike_used`, `outcome.timeout_used`, and `outcome.defensive_timeout_used` flags
 
 **Example (web backend):**
 ```python
@@ -437,7 +438,9 @@ The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop 
 - If play would have taken >17 seconds, it's reduced to 17, then 3 seconds for spike
 - Only applies when clock is running (skipped after incomplete, OOB, or turnover)
 - Charges an additional down. A first-down call plus applied spike leaves third down, even after a first-down gain.
-- A pending foul preserves the S request; only a retained, eligible play applies the spike, not an accepted penalty.
+- A pending foul preserves the S and defensive AT requests; only a retained, eligible play applies them.
+- A useful available defensive timeout wins before a planned spike, saving its down; unavailable timeouts cannot cancel a spike.
+- A newly reached two-minute warning requires neither procedure. Restoring first-half time also restores first-half timeout budgets.
 
 **Code locations:**
 - Modifier parsing: `interactive_game.py:_get_human_offense_play_compact()` lines ~475-485
