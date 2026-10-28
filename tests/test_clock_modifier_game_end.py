@@ -76,7 +76,14 @@ def test_sample_game_clock_modifier_flow(
     engine = run_seeded_cli_game(monkeypatch, away, home, seed)
     output = capsys.readouterr().out
     assert "FINAL" in output
-    assert engine.state.time_remaining == 0
+    if engine.state.is_overtime:
+        # AI-007 changes the seeded play/RNG sequence; a sudden-death TD can end early.
+        assert engine.state.home_score != engine.state.away_score
+        assert engine.state.scoring_plays[-1].quarter == engine.state.quarter
+        assert engine.state.scoring_plays[-1].play_type == "TD"
+        assert engine.play_log[-1].touchdown
+    else:
+        assert engine.state.time_remaining == 0
     assert not engine.has_untimed_down()
     assert engine.state.game_over
     assert sum(p["home"] for p in engine.get_period_scores()) == engine.state.home_score

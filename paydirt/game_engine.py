@@ -2157,6 +2157,9 @@ class PaydirtGameEngine:
         # No huddle reduces play time from ~35 sec to ~20 sec
         if getattr(result, "replay_down", False):
             play_seconds = 10.0  # A play nullified by offsetting fouls takes ten seconds.
+        elif result.result_type == ResultType.INCOMPLETE:
+            play_seconds = 5.0
+            is_out_of_bounds = False  # Incompletion timing wins over OOB timing.
         elif forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
@@ -2840,6 +2843,9 @@ class PaydirtGameEngine:
         # No huddle reduces play time from ~35 sec to ~20 sec
         if getattr(result, "replay_down", False):
             play_seconds = 10.0  # A play nullified by offsetting fouls takes ten seconds.
+        elif result.result_type == ResultType.INCOMPLETE:
+            play_seconds = 5.0
+            is_out_of_bounds = False  # Incompletion timing wins over OOB timing.
         elif forced_10_sec:
             play_seconds = 10.0
         elif no_huddle:
@@ -3331,7 +3337,7 @@ class PaydirtGameEngine:
 
         self.play_log.append(outcome)
         self._use_time(
-            random.uniform(5, 15),
+            5.0 if result.result_type == ResultType.INCOMPLETE else random.uniform(5, 15),
             defensive_penalty=result.result_type == ResultType.PASS_INTERFERENCE,
         )
 
@@ -5942,7 +5948,7 @@ class PaydirtGameEngine:
 
         # Clamp sub-second residuals to 0 to prevent phantom plays at "0:00"
         # (e.g., 0.003 minutes displays as 0:00 but doesn't trigger quarter end)
-        if 0 < self.state.time_remaining < 0.0167:  # Less than 1 second
+        if 0 < self.state.time_remaining < 1 / 60 - 1e-9:  # Preserve a genuine full second.
             self.state.time_remaining = 0
 
         if self.state.time_remaining <= 0:

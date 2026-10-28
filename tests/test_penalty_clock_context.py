@@ -94,8 +94,13 @@ def test_penalty_resolution_preserves_requested_clock_pace(
         game, monkeypatch, penalty_type,
         no_huddle=no_huddle, accept_play=resolution == "declined",
     )
-    assert game.state.time_remaining * 60 == pytest.approx(90 - (20 if no_huddle else 35))
-    timing.assert_called_once()
+    retained_incomplete = resolution in ("clean", "declined")
+    elapsed = 5 if retained_incomplete else 20 if no_huddle else 35
+    assert game.state.time_remaining * 60 == pytest.approx(90 - elapsed)
+    if retained_incomplete:
+        timing.assert_not_called()
+    else:
+        timing.assert_called_once()
     assert game.state.quarter == quarter
     assert not game.state.game_over
     assert not game.has_untimed_down()
@@ -139,7 +144,8 @@ def test_accepted_defensive_foul_extends_only_when_time_actually_expires(
 def test_offensive_or_declined_foul_does_not_extend_expired_period(
     monkeypatch: pytest.MonkeyPatch, quarter: int, resolution: str,
 ) -> None:
-    game = prepare_game(True, quarter, 39)
+    # Retained incompletions now take five seconds; still exercise actual expiry.
+    game = prepare_game(True, quarter, 5 if resolution.startswith("declined-") else 39)
     monkeypatch.setattr("paydirt.game_engine.random.uniform", lambda low, high: 45)
     penalty_type = resolution.removeprefix("declined-")
     apply_choice(

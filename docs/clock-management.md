@@ -8,6 +8,21 @@ The engine applies play timing, warnings, timeouts, and period boundaries. Clock
 procedures; they do not guarantee another snap if time has expired. Base timing is not changed by difficulty.
 The examples below use CLI input; the browser exposes corresponding play controls.
 
+### Incomplete Passes
+
+An incomplete pass uses **five seconds** throughout regulation and overtime,
+with no running-clock dead time. This adopts the incomplete-pass entry from
+the 2008 rules' optional Alternate Timing Method (printed pages 22–23) for
+the whole game; it does not enable that alternate method for other results.
+No-huddle and in/out-of-bounds designations do not change these five seconds.
+
+For example, `7T` followed by an incompletion uses five seconds and **no
+timeout**. `7S` also needs no spike and charges no extra down. Defensive
+timeout requests are likewise unnecessary. At 0:28, the incompletion leaves
+0:23; with five seconds or less remaining it can still end the period.
+A nullified play with offsetting fouls retains its separate ten-second timing,
+and accepted penalties retain their existing enforcement timing.
+
 ## Saving Time
 
 | Control | CLI example | Effect and tradeoff |

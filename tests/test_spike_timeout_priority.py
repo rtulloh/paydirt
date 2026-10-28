@@ -128,7 +128,7 @@ def test_cli_defensive_timeout_cancels_only_an_eligible_spike(
     assert game.state.is_home_possession is human_home
     expected_time = 1 - (.167 if available or not eligible else .333)
     if case == "incomplete":
-        expected_time = 1 - 35 / 60  # Preserve base timing; neither procedure applies.
+        expected_time = 1 - 5 / 60  # AI-007: incompletion needs neither procedure.
     assert game.state.time_remaining == pytest.approx(expected_time, abs=.001)
     if eligible and available:
         assert "defensive timeout" in outcome.description.lower()
