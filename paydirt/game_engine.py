@@ -10,7 +10,7 @@ from typing import Optional
 
 from .chart_loader import TeamChart, load_team_chart
 from .commentary import get_roster
-from .game_state import GameState, PenaltySituation, PlayOutcome, ScoringPlay, TeamStats
+from .game_state import ClockTrace, GameState, PenaltySituation, PlayOutcome, ScoringPlay, TeamStats
 from .overtime_rules import OvertimeFormat, OvertimeRules
 from .packaging import get_seasons_path
 from .penalty_handler import resolve_pass_interference, resolve_penalty
@@ -181,6 +181,7 @@ class PaydirtGameEngine:
             )
 
         self.play_log: list[PlayOutcome] = []
+        self.last_clock_trace: ClockTrace | None = None
         # Period in which the most recent scoring-capable action began. Scores that
         # expire a half must not be followed by the scoring team's kickoff, and
         # only the engine can know this once _use_time has advanced the period.
@@ -1083,6 +1084,7 @@ class PaydirtGameEngine:
         )
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 15))
+        outcome.clock_trace = self.last_clock_trace
         return outcome
 
     def _pending_kickoff_return_fumble(self, ctx: dict, chain: ReturnChain) -> PlayOutcome:
@@ -2170,6 +2172,7 @@ class PaydirtGameEngine:
         self._use_time(
             play_seconds, out_of_bounds=is_out_of_bounds, defensive_penalty=defensive_penalty
         )
+        outcome.clock_trace = self.last_clock_trace
         if defensive_penalty:
             result.description = self.check_untimed_down_for_defensive_penalty(result.description)
             outcome.description = result.description
@@ -2854,6 +2857,7 @@ class PaydirtGameEngine:
             play_seconds = random.uniform(25, 45)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds)
+        outcome.clock_trace = self.last_clock_trace
 
         return outcome
 
@@ -2953,6 +2957,7 @@ class PaydirtGameEngine:
 
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 25))
+        outcome.clock_trace = self.last_clock_trace
 
         return outcome
 
@@ -3340,7 +3345,7 @@ class PaydirtGameEngine:
             5.0 if result.result_type == ResultType.INCOMPLETE else random.uniform(5, 15),
             defensive_penalty=result.result_type == ResultType.PASS_INTERFERENCE,
         )
-
+        outcome.clock_trace = self.last_clock_trace
         # Only an accepted defensive foul can extend the period, not a clean
         # Hail Mary completion or incompletion that happens to exhaust the clock.
         if result.result_type == ResultType.PASS_INTERFERENCE:
@@ -5478,7 +5483,8 @@ class PaydirtGameEngine:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
         self._recompute_game_over_after_try()
-        return success, description
+        trace = self._record_untimed_clock("untimed PAT")
+        return success, f"{description}\n  {trace.description}"
 
     def _recompute_game_over_after_try(self) -> None:
         """A last-second touchdown leaves regulation provisionally over or tied.
@@ -5893,6 +5899,14 @@ class PaydirtGameEngine:
             # Didn't make it past goal line - touchback
             return 20, True
 
+    def _record_untimed_clock(self, note: str) -> ClockTrace:
+        """Record a try's zero clock charge without advancing or resetting a period."""
+        seconds = self.state.time_remaining * 60
+        self.last_clock_trace = ClockTrace(
+            self.state.quarter, seconds, self.state.quarter, seconds, 0, 0, False, note,
+        )
+        return self.last_clock_trace
+
     def _use_time(
         self, seconds: float, out_of_bounds: bool = False, *, defensive_penalty: bool = False,
     ) -> bool:
@@ -5921,7 +5935,8 @@ class PaydirtGameEngine:
         """
         two_minute_warning = False
         time_before = self.state.time_remaining
-
+        start_quarter = self.state.quarter
+        requested_seconds = seconds
         # Check if we're in final minutes where out-of-bounds timing applies
         in_final_minutes = False
         if self.state.quarter == 2 and self.state.time_remaining <= 2.0:
@@ -5951,6 +5966,10 @@ class PaydirtGameEngine:
         if 0 < self.state.time_remaining < 1 / 60 - 1e-9:  # Preserve a genuine full second.
             self.state.time_remaining = 0
 
+        remaining_seconds = max(0, self.state.time_remaining * 60)
+        charged_seconds = max(0, time_before * 60 - remaining_seconds)
+        period_held = remaining_seconds == 0 and (self.state.untimed_down_pending or defensive_penalty)
+        period_ended = remaining_seconds == 0 and not period_held
         if self.state.time_remaining <= 0:
             self.state.time_remaining = 0
             # Hold the period until an accepted defensive foul can award its extension.
@@ -5974,6 +5993,12 @@ class PaydirtGameEngine:
                     self.state.game_over = True
                 # If tied, overtime will be started by the game loop
 
+        self.last_clock_trace = ClockTrace(
+            start_quarter, time_before * 60, self.state.quarter,
+            self.state.time_remaining * 60, requested_seconds, charged_seconds, period_ended,
+            ("period held for penalty/untimed down" if period_held
+             else "two-minute warning" if two_minute_warning else ""),
+        )
         return two_minute_warning
 
     def get_score_str(self) -> str:

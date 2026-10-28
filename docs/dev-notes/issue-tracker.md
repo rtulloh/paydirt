@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-94 issues: 46 open, 37 resolved, 11 closed.
+95 issues: 46 open, 37 resolved, 12 closed.
 
 ## Open (46)
 
@@ -108,7 +108,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
 
 
-## Closed (11)
+## Closed (12)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -123,5 +123,6 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
-| [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | — |
+| [TRACE-009](issues/TRACE/TRACE-009.md) | Medium | Half-ending touchdown and kickoff lack elapsed-time evidence to verify whether another snap was owed | created 2026-10-28, resolved 2026-10-28, closed 2026-10-28 | AI-007 |
+| [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18, resolved 2026-10-20, closed 2026-10-20 | TRACE-007 |

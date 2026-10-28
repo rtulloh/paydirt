@@ -2704,6 +2704,8 @@ def _complete_touchdown_sequence(
     # The engine decides whether a try is still owed (regulation tries are played
     # even after the clock expires) and whether any kick may follow it.
     while outcome.touchdown and game.can_attempt_conversion_after_touchdown():
+        if outcome.clock_trace is not None:
+            print(f"  {outcome.clock_trace.description}")
         scoring_home = game.state.is_home_possession
         human_scored = scoring_home == human_is_home
         two_point_allowed = game.season_rules.two_point_conversion
@@ -2749,6 +2751,8 @@ def _complete_touchdown_sequence(
                 game, outcome, scoring_home != human_is_home, human_is_home
             )
         print(f"  {outcome.description}")
+        if not outcome.touchdown and outcome.clock_trace is not None:
+            print(f"  {outcome.clock_trace.description}")
     return outcome
 
 

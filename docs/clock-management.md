@@ -23,6 +23,20 @@ timeout requests are likewise unnecessary. At 0:28, the incompletion leaves
 A nullified play with offsetting fouls retains its separate ten-second timing,
 and accepted penalties retain their existing enforcement timing.
 
+### Touchdown, Try, and Kickoff Evidence
+
+The CLI prints engine-owned `Clock:` records during touchdown sequences in
+both new and resumed games: clock before/after, requested duration, actual
+charged duration, and period expiry. PAT kicks are untimed and show a
+zero charge. Fractional seconds are retained in the evidence;
+a period reset to 15:00 is not time charged in the new period.
+
+For example, from Q2 0:45 a 35-second touchdown play, untimed PAT, and
+10-second kickoff exhaust the half. A 25-second play and five-second
+kickoff leave 15 seconds for another snap, even if the kicking team
+recovers a return fumble. These are illustrative durations, not inferred
+rolls from an earlier game. This evidence does not change timing rules.
+
 ## Saving Time
 
 | Control | CLI example | Effect and tradeoff |

@@ -192,6 +192,36 @@ class PenaltySituation:
     first_down: bool
 
 
+@dataclass(frozen=True)
+class ClockTrace:
+    """Observed engine clock charge, independent of a later play or period reset."""
+
+    start_quarter: int
+    start_seconds: float
+    end_quarter: int
+    end_seconds: float
+    requested_seconds: float
+    charged_seconds: float
+    period_ended: bool
+    note: str = ""
+
+    @property
+    def description(self) -> str:
+        """Return display-ready evidence; clients must not reconstruct elapsed time."""
+        def clock(quarter: int, seconds: float) -> str:
+            whole = round(seconds)
+            return f"Q{quarter} {whole // 60}:{whole % 60:02d} ({seconds:.3f}s)"
+
+        detail = "; period ended" if self.period_ended else ""
+        if self.note:
+            detail += f"; {self.note}"
+        return (
+            f"Clock: {clock(self.start_quarter, self.start_seconds)} -> "
+            f"{clock(self.end_quarter, self.end_seconds)}; "
+            f"requested {self.requested_seconds:.3f}s; charged {self.charged_seconds:.3f}s{detail}"
+        )
+
+
 @dataclass
 class PlayOutcome:
     """Complete outcome of a play for the game."""
@@ -236,3 +266,4 @@ class PlayOutcome:
     # Optional coaching observations, not a scored/applied play result.
     retained_play_situation: PenaltySituation | None = None
     penalty_situations: dict[int, PenaltySituation] = field(default_factory=dict)
+    clock_trace: ClockTrace | None = None

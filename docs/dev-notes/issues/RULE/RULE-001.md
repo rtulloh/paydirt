@@ -30,3 +30,12 @@ Migrated from the single-file tracker (status at migration: Open (reproduced)).
 
 --- 2026-10-20 17:30 ---
 Priority changed from High to Medium: two-point conversion support is not a current product priority. The defect remains reproduced and must be addressed before prioritizing 2026 two-point-conversion play-testing.
+
+--- 2026-10-28 14:00 ---
+TRACE-009 investigation reconfirmed the known clock side effect using only
+public 2026 fixtures: an actual medium-pass try from Q2 0:30 with a
+synthetic two-yard gain and controlled 35-second duration advances to
+Q3 15:00. The try still uses ordinary run_play. No change to conversion
+mechanics is included in TRACE-009, and its zero-charge evidence is limited
+to PAT kicks. This issue remains open; do not label two-point tries as
+observed zero-time events until the conversion sandbox is implemented.
