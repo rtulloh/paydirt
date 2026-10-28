@@ -238,7 +238,7 @@ class TestKickoffChartPenalties:
             # Should return pending decision for receiving team
             assert outcome.pending_penalty_decision is True
             assert outcome.penalty_choice is not None
-            assert outcome.penalty_choice.offended_team == "defense"  # Receiving team
+            assert outcome.penalty_choice.offended_team == "offense"  # Receiving team
             assert "DEF 5" in outcome.description
     
     def test_def_penalty_on_kickoff_accept_rekicks_from_closer(self, game):
@@ -306,7 +306,7 @@ class TestKickoffChartPenalties:
             
             # Should return pending decision for kicking team
             assert outcome.pending_penalty_decision is True
-            assert outcome.penalty_choice.offended_team == "offense"  # Kicking team
+            assert outcome.penalty_choice.offended_team == "defense"  # Kicking team
             assert "OFF 10" in outcome.description
     
     def test_offsetting_penalties_on_kickoff_chart_rekicks(self, game):
@@ -402,7 +402,7 @@ class TestKickoffDiceDisplay:
             
             # Should have pending decision
             assert outcome.pending_penalty_decision is True
-            assert outcome.penalty_choice.offended_team == "defense"
+            assert outcome.penalty_choice.offended_team == "offense"
             
             # Decline penalty - take kickoff result
             # Kickoff 65 yards from 35 = lands at 0 (100 - 35 - 65)

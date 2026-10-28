@@ -420,11 +420,15 @@ class TestKickoffDoubleFoulIntegration:
                 (14, "14"),  # Kickoff chart roll - DEF 5
                 (15, "15"),  # Kickoff re-roll - 50 yards
                 (14, "14"),  # Return chart roll - OFF 5 (same as kickoff roll)
-                (16, "16"),  # Return re-roll - 25 yards
+                (15, "15"),  # Actual re-kick - 50 yards
+                (16, "16"),  # Fresh return - 25 yards
             ]
             
             outcome = game.kickoff(kicking_home=True)
             
             # Should offset - penalties cancel out
             assert "OFFSETTING PENALTIES" in outcome.description
-            assert "Down replayed" in outcome.description
+            assert "re-kick" in outcome.description
+            assert mock_dice.call_count == 5
+            assert game.state.is_home_possession is False
+            assert game.state.ball_position == 40

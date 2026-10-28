@@ -421,15 +421,15 @@ class PaydirtGameEngine:
             self.state.pending_kickoff_penalty_yards = 0
             self.state.pending_kickoff_penalty_is_offense = False
 
-        # Check for penalty on kickoff chart (pre-return)
-        # Chart penalties use scrimmage play perspective (kicking team = offense, receiving team = defense)
-        # OFF penalty = kicking team foul → receiving team gets choice
-        # DEF penalty = receiving team foul → kicking team gets choice
+        # Kickoff consumers use the receiving team as offense in both phases.
+        # OFF is a receiving-team foul; DEF is a kicking-team foul.
+        kick_rerolls = []
         if "OFF" in ko_result.upper() or "DEF" in ko_result.upper():
             ko_penalty_match = re.search(r"(OFF|DEF)\s*(\d+)(X)?", ko_result.upper())
             if ko_penalty_match:
                 ko_penalty_yards = int(ko_penalty_match.group(2))
                 ko_is_offensive_penalty = ko_penalty_match.group(1) == "OFF"
+                ko_has_auto_first_down = bool(ko_penalty_match.group(3))
 
                 # Re-roll to get actual kickoff yardage - keep rolling until non-penalty
                 ko_yards = None
@@ -440,7 +440,7 @@ class PaydirtGameEngine:
                     reroll_count += 1
                     reroll, _ = roll_chart_dice()
                     reroll_result = kicking_chart.special_teams.kickoff.get(reroll, "65")
-
+                    kick_rerolls.append(f'KO reroll:{reroll}→"{reroll_result}"')
                     if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
                         reroll_is_offensive = "OFF" in reroll_result.upper()
                         if ko_is_offensive_penalty != reroll_is_offensive:
@@ -450,10 +450,11 @@ class PaydirtGameEngine:
                             )
                         else:
                             # Same type - take larger penalty, continue rolling
-                            reroll_match = re.search(r"(OFF|DEF)\s*(\d+)", reroll_result.upper())
+                            reroll_match = re.search(r"(OFF|DEF)\s*(\d+)(X)?", reroll_result.upper())
                             if reroll_match:
                                 reroll_penalty = int(reroll_match.group(2))
                                 ko_penalty_yards = max(ko_penalty_yards, reroll_penalty)
+                                ko_has_auto_first_down = ko_has_auto_first_down or bool(reroll_match.group(3))
                     elif "OB" in reroll_result.upper() or "OUT" in reroll_result.upper():
                         # Out of bounds on re-roll - use that result
                         ko_yards = 0  # Will be handled as OB below
@@ -476,7 +477,7 @@ class PaydirtGameEngine:
                 if return_has_penalty:
                     # Parse return penalty
                     ret_penalty_match = re.search(r"(OFF|DEF)\s*(\d+)", ret_result.upper())
-                    if ret_penalty_match:
+                    if ret_penalty_match and ((ret_penalty_match.group(1) == "OFF") != ko_is_offensive_penalty):
                         return_penalty_yards = int(ret_penalty_match.group(2))
                         return_is_offensive = ret_penalty_match.group(1) == "OFF"
 
@@ -487,52 +488,55 @@ class PaydirtGameEngine:
                         double_foul_result = self._handle_double_foul_penalty(
                             penalty_a_yards=ko_penalty_yards,
                             penalty_a_is_offensive=ko_is_offensive_penalty,
-                            penalty_a_has_auto_fd=False,
+                            penalty_a_has_auto_fd=ko_has_auto_first_down,
                             penalty_b_yards=return_penalty_yards,
                             penalty_b_is_offensive=return_is_offensive,
                             penalty_b_has_auto_fd=False,
                             landing_spot=landing_spot,
                             punt_roll=dice_roll,
-                            return_roll=dice_roll,
+                            return_roll=return_roll,
                             punt_result=ko_result,
                             return_result=ret_result,
                         )
 
+                        trace = " | ".join(kick_rerolls + [f'RT:{return_roll}→"{ret_result}"'])
+                        dice_line = self._kickoff_dice_line(dice_roll, ko_result, trace)
                         if double_foul_result["action"] == "offset":
-                            # Penalties offset - re-kick
-                            outcome = PlayOutcome(
-                                play_type=PlayType.KICKOFF,
-                                defense_type=DefenseType.STANDARD,
-                                result=parse_result_string(ko_result),
-                                yards_gained=0,
-                                field_position_before=f"Kickoff from {kickoff_spot}",
-                                field_position_after="pending",
-                                description=double_foul_result["description"],
-                            )
-                            self.play_log.append(outcome)
+                            self._use_time(10)
+                            outcome = self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
+                            outcome.description = f"OFFSETTING PENALTIES on kickoff; re-kick. {dice_line} " + outcome.description
+                            outcome.result.description = outcome.description
                             return outcome
-                        else:
-                            # Apply 15-yard penalty only - receiving team keeps possession
-                            self.state.is_home_possession = not kicking_home
-                            self.state.ball_position = clamp_ball_position(
-                                double_foul_result["final_position"]
-                            )
-                            self.state.down = 1
-                            self.state.yards_to_go = 10
-
-                            outcome = PlayOutcome(
-                                play_type=PlayType.KICKOFF,
-                                defense_type=DefenseType.STANDARD,
-                                result=parse_result_string(ko_result),
-                                yards_gained=0,
-                                touchdown=False,
-                                field_position_before=f"Kickoff from {kickoff_spot}",
-                                field_position_after=self.state.field_position_str(),
-                                description=double_foul_result["description"],
-                            )
-                            self.play_log.append(outcome)
-                            self._use_time(random.uniform(5, 15))
-                            return outcome
+                        # Preserve the established opposite-team 5-versus-15
+                        # exception: disregard 5; assess 15 from the catch.
+                        self.state.is_home_possession = not kicking_home
+                        final_position = double_foul_result["final_position"]
+                        self.state.ball_position = clamp_ball_position(final_position)
+                        self.state.down = 1
+                        self.state.yards_to_go = 10
+                        fouling_receiver = double_foul_result["is_offensive"]
+                        fouling_home = not kicking_home if fouling_receiver else kicking_home
+                        stats = self.state.home_stats if fouling_home else self.state.away_stats
+                        stats.penalties += 1
+                        stats.penalty_yards += abs(final_position - landing_spot)
+                        parsed = parse_result_string(ko_result)
+                        parsed.dice_roll = dice_roll
+                        parsed.kickoff_return_dice = return_roll
+                        parsed.kickoff_return_result = ret_result
+                        description = (
+                            "Under NFL Rule 14-5-1, the 5-yard penalty is disregarded. "
+                            f"15 yards enforced from the catch. 1st and 10. {dice_line}"
+                        )
+                        parsed.description = description
+                        outcome = PlayOutcome(
+                            play_type=PlayType.KICKOFF, defense_type=DefenseType.STANDARD,
+                            result=parsed, yards_gained=0, penalty_applied=True,
+                            field_position_before=f"Kickoff from {kickoff_spot}",
+                            field_position_after=self.state.field_position_str(), description=description,
+                        )
+                        self.play_log.append(outcome)
+                        self._use_time(random.uniform(5, 15))
+                        return outcome
 
                 # Store pending kickoff penalty state for choice
                 self._pending_kickoff_penalty_state = {
@@ -545,7 +549,8 @@ class PaydirtGameEngine:
                     "ko_penalty_yards": ko_penalty_yards,
                     "ko_is_offensive_penalty": ko_is_offensive_penalty,
                     "dice_roll": dice_roll,
-                    "return_trace": f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none",
+                    "kick_reroll_trace": " | ".join(kick_rerolls),
+                    "return_trace": " | ".join(kick_rerolls + [f'RT:{return_roll}→"{ret_result}"' if return_roll else "RT:none"]),
                 }
 
                 # Build description and return pending decision
@@ -555,7 +560,9 @@ class PaydirtGameEngine:
                 else:
                     adjusted_spot = max(1, kickoff_spot - ko_penalty_yards)
                     description = f"PENALTY on kickoff: DEF {ko_penalty_yards} (kicking team foul). Receiving team chooses: accept (re-kick from {adjusted_spot}) OR decline."
-
+                description += " " + self._kickoff_dice_line(
+                    dice_roll, ko_result, self._pending_kickoff_penalty_state["return_trace"],
+                )
                 # Create penalty choice
                 accept_option = PenaltyOption(
                     penalty_type="OFF" if ko_is_offensive_penalty else "DEF",
@@ -575,7 +582,7 @@ class PaydirtGameEngine:
                 penalty_choice = PenaltyChoice(
                     play_result=parse_result_string(ko_result),
                     penalty_options=[accept_option, decline_option],
-                    offended_team="offense" if ko_is_offensive_penalty else "defense",
+                    offended_team="defense" if ko_is_offensive_penalty else "offense",
                     offsetting=False,
                     kick_phase="kick",
                 )
@@ -1049,7 +1056,8 @@ class PaydirtGameEngine:
             description += " " + "; ".join(chain.notes) + "."
         if ctx.get("declined_kick_penalty"):
             description += " (kick-chart penalty declined)"
-        description += f"{ctx['penalty_desc']} {self._kickoff_dice_line(ctx['dice_roll'], ko_result, return_trace)}"
+        full_trace = " | ".join(filter(None, [ctx.get("kick_reroll_trace", ""), return_trace]))
+        description += f"{ctx['penalty_desc']} {self._kickoff_dice_line(ctx['dice_roll'], ko_result, full_trace)}"
 
         result = parse_result_string(chain.first_cell if chain is not None else ko_result)
         result.dice_roll = ctx["dice_roll"]
@@ -1097,7 +1105,8 @@ class PaydirtGameEngine:
             play_preview = f"{kicker} recovers at {format_field_position_with_team(chain.spot, kicker, receiver)}"
         accept_preview = f"1st and 10 at {penalty_spot_text}"
         return_trace = " | ".join(chain.trace)
-        dice_line = self._kickoff_dice_line(ctx["dice_roll"], ctx["ko_result"], return_trace)
+        full_trace = " | ".join(filter(None, [ctx.get("kick_reroll_trace", ""), return_trace]))
+        dice_line = self._kickoff_dice_line(ctx["dice_roll"], ctx["ko_result"], full_trace)
 
         play_result = parse_result_string(chain.first_cell)
         play_result.dice_roll = ctx["dice_roll"]
@@ -4574,8 +4583,16 @@ class PaydirtGameEngine:
                 # DEF penalty (kicking team foul) - kick from closer
                 new_kickoff_spot = max(1, kickoff_spot - ko_penalty_yards)
 
-            # Perform the re-kick from adjusted spot
-            return self.kickoff(kicking_home=kicking_home, kickoff_spot=new_kickoff_spot)
+            fouling_home = not kicking_home if ko_is_offensive_penalty else kicking_home
+            stats = self.state.home_stats if fouling_home else self.state.away_stats
+            stats.penalties += 1
+            stats.penalty_yards += abs(new_kickoff_spot - kickoff_spot)
+            outcome = self.kickoff(kicking_home=kicking_home, kickoff_spot=new_kickoff_spot)
+            dice_line = self._kickoff_dice_line(state["dice_roll"], state["ko_result"], state["return_trace"])
+            outcome.description = f"Kick-chart penalty accepted; re-kick. {dice_line} " + outcome.description
+            outcome.result.description = outcome.description
+            outcome.penalty_applied = True
+            return outcome
         else:
             # Decline the kick-chart penalty: play the kick as rolled, with the
             # receiving team's return roll already taken for that kick.
@@ -4607,7 +4624,12 @@ class PaydirtGameEngine:
                     )
                     if chain.offsetting:
                         self._use_time(10)
-                        return self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
+                        outcome = self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
+                        full_trace = " | ".join(filter(None, [state.get("kick_reroll_trace", ""), *chain.trace]))
+                        dice_line = self._kickoff_dice_line(dice_roll, ko_result, full_trace)
+                        outcome.description = f"OFFSETTING PENALTIES on kickoff return; re-kick. {dice_line} " + outcome.description
+                        outcome.result.description = outcome.description
+                        return outcome
             ctx = {
                 "kicking_home": kicking_home,
                 "kickoff_spot": kickoff_spot,
@@ -4619,6 +4641,7 @@ class PaydirtGameEngine:
                 "return_position": return_position,
                 "penalty_desc": "",
                 "declined_kick_penalty": (ko_penalty_yards, ko_is_offensive_penalty),
+                "kick_reroll_trace": state.get("kick_reroll_trace", ""),
             }
             if chain is not None and chain.choice:
                 return self._pending_kickoff_return_fumble(ctx, chain)

@@ -133,6 +133,16 @@ The one decision on a return: when the reroll after a returning-team foul is a f
 other team recovers, that team keeps the recovery or takes the penalty (which gives the ball
 back to the returning team, backed up). Kickoffs prompt for it; the CPU keeps the recovery.
 
+Kick-chart fouls remain re-kick decisions. On a kickoff, `OFF` identifies the
+receiving team and `DEF` the kicking team in both chart phases. If that same
+team fouls on the kick and return, the other team can take the kick-chart
+re-kick or decline it and let the return-chart procedure stand. Fouls by
+opposite teams offset and cause a real re-kick with ten seconds run off; the
+existing cross-chart 5-versus-15 exception instead disregards the five-yard
+foul and enforces the fifteen-yard foul from the catch, unless the kick-chart
+foul specifies an automatic first down. The cross-chart trace retains the
+original kick, distance rerolls, actual return rolls, and any re-kick.
+
 ### Quick Play with Defaults
 
 Press Enter to accept the choice shown in each prompt, including plays and formations.

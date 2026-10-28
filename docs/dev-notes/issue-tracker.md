@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-92 issues: 50 open, 35 resolved, 7 closed.
+93 issues: 50 open, 36 resolved, 7 closed.
 
 ## Open (50)
 
@@ -50,7 +50,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [STAT-003](issues/STAT/STAT-003.md) | Medium | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
 | [TRACE-001](issues/TRACE/TRACE-001.md) | Medium | Secondary QB-time rolls/results are not visible consistently, especially QB-time fumbles and transaction-based… | created 2026-10-18 | TRACE-007 |
 | [TRACE-003](issues/TRACE/TRACE-003.md) | Medium | Compact traces do not explicitly identify called modifiers and the winning clock procedure | created 2026-10-18 | — |
-| [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006, AI-015, AUD-020, RULE-019 |
+| [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006, AI-015, AUD-020, RULE-019, RULE-020 |
 | [TRACE-005](issues/TRACE/TRACE-005.md) | Medium | Full deterministic engine replay from logs is not implemented | created 2026-10-18 | TRACE-007 |
 | [TRACE-007](issues/TRACE/TRACE-007.md) | Medium | The PlayTransaction/PlayEvent model (paydirt/play_events.py) does not deliver its stated purpose and is now a… | created 2026-10-19 | AUD-018, TRACE-001, TRACE-002, TRACE-005 |
 | [VAL-001](issues/VAL/VAL-001.md) | Medium | Full-game browser regression lost its execution context during navigation | created 2026-10-18 | AUD-001 |
@@ -67,7 +67,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 
 
-## Resolved (awaiting play-test confirmation) (35)
+## Resolved (awaiting play-test confirmation) (36)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -85,6 +85,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [RULE-017](issues/RULE/RULE-017.md) | High | Own-recovery fumble advance resets the down to second regardless of the down before | created 2026-10-27, resolved 2026-10-27 | — |
 | [RULE-018](issues/RULE/RULE-018.md) | High | Return-chain fumbles in or beyond an end zone are clamped to the 1 with no touchdown, touchback or safety | created 2026-10-27, resolved 2026-10-28 | RULE-014 |
 | [RULE-019](issues/RULE/RULE-019.md) | High | Punt returns bypass the unified return resolver: penalty touchdowns, discarded TD/F rerolls, no recovery roll | created 2026-10-27, resolved 2026-10-28 | RULE-014, TRACE-004 |
+| [RULE-020](issues/RULE/RULE-020.md) | High | Kickoff with kick-chart and return-chart fouls by the same team is treated as offsetting with no re-kick | created 2026-10-27, resolved 2026-10-28 | TRACE-004 |
 | [SPIKE-003](issues/SPIKE/SPIKE-003.md) | High | A completion could leave time, then its spike reduce the clock to zero without processing period/game expiration | created 2026-10-18, resolved 2026-10-18 | SPIKE-001 |
 | [VAL-002](issues/VAL/VAL-002.md) | High | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [AI-004](issues/AI/AI-004.md) | Medium | Chart analysis treated rows as equally likely | created 2026-10-17, resolved 2026-10-17 | — |
