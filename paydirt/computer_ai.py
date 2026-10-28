@@ -1330,6 +1330,19 @@ class ComputerAI:
             else:
                 accept_play = True
         elif offended_is_offense:
+            retained = outcome.retained_play_situation
+            if retained is not None and retained.first_down is True:
+                # Once both choices earn a first down, an automatic-first flag
+                # adds no value. Compare engine-enforced spots, not nominal yards.
+                best_position = retained.ball_position
+                chosen_index = None
+                for index, situation in outcome.penalty_situations.items():
+                    if situation.first_down and situation.ball_position > best_position:
+                        best_position = situation.ball_position
+                        chosen_index = index
+                # Keep the actual gain on a tie; never discard it for a shorter
+                # equivalent first down, including a half-distance penalty.
+                return (chosen_index is None, chosen_index)
             best_penalty = None
             if filtered_penalties:
                 # Sort penalties: Prefer auto_first_down, then most yards

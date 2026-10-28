@@ -101,6 +101,21 @@ selections after save/resume. Easy and Medium do not use Hard's recent-call poli
 Analysis does not change gameplay dice odds or base timing, and a sensible call can still fail.
 For experiment history, see the [AI play-testing notes](dev-notes/ai-playtesting.md).
 
+## Penalty Choices
+
+When an ordinary scrimmage gain already earns a first down, CPU coaching
+compares it with the engine-projected first-down penalty options. It keeps
+the most advanced resulting spot, retaining the play on a tie. An automatic
+first-down flag does not outweigh a longer gain that also earns first down.
+Comparisons use actual enforcement, including half-distance and pass
+interference spots, without applying state or consuming dice.
+
+This comparison does not override the existing end-of-half policy within
+the last 45 seconds of the second, fourth, or overtime periods: a retained gain may
+expire the period while a defensive penalty can preserve time or an untimed
+down. It is not a general redesign of defensive penalty choices, kick/return
+choices, clock management, or play-plus-spike decisions.
+
 ## Two-Point Tries
 
 CLI two-point play selection uses a separate, untimed conversion situation from

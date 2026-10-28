@@ -182,6 +182,15 @@ class GameState:
             return True
         return False
 
+@dataclass(frozen=True)
+class PenaltySituation:
+    """Engine-projected ordinary scrimmage situation; no state is applied."""
+
+    ball_position: int
+    down: int
+    yards_to_go: int
+    first_down: bool
+
 
 @dataclass
 class PlayOutcome:
@@ -222,3 +231,6 @@ class PlayOutcome:
     projected_touchdown: bool = False
     # Engine-owned request context, retained only while a scrimmage foul is pending.
     spike_context: dict | None = field(default=None, repr=False, compare=False)
+    # Optional coaching observations, not a scored/applied play result.
+    retained_play_situation: PenaltySituation | None = None
+    penalty_situations: dict[int, PenaltySituation] = field(default_factory=dict)

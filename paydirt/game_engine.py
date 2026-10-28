@@ -5,12 +5,12 @@ from __future__ import annotations
 
 import random
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional
 
 from .chart_loader import TeamChart, load_team_chart
 from .commentary import get_roster
-from .game_state import GameState, PlayOutcome, ScoringPlay, TeamStats
+from .game_state import GameState, PenaltySituation, PlayOutcome, ScoringPlay, TeamStats
 from .overtime_rules import OvertimeFormat, OvertimeRules
 from .packaging import get_seasons_path
 from .penalty_handler import resolve_pass_interference, resolve_penalty
@@ -2281,6 +2281,7 @@ class PaydirtGameEngine:
                 no_huddle=no_huddle,
                 spike_context=spike_context,
             )
+            self._set_first_down_penalty_situations(outcome)
             return outcome
 
         elif penalty_choice.offsetting:
@@ -2372,6 +2373,57 @@ class PaydirtGameEngine:
         offense = self.state.possession_team.peripheral.short_name
         defense = self.state.defense_team.peripheral.short_name
         return f"SAFETY! {offense} concedes 2 points to {defense}"
+
+    def _set_first_down_penalty_situations(self, outcome: PlayOutcome) -> None:
+        """Preview equivalent first downs without applying state, stats or dice.
+
+        Only ordinary retained first-down gains are covered here. Scores,
+        turnovers, return chains and requested spikes keep their own policy.
+        """
+        choice = outcome.penalty_choice
+        if (choice is None or choice.offended_team != "offense"
+                or outcome.play_type not in CHART_PLAY_TYPES
+                or outcome.turnover or outcome.projected_touchdown
+                or outcome.spike_context is not None):
+            return
+        # A gain that can expire a half is not equivalent to a defensive
+        # penalty that can preserve time/an untimed down. Keep that policy
+        # unchanged throughout the maximum ordinary-play duration (45 sec).
+        if (self.state.quarter == 2 or self.state.quarter >= 4) and self.state.time_remaining <= .75:
+            return
+        result = choice.play_result
+        if result.result_type not in (
+                ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE):
+            return
+        # Match apply_penalty_decision: a DEF priority result may store penalty
+        # yardage rather than the original offensive gain in result.yards.
+        yards = (result.offense_yards if (result.defense_modifier or "").startswith("DEF")
+                 else result.yards)
+        if yards < self.state.yards_to_go or self.state.ball_position + yards >= 100:
+            return
+        preview = replace(self.state)
+        first_down = preview.advance_ball(yards)
+        outcome.retained_play_situation = PenaltySituation(
+            preview.ball_position, preview.down, preview.yards_to_go, first_down,
+        )
+        for index, option in enumerate(choice.penalty_options):
+            if option.penalty_type == "DEF":
+                _, position, down, distance, first_down = resolve_penalty(
+                    option.raw_result, self.state.ball_position,
+                    yards_gained=0, is_return=False,
+                    yards_to_go=self.state.yards_to_go, down=self.state.down,
+                    chart_yards=option.yards, auto_first_down=option.auto_first_down,
+                )
+            elif option.penalty_type == "PI":
+                position, down, distance = resolve_pass_interference(
+                    option.yards, self.state.ball_position,
+                )
+                first_down = True
+            else:
+                continue
+            outcome.penalty_situations[index] = PenaltySituation(
+                position, down, distance, first_down,
+            )
 
     def apply_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0
