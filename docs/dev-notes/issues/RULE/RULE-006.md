@@ -24,3 +24,11 @@ Offensive `T`/`S` modifiers are dropped whenever a penalty decision intervenes; 
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Open (reproduced)).
+
+--- 2026-10-28 08:58 ---
+SPIKE-001 repairs the S-only request across a scrimmage penalty choice: retain
+the pre-play clock/quarter, offense and down until a final play is retained;
+then apply an eligible spike, including its down cost. Enforcing the penalty
+or offsetting fouls does not spike. Offensive T (and the T/S precedence path)
+still needs its full timeout snapshot and remains open here. This partial S
+fix does not close RULE-006 or change defensive AT priority (SPIKE-002).

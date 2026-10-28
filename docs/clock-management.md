@@ -55,10 +55,20 @@ when the completion and spike both apply, the next play is **third down**, **eve
 An **incompletion needs no spike**; it leaves second down without an extra spike cost.
 Penalties must be resolved before deciding the spike's effect on down and clock.
 
-**Known implementation mismatch:** the current engine applies the spike's clock adjustment without charging
-that additional down. It also processes an offensive spike before a defensive timeout request.
-The examples below state the agreed rules to be implemented, not a claim that these fixes have shipped.
-The earlier statement that the modifier intentionally does not advance the down was incorrect.
+The engine charges the extra down only when the spike actually applies. It
+skips the modifier after an incompletion, out-of-bounds play, score, or loss of
+possession (including a failed fourth down). A third-down play that falls short
+can leave fourth down, then the spike itself turns the ball over on downs. No
+additional chart roll or invented yardage is added. The engine reports the
+final down, possession and field position for both CLI and browser displays.
+
+A pending foul preserves the S request without applying its down/clock effect
+early. If the play is retained, eligibility is checked against that finalized
+play; if the penalty is enforced or fouls offset, there is no subsequent spike.
+
+**Remaining implementation mismatch:** offensive spike versus defensive timeout
+priority is still tracked separately (SPIKE-002). The agreed timeout-priority
+procedure below is not a claim that this remaining fix has shipped.
 
 For an applied spike modifier, the existing timing procedure caps the first play at 17 seconds and
 adds three seconds for the spike, for at most 20 seconds total. This timing cap does not make the spike free.

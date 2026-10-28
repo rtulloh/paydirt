@@ -436,12 +436,14 @@ The spike modifier (`S`) allows the two-minute drill: run a play, spike to stop 
 - Play + spike time is capped at 20 seconds total
 - If play would have taken >17 seconds, it's reduced to 17, then 3 seconds for spike
 - Only applies when clock is running (skipped after incomplete, OOB, or turnover)
-- Does NOT advance down (play already did that)
+- Charges an additional down. A first-down call plus applied spike leaves third down, even after a first-down gain.
+- A pending foul preserves the S request; only a retained, eligible play applies the spike, not an accepted penalty.
 
 **Code locations:**
 - Modifier parsing: `interactive_game.py:_get_human_offense_play_compact()` lines ~475-485
-- Spike application: `game_engine.py:_apply_spike()` method
-- Skip conditions: `game_engine.py:_should_apply_spike_after_play()` method
+- Spike/down application: `game_engine.py:_apply_requested_spike()`
+- Clock adjustment: `game_engine.py:_apply_spike()`
+- Skip conditions: `_apply_requested_spike()` and `_should_apply_spike_after_play()`
 
 **Example scenario (20 seconds left, need FG):**
 1. Call `7S` (Medium Pass + Spike)

@@ -2238,6 +2238,11 @@ class PaydirtGameEngine:
         down_before = self.state.down
         ball_pos_before = self.state.ball_position
         ytg_before = self.state.yards_to_go
+        spike_context = {
+            "time_before": time_before_play, "quarter_before": quarter_before_play,
+            "offense_home": offense_was_home, "down_before": down_before,
+            "forced_oob": out_of_bounds_designation and not in_bounds_designation,
+        } if call_spike and not call_timeout else None
 
         # Use the new penalty procedure
         penalty_choice = resolve_play_with_penalties(
@@ -2274,6 +2279,7 @@ class PaydirtGameEngine:
                 penalty_choice=penalty_choice,
                 pending_penalty_decision=True,
                 no_huddle=no_huddle,
+                spike_context=spike_context,
             )
             return outcome
 
@@ -2327,12 +2333,8 @@ class PaydirtGameEngine:
                     timeouts_before_play=timeouts_before_play,
                 )
 
-            elif call_spike and not outcome.touchdown and not outcome.turnover:
-                play_seconds = (time_before_play - self.state.time_remaining) * 60
-                should_apply, _ = self._should_apply_spike_after_play(outcome, play_seconds)
-                if should_apply:
-                    self._apply_spike(time_before_play, quarter_before_play)
-                    outcome.spike_used = True
+            elif spike_context is not None:
+                self._apply_requested_spike(outcome, spike_context)
 
             return outcome
 
@@ -2420,7 +2422,9 @@ class PaydirtGameEngine:
                     offense_yards=original_yards,
                 )
 
-            return self._apply_play_result(
+            spike_context = outcome.spike_context
+            outcome.spike_context = None
+            final_outcome = self._apply_play_result(
                 outcome.play_type,
                 outcome.defense_type,
                 play_result,
@@ -2432,8 +2436,12 @@ class PaydirtGameEngine:
                 in_bounds_designation=False,
                 no_huddle=outcome.no_huddle,
             )
+            if spike_context is not None:
+                self._apply_requested_spike(final_outcome, spike_context)
+            return final_outcome
         else:
-            # Accept the penalty - down is replayed
+            # Accept the penalty - down is replayed; no subsequent spike is owed.
+            outcome.spike_context = None
             if penalty_index >= len(penalty_choice.penalty_options):
                 penalty_index = 0
 
@@ -3033,6 +3041,41 @@ class PaydirtGameEngine:
         # Reopen regulation only if the adjusted clock actually preserves time.
         if time_after_timeout > 0 and self.state.quarter <= 4:
             self.state.game_over = False
+
+    def _apply_requested_spike(self, outcome: PlayOutcome, context: dict) -> None:
+        """Charge an eligible post-play spike once, after the foul decision."""
+        if (outcome.spike_used or outcome.pending_penalty_decision or outcome.penalty_applied
+                or outcome.touchdown or outcome.safety or outcome.turnover or outcome.turnover_on_downs
+                or self.state.is_home_possession != context["offense_home"]):
+            return
+        result = outcome.result
+        natural_oob = (result.out_of_bounds and not result.defense_modifier
+                       and result.result_type not in (ResultType.FUMBLE, ResultType.SACK))
+        if natural_oob or context["forced_oob"] or getattr(result, "replay_down", False):
+            return
+        play_seconds = (context["time_before"] - self.state.time_remaining) * 60
+        should_apply, _ = self._should_apply_spike_after_play(outcome, play_seconds)
+        if not should_apply:
+            return
+        self._apply_spike(context["time_before"], context["quarter_before"])
+        # Agreed first-down-call exception: completion + spike leaves third
+        # even if the completion established a new series. Other plays charge
+        # the additional down against the series established by the play.
+        if context["down_before"] == 1 and outcome.first_down:
+            self.state.down = 2
+        outcome.turnover_on_downs = self.state.next_down()
+        outcome.spike_used = True
+        outcome.down_after = self.state.down
+        outcome.field_position_after = self.state.field_position_str()
+        outcome.description += " | Spike: additional down."
+        if outcome.turnover_on_downs:
+            outcome.description += " Turnover on downs."
+        if outcome.transaction is not None:
+            outcome.transaction.final_down = self.state.down
+            outcome.transaction.final_ball_position = self.state.ball_position
+            outcome.transaction.final_yards_to_go = self.state.yards_to_go
+            outcome.transaction.possession_team = self.state.possession_team.peripheral.short_name
+            outcome.transaction.turnover = outcome.turnover or outcome.turnover_on_downs
 
     def _apply_spike(self, time_before_play: float, quarter_before_play: int):
         """

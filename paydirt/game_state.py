@@ -220,3 +220,5 @@ class PlayOutcome:
     # score. Nothing is recorded until the decision is applied; `touchdown` stays
     # False on pending outcomes so no consumer treats the projection as a score.
     projected_touchdown: bool = False
+    # Engine-owned request context, retained only while a scrimmage foul is pending.
+    spike_context: dict | None = field(default=None, repr=False, compare=False)
