@@ -59,8 +59,7 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff check
-        run: ruff check paydirt/ tests/
-        continue-on-error: true
+        run: ruff check paydirt/ tests/ paydirt-web/backend/
 
   browser-games:
     runs-on: ubuntu-24.04
@@ -97,3 +96,30 @@ jobs:
           name: browser-game-failures
           path: paydirt-web/frontend/test-results/
           retention-days: 7
+
+  backend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: paydirt-web/backend
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install backend and test dependencies
+        run: python -m pip install -r requirements.txt pytest "httpx<0.28"
+      - name: Run backend regressions
+        run: python -m pytest tests/ -q -o addopts= --tb=short
+
+  public-ai-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install audit dependencies
+        run: python -m pip install pytest pyyaml
+      - name: Audit complete public season and balanced comparison
+        run: python tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/public-season.json

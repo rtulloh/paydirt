@@ -95,3 +95,41 @@ def test_runtime_upgrade_preserves_release_safety_and_artifact_layout(jobs: dict
         "node-version": "24.22.1", "cache": "npm",
         "cache-dependency-path": "paydirt-web/frontend/package-lock.json",
     }
+
+
+def test_ci_lint_is_required_and_covers_backend(jobs: dict) -> None:
+    lint = jobs["lint"]
+    assert not lint.get("continue-on-error", False)
+    step = next(step for step in lint["steps"] if "ruff check" in step.get("run", ""))
+    assert step["run"] == "ruff check paydirt/ tests/ paydirt-web/backend/"
+    assert not step.get("continue-on-error", False)
+
+
+def test_ci_backend_suite_is_required_and_installs_test_dependencies(jobs: dict) -> None:
+    backend = jobs["backend"]
+    assert backend["runs-on"] == "ubuntu-24.04"
+    assert not backend.get("continue-on-error", False)
+    assert backend["defaults"]["run"]["working-directory"] == "paydirt-web/backend"
+    install = next(step for step in backend["steps"]
+                   if "pip install" in step.get("run", ""))
+    assert "-r requirements.txt" in install["run"]
+    assert "pytest" in install["run"]
+    assert '"httpx<0.28"' in install["run"]
+    run = next(step for step in backend["steps"]
+               if "-m pytest" in step.get("run", ""))
+    assert run["run"] == "python -m pytest tests/ -q -o addopts= --tb=short"
+    assert not run.get("continue-on-error", False)
+
+
+def test_ci_runs_complete_public_ai_audit_without_private_data(jobs: dict) -> None:
+    audit = jobs["public-ai-audit"]
+    assert audit["runs-on"] == "ubuntu-24.04"
+    assert not audit.get("continue-on-error", False)
+    run = next(step for step in audit["steps"]
+               if "tests/run_ai_audit.py" in step.get("run", ""))
+    assert run["run"] == (
+        "python tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 "
+        "--compare-balanced --output .ai-audits/public-season.json"
+    )
+    assert not run.get("continue-on-error", False)
+    assert "if" not in run

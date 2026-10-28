@@ -171,3 +171,18 @@ release asset paths unchanged. Manual build dispatch still does not publish a
 release; only a pushed `v*` tag can do that. Verify upstream tests and all four
 standalone platform builds before any release. These runtime upgrades do not
 remediate frontend dependency vulnerabilities.
+
+## Required hosted validation
+
+The Tests workflow runs backend pytest as a separate required job, makes Ruff
+blocking across core, tests, and backend, and runs the full public 2026 AI audit
+with the legacy-balanced comparison. The public audit needs no private charts;
+private historical integrations remain local-only. Backend CI installs its pinned
+runtime requirements plus pytest and `httpx<0.28`: the pinned FastAPI/Starlette
+TestClient uses the older httpx `app` argument. This is a test-only compatibility
+bound, not a runtime dependency upgrade or vulnerability remediation. Local
+pre-push validation is still mandatory even when hosted checks are green.
+
+Personal standings directories and backups matching `standings_data*/` are
+ignored. Keep those files local; never force-add them or include them in release
+artifacts. This does not remove existing standings or change persistence behavior.

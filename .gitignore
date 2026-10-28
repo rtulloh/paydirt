@@ -52,7 +52,7 @@ paydirt_save.json
 game.log
 
 # Standings data (user-specific season tracking)
-standings_data/
+standings_data*/
 
 # OS files
 .DS_Store

@@ -1654,6 +1654,9 @@ class PaydirtGameEngine:
                         self.state.switch_possession()
                         self.state.ball_position = 100 - final_position
                     else:
+                        # Return-chain application initializes a new series; an own
+                        # recovery short of the sticks must consume the original down.
+                        self.state.down = down_before
                         self.state.next_down()
                         self.state.yards_to_go = max(1, ytg_before - net_yards)
 

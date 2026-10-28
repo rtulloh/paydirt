@@ -80,7 +80,7 @@ def test_long_pass_recovery_advance_explained_in_cli(
 @pytest.mark.parametrize("penalty_procedure", [False, True])
 @pytest.mark.parametrize("offense_is_home", [False, True])
 @pytest.mark.parametrize("recovery_roll", [17, 18, 19])
-@pytest.mark.parametrize("down", [1, 4])
+@pytest.mark.parametrize("down", [1, 2, 3, 4])
 @pytest.mark.parametrize("return_result", ["41", "15", "0", "-5", "60", "TD", "-45"])
 def test_recovery_advance_uses_final_spot_for_downs_and_scores(
     game: PaydirtGameEngine,
@@ -145,9 +145,53 @@ def test_recovery_advance_uses_final_spot_for_downs_and_scores(
     elif turnover:
         assert game.state.down == 1
     else:
-        assert (game.state.down, game.state.yards_to_go) == (2, 10 - net_yards)
+        assert (game.state.down, game.state.yards_to_go) == (down + 1, 10 - net_yards)
     assert result.rule_explanation
     assert "interception-chart advance" in result.rule_explanation
     if outcome.transaction:
         assert outcome.transaction.yards_gained == net_yards
         assert outcome.transaction.first_down == first_down
+
+
+@pytest.mark.parametrize("penalty_procedure", [False, True])
+@pytest.mark.parametrize("down", [1, 2, 3, 4])
+@pytest.mark.parametrize("recovery_roll", [17, 20])
+def test_short_own_recovery_preserves_original_down(
+    game: PaydirtGameEngine, penalty_procedure: bool, down: int, recovery_roll: int,
+) -> None:
+    """An optional recovery advance must not start a new series short of the sticks."""
+    from paydirt.play_resolver import PenaltyChoice, PlayResult, ResultType
+
+    game.state.ball_position = 42
+    game.state.down = down
+    game.state.yards_to_go = 8
+    game.state.home_chart.special_teams.interception_return[13] = "2"
+    result = PlayResult(ResultType.FUMBLE, yards=2, raw_result="F + 2")
+    rolls = [(recovery_roll, "Recovery")]
+    if recovery_roll == 17:
+        rolls.append((13, "Return13"))
+    run_play = game.run_play_with_penalty_procedure if penalty_procedure else game.run_play
+    with (
+        patch("paydirt.game_engine.resolve_play", return_value=result),
+        patch("paydirt.game_engine.resolve_play_with_penalties", return_value=PenaltyChoice(result)),
+        patch("paydirt.game_engine.roll_chart_dice", side_effect=rolls) as dice,
+    ):
+        outcome = run_play(PlayType.LINE_PLUNGE, DefenseType.STANDARD)
+
+    gained = 4 if recovery_roll == 17 else 2
+    assert outcome.yards_gained == gained
+    assert not outcome.first_down
+    assert not outcome.touchdown
+    assert not outcome.safety
+    assert result.fumble_recovery_roll == recovery_roll
+    assert dice.call_count == len(rolls)
+    if down == 4:
+        assert outcome.turnover
+        assert not game.state.is_home_possession
+        assert game.state.ball_position == 100 - (42 + gained)
+        assert (game.state.down, game.state.yards_to_go) == (1, 10)
+    else:
+        assert not outcome.turnover
+        assert game.state.is_home_possession
+        assert game.state.ball_position == 42 + gained
+        assert (game.state.down, game.state.yards_to_go) == (down + 1, 8 - gained)

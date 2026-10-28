@@ -151,6 +151,9 @@ like any other, and 19/39 are automatic touchdowns only on blocked kicks. The ch
 is not necessarily the actual advance, which stops at the goal line. Compact transaction
 traces label the recovery roll (`R:`), advance roll and actual yards (`Ret:`), rerolls
 (`Ret reroll:`), fumble returns (`FR:`), and raw chart result separately.
+If the offense retains the ball short of the line to gain, the play consumes its
+original down; a recovery advance does not reset the series. Reaching the line
+to gain earns a first down, while falling short on fourth down turns the ball over.
 The defensive call is confirmed once as `Defense: Long Pass (E)`, for example; the
 following `Offense runs:` line identifies the opponent's actual call.
 
