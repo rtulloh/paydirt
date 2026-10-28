@@ -1,16 +1,17 @@
 ---
 id: RULE-018
 title: Return-chain fumbles in or beyond an end zone are clamped to the 1 with no touchdown, touchback or safety
-status: open
+status: resolved
 priority: High
 created-at: 2026-10-27
-resolved-at:
+resolved-at: 2026-10-28
 closed-at:
 tags:
   - reproduced
 links:
   - RULE-014
 commits:
+  - 7aa7386
 ---
 
 ## Description
@@ -60,3 +61,14 @@ is sufficient after intervening possession changes.
 Shared-resolver implementation, 151 new regression cases, and player guidance
 are included in the current local fix commit. Keep open until RULE-019 adds
 ordinary punt-return integration and its regression coverage. Nothing pushed.
+
+--- 2026-10-28 07:13 ---
+RULE-019 migrates ordinary punts; its four end-zone fumble cases pass in both
+recovery directions, completing the missing entry-point coverage. A targeted
+real full-game replay (13 historical + 224 generated + nine playoffs) observed
+one punt end-zone fumble chain and verified final possession, TD/safety flags,
+and reconciled lost-fumble/penalty statistics against the resolved chain. This
+is specific evidence beyond aggregate completion, not proof every end-zone
+variant occurred naturally. Marked resolved with the local migration commit;
+keep pending broader case-specific play-test confirmation. The separate nested
+series-reset concern recorded above remains outside this fix. Nothing pushed.

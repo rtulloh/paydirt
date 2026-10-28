@@ -362,74 +362,6 @@ class PaydirtGameEngine:
                 "final_position": landing_spot,
             }
 
-    def _handle_return_penalty(
-        self, return_result: str, return_chart: dict, default_return: int = 20
-    ) -> tuple[int, int, bool, bool, list[tuple[int, str]]]:
-        """
-        Handle penalty logic for kickoff/punt returns.
-
-        Args:
-            return_result: The initial return chart result (e.g., "OFF 15", "DEF 10", "20")
-            return_chart: The return chart dict to re-roll from if needed
-            default_return: Default return yards when chart has no valid entries (fallback only)
-
-        Returns:
-            tuple of (return_yards, penalty_yards, is_offensive_penalty, needs_rekick, rerolls)
-        """
-        penalty_yards = 0
-        is_offensive_penalty = False
-        needs_rekick = False
-        return_yards = None
-        rerolls: list[tuple[int, str]] = []
-
-        if "OFF" in return_result.upper() or "DEF" in return_result.upper():
-            # Parse penalty from initial result
-            penalty_match = re.search(r"(OFF|DEF)\s*(\d+)", return_result.upper())
-            if penalty_match:
-                penalty_yards = int(penalty_match.group(2))
-                is_offensive_penalty = penalty_match.group(1) == "OFF"
-
-            # Keep re-rolling until we get actual return yardage
-            max_rerolls = 10  # Safety limit
-            reroll_count = 0
-
-            while return_yards is None and reroll_count < max_rerolls:
-                reroll_count += 1
-                reroll, _ = roll_chart_dice()
-                reroll_result = return_chart.get(reroll, str(default_return))
-                rerolls.append((reroll, reroll_result))
-                # Check if re-roll is also a penalty
-                if "OFF" in reroll_result.upper() or "DEF" in reroll_result.upper():
-                    reroll_is_offensive = "OFF" in reroll_result.upper()
-                    if is_offensive_penalty != reroll_is_offensive:
-                        # Offsetting penalties (OFF + DEF) - need to rekick/repunt
-                        needs_rekick = True
-                        return_yards = default_return  # Exit loop
-                    else:
-                        # Same type - take larger penalty and re-roll again
-                        reroll_match = re.search(r"(OFF|DEF)\s*(\d+)", reroll_result.upper())
-                        if reroll_match:
-                            reroll_penalty = int(reroll_match.group(2))
-                            penalty_yards = max(penalty_yards, reroll_penalty)
-                        # Continue loop to get actual yardage
-                else:
-                    # Normal return yardage from re-roll
-                    try:
-                        return_yards = int(reroll_result.replace("*", "").replace("†", "").strip())
-                    except ValueError:
-                        # Non-numeric, non-penalty result - continue rolling
-                        pass
-
-            # Fallback only if chart has no valid yardage entries
-            if return_yards is None:
-                return_yards = default_return
-        else:
-            # No penalty - just return 0 penalty
-            penalty_yards = 0
-            return_yards = default_return
-
-        return (return_yards, penalty_yards, is_offensive_penalty, needs_rekick, rerolls)
-
     def kickoff(self, kicking_home: bool = True, kickoff_spot: int = 35) -> PlayOutcome:
         """
         Perform a kickoff.
@@ -3927,6 +3859,7 @@ class PaydirtGameEngine:
         return_penalty_is_offensive = False
         return_roll = 0  # Initialize for all code paths
         return_fumbled = False
+        return_chain = None
 
         if is_downed:
             # Ball downed or out of bounds - no return
@@ -3935,67 +3868,46 @@ class PaydirtGameEngine:
             # Fair catch - no return
             return_desc = "fair catch"
         else:
-            # Punt can be returned - roll on receiving team's punt return chart
-            return_roll, _return_dice_desc = roll_chart_dice()
-            return_result = receiving_team.special_teams.punt_return.get(return_roll, "0")
-
-            # Parse return result
-            if return_result:
-                # Check for penalty on return first (before fumble check since DEF contains F)
-                if "OFF" in return_result.upper() or "DEF" in return_result.upper():
-                    return_desc = f"Penalty on return: {return_result}"
-                    (
-                        return_yards,
-                        return_penalty_yards,
-                        return_penalty_is_offensive,
-                        needs_repunt,
-                        return_rerolls,
-                    ) = self._handle_return_penalty(
-                        return_result, receiving_team.special_teams.punt_return, default_return=20
-                    )
-                    reroll_text = "; ".join(
-                        f"reroll {roll} → {result} yards"
-                        for roll, result in return_rerolls
-                        if result.lstrip("+-").isdigit()
-                    )
-                    if reroll_text:
-                        return_desc = f"{return_desc}; {reroll_text}"
-                    if needs_repunt:
-                        return self._handle_punt(
-                            short_drop=short_drop, coffin_corner_yards=coffin_corner_yards
-                        )
-                    # Penalty will be applied in the TD check logic below
-                # Check for fumble on return
-                elif "F" in return_result.upper():
-                    # Resolve only after the offended team has chosen play or penalty.
-                    return_fumbled = True
-                    return_desc = "FUMBLE on the return!"
-                else:
-                    # Normal return yardage
-                    try:
-                        return_yards = int(return_result.replace("*", "").replace("†", "").strip())
-                    except ValueError:
-                        return_yards = 0
-
-                    # Short-drop punt: minus yardage returns become 0 yard returns
-                    # Per rules: "all minus yardage returns are zero yard returns"
-                    if is_short_drop and return_yards < 0:
-                        return_yards = 0
-
-                    # Add commentary for exceptional returns
-                    if return_yards >= 30:
-                        return_desc = f"returned {return_yards} yards. What a return!"
-                    elif return_yards >= 20:
-                        return_desc = f"returned {return_yards} yards. Great return!"
-                    elif return_yards > 0:
-                        return_desc = f"returned {return_yards} yards"
-                    elif return_yards == 0:
-                        return_desc = "no return. Excellent coverage!"
-                    else:
-                        return_desc = f"tackled for a loss of {abs(return_yards)} yards! Outstanding special teams coverage!"
+            # The receiving team owns the return chart and any recovery roll.
+            return_chart = receiving_team.special_teams.punt_return
+            end_rule = None
+            if is_short_drop:
+                end_rule = lambda yards: (min(100, receiving_position + max(0, yards)), False)
+            return_chain = self._resolve_return_chain(
+                not self.state.is_home_possession, receiving_position, return_chart, "Ret", end_rule=end_rule,
+            )
+            if is_short_drop and not return_chain.fumbled:
+                return_chain.yards = max(0, return_chain.yards)
+            return_roll, return_result = return_chain.first_roll, return_chain.first_cell
+            return_yards = return_chain.yards
+            return_fumbled = return_chain.fumbled
+            return_desc = f"returned {return_yards} yards"
+            if return_chain.offsetting:
+                self._use_time(10)
+                outcome = self._handle_punt(
+                    short_drop=short_drop, coffin_corner_yards=coffin_corner_yards, punt_from=punt_from,
+                )
+                outcome.description = (
+                    f"OFFSETTING PENALTIES on the punt return; re-kick "
+                    f"(P:{punt_roll}→{punt_result} | {' | '.join(return_chain.trace)}). "
+                    + outcome.description
+                )
+                return outcome
+            if not punt_penalty_yards:
+                return self._finish_punt_return_chain(
+                    return_chain, punt_result, punt_roll, punt_yards, field_pos_before,
+                    prefix="Safety free kick punt" if punt_from == 20 else "Punt",
+                    lead=description, shanked=not short_drop and coffin_corner_yards == 0 and punt_yards < 20,
+                )
+            if return_chain.penalties:
+                fouling_home, return_penalty_yards = return_chain.penalties[0]
+                return_penalty_is_offensive = fouling_home != self.state.is_home_possession
 
         # Final position is receiving position plus return yards (before penalty)
         final_position = receiving_position + return_yards
+        if return_chain is not None:
+            final_position = (return_chain.spot if return_chain.possession_home != self.state.is_home_possession
+                              else 100 - return_chain.spot)
 
         # Check for return touchdown first (before applying penalties)
         touchdown = False
@@ -4057,15 +3969,6 @@ class PaydirtGameEngine:
                 self._use_time(random.uniform(5, 12))
                 return outcome
 
-        # Combine punt penalty (from punt chart) and return penalty (from return chart)
-        # Use return penalty if set, otherwise use punt penalty
-        combined_penalty_yards = (
-            return_penalty_yards if return_penalty_yards > 0 else punt_penalty_yards
-        )
-        combined_is_offensive = (
-            return_penalty_is_offensive if return_penalty_yards > 0 else is_punt_offensive_penalty
-        )
-
         # Check for penalty on punt chart that requires a choice
         # Chart penalties use scrimmage play perspective (punting team = offense, receiving team = defense)
         # OFF penalty = punting team foul → receiving team gets choice
@@ -4081,10 +3984,8 @@ class PaydirtGameEngine:
                 replay_pos = max(replay_pos, 1)
 
                 # Calculate keep result position (add penalty yards to final position)
-                keep_position = final_position + punt_penalty_yards
+                keep_position, _, _ = self._enforce_return_penalty(final_position, punt_penalty_yards, False)
                 keep_td = keep_position >= 100
-                if keep_td:
-                    keep_position = 100
 
                 replay_option = PenaltyOption(
                     penalty_type="OFF",
@@ -4106,7 +4007,9 @@ class PaydirtGameEngine:
 
                 penalty_choice = PenaltyChoice(
                     play_result=parse_result_string(punt_result),
-                    penalty_options=[replay_option] if return_fumbled else [replay_option, keep_option],
+                    penalty_options=([replay_option] if return_chain is not None
+                                     and return_chain.possession_home == self.state.is_home_possession
+                                     else [replay_option, keep_option]),
                     offended_team="defense",  # Receiving team is offended
                     offsetting=False,
                 )
@@ -4132,16 +4035,17 @@ class PaydirtGameEngine:
                     "is_fair_catch": is_fair_catch,
                     "punt_from": punt_from,
                     "return_fumbled": return_fumbled,
+                    "return_chain": return_chain,
                 }
 
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
-                if return_fumbled:
-                    parsed_result = self._punt_return_fumble_result(
-                        punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
-                    )
+                if return_chain is not None:
+                    parsed_result = self._punt_return_chain_result(return_chain, punt_result, punt_roll)
                     penalty_choice.play_result = parsed_result
-                    description = f"Punt {punt_yards} yards, FUMBLE on the return! Kicking team recovers. PENALTY: OFF {punt_penalty_yards}. Receiving team may replay the punt or decline."
+                if return_fumbled:
+                    description = (f"Punt {punt_yards} yards. " + "; ".join(return_chain.notes)
+                                   + f". PENALTY: OFF {punt_penalty_yards}. Receiving team may replay or decline.")
                 else:
                     description = f"Punt {punt_yards} yards, returned {return_yards} yards. PENALTY: OFF {punt_penalty_yards} on kicking team. Receiving team chooses: replay punt OR keep result + yardage."
 
@@ -4230,19 +4134,18 @@ class PaydirtGameEngine:
                     "is_fair_catch": is_fair_catch,
                     "punt_from": punt_from,
                     "return_fumbled": return_fumbled,
+                    "return_chain": return_chain,
                 }
 
                 parsed_result = parse_result_string(punt_result)
                 parsed_result.dice_roll = punt_roll
-                if return_fumbled:
-                    parsed_result = self._punt_return_fumble_result(
-                        punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
-                    )
+                if return_chain is not None:
+                    parsed_result = self._punt_return_chain_result(return_chain, punt_result, punt_roll)
                     penalty_choice.play_result = parsed_result
                 penalty_suffix = "X" if punt_penalty_auto_first_down else ""
                 description = f"Punt {punt_yards} yards. PENALTY: DEF {punt_penalty_yards}{penalty_suffix} on receiving team. Kicking team chooses: accept OR decline."
                 if return_fumbled:
-                    description += " FUMBLE on the return! Kicking team recovers if penalty declined."
+                    description += " " + "; ".join(return_chain.notes)
 
                 outcome = PlayOutcome(
                     play_type=PlayType.PUNT,
@@ -4258,60 +4161,8 @@ class PaydirtGameEngine:
                 )
                 return outcome
 
-        if return_fumbled:
-            return self._finish_punt_return_fumble(
-                punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot, field_pos_before
-            )
-
-        # Switch possession now (after DEF penalty check passed)
+        # Only downed/fair-caught punts without a kick-chart choice remain here.
         self.state.switch_possession()
-
-        if combined_penalty_yards > 0:
-            if combined_is_offensive:
-                # OFF penalty on receiving team
-                if would_be_td:
-                    # TD negated - penalty applied from CATCH POINT, not final position
-                    effective_penalty = self._apply_half_the_distance(
-                        receiving_position, combined_penalty_yards
-                    )
-                    final_position = receiving_position - effective_penalty
-                    touchdown = False
-                else:
-                    # No TD - apply penalty to final position with half-the-distance
-                    effective_penalty = self._apply_half_the_distance(
-                        final_position, combined_penalty_yards
-                    )
-                    final_position -= effective_penalty
-                self.state.offense_stats.penalties += 1
-                self.state.offense_stats.penalty_yards += effective_penalty
-            else:
-                # DEF penalty on kicking team (from return chart, not punt chart)
-                self.state.defense_stats.penalties += 1
-                self.state.defense_stats.penalty_yards += (
-                    combined_penalty_yards if would_be_td
-                    else min(combined_penalty_yards, 100 - final_position)
-                )
-                if would_be_td:
-                    # TD stands, penalty applied to kickoff spot
-                    touchdown = True
-                    final_position = 100
-                    self.state.pending_kickoff_penalty_yards = combined_penalty_yards
-                    self.state.pending_kickoff_penalty_is_offense = False
-                    combined_penalty_yards = 0  # Clear for description
-                    self._score_touchdown()
-                else:
-                    # No TD - add yards to receiving team (no half-distance needed, moves toward opponent)
-                    final_position += combined_penalty_yards
-                    if final_position >= 100:
-                        # DEF penalty pushes into end zone = TD
-                        touchdown = True
-                        final_position = 100
-                        self._score_touchdown()
-        elif would_be_td:
-            # No penalty - normal TD
-            touchdown = True
-            final_position = 100
-            self._score_touchdown()
 
         self.state.ball_position = clamp_ball_position(final_position)
         self.state.down = 1
@@ -4391,46 +4242,67 @@ class PaydirtGameEngine:
 
         return outcome
 
-    def _punt_return_fumble_result(
-        self, punt_result: str, punt_roll: int, return_roll: int, return_result: str, punt_yards: int,
-        landing_spot: int,
-    ) -> PlayResult:
-        """Describe a return fumble without applying its statistics or possession."""
-        team = self.state.possession_team.peripheral.short_name
-        spot = format_field_position_with_team(
-            landing_spot, team, self.state.defense_team.peripheral.short_name
-        )
-        return PlayResult(
-            result_type=ResultType.FUMBLE, raw_result=punt_result, dice_roll=punt_roll,
-            punt_return_dice=return_roll, punt_return_result=return_result,
-            fumble_recovered=True, fumble_resolved=True, fumble_spot=landing_spot, first_down=True,
-            description=f"Punt {punt_yards} yards, FUMBLE on the return! "
-                        f"Recovered by {team} at {spot}; 1st and {min(10, 100 - landing_spot)}.",
-        )
+    def _punt_return_chain_result(self, chain: ReturnChain, punt_result: str, punt_roll: int) -> PlayResult:
+        """Project return facts without applying possession, scores, or statistics."""
+        result = parse_result_string(punt_result)
+        result.dice_roll = punt_roll
+        result.punt_return_dice = chain.first_roll
+        result.punt_return_result = chain.first_cell
+        if chain.fumbled:
+            result.result_type = ResultType.FUMBLE
+            result.fumble_resolved = True
+            result.fumble_recovered = chain.possession_home == self.state.is_home_possession
+        result.description = "; ".join(chain.notes) + f" ({' | '.join(chain.trace)})"
+        return result
 
-    def _finish_punt_return_fumble(
-        self, punt_result: str, punt_roll: int, return_roll: int, return_result: str, punt_yards: int,
-        landing_spot: int, field_pos_before: str,
+    def _finish_punt_return_chain(
+        self, chain: ReturnChain, punt_result: str, punt_roll: int, punt_yards: int,
+        field_pos_before: int, prefix: str = "Punt", lead: str = "", shanked: bool = False,
     ) -> PlayOutcome:
-        """Apply a live returner loss, charged to the receiving team only.
-
-        The original offense recovers, so outcome.turnover remains False.
-        Call only once the punt result stands, never for a replayed down.
-        """
-        stats = self.state.defense_stats
-        stats.fumbles_lost += 1
-        stats.turnovers += 1
-        self.state.ball_position = landing_spot
-        self.state.down = 1
-        self.state.yards_to_go = min(10, 100 - landing_spot)
-        result = self._punt_return_fumble_result(
-            punt_result, punt_roll, return_roll, return_result, punt_yards, landing_spot
-        )
+        """Apply a punt return exactly once, after any kick-chart decision."""
+        result = self._punt_return_chain_result(chain, punt_result, punt_roll)
+        if punt_result.strip().isdigit():
+            result.raw_result = str(punt_yards)
+        touchdown = self._apply_return_chain(chain, accept_choice=False)
+        safety = chain.spot <= 0
+        description = f"{lead}{prefix} {punt_yards} yards, returned {chain.yards} yards to {self.state.field_position_str()}."
+        if not chain.fumbled and not chain.penalties and not touchdown and not safety:
+            if chain.yards >= 30:
+                description += " What a return!"
+            elif chain.yards >= 20:
+                description += " Great return!"
+            elif chain.yards == 0:
+                description += " Excellent coverage!"
+            elif chain.yards < 0:
+                description += " Outstanding special teams coverage!"
+            if shanked:
+                description += " Shanked!"
+            elif self.state.ball_position <= 10:
+                description += " Pinned deep!"
+            elif self.state.ball_position <= 20:
+                description += " Pinned inside the 20!"
+            elif punt_yards >= 55:
+                description += " What a boot!"
+            elif punt_yards >= 50:
+                description += " Great hang time!"
+        if chain.penalties:
+            description += " Penalty on return."
+        if touchdown:
+            description += " TOUCHDOWN!"
+        elif safety:
+            description += " SAFETY!"
+        elif chain.touchback:
+            description += " TOUCHBACK."
+        if chain.notes:
+            description += " " + "; ".join(chain.notes)
+        description += f" (P:{punt_roll}→{punt_result} | {' | '.join(chain.trace)})"
+        result.description = description
+        result.touchdown = touchdown
         outcome = PlayOutcome(
             play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
-            yards_gained=punt_yards, turnover=False, field_position_before=field_pos_before,
-            field_position_after=self.state.field_position_str(),
-            description=result.description,
+            yards_gained=punt_yards, touchdown=touchdown, safety=safety,
+            penalty_applied=bool(chain.penalties), field_position_before=field_pos_before,
+            field_position_after=self.state.field_position_str(), description=description,
         )
         self.play_log.append(outcome)
         self._use_time(random.uniform(5, 12))
@@ -4467,12 +4339,12 @@ class PaydirtGameEngine:
         penalty_yards = state["punt_penalty_yards"]
         is_offensive_penalty = state.get("is_offensive_penalty", False)
 
-        if state.get("return_fumbled") and not accept_penalty:
+        chain = state.get("return_chain")
+        if chain is not None and not accept_penalty:
             del self._pending_punt_state
-            return self._finish_punt_return_fumble(
-                state["punt_result"], state["punt_roll"], state["return_roll"],
-                state["return_result"], state["punt_yards"], 100 - state["final_position"],
-                state["field_pos_before"],
+            return self._finish_punt_return_chain(
+                chain, state["punt_result"], state["punt_roll"], state["punt_yards"], state["field_pos_before"],
+                prefix=("Receiving team" if is_offensive_penalty else "Kicking team") + " declines penalty. Punt",
             )
 
         if is_offensive_penalty and accept_penalty:
@@ -4484,8 +4356,16 @@ class PaydirtGameEngine:
                 keep_return = "KEEP" in selected_option.raw_result
 
             if keep_return:
-                # Option 2: Keep return result + penalty yards added (user selected "Keep return + X yards")
-                final_position = state["final_position"] + penalty_yards
+                if chain is not None:
+                    chain.spot, effective, _ = self._enforce_return_penalty(chain.spot, penalty_yards, False)
+                    chain.penalties.append((self.state.is_home_possession, effective))
+                    chain.notes.append(f"Receiving team keeps result + {effective} yards (OFF {penalty_yards})")
+                    del self._pending_punt_state
+                    return self._finish_punt_return_chain(
+                        chain, state["punt_result"], state["punt_roll"], state["punt_yards"], state["field_pos_before"],
+                    )
+                # No-return punts (fair catch, downed, or touchback) keep their stored result.
+                final_position, effective, _ = self._enforce_return_penalty(state["final_position"], penalty_yards, False)
 
                 touchdown = False
                 if final_position >= 100:
@@ -4498,7 +4378,7 @@ class PaydirtGameEngine:
                 self.state.yards_to_go = 10
 
                 self.state.defense_stats.penalties += 1
-                self.state.defense_stats.penalty_yards += penalty_yards
+                self.state.defense_stats.penalty_yards += effective
 
                 if touchdown:
                     self._score_touchdown()

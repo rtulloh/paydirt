@@ -77,6 +77,9 @@ def punt_game(
     game.state.possession_team.special_teams.punt.update({16: penalty or "31", 17: "31"})
     game.state.defense_team.special_teams.punt_return[18] = return_result
     rolls = [(16, "punt")] + ([(17, "reroll")] if penalty else []) + [(18, "return")]
+    if return_result == "F":
+        # Explicitly lose the returner's fumble; a chart F is not an automatic loss.
+        rolls.append((35, "recovery lost"))
     with patch("paydirt.game_engine.roll_chart_dice", side_effect=rolls):
         outcome = game.run_play(PlayType.PUNT, DefenseType.STANDARD)
     return game, outcome

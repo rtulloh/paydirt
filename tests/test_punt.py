@@ -305,7 +305,7 @@ class TestPuntReturn:
         
         # Mock: punt 40 yards, then fumble on return
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
-            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (12, "B1+W0+W2=12")]
+            mock_dice.side_effect = [(10, "B1+W0+W0=10"), (12, "B1+W0+W2=12"), (32, "Recovery lost")]
             
             outcome = game.run_play(PlayType.PUNT, None)
             
@@ -383,7 +383,7 @@ class TestPuntDownAndDistance:
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
             # First roll: punt 45 yards, second roll: fumble on return
-            mock_dice.side_effect = [(15, "B1+W5+W0=15"), (12, "B1+W2+W0=12")]
+            mock_dice.side_effect = [(15, "B1+W5+W0=15"), (12, "B1+W2+W0=12"), (32, "Recovery lost")]
             
             outcome = game.run_play(PlayType.PUNT, None)
             
@@ -395,7 +395,7 @@ class TestPuntDownAndDistance:
             assert "FUMBLE" in outcome.description
             assert outcome.result.punt_return_dice == 12
             assert outcome.result.punt_return_result == "F"
-            assert mock_dice.call_count == 2
+            assert mock_dice.call_count == 3
 
 
 class TestPuntReturnCommentary:
@@ -1287,6 +1287,7 @@ class TestPuntDiceDisplay:
             mock_dice.side_effect = [
                 (17, "B2+W2+W5=17"),  # Punt
                 (10, "B1+W1+W1=10"),  # Return - F means fumble
+                (32, "Recovery lost"),  # Returning team loses the fumble.
             ]
             
             game.state.possession_team.special_teams.punt[17] = "40"
@@ -1722,7 +1723,8 @@ def punt_preview_game(mock_team_chart):
         (24, "38†", "0", 0, 48, "own 48"),
         (50, "65", "0", 0, 30, "own 30"),
         (24, "34", "0", 15, 52, "opponent 48"),
-        (24, "34", "50", 0, 100, "touchdown"),
+        (24, "34", "50", 0, 96, "opponent 4"),
+        (24, "34", "60", 0, 100, "touchdown"),
         (5, "34", "2", 0, 73, "opponent 27"),
     ],
 )
@@ -1858,9 +1860,7 @@ class TestReturnPenaltyTrace:
 
     def test_return_penalty_records_the_reroll_and_yardage(self, game) -> None:
         with patch("paydirt.game_engine.roll_chart_dice", return_value=(14, "B1+W4+W4=14")):
-            yards, penalty, is_offense, needs_rekick, rerolls = game._handle_return_penalty(
-                "OFF 15", {14: "60"}
-            )
+            result = game._roll_return_chart({14: "60"}, first=(13, "OFF 15"))
 
-        assert (yards, penalty, is_offense, needs_rekick) == (60, 15, True, False)
-        assert rerolls == [(14, "60")]
+        assert (result.yards, result.penalty_yards, result.returner_foul, result.offsetting) == (60, 15, True, False)
+        assert result.rolls == [(13, "OFF 15"), (14, "60")]

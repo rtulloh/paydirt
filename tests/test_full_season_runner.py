@@ -107,19 +107,19 @@ def test_historical_runner_keeps_all_reproductions_local(
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == int(problem is not None)
-    assert len(calls) == 12
+    assert len(calls) == 13
     assert all(away.startswith("1983/") and home.startswith("1983/") for away, home, _ in calls)
     output = capsys.readouterr()
-    assert ("12/12" if problem is None else "11/12" if problem == "exception" else "10/12") in output.out
+    assert ("13/13" if problem is None else "12/13" if problem == "exception" else "11/13") in output.out
     if problem == "exception":
         assert "seed=19831104" in output.err
     elif problem == "missing-untimed":
         assert "seed=19831141" in output.err
-        assert "seed=19831631" in output.err
+        assert "seed=19831660" in output.err
 
 
 @pytest.mark.parametrize("missing_supplemental", [False, True])
-@pytest.mark.parametrize("supplemental_seed", [19831141, 19831631])
+@pytest.mark.parametrize("supplemental_seed", [19831141, 19831660])
 def test_seed_drift_retains_original_and_requires_supplemental_untimed_flow(
     monkeypatch: pytest.MonkeyPatch, missing_supplemental: bool, supplemental_seed: int,
 ) -> None:
@@ -129,14 +129,14 @@ def test_seed_drift_retains_original_and_requires_supplemental_untimed_flow(
         calls.append(seed)
         print("FINAL")
         # Synthetic output only: no historical charts are loaded by this test.
-        if seed in (19831141, 19831631) and not (seed == supplemental_seed and missing_supplemental):
+        if seed in (19831141, 19831660) and not (seed == supplemental_seed and missing_supplemental):
             print("UNTIMED DOWN")
         return finished_game()
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == int(missing_supplemental)
     assert {19831104, 19831107, 19831127, 19831603, 19831607, 19831621, 19831623,
-            19831624, 19830601, 19830914, 19831141, 19831631} == set(calls)
+            19831624, 19830601, 19830914, 19831141, 19831631, 19831660} == set(calls)
 
 @pytest.mark.parametrize("reproduction_status,season_status", [(0, 0), (1, 0), (0, 1), (1, 1)])
 def test_main_requires_both_integration_checks_to_pass(
@@ -179,6 +179,6 @@ def test_historical_driver_plays_on_but_does_not_change_live_ai(
 
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == 0
-    assert len(decisions) == 12
+    assert len(decisions) == 13
     assert all(play != PlayType.QB_KNEEL for play in decisions)
     assert ai.select_offense(game) == PlayType.QB_KNEEL

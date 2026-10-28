@@ -278,7 +278,10 @@ def run_historical_reproductions() -> int:
         ("Chiefs", "Giants", 19831621, False),
         ("Chiefs", "Giants", 19831623, False),
         ("Chiefs", "Giants", 19831624, False),
-        ("Chiefs", "Giants", 19831631, True),
+        # RULE-019 adds real punt-fumble recovery rolls, shifting later dice.
+        # Retain the old game and require the independently observed Q2 extension.
+        ("Chiefs", "Giants", 19831631, False),
+        ("Chiefs", "Giants", 19831660, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )

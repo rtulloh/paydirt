@@ -44,3 +44,19 @@ Private charts and narrative logs remain local; standings persistence is disable
   games, 9/9 playoffs**, exit zero. Five regular-season ties are allowed; no
   playoff ties. Standings persistence disabled.
 - Ruff passes. Fix remains uncommitted at this checkpoint.
+
+## Punt-return recovery rolls (RULE-019, 2026-10-28)
+
+Routing punts through the shared return resolver consumes the previously omitted
+recovery dice. Seed `19831631` still completes normally but no longer awards an
+untimed down. Instrumentation observed no pending untimed play, not just a missing
+announcement. Retain that complete game and add same-matchup seed `19831660`,
+independently observed to announce **and play** a Q2 untimed down, finish cleanly,
+and pass final-state/scoring checks. Seed `19831141` remains mandatory. No runtime
+seed search, altered dice, skipped games, or changed live AI.
+
+Runner unit expectations now require all 13 games and both mandatory events:
+13/13 normally, 12/13 with one injected exception, 11/13 with both events absent.
+The old event requirement on `19831631` was tied to the incorrect punt dice
+consumption. Test-first baseline: **8 expected failures, 47 passing controls**.
+Synthetic runner tests load no private charts; private narrative logs stay local.

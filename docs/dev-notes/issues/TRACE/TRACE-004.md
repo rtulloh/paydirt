@@ -10,6 +10,7 @@ links:
   - TRACE-006
   - AI-015
   - AUD-020
+  - RULE-019
 ---
 
 ## Description

@@ -316,8 +316,8 @@ def test_clean_or_offsetting_punt_returns_do_not_add_penalty_stats(
     assert kicking.penalty_yards == receiving.penalty_yards == 0
 
 
-@pytest.mark.parametrize("code,position,expected_penalty,td", [("OFF 15", 55, 2, False), ("DEF 15", 43, 15, True)])
-def test_punt_return_td_penalty_uses_catch_spot_or_deferred_enforcement(
+@pytest.mark.parametrize("code,position,expected_penalty,td", [("OFF 15", 55, 15, False), ("DEF 15", 43, 0, True)])
+def test_punt_return_td_penalty_uses_shared_end_of_return_enforcement(
     game: PaydirtGameEngine, code: str, position: int, expected_penalty: int, td: bool,
 ) -> None:
     game.state.ball_position = position
@@ -333,6 +333,6 @@ def test_punt_return_td_penalty_uses_catch_spot_or_deferred_enforcement(
     assert outcome.touchdown is td
     assert kicking.first_downs == receiving.first_downs == 0
     assert kicking.total_yards == receiving.total_yards == 0
-    assert game.state.pending_kickoff_penalty_yards == (15 if td else 0)
+    assert game.state.pending_kickoff_penalty_yards == 0
     if not td:
-        assert game.state.ball_position == 3  # Catch at own 5, half-distance penalty of 2.
+        assert game.state.ball_position == 85  # Own foul wipes TD; 15 from the goal line.
