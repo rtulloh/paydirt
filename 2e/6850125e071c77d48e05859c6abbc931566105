@@ -1,0 +1,25 @@
+docs/dev-notes/issue-tracker.md
+  s_acfd3acbb73f7e::t_eb64f0074f34b8 10,66,78
+docs/dev-notes/issues/FLOW/FLOW-011.md
+  s_acfd3acbb73f7e::t_3d546c6037ca30 1-47
+paydirt-web/backend/routes.py
+  s_acfd3acbb73f7e::t_5d01cd9b765509 1498-1500,1673-1680
+paydirt-web/backend/tests/test_api.py
+  s_acfd3acbb73f7e::t_63253381ac299b 9,1907-1908,1919,1921-1928,1930-1936
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2e6850125e071c77d48e05859c6abbc931566105",
+  "prompts": {},
+  "sessions": {
+    "s_acfd3acbb73f7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18ee6-6b52-72a1-a5fa-fe2fdb9200e7",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
