@@ -1,0 +1,29 @@
+docs/dev-notes/issues/FLOW/FLOW-008.md
+  s_6730ee9a377960::t_9ae2ffe08a8a17 25-47
+docs/dev-notes/issues/RULE/RULE-004.md
+  s_6730ee9a377960::t_e914f5a7fbe032 25-36
+docs/dev-notes/issues/STAT/STAT-004.md
+  s_6730ee9a377960::t_ff3d93c923ea3d 1-35
+docs/dev-notes/issues/VAL/VAL-010.md
+  s_6730ee9a377960::t_b12999654ac140 1-36
+docs/dev-notes/issues/VAL/VAL-011.md
+  s_6730ee9a377960::t_e8a9160ac36a8c 1-30
+docs/dev-notes/issues/VAL/VAL-013.md
+  s_6730ee9a377960::t_309e8c1fb7d672 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3eadcb1f755de7489c932e11eee5ae501c5f2dcb",
+  "prompts": {},
+  "sessions": {
+    "s_6730ee9a377960": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18e66-0838-7912-80d6-105cbd1bed05",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
