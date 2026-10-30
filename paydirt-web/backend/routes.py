@@ -857,8 +857,8 @@ async def new_game(request: NewGameRequest):
             home_id = player_team_id
             away_id = cpu_team_id
         else:
-            player_team_id = cpu_team
-            cpu_team_id = player_team
+            player_team_id = player_team
+            cpu_team_id = cpu_team
             home_id = cpu_team_id
             away_id = player_team_id
 
