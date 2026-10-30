@@ -83,6 +83,12 @@ Useful endpoints include `GET /api/health`, `GET /api/seasons`, `GET /api/teams?
 `POST /api/game/new`, and `GET /api/game/state/{game_id}`.
 The running backend's **http://localhost:8000/docs** provides its API schema.
 
+`POST /api/game/execute` accepts offensive play keys `1`–`9`, `Q`, `K`, `P`,
+`F`, and `S`, with optional `+`, `-`, `T`, and `S` suffixes; defensive keys are
+`A`–`E`. Calls are case-insensitive. Omit `cpu_play` (or send `null`) to let
+the CPU choose. `/api/game/two-point` accepts the same keys without suffixes.
+Invalid calls return HTTP 400 without advancing the game.
+
 Browser saved replays are not resumable CLI games or deterministic engine-log replay.
 See [saved games](../docs/saved-games-and-standings.md) and the separately labeled
 [replay design notes](../docs/dev-notes/replayable-game-logs.md).

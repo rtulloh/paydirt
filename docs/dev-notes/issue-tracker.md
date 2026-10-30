@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-95 issues: 46 open, 37 resolved, 12 closed.
+96 issues: 46 open, 38 resolved, 12 closed.
 
 ## Open (46)
 
@@ -63,7 +63,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 
 
-## Resolved (awaiting play-test confirmation) (37)
+## Resolved (awaiting play-test confirmation) (38)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -97,6 +97,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
 | [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
+| [VAL-012](issues/VAL/VAL-012.md) | Medium | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19 | — |
 | [AUD-003](issues/AUD/AUD-003.md) | Low | QB-kneel commentary credits a running back and describes an ordinary tackled loss | created 2026-10-18, resolved 2026-10-19 | — |
 | [AUD-004](issues/AUD/AUD-004.md) | Low | Goal-to-go headers repeat the position separator, such as a goal-distance marker followed by a second @ | created 2026-10-18, resolved 2026-10-19 | — |

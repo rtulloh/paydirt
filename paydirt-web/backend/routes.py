@@ -667,7 +667,10 @@ def get_play_type_from_key(key: str) -> PlayType:
         "F": PlayType.FIELD_GOAL,
         "S": PlayType.SPIKE_BALL,
     }
-    return play_map.get(key.upper(), PlayType.LINE_PLUNGE)
+    try:
+        return play_map[key.upper()]
+    except KeyError:
+        raise ValueError(f"Invalid offensive play: {key!r}") from None
 
 
 def get_defense_type_from_key(key: str) -> DefenseType:
@@ -678,7 +681,10 @@ def get_defense_type_from_key(key: str) -> DefenseType:
         "D": DefenseType.SHORT_PASS,
         "E": DefenseType.LONG_PASS,
     }
-    return defense_map.get(key.upper(), DefenseType.STANDARD)
+    try:
+        return defense_map[key.upper()]
+    except KeyError:
+        raise ValueError(f"Invalid defensive play: {key!r}") from None
 
 
 def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
@@ -700,6 +706,8 @@ def parse_play_with_modifiers(play_string: str) -> tuple[PlayType, dict]:
 
     base_play = play_string[0].upper()
     modifiers = play_string[1:].upper()
+    if any(modifier not in "+-TS" for modifier in modifiers):
+        raise ValueError(f"Invalid offensive play modifiers: {play_string!r}")
 
     # Parse modifiers (only from suffix, not from base play)
     out_of_bounds = "+" in modifiers
@@ -1067,7 +1075,7 @@ async def execute_play(request: PlayRequest):
     is_home_possession = engine.state.is_home_possession
     player_offense = human_is_home == is_home_possession
 
-    cpu_play = request.cpu_play.upper() if request.cpu_play else None
+    cpu_play = request.cpu_play.upper() if request.cpu_play is not None else None
 
     # Initialize modifier flags
     call_spike = False
@@ -1076,21 +1084,27 @@ async def execute_play(request: PlayRequest):
     in_bounds = False
     no_huddle = request.no_huddle
 
-    if player_offense:
-        # Parse player_play for modifiers (e.g., '7S' -> medium pass with spike)
-        offense_play, modifiers = parse_play_with_modifiers(player_play)
-        call_spike = modifiers["call_spike"]
-        call_timeout = modifiers["call_timeout"]
-        out_of_bounds = modifiers["out_of_bounds"]
-        in_bounds = modifiers["in_bounds"]
-
-        if cpu_play:
-            defense_play = get_defense_type_from_key(cpu_play)
+    # Validate all supplied calls before asking the AI or changing game state.
+    try:
+        if player_offense:
+            offense_play, modifiers = parse_play_with_modifiers(player_play)
+            call_spike = modifiers["call_spike"]
+            call_timeout = modifiers["call_timeout"]
+            out_of_bounds = modifiers["out_of_bounds"]
+            in_bounds = modifiers["in_bounds"]
+            defense_play = get_defense_type_from_key(cpu_play) if cpu_play is not None else None
         else:
+            defense_play = get_defense_type_from_key(player_play)
+            offense_play = get_play_type_from_key(cpu_play) if cpu_play is not None else None
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    if player_offense:
+        if defense_play is None:
             defense_play = game["ai"].select_defense(engine)
     else:
         # CPU on offense - check for 4th down decision if no cpu_play provided
-        if engine.state.down == 4 and not cpu_play:
+        if engine.state.down == 4 and cpu_play is None:
             play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
             play_map = {
                 PlayType.LINE_PLUNGE: "1",
@@ -1115,11 +1129,9 @@ async def execute_play(request: PlayRequest):
             else:
                 cpu_play = play_map.get(play, "1")
 
-        if cpu_play:
-            offense_play = get_play_type_from_key(cpu_play)
-        else:
-            offense_play = game["ai"].select_offense(engine)
-        defense_play = get_defense_type_from_key(player_play)
+        if offense_play is None:
+            offense_play = (get_play_type_from_key(cpu_play) if cpu_play is not None
+                            else game["ai"].select_offense(engine))
 
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
@@ -1649,8 +1661,11 @@ async def attempt_two_point(request: TwoPointRequest):
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
 
-    offense_play = get_play_type_from_key(request.offense_play)
-    defense_play = get_defense_type_from_key(request.defense_play)
+    try:
+        offense_play = get_play_type_from_key(request.offense_play)
+        defense_play = get_defense_type_from_key(request.defense_play)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
     _success, _defense_points, description = engine.attempt_two_point(offense_play, defense_play)
 

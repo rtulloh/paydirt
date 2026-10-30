@@ -297,17 +297,15 @@ class TestModifierIntegration:
         assert response.status_code == 200
     
     def test_invalid_play_string(self, client, game_with_human_on_offense):
-        """Test that invalid play strings are handled gracefully (default to LINE_PLUNGE)."""
+        """An unknown call must not silently become a line plunge."""
         game_id = game_with_human_on_offense
-        
+
         response = client.post("/api/game/execute", json={
             "game_id": game_id,
-            "player_play": "X",  # Invalid play, defaults to LINE_PLUNGE
+            "player_play": "X",
         })
-        # Backend defaults invalid plays to LINE_PLUNGE, so should succeed
-        assert response.status_code == 200
-        data = response.json()
-        assert "result" in data
+        assert response.status_code == 400
+        assert "play" in response.json()["detail"].lower()
     
     def test_no_huddle_persistence_across_plays(self, client, game_with_human_on_offense):
         """Test that no_huddle flag persists across multiple plays."""

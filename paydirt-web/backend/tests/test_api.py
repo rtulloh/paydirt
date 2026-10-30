@@ -113,7 +113,8 @@ def test_execute_play():
     data = response.json()
     game_id = data["game_id"]
 
-    response = client.post("/api/game/execute", json={"game_id": game_id, "player_play": "1"})
+    player_play = "1" if data["game_state"]["player_offense"] else "A"
+    response = client.post("/api/game/execute", json={"game_id": game_id, "player_play": player_play})
     assert response.status_code == 200
     result = response.json()
 
