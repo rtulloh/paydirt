@@ -1,0 +1,21 @@
+paydirt-web/backend/routes.py
+  s_acfd3acbb73f7e::t_c535fbcea531f8 860-861
+paydirt-web/backend/tests/test_new_game_team_assignment.py
+  s_acfd3acbb73f7e::t_a7418b6008e4dc 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7214b8969a652c9f439fe2726846ea0eca361bb1",
+  "prompts": {},
+  "sessions": {
+    "s_acfd3acbb73f7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18ee6-6b52-72a1-a5fa-fe2fdb9200e7",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
