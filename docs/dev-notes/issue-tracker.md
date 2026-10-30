@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-97 issues: 46 open, 39 resolved, 12 closed.
+98 issues: 46 open, 40 resolved, 12 closed.
 
 ## Open (46)
 
@@ -63,7 +63,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 
 
-## Resolved (awaiting play-test confirmation) (39)
+## Resolved (awaiting play-test confirmation) (40)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -75,6 +75,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-003](issues/FLOW/FLOW-003.md) | High | Web execute_play called setup_for_pat() and set pending_pat from result.touchdown without checking… | created 2026-10-19, resolved 2026-10-19 | RULE-003 |
 | [FLOW-004](issues/FLOW/FLOW-004.md) | High | CheckPendingPat fallback references the deleted isHomeScoring | created 2026-10-19, resolved 2026-10-20 | — |
 | [FLOW-010](issues/FLOW/FLOW-010.md) | High | Random-opponent API assigns the opponent as the player in away games | created 2026-10-30, resolved 2026-10-30 | — |
+| [FLOW-011](issues/FLOW/FLOW-011.md) | High | Web conversion endpoints execute without a pending touchdown try | created 2026-10-30, resolved 2026-10-30 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
 | [RULE-014](issues/RULE/RULE-014.md) | High | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010, RULE-018, RULE-019 |
 | [RULE-015](issues/RULE/RULE-015.md) | High | Recovery roll 39 on an ordinary fumble was an automatic defensive touchdown (R:39→"lost" | Ret:35→97 in the… | created 2026-10-20, resolved 2026-10-20 | — |

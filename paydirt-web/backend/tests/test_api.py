@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import app
+from routes import games
 
 client = TestClient(app)
 
@@ -1903,8 +1904,8 @@ def test_load_replay_season_detection_from_teams():
 # =============================================================================
 
 
-def test_extra_point_only_requires_game_id():
-    """Test that extra-point endpoint works with just game_id (no player_play required)."""
+def test_extra_point_only_requires_game_id_when_try_is_pending() -> None:
+    """An owed PAT needs no extra play field in the request body."""
     # Create game
     response = client.post(
         "/api/game/new",
@@ -1915,20 +1916,24 @@ def test_extra_point_only_requires_game_id():
         },
     )
     game_id = response.json()["game_id"]
+    games[game_id]["pending_pat"] = True
 
-    # Call extra-point with only game_id
-    ep_response = client.post(
-        "/api/game/extra-point",
-        json={
-            "game_id": game_id,
-        },
-    )
+    try:
+        # Call extra-point with only game_id
+        ep_response = client.post(
+            "/api/game/extra-point",
+            json={
+                "game_id": game_id,
+            },
+        )
 
-    # Should succeed (200) not fail with 422 validation error
-    assert ep_response.status_code == 200
-    data = ep_response.json()
-    assert "success" in data
-    assert "description" in data
+        # An owed try succeeds without a player_play field.
+        assert ep_response.status_code == 200
+        data = ep_response.json()
+        assert "success" in data
+        assert "description" in data
+    finally:
+        games.pop(game_id, None)
 
 
 def test_cpu_play_only_requires_game_id():

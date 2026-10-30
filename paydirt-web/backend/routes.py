@@ -1495,6 +1495,9 @@ async def attempt_extra_point(request: GameIdRequest):
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[request.game_id]
+    if not game.get("pending_pat", False):
+        raise HTTPException(status_code=400, detail="No touchdown try is pending")
+
     engine = game["engine"]
 
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
@@ -1666,6 +1669,14 @@ async def attempt_two_point(request: TwoPointRequest):
         defense_play = get_defense_type_from_key(request.defense_play)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+    if not game.get("pending_pat", False):
+        raise HTTPException(status_code=400, detail="No touchdown try is pending")
+    if not engine.season_rules.two_point_conversion:
+        raise HTTPException(
+            status_code=400,
+            detail="Two-point conversions are not available in this season",
+        )
 
     _success, _defense_points, description = engine.attempt_two_point(offense_play, defense_play)
 
