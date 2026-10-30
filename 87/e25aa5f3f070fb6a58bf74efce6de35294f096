@@ -1,0 +1,31 @@
+docs/dev-notes/issue-tracker.md
+  s_6730ee9a377960::t_fab5fb7ed199b4 10,66,100
+docs/dev-notes/issues/VAL/VAL-012.md
+  s_6730ee9a377960::t_218aca15bd9366 1-48
+paydirt-web/README.md
+  s_6730ee9a377960::t_cd041102be329a 86-91
+paydirt-web/backend/routes.py
+  s_6730ee9a377960::t_4569d1b6e379ed 670-673,684-687,709-710,1078,1087-1095,1097-1103,1107,1132-1134,1664-1668
+paydirt-web/backend/tests/test_api.py
+  s_6730ee9a377960::t_075f31864c7405 116-117
+paydirt-web/backend/tests/test_invalid_plays_api.py
+  s_6730ee9a377960::t_da9a640a51f89b 1-143
+paydirt-web/backend/tests/test_play_modifiers.py
+  s_6730ee9a377960::t_18d91430e22044 300,302,305,307-308,329
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "87e25aa5f3f070fb6a58bf74efce6de35294f096",
+  "prompts": {},
+  "sessions": {
+    "s_6730ee9a377960": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18e66-0838-7912-80d6-105cbd1bed05",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
