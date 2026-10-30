@@ -268,9 +268,9 @@ def run_historical_reproductions() -> int:
         # changed the 19831107 trajectory. Retain it as a complete game and require
         # the untimed down in an independently verified supplement.
         ("Raiders", "Eagles", 19831127, False),
-        # Corrected offensive dice (1d34a45) change both prior extension seeds.
-        # Keep those full games; these supplements award and play real untimed downs.
-        ("Raiders", "Eagles", 19831141, True),
+        # Corrected dice and subsequent clock/AI changes shifted the extension.
+        # Keep a current-dice supplement that awards and plays a real untimed down.
+        ("Raiders", "Eagles", 19831154, True),
         # Retain prior reproductions when corrected commentary/timing changes
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),
@@ -278,10 +278,10 @@ def run_historical_reproductions() -> int:
         ("Chiefs", "Giants", 19831621, False),
         ("Chiefs", "Giants", 19831623, False),
         ("Chiefs", "Giants", 19831624, False),
-        # RULE-019 adds real punt-fumble recovery rolls, shifting later dice.
-        # Retain the old game and require the independently observed Q2 extension.
+        # RULE-019 and subsequent clock/AI changes shifted the extension again.
+        # This current-dice supplement awards and plays a real untimed down.
         ("Chiefs", "Giants", 19831631, False),
-        ("Chiefs", "Giants", 19831660, True),
+        ("Chiefs", "Giants", 19831673, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )

@@ -138,8 +138,16 @@ and standalone game/AI-audit commands used above, including
 `python3 tests/run_ai_audit.py` with arguments. Run frontend commands from
 `paydirt-web/frontend` and backend pytest from `paydirt-web/backend`.
 
-Other shell commands require approval. Git pushes also require approval; reset,
-rebase, checkout, and `rm` remain denied. Unlike the source template, this file
+Read-only tracked-file inspection with `git ls-files` and remote-reference
+inspection with `git ls-remote` (with or without arguments) are allowed.
+`git checkout-index` (with or without arguments) is also allowed for exporting
+staged-only validation snapshots. `git remote` still requires approval.
+GitHub CLI (`gh`) commands are explicitly
+denied because `gh` is not installed; use GitHub HTTP APIs or web pages instead.
+These command permissions do not replace explicit approval
+for pushes, tags, releases, or destructive actions. Other shell commands
+require approval. The `git push` rule still asks; reset, rebase, checkout,
+and `rm` remain denied. Unlike the source template, this file
 does not blanket-allow arbitrary `python3` scripts or retain Bowl Bound-specific
 frontend paths/environment variables. These permissions are convenience rules,
 not a sandbox or a replacement for the required pre-push validation.

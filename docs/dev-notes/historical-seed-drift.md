@@ -60,3 +60,16 @@ Runner unit expectations now require all 13 games and both mandatory events:
 The old event requirement on `19831631` was tied to the incorrect punt dice
 consumption. Test-first baseline: **8 expected failures, 47 passing controls**.
 Synthetic runner tests load no private charts; private narrative logs stay local.
+
+## Clock and AI changes (2026-10-30)
+
+The full-season pre-push regression found that required supplements `19831141`
+and `19831660` still completed but no longer exercised an untimed down after
+later clock and AI changes. The 224 generated regular-season games and all
+nine playoff games passed; the runner correctly failed its two historical
+event requirements. Current-dice supplements `19831154` (Raiders/Eagles) and
+`19831673` (Chiefs/Giants) were independently run through the complete CLI
+flow. Each announced the extension, played the extra down, finished with no
+pending untimed down, and passed normal score/period validation. The runner
+keeps thirteen games and requires those two events. No dice, engine rules,
+private charts or narrative logs were changed or exported.

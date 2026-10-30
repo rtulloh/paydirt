@@ -47,3 +47,10 @@ full-game play-test; unrelated game completion alone is not grounds for closure.
 Included in the current local fix commit with its tests and player guidance.
 Marked resolved; issue-specific full-game confirmation is still required for
 closure. No push authorized or performed.
+
+--- 2026-10-28 12:40 ---
+Supplied-game own-recovery fumble correctly gains a first down at the
+recovery spot, but this is a first-down call with no recovery advance
+(local lines 1269-1277). It is only a passing control. The reported
+second/third-down advance short of the sticks is not exercised, so keep
+resolved pending that specific full-game evidence. No closure inferred.

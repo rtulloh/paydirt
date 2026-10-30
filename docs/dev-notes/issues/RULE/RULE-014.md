@@ -33,3 +33,12 @@ Play-test confirmation — ordinary recovered kickoff-return fumble: CLE '83 kic
 
 --- 2026-10-20 17:00 ---
 Latest Week 6 audit adds a penalty-reroll fumble: the NYG '83/PHI '83 game reached `OFF 10` on a penalty reroll, then `F + 8`, followed by `R:35→"lost"`. NYG recovered the ball at NYG 49 and continued at 1st & 10. This confirms the penalty-reroll fumble path. RULE-014 remains resolved/awaiting closure because no chained fumble return (recovery roll 37–39) or explicit kicking-team recovery choice occurred.
+
+--- 2026-10-28 12:40 ---
+Supplied-game audit observes an ordinary kickoff-return fumble lost to
+the kicking team, with a captured recovery roll, the correct resulting
+team/spot and a fumble-lost turnover in halftime/final totals (local
+lines 594-615 and 649-658). This confirms the ordinary lost-return path
+and complements earlier kept/penalty-reroll evidence. Keep resolved: the
+explicit pending choice and chained recovery-advance branches required
+by this ticket were not reached. Do not close from game completion alone.

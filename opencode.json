@@ -18,6 +18,21 @@
     },
     {
       "action": "shell",
+      "resource": "git ls-files *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git ls-remote *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git checkout-index *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
       "resource": "git diff *",
       "effect": "allow"
     },
@@ -180,6 +195,11 @@
       "action": "shell",
       "resource": "git push *",
       "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "gh *",
+      "effect": "deny"
     },
     {
       "action": "shell",

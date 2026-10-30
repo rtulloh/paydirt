@@ -7,14 +7,16 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-98 issues: 46 open, 40 resolved, 12 closed.
+110 issues: 57 open, 34 resolved, 19 closed.
 
-## Open (46)
+## Open (57)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
+| [STAT-004](issues/STAT/STAT-004.md) | High | Standings game numbers target the wrong record after out-of-order weeks | created 2026-10-30 | — |
+| [VAL-009](issues/VAL/VAL-009.md) | High | Review season lookup path confinement at API boundaries | created 2026-10-30 | — |
 | [AI-002](issues/AI/AI-002.md) | Medium | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
 | [AI-003](issues/AI/AI-003.md) | Medium | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006 |
 | [AI-012](issues/AI/AI-012.md) | Medium | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
@@ -23,14 +25,16 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-016](issues/AI/AI-016.md) | Medium | CPU never acts on kickoff-chart penalties | created 2026-10-19 | AUD-020, RULE-013 |
 | [AI-017](issues/AI/AI-017.md) | Medium | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19 | — |
 | [AI-018](issues/AI/AI-018.md) | Medium | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002 |
-| [AI-019](issues/AI/AI-019.md) | Medium | Hard defense bypasses goal-line, red-zone, prevent, two-minute, and fourth-down policies and returns Standard… | created 2026-10-19 | — |
+| [AI-019](issues/AI/AI-019.md) | Medium | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-023 |
 | [AI-020](issues/AI/AI-020.md) | Medium | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
+| [AI-023](issues/AI/AI-023.md) | Medium | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
 | [AUD-017](issues/AUD/AUD-017.md) | Medium | Duplicate FIRST DOWN on offensive fumble recoveries | created 2026-10-19 | — |
 | [AUD-018](issues/AUD/AUD-018.md) | Medium | CLI display parses description strings to decide output (first-down marker check, reroll-dice and touchback… | created 2026-10-19 | TRACE-007 |
 | [AUD-020](issues/AUD/AUD-020.md) | Medium | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-015, AI-016, TRACE-004 |
+| [AUD-022](issues/AUD/AUD-022.md) | Medium | Fourth-down own-recovery turnover on downs prints contradictory recovery labels and a fabricated lost roll | created 2026-10-27 | RULE-008 |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
@@ -52,18 +56,25 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [TRACE-007](issues/TRACE/TRACE-007.md) | Medium | The PlayTransaction/PlayEvent model (paydirt/play_events.py) does not deliver its stated purpose and is now a… | created 2026-10-19 | AUD-018, TRACE-001, TRACE-002, TRACE-005 |
 | [VAL-001](issues/VAL/VAL-001.md) | Medium | Full-game browser regression lost its execution context during navigation | created 2026-10-18 | AUD-001 |
 | [VAL-004](issues/VAL/VAL-004.md) | Medium | Local tag v1.9.0 points behind the pushed v1.8.1; git push --tags would build a stale 1.9.0 | created 2026-10-19 | — |
-| [VAL-005](issues/VAL/VAL-005.md) | Medium | Corrupt offensive_call_history in a save aborts --load with a traceback instead of the "Failed to load" message | created 2026-10-19 | — |
+| [VAL-005](issues/VAL/VAL-005.md) | Medium | Corrupt offensive_call_history in a save aborts --load with a traceback instead of the "Failed to load" message | created 2026-10-19 | VAL-008 |
 | [VAL-006](issues/VAL/VAL-006.md) | Medium | CI matrix includes Python 3.9 while requires-python >= 3.10 and the audit harness uses 3.10 syntax | created 2026-10-19 | — |
-| [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26 | — |
+| [VAL-010](issues/VAL/VAL-010.md) | Medium | Unit regressions still depend on private historical seasons and silently skip | created 2026-10-30 | — |
+| [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
 | [AUD-021](issues/AUD/AUD-021.md) | Low | Kick/return presentation from the play-test log | created 2026-10-19 | AI-021, RULE-010 |
+| [AUD-023](issues/AUD/AUD-023.md) | Low | CSV fallback team metadata repeats the nickname in the matchup banner | created 2026-10-28 | — |
+| [AUD-024](issues/AUD/AUD-024.md) | Low | Postgame tendency summary labels distance bands as exact down-and-distance situations | created 2026-10-28 | — |
+| [DATA-002](issues/DATA/DATA-002.md) | Low | Local 1983 Chiefs commentary roster includes Joe Delaney despite his death before the season | created 2026-10-28 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
-| [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | — |
+| [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
+| [TRACE-008](issues/TRACE/TRACE-008.md) | Low | End-line fumble depth roll is dropped from the description when the defense recovers | created 2026-10-27 | — |
+| [VAL-008](issues/VAL/VAL-008.md) | Low | CLI argv dispatch rejects the advertised -l flag, ignores -A/-H ordering and skips validation on --load | created 2026-10-27 | VAL-005 |
+| [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (40)
+## Resolved (awaiting play-test confirmation) (34)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -90,28 +101,22 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-005](issues/AI/AI-005.md) | Medium | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003 |
 | [AI-008](issues/AI/AI-008.md) | Medium | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
-| [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18 | AI-012 |
 | [AI-011](issues/AI/AI-011.md) | Medium | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-022](issues/AI/AI-022.md) | Medium | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-008](issues/AUD/AUD-008.md) | Medium | Full interception-TD output can name the original offense as scorer because the engine omits result scoring-team… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19 | — |
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
-| [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19 | — |
 | [AUD-003](issues/AUD/AUD-003.md) | Low | QB-kneel commentary credits a running back and describes an ordinary tackled loss | created 2026-10-18, resolved 2026-10-19 | — |
-| [AUD-004](issues/AUD/AUD-004.md) | Low | Goal-to-go headers repeat the position separator, such as a goal-distance marker followed by a second @ | created 2026-10-18, resolved 2026-10-19 | — |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19, resolved 2026-10-19 | — |
-| [AUD-010](issues/AUD/AUD-010.md) | Low | Ordinary offensive fumble recovery describes pre-fumble gain as an extra post-recovery advance | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
-| [AUD-012](issues/AUD/AUD-012.md) | Low | Pass interference repeats the achieved first-down wording | created 2026-10-19, resolved 2026-10-19 | — |
-| [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19 | — |
 
 
-## Closed (12)
+## Closed (19)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -124,8 +129,15 @@ A play-test audit confirmed the issue no longer occurs.
 | [VAL-003](issues/VAL/VAL-003.md) | High | Standings_data.save/season_1983.json is untracked and not ignored and contains private-season results | created 2026-10-19, resolved 2026-10-27, closed 2026-10-27 | — |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-003, AI-018 |
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | — |
+| [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
+| [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
 | [TRACE-009](issues/TRACE/TRACE-009.md) | Medium | Half-ending touchdown and kickoff lack elapsed-time evidence to verify whether another snap was owed | created 2026-10-28, resolved 2026-10-28, closed 2026-10-28 | AI-007 |
+| [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26, resolved 2026-10-30, closed 2026-10-30 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
+| [AUD-004](issues/AUD/AUD-004.md) | Low | Goal-to-go headers repeat the position separator, such as a goal-distance marker followed by a second @ | created 2026-10-18, resolved 2026-10-19, closed 2026-10-28 | — |
+| [AUD-010](issues/AUD/AUD-010.md) | Low | Ordinary offensive fumble recovery describes pre-fumble gain as an extra post-recovery advance | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
+| [AUD-012](issues/AUD/AUD-012.md) | Low | Pass interference repeats the achieved first-down wording | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
+| [AUD-013](issues/AUD/AUD-013.md) | Low | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
 | [TRACE-002](issues/TRACE/TRACE-002.md) | Low | Fumble traces show unknown defensive rows and placeholder-looking zero return rolls | created 2026-10-18, resolved 2026-10-20, closed 2026-10-20 | TRACE-007 |

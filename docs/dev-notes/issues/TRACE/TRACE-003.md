@@ -20,3 +20,13 @@ Record calls such as spike, timeout, sideline designation, and no-huddle separat
 
 --- 2026-10-18 00:00 ---
 Migrated from the single-file tracker (status at migration: Open).
+
+--- 2026-10-28 12:40 ---
+Supplied-game audit confirms that called offensive modifiers remain absent
+from compact call/trace lines. Timeout-used/skipped output is visible, but
+the echoed call names alone cannot distinguish an unmodified call from
+T, S, +, - or their combinations. In particular, skipped-timeout messages
+after incomplete/penalty outcomes do not prove which full modifier call
+the user entered or whether another modifier was also planned. Retain
+request-versus-effect observability as open; do not infer missing input
+from elapsed time. No raw private log exported.
