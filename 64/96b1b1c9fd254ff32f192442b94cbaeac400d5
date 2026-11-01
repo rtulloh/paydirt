@@ -1,0 +1,25 @@
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_43e6c2462e6a35 10,119,128
+docs/dev-notes/issues/RULE/RULE-021.md
+  s_56c2016c2f0956::t_5c326cca436725 1-46
+paydirt/game_engine.py
+  s_56c2016c2f0956::t_825335e61afb05 6231-6237
+tests/test_overtime.py
+  s_56c2016c2f0956::t_899f1529c37a5e 313-330
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6496b1b1c9fd254ff32f192442b94cbaeac400d5",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
