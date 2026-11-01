@@ -310,6 +310,24 @@ class TestGameEngineOvertime:
         assert result is True
         assert game.state.game_over is True
     
+    def test_modified_overtime_matching_second_possession_field_goal_continues(self, game) -> None:
+        """A response field goal that only ties the score must continue overtime."""
+        game.season_rules.overtime.format = "modified_sudden_death"
+        game.state.is_overtime = True
+        game.state.is_playoff = True
+        game.state.ot_first_possession_complete = True
+        game.state.home_score = 19
+        game.state.away_score = 19
+
+        ended = game.check_overtime_score(
+            scored=True,
+            was_touchdown=False,
+            scoring_team_is_home=False,
+        )
+
+        assert ended is False
+        assert game.state.game_over is False
+
     def test_ot_period_ends_still_tied_regular_season(self, game):
         """If OT period ends still tied in regular season, game ends in tie."""
         game.state.is_overtime = True

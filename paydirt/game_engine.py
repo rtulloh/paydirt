@@ -6228,9 +6228,13 @@ class PaydirtGameEngine:
                     self.state.ot_first_possession_complete = True
                     return False
             else:
-                # After first possession, any score wins
-                self.state.game_over = True
-                return True
+                # After both teams have possessed the ball, a score ends the
+                # game only when it creates a lead. A matching response field
+                # goal leaves the game tied and starts true sudden death.
+                if self.state.home_score != self.state.away_score:
+                    self.state.game_over = True
+                    return True
+                return False
 
         return False
 
