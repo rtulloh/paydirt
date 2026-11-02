@@ -1,0 +1,35 @@
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_9c43ddf35add0a 10,121,134,160
+docs/dev-notes/issues/FLOW/FLOW-012.md
+  s_56c2016c2f0956::t_f9daf218f5b99c 1-58
+docs/dev-notes/issues/VAL/VAL-014.md
+  s_56c2016c2f0956::t_d3b8d7984b4542 70-75
+docs/dev-notes/issues/VAL/VAL-015.md
+  s_56c2016c2f0956::t_f2503b38997e91 1-71
+docs/web-interface.md
+  s_56c2016c2f0956::t_9a3b41c26d4bdd 45-47
+paydirt-web/frontend/e2e/README.md
+  s_56c2016c2f0956::t_5e0ac907cfeb37 36-38,47-50
+paydirt-web/frontend/e2e/full-games.spec.js
+  s_56c2016c2f0956::t_ac346d06ac9677 56,86,125-128,130-152,154-156,187-211,224-228,245,255,257
+paydirt-web/frontend/src/components/Game/PlayingPhase.jsx
+  s_56c2016c2f0956::t_2721cfd6b6d299 100-101,159,163,168-171,177,189-191,196-203,588,862-865,1282
+paydirt-web/frontend/src/components/Game/PlayingPhaseFourthDown.test.jsx
+  s_56c2016c2f0956::t_9106286d569caf 1-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5783e01e2d6795e11830a184a3a449d9987b46e6",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
