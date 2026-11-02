@@ -221,3 +221,15 @@ correlation from 0.782 to 0.866. Every playoff game completed without a tied fin
 The remaining gaps in passing yardage, volume, and field-goal accuracy are documented
 model limitations and future calibration opportunities rather than the omitted-input
 and unresolved-outcome defects described by this ticket. DATA-006 is closed.
+
+--- 2026-11-01 23:59 ---
+Regenerated all 32 local 2024 teams after commit `fbef65a` using the current aggregate
+pipeline and reran 256 Hard-vs-Hard seasons in a new audit directory. Hash comparison
+found zero changes among all 132 season files. The fresh 72,960-game summary was
+byte-identical to the earlier 256-season summary (`b0d0b0d374b2193a69d139753a5045a2ebb31e3fe295226503312d8ce3d62f8a`).
+All seasons completed without a failed or tied playoff final.
+
+This independently reproduces the closed ticket's 2024 aggregate results. It does not
+exercise the opponent-adjusted PFR empirical mode, because the existing 2024 source
+adapter uses aggregate FootballDB totals with nflverse enrichment for field goals,
+fumbles, and out-of-bounds counts rather than classifying every nflverse scrimmage play.
