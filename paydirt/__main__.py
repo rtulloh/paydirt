@@ -53,7 +53,7 @@ def start_web_server(port=8000, open_browser=True):
         from fastapi.responses import FileResponse
 
         # Create app
-        app = FastAPI(title="Paydirt Web API", version="1.9.5")
+        app = FastAPI(title="Paydirt Web API", version="1.10.0")
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],

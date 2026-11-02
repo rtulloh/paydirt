@@ -1,12 +1,38 @@
 # Paydirt Release Notes
 
-## Unreleased
+## v1.10.0
 
 ### Generated Season Charts
 
-- Include independently generated 1983 and 2024 chart sets with published builds alongside the fictional 2026 sample.
+- Include all 32 teams from 2024 and all 28 teams from 1983, independently generated from play-by-play and season statistics, alongside the fictional 2026 sample.
 - Present the bundled seasons consistently as `seasons/1983`, `seasons/2024`, and `seasons/2026`.
 - Distribute concise source, license, and non-endorsement attribution without bundling raw play-by-play or original developer charts.
+
+### Chart Generation and Tuning
+
+- Add play-by-play adapters for nflverse and archived Pro Football Reference records, opponent adjustments, and separate generation and engine-based tuning tools.
+- Preserve out-of-bounds markers and special-teams fouls; improve breakaway runs, passing results, sacks, turnovers, and distance-based kicking inputs.
+- Document the two-phase generation, tuning, and validation workflow for future seasons. The generated charts are statistical reconstructions, not a guarantee of historical standings or scores.
+
+### Gameplay and Coaching
+
+- Improve CPU penalty choices when a retained gain already earns a first down, and use conversion-specific play selection for two-point attempts.
+- Correct incomplete-pass and flagged-play timing, natural out-of-bounds clock stops, spike down costs, and defensive timeout priority.
+- Correct modified-overtime matching-field-goal handling, era-dependent missed-field-goal possession, and return-fumble recovery/down handling.
+- Improve kickoff and return penalty enforcement, penalty previews, clock evidence, and return-foul narration.
+
+### Browser Reliability and Validation
+
+- Prevent duplicate and stale CPU fourth-down decision requests; preserve the required punt/field-goal confirmation when a decision arrives after a defense click.
+- Reject invalid API play calls and conversion attempts without a pending try; correct random-opponent team assignment.
+- Expand unit, complete-game, full-season, and AI play-selection regression coverage, including two complete real-engine browser games with a forced fourth-down handoff.
+- Synchronize package, API, frontend, and installer version metadata to 1.10.0.
+
+### Validation
+
+- Full local regression passes: 6,776 core tests, 6,759 clean-checkout tests, 280 backend tests, 267 frontend tests, frontend build, both browser checks, and Ruff.
+- All fourteen standalone games, fifteen historical reproductions, 224 generated regular-season games, nine untied playoff games, and public/local AI audits (32/32 and 448/448 games) pass. Reviewed play-selection distributions retain the known legacy-balanced advisory on AI-008.
+- Existing skips remain: eight in the local core suite, 25 in the clean checkout, and one frontend test. Existing Pydantic deprecations and browser-tooling warnings remain.
 
 ## v1.9.5
 
