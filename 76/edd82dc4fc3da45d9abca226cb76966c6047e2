@@ -1,0 +1,37 @@
+RELEASE_NOTES.md
+  s_56c2016c2f0956::t_607405a1e61bff 3,7,11-36
+packaging/linux/create_appimage.sh
+  s_56c2016c2f0956::t_f1ae50b6b8b867 6,95
+packaging/macos/create_app.sh
+  s_56c2016c2f0956::t_070df44fe5eb26 8,83
+packaging/windows/installer.nsi
+  s_56c2016c2f0956::t_09822fffd09153 6,85
+paydirt-web/backend/main.py
+  s_56c2016c2f0956::t_ee298f2fde0fe4 16
+paydirt-web/frontend/package-lock.json
+  s_56c2016c2f0956::t_5b5aa9b1f21164 3,9
+paydirt-web/frontend/package.json
+  s_56c2016c2f0956::t_01359e8658ada8 3
+paydirt/__init__.py
+  s_56c2016c2f0956::t_17d29f8a49d501 4
+paydirt/__main__.py
+  s_56c2016c2f0956::t_78b64103cf1f6c 56
+pyproject.toml
+  s_56c2016c2f0956::t_de3e5890bdc96c 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "76edd82dc4fc3da45d9abca226cb76966c6047e2",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
