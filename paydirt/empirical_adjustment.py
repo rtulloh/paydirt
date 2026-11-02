@@ -374,6 +374,45 @@ def _defense_profiles(
     }
 
 
+def scale_empirical_run_yards(
+    plays: Sequence[EmpiricalPlay],
+    multiplier: float,
+) -> tuple[EmpiricalPlay, ...]:
+    """Scale resolved rushing yards for engine-level chart calibration.
+
+    Numeric and fumble results retain their out-of-bounds or turnover markers.
+    Penalties, touchdowns, passes, and special-teams outcomes remain unchanged.
+
+    Args:
+        plays: Opponent-adjusted empirical outcomes.
+        multiplier: Positive factor applied to resolved run yardage.
+
+    Returns:
+        Calibrated copies of the supplied outcomes.
+
+    Raises:
+        ValueError: If the multiplier is not positive.
+    """
+    if multiplier <= 0:
+        raise ValueError("Empirical run-yard multiplier must be positive")
+    calibrated: list[EmpiricalPlay] = []
+    for play in plays:
+        yards = _result_yards(play)
+        if (
+            play.unit == "offense"
+            and play.chart in _RUN_CHARTS
+            and yards is not None
+            and not play.result.upper().startswith(_PENALTY_PREFIXES)
+        ):
+            calibrated.append(
+                replace(play, result=_format_adjusted_result(play, yards * multiplier))
+            )
+        else:
+            calibrated.append(play)
+    return tuple(calibrated)
+
+
+
 def adjust_empirical_offense(
     plays: Sequence[EmpiricalPlay],
     shrinkage: float = 24.0,

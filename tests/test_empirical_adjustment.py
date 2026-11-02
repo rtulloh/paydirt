@@ -119,3 +119,25 @@ def test_defense_profile_replaces_schedule_biased_defense_rates() -> None:
     assert calibrated.defense.passing.interceptions == 12
     assert calibrated.defense.passing.sacks == 26
     assert calibrated.defense.passing.sack_yards == 182
+
+
+def test_run_yard_calibration_preserves_symbols_and_non_run_results() -> None:
+    """Run calibration should scale yardage without losing result semantics."""
+    from paydirt.empirical_adjustment import scale_empirical_run_yards
+
+    plays = (
+        _play("alpha", "beta", "8*", 1, chart="line_plunge"),
+        _play("alpha", "beta", "F - 6", 2, chart="off_tackle"),
+        _play("alpha", "beta", "TD", 3, chart="end_run"),
+        _play("alpha", "beta", "12", 4, chart="short_pass"),
+    )
+
+    calibrated = scale_empirical_run_yards(plays, multiplier=0.75)
+
+    assert [play.result for play in calibrated] == ["6*", "F - 4", "TD", "12"]
+    assert [play.chart for play in calibrated] == [
+        "line_plunge",
+        "off_tackle",
+        "end_run",
+        "short_pass",
+    ]

@@ -11,6 +11,7 @@ tags:
   - play-tested
 links:
   - RULE-021
+  - DATA-007
 ---
 
 ## Description
@@ -233,3 +234,11 @@ This independently reproduces the closed ticket's 2024 aggregate results. It doe
 exercise the opponent-adjusted PFR empirical mode, because the existing 2024 source
 adapter uses aggregate FootballDB totals with nflverse enrichment for field goals,
 fumbles, and out-of-bounds counts rather than classifying every nflverse scrimmage play.
+
+--- 2026-11-01 22:35 ---
+DATA-007 supplied the requested held-out validation with complete 2024 nflverse play-by-play.
+Across 256 Hard seasons, opponent-adjusted empirical charts improved mean win error, team-strength
+correlations, playoff overlap, passing efficiency, sacks, turnovers, and play volume relative to
+the aggregate charts. Absolute points remained 4.1% high and yards 5.4% high. This supports the
+closed ticket's empirical and engine-calibration design while leaving coaching-related play volume
+as a separate concern.

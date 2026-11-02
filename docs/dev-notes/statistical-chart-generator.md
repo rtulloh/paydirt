@@ -595,6 +595,57 @@ play volume and yardage, field-goal underperformance, residual completion and tu
 held-out validation. Further numerical tuning should use another season or held-out teams rather
 than optimizing the complete 1983 sample.
 
+## November 1: 2024 nflverse Held-Out Adapter
+
+The first 2024 regeneration still used aggregate totals despite complete nflverse play-by-play.
+DATA-007 corrects that workflow. The new source adapter classified 47,274 regular-season rows
+from all 272 games into 47,351 chart outcomes, including 1,115 field-goal attempts and 504 fumble
+events. Every offensive outcome retained its opponent. Air yards supplied pass families, with
+4,031 nonpositive-air-yard passes assigned to the screen column instead of relying on narrative
+text that almost never says "screen".
+
+All 32 teams generated successfully. Draw remained the only sparse offense column and fell back
+to aggregate generation once per team; 47,220 outcomes populated empirical columns. A neutral
+32-season Hard replay demonstrated why source parsing and engine calibration are separate steps:
+completion was 61.37% versus 65.29% actual, yards were 382.18 versus 337.42 per team-game, and
+points were 25.73 versus 22.91. Team-mean win correlation was .786 and points-for correlation was
+.940, showing strong relative information despite incorrect absolute engine output.
+
+Matched pilots then adjusted only measured engine-boundary rates. The selected 2024 manifest uses
+a 0.75 run-yard multiplier, +0.085 completion adjustment, -0.003 interception adjustment, +0.009
+pressure adjustment, and 0.75 resolved-pass-yard multiplier. In the final 16-season pilot this
+produced 65.65% completions, 7.26 passing yards per attempt, 2.45 sacks, 1.28 turnovers, 353.04
+yards, and 23.94 points per team-game. An eight-season interception refinement reduced turnover
+overstatement to 1.18 per team-game. The final 256-season Hard assessment completed 69,632 regular-season games and 3,328
+postseason games without a failed or tied playoff final.
+
+| Metric | Actual 2024 | Aggregate charts | nflverse play by play |
+|---|---:|---:|---:|
+| Completion rate | 65.29% | 65.28% | 65.86% |
+| Passing yards / attempt | 7.13 | 6.53 | 7.32 |
+| Sacks / team-game | 2.42 | 2.35 | 2.44 |
+| Turnovers / team-game | 1.15 | 1.11 | 1.17 |
+| Plays / team-game | 62.15 | 59.02 | 59.69 |
+| Yards / team-game | 337.42 | 314.72 | 355.73 |
+| Points / team-game | 22.91 | 23.13 | 23.85 |
+
+| Fit metric | Aggregate charts | nflverse play by play |
+|---|---:|---:|
+| Mean win MAE / season | 2.366 | 2.325 |
+| Team-mean win correlation | .760 | .795 |
+| Team-mean points-for correlation | .925 | .938 |
+| Team-mean points-against correlation | .661 | .678 |
+| Mean playoff overlap / 14 | 9.25 | 9.70 |
+
+The empirical charts produced 66 Super Bowl pairs and 18 champions. The actual Kansas City–
+Philadelphia matchup occurred 3/256 times. Philadelphia won 38 championships, matching Baltimore
+for the strongest NFC/AFC result pattern, while Kansas City won 3. The most common matchup was
+Baltimore–Detroit at 25/256. This is a stronger held-out result than the aggregate generator on
+relative team fit and most engine event rates, although points remain 4.1% high and yards 5.4%
+high. The remaining play-volume and pass-selection differences should be investigated separately
+from source extraction; compensating for Hard coaching behavior inside chart classification would
+mix two distinct model boundaries.
+
 ## Recommended Validation
 
 For every selected matchup, run both chart sets across the same seed list and compare:

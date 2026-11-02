@@ -20,10 +20,11 @@ rows, and a subset-sum allocator chooses the closest available dice probability 
 later classes to overwrite earlier ones. A stable seed changes where equivalent results appear
 without changing the inputs.
 
-Aggregate totals are enough for a calibrated estimate. They do not uniquely determine an
-original chart. For example, one passing total does not reveal which attempts were screens,
-short passes, medium passes, long passes, or tight-end passes. Use classified full-season
-outcomes when those distinctions are available.
+Aggregate totals provide a fallback estimate when complete play-by-play is unavailable. They
+do not uniquely determine an original chart. For example, one passing total does not reveal
+which attempts were screens, short passes, medium passes, long passes, or tight-end passes.
+When a complete, suitable play-by-play source is available, use classified full-season outcomes
+as the primary input and retain aggregate totals for calibration and sparse-column fallback.
 
 Create a JSON file such as `team-stats.json`:
 
@@ -108,9 +109,21 @@ python generate_charts.py team-stats.json \
   --seed 8306
 ```
 
-The input boundary is source neutral. A Pro-Football-Reference, Stathead, official gamebook,
-or film workflow must first decide which Paydirt play column and result each play represents.
-Keep licensed or private source data outside the repository.
+The input boundary is source neutral. A Pro-Football-Reference, Stathead, nflverse, official
+gamebook, or film workflow must first decide which Paydirt play column and result each play
+represents. Keep licensed or private source data outside the repository.
+
+### Play-by-Play Source Policy
+
+Use complete regular-season play-by-play whenever a suitable source is available. The source
+adapter must retain opponent identity, accepted penalties, field-goal distance and result,
+fumble-loss events, and empirical out-of-bounds markers, then pass normalized outcomes through
+the opponent-adjusted generator. Aggregate-only generation is an explicit fallback for a season
+without complete play-by-play or for empirical columns below the minimum sample threshold.
+
+Calibrate source adapters through multi-seed engine replays. Match completion, yardage, sacks,
+turnovers, play volume, and scoring together; matching isolated chart averages is insufficient.
+Record every non-neutral run or pass calibration value in `generation-manifest.json`.
 
 ### Generate from Pro Football Reference Play by Play
 
@@ -147,14 +160,39 @@ Pass event families use the aggregate generator's engine-calibrated baseline by 
 empirical play by play supplies resolved yard distributions, touchdowns, fumbles, and clock-stop
 markers. Quantization preserves the combined mass of fumble, interception, penalty, and marked
 numeric families before selecting individual variants. Optional replay-derived adjustments are
-available as `--pass-completion-adjustment`, `--pass-interception-adjustment`,
-`--pass-pressure-adjustment`, and `--pass-yard-multiplier`. Leave them neutral unless a matched
-multi-season engine replay justifies a change, and record non-neutral values in the manifest.
+available as `--run-yard-multiplier`, `--pass-completion-adjustment`,
+`--pass-interception-adjustment`, `--pass-pressure-adjustment`, and
+`--pass-yard-multiplier`. Leave them neutral unless a matched multi-season engine replay justifies
+a change, and record non-neutral values in the manifest.
 
 Historical PFR descriptions usually identify run direction, sacks, turnovers, penalties, kicks,
 and observed yardage, but usually omit pass depth and defensive alignment. The adapter therefore
 uses a deterministic pass-family heuristic and estimates relative defense effects from matched
 league-wide residuals rather than attempting to reconstruct unobserved formations.
+
+### Generate from nflverse Play by Play
+
+[`generate_nflverse_charts.py`](../generate_nflverse_charts.py) reads a regular-season nflverse
+CSV or gzip-compressed CSV and feeds the same opponent-adjusted empirical pipeline. nflverse air
+yards distinguish screens, short, medium, and long passes more directly than historical narrative
+heuristics. Run gaps and locations select run columns; sacks also populate quarterback-time;
+interceptions produce both pass results and return outcomes.
+
+```sh
+python generate_nflverse_charts.py \
+  --pbp /path/to/play_by_play_2024.csv.gz \
+  --stats-dir /path/to/2024-team-stat-json \
+  --template-season /path/to/2024-template \
+  --team-map /path/to/nflverse-team-map.json \
+  --output /path/to/staging/2024 \
+  --audit-dir /path/to/local-audit \
+  --seed 8306
+```
+
+The command accepts the same opponent and pass calibration controls as the PFR adapter plus
+`--run-yard-multiplier`. Leave all multipliers at `1.0` and rate adjustments at `0.0` until a
+matched engine replay demonstrates a systematic boundary error. The manifest records source
+coverage, diagnostics, fallback columns, and all calibration values.
 A minimum sample threshold prevents a penalty-only or otherwise sparse empirical column from
 replacing its aggregate fallback. Accepted field goals marked `no play` are excluded from kick
 calibration. Review the manifest before using the charts.

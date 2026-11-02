@@ -16,7 +16,11 @@ from paydirt.chart_generator import (
     TeamSeasonStats,
     generate_team_charts,
 )
-from paydirt.empirical_adjustment import adjust_empirical_offense, calibrate_defense_stats
+from paydirt.empirical_adjustment import (
+    adjust_empirical_offense,
+    calibrate_defense_stats,
+    scale_empirical_run_yards,
+)
 from paydirt.pfr_play_by_play import (
     EmpiricalPlay,
     FieldGoalAttempt,
@@ -173,6 +177,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Ridge pseudo-count for separating offense and defense effects",
     )
     parser.add_argument(
+        "--run-yard-multiplier",
+        type=float,
+        default=1.0,
+        help="Engine-calibrated multiplier for resolved empirical run yards",
+    )
+    parser.add_argument(
         "--pass-completion-adjustment",
         type=float,
         default=0.0,
@@ -214,7 +224,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if play.unit != "offense":
             plays_by_team[play.team].append(play)
     for team, team_plays in adjusted.plays_by_team.items():
-        plays_by_team[team].extend(team_plays)
+        plays_by_team[team].extend(
+            scale_empirical_run_yards(team_plays, args.run_yard_multiplier)
+        )
 
     raw_plays_by_team: dict[str, list[EmpiricalPlay]] = defaultdict(list)
     for play in plays:
@@ -279,6 +291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "opponent_adjustment": {
             "model": "league additive offense plus defense effects",
             "pass_event_baseline": "aggregate engine calibration",
+            "run_yard_multiplier": args.run_yard_multiplier,
             "pass_completion_adjustment": args.pass_completion_adjustment,
             "pass_interception_adjustment": args.pass_interception_adjustment,
             "pass_pressure_adjustment": args.pass_pressure_adjustment,

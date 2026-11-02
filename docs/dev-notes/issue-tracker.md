@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-115 issues: 58 open, 34 resolved, 23 closed.
+116 issues: 58 open, 34 resolved, 24 closed.
 
 ## Open (58)
 
@@ -117,13 +117,14 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (23)
+## Closed (24)
 
 A play-test audit confirmed the issue no longer occurs.
 
 | ID | Priority | Title | Dates | Links |
 |----|----------|-------|-------|-------|
 | [AI-014](issues/AI/AI-014.md) | High | CPU preserves an opponent touchdown instead of accepting an eligible offensive foul that erases it | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | — |
+| [DATA-007](issues/DATA/DATA-007.md) | High | Modern season chart generation bypasses available play-by-play data | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | DATA-006 |
 | [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
 | [RULE-021](issues/RULE/RULE-021.md) | High | Matching second-possession field goal incorrectly ends modified sudden-death overtime tied | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | DATA-006 |
@@ -134,7 +135,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
 | [DATA-004](issues/DATA/DATA-004.md) | Medium | Aggregate chart generation compresses distinct teams into coarse defensive templates | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
 | [DATA-005](issues/DATA/DATA-005.md) | Medium | Empirical chart generation discards numeric out-of-bounds markers | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
-| [DATA-006](issues/DATA/DATA-006.md) | Medium | Aggregate chart calibration omits supplied rates and lacks resolved-outcome validation | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | RULE-021 |
+| [DATA-006](issues/DATA/DATA-006.md) | Medium | Aggregate chart calibration omits supplied rates and lacks resolved-outcome validation | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | RULE-021, DATA-007 |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
 | [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
