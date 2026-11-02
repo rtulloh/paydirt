@@ -43,6 +43,18 @@ The three CSVs and season rules are required. Team metadata and commentary roste
 The [chart generator](chart-generator.md) creates the CSVs from compatible Excel workbooks;
 it does not create the rules, metadata, or roster.
 
+For local chart-set comparisons, a directory may add a suffix to the base year, such as
+`seasons/1983-gen/`. Keep the rules file named for the base year (`1983.yaml`) and declare
+`season: 1983` inside it. Suffixed variants are loaded when their team paths are supplied
+directly, for example:
+
+```sh
+python -m paydirt --auto seasons/1983-gen/Eagles seasons/1983-gen/Cowboys
+```
+
+The normal team picker lists numeric season directories only, so comparison variants do not
+appear alongside installed seasons.
+
 ## Chart File Formats
 
 Use the public sample files under `seasons/2026/` as concrete format references.

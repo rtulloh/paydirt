@@ -3,6 +3,7 @@ Unit tests for auto_game.py game loop logic.
 """
 import pytest
 
+from paydirt.auto_game import resolve_team_path
 from paydirt.chart_loader import (
     DefenseChart,
     OffenseChart,
@@ -11,6 +12,16 @@ from paydirt.chart_loader import (
     TeamChart,
 )
 from paydirt.game_engine import PaydirtGameEngine
+
+
+def test_resolve_team_path_accepts_absolute_directory(tmp_path) -> None:
+    """Documented full paths should work without a seasons/ prefix rewrite."""
+    team_dir = tmp_path / "1983-gen" / "Eagles"
+    team_dir.mkdir(parents=True)
+
+    resolved = resolve_team_path(str(team_dir), [], str(tmp_path))
+
+    assert resolved == str(team_dir)
 
 
 @pytest.fixture

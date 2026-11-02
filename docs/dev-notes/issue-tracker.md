@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-111 issues: 57 open, 34 resolved, 20 closed.
+115 issues: 58 open, 34 resolved, 23 closed.
 
-## Open (57)
+## Open (58)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -66,6 +66,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AUD-023](issues/AUD/AUD-023.md) | Low | CSV fallback team metadata repeats the nickname in the matchup banner | created 2026-10-28 | — |
 | [AUD-024](issues/AUD/AUD-024.md) | Low | Postgame tendency summary labels distance bands as exact down-and-distance situations | created 2026-10-28 | — |
 | [DATA-002](issues/DATA/DATA-002.md) | Low | Local 1983 Chiefs commentary roster includes Joe Delaney despite his death before the season | created 2026-10-28 | — |
+| [DATA-003](issues/DATA/DATA-003.md) | Low | Add a PDF import backend for Paydirt charts | created 2026-10-30 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
@@ -116,7 +117,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (20)
+## Closed (23)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -125,12 +126,15 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-014](issues/AI/AI-014.md) | High | CPU preserves an opponent touchdown instead of accepting an eligible offensive foul that erases it | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | — |
 | [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
-| [RULE-021](issues/RULE/RULE-021.md) | High | Matching second-possession field goal incorrectly ends modified sudden-death overtime tied | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
+| [RULE-021](issues/RULE/RULE-021.md) | High | Matching second-possession field goal incorrectly ends modified sudden-death overtime tied | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | DATA-006 |
 | [SPIKE-001](issues/SPIKE/SPIKE-001.md) | High | The S modifier adjusts time without charging the agreed additional down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | SPIKE-003 |
 | [VAL-003](issues/VAL/VAL-003.md) | High | Standings_data.save/season_1983.json is untracked and not ignored and contains private-season results | created 2026-10-19, resolved 2026-10-27, closed 2026-10-27 | — |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-003, AI-018 |
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | — |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
+| [DATA-004](issues/DATA/DATA-004.md) | Medium | Aggregate chart generation compresses distinct teams into coarse defensive templates | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
+| [DATA-005](issues/DATA/DATA-005.md) | Medium | Empirical chart generation discards numeric out-of-bounds markers | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
+| [DATA-006](issues/DATA/DATA-006.md) | Medium | Aggregate chart calibration omits supplied rates and lacks resolved-outcome validation | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | RULE-021 |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
 | [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |

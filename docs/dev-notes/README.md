@@ -15,6 +15,8 @@ use the [documentation index](../README.md).
 
 - [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
 - [AI play-testing](ai-playtesting.md)
+- [Statistical Paydirt chart generator](statistical-chart-generator.md): investigation,
+  probability model, 1983 validation, limitations, and recommended multi-seed analysis.
 - [Replayable game logs](replayable-game-logs.md)
 - [Eight-finding game audit validation](game-audit-validation.md): uncommitted fixes, test-first evidence, semantic coverage, and remaining limits.
 

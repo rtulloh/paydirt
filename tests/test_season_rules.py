@@ -87,6 +87,17 @@ class TestLoadSeasonRules:
         assert rules.overtime.format == "modified_sudden_death"
         assert rules.overtime.period_length_minutes == 10
 
+    def test_load_generated_variant_uses_base_year_rules(self, tmp_path):
+        """A generated chart set may use a suffixed directory such as 2000-gen."""
+        season_dir = tmp_path / "2000-gen"
+        season_dir.mkdir()
+        (season_dir / "2000.yaml").write_text(scaffold_season_rules(2000))
+
+        rules = load_season_rules(season_dir)
+
+        assert rules.season == 2000
+        assert rules.two_point_conversion is True
+
     def test_missing_yaml_raises_error(self, temp_season_dir):
         """Missing YAML file should raise FileNotFoundError."""
         with pytest.raises(FileNotFoundError) as exc_info:

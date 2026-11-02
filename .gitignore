@@ -66,6 +66,14 @@ node_modules/
 # Historical season data (kept locally for development, not in repository)
 seasons/1972/
 seasons/1983/
+seasons/1983-gen/
+seasons/1983-gen-current/
+seasons/1983-pbp/
+seasons/1983-pbp-joint/
+seasons/1983-pbp-joint-calibrated/
+seasons/1983-pbp-joint-final/
+seasons/1983-pbp-joint-tuned/
+seasons/2024/
 .venv310/
 
 # Web frontend build output (regenerated during CI builds)

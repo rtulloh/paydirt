@@ -321,8 +321,8 @@ def load_season_rules(season_dir: Path) -> SeasonRules:
     """
     Load season rules from YAML file.
 
-    Expects a file named {season_dir}/{year}.yaml where year is
-    the directory name (e.g., seasons/1972/1972.yaml).
+    Expects a file named {season_dir}/{year}.yaml. The directory may be the
+    year itself or a named chart-set variant such as ``1983-gen``.
 
     Args:
         season_dir: Path to the season directory (e.g., seasons/1972)
@@ -336,13 +336,13 @@ def load_season_rules(season_dir: Path) -> SeasonRules:
     """
     season_dir = Path(season_dir)
     year_str = season_dir.name
+    base_year, separator, variant = year_str.partition("-")
 
-    try:
-        year = int(year_str)
-    except ValueError:
+    if not base_year.isdigit() or (separator and not variant):
         raise ValueError(
-            f"Season directory name must be a year, got: {year_str}"
+            f"Season directory name must begin with a year, got: {year_str}"
         )
+    year = int(base_year)
 
     yaml_path = season_dir / f"{year}.yaml"
 

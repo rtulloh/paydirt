@@ -13,7 +13,7 @@
 ## Teams and Data
 
 - [Seasons and rules](seasons.md): data locations, CSV layout, team metadata, rosters, and season YAML.
-- [Chart generator / Excel importer](chart-generator.md): generate game CSV files from existing Excel charts using `extract_charts.py`.
+- [Chart generation and Excel import](chart-generator.md): estimate charts from season data or convert existing Excel charts.
 
 Only the public fictional 2026 teams are distributed. Keep private charts, source workbooks, and historical logs local.
 

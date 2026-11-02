@@ -41,6 +41,10 @@ def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
         # Normalize path
         team_spec = team_spec.replace('\\', '/')
 
+        supplied_path = Path(team_spec)
+        if supplied_path.exists():
+            return str(supplied_path)
+
         # Handle various path formats
         # "seasons/1983/Bears" -> "seasons/1983/Bears"
         # "1983/Bears" -> "seasons/1983/Bears"

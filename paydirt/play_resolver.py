@@ -203,6 +203,8 @@ def roll_d10() -> int:
 _CHART_BLACK_DIE_FACES = (1, 2, 2, 3, 3, 3)
 _CHART_WHITE_DIE_1_FACES = (0, 0, 1, 2, 3, 4)
 _CHART_WHITE_DIE_2_FACES = (0, 1, 2, 3, 4, 5)
+_DEFENSE_RED_DIE_FACES = (1, 1, 1, 2, 2, 3)
+_DEFENSE_GREEN_DIE_FACES = (0, 0, 0, 0, 1, 2)
 
 
 def chart_roll_weights() -> dict[int, int]:
@@ -217,6 +219,21 @@ def chart_roll_weights() -> dict[int, int]:
             _CHART_BLACK_DIE_FACES, _CHART_WHITE_DIE_1_FACES, _CHART_WHITE_DIE_2_FACES
         )
     ))
+
+
+def defense_subrow_weights() -> dict[int, int]:
+    """Return face-combination counts for defense chart sub-rows 1 through 5."""
+    return dict(Counter(
+        red + green
+        for red, green in product(_DEFENSE_RED_DIE_FACES, _DEFENSE_GREEN_DIE_FACES)
+    ))
+
+
+def roll_defense_dice() -> tuple[int, int, int]:
+    """Roll defensive dice and return the red face, green face, and sub-row."""
+    red = random.choice(_DEFENSE_RED_DIE_FACES)
+    green = random.choice(_DEFENSE_GREEN_DIE_FACES)
+    return red, green, red + green
 
 
 def roll_chart_dice() -> tuple[int, str]:
@@ -918,15 +935,8 @@ def resolve_play(
     # Black die (tens): 1,1,2,2,3,3 + Two White dice (ones): 0-5 each
     off_dice_roll, off_dice_desc = roll_chart_dice()
 
-    # Roll DEFENSIVE dice - special Paydirt dice that sum to 1-5
-    # Red die faces: 1, 1, 1, 2, 2, 3
-    # Green die faces: 0, 0, 0, 0, 1, 2
-    red_die_faces = [1, 1, 1, 2, 2, 3]
-    green_die_faces = [0, 0, 0, 0, 1, 2]
-
-    def_red = random.choice(red_die_faces)
-    def_green = random.choice(green_die_faces)
-    sub_row = def_red + def_green  # Range 1-5, maps directly to defense chart row
+    # Roll DEFENSIVE dice - special Paydirt dice that sum to chart sub-row 1-5.
+    def_red, def_green, sub_row = roll_defense_dice()
 
     # Get offensive result from offensive team's chart
     off_result_str = get_offense_result(offense_chart.offense, play_type, off_dice_roll)
@@ -1320,12 +1330,8 @@ def resolve_play_with_penalties(
     Returns:
         PenaltyChoice with play result and penalty options for the offended team to choose from
     """
-    # Roll DEFENSIVE dice ONCE - this result is kept throughout
-    red_die_faces = [1, 1, 1, 2, 2, 3]
-    green_die_faces = [0, 0, 0, 0, 1, 2]
-    def_red = random.choice(red_die_faces)
-    def_green = random.choice(green_die_faces)
-    sub_row = def_red + def_green
+    # Roll DEFENSIVE dice ONCE - this result is kept throughout.
+    def_red, def_green, sub_row = roll_defense_dice()
 
     # Get defensive result from defensive team's chart
     play_column = _play_type_to_column(play_type)
