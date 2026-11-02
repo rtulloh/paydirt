@@ -51,8 +51,10 @@ see [web development setup](paydirt-web/README.md).
 
 ## Teams and Seasons
 
-The public sample season contains the fictional **2026 Thunderhawks and Ironclads**.
-Historical charts are not distributed with the project; supply your own data that you have permission to use.
+Published builds include generated **1983** and **2024** season charts plus the fictional
+**2026 Thunderhawks and Ironclads** sample. The historical chart sets are independent
+statistical reconstructions produced by this project; see the
+[chart attribution](CHART_ATTRIBUTION.md) for sources and licensing.
 
 [Add seasons and configure rules](docs/seasons.md), or use the
 [chart generator / Excel importer](docs/chart-generator.md) to convert existing `.xls` charts into CSV files.

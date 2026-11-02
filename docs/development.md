@@ -38,6 +38,8 @@ The CLI and web frontend display engine decisions rather than reconstructing out
 | `paydirt/save_game.py`, `standings.py` | CLI persistence and results |
 | `paydirt-web/backend/` | FastAPI adapter around the core engine |
 | `paydirt-web/frontend/` | React browser UI |
+| `seasons/1983-generated/` | Public generated 1983 charts; packaged as `seasons/1983/` |
+| `seasons/2024/` | Public generated 2024 charts |
 | `seasons/2026/` | Public fictional sample data |
 | `extract_charts.py` | [Excel-to-CSV chart generator](chart-generator.md) |
 | `tests/` | Core unit tests and standalone integration runners |
@@ -81,7 +83,10 @@ Platform packaging uses NSIS for the Windows installer, `create-dmg` and
 Build on the target platform. The workflow does not currently implement the certificate-secret signing recipe
 previously shown in the README; do not assume a build is signed.
 
-The specs bundle only public 2026 season data, Markdown guides, and documentation images.
+The specs bundle generated 1983 and 2024 charts, the public 2026 sample, the chart attribution,
+Markdown guides, and documentation images. The generated source directory
+`seasons/1983-generated` is mapped to the numeric release path `seasons/1983`; release builds
+therefore expose `1983`, `2024`, and `2026` consistently.
 The backend assembles the offline User Guide from the canonical player files in `docs/`.
 Relative links between those player guides become in-app anchors; contributor-only documents link to GitHub.
 No separately maintained copy of the player manual is needed.

@@ -21,8 +21,9 @@ mkdir -p "${APP_DIR}/usr/share/pixmaps"
 cp "dist/${EXECUTABLE}" "${APP_DIR}/usr/bin/"
 chmod +x "${APP_DIR}/usr/bin/${EXECUTABLE}"
 
-# Copy LICENSE
+# Copy licenses and chart attribution
 cp "LICENSE" "${APP_DIR}/"
+cp "CHART_ATTRIBUTION.md" "${APP_DIR}/"
 
 # Create desktop file in correct location
 cat > "${APP_DIR}/usr/share/applications/${APP_NAME}.desktop" <<EOF

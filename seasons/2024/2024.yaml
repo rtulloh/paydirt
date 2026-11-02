@@ -1,0 +1,15 @@
+season: 2024
+two_point_conversion: true
+overtime:
+  enabled: true
+  format: modified_sudden_death
+  period_length_minutes: 10.0
+  max_periods_regular: 1
+  max_periods_playoff: 0
+  can_end_in_tie_regular: true
+  can_end_in_tie_playoff: false
+  coin_toss_winner_receives: true
+
+# NOTE: CPU AI behavior can be configured in seasons/2024/ai_behavior.yaml
+# See paydirt/season_rules.py for the schema.
+# Era-appropriate defaults are used if ai_behavior.yaml is absent.

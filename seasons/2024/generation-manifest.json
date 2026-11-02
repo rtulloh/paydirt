@@ -1,0 +1,323 @@
+{
+  "diagnostics": {
+    "accepted_penalties": 3093,
+    "field_goal_attempts": 1115,
+    "ignored_no_play": 586,
+    "ignored_rows": 2051,
+    "interceptions": 374,
+    "sacks": 1306,
+    "unattributed_rows": 2588,
+    "unclassified_passes": 99,
+    "unclassified_penalties": 15
+  },
+  "empirical_outcomes": 47351,
+  "field_goal_attempts": 1115,
+  "fumbles": 504,
+  "games": 272,
+  "mode": "opponent-adjusted nflverse play-by-play",
+  "opponent_adjustment": {
+    "average_defense_effect": 0.0,
+    "model": "league additive offense plus defense effects",
+    "pass_completion_adjustment": 0.085,
+    "pass_event_baseline": "aggregate engine calibration",
+    "pass_interception_adjustment": -0.003,
+    "pass_pressure_adjustment": 0.009,
+    "pass_yard_multiplier": 0.75,
+    "run_yard_multiplier": 0.75,
+    "shrinkage": 24.0
+  },
+  "season": 2024,
+  "seed": 8306,
+  "source": "nflverse regular-season play-by-play",
+  "source_rows": 47274,
+  "teams": {
+    "49ers": {
+      "empirical_outcomes": 1424,
+      "fallback_columns": 1,
+      "field_goal_attempts": 43,
+      "fumbles": 20,
+      "generated_empirical_outcomes": 1423,
+      "nflverse_team": "SF",
+      "opponent_adjusted_outcomes": 1424
+    },
+    "Bears": {
+      "empirical_outcomes": 1534,
+      "fallback_columns": 1,
+      "field_goal_attempts": 25,
+      "fumbles": 16,
+      "generated_empirical_outcomes": 1529,
+      "nflverse_team": "CHI",
+      "opponent_adjusted_outcomes": 1534
+    },
+    "Bengals": {
+      "empirical_outcomes": 1513,
+      "fallback_columns": 1,
+      "field_goal_attempts": 33,
+      "fumbles": 20,
+      "generated_empirical_outcomes": 1512,
+      "nflverse_team": "CIN",
+      "opponent_adjusted_outcomes": 1513
+    },
+    "Bills": {
+      "empirical_outcomes": 1404,
+      "fallback_columns": 1,
+      "field_goal_attempts": 29,
+      "fumbles": 7,
+      "generated_empirical_outcomes": 1396,
+      "nflverse_team": "BUF",
+      "opponent_adjusted_outcomes": 1404
+    },
+    "Broncos": {
+      "empirical_outcomes": 1474,
+      "fallback_columns": 1,
+      "field_goal_attempts": 34,
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1468,
+      "nflverse_team": "DEN",
+      "opponent_adjusted_outcomes": 1474
+    },
+    "Browns": {
+      "empirical_outcomes": 1604,
+      "fallback_columns": 1,
+      "field_goal_attempts": 27,
+      "fumbles": 17,
+      "generated_empirical_outcomes": 1601,
+      "nflverse_team": "CLE",
+      "opponent_adjusted_outcomes": 1604
+    },
+    "Buccaneers": {
+      "empirical_outcomes": 1506,
+      "fallback_columns": 1,
+      "field_goal_attempts": 32,
+      "fumbles": 23,
+      "generated_empirical_outcomes": 1499,
+      "nflverse_team": "TB",
+      "opponent_adjusted_outcomes": 1506
+    },
+    "Cardinals": {
+      "empirical_outcomes": 1430,
+      "fallback_columns": 1,
+      "field_goal_attempts": 38,
+      "fumbles": 16,
+      "generated_empirical_outcomes": 1429,
+      "nflverse_team": "ARI",
+      "opponent_adjusted_outcomes": 1430
+    },
+    "Chargers": {
+      "empirical_outcomes": 1441,
+      "fallback_columns": 1,
+      "field_goal_attempts": 42,
+      "fumbles": 14,
+      "generated_empirical_outcomes": 1440,
+      "nflverse_team": "LAC",
+      "opponent_adjusted_outcomes": 1441
+    },
+    "Chiefs": {
+      "empirical_outcomes": 1471,
+      "fallback_columns": 1,
+      "field_goal_attempts": 37,
+      "fumbles": 9,
+      "generated_empirical_outcomes": 1468,
+      "nflverse_team": "KC",
+      "opponent_adjusted_outcomes": 1471
+    },
+    "Colts": {
+      "empirical_outcomes": 1459,
+      "fallback_columns": 1,
+      "field_goal_attempts": 37,
+      "fumbles": 17,
+      "generated_empirical_outcomes": 1456,
+      "nflverse_team": "IND",
+      "opponent_adjusted_outcomes": 1459
+    },
+    "Commanders": {
+      "empirical_outcomes": 1523,
+      "fallback_columns": 1,
+      "field_goal_attempts": 42,
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1520,
+      "nflverse_team": "WAS",
+      "opponent_adjusted_outcomes": 1523
+    },
+    "Cowboys": {
+      "empirical_outcomes": 1555,
+      "fallback_columns": 1,
+      "field_goal_attempts": 47,
+      "fumbles": 25,
+      "generated_empirical_outcomes": 1549,
+      "nflverse_team": "DAL",
+      "opponent_adjusted_outcomes": 1555
+    },
+    "Dolphins": {
+      "empirical_outcomes": 1499,
+      "fallback_columns": 1,
+      "field_goal_attempts": 41,
+      "fumbles": 24,
+      "generated_empirical_outcomes": 1492,
+      "nflverse_team": "MIA",
+      "opponent_adjusted_outcomes": 1499
+    },
+    "Eagles": {
+      "empirical_outcomes": 1515,
+      "fallback_columns": 1,
+      "field_goal_attempts": 36,
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1508,
+      "nflverse_team": "PHI",
+      "opponent_adjusted_outcomes": 1515
+    },
+    "Falcons": {
+      "empirical_outcomes": 1483,
+      "fallback_columns": 1,
+      "field_goal_attempts": 41,
+      "fumbles": 19,
+      "generated_empirical_outcomes": 1480,
+      "nflverse_team": "ATL",
+      "opponent_adjusted_outcomes": 1483
+    },
+    "Giants": {
+      "empirical_outcomes": 1498,
+      "fallback_columns": 1,
+      "field_goal_attempts": 28,
+      "fumbles": 15,
+      "generated_empirical_outcomes": 1490,
+      "nflverse_team": "NYG",
+      "opponent_adjusted_outcomes": 1498
+    },
+    "Jaguars": {
+      "empirical_outcomes": 1386,
+      "fallback_columns": 1,
+      "field_goal_attempts": 29,
+      "fumbles": 12,
+      "generated_empirical_outcomes": 1385,
+      "nflverse_team": "JAX",
+      "opponent_adjusted_outcomes": 1386
+    },
+    "Jets": {
+      "empirical_outcomes": 1422,
+      "fallback_columns": 1,
+      "field_goal_attempts": 28,
+      "fumbles": 16,
+      "generated_empirical_outcomes": 1416,
+      "nflverse_team": "NYJ",
+      "opponent_adjusted_outcomes": 1422
+    },
+    "Lions": {
+      "empirical_outcomes": 1493,
+      "fallback_columns": 1,
+      "field_goal_attempts": 29,
+      "fumbles": 9,
+      "generated_empirical_outcomes": 1492,
+      "nflverse_team": "DET",
+      "opponent_adjusted_outcomes": 1493
+    },
+    "Packers": {
+      "empirical_outcomes": 1431,
+      "fallback_columns": 1,
+      "field_goal_attempts": 38,
+      "fumbles": 11,
+      "generated_empirical_outcomes": 1424,
+      "nflverse_team": "GB",
+      "opponent_adjusted_outcomes": 1431
+    },
+    "Panthers": {
+      "empirical_outcomes": 1423,
+      "fallback_columns": 1,
+      "field_goal_attempts": 26,
+      "fumbles": 14,
+      "generated_empirical_outcomes": 1420,
+      "nflverse_team": "CAR",
+      "opponent_adjusted_outcomes": 1423
+    },
+    "Patriots": {
+      "empirical_outcomes": 1469,
+      "fallback_columns": 1,
+      "field_goal_attempts": 33,
+      "fumbles": 25,
+      "generated_empirical_outcomes": 1466,
+      "nflverse_team": "NE",
+      "opponent_adjusted_outcomes": 1469
+    },
+    "Raiders": {
+      "empirical_outcomes": 1505,
+      "fallback_columns": 1,
+      "field_goal_attempts": 40,
+      "fumbles": 15,
+      "generated_empirical_outcomes": 1504,
+      "nflverse_team": "LV",
+      "opponent_adjusted_outcomes": 1505
+    },
+    "Rams": {
+      "empirical_outcomes": 1426,
+      "fallback_columns": 1,
+      "field_goal_attempts": 34,
+      "fumbles": 11,
+      "generated_empirical_outcomes": 1422,
+      "nflverse_team": "LA",
+      "opponent_adjusted_outcomes": 1426
+    },
+    "Ravens": {
+      "empirical_outcomes": 1465,
+      "fallback_columns": 1,
+      "field_goal_attempts": 30,
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1462,
+      "nflverse_team": "BAL",
+      "opponent_adjusted_outcomes": 1465
+    },
+    "Saints": {
+      "empirical_outcomes": 1454,
+      "fallback_columns": 1,
+      "field_goal_attempts": 31,
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1449,
+      "nflverse_team": "NO",
+      "opponent_adjusted_outcomes": 1454
+    },
+    "Seahawks": {
+      "empirical_outcomes": 1512,
+      "fallback_columns": 1,
+      "field_goal_attempts": 30,
+      "fumbles": 16,
+      "generated_empirical_outcomes": 1507,
+      "nflverse_team": "SEA",
+      "opponent_adjusted_outcomes": 1512
+    },
+    "Steelers": {
+      "empirical_outcomes": 1515,
+      "fallback_columns": 1,
+      "field_goal_attempts": 44,
+      "fumbles": 19,
+      "generated_empirical_outcomes": 1507,
+      "nflverse_team": "PIT",
+      "opponent_adjusted_outcomes": 1515
+    },
+    "Texans": {
+      "empirical_outcomes": 1529,
+      "fallback_columns": 1,
+      "field_goal_attempts": 42,
+      "fumbles": 12,
+      "generated_empirical_outcomes": 1526,
+      "nflverse_team": "HOU",
+      "opponent_adjusted_outcomes": 1529
+    },
+    "Titans": {
+      "empirical_outcomes": 1499,
+      "fallback_columns": 1,
+      "field_goal_attempts": 27,
+      "fumbles": 22,
+      "generated_empirical_outcomes": 1497,
+      "nflverse_team": "TEN",
+      "opponent_adjusted_outcomes": 1499
+    },
+    "Vikings": {
+      "empirical_outcomes": 1489,
+      "fallback_columns": 1,
+      "field_goal_attempts": 42,
+      "fumbles": 15,
+      "generated_empirical_outcomes": 1483,
+      "nflverse_team": "MIN",
+      "opponent_adjusted_outcomes": 1489
+    }
+  }
+}

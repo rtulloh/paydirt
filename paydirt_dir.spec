@@ -2,9 +2,12 @@
 
 block_cipher = None
 
-# Include only the 2026 season directory
+# Include all public generated and sample seasons
 datas = [
+    ('seasons/1983-generated', 'seasons/1983'),
+    ('seasons/2024', 'seasons/2024'),
     ('seasons/2026', 'seasons/2026'),
+    ('CHART_ATTRIBUTION.md', '.'),
     # Include the MIT LICENSE and README files
     ('LICENSE', '.'),
     ('README.md', '.'),

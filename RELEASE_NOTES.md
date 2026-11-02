@@ -1,5 +1,13 @@
 # Paydirt Release Notes
 
+## Unreleased
+
+### Generated Season Charts
+
+- Include independently generated 1983 and 2024 chart sets with published builds alongside the fictional 2026 sample.
+- Present the bundled seasons consistently as `seasons/1983`, `seasons/2024`, and `seasons/2026`.
+- Distribute concise source, license, and non-endorsement attribution without bundling raw play-by-play or original developer charts.
+
 ## v1.9.5
 
 ### Build Reliability and Developer Validation

@@ -16,8 +16,9 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 cp "dist/${EXECUTABLE}" "${APP_BUNDLE}/Contents/MacOS/"
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE}"
 
-# Copy LICENSE
+# Copy licenses and chart attribution
 cp "LICENSE" "${APP_BUNDLE}/Contents/Resources/"
+cp "CHART_ATTRIBUTION.md" "${APP_BUNDLE}/Contents/Resources/"
 
 # Create Info.plist
 cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
@@ -59,6 +60,7 @@ fi
 DMG_TEMP=$(mktemp -d)
 cp -r "${APP_BUNDLE}" "${DMG_TEMP}/"
 cp "LICENSE" "${DMG_TEMP}/"
+cp "CHART_ATTRIBUTION.md" "${DMG_TEMP}/"
 
 # Create DMG (strip 'v' prefix from version if present)
 VERSION_STRIPVED=$(echo "${VERSION}" | sed 's/^v//')

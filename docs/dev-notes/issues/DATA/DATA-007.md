@@ -11,6 +11,7 @@ tags:
   - play-tested
 links:
   - DATA-006
+  - DATA-008
 ---
 
 ## Description

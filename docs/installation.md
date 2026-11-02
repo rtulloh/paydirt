@@ -5,7 +5,7 @@
 ## Download & Install
 
 Get a build from [GitHub Releases](https://github.com/rtulloh/paydirt/releases).
-Pre-built downloads include the browser interface and public 2026 sample teams; Python and Node.js are not needed to play.
+Pre-built downloads include the browser interface, generated 1983 and 2024 seasons, and the public 2026 sample teams; Python and Node.js are not needed to play.
 
 | Platform | File | Launch |
 |----------|------|--------|

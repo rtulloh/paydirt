@@ -248,7 +248,9 @@ If no documentation update is needed, state why in the change summary.
   in `docs/`. Clearly distinguish them from implemented features and current
   player guidance. Keep maintained user/developer reference guides in `docs/`.
 - Verify examples against the current implementation. Use synthetic data or public
-  2026 sample teams; never publish private charts, workbooks, or historical logs.
+  2026 sample teams for examples. Publish only reviewed chart-generator outputs with
+  attribution; never publish private developer charts, workbooks, raw source data, or
+  historical logs.
 - When moving or renaming documentation, update references, relative links,
   heading anchors, and image paths. Run `python3 -m pytest tests/test_documentation.py`.
 - Player guides also power the offline in-app User Guide. Keep the backend

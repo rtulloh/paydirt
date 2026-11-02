@@ -46,6 +46,7 @@ Section "MainSection" SEC01
   SetOverwrite on
   File "..\..\dist\paydirt.exe"
   File "..\..\LICENSE"
+  File "..\..\CHART_ATTRIBUTION.md"
   
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\Paydirt"
@@ -69,6 +70,7 @@ SectionEnd
 Section Uninstall
   Delete "$INSTDIR\paydirt.exe"
   Delete "$INSTDIR\LICENSE"
+  Delete "$INSTDIR\CHART_ATTRIBUTION.md"
   Delete "$INSTDIR\uninstall.exe"
   
   Delete "$SMPROGRAMS\Paydirt\Paydirt.lnk"

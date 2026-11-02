@@ -15,7 +15,7 @@ Links to GitHub, releases, and contributor documentation still need an internet 
 ## Starting a Browser Game
 
 Select a season, home and away teams, which team you control, and CPU difficulty.
-The public sample teams are the 2026 Thunderhawks and Ironclads; other teams require locally installed charts.
+Published builds include generated 1983 and 2024 teams plus the fictional 2026 Thunderhawks and Ironclads. Additional teams require locally installed charts.
 
 ![Team Selection](images/team-select.png)
 
