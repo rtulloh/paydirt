@@ -21,7 +21,43 @@ timeout**. `7S` also needs no spike and charges no extra down. Defensive
 timeout requests are likewise unnecessary. At 0:28, the incompletion leaves
 0:23; with five seconds or less remaining it can still end the period.
 A nullified play with offsetting fouls retains its separate ten-second timing,
-and accepted penalties retain their existing enforcement timing.
+and enforced scrimmage fouls use the policy below.
+
+### Plays Involving a Foul
+
+Scrimmage plays involving a foul use action time and any actual retained
+return time, with **zero dead time**, from the supplied 2008 rulebook's
+Alternate Timing Method (printed pages 22–23). This extends the existing
+incompletion policy to flagged plays; ordinary clean-play timing is unchanged.
+
+A run or completed pass uses five seconds plus the tens digit of the distance
+covered, including losses: nine yards takes five seconds, 26 yards takes seven,
+and a thirteen-yard loss takes six. An incompletion takes five seconds; a
+fumble adds two. A retained turnover includes its actual return time. Accepted
+fouls use the rerolled live-play action without resolving a hypothetical return;
+enforcement yards are not live-play yardage. Standalone chart fouls without an
+underlying live result use the five-second base action time. Hail Mary
+interference uses its three-second base plus the distance's tens digit.
+
+Choosing a penalty consumes no clock time. Resolution charges the play once,
+and no extra spike or timeout is charged after the foul stops the clock.
+The nine-yard completion at 1:25 with a declined foul therefore leaves 1:20,
+preserving its first down and statistics. This clock stop also supersedes the
+ordinary ten-second sideline timing on a flagged play.
+
+Special kicks retain their existing timing; offsetting fouls retain their
+separate ten-second timing. At expiry, only an accepted defensive foul or
+offsetting fouls extend the period. This is a selected use of the rulebook's
+alternate method, not an implementation of that entire optional system.
+
+### Natural Out-of-Bounds Results
+
+A retained `*` or `†` result uses ten seconds inside the last two minutes of
+the first half and the last five minutes of the fourth quarter. An ordinary
+defensive yardage adjustment preserves that marker; a defensive overrule
+replaces it. Secondary B/QT results supply their own marker. Fumbles and sacks
+do not receive the natural sideline clock reduction. The two-minute warning
+still stops a play that starts above 2:00 at 2:00.
 
 ### Touchdown, Try, and Kickoff Evidence
 
@@ -92,8 +128,8 @@ additional chart roll or invented yardage is added. The engine reports the
 final down, possession and field position for both CLI and browser displays.
 
 A pending foul preserves the S request without applying its down/clock effect
-early. If the play is retained, eligibility is checked against that finalized
-play; if the penalty is enforced or fouls offset, there is no subsequent spike.
+early. The finalized foul stops the clock whether accepted or declined, so
+neither resolution needs a subsequent spike. Offsetting fouls also need none.
 
 The same engine ordering is used for new and resumed CLI games, whether the
 defensive request comes from a human `AT` call or CPU coaching. The request
@@ -137,12 +173,12 @@ Downs in this table describe the implemented spike/defensive-timeout procedure.
 | `7S` against `AT`: complete for 4 yards; defense has an applicable timeout | Charge defense; use timeout timing instead of the spike sequence | Second-and-six; no spike-related down |
 | `7S` against `AT`: complete for 4 yards; defense has no timeout left | Reject the unavailable timeout; apply the spike normally | Third-and-six |
 | `7S` against `AT`: incomplete | No spike and no timeout charged | Second-and-ten |
-| `7S` with a penalty flag | Resolve acceptance/declination and enforcement first | Follow the enforced down/distance and applicable spike procedure; do not blindly force third down |
+| `7S` with a penalty flag | Resolve acceptance/declination and enforcement first | Use the enforced down/distance; the foul clock stop requires no spike |
 
 For the first row, starting at 0:30 and using the full 20-second sequence leaves 0:10.
 Starting with exactly 0:20 can leave **zero**, so a field-goal attempt is not guaranteed.
 An already stopped out-of-bounds play needs no additional spike. Check the
-engine's finalized result: an incompletion, enforced penalty, or useful
+engine's finalized result: an incompletion, accepted or declined foul, or useful
 defensive timeout must not be mistaken for a completed play followed by a spike.
 
 ## Final Seconds Strategy

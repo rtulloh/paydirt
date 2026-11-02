@@ -116,7 +116,7 @@ def test_ineligible_or_superseded_spike_does_not_charge_extra_down(game: Paydirt
 @pytest.mark.parametrize("kind", ["OFF", "DEF"])
 @pytest.mark.parametrize("accept_play", [False, True])
 @pytest.mark.parametrize("yards", [4, 12])
-def test_spike_waits_for_penalty_decision_and_only_charges_retained_play(
+def test_spike_waits_for_penalty_decision_then_skips_the_foul_clock_stop(
     game: PaydirtGameEngine, kind: str, accept_play: bool, yards: int,
 ) -> None:
     home = game.state.is_home_possession
@@ -134,10 +134,10 @@ def test_spike_waits_for_penalty_decision_and_only_charges_retained_play(
     assert not game.play_log
     with patch("paydirt.game_engine.random.uniform", return_value=40):
         outcome = game.apply_penalty_decision(pending, accept_play)
-    assert outcome.spike_used is accept_play
-    assert game.state.down == outcome.down_after == (3 if accept_play else 1)
+    assert not outcome.spike_used
+    assert game.state.down == outcome.down_after == (2 if accept_play and yards < 10 else 1)
     assert game.state.is_home_possession is home
-    assert game.state.time_remaining == pytest.approx(1 - (.333 if accept_play else 40 / 60))
+    assert game.state.time_remaining == pytest.approx(1 - (5 + yards // 10) / 60)
     assert len(game.play_log) == len(game.offensive_call_history) == 1
     assert game.apply_penalty_decision(outcome, accept_play) is outcome
     assert game.state.down == outcome.down_after

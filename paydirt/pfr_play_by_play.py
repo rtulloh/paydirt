@@ -313,13 +313,50 @@ def _other_linked_team(game: PfrGame, play: PfrPlay, team: str) -> str | None:
     return None
 
 
-def _penalty_result(game: PfrGame, play: PfrPlay, offense: str) -> tuple[str, str] | None:
-    """Translate an accepted source penalty into a chart penalty symbol."""
+def normalized_penalty_result(name: str, offense_foul: bool, observed_yards: int) -> str:
+    """Encode nominal foul yardage; let the engine apply current field position.
+
+    Half-distance enforcement is evidence of a foul, not a smaller foul that
+    should be enforced again at every future field position.
+    """
+    lower = name.casefold()
+    yards = observed_yards
+    if "holding" in lower:
+        yards = 5 if "defensive holding" in lower else 10
+    elif any(term in lower for term in (
+        "offside", "false start", "encroachment", "neutral zone", "delay of game",
+        "illegal contact", "illegal formation", "illegal shift", "illegal motion",
+        "running into", "too many", "illegal substitution", "ineligible",
+    )):
+        yards = 5
+    elif any(term in lower for term in (
+        "roughing", "unnecessary roughness", "personal foul", "unsportsmanlike",
+        "face mask", "facemask", "clipping", "chop block", "horse collar",
+    )):
+        yards = 15
+    elif any(term in lower for term in ("block in the back", "offensive pass interference")):
+        yards = 10
+    if yards <= 0:
+        yards = 10
+    automatic = not offense_foul and any(term in lower for term in (
+        "defensive holding", "illegal contact", "roughing the passer", "roughing the kicker",
+    ))
+    return f"{'OFF' if offense_foul else 'DEF'} {yards}{'X' if automatic else ''}"
+
+
+def _penalty_result(
+    game: PfrGame,
+    play: PfrPlay,
+    offense: str,
+    *,
+    include_declined: bool = False,
+) -> tuple[str, str] | None:
+    """Translate a source foul into a chart symbol relative to one offense."""
     match = _PENALTY.search(play.detail)
     if not match:
         return None
     offender_name, penalty_name, yards_text, status = match.groups()
-    if status.casefold() != "accepted":
+    if status.casefold() != "accepted" and not include_declined:
         return None
     yards = int(yards_text or 0)
     offender_key = offender_name.strip()
@@ -329,11 +366,12 @@ def _penalty_result(game: PfrGame, play: PfrPlay, offense: str) -> tuple[str, st
         offender_team = offender_key.upper()
     penalty_lower = penalty_name.casefold()
     if "defensive pass interference" in penalty_lower:
-        return "accepted", f"PI {max(1, yards)}"
+        return status.casefold(), f"PI {max(1, yards)}"
     if yards <= 0:
         yards = 5 if any(name in penalty_lower for name in ("offside", "false start")) else 10
-    prefix = "OFF" if offender_team == offense else "DEF"
-    return "accepted", f"{prefix} {yards}"
+    return status.casefold(), normalized_penalty_result(
+        penalty_name, offender_team == offense, yards
+    )
 
 
 def _yards(detail: str) -> int | None:
@@ -497,10 +535,8 @@ def _empirical_play(
 
 
 def _return_result(detail: str) -> str:
-    """Translate a kick or interception return into a return-chart result."""
+    """Translate a return while preserving the chart family's touchdown convention."""
     lower = detail.casefold()
-    if "touchdown" in lower:
-        return "TD"
     marker = lower.find("returned")
     return_yards = _yards(detail[marker:]) if marker >= 0 else None
     yards = return_yards if return_yards is not None else 0
@@ -552,7 +588,27 @@ def classify_pfr_game(game: PfrGame, seed: int = 8306) -> ClassifiedGame:
 
         if "kicks off" in lower:
             current_team = _opponent(game, team)
-            if "out of bounds" in lower:
+            has_return = "returned by" in lower
+            if "kickoff oob" in lower:
+                outcomes.append(_empirical_play(team, "special_teams", "kickoff", "OB", play))
+                diagnostics["kickoff_out_of_bounds"] += 1
+                continue
+            penalty = _penalty_result(
+                game, play, current_team if has_return else team, include_declined=True
+            )
+            if penalty is not None:
+                outcomes.append(
+                    _empirical_play(
+                        current_team if has_return else team,
+                        "special_teams",
+                        "kickoff_return" if has_return else "kickoff",
+                        penalty[1],
+                        play,
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
+                continue
+            if "out of bounds" in lower and not has_return:
                 kick_result = "OB"
             else:
                 match = re.search(r"kicks off (\d+) yards?", detail, re.IGNORECASE)
@@ -572,26 +628,53 @@ def classify_pfr_game(game: PfrGame, seed: int = 8306) -> ClassifiedGame:
 
         field_goal_match = _FIELD_GOAL.search(detail)
         if field_goal_match:
+            penalty = _penalty_result(game, play, team, include_declined=True)
             if "no play" in lower:
                 diagnostics["nullified_field_goals"] += 1
-                continue
-            distance = int(field_goal_match.group(1))
-            made = field_goal_match.group(2).casefold() == "good"
-            field_goals.append(
-                FieldGoalAttempt(
-                    team,
-                    distance,
-                    made,
-                    play.game_id,
-                    play.number,
-                    blocked=field_goal_match.group(2).casefold() == "blocked",
+            else:
+                distance = int(field_goal_match.group(1))
+                made = field_goal_match.group(2).casefold() == "good"
+                field_goals.append(
+                    FieldGoalAttempt(
+                        team,
+                        distance,
+                        made,
+                        play.game_id,
+                        play.number,
+                        blocked=field_goal_match.group(2).casefold() == "blocked",
+                    )
                 )
-            )
-            diagnostics["field_goal_attempts"] += 1
+                diagnostics["field_goal_attempts"] += 1
+            if penalty is not None:
+                outcomes.append(
+                    _empirical_play(
+                        team, "special_teams", "field_goal", penalty[1], play
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
             continue
 
         if "punts" in lower:
             current_team = _opponent(game, team)
+            has_return = "returned by" in lower
+            penalty = _penalty_result(
+                game,
+                play,
+                current_team if has_return else team,
+                include_declined=True,
+            )
+            if penalty is not None:
+                outcomes.append(
+                    _empirical_play(
+                        current_team if has_return else team,
+                        "special_teams",
+                        "punt_return" if has_return else "punt",
+                        penalty[1],
+                        play,
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
+                continue
             if "punts blocked" in lower:
                 punt_result = "BK -5"
             else:
@@ -617,8 +700,29 @@ def classify_pfr_game(game: PfrGame, seed: int = 8306) -> ClassifiedGame:
         offense = team
         opponent = _opponent(game, offense)
         current_team = offense
+        interception_return_penalty: tuple[str, str] | None = None
+        if "intercepted by" in lower and "returned" in lower:
+            penalty_match = _PENALTY.search(detail)
+            penalty_name = penalty_match.group(2).casefold() if penalty_match else ""
+            if not any(
+                term in penalty_name
+                for term in (
+                    "pass interference",
+                    "roughing the passer",
+                    "defensive holding",
+                    "illegal contact",
+                )
+            ):
+                return_team = _other_linked_team(game, play, offense) or opponent
+                interception_return_penalty = _penalty_result(
+                    game,
+                    play,
+                    return_team,
+                    include_declined=True,
+                )
+
         penalty = _penalty_result(game, play, offense)
-        if penalty is not None:
+        if penalty is not None and interception_return_penalty is None:
             if lower.startswith("penalty on "):
                 chart = _penalty_chart(play, seed)
                 diagnostics["unknown_penalty_play_family"] += 1
@@ -667,16 +771,26 @@ def classify_pfr_game(game: PfrGame, seed: int = 8306) -> ClassifiedGame:
                 result = f"INT {depth if depth is not None else 10}"
                 defense = _other_linked_team(game, play, offense) or _opponent(game, offense)
                 outcomes.append(
-                    _empirical_play(defense, "special_teams", "interception_return", _return_result(detail), play)
+                    _empirical_play(
+                        defense,
+                        "special_teams",
+                        "interception_return",
+                        (
+                            interception_return_penalty[1]
+                            if interception_return_penalty is not None
+                            else _return_result(detail)
+                        ),
+                        play,
+                    )
                 )
+                if interception_return_penalty is not None:
+                    diagnostics["special_teams_penalties"] += 1
                 current_team = defense
                 diagnostics["interceptions"] += 1
             elif "incomplete" in lower:
                 result = "BLACK"
             elif observed_yards is not None:
-                if "touchdown" in lower:
-                    result = "TD"
-                elif "fumble" in lower:
+                if "fumble" in lower:
                     result = _fumble_result(observed_yards)
                     recovery = _recovery_team(game, play, offense)
                     fumbles.append(
@@ -697,7 +811,9 @@ def classify_pfr_game(game: PfrGame, seed: int = 8306) -> ClassifiedGame:
                 diagnostics["unclassified_runs"] += 1
                 continue
             if "touchdown" in lower:
-                run_result = "TD"
+                # A short goal-line score is still a short gain when replayed
+                # elsewhere on the field; the engine converts gains at the goal line.
+                run_result = _marked_numeric(run_yards, detail)
             elif "fumble" in lower:
                 run_result = _fumble_result(run_yards)
                 recovery = _recovery_team(game, play, offense)

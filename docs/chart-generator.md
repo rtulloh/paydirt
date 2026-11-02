@@ -98,9 +98,16 @@ Valid special-teams names are `kickoff`, `kickoff_return`, `punt`, `punt_return`
 `interception_return`, and `field_goal`.
 
 Each supplied column replaces its aggregate estimate. Unspecified columns still use season
-totals. The generator validates every normalized result before generation, preserves numeric
-out-of-bounds markers such as `4*`, approximates symbolic frequencies with whole chart-row
-weights, and fills unmarked numeric rows from the observed yardage distribution.
+totals. When classified short, medium, or long passes are available without a separately
+classified `te_short_long` sample, the generator builds that route column from the combined
+observed pass outcomes. The generator validates every normalized result before generation,
+preserves numeric out-of-bounds markers such as `4*`, approximates symbolic frequencies with
+whole chart-row weights, and fills unmarked numeric rows from the observed yardage distribution.
+Primary rushing columns cap direct numeric gains at 18 yards. For empirical columns, gains of
+19 yards or more determine the rare `B` trigger frequency, while the separate Breakaway column
+is learned from the full distribution of observed gains of 10 yards or more. Aggregate fallback
+columns apply the same direct-gain cap to their modeled distribution. This keeps ordinary long
+gains field-position aware and uses the two-stage chart mechanism for exceptional runs.
 
 ```sh
 python generate_charts.py team-stats.json \
@@ -117,13 +124,26 @@ represents. Keep licensed or private source data outside the repository.
 
 Use complete regular-season play-by-play whenever a suitable source is available. The source
 adapter must retain opponent identity, accepted penalties, field-goal distance and result,
-fumble-loss events, and empirical out-of-bounds markers, then pass normalized outcomes through
-the opponent-adjusted generator. Aggregate-only generation is an explicit fallback for a season
-without complete play-by-play or for empirical columns below the minimum sample threshold.
+fumble-loss events, empirical out-of-bounds markers, and observed yardage, including the yardage
+of scoring plays. For kickoff, kickoff-return, punt, punt-return, interception-return, and
+field-goal charts, retain both accepted and declined non-offsetting fouls: a chart penalty cell
+represents a called foul, and the engine decides whether the resulting penalty is accepted. Assign
+the result relative to the chart owner (`OFF` for that team and `DEF` for its opponent). The
+baseline generator does not translate a source touchdown flag directly into
+a guaranteed chart `TD`. High numeric gains remain field-position aware and can score normally.
+Aggregate-only generation is an explicit fallback for a season without complete play-by-play or
+for empirical columns below the minimum sample threshold.
 
-Calibrate source adapters through multi-seed engine replays. Match completion, yardage, sacks,
-turnovers, play volume, and scoring together; matching isolated chart averages is insufficient.
-Record every non-neutral run or pass calibration value in `generation-manifest.json`.
+Chart creation uses two tools. The source generator produces a deterministic baseline from the
+source evidence. [`tune_charts.py`](../tune_charts.py) measures candidates through multi-seed engine replays and
+writes a calibration profile that the source generator applies on the next run. Use 64 complete
+regular seasons for tuning, which produces 1,024 team-games in a 16-game season or 1,088 in a
+17-game season. Validate the selected profile with 256 additional seasons and unused seeds. Match
+completion, yardage, sacks, turnovers, play volume, and scoring together; matching isolated chart
+averages is insufficient. Sparse literal `TD` cells, when required after numeric gains are
+calibrated, belong to this second stage. Record the effective profile in
+`generation-manifest.json`. See the [two-phase operator workflow](chart-generation-workflow.md) and the
+[chart generator tuning tool](dev-notes/chart-generator-tuning-tool.md).
 
 ### Generate from Pro Football Reference Play by Play
 
@@ -141,6 +161,7 @@ python generate_pfr_charts.py \
   --output /path/to/staging/1983-pbp \
   --audit-dir /path/to/local-audit \
   --through-date 19831219 \
+  --calibration-profile /path/to/profile.json \
   --seed 8306
 ```
 
@@ -158,8 +179,8 @@ residuals replace schedule-biased allowed rates before the defense template is g
 pseudo-count, configurable with `--opponent-shrinkage`, partially pools small samples.
 
 Pass event families use the aggregate generator's engine-calibrated baseline by default, while
-empirical play by play supplies resolved yard distributions, touchdowns, fumbles, and clock-stop
-markers. Quantization preserves the combined mass of fumble, interception, penalty, and marked
+empirical play by play supplies resolved yard distributions, scoring-play yardage, fumbles, and
+clock-stop markers. Quantization preserves the combined mass of fumble, interception, penalty, and marked
 numeric families before selecting individual variants. Optional replay-derived adjustments are
 available as `--run-yard-multiplier`, `--pass-completion-adjustment`,
 `--pass-interception-adjustment`, `--pass-pressure-adjustment`, and
@@ -195,8 +216,12 @@ The command accepts the same opponent and pass calibration controls as the PFR a
 matched engine replay demonstrates a systematic boundary error. The manifest records source
 coverage, diagnostics, fallback columns, and all calibration values.
 A minimum sample threshold prevents a penalty-only or otherwise sparse empirical column from
-replacing its aggregate fallback. Accepted field goals marked `no play` are excluded from kick
-calibration. Review the manifest before using the charts.
+replacing its aggregate fallback. Every special-teams family also has a deterministic fallback
+penalty profile, so a resolved empirical sample cannot erase foul risk merely because no foul was
+observed in that small sample. Observed special-teams penalties replace that fallback distribution
+when present. Field-goal accuracy is calibrated only across numeric cells because the engine
+rerolls penalty cells; accepted field goals marked `no play` are excluded from kick calibration.
+Review the manifest, including `special_teams_penalties`, before using the charts.
 
 The source approach is informed by the archived
 [Data-Driven Football design process](https://web.archive.org/web/20250524072210/http://www.datadrivenfootball.com/designprocess.html),
@@ -220,7 +245,9 @@ coexist with ignored private comparison charts; release packaging maps it to `se
 - Rushing and passing totals produce cohort-calibrated column strengths.
 - Defensive rushing and passing efficiency shift a complete tactical formation template.
   Fractional shifts are distributed across defense sub-rows according to the actual red/green
-  dice probabilities, while interception and sack rates alter rare defensive outcomes.
+  dice probabilities. Defensive interception strength is allocated across sub-row-five cells,
+  limiting any one play-and-formation adjustment to 1/36 while preserving team differences; sack
+  rates alter separate rare pressure outcomes.
 - Classified plays preserve team-specific distributions that aggregate totals discard.
 
 Exact reproduction still needs charting judgment. Historical descriptions often identify run
@@ -233,18 +260,34 @@ designers.
 
 Aggregate passing symbols are allocated against the same denominators used by the engine:
 completion and interception rates apply to resolved pass attempts, while quarterback-time and
-penalty rows sit outside that attempt denominator. Passing yardage, pressure, and the template's
-baseline defensive interception contribution use engine-observed calibration factors rather than
-matching offense-column averages in isolation. Supplied `out_of_bounds` counts mark weighted
+penalty rows sit outside that attempt denominator. Passing yardage, pressure, and the template's defensive interception contribution use
+engine-observed calibration factors rather than matching offense-column averages in isolation.
+The defensive contribution is expressed through multiple low-mass cells instead of changing one
+high-mass sub-row at a source-rate threshold. Supplied `out_of_bounds` counts mark weighted
 numeric run and pass outcomes with `*`; omitted counts preserve the previous unmarked fallback.
 
-A 256-season 2024 Hard-vs-Hard calibration run measured the generated charts through 72,960
-completed engine games. Completion rate was 65.28% versus 65.29% actual, sacks were 2.35 versus
-2.42 per team-game, turnovers were 1.11 versus 1.15, scoring was 23.13 versus 22.91 points per
-team-game, and field goals were 85.20% versus 84.04%. Passing yards remained low at 6.53 versus
-7.13 yards per attempt, total yardage at 314.72 versus 337.42 yards per team-game, and play
-volume at 59.02 versus 62.15 plays per team-game. These are calibration measurements, not
-guarantees for a team or a single simulated season.
+The 2026-11-01 two-phase reference run used 64 chart-focused training seasons and 256 held-out
+Hard-vs-Hard validation seasons for both 1983 and 2024. The selected 1983 profile applies
+completion, interception, pressure, and passing-yard adjustments of `-0.05`, `-0.07`, `-0.07`,
+and `1.55`; its rushing multiplier remains `1.0`. The selected 2024 values are `0.02`, `-0.06`,
+`-0.02`, `1.30`, and `1.0` respectively. Every training and validation game completed.
+
+Under the team-independent situation-aware training policy, all five configured chart-boundary
+metrics met tolerance for both seasons. Hard play selection produced a separate distribution:
+1983 completion rose to 60.86% versus 56.90% actual while interceptions and sacks fell to 1.25%
+and 4.31% versus 4.41% and 7.96%; 2024 completion was 64.86% versus 65.29%, passing yardage was
+7.81 versus 7.13 yards per attempt, and sacks were 4.96% versus 6.87%. The 2024 Hard run still
+finished near actual scoring and volume at 22.16 versus 22.91 points and 61.16 versus 62.15 plays
+per team-game. These policy differences are reported diagnostics. Chart tuning must not force one
+profile to cancel the strategic choices made by every AI policy.
+
+A 2026-11-02 DATA-012 rerun replaced the old binary defensive-interception threshold with the
+low-mass allocation described above. The existing profiles still met all five 64-season training
+tolerances. The 1983 Hard interception rate increased from 1.25% to 1.96%; 2024 moved from 1.30%
+to 1.11%, while its chart-focused rate improved from 3.12% to 2.79% against a 2.17% source rate.
+The specific Dallas D/Short matchup found in manual testing fell from 38.89% to 11.11%. For the
+47-pass call mix in that game, expected defensive interceptions fell from 2.50 to 1.58 and the
+probability of at least five fell from 6.84% to 1.87%.
 
 The original historical workbooks examined during development contain chart-entry formatting
 and quantitative audit formulas. They do not contain a hidden season-statistics-to-chart formula.
@@ -409,8 +452,23 @@ Do not overwrite the distributed Thunderhawks or Ironclads when experimenting.
 - **Partial output:** repair only the affected staged team, rerun, and review every message.
 - **Team missing in the app:** check rules YAML and source-versus-bundled data locations.
 
-There is no general chart-validity report, dry-run, overwrite protection, or metadata generator.
-Loading successfully is not an accuracy guarantee. Import only authorized workbooks;
+The workbook extractor has no general chart-validity report, dry-run, overwrite protection, or
+metadata generator. Loading successfully is not an accuracy guarantee. Import only authorized workbooks;
 keep private sources, extracted charts, intermediate generations, and replay artifacts local.
 Only reviewed generator outputs intended for a release belong in the public season directories,
 and historical release charts remain outside unit fixtures.
+
+### Automatic completeness audit
+
+Both PBP generation commands write `chart-audit.json` and reject invalid or incomplete generated
+charts. The audit checks all primary and secondary columns, result symbols, physical yardage limits,
+fumble recovery coverage, and scoring conventions; it also measures the combined primary offense/defense result probabilities
+for all 54 play/formation combinations. `generation-manifest.json` records source annotation counts
+and explicitly modeled fallback features and rates. A missing season-wide annotation is not
+interpreted as evidence that its probability was zero.
+
+Saved historical sources can omit clock stops, fair catches, illegal kickoffs, blocked field goals,
+and special snap fumbles. Documented modeling defaults preserve those engine mechanisms when the
+whole season contains no corresponding observations. These estimates are distinct from source
+evidence and still need sensitivity and historical validation. The full findings and repeatable
+comparison command are in the [completeness audit](dev-notes/generated-chart-completeness-audit.md).

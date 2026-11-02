@@ -30,6 +30,7 @@ class TeamCalibrationTotals:
     team_games: int = 0
     points: int = 0
     offensive_plays: int = 0
+    rushing_attempts: int = 0
     pass_attempts: int = 0
     completions: int = 0
     total_yards: int = 0
@@ -60,6 +61,9 @@ class TeamCalibrationTotals:
         """Return counts plus derived rates used by calibration reports."""
         values: dict[str, int | float] = asdict(self)
         values["completion_rate"] = _ratio(self.completions, self.pass_attempts)
+        values["rushing_yards_per_attempt"] = _ratio(
+            self.rushing_yards, self.rushing_attempts
+        )
         values["yards_per_pass_attempt"] = _ratio(
             self.passing_yards, self.pass_attempts
         )
@@ -131,9 +135,13 @@ class EngineCalibrationObserver:
             return
         totals.offensive_plays += 1
         if selected_play not in _PASS_PLAY_TYPES:
+            totals.rushing_attempts += 1
             return
         result_type = outcome.result.result_type
-        if result_type in {ResultType.SACK, ResultType.QB_SCRAMBLE}:
+        if result_type == ResultType.QB_SCRAMBLE:
+            totals.rushing_attempts += 1
+            return
+        if result_type == ResultType.SACK:
             return
         totals.pass_attempts += 1
         if result_type not in {ResultType.INCOMPLETE, ResultType.INTERCEPTION}:

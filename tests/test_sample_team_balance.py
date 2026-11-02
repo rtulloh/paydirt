@@ -102,8 +102,19 @@ def test_public_teams_have_close_offensive_strength_and_kicking() -> None:
     assert teams[0].defense != teams[1].defense
     weights = chart_weights()
     for field in ("kickoff", "kickoff_return", "punt", "punt_return", "field_goal"):
-        means = [sum(float(str(getattr(team.special_teams, field)[roll]).rstrip("*")) * weight
-                     for roll, weight in weights.items()) / 216 for team in teams]
+        means = []
+        for team in teams:
+            cells = getattr(team.special_teams, field)
+            numeric = {
+                roll: float(str(cells[roll]).rstrip("*"))
+                for roll in weights
+                if str(cells[roll]).rstrip("*").lstrip("-").isdigit()
+            }
+            numeric_weight = sum(weights[roll] for roll in numeric)
+            means.append(
+                sum(value * weights[roll] for roll, value in numeric.items())
+                / numeric_weight
+            )
         assert abs(means[0] - means[1]) <= 3
 
 

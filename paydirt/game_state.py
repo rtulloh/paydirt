@@ -267,3 +267,4 @@ class PlayOutcome:
     retained_play_situation: PenaltySituation | None = None
     penalty_situations: dict[int, PenaltySituation] = field(default_factory=dict)
     clock_trace: ClockTrace | None = None
+    clock_stopped_for_penalty: bool = False

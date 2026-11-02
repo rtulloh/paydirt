@@ -14,6 +14,7 @@
 
 - [Seasons and rules](seasons.md): data locations, CSV layout, team metadata, rosters, and season YAML.
 - [Chart generation and Excel import](chart-generator.md): estimate charts from season data or convert existing Excel charts.
+- [Two-phase chart generation workflow](chart-generation-workflow.md): generate, train, validate, promote, and prepare a season for playtesting.
 
 Published builds include generated 1983 and 2024 charts plus the fictional 2026 sample. See the
 [chart attribution](../CHART_ATTRIBUTION.md); keep original charts, source workbooks, raw data, and historical logs local.

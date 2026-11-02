@@ -646,6 +646,54 @@ high. The remaining play-volume and pass-selection differences should be investi
 from source extraction; compensating for Hard coaching behavior inside chart classification would
 mix two distinct model boundaries.
 
+## November 1 Play-Test Follow-up: Touchdown Result Conventions
+
+A manual generated-1983 Dallas game exposed three offensive chart touchdowns in 34 calls,
+including two Line Plunge results that scored from 44 and 60 yards and an End Run result that
+scored from 73 yards. The source adapters had converted scoring plays to literal `TD`, discarding
+the observed gain and starting field position.
+
+An audit of all 28 developer-created 1983 chart sets established that source touchdowns do not
+map directly to chart symbols. The four run columns and Breakaway contain no `TD`. Pass columns
+contain only 27 `TD` cells, while direct numeric gains reach 77 on Screen, 35 on Short, 46 on
+Medium, 99 on Long, and 68 on T/E S/L. Kickoff Return and Punt Return contain neither `TD` nor
+`B`. Interception Return contains 17 `TD` cells and no `B`; numeric interception returns can also
+score through field position.
+
+The Colts provide a useful counterexample to a simple threshold rule. Their only Short Pass `TD`
+is roll 19, a 1/216 result, although the current historical classifier finds several teams with
+higher short-pass touchdown rates and no Short Pass `TD` cell. Guaranteed touchdowns therefore
+reflect whole-chart and engine calibration rather than a fixed source-yardage boundary.
+
+The PFR and nflverse adapters now preserve observed numeric yardage for scoring runs, completed
+passes, kickoff returns, punt returns, and interception returns. The baseline empirical charts
+remain field-position aware. A separate tuning stage will add sparse symbolic touchdown mass only
+when real-engine batches demonstrate a residual scoring deficit after completion, yardage, sacks,
+and turnovers are calibrated. DATA-009 tracks the play-test defect; DATA-011 tracks the reusable
+tuning tool.
+
+## November 1 Breakaway Reconstruction Follow-up
+
+The initial empirical breakaway change converted every run of 10 yards or more into a `B`
+trigger. Although that retained the weighted probability of a long run, it produced too many
+visible `B` cells and removed the direct 10-to-18-yard results that appear in developer-created
+charts. Across the 1983 developer charts, the longest direct run result is 18 yards and the
+separate Breakaway column ranges from 10 to 85 yards.
+
+The revised model separates trigger frequency from conditional yardage. Direct empirical gains
+through 18 yards remain in the primary run column; gains of 19 yards or more become `B` triggers.
+The Breakaway result chart is learned from all observed gains of at least 10 yards, including
+out-of-bounds and fumble markers. Aggregate fallback run columns use the same 18-yard direct cap.
+This gives the conditional chart enough samples and preserves the range of long-run outcomes
+without making every ordinary long gain a second-stage roll.
+
+For the regenerated 1983 charts, average `B` cells per column are 1.11 for Line Plunge, 1.46 for
+Off Tackle, and 1.39 for End Run. The prior generated charts contained 1.79, 2.82, and 3.54 direct
+10-plus-yard cells respectively. The corrected direct columns cap at 18 yards, while the
+Breakaway column has a weighted mean of 15.95 yards and ranges from 10 to 80. The developer
+Breakaway column has a weighted mean of 18.18 and ranges from 10 to 85. DATA-010 tracks the
+remaining engine and play-test validation.
+
 ## Recommended Validation
 
 For every selected matchup, run both chart sets across the same seed list and compare:
@@ -681,3 +729,57 @@ not evidence of calibration.
 4. Compare empirical reconstruction with both aggregate generation and original charts.
 5. Tune formulas only from training teams, then evaluate held-out teams to avoid fitting the
    complete historical set directly.
+
+
+## November 2: Special-Teams Penalty Coverage
+
+DATA-013 found that every generated 1983 and 2024 `special.csv` contained zero penalty cells, even
+though the engine supports special-teams penalty procedures and the developer-created 1983 charts
+use them. The source adapters had also converted penalized kicks and returns into ordinary numeric
+outcomes, while an interception-return foul was treated as a scrimmage penalty and could erase the
+interception from the empirical evidence.
+
+The PFR and nflverse adapters now classify non-offsetting accepted and declined special-teams
+fouls on the chart that produced them. Kickoff and punt fouls use the return chart when a return
+was recorded and the kick chart otherwise. Field-goal fouls use the kicking team's field-goal
+chart. Interception-return fouls preserve the offensive `INT` result and place the foul on the
+return team's interception-return chart. Offsetting fouls remain excluded because one chart cell
+cannot represent both sides of an offsetting procedure.
+
+Aggregate generation now inserts deterministic penalty mass into all six special-teams families.
+Empirical columns keep observed penalty outcomes; when a resolved sample contains none, at least
+one fallback penalty outcome is retained so limited evidence cannot remove foul risk. Field-goal
+success remains conditional on numeric rows because the engine rerolls a field-goal penalty cell.
+
+Regeneration used the existing reviewed inputs and calibration profiles: 224 regular-season games
+through December 19, 1983, and all 272 regular-season games in 2024. The resulting chart sets contain
+568 and 604 special-teams penalty cells respectively, with coverage in every family for every team.
+The two fictional 2026 sample teams were given the same fallback coverage and contain 29 cells
+combined. The manifests report 318 classified 1983 special-teams fouls and 350 for 2024.
+
+## November 2: Systematic Completeness Review
+
+The [all-team completeness audit](generated-chart-completeness-audit.md) records the subsequent
+review of every offense, defense, special-teams, and metadata family against the local developer
+1983 set. DATA-014 fixes numeric quantile ordering, truncated season sampling, lost foul variants,
+B/fumble/clock semantics, physical limits, ignored field-goal blocks, kick-return placeholder
+sampling, kickoff ownership, and nominal penalty enforcement. It also records explicit modeled
+fallbacks for source-wide annotation gaps. `Kickoff OOB` in the archived penalty descriptions is
+recognized as an observed illegal kick, rather than assumed absent.
+
+Both PBP generator commands now write a structural/feature `chart-audit.json` and fail on invalid
+output. The report includes engine priority-rule probabilities for all 54 primary play/formation
+combinations. Reference comparisons treat old blank cells as engine zero defaults; generated
+charts must still provide every required cell. Historical comparison reports stay ignored.
+
+The completed review renewed 64-season training and 256-season held-out Hard assessments for both
+1983 and 2024. All five existing training tolerances passed, with 1,024/1,088 games per team; all
+126,976 held-out games completed, with 4,096/4,352 per team. The final 1983 completion/run profile
+is -0.06/1.025, with its other parameters unchanged. The 2024 profile is unchanged. Both focused
+historical regular-season/postseason runs completed, and all 180 chart CSVs reproduce byte for byte.
+
+Hard remains a materially different policy: 1983 produces 24.50 points, 60.80 plays, and 1.42
+turnovers per team-game; 2024 produces 24.30, 60.95, and 0.87. Neither set passes every training
+tolerance under Hard. The completeness report records those limits and the remaining differences
+in B frequency, primary pass incompletions, foul exposure, and QT fumble exposure. Restored result
+families and passing training checks do not imply exact developer-chart or historical equivalence.

@@ -75,6 +75,21 @@ class SeasonRules:
     overtime: OvertimeConfig
     ai_behavior: AIBehavior = field(default_factory=AIBehavior)
 
+    def missed_field_goal_position(self, scrimmage_position: int, kick_position: int) -> int:
+        """Return the new offense's spot for an unreturned, unblocked miss.
+
+        Args:
+            scrimmage_position: Line of scrimmage from the kicker's goal line.
+            kick_position: Spot of the kick from the kicker's goal line.
+
+        Returns:
+            Yards from the receiving team's goal line, with a twenty-yard floor.
+        """
+        if self.season < 1974:
+            return 20
+        spot = kick_position if self.season >= 1994 else scrimmage_position
+        return max(20, 100 - max(1, spot))
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API consumption."""
         return {

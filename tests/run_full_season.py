@@ -270,7 +270,10 @@ def run_historical_reproductions() -> int:
         ("Raiders", "Eagles", 19831127, False),
         # Corrected dice and subsequent clock/AI changes shifted the extension.
         # Keep a current-dice supplement that awards and plays a real untimed down.
-        ("Raiders", "Eagles", 19831154, True),
+        ("Raiders", "Eagles", 19831154, False),
+        # RULE-022 preserves the foul clock stop, shifting seeded trajectories.
+        # Retain every prior complete game and require a verified new extension.
+        ("Raiders", "Eagles", 19831153, True),
         # Retain prior reproductions when corrected commentary/timing changes
         # their seeded trajectories; require a real extension in the new supplement.
         ("Chiefs", "Giants", 19831603, False),
@@ -281,7 +284,8 @@ def run_historical_reproductions() -> int:
         # RULE-019 and subsequent clock/AI changes shifted the extension again.
         # This current-dice supplement awards and plays a real untimed down.
         ("Chiefs", "Giants", 19831631, False),
-        ("Chiefs", "Giants", 19831673, True),
+        ("Chiefs", "Giants", 19831673, False),
+        ("Chiefs", "Giants", 19831617, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )

@@ -196,3 +196,217 @@ def test_retains_field_goals_and_regular_season_filter(tmp_path: Path) -> None:
     ]
     assert season.source_rows == 1
     assert season.games == 1
+
+
+def test_touchdown_results_follow_developer_chart_conventions() -> None:
+    """Encode scoring plays the same way as the developer-created charts."""
+    rows = [
+        _row(
+            play_id=1,
+            desc="Runner right tackle for 2 yards, touchdown",
+            yards_gained=2,
+            run_location="right",
+            run_gap="tackle",
+            touchdown=1,
+        ),
+        _row(
+            play_id=2,
+            play_type="pass",
+            desc="Pass complete deep right for 35 yards, touchdown",
+            yards_gained=35,
+            air_yards=25,
+            complete_pass=1,
+            touchdown=1,
+        ),
+        _row(
+            play_id=3,
+            play_type="pass",
+            desc="Pass complete deep right for 45 yards, touchdown",
+            yards_gained=45,
+            air_yards=30,
+            complete_pass=1,
+            touchdown=1,
+        ),
+        _row(
+            play_id=4,
+            play_type="punt",
+            desc="Punt returned 65 yards for touchdown",
+            posteam="ARI",
+            defteam="BUF",
+            touchdown=1,
+            return_touchdown=1,
+            return_team="BUF",
+            return_yards=65,
+        ),
+        _row(
+            play_id=5,
+            play_type="pass",
+            desc="Pass intercepted and returned 55 yards for touchdown",
+            posteam="ARI",
+            defteam="BUF",
+            air_yards=10,
+            interception=1,
+            touchdown=1,
+            return_touchdown=1,
+            return_team="BUF",
+            return_yards=55,
+        ),
+        _row(
+            play_id=6,
+            play_type="pass",
+            desc="Pass intercepted and returned 70 yards for touchdown",
+            posteam="ARI",
+            defteam="BUF",
+            air_yards=10,
+            interception=1,
+            touchdown=1,
+            return_touchdown=1,
+            return_team="BUF",
+            return_yards=70,
+        ),
+    ]
+
+    season = classify_nflverse_rows(rows)
+    offense = [play for play in season.plays if play.unit == "offense"]
+    punt_returns = [play for play in season.plays if play.chart == "punt_return"]
+    interception_returns = [
+        play for play in season.plays if play.chart == "interception_return"
+    ]
+
+    assert [(play.chart, play.result) for play in offense[:3]] == [
+        ("off_tackle", "2"),
+        ("long_pass", "35"),
+        ("long_pass", "45"),
+    ]
+    assert any(play.result.startswith("INT ") for play in offense)
+    assert [(play.team, play.result) for play in punt_returns] == [("BUF", "65")]
+    assert [(play.team, play.result) for play in interception_returns] == [
+        ("BUF", "55"),
+        ("BUF", "70"),
+    ]
+
+
+def test_special_teams_penalties_are_classified_on_the_correct_chart() -> None:
+    rows = [
+        _row(
+            play_id=1,
+            play_type="kickoff",
+            desc="Kickoff returned 20 yards. Holding on receiving team declined",
+            posteam="BUF",
+            defteam="ARI",
+            kick_distance=65,
+            return_team="BUF",
+            return_yards=20,
+            penalty=1,
+            penalty_team="BUF",
+            penalty_yards=10,
+            penalty_type="Holding",
+        ),
+        _row(
+            play_id=2,
+            play_type="punt",
+            desc="Punt returned 7 yards. Holding on kicking team",
+            posteam="ARI",
+            defteam="BUF",
+            kick_distance=44,
+            return_team="BUF",
+            return_yards=7,
+            penalty=1,
+            penalty_team="ARI",
+            penalty_yards=10,
+            penalty_type="Holding",
+        ),
+        _row(
+            play_id=3,
+            play_type="field_goal",
+            desc="Field goal no play because of defensive offside",
+            posteam="ARI",
+            defteam="BUF",
+            field_goal_result="made",
+            kick_distance=42,
+            penalty=1,
+            penalty_team="BUF",
+            penalty_yards=5,
+            penalty_type="Offside",
+        ),
+        _row(
+            play_id=4,
+            play_type="pass",
+            desc="Pass intercepted and returned 18 yards. Holding on return team",
+            posteam="ARI",
+            defteam="BUF",
+            air_yards=12,
+            interception=1,
+            return_team="BUF",
+            return_yards=18,
+            penalty=1,
+            penalty_team="BUF",
+            penalty_yards=10,
+            penalty_type="Holding",
+        ),
+    ]
+
+    season = classify_nflverse_rows(rows)
+
+    assert [
+        (play.team, play.chart, play.result)
+        for play in season.plays
+        if play.unit == "special_teams"
+    ] == [
+        ("BUF", "kickoff_return", "OFF 10"),
+        ("BUF", "punt_return", "DEF 10"),
+        ("ARI", "field_goal", "DEF 5"),
+        ("BUF", "interception_return", "OFF 10"),
+    ]
+    assert any(
+        play.unit == "offense" and play.result == "INT 12"
+        for play in season.plays
+    )
+    assert season.diagnostics["special_teams_penalties"] == 4
+
+
+def test_kickoff_foul_without_return_is_relative_to_kicking_team() -> None:
+    season = classify_nflverse_rows([_row(
+        play_type='kickoff', posteam='BUF', defteam='ARI',
+        desc='Kickoff, kicking team offside, no play',
+        penalty=1, penalty_team='ARI', penalty_type='Offside', penalty_yards=5,
+    )])
+    assert [(p.team, p.chart, p.result) for p in season.plays] == [('ARI', 'kickoff', 'OFF 5')]
+
+
+def test_return_out_of_bounds_does_not_make_kickoff_illegal() -> None:
+    season = classify_nflverse_rows([_row(
+        play_type='kickoff', posteam='BUF', defteam='ARI',
+        desc='Kickoff 65 yards, returned 20 yards out of bounds',
+        kick_distance=65, return_yards=20, out_of_bounds=1,
+    )])
+    assert [(p.chart,p.result) for p in season.plays] == [('kickoff','65'),('kickoff_return','20*')]
+
+
+def test_half_distance_foul_preserves_nominal_yards_and_first_down() -> None:
+    rows = [
+        _row(play_type='no_play', desc='False Start', penalty=1, penalty_team='ARI',
+             penalty_type='False Start', penalty_yards=2),
+        _row(play_id=2, play_type='no_play', desc='Defensive Holding', penalty=1,
+             penalty_team='BUF', penalty_type='Defensive Holding', penalty_yards=3),
+    ]
+    season = classify_nflverse_rows(rows)
+    assert [p.result for p in season.plays] == ['OFF 5', 'DEF 5X']
+
+
+def test_punt_touchback_does_not_generate_a_zero_yard_return() -> None:
+    season = classify_nflverse_rows([_row(
+        play_type='punt', kick_distance=50, return_team='BUF', return_yards=0,
+        touchback=1, desc='Punt 50 yards, touchback',
+    )])
+    assert [(p.chart,p.result) for p in season.plays] == [('punt','50†')]
+
+
+def test_kickoff_oob_penalty_uses_the_illegal_kick_procedure() -> None:
+    season = classify_nflverse_rows([_row(
+        play_type='kickoff', posteam='BUF', defteam='ARI',
+        desc='Kickoff out of bounds, no play',
+        penalty=1, penalty_team='ARI', penalty_type='Kickoff Out of Bounds', penalty_yards=5,
+        kickoff_out_of_bounds=1,
+    )])
+    assert [(p.chart,p.result) for p in season.plays] == [('kickoff','OB')]

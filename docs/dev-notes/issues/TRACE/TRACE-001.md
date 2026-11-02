@@ -22,3 +22,6 @@ Existing resolvers already retain `qb_scramble_dice` and yardage. Audit all rend
 
 --- 2026-10-18 00:00 ---
 Migrated from the single-file tracker (status at migration: Open).
+
+--- 2026-11-02 10:15 ---
+Latest completed manual game has seven QT resolutions: three ordinary sacks, one sack/fumble lost, two positive scrambles, and one positive retained fumble. Compact output still omits the secondary QT roll and raw result, even where it includes recovery/advance rolls. This prevents a complete exact-roll replay; no missing secondary roll was reconstructed from its yardage. Keep open; see ../../game-audit-2026-11-02.md.

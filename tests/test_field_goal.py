@@ -4,7 +4,7 @@ Tests for field goal handling per official Paydirt rules.
 Official rules:
 - Roll offensive dice, consult Field Goal column on kicking team's Special Team Chart
 - If yardage shown EQUALS or EXCEEDS distance from LOS to goal line, FG is GOOD
-- On miss, defense gets ball at their 20 OR spot of hold (7 yards back) - whichever
+- Under modern season rules, defense gets ball at their 20 OR spot of hold (7 yards back) - whichever
   is to their advantage
 - Chart yardages are distance from LOS to goal line, NOT the statistical length
   (which is 17 yards greater: 10 yards end zone + 7 yards to spot of hold)
@@ -71,7 +71,7 @@ def mock_team_chart(mock_special_teams):
     """Create a mock team chart."""
     return TeamChart(
         peripheral=PeripheralData(
-            year=1983,
+            year=2026,
             team_name="Test",
             team_nickname="Team",
             short_name="TST '83",

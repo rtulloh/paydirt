@@ -134,3 +134,20 @@ def test_team_metadata_consistency():
     assert hasattr(thunderhawks_team.peripheral, 'short_name')
     assert hasattr(thunderhawks_team.peripheral, 'year')
     assert hasattr(thunderhawks_team.peripheral, 'team_nickname')
+
+@pytest.mark.parametrize("team_fixture", ["ironclads_team", "thunderhawks_team"])
+def test_sample_special_teams_include_penalties(request, team_fixture):
+    """Every playable special-teams family retains a chance of a foul."""
+    team = request.getfixturevalue(team_fixture)
+    charts = team.special_teams
+
+    for chart_name in (
+        "kickoff",
+        "kickoff_return",
+        "punt",
+        "punt_return",
+        "interception_return",
+        "field_goal",
+    ):
+        results = getattr(charts, chart_name).values()
+        assert any(result.startswith(("OFF ", "DEF ")) for result in results), chart_name

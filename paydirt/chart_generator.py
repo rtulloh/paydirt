@@ -30,8 +30,68 @@ _DEFENSE_SUBROW_WEIGHTS = defense_subrow_weights()
 _PASS_COMPLETION_CALIBRATION = 0.02
 _PASS_DEFENSE_INTERCEPTION_ALLOWANCE = 0.006
 _PASS_PENALTY_RATE = 0.055
+_SPECIAL_PENALTY_PROFILES: dict[str, tuple[float, tuple[str, ...]]] = {
+    "kickoff": (0.005, ("DEF 5",)),
+    "kickoff_return": (0.08, ("OFF 15", "DEF 15")),
+    "punt": (0.105, ("OFF 5", "OFF 10", "DEF 5", "DEF 5X")),
+    "punt_return": (0.10, ("OFF 15", "DEF 15")),
+    "interception_return": (0.085, ("OFF 15", "DEF 15")),
+    "field_goal": (0.095, ("OFF 5", "OFF 10", "DEF 5", "DEF 5X")),
+}
+# Explicit modeling defaults for sources that omit these annotations entirely.
+# These are estimates, not recovered play-by-play events or copied chart cells.
+_MISSING_OOB_RATES = {
+    "line_plunge": .01, "off_tackle": .02, "end_run": .15, "draw": .02,
+    "screen": .10, "short_pass": .02, "medium_pass": .05, "long_pass": .06,
+    "te_short_long": .12, "qb_time": .025, "breakaway": .02,
+}
+_MISSING_SPECIAL_PROFILES = {
+    "field_goal_block": ("field_goal", .02, "BK -7"),
+    "field_goal_fumble": ("field_goal", .005, "F - 7"),
+    "punt_fumble": ("punt", .005, "F - 10"),
+    "interception_return_fumble": ("interception_return", .01, "F"),
+}
 _PASS_PRESSURE_MULTIPLIER = 1.70
 _PASS_YARDAGE_CALIBRATION = 1.28
+_EMPIRICAL_LONG_RUN_YARDS = 10
+_EMPIRICAL_BREAKAWAY_TRIGGER_YARDS = 19
+_DEFENSE_INTERCEPTION_NEUTRAL_RATE = 0.025
+_DEFENSE_INTERCEPTION_RATE_SCALE = 500.0
+_DEFENSE_INTERCEPTION_ADD_CELLS = (
+    ("D", 6),
+    ("B", 8),
+    ("E", 8),
+    ("F", 6),
+    ("D", 9),
+    ("E", 9),
+    ("A", 7),
+    ("C", 7),
+    ("D", 8),
+    ("A", 5),
+    ("B", 5),
+    ("C", 5),
+    ("D", 5),
+    ("E", 5),
+    ("F", 5),
+)
+_DEFENSE_INTERCEPTION_REMOVE_CELLS = (
+    ("A", 6),
+    ("A", 8),
+    ("B", 6),
+    ("C", 6),
+    ("C", 8),
+    ("D", 7),
+    ("E", 6),
+    ("E", 7),
+    ("F", 7),
+)
+_DEFENSE_INTERCEPTION_RESULTS = {
+    5: "INT 5",
+    6: "INT 5",
+    7: "INT 12",
+    8: "INT 18",
+    9: "INT 8",
+}
 _OFFENSE_NAMES = (
     "line_plunge",
     "off_tackle",
@@ -445,6 +505,7 @@ def _replace_rate(
     rate: float,
     value_factory: str | Sequence[str],
     rng: random.Random,
+    minimum_one: bool = False,
 ) -> None:
     """Replace weighted chart rows to approximate the requested symbolic outcome rate."""
     available = [
@@ -454,9 +515,19 @@ def _replace_rate(
     ]
     rng.shuffle(available)
     chosen = _nearest_roll_mass(rate, available)
+    if minimum_one and rate > 0 and not chosen and available:
+        chosen = {min(available, key=lambda roll: (_ROLL_WEIGHTS[roll], roll))}
     values = [value_factory] if isinstance(value_factory, str) else list(value_factory)
     for index, roll in enumerate(sorted(chosen)):
         column[roll] = values[index % len(values)]
+
+
+def _cap_direct_run_yards(column: dict[int, str], maximum: int = 18) -> None:
+    """Cap direct numeric run gains so larger results use the B mechanism."""
+    for roll, cell in column.items():
+        numeric = re.fullmatch(r"([+-]?\d+)([*†]?)", cell)
+        if numeric and int(numeric.group(1)) > maximum:
+            column[roll] = f"{maximum}{numeric.group(2)}"
 
 
 def _mark_numeric_out_of_bounds(
@@ -497,17 +568,25 @@ def _scale_empirical_resolved_yards(result: str, multiplier: float) -> str:
     """Scale resolved numeric and fumble yards while preserving chart markers."""
     numeric = re.fullmatch(r"([+-]?\d+)([*†]?)", result.strip())
     if numeric:
-        return f"{round(int(numeric.group(1)) * multiplier)}{numeric.group(2)}"
+        return f"{max(-99, min(99, round(int(numeric.group(1)) * multiplier)))}{numeric.group(2)}"
     fumble = re.fullmatch(
         r"F(?:\s*([+-])\s*(\d+))?", result.strip(), re.IGNORECASE
     )
     if fumble and fumble.group(2):
         value = int(fumble.group(2)) * (-1 if fumble.group(1) == "-" else 1)
-        scaled = round(value * multiplier)
+        scaled = max(-99, min(99, round(value * multiplier)))
         if scaled == 0:
             return "F"
         return f"F {'+' if scaled > 0 else '-'} {abs(scaled)}"
     return result
+
+def _resample_outcomes(values: Sequence[str], count: int) -> tuple[str, ...]:
+    """Sample across the full sequence instead of truncating the season prefix."""
+    if count <= 0 or not values:
+        return ()
+    return tuple(values[min(len(values) - 1, int((index + .5) * len(values) / count))]
+                 for index in range(count))
+
 
 def _calibrate_empirical_pass_events(
     outcomes: Sequence[str],
@@ -568,10 +647,13 @@ def _calibrate_empirical_pass_events(
 
     calibrated: list[str] = []
     for name in event_names:
-        sources = baseline_sources[name] or empirical_sources[name]
+        if name == "penalty":
+            sources = empirical_sources[name] or baseline_sources[name]
+        else:
+            sources = baseline_sources[name] or empirical_sources[name]
         if not sources:
             continue
-        calibrated.extend(sources[index % len(sources)] for index in range(counts[name]))
+        calibrated.extend(_resample_outcomes(sources, counts[name]))
     resolved_count = total - len(calibrated)
     resolved_sources = empirical_sources["resolved"] or baseline_sources["resolved"]
     if not resolved_sources:
@@ -582,10 +664,41 @@ def _calibrate_empirical_pass_events(
         )
         for result in resolved_sources
     ]
-    calibrated.extend(
-        scaled_sources[index % len(scaled_sources)] for index in range(resolved_count)
-    )
+    calibrated.extend(_resample_outcomes(scaled_sources, resolved_count))
     return tuple(calibrated)
+
+def _reconstruct_empirical_breakaways(
+    offense: Mapping[str, tuple[str, ...]],
+) -> dict[str, tuple[str, ...]]:
+    """Derive rare B triggers and its conditional yardage from observed long runs."""
+    reconstructed = dict(offense)
+    if "breakaway" in reconstructed:
+        return reconstructed
+    long_run_outcomes: list[str] = []
+    for name in ("line_plunge", "off_tackle", "end_run", "draw"):
+        outcomes = reconstructed.get(name)
+        if not outcomes:
+            continue
+        primary: list[str] = []
+        for outcome in outcomes:
+            # A fumble remains on its original call; B must not relocate its risk
+            # to every run family through a shared secondary chart.
+            if outcome.upper().startswith("F"):
+                primary.append(outcome)
+                continue
+            numeric = re.fullmatch(r"([+-]?\d+)[*†]?", outcome.strip())
+            yards = int(numeric.group(1)) if numeric else None
+            if yards is not None and yards >= _EMPIRICAL_LONG_RUN_YARDS:
+                long_run_outcomes.append(outcome)
+            if yards is not None and yards >= _EMPIRICAL_BREAKAWAY_TRIGGER_YARDS:
+                primary.append("B*" if outcome.endswith(("*", "†")) else "B")
+            else:
+                primary.append(outcome)
+        reconstructed[name] = tuple(primary)
+    if long_run_outcomes:
+        reconstructed["breakaway"] = tuple(long_run_outcomes)
+    return reconstructed
+
 
 def _empirical_symbol_family(cell: str) -> str:
     """Group variants that share one empirical probability mass."""
@@ -611,7 +724,12 @@ def _assign_empirical_variants(
     """Assign family variants by their empirical quantiles over chosen dice mass."""
     if not rolls or not values:
         return
-    ordered_values = sorted(values)
+    def yardage_key(value: str) -> tuple[int, int | str]:
+        """Order numeric variants by yards; keep other symbol families stable."""
+        numeric = re.fullmatch(r"([+-]?\d+)[*†]?", value)
+        return (0, int(numeric.group(1))) if numeric else (1, value)
+
+    ordered_values = sorted(values, key=yardage_key)
     ordered_rolls = list(rolls)
     random.Random(seed).shuffle(ordered_rolls)
     total_mass = sum(_ROLL_WEIGHTS[roll] for roll in ordered_rolls)
@@ -697,6 +815,7 @@ def _run_column(
         1.0 - _PASS_PENALTY_RATE,
         rng,
     )
+    _cap_direct_run_yards(column)
     return column
 
 
@@ -891,6 +1010,31 @@ def _apply_defense_efficiency_shift(
                 row[column] = _shift_defense_cell(row[column], fractional_step)
 
 
+def _allocate_defense_interceptions(
+    defense: dict[tuple[str, int], dict[int, str]],
+    interception_rate: float,
+) -> None:
+    """Distribute defense strength across low-mass rows instead of one trap cell.
+
+    Each allocation changes one sub-row-five result, which carries only 1/36 of
+    the probability for that play and formation. The scale assigns roughly half
+    of a defense's deviation from the neutral interception rate to its chart;
+    offense generation and engine calibration retain the other contribution.
+    """
+    row_units = round(
+        (interception_rate - _DEFENSE_INTERCEPTION_NEUTRAL_RATE)
+        * _DEFENSE_INTERCEPTION_RATE_SCALE
+    )
+    if row_units > 0:
+        for formation, column in _DEFENSE_INTERCEPTION_ADD_CELLS[:row_units]:
+            defense[(formation, 5)][column] = _DEFENSE_INTERCEPTION_RESULTS[column]
+        return
+
+    for formation, column in _DEFENSE_INTERCEPTION_REMOVE_CELLS[: -row_units]:
+        if defense[(formation, 5)][column].startswith("INT"):
+            defense[(formation, 5)][column] = "BLACK"
+
+
 def _generate_defense(stats: TeamSeasonStats) -> dict[tuple[str, int], dict[int, str]]:
     """Adjust the tactical defense template for team efficiency and disruption rates."""
     rushing = stats.defense.rushing
@@ -908,10 +1052,7 @@ def _generate_defense(stats: TeamSeasonStats) -> dict[tuple[str, int], dict[int,
     _apply_defense_efficiency_shift(defense, range(1, 5), run_shift)
     _apply_defense_efficiency_shift(defense, range(5, 10), pass_shift)
 
-    if interception_rate >= 0.035:
-        defense[("D", 2)][6] = "INT 5"
-    elif interception_rate <= 0.015:
-        defense[("C", 5)][6] = "BLACK"
+    _allocate_defense_interceptions(defense, interception_rate)
     if sack_rate >= 0.08:
         defense[("D", 3)][8] = "QT"
     elif sack_rate <= 0.04:
@@ -924,6 +1065,44 @@ def _special_column(mean: float, spread: float, seed: int, minimum: int = 0) -> 
     return _numeric_column(mean, spread, random.Random(seed), minimum=minimum)
 
 
+def _apply_special_penalty_profile(
+    special: Mapping[str, dict[int, str]], team_name: str, seed: int
+) -> None:
+    """Insert deterministic era-neutral foul risk into every special-teams family."""
+    for name, (rate, results) in _SPECIAL_PENALTY_PROFILES.items():
+        _replace_rate(
+            special[name],
+            rate,
+            results,
+            random.Random(_seed_for(seed, team_name, name, "penalty")),
+        )
+
+
+def _calibrate_empirical_special_penalties(
+    outcomes: Sequence[str], baseline: Mapping[int, str]
+) -> tuple[str, ...]:
+    """Keep observed special-teams fouls or retain fallback risk when none were recorded."""
+    if not outcomes:
+        return ()
+    if any(_empirical_event_category(result) == "penalty" for result in outcomes):
+        return tuple(outcomes)
+    penalty_sources = [
+        result
+        for roll, result in baseline.items()
+        for _ in range(_ROLL_WEIGHTS.get(roll, 0))
+        if _empirical_event_category(result) == "penalty"
+    ]
+    if not penalty_sources:
+        return tuple(outcomes)
+    penalty_rate = len(penalty_sources) / _TOTAL_WEIGHT
+    penalty_count = max(1, min(len(outcomes), round(len(outcomes) * penalty_rate)))
+    resolved_count = len(outcomes) - penalty_count
+    return _resample_outcomes(outcomes, resolved_count) + tuple(
+        penalty_sources[index % len(penalty_sources)]
+        for index in range(penalty_count)
+    )
+
+
 def _monotonic_field_goal_rates(
     buckets: Sequence[FieldGoalDistanceStats],
 ) -> list[tuple[int, float]]:
@@ -931,7 +1110,7 @@ def _monotonic_field_goal_rates(
     grouped: dict[int, list[int]] = {}
     for bucket in buckets:
         totals = grouped.setdefault(bucket.distance, [0, 0])
-        totals[0] += bucket.attempts
+        totals[0] += bucket.attempts - bucket.blocked
         totals[1] += bucket.made
     blocks: list[dict[str, Any]] = []
     for distance, (attempts, made) in sorted(grouped.items()):
@@ -965,24 +1144,43 @@ def _monotonic_field_goal_rates(
     ]
 
 
-def _field_goal_column(
-    buckets: Sequence[FieldGoalDistanceStats], seed: int
-) -> dict[int, str]:
-    """Generate maximum-distance results from observed makes and attempts by distance."""
+def _calibrate_field_goal_distances(
+    column: dict[int, str],
+    buckets: Sequence[FieldGoalDistanceStats],
+    seed: int,
+    success_multiplier: float = 1.0,
+) -> None:
+    """Set conditional field-goal accuracy while preserving symbolic foul rows."""
     rates = _monotonic_field_goal_rates(buckets)
     if not rates:
         raise ValueError("Field-goal distance data must contain at least one attempt")
+    numeric_rolls = [
+        roll for roll, cell in column.items() if re.fullmatch(r"[+-]?\d+", cell)
+    ]
+    numeric_mass = sum(_ROLL_WEIGHTS[roll] for roll in numeric_rolls)
     shortest_needed = max(0, rates[0][0] - 17)
-    column = {roll: str(max(0, shortest_needed - 1)) for roll in _ROLLS}
-    successful_rolls = set(_ROLLS)
+    for roll in numeric_rolls:
+        column[roll] = str(max(0, shortest_needed - 1))
+    successful_rolls = set(numeric_rolls)
     rng = random.Random(seed)
     for statistical_distance, success_rate in rates:
         candidates = list(successful_rolls)
         rng.shuffle(candidates)
-        successful_rolls = _nearest_roll_mass(success_rate, candidates)
+        target_mass = round(min(1.0, success_rate * success_multiplier) * numeric_mass)
+        successful_rolls = _nearest_roll_mass(
+            target_mass / _TOTAL_WEIGHT, candidates
+        )
         chart_distance = max(0, statistical_distance - 17)
         for roll in successful_rolls:
             column[roll] = str(chart_distance)
+
+
+def _field_goal_column(
+    buckets: Sequence[FieldGoalDistanceStats], seed: int
+) -> dict[int, str]:
+    """Generate maximum-distance results from observed makes and attempts by distance."""
+    column = {roll: "0" for roll in _ROLLS}
+    _calibrate_field_goal_distances(column, buckets, seed)
     return column
 
 
@@ -1023,6 +1221,28 @@ def _generate_special(stats: TeamSeasonStats, seed: int) -> dict[str, dict[int, 
     else:
         field_goal_mean = max(18.0, min(45.0, (special.field_goal.long or 45) * 0.58))
         result["field_goal"] = _special_column(field_goal_mean, 9.0, field_goal_seed, 5)
+    _apply_special_penalty_profile(result, stats.team_name, seed)
+    if special.field_goal.blocked:
+        # Block risk is conditional on an actual attempt, excluding foul rerolls.
+        available_mass = sum(
+            _ROLL_WEIGHTS[roll]
+            for roll, cell in result["field_goal"].items()
+            if cell.lstrip("-").isdigit()
+        )
+        _replace_rate(
+            result["field_goal"],
+            _rate(special.field_goal.blocked, special.field_goal.attempts)
+            * available_mass / _TOTAL_WEIGHT,
+            "BK -7",
+            random.Random(_seed_for(seed, stats.team_name, "field_goal_block")),
+            minimum_one=True,
+        )
+    if special.field_goal_by_distance:
+        _calibrate_field_goal_distances(
+            result["field_goal"], special.field_goal_by_distance, field_goal_seed
+        )
+    else:
+        _adjust_numeric_mean(result["field_goal"], field_goal_mean, 5)
     if special.punt.blocked:
         _replace_rate(
             result["punt"],
@@ -1030,7 +1250,19 @@ def _generate_special(stats: TeamSeasonStats, seed: int) -> dict[str, dict[int, 
             "BK -10",
             random.Random(_seed_for(seed, stats.team_name, "punt_block")),
         )
-        _adjust_numeric_mean(result["punt"], special.punt.average or 40.0, 15)
+    _adjust_numeric_mean(result["kickoff"], special.kickoff.average or 60.0, 35)
+    _adjust_numeric_mean(
+        result["kickoff_return"], (special.kickoff_return.average or 20.0) * 1.10, 0
+    )
+    _adjust_numeric_mean(result["punt"], special.punt.average or 40.0, 15)
+    _adjust_numeric_mean(
+        result["punt_return"], (special.punt_return.average or 8.0) * 1.18, -5
+    )
+    _adjust_numeric_mean(
+        result["interception_return"],
+        (special.interception_return.average or 8.0) * 1.45,
+        -10,
+    )
     return result
 
 
@@ -1113,7 +1345,7 @@ def _write_offense(
         "Fumble",
     )
     with path.open("w", newline="", encoding="utf-8") as target:
-        writer = csv.writer(target)
+        writer = csv.writer(target, lineterminator="\n")
         writer.writerow(headers)
         for roll in _ROLLS:
             writer.writerow(
@@ -1135,7 +1367,7 @@ def _write_offense(
 def _write_defense(path: Path, defense: Mapping[tuple[str, int], Mapping[int, str]]) -> None:
     """Write the six defense formations and their five weighted sub-rows."""
     with path.open("w", newline="", encoding="utf-8") as target:
-        writer = csv.writer(target)
+        writer = csv.writer(target, lineterminator="\n")
         writer.writerow(("#", "Formation", "Sub", *range(1, 10)))
         for formation in "ABCDEF":
             for sub in range(1, 6):
@@ -1160,7 +1392,7 @@ def _write_special(
     miss_rate = _rate(misses, extra_point.attempts)
     miss_rolls = _nearest_roll_mass(miss_rate, _ROLLS)
     with path.open("w", newline="", encoding="utf-8") as target:
-        writer = csv.writer(target)
+        writer = csv.writer(target, lineterminator="\n")
         writer.writerow(
             (
                 "#",
@@ -1205,6 +1437,7 @@ def generate_team_charts(
     empirical: EmpiricalChartData | None = None,
     calibrate_empirical_pass_events: bool = False,
     empirical_pass_calibration: EmpiricalPassCalibration | None = None,
+    missing_source_features: Sequence[str] = (),
 ) -> GeneratedCharts:
     """Generate and write offense, defense, and special-teams charts.
 
@@ -1217,6 +1450,8 @@ def generate_team_charts(
         calibrate_empirical_pass_events: Preserve aggregate engine calibration
             for pass events while using empirical resolved-yard distributions.
         empirical_pass_calibration: Optional offsets found through engine replay.
+        missing_source_features: Explicitly unobserved source annotations for which
+            documented modeling defaults should preserve engine mechanisms.
 
     Returns:
         The generated chart cells.
@@ -1227,13 +1462,23 @@ def generate_team_charts(
     defense = _generate_defense(stats)
     special = _generate_special(stats, seed)
     if empirical is not None:
-        for name, outcomes in empirical.offense.items():
+        empirical_offense = _reconstruct_empirical_breakaways(empirical.offense)
+        if "te_short_long" not in empirical_offense:
+            te_outcomes = tuple(
+                outcome
+                for name in ("short_pass", "medium_pass", "long_pass")
+                for outcome in empirical_offense.get(name, ())
+            )
+            if te_outcomes:
+                empirical_offense["te_short_long"] = te_outcomes
+        for name, outcomes in empirical_offense.items():
             calibrated_outcomes = outcomes
             if calibrate_empirical_pass_events and name in {
                 "screen",
                 "short_pass",
                 "medium_pass",
                 "long_pass",
+                "te_short_long",
             }:
                 calibrated_outcomes = _calibrate_empirical_pass_events(
                     outcomes,
@@ -1245,9 +1490,53 @@ def generate_team_charts(
                 _seed_for(seed, stats.team_name, "empirical", name),
             )
         for name, outcomes in empirical.special_teams.items():
-            special[name] = _empirical_column(
-                outcomes, _seed_for(seed, stats.team_name, "empirical", name)
+            calibrated_outcomes = _calibrate_empirical_special_penalties(
+                outcomes, special[name]
             )
+            special[name] = _empirical_column(
+                calibrated_outcomes,
+                _seed_for(seed, stats.team_name, "empirical", name),
+            )
+    if "offense_oob" in missing_source_features:
+        for name, rate in _MISSING_OOB_RATES.items():
+            if not any(cell.endswith(("*", "†")) for cell in offense[name].values()
+                       if re.fullmatch(r"[+-]?\d+[*†]?", cell)):
+                _mark_numeric_out_of_bounds(
+                    offense[name], rate, 1.0,
+                    random.Random(_seed_for(seed, stats.team_name, name, "missing_oob")),
+                )
+    if "punt_fair_catch" in missing_source_features:
+        numeric = [roll for roll, cell in special["punt"].items()
+                   if re.fullmatch(r"[+-]?\d+", cell)]
+        for roll in _nearest_roll_mass(.25, numeric):
+            special["punt"][roll] += "*"
+    if "kickoff_out" in missing_source_features:
+        _replace_rate(
+            special["kickoff"], .01, "OB",
+            random.Random(_seed_for(seed, stats.team_name, "missing_kickoff_out")),
+        )
+    field_goal_mishap_mass = 0
+    for name, (column_name, rate, result) in _MISSING_SPECIAL_PROFILES.items():
+        if name in missing_source_features:
+            column = special[column_name]
+            _replace_rate(
+                column, rate, result,
+                random.Random(_seed_for(seed, stats.team_name, name)),
+                minimum_one=True,
+            )
+            if column_name == "field_goal":
+                field_goal_mishap_mass += sum(
+                    _ROLL_WEIGHTS[roll] for roll, cell in column.items() if cell == result
+                )
+    if field_goal_mishap_mass and stats.special_teams.field_goal_by_distance:
+        # These modeled mishaps are part of observed misses, not extra misses.
+        numeric_mass = sum(_ROLL_WEIGHTS[roll] for roll, cell in special["field_goal"].items()
+                           if cell.lstrip("-").isdigit())
+        factor = (numeric_mass + field_goal_mishap_mass) / max(1, numeric_mass)
+        _calibrate_field_goal_distances(
+            special["field_goal"], stats.special_teams.field_goal_by_distance,
+            _seed_for(seed, stats.team_name, "field_goal"), success_multiplier=factor,
+        )
     recovered_range, lost_range = _fumble_ranges(stats)
     _write_offense(destination / "offense.csv", offense, recovered_range, lost_range)
     _write_defense(destination / "defense.csv", defense)

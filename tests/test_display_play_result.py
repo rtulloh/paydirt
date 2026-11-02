@@ -661,7 +661,8 @@ class TestPuntReturnFumbleDisplay:
             assert "P:17" in output, f"Expected 'P:17' in output: {output}"
             assert "R:10" in output, f"Expected 'R:10' in output: {output}"
             assert "FUMBLE" in output, f"Expected 'FUMBLE' in output: {output}"
-            assert "recovers" in output.lower(), f"Expected 'recovers' in output: {output}"
+            assert outcome.description in output
+            assert 'recovers and keeps possession' not in output
         finally:
             ig.COMPACT_MODE = original_compact
     

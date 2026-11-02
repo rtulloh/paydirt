@@ -81,7 +81,7 @@ def apply_choice(
 @pytest.mark.parametrize("quarter", [2, 4])
 @pytest.mark.parametrize("no_huddle", [False, True], ids=["ordinary", "hurry-up"])
 @pytest.mark.parametrize("resolution", ["clean", "declined", "OFF", "DEF", "PI"])
-def test_penalty_resolution_preserves_requested_clock_pace(
+def test_penalty_resolution_uses_finalized_clock_policy(
     monkeypatch: pytest.MonkeyPatch, home: bool, quarter: int,
     no_huddle: bool, resolution: str,
 ) -> None:
@@ -94,13 +94,9 @@ def test_penalty_resolution_preserves_requested_clock_pace(
         game, monkeypatch, penalty_type,
         no_huddle=no_huddle, accept_play=resolution == "declined",
     )
-    retained_incomplete = resolution in ("clean", "declined")
-    elapsed = 5 if retained_incomplete else 20 if no_huddle else 35
+    elapsed = 5
     assert game.state.time_remaining * 60 == pytest.approx(90 - elapsed)
-    if retained_incomplete:
-        timing.assert_not_called()
-    else:
-        timing.assert_called_once()
+    timing.assert_not_called()
     assert game.state.quarter == quarter
     assert not game.state.game_over
     assert not game.has_untimed_down()
@@ -116,11 +112,11 @@ def test_penalty_resolution_preserves_requested_clock_pace(
 @pytest.mark.parametrize("quarter", [2, 4, 5], ids=["half", "regulation", "overtime"])
 @pytest.mark.parametrize("penalty_type", ["DEF", "PI"])
 @pytest.mark.parametrize("seconds,elapsed", [
-    (39, 45),  # The audited failure: snap outside the 30-sec heuristic, time expires.
-    (39, 39),  # Exact expiry must extend the period too.
-    (25, 25),  # Passing control inside the old threshold.
-    (39, 25),  # Passing control: time remains, no extension is armed.
-    (30, 25),  # Threshold must not arm a phantom untimed down with 5 sec left.
+    (4, 5),  # The fixed foul duration overruns the remaining clock.
+    (5, 5),  # Exact expiry must extend the period too.
+    (6, 5),  # A real remaining second must not arm an extension.
+    (39, 5),  # Outside the old threshold; time remains under the new policy.
+    (30, 5),  # Inside the old threshold; no phantom untimed down.
 ])
 def test_accepted_defensive_foul_extends_only_when_time_actually_expires(
     monkeypatch: pytest.MonkeyPatch, home: bool, quarter: int,
@@ -145,7 +141,7 @@ def test_offensive_or_declined_foul_does_not_extend_expired_period(
     monkeypatch: pytest.MonkeyPatch, quarter: int, resolution: str,
 ) -> None:
     # Retained incompletions now take five seconds; still exercise actual expiry.
-    game = prepare_game(True, quarter, 5 if resolution.startswith("declined-") else 39)
+    game = prepare_game(True, quarter, 5)
     monkeypatch.setattr("paydirt.game_engine.random.uniform", lambda low, high: 45)
     penalty_type = resolution.removeprefix("declined-")
     apply_choice(
@@ -165,9 +161,9 @@ def test_offensive_or_declined_foul_does_not_extend_expired_period(
 @pytest.mark.parametrize("home", [False, True])
 @pytest.mark.parametrize("quarter", [2, 4, 5])
 @pytest.mark.parametrize("flow,seconds,elapsed", [
-    ("direct-DEF", 39, 45), ("direct-DEF", 30, 25),
-    ("direct-PI", 39, 45), ("direct-PI", 30, 25),
-    ("hail-mary", 5, 10), ("hail-mary", 15, 10),
+    ("direct-DEF", 4, 5), ("direct-DEF", 30, 5),
+    ("direct-PI", 4, 5), ("direct-PI", 30, 5),
+    ("hail-mary", 2, 3), ("hail-mary", 25, 3),
     ("offsetting", 5, 10), ("offsetting", 15, 10),
 ])
 def test_other_defensive_foul_paths_use_actual_period_expiry(

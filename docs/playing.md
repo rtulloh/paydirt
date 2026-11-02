@@ -142,6 +142,10 @@ existing cross-chart 5-versus-15 exception instead disregards the five-yard
 foul and enforces the fifteen-yard foul from the catch, unless the kick-chart
 foul specifies an automatic first down. The cross-chart trace retains the
 original kick, distance rerolls, actual return rolls, and any re-kick.
+Kickoff choices show the engine's kick/return preview and the re-kick spot.
+The previous touchdown's field position is not a kickoff result. If retaining
+the kick requires resolving a return foul or fumble, the preview identifies
+that unresolved return; choosing does not roll extra dice for the preview.
 
 ### Quick Play with Defaults
 

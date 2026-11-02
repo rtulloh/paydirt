@@ -30,3 +30,6 @@ after incomplete/penalty outcomes do not prove which full modifier call
 the user entered or whether another modifier was also planned. Retain
 request-versus-effect observability as open; do not infer missing input
 from elapsed time. No raw private log exported.
+
+--- 2026-11-02 10:15 ---
+Latest completed game again displays no-huddle state and timeout-used/skipped messages but does not echo complete human call modifiers. Do not infer requested +, -, T or S inputs from narration alone. The two natural-sideline run examples in RULE-023 retain the full unmodified numeric gain, ruling out a five-yard in-bounds designation cost in those specific cases. Keep request/effect trace work open; see ../../game-audit-2026-11-02.md.

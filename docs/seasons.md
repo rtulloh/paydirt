@@ -115,6 +115,15 @@ Example `roster.json` (position lists supply commentary names):
 The **home team's season rules** apply, including cross-season games.
 Missing rules YAML is an error. The file controls conversion availability and overtime rather than the UI guessing from a year.
 
+The season year also determines possession after an unblocked, unreturned
+missed field goal. Before 1974 the opponent starts at its 20; from 1974 through
+1993 it takes the better of its 20 and the line of scrimmage; from 1994 onward
+it takes the better of its 20 and the kick spot. The same rule applies when a
+foul is declined and the missed kick stands. Blocked kicks and fumbled snaps
+use their recovery procedures. See the Hall of Fame's
+[1974 rule history](https://www.profootballhof.com/football-history/general-history-chronology-1960-to-1979)
+and [1994 change](https://www.profootballhof.com/news/nfl-kickers-up-up-and-away).
+
 ```yaml
 season: 2026
 two_point_conversion: true

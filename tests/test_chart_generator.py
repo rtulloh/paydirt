@@ -14,7 +14,11 @@ from paydirt.chart_generator import (
     weighted_chart_rate,
 )
 from paydirt.chart_loader import load_team_chart
-from paydirt.play_resolver import chart_roll_weights, parse_result_string
+from paydirt.play_resolver import (
+    chart_roll_weights,
+    defense_subrow_weights,
+    parse_result_string,
+)
 
 
 def _synthetic_stats() -> TeamSeasonStats:
@@ -114,6 +118,28 @@ def test_team_season_stats_round_trip() -> None:
     assert restored == stats
     assert restored.offense.rushing.average == 4.5
     assert restored.offense.passing.completion_rate == 0.65
+
+
+def test_aggregate_run_columns_cap_direct_gains_before_breakaway(tmp_path) -> None:
+    """Aggregate fallbacks should reserve gains above 18 yards for B."""
+    stats = _synthetic_stats()
+    stats = replace(
+        stats,
+        offense=replace(
+            stats.offense,
+            rushing=replace(stats.offense.rushing, yards=4800),
+        ),
+    )
+
+    generated = generate_team_charts(stats, tmp_path / "Foxes", seed=8306)
+
+    for name in ("line_plunge", "off_tackle", "end_run", "draw"):
+        direct_yards = [
+            int(match.group(1))
+            for result in generated.offense[name].values()
+            if (match := re.fullmatch(r"([+-]?\d+)[*†]?", result))
+        ]
+        assert max(direct_yards) <= 18
 
 
 def test_generated_numeric_columns_track_season_averages(tmp_path) -> None:
@@ -553,12 +579,18 @@ def test_field_goal_distance_results_control_generated_accuracy(tmp_path) -> Non
 
     def success_rate(column: dict[int, str], kick_distance: int) -> float:
         needed_chart_yards = kick_distance - 17
+        numeric = {
+            roll: int(cell)
+            for roll, cell in column.items()
+            if re.fullmatch(r"[+-]?\d+", cell)
+        }
         successful_mass = sum(
-            weight
-            for roll, weight in chart_roll_weights().items()
-            if int(column[roll]) >= needed_chart_yards
+            chart_roll_weights()[roll]
+            for roll, yards in numeric.items()
+            if yards >= needed_chart_yards
         )
-        return successful_mass / sum(chart_roll_weights().values())
+        resolved_mass = sum(chart_roll_weights()[roll] for roll in numeric)
+        return successful_mass / resolved_mass
 
     assert accurate_column != inaccurate_column
     assert success_rate(accurate_column, 30) == pytest.approx(1.0, abs=0.03)
@@ -641,6 +673,109 @@ def test_empirical_pass_events_can_be_calibrated_to_engine_baseline(tmp_path) ->
     assert max(numeric) <= 8
 
 
+def test_empirical_long_runs_use_breakaway_trigger_and_conditional_yardage(tmp_path) -> None:
+    """Exceptional runs trigger B while its chart represents all long runs."""
+    stats = _synthetic_stats()
+    samples = EmpiricalChartData.from_rows(
+        [
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "4"}
+                for _ in range(100)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "10"}
+                for _ in range(10)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "18"}
+                for _ in range(10)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "19"}
+                for _ in range(5)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "20"}
+                for _ in range(5)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "25*"}
+                for _ in range(5)
+            ),
+            *(
+                {"unit": "offense", "chart": "line_plunge", "result": "F + 14"}
+                for _ in range(10)
+            ),
+        ]
+    )
+
+    generated = generate_team_charts(
+        stats, tmp_path / "empirical-breakaway", seed=8306, empirical=samples
+    ).offense
+
+    primary = set(generated["line_plunge"].values())
+    assert "B" in primary
+    assert {"10", "18", "F + 14"} <= primary
+    assert "19" not in primary
+    assert "20" not in primary
+    assert "25*" not in primary
+    breakaway = set(generated["breakaway"].values())
+    assert {"10", "18", "19", "20", "25*"} <= breakaway
+    assert not any(cell.startswith("F") for cell in breakaway)
+
+    weights = chart_roll_weights()
+    breakaway_mass = sum(
+        weights[roll]
+        for roll, result in generated["line_plunge"].items()
+        if result == "B"
+    )
+    direct_long_mass = sum(
+        weights[roll]
+        for roll, result in generated["line_plunge"].items()
+        if (match := re.fullmatch(r"(\d+)[*†]?", result))
+        and int(match.group(1)) >= 10
+    )
+    assert breakaway_mass < direct_long_mass
+
+
+def test_empirical_pass_data_replaces_aggregate_te_touchdowns(tmp_path) -> None:
+    """T/E S/L should use observed gains instead of automatic aggregate TD cells."""
+    stats = _synthetic_stats()
+    samples = EmpiricalChartData.from_rows(
+        [
+            *(
+                {"unit": "offense", "chart": "short_pass", "result": "5"}
+                for _ in range(80)
+            ),
+            *(
+                {"unit": "offense", "chart": "medium_pass", "result": "12"}
+                for _ in range(80)
+            ),
+            *(
+                {"unit": "offense", "chart": "long_pass", "result": "30"}
+                for _ in range(40)
+            ),
+        ]
+    )
+
+    generated = generate_team_charts(
+        stats,
+        tmp_path / "empirical-tight-end",
+        seed=8306,
+        empirical=samples,
+        calibrate_empirical_pass_events=True,
+    ).offense["te_short_long"]
+
+    assert "TD" not in generated.values()
+    numeric = {
+        int(result)
+        for result in generated.values()
+        if re.fullmatch(r"[+-]?\d+", result)
+    }
+    assert numeric <= {5, 12, 30}
+    assert numeric
+
+
 def test_empirical_event_calibration_uses_compact_baseline_symbols(tmp_path) -> None:
     """Rare source symbol variants must not lose target event probability mass."""
     stats = _synthetic_stats()
@@ -699,7 +834,8 @@ def test_empirical_event_calibration_uses_compact_baseline_symbols(tmp_path) -> 
         if result.startswith(("INT ", "QT", "OFF ", "DEF ", "PI "))
         or result == "BLACK"
     }
-    assert calibrated_events <= baseline_events
+    assert calibrated_events <= baseline_events | {"DEF 5X"}
+    assert "DEF 5X" in calibrated_events
 
 
 def test_empirical_quantization_preserves_combined_fumble_family_rate(tmp_path) -> None:
@@ -715,9 +851,9 @@ def test_empirical_quantization_preserves_combined_fumble_family_rate(tmp_path) 
                 {
                     "unit": "offense",
                     "chart": "line_plunge",
-                    "result": f"F + {index}",
+                    "result": f"F + {1 + index % 8}",
                 }
-                for index in range(1, 21)
+                for index in range(20)
             ),
         ]
     )
@@ -776,3 +912,265 @@ def test_empirical_pass_calibration_applies_engine_offsets_and_yard_scale(tmp_pa
     assert rate(tuned, ("INT ",)) > rate(neutral, ("INT ",))
     assert rate(tuned, ("QT",)) < rate(neutral, ("QT",))
     assert weighted_chart_mean(tuned) > weighted_chart_mean(neutral) * 1.3
+
+
+def test_generated_csvs_use_lf_line_endings(tmp_path) -> None:
+    """Generated chart files should not add CR characters to tracked CSV lines."""
+    output = tmp_path / "Foxes"
+
+    generate_team_charts(_synthetic_stats(), output, seed=8306)
+
+    for name in ("offense.csv", "defense.csv", "special.csv"):
+        assert b"\r\n" not in (output / name).read_bytes()
+
+
+
+def test_defensive_interception_strength_uses_distributed_low_mass_rows(tmp_path) -> None:
+    """Defense strength must not create one high-probability interception trap."""
+    stats = _synthetic_stats()
+
+    def with_defensive_interception_rate(rate: float, name: str) -> TeamSeasonStats:
+        attempts = 2000
+        return replace(
+            stats,
+            team_name=name,
+            defense=replace(
+                stats.defense,
+                passing=replace(
+                    stats.defense.passing,
+                    attempts=attempts,
+                    completions=1200,
+                    yards=14400,
+                    interceptions=round(attempts * rate),
+                ),
+            ),
+        )
+
+    weak = generate_team_charts(
+        with_defensive_interception_rate(0.015, "Weak Interception Defense"),
+        tmp_path / "weak",
+        seed=8306,
+    ).defense
+    neutral = generate_team_charts(
+        with_defensive_interception_rate(0.025, "Neutral Interception Defense"),
+        tmp_path / "neutral",
+        seed=8306,
+    ).defense
+    strong = generate_team_charts(
+        with_defensive_interception_rate(0.045, "Strong Interception Defense"),
+        tmp_path / "strong",
+        seed=8306,
+    ).defense
+    weights = defense_subrow_weights()
+    total = sum(weights.values())
+
+    def call_rate(
+        defense: dict[tuple[str, int], dict[int, str]],
+        formation: str,
+        column: int,
+    ) -> float:
+        return sum(
+            weights[subrow]
+            for subrow in weights
+            if defense[(formation, subrow)][column].startswith("INT")
+        ) / total
+
+    def combined_mass(
+        defense: dict[tuple[str, int], dict[int, str]],
+    ) -> float:
+        return sum(
+            call_rate(defense, formation, column)
+            for formation in "ABCDEF"
+            for column in range(5, 10)
+        )
+
+    assert combined_mass(weak) < combined_mass(neutral) < combined_mass(strong)
+    assert max(
+        call_rate(strong, formation, column)
+        - call_rate(neutral, formation, column)
+        for formation in "ABCDEF"
+        for column in range(5, 10)
+    ) <= (1 / 36) + 1e-12
+    assert call_rate(strong, "D", 6) == pytest.approx(4 / 36)
+
+
+def test_defensive_interception_threshold_has_no_large_call_specific_jump(tmp_path) -> None:
+    """Crossing the old 3.5% threshold may change at most one low-mass row per call."""
+    stats = _synthetic_stats()
+
+    def generated(rate: float, name: str) -> dict[tuple[str, int], dict[int, str]]:
+        attempts = 10000
+        adjusted = replace(
+            stats,
+            team_name=name,
+            defense=replace(
+                stats.defense,
+                passing=replace(
+                    stats.defense.passing,
+                    attempts=attempts,
+                    completions=6000,
+                    yards=72000,
+                    interceptions=round(attempts * rate),
+                ),
+            ),
+        )
+        return generate_team_charts(adjusted, tmp_path / name, seed=8306).defense
+
+    below = generated(0.0349, "Below Threshold")
+    above = generated(0.0351, "Above Threshold")
+    weights = defense_subrow_weights()
+    total = sum(weights.values())
+
+    def rate(
+        defense: dict[tuple[str, int], dict[int, str]],
+        formation: str,
+        column: int,
+    ) -> float:
+        return sum(
+            weights[subrow]
+            for subrow in weights
+            if defense[(formation, subrow)][column].startswith("INT")
+        ) / total
+
+    largest_jump = max(
+        abs(rate(above, formation, column) - rate(below, formation, column))
+        for formation in "ABCDEF"
+        for column in range(5, 10)
+    )
+    assert largest_jump <= (1 / 36) + 1e-12
+
+
+def test_generated_special_teams_include_penalty_mass(tmp_path) -> None:
+    """Every generated special-teams family must be able to produce a foul."""
+    generated = generate_team_charts(
+        _synthetic_stats(), tmp_path / "Foxes", seed=8306
+    ).special_teams
+
+    for name in (
+        "kickoff",
+        "kickoff_return",
+        "punt",
+        "punt_return",
+        "interception_return",
+        "field_goal",
+    ):
+        assert any(
+            cell.startswith(("OFF ", "DEF "))
+            for cell in generated[name].values()
+        ), name
+
+
+def test_empirical_special_teams_keep_fallback_penalty_mass(tmp_path) -> None:
+    """Resolved empirical samples must not erase all special-teams foul risk."""
+    empirical = EmpiricalChartData(
+        special_teams={"punt": tuple(str(38 + index % 5) for index in range(24))}
+    )
+
+    punt = generate_team_charts(
+        _synthetic_stats(), tmp_path / "Foxes", empirical=empirical, seed=8306
+    ).special_teams["punt"]
+
+    assert any(cell.startswith(("OFF ", "DEF ")) for cell in punt.values())
+
+
+def test_empirical_numeric_quantiles_are_ordered_by_yardage() -> None:
+    """Quantiles must follow numeric rank, including negative and marked gains."""
+    from paydirt.chart_generator import _assign_empirical_variants
+
+    weights = chart_roll_weights()
+    values = tuple(str(value) for value in range(-10, 100))
+    column = {}
+    _assign_empirical_variants(column, tuple(weights), values, seed=8306)
+    import random
+    order = list(weights)
+    random.Random(8306).shuffle(order)
+    observed = [int(column[roll]) for roll in order]
+    assert observed == sorted(observed)
+
+
+def test_long_run_reconstruction_preserves_fumbles_and_oob() -> None:
+    """Routing long gains through B must retain clock and turnover information."""
+    from paydirt.chart_generator import _reconstruct_empirical_breakaways
+
+    result = _reconstruct_empirical_breakaways({
+        'end_run': ('3', '25*', 'F + 30', '12'),
+    })
+    assert result['end_run'] == ('3', 'B*', 'F + 30', '12')
+    assert result['breakaway'] == ('25*', '12')
+
+
+def test_blocked_field_goals_survive_distance_calibration(tmp_path) -> None:
+    """Blocks have their own result and must not reduce conditional accuracy twice."""
+    data = _synthetic_stats().to_dict()
+    data['special_teams']['field_goal'] = {'attempts': 100, 'made': 70, 'blocked': 10}
+    data['special_teams']['field_goal_by_distance'] = [
+        {'distance': 40, 'attempts': 100, 'made': 70, 'blocked': 10},
+    ]
+    chart = generate_team_charts(TeamSeasonStats.from_dict(data), tmp_path).special_teams['field_goal']
+    weights = chart_roll_weights()
+    attempts = sum(w for r,w in weights.items() if not chart[r].startswith(('OFF', 'DEF')))
+    blocks = sum(w for r,w in weights.items() if chart[r].startswith('BK'))
+    makes = sum(w for r,w in weights.items() if chart[r].isdigit() and int(chart[r]) >= 23)
+    assert blocks / attempts == pytest.approx(.10, abs=.015)
+    assert makes / attempts == pytest.approx(.70, abs=.015)
+
+
+def test_empirical_pass_scaling_cannot_exceed_the_field(tmp_path) -> None:
+    """Calibration may strengthen gains without encoding impossible 150-yard plays."""
+    samples = EmpiricalChartData(offense={'long_pass': ('99',) * 100})
+    charts = generate_team_charts(
+        _synthetic_stats(), tmp_path, empirical=samples,
+        calibrate_empirical_pass_events=True,
+        empirical_pass_calibration=EmpiricalPassCalibration(resolved_yard_multiplier=2),
+    )
+    assert max(int(v) for v in charts.offense['long_pass'].values() if v.isdigit()) <= 99
+
+
+def test_missing_source_markers_use_explicit_modeled_fallbacks(tmp_path) -> None:
+    """An explicitly incomplete source must not remove clock and kick mechanisms."""
+    samples = EmpiricalChartData(
+        offense={'end_run': ('4',) * 100},
+        special_teams={'punt': ('40',) * 100, 'kickoff': ('65',) * 100},
+    )
+    charts = generate_team_charts(
+        _synthetic_stats(), tmp_path / 'fallback', empirical=samples,
+        missing_source_features=('offense_oob', 'punt_fair_catch', 'kickoff_out'),
+    )
+    assert any(v.endswith('*') for v in charts.offense['end_run'].values())
+    assert any(v.endswith('*') for v in charts.special_teams['punt'].values())
+    assert 'OB' in charts.special_teams['kickoff'].values()
+    control = generate_team_charts(_synthetic_stats(), tmp_path / 'control', empirical=samples)
+    assert not any(v.endswith('*') for v in control.offense['end_run'].values())
+    assert not any(v.endswith('*') for v in control.special_teams['punt'].values())
+    assert 'OB' not in control.special_teams['kickoff'].values()
+
+
+def test_calibration_samples_the_whole_season_and_preserves_observed_fouls() -> None:
+    """Resampling must not truncate late-season fumbles or replace penalty types."""
+    from paydirt.chart_generator import _calibrate_empirical_pass_events
+
+    weights = chart_roll_weights()
+    baseline = {roll: 'BLACK' if roll < 30 else '4' for roll in weights}
+    outcomes = ('4',) * 80 + ('F + 4',) * 20
+    calibrated = _calibrate_empirical_pass_events(outcomes, baseline, EmpiricalPassCalibration())
+    resolved = [value for value in calibrated if value != 'BLACK']
+    assert sum(value.startswith('F') for value in resolved) / len(resolved) == pytest.approx(.2, abs=.02)
+    penalties = _calibrate_empirical_pass_events(
+        ('DEF 5X',) * 10 + ('4',) * 90,
+        {roll: 'OFF 5' if roll < 20 else '4' for roll in weights},
+        EmpiricalPassCalibration(),
+    )
+    assert 'DEF 5X' in penalties
+    assert 'OFF 5' not in penalties
+
+
+def test_missing_rare_special_events_retain_engine_mechanisms(tmp_path) -> None:
+    """Historical annotation gaps must not make rare kick mishaps impossible."""
+    charts = generate_team_charts(
+        _synthetic_stats(), tmp_path,
+        missing_source_features=('field_goal_block', 'field_goal_fumble', 'punt_fumble', 'interception_return_fumble'),
+    )
+    assert any(v.startswith('BK') for v in charts.special_teams['field_goal'].values())
+    assert any(v.startswith('F ') for v in charts.special_teams['field_goal'].values())
+    assert any(v.startswith('F') for v in charts.special_teams['punt'].values())
+    assert any(v.startswith('F') for v in charts.special_teams['interception_return'].values())

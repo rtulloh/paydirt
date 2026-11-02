@@ -1449,9 +1449,8 @@ def display_play_result(
 
         if COMPACT_MODE:
             # Compact punt display with dice details
-            td_marker = " ★ TOUCHDOWN!" if outcome.touchdown else ""
             punter_str = f" ({punter})" if punter else ""
-            print(f"► PUNT{punter_str}: {outcome.description}{td_marker}")
+            print(f"► PUNT{punter_str}: {outcome.description}")
             # Show dice roll info if available (both punt and return)
             if outcome.result:
                 # Format: (O:10→"4" | D:2→"" | offense) style
@@ -1476,9 +1475,6 @@ def display_play_result(
                     print(
                         f"  ({format_dice_roll(punt_dice, result=punt_result_str, style='verbose')})"
                     )
-            # Clarify fumble recovery possession
-            if "FUMBLE" in outcome.description.upper():
-                print(f"  >> {off_team} recovers and keeps possession!")
             return
 
         print("\n" + "=" * 70)
@@ -1501,8 +1497,6 @@ def display_play_result(
             print("  >> Punt goes out of bounds.")
         elif "returned" in desc.lower():
             print(f"\n  {desc}")
-            if outcome.touchdown:
-                print("  >> PUNT RETURN TOUCHDOWN!")
         elif "BLOCKED" in desc.upper():
             print(f"\n  {desc}")
             print("  >> BLOCKED PUNT!")
@@ -1515,7 +1509,6 @@ def display_play_result(
                 print(
                     f'  (P:{punt_dice}→"{outcome.result.raw_result}" | R:{return_dice}→"F" | return)'
                 )
-            print(f"  >> FUMBLE on the return! {off_team} recovers and keeps possession!")
         else:
             print(f"\n  {desc}")
         return
@@ -2375,10 +2368,15 @@ def handle_penalty_decision(
     play_result = penalty_choice.play_result
     txn = penalty_choice.transaction
     safety_preview = game.get_penalty_safety_preview(outcome)
-    print("\n  Play Result (if accepted, down counts):")
+    if is_kickoff_penalty:
+        print("\n  Kickoff Result (if penalty declined):")
+    else:
+        print("\n  Play Result (if accepted, down counts):")
 
     # Handle FG plays specially - the chart yardage is kick distance, not yards gained
-    if is_fg_penalty:
+    if is_kickoff_penalty:
+        print(f"    {penalty_choice.play_result_preview or play_result.description}")
+    elif is_fg_penalty:
         # For FG, show whether the kick was good or not
         print(f"    {play_result.description}")
         if outcome.field_goal_made:
@@ -3101,11 +3099,9 @@ def resume_game(
             last_quarter = game.state.quarter
 
         # Check for end of game conditions
-        time_effectively_zero = game.state.time_remaining < 0.0167
-        if time_effectively_zero and game.has_untimed_down():
+        if game.is_period_expired() and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
-        elif time_effectively_zero:
-            game.state.time_remaining = 0
+        elif game.is_period_expired():
             if game.state.is_overtime:
                 if game.state.game_over:
                     break
@@ -3882,16 +3878,11 @@ def run_interactive_game(
             last_quarter = game.state.quarter
 
         # Check if quarter ended or overtime needed
-        # Use < 0.0167 (1 second) threshold to catch tiny positive residuals
-        # from floating-point arithmetic in timeout calculations that display as 0:00
-        time_effectively_zero = game.state.time_remaining < 0.0167
         # But first check for untimed down (defensive penalty at 0:00)
-        if time_effectively_zero and game.has_untimed_down():
+        if game.is_period_expired() and game.has_untimed_down():
             print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
             print("  The quarter cannot end on an accepted defensive penalty.")
-        elif time_effectively_zero:
-            # Clamp any tiny residual to exactly 0
-            game.state.time_remaining = 0
+        elif game.is_period_expired():
             if game.state.is_overtime:
                 # End of OT period - game engine handles this
                 if game.state.game_over:

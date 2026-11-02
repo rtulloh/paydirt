@@ -12,6 +12,8 @@ tags:
 links:
   - RULE-021
   - DATA-007
+  - DATA-010
+  - DATA-014
 ---
 
 ## Description

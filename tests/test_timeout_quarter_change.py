@@ -67,7 +67,7 @@ class TestShouldApplyTimeoutAfterPlayQuarterChange:
         game.state.time_remaining = 0.2  # 12 seconds
 
         # Create a mock outcome (not incomplete, not OOB)
-        outcome = MagicMock()
+        outcome = MagicMock(clock_stopped_for_penalty=False)
         outcome.result = MagicMock()
         outcome.result.result_type = ResultType.YARDS
         outcome.result.out_of_bounds = False
@@ -103,7 +103,7 @@ class TestShouldApplyTimeoutAfterPlayQuarterChange:
         game.state.quarter = 3
         game.state.time_remaining = 15.0
 
-        outcome = MagicMock()
+        outcome = MagicMock(clock_stopped_for_penalty=False)
         outcome.result = MagicMock()
         outcome.result.result_type = ResultType.YARDS
         outcome.result.out_of_bounds = False
@@ -129,7 +129,7 @@ class TestShouldApplyTimeoutAfterPlayQuarterChange:
         game.state.quarter = 2
         game.state.time_remaining = 10.0  # 10 seconds remaining
 
-        outcome = MagicMock()
+        outcome = MagicMock(clock_stopped_for_penalty=False)
         outcome.result = MagicMock()
         outcome.result.result_type = ResultType.YARDS
         outcome.result.out_of_bounds = False
@@ -155,7 +155,7 @@ class TestShouldApplyTimeoutAfterPlayQuarterChange:
         game.state.quarter = 2
         game.state.time_remaining = 10.0
 
-        outcome = MagicMock()
+        outcome = MagicMock(clock_stopped_for_penalty=False)
         outcome.result = MagicMock()
         outcome.result.result_type = ResultType.YARDS
         outcome.result.out_of_bounds = False

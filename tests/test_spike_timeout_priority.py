@@ -155,10 +155,10 @@ def test_cli_penalty_decision_precedes_timeout_and_spike_arbitration(
         offended_team="offense",
     )
     outcome = run_cli_play(monkeypatch, game, resumed, home, choice, accept_play)
-    assert outcome.timeout_used is (accept_play and bool(available))
-    assert outcome.spike_used is (accept_play and not available)
-    assert game.state.defense_timeouts == (0 if accept_play else available)
-    assert game.state.down == outcome.down_after == ((2 if available else 3) if accept_play else 1)
+    assert not outcome.timeout_used
+    assert not outcome.spike_used
+    assert game.state.defense_timeouts == available
+    assert game.state.down == outcome.down_after == (2 if accept_play else 1)
     assert game.state.ball_position == (54 if accept_play else 55)
     assert len(game.play_log) == len(game.offensive_call_history) == 1
 

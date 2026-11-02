@@ -142,3 +142,21 @@ def test_observer_counts_field_goal_attempts_and_makes() -> None:
     assert totals.field_goals_made == 1
     assert totals.to_dict()["field_goal_rate"] == pytest.approx(0.5)
     assert totals.offensive_plays == 0
+
+
+def test_observer_reports_rushing_attempts_and_yards_per_attempt() -> None:
+    """Calibration should expose the rushing efficiency needed by the tuner."""
+    observer = EngineCalibrationObserver()
+    game = _game()
+
+    for play_type in (PlayType.LINE_PLUNGE, PlayType.DRAW):
+        observer.on_decision(game, None, play_type, DefenseType.STANDARD)
+        observer.on_result(game, _outcome(play_type, ResultType.YARDS))
+    observer.finalize_game(game)
+
+    report = observer.report()
+    league = report["league"]
+    home = report["teams"]["HOM"]
+    assert home["rushing_attempts"] == 2
+    assert home["rushing_yards_per_attempt"] == pytest.approx(60.0)
+    assert league["rushing_attempts"] == 2

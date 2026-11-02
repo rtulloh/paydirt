@@ -520,9 +520,12 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         final_yards = 0
         description = "Incomplete pass"
 
-    # Detect OOB marker (*) from the raw offense result string
-    # The * indicates the play ended out of bounds (affects clock management)
-    off_has_oob = '*' in offense_result if offense_result else False
+    # A numeric adjustment retains the offensive sideline result. An actual
+    # overrule replaces it; B/QT rolls supply their own marker downstream.
+    offense_retained = priority in (
+        PriorityResult.ADD, PriorityResult.OFFENSE, PriorityResult.OFFENSE_WITH_B,
+    ) or (priority == PriorityResult.PARENS and off_cat == ResultCategory.PARENS_NUMBER)
+    off_has_oob = any(marker in (offense_result or "") for marker in ("*", "†"))
 
     return CombinedResult(
         priority=priority,
@@ -535,5 +538,5 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         description=description,
         offense_result=offense_result,
         defense_result=defense_result,
-        out_of_bounds=off_has_oob,
+        out_of_bounds=off_has_oob and offense_retained and not is_turnover,
     )

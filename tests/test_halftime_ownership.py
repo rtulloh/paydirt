@@ -64,7 +64,8 @@ SAFETY = PlayResult(ResultType.SACK, yards=-5, raw_result="-5")
 @pytest.mark.parametrize("ending", ["touchdown", "touchdown-after-pat", "safety", "penalty-decision", "ordinary"])
 def test_halftime_is_pending_after_any_play_that_expires_the_second_quarter(ending: str) -> None:
     game = make_sample_game()
-    game.state.quarter, game.state.time_remaining = 2, 20 / 60
+    game.state.quarter = 2
+    game.state.time_remaining = (5 if ending == "penalty-decision" else 20) / 60
     game.state.is_home_possession = True
     game.state.ball_position = 3 if ending == "safety" else 94 if ending.startswith("touchdown") else 50
     result = SAFETY if ending == "safety" else TD if ending.startswith("touchdown") else PlayResult(ResultType.YARDS, yards=4, raw_result="4")

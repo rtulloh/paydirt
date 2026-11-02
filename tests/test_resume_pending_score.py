@@ -15,16 +15,21 @@ from unittest.mock import patch
 
 import pytest
 
-from paydirt.chart_loader import load_team_chart
+from paydirt.chart_loader import TeamChart, load_team_chart
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.save_game import load_game, save_game
 
-# Check if 1972 season data exists for skipif markers
-_seasons_dir = Path(__file__).parent.parent / "seasons"
-_has_1972_jets = (_seasons_dir / "1972" / "Jets").exists()
-requires_1972_jets = pytest.mark.skipif(
-    not _has_1972_jets, reason="1972/Jets season data not available"
-)
+
+@pytest.fixture(autouse=True)
+def ordinary_loaded_kickoffs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep save/resume ownership tests separate from return fouls and fumbles."""
+    def load_ordinary_chart(path: str) -> TeamChart:
+        chart = load_team_chart(path)
+        chart.special_teams.kickoff = dict.fromkeys(range(10, 40), "60")
+        chart.special_teams.kickoff_return = dict.fromkeys(range(10, 40), "20")
+        return chart
+
+    monkeypatch.setattr("paydirt.save_game.load_team_chart", load_ordinary_chart)
 
 
 @pytest.fixture

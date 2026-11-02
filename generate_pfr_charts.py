@@ -10,12 +10,15 @@ from collections import Counter, defaultdict
 from collections.abc import Sequence
 from pathlib import Path
 
+from paydirt.chart_audit import audit_season
 from paydirt.chart_generator import (
     EmpiricalChartData,
     EmpiricalPassCalibration,
     TeamSeasonStats,
     generate_team_charts,
 )
+from paydirt.chart_source_coverage import source_feature_coverage
+from paydirt.chart_tuning import apply_profile_overrides, load_calibration_profile
 from paydirt.empirical_adjustment import (
     adjust_empirical_offense,
     calibrate_defense_stats,
@@ -171,6 +174,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--seed", type=int, default=8306, help="Stable classification seed")
     parser.add_argument(
+        "--calibration-profile",
+        type=Path,
+        help="JSON generator profile; explicit adjustment flags override its values",
+    )
+    parser.add_argument(
         "--opponent-shrinkage",
         type=float,
         default=24.0,
@@ -179,34 +187,44 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--run-yard-multiplier",
         type=float,
-        default=1.0,
+        default=None,
         help="Engine-calibrated multiplier for resolved empirical run yards",
     )
     parser.add_argument(
         "--pass-completion-adjustment",
         type=float,
-        default=0.0,
+        default=None,
         help="Engine-calibrated change to empirical completion probability",
     )
     parser.add_argument(
         "--pass-interception-adjustment",
         type=float,
-        default=0.0,
+        default=None,
         help="Engine-calibrated change to empirical interception probability",
     )
     parser.add_argument(
         "--pass-pressure-adjustment",
         type=float,
-        default=0.0,
+        default=None,
         help="Engine-calibrated change to empirical pressure probability",
     )
     parser.add_argument(
         "--pass-yard-multiplier",
         type=float,
-        default=1.0,
+        default=None,
         help="Engine-calibrated multiplier for resolved empirical pass yards",
     )
     args = parser.parse_args(argv)
+    profile = apply_profile_overrides(
+        load_calibration_profile(args.calibration_profile),
+        {
+            "run_yard_multiplier": args.run_yard_multiplier,
+            "pass_completion_adjustment": args.pass_completion_adjustment,
+            "pass_interception_adjustment": args.pass_interception_adjustment,
+            "pass_pressure_adjustment": args.pass_pressure_adjustment,
+            "pass_yard_multiplier": args.pass_yard_multiplier,
+        },
+    )
 
     html_dir = Path(args.html_dir)
     stats_dir = Path(args.stats_dir)
@@ -218,6 +236,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         html_dir, args.through_date, args.seed
     )
 
+    coverage = source_feature_coverage(
+        (play.to_row() for play in plays),
+        field_goal_blocks=sum(attempt.blocked for attempt in field_goals),
+    )
+
     adjusted = adjust_empirical_offense(plays, shrinkage=args.opponent_shrinkage)
     plays_by_team: dict[str, list[EmpiricalPlay]] = defaultdict(list)
     for play in plays:
@@ -225,7 +248,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             plays_by_team[play.team].append(play)
     for team, team_plays in adjusted.plays_by_team.items():
         plays_by_team[team].extend(
-            scale_empirical_run_yards(team_plays, args.run_yard_multiplier)
+            scale_empirical_run_yards(team_plays, profile.run_yard_multiplier)
         )
 
     raw_plays_by_team: dict[str, list[EmpiricalPlay]] = defaultdict(list)
@@ -262,12 +285,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             output / team_name,
             seed=args.seed,
             empirical=empirical,
+            missing_source_features=coverage["modeled_missing_features"],
             calibrate_empirical_pass_events=True,
             empirical_pass_calibration=EmpiricalPassCalibration(
-                completion_rate_adjustment=args.pass_completion_adjustment,
-                interception_rate_adjustment=args.pass_interception_adjustment,
-                pressure_rate_adjustment=args.pass_pressure_adjustment,
-                resolved_yard_multiplier=args.pass_yard_multiplier,
+                completion_rate_adjustment=profile.pass_completion_adjustment,
+                interception_rate_adjustment=profile.pass_interception_adjustment,
+                pressure_rate_adjustment=profile.pass_pressure_adjustment,
+                resolved_yard_multiplier=profile.pass_yard_multiplier,
             ),
         )
         _copy_team_metadata(template, output, team_name)
@@ -288,14 +312,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     manifest = {
         "season": season,
         "seed": args.seed,
+        "calibration_profile": profile.to_dict(),
+        "source_feature_coverage": coverage,
         "opponent_adjustment": {
             "model": "league additive offense plus defense effects",
             "pass_event_baseline": "aggregate engine calibration",
-            "run_yard_multiplier": args.run_yard_multiplier,
-            "pass_completion_adjustment": args.pass_completion_adjustment,
-            "pass_interception_adjustment": args.pass_interception_adjustment,
-            "pass_pressure_adjustment": args.pass_pressure_adjustment,
-            "pass_yard_multiplier": args.pass_yard_multiplier,
+            "run_yard_multiplier": profile.run_yard_multiplier,
+            "pass_completion_adjustment": profile.pass_completion_adjustment,
+            "pass_interception_adjustment": profile.pass_interception_adjustment,
+            "pass_pressure_adjustment": profile.pass_pressure_adjustment,
+            "pass_yard_multiplier": profile.pass_yard_multiplier,
             "average_defense_effect": 0.0,
             "shrinkage": args.opponent_shrinkage,
         },
@@ -313,6 +339,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    chart_audit = audit_season(output)
+    (output / "chart-audit.json").write_text(
+        json.dumps(chart_audit, indent=2, sort_keys=True) + "\n", encoding="utf-8",
+    )
+    if not chart_audit["passed"]:
+        raise ValueError(f"Generated chart audit failed: {chart_audit['errors']}")
     print(
         f"Generated {len(generated_teams)} teams from {games} games and "
         f"{len(plays)} classified outcomes in {output}"

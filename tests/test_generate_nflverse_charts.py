@@ -103,6 +103,19 @@ def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Pat
         json.dumps({"AAA": "Alphas", "BBB": "Betas"}),
         encoding="utf-8",
     )
+    profile_path = tmp_path / "calibration-profile.json"
+    profile_path.write_text(
+        json.dumps(
+            {
+                "run_yard_multiplier": 1.1,
+                "pass_completion_adjustment": 0.02,
+                "pass_interception_adjustment": -0.003,
+                "pass_pressure_adjustment": 0.004,
+                "pass_yard_multiplier": 1.08,
+            }
+        ),
+        encoding="utf-8",
+    )
 
     result = main(
         [
@@ -118,6 +131,8 @@ def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Pat
             str(output_dir),
             "--audit-dir",
             str(audit_dir),
+            "--calibration-profile",
+            str(profile_path),
             "--run-yard-multiplier",
             "0.75",
         ]

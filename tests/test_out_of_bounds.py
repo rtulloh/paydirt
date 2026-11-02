@@ -239,12 +239,12 @@ class TestOutOfBoundsExceptions:
         game.state.ball_position = 50
         game.state.is_home_possession = True
         
-        # Create a result with out_of_bounds and defense modifier
+        # The resolver has replaced the offensive result with the overrule.
         mock_result = PlayResult(
             result_type=ResultType.YARDS,
-            yards=5,
+            yards=3,
             raw_result="5*",
-            out_of_bounds=True,
+            out_of_bounds=False,
             defense_modifier="(3)",  # Defense overruled
         )
         

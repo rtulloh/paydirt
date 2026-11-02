@@ -238,6 +238,17 @@ def test_pfr_chart_command_generates_team_and_audit_inputs(tmp_path) -> None:
     manifest = json.loads((output_dir / "generation-manifest.json").read_text())
     assert manifest["games"] == 1
     assert manifest["source_rows"] == 1
+    assert "modeled_missing_features" in manifest["source_feature_coverage"]
+    audit = json.loads((output_dir / "chart-audit.json").read_text())
+    assert audit["passed"]
+    assert audit["team_count"] == 1
+    assert manifest["calibration_profile"] == {
+        "run_yard_multiplier": 1.0,
+        "pass_completion_adjustment": 0.0,
+        "pass_interception_adjustment": 0.0,
+        "pass_pressure_adjustment": 0.0,
+        "pass_yard_multiplier": 1.0,
+    }
     assert manifest["teams"]["Foxes"]["empirical_outcomes"] == 1
     assert manifest["teams"]["Foxes"]["generated_empirical_outcomes"] == 0
     assert manifest["teams"]["Foxes"]["fallback_columns"] == 1
@@ -276,3 +287,172 @@ def test_nullified_field_goal_is_not_counted_as_an_attempt() -> None:
 
     assert classified.field_goals == ()
     assert classified.diagnostics["nullified_field_goals"] == 1
+
+
+def test_touchdown_results_follow_developer_chart_conventions() -> None:
+    """Encode scoring plays the same way as the developer-created charts."""
+    rows = "".join(
+        (
+            _row(
+                1,
+                "1",
+                "2",
+                "SFO 2",
+                '<a href="/players/R/RushRo00.htm">Ron Runner</a> right tackle for 2 yards, touchdown',
+            ),
+            _row(
+                2,
+                "1",
+                "10",
+                "SFO 35",
+                '<a href="/players/P/PassPh00.htm">Phil Passer</a> pass complete to Ron Runner for 35 yards, touchdown',
+            ),
+            _row(
+                3,
+                "1",
+                "10",
+                "SFO 45",
+                '<a href="/players/P/PassPh00.htm">Phil Passer</a> pass complete to Ron Runner for 45 yards, touchdown',
+            ),
+            _row(
+                4,
+                "4",
+                "10",
+                "PHI 20",
+                '<a href="/players/P/PuntPa00.htm">Pat Punter</a> punts 45 yards, returned by '
+                '<a href="/players/R/RetuRa00.htm">Ray Returner</a> for 65 yards, touchdown',
+            ),
+            _row(
+                5,
+                "1",
+                "10",
+                "SFO 35",
+                '<a href="/players/P/PassPh00.htm">Phil Passer</a> pass intended for Ron Runner is intercepted by '
+                '<a href="/players/D/DefeDa00.htm">Dan Defender</a> at SFO35 and returned for 55 yards, touchdown',
+            ),
+            _row(
+                6,
+                "1",
+                "10",
+                "SFO 35",
+                '<a href="/players/P/PassPh00.htm">Phil Passer</a> pass intended for Ron Runner is intercepted by '
+                '<a href="/players/D/DefeDa00.htm">Dan Defender</a> at SFO30 and returned for 70 yards, touchdown',
+            ),
+        )
+    )
+
+    classified = classify_pfr_game(parse_pfr_boxscore(_game_html(rows), "touchdown-results"))
+    offense = [play for play in classified.plays if play.unit == "offense"]
+    punt_returns = [play for play in classified.plays if play.chart == "punt_return"]
+    interception_returns = [
+        play for play in classified.plays if play.chart == "interception_return"
+    ]
+
+    assert [(play.chart, play.result) for play in offense[:3]] == [
+        ("off_tackle", "2"),
+        (offense[1].chart, "35"),
+        (offense[2].chart, "45"),
+    ]
+    assert offense[1].chart in {"screen", "short_pass", "medium_pass", "long_pass"}
+    assert offense[2].chart == "long_pass"
+    assert any(play.result.startswith("INT ") for play in offense)
+    assert [(play.team, play.result) for play in punt_returns] == [("SFO", "65")]
+    assert [(play.team, play.result) for play in interception_returns] == [
+        ("SFO", "55"),
+        ("SFO", "70"),
+    ]
+
+
+def test_special_teams_penalties_are_retained_as_chart_results() -> None:
+    rows = "".join(
+        (
+            _row(
+                1,
+                "",
+                "",
+                "PHI 35",
+                '<a href="/players/K/KickKi00.htm">Ken Kicker</a> kicks off 65 yards, '
+                'returned by <a href="/players/R/RetuRa00.htm">Ray Returner</a> for 20 yards. '
+                'Penalty on SFO: Holding, 10 yards (declined)',
+            ),
+            _row(
+                2,
+                "4",
+                "10",
+                "PHI 40",
+                '<a href="/players/P/PuntPa00.htm">Pat Punter</a> punts 40 yards, '
+                'returned by <a href="/players/R/RetuRa00.htm">Ray Returner</a> for 7 yards. '
+                'Penalty on PHI: Holding, 10 yards (accepted)',
+            ),
+            _row(
+                3,
+                "4",
+                "5",
+                "SFO 20",
+                '<a href="/players/K/KickKi00.htm">Ken Kicker</a> 37 yard field goal good. '
+                'Penalty on SFO: Offside, 5 yards (accepted) (no play)',
+            ),
+            _row(
+                4,
+                "1",
+                "10",
+                "SFO 35",
+                '<a href="/players/P/PassPh00.htm">Phil Passer</a> pass intended for Ron Runner is intercepted by '
+                '<a href="/players/D/DefeDa00.htm">Dan Defender</a> at PHI45 and returned for 18 yards. '
+                'Penalty on SFO: Holding, 10 yards (accepted)',
+            ),
+        )
+    )
+
+    classified = classify_pfr_game(parse_pfr_boxscore(_game_html(rows), "special-penalties"))
+
+    assert [
+        (play.team, play.chart, play.result)
+        for play in classified.plays
+        if play.unit == "special_teams"
+    ] == [
+        ("SFO", "kickoff_return", "OFF 10"),
+        ("SFO", "punt_return", "DEF 10"),
+        ("PHI", "field_goal", "DEF 5"),
+        ("SFO", "interception_return", "OFF 10"),
+    ]
+    assert any(
+        play.unit == "offense" and play.result.startswith("INT ")
+        for play in classified.plays
+    )
+    assert classified.diagnostics["special_teams_penalties"] == 4
+
+
+def test_kickoff_foul_without_return_is_relative_to_kicking_team() -> None:
+    rows = _row(1, '', '', 'PHI 35',
+        '<a href="/players/K/KickKi00.htm">Ken Kicker</a> kicks off 65 yards. '
+        'Penalty on PHI: Offside, 5 yards (accepted) (no play)')
+    season = classify_pfr_game(parse_pfr_boxscore(_game_html(rows),'kickoff-foul'))
+    assert [(p.team,p.chart,p.result) for p in season.plays] == [('PHI','kickoff','OFF 5')]
+
+
+def test_return_out_of_bounds_does_not_make_kickoff_illegal() -> None:
+    rows = _row(1, '', '', 'PHI 35',
+        '<a href="/players/K/KickKi00.htm">Ken Kicker</a> kicks off 65 yards, '
+        'returned by <a href="/players/R/RetuRa00.htm">Ray Returner</a> for 20 yards (out of bounds)')
+    season = classify_pfr_game(parse_pfr_boxscore(_game_html(rows),'return-oob'))
+    assert [(p.chart,p.result) for p in season.plays] == [('kickoff','65'),('kickoff_return','20*')]
+
+
+def test_half_distance_foul_preserves_nominal_yards_and_first_down() -> None:
+    rows = ''.join([
+        _row(1, '1', '10', 'PHI 4', '<a href="/players/P/PassPh00.htm">Phil Passer</a> '
+             'pass incomplete. Penalty on PHI: False Start, 2 yards (accepted) (no play)'),
+        _row(2, '1', '10', 'SFO 6', '<a href="/players/P/PassPh00.htm">Phil Passer</a> '
+             'pass incomplete. Penalty on SFO: Defensive Holding, 3 yards (accepted) (no play)'),
+    ])
+    season = classify_pfr_game(parse_pfr_boxscore(_game_html(rows),'half-distance'))
+    assert [p.result for p in season.plays] == ['OFF 5', 'DEF 5X']
+
+
+def test_kickoff_oob_penalty_uses_the_illegal_kick_procedure() -> None:
+    rows = _row(1, '', '', 'PHI 35',
+        '<a href="/players/K/KickKi00.htm">Ken Kicker</a> kicks off no gain,. '
+        'Penalty on PHI: Kickoff OOB, 5 yards (accepted) (no play)')
+    season = classify_pfr_game(parse_pfr_boxscore(_game_html(rows),'kick-out'))
+    assert [(p.chart,p.result) for p in season.plays] == [('kickoff','OB')]

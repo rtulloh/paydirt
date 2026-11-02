@@ -11,7 +11,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
-from .pfr_play_by_play import EmpiricalPlay, FieldGoalAttempt, FumbleEvent
+from .pfr_play_by_play import (
+    EmpiricalPlay,
+    FieldGoalAttempt,
+    FumbleEvent,
+    normalized_penalty_result,
+)
 
 _PASS_CHARTS = ("screen", "short_pass", "medium_pass", "long_pass")
 _PENALTY_CHARTS = (
@@ -94,13 +99,20 @@ def _fumble_result(yards: int) -> str:
 
 
 def _return_result(row: Mapping[str, object]) -> str:
-    """Translate an nflverse kick or interception return into a chart result."""
-    if _flag(row, "return_touchdown"):
-        return "TD"
+    """Translate a return while preserving the chart family's touchdown convention."""
     yards = _integer(row, "return_yards")
     if _flag(row, "fumble"):
         return _fumble_result(yards)
     return _marked_numeric(yards, _flag(row, "out_of_bounds"))
+
+
+def _has_kick_return(row: Mapping[str, object]) -> bool:
+    """Exclude zero placeholders on nonreturn kicks from the return sample."""
+    if any(_flag(row, key) for key in (
+        "touchback", "punt_fair_catch", "punt_out_of_bounds", "punt_downed", "punt_blocked",
+    )) or "no play" in _text(row, "desc").casefold():
+        return False
+    return _number(row, "return_yards") is not None
 
 
 def _run_chart(row: Mapping[str, object]) -> str | None:
@@ -176,12 +188,14 @@ def _scrimmage_chart(row: Mapping[str, object], seed: int) -> str | None:
     return None
 
 
-def _accepted_penalty_result(row: Mapping[str, object], offense: str) -> str | None:
-    """Return an engine-valid result for an accepted nflverse penalty."""
+def _penalty_result(
+    row: Mapping[str, object], offense: str, *, include_declined: bool = False
+) -> str | None:
+    """Return an engine-valid nflverse foul relative to the chart's offense."""
     if not _flag(row, "penalty"):
         return None
     description = _text(row, "desc").casefold()
-    if "offsetting" in description or "declined" in description:
+    if "offsetting" in description or ("declined" in description and not include_declined):
         return None
     penalty_type = _text(row, "penalty_type").casefold()
     penalty_team = _text(row, "penalty_team").upper()
@@ -192,8 +206,7 @@ def _accepted_penalty_result(row: Mapping[str, object], offense: str) -> str | N
         return f"PI {max(1, yards)}"
     if yards <= 0:
         yards = 5 if any(term in penalty_type for term in ("offside", "false start")) else 10
-    prefix = "OFF" if penalty_team == offense else "DEF"
-    return f"{prefix} {yards}"
+    return normalized_penalty_result(penalty_type, penalty_team == offense, yards)
 
 
 def _empirical_play(
@@ -249,7 +262,13 @@ def classify_nflverse_rows(
         if play_type == "field_goal":
             distance = _integer(row, "kick_distance")
             result = _text(row, "field_goal_result").casefold()
-            if offense and distance > 0 and result in {"made", "missed", "blocked"}:
+            penalty_result = _penalty_result(row, offense, include_declined=True)
+            if (
+                offense
+                and distance > 0
+                and result in {"made", "missed", "blocked"}
+                and "no play" not in description
+            ):
                 field_goals.append(
                     FieldGoalAttempt(
                         offense,
@@ -261,17 +280,53 @@ def classify_nflverse_rows(
                     )
                 )
                 diagnostics["field_goal_attempts"] += 1
+            if offense and penalty_result is not None:
+                plays.append(
+                    _empirical_play(
+                        row,
+                        offense,
+                        "special_teams",
+                        "field_goal",
+                        penalty_result,
+                        fallback_number,
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
             continue
 
         if play_type == "kickoff":
             kicking_team = defense
             receiving_team = offense
+            has_return = _has_kick_return(row)
+            if _flag(row, "kickoff_out_of_bounds") or "kickoff out of bounds" in _text(row, "penalty_type").casefold():
+                plays.append(_empirical_play(row, kicking_team, "special_teams", "kickoff", "OB", fallback_number))
+                diagnostics["kickoff_out_of_bounds"] += 1
+                continue
+            penalty_result = _penalty_result(
+                row, receiving_team if has_return else kicking_team, include_declined=True
+            )
+            if penalty_result is not None and (kicking_team or receiving_team):
+                plays.append(
+                    _empirical_play(
+                        row,
+                        receiving_team if has_return else kicking_team,
+                        "special_teams",
+                        "kickoff_return" if has_return else "kickoff",
+                        penalty_result,
+                        fallback_number,
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
+                continue
             if kicking_team:
-                result = "OB" if "out of bounds" in description else str(_integer(row, "kick_distance"))
+                kick_out = _flag(row, "kickoff_out_of_bounds") or (
+                    "out of bounds" in description and not has_return
+                )
+                result = "OB" if kick_out else str(_integer(row, "kick_distance"))
                 plays.append(
                     _empirical_play(row, kicking_team, "special_teams", "kickoff", result, fallback_number)
                 )
-            if receiving_team and _number(row, "return_yards") is not None:
+            if receiving_team and has_return:
                 plays.append(
                     _empirical_play(
                         row,
@@ -285,6 +340,26 @@ def classify_nflverse_rows(
             continue
 
         if play_type == "punt":
+            return_team = _text(row, "return_team").upper() or defense
+            has_return = _has_kick_return(row)
+            penalty_result = _penalty_result(
+                row,
+                return_team if has_return else offense,
+                include_declined=True,
+            )
+            if penalty_result is not None and (offense or return_team):
+                plays.append(
+                    _empirical_play(
+                        row,
+                        return_team if has_return else offense,
+                        "special_teams",
+                        "punt_return" if has_return else "punt",
+                        penalty_result,
+                        fallback_number,
+                    )
+                )
+                diagnostics["special_teams_penalties"] += 1
+                continue
             if offense:
                 punt_result = "BK -5" if _flag(row, "punt_blocked") else str(_integer(row, "kick_distance"))
                 if _flag(row, "punt_fair_catch"):
@@ -297,8 +372,7 @@ def classify_nflverse_rows(
                 plays.append(
                     _empirical_play(row, offense, "special_teams", "punt", punt_result, fallback_number)
                 )
-            return_team = _text(row, "return_team").upper() or defense
-            if return_team and _number(row, "return_yards") is not None:
+            if return_team and has_return:
                 plays.append(
                     _empirical_play(
                         row,
@@ -315,8 +389,29 @@ def classify_nflverse_rows(
             diagnostics["unattributed_rows"] += 1
             continue
 
-        penalty_result = _accepted_penalty_result(row, offense)
-        if penalty_result is not None:
+        interception_return_penalty: str | None = None
+        if (
+            _flag(row, "interception")
+            and _text(row, "return_team")
+            and _number(row, "return_yards") is not None
+            and not any(
+                term in _text(row, "penalty_type").casefold()
+                for term in (
+                    "pass interference",
+                    "roughing the passer",
+                    "defensive holding",
+                    "illegal contact",
+                )
+            )
+        ):
+            interception_return_penalty = _penalty_result(
+                row,
+                _text(row, "return_team").upper(),
+                include_declined=True,
+            )
+
+        penalty_result = _penalty_result(row, offense)
+        if penalty_result is not None and interception_return_penalty is None:
             chart = _scrimmage_chart(row, seed)
             if chart:
                 plays.append(
@@ -374,18 +469,18 @@ def classify_nflverse_rows(
                         return_team,
                         "special_teams",
                         "interception_return",
-                        _return_result(row),
+                        interception_return_penalty or _return_result(row),
                         fallback_number,
                     )
                 )
+                if interception_return_penalty is not None:
+                    diagnostics["special_teams_penalties"] += 1
                 diagnostics["interceptions"] += 1
             elif _flag(row, "incomplete_pass"):
                 result = "BLACK"
             elif _flag(row, "complete_pass"):
                 yards = _integer(row, "yards_gained")
-                if _flag(row, "touchdown"):
-                    result = "TD"
-                elif _flag(row, "fumble"):
+                if _flag(row, "fumble"):
                     result = _fumble_result(yards)
                     fumbles.append(FumbleEvent(offense, "passing", _flag(row, "fumble_lost"), game_id, _play_number(row, fallback_number)))
                 else:
@@ -405,7 +500,8 @@ def classify_nflverse_rows(
                 continue
             yards = _integer(row, "yards_gained")
             if _flag(row, "touchdown"):
-                result = "TD"
+                # Preserve goal-line context instead of making the score automatic.
+                result = _marked_numeric(yards, _flag(row, "out_of_bounds"))
             elif _flag(row, "fumble"):
                 result = _fumble_result(yards)
                 fumbles.append(FumbleEvent(offense, "rushing", _flag(row, "fumble_lost"), game_id, _play_number(row, fallback_number)))

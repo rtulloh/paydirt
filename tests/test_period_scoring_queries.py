@@ -44,7 +44,8 @@ def test_kick_queries_use_the_engine_recorded_start_period(
     entry: str, quarter: int, seconds: int, kick_expected: bool,
 ) -> None:
     game = make_sample_game()
-    game.state.ball_position, game.state.quarter, game.state.time_remaining = 94, quarter, seconds / 60
+    start_seconds = 5 if entry == "decision" and seconds == 20 else seconds
+    game.state.ball_position, game.state.quarter, game.state.time_remaining = 94, quarter, start_seconds / 60
     game.state.home_score, game.state.away_score = 0, 7  # Q4 expiry ties: no game over yet.
     score_by(game, entry, seconds=30)
     if quarter == 3 and seconds == 20:

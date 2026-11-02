@@ -42,3 +42,6 @@ lines 594-615 and 649-658). This confirms the ordinary lost-return path
 and complements earlier kept/penalty-reroll evidence. Keep resolved: the
 explicit pending choice and chained recovery-advance branches required
 by this ticket were not reached. Do not close from game completion alone.
+
+--- 2026-11-02 10:15 ---
+Completed manual game adds the previously missing lost-kickoff-return recovery-advance evidence: the captured recovery roll starts the kicking team's advance; its numeric return reaches the goal and the correct team scores. The receiving team is charged one lost fumble, and all four game giveaways reconcile independently. Keep resolved: the explicit pending live-foul recovery-versus-penalty choice is still unobserved, so this does not complete all closure criteria. See ../../game-audit-2026-11-02.md; original trace remains local.

@@ -13,9 +13,12 @@ from tests.game_fixtures import make_sample_game
 
 @pytest.fixture
 def game() -> PaydirtGameEngine:
-    """Public sample teams: their return charts carry no fumble cells, so an
-    unpatched kickoff always leaves the receiving team in possession."""
-    return make_sample_game()
+    """Use explicit ordinary kicks/returns to isolate receiving-team ownership."""
+    engine = make_sample_game()
+    for chart in (engine.state.home_chart, engine.state.away_chart):
+        chart.special_teams.kickoff = dict.fromkeys(range(10, 40), "60")
+        chart.special_teams.kickoff_return = dict.fromkeys(range(10, 40), "20")
+    return engine
 
 
 class TestKickoffAfterScore:

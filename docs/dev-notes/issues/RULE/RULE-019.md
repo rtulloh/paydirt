@@ -11,6 +11,7 @@ tags:
 links:
   - RULE-014
   - TRACE-004
+  - AUD-025
 commits:
 ---
 
@@ -74,3 +75,13 @@ fumble rerolls, and one end-zone fumble chain with matching final possession
 and scoring flags. No new skip or weakened gameplay assertion. Mark resolved
 with the scoped local commit, not closed: rare TD-wipe/penalty-near-goal cases
 remain synthetic-regression evidence rather than observed play-test cases.
+
+--- 2026-11-02 10:00 ---
+The new live punt-fumble report again confirms that the returning team's recovery roll is
+consumed and that recovery 38 starts the kicking team's fumble return. AUD-025 records a separate
+presentation defect: initial return yards were paired with the later scoring spot. Public synthetic
+controls reproduce the correct possession, lost-fumble count and touchdown in both directions and
+after a declined kicking-chart foul. All thirteen historical plus 224 generated regular-season and
+nine postseason regressions pass. Keep RULE-019 resolved: the earlier rare penalty/TD variants still
+lack the complete issue-specific play-test confirmation required for closure. No private narrative
+or charts are exported.

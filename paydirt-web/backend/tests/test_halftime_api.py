@@ -63,12 +63,14 @@ def test_touchdown_that_ends_the_half_waits_for_halftime_and_the_other_kicker(hu
             client.delete(f"/api/game/{game_id}")
 
 
-def test_penalty_decision_that_ends_the_half_reports_halftime() -> None:
+@pytest.mark.parametrize("seconds,expired", [(5, True), (20, False)])
+def test_penalty_decision_reports_actual_half_expiry(seconds: int, expired: bool) -> None:
     with TestClient(app) as client:
         game_id, game = _start(client, human_is_home=True)
         engine = game["engine"]
         try:
             engine.state.ball_position = 50
+            engine.state.time_remaining = seconds / 60
             engine.state.possession_team.offense.line_plunge.update({26: "DEF 5", 27: "4"})
             with patch("paydirt.play_resolver.roll_chart_dice", side_effect=[(26, "Roll26"), (27, "Roll27")]):
                 executed = client.post("/api/game/execute", json={
@@ -80,8 +82,9 @@ def test_penalty_decision_that_ends_the_half_reports_halftime() -> None:
                 decided = client.post("/api/game/penalty-decision", json={
                     "game_id": game_id, "accept_penalty": False, "penalty_index": 0,
                 }).json()
-            assert decided["result"]["half_changed"] is True
-            assert decided["game_state"]["halftime_pending"] is True
-            assert decided["game_state"]["quarter"] == 3
+            assert decided["result"]["half_changed"] is expired
+            assert decided["game_state"]["halftime_pending"] is expired
+            assert decided["game_state"]["quarter"] == (3 if expired else 2)
+            assert engine.state.time_remaining * 60 == pytest.approx(900 if expired else seconds - 5)
         finally:
             client.delete(f"/api/game/{game_id}")

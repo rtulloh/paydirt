@@ -100,9 +100,9 @@ class TestApplyPriorityChartOOB:
         assert result.out_of_bounds is False
 
     def test_oob_with_parens_defense_override(self):
-        """'3*' offense + '(5)' defense → defense overrules, but OOB still from offense."""
+        """An actual defensive overrule replaces the offensive sideline marker."""
         result = apply_priority_chart("3*", "(5)", is_passing_play=False)
-        assert result.out_of_bounds is True
+        assert result.out_of_bounds is False
         assert result.final_yards == 5
 
     def test_no_oob_empty_offense(self):

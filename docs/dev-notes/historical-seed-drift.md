@@ -73,3 +73,19 @@ flow. Each announced the extension, played the extra down, finished with no
 pending untimed down, and passed normal score/period validation. The runner
 keeps thirteen games and requires those two events. No dice, engine rules,
 private charts or narrative logs were changed or exported.
+
+## Foul clock stops (2026-11-02)
+
+RULE-022 now retains the foul clock stop and charges the supplied rulebook's
+action time rather than a normal running-clock huddle. This legitimately changes
+seeded trajectories, including the two previously required extensions. Keep all
+thirteen previous complete games and add independently verified same-matchup
+supplements `19831153` and `19831617`. Each announces and consumes an untimed
+down, finishes with no pending extension and passes final score/period checks.
+All fifteen complete games and both event requirements are mandatory.
+
+Synthetic runner tests first produced seven expected failures and eighteen
+passing controls. Their final expectations now require fifteen attempts,
+fourteen successes after one injected failure, and thirteen after both
+mandatory events are omitted. The dice, live AI, original thirteen complete
+games, final-state checks and requirement for two real extensions are retained.
