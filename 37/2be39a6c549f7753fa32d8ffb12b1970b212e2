@@ -1,0 +1,21 @@
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_ec8e713ae16aa7 10,81,121,142
+docs/dev-notes/issues/VAL/VAL-014.md
+  s_56c2016c2f0956::t_28180f229bdadd 4,8,47,60-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "372be39a6c549f7753fa32d8ffb12b1970b212e2",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
