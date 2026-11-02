@@ -1,0 +1,41 @@
+docs/chart-generator.md
+  s_56c2016c2f0956::t_3d1622503ba701 23-27,112-126,163-166,172-195
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_68cf3075e66013 10,120,127,138
+docs/dev-notes/issues/DATA/DATA-006.md
+  s_56c2016c2f0956::t_229857f112e11e 14,237-244
+docs/dev-notes/issues/DATA/DATA-007.md
+  s_56c2016c2f0956::t_d29ee53fa722ca 1-61
+docs/dev-notes/statistical-chart-generator.md
+  s_56c2016c2f0956::t_1313db192da440 598-648
+generate_nflverse_charts.py
+  s_56c2016c2f0956::t_cc1c5f5e144d87 1-279
+generate_pfr_charts.py
+  s_56c2016c2f0956::t_968fb18a47cae3 19-23,179-184,227-229,294
+paydirt/empirical_adjustment.py
+  s_56c2016c2f0956::t_50cd00d9bce637 377-415
+paydirt/nflverse_play_by_play.py
+  s_56c2016c2f0956::t_42b45e029e55f7 1-445
+tests/test_empirical_adjustment.py
+  s_56c2016c2f0956::t_20a2c648069232 122-143
+tests/test_generate_nflverse_charts.py
+  s_56c2016c2f0956::t_9356c9ae008949 1-142
+tests/test_nflverse_play_by_play.py
+  s_56c2016c2f0956::t_0f0c5f616d02a5 1-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "408a67adeea84f97bac25af320ff551851081e0a",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
