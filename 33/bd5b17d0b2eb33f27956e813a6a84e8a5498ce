@@ -1,0 +1,277 @@
+seasons/2024/2024.yaml
+  s_56c2016c2f0956::t_b96198502dde06 1-15
+seasons/2024/49ers/defense.csv
+  s_56c2016c2f0956::t_7ba89fba77da73 1-31
+seasons/2024/49ers/offense.csv
+  s_56c2016c2f0956::t_9847509fa7719a 1-33
+seasons/2024/49ers/special.csv
+  s_56c2016c2f0956::t_f3336d003e807e 1-31
+seasons/2024/49ers/team.yaml
+  s_56c2016c2f0956::t_341815cd99f2b1 1-3
+seasons/2024/Bears/defense.csv
+  s_56c2016c2f0956::t_a5123627300032 1-31
+seasons/2024/Bears/offense.csv
+  s_56c2016c2f0956::t_3958faeb8c56ed 1-33
+seasons/2024/Bears/special.csv
+  s_56c2016c2f0956::t_85cbaef5d21607 1-31
+seasons/2024/Bears/team.yaml
+  s_56c2016c2f0956::t_d518116f11244a 1-3
+seasons/2024/Bengals/defense.csv
+  s_56c2016c2f0956::t_d4abf593c17144 1-31
+seasons/2024/Bengals/offense.csv
+  s_56c2016c2f0956::t_104bfce1de5b34 1-33
+seasons/2024/Bengals/special.csv
+  s_56c2016c2f0956::t_9ce8abd311c9b6 1-31
+seasons/2024/Bengals/team.yaml
+  s_56c2016c2f0956::t_e131370127dae2 1-3
+seasons/2024/Bills/defense.csv
+  s_56c2016c2f0956::t_f2fcad6ca09c8b 1-31
+seasons/2024/Bills/offense.csv
+  s_56c2016c2f0956::t_a189c4a43847c6 1-33
+seasons/2024/Bills/special.csv
+  s_56c2016c2f0956::t_b7e64a1e7f7b5f 1-31
+seasons/2024/Bills/team.yaml
+  s_56c2016c2f0956::t_7e0551d080e9b2 1-3
+seasons/2024/Broncos/defense.csv
+  s_56c2016c2f0956::t_609de68d7d423c 1-31
+seasons/2024/Broncos/offense.csv
+  s_56c2016c2f0956::t_e2be624168b887 1-33
+seasons/2024/Broncos/special.csv
+  s_56c2016c2f0956::t_9e66a7a960c90a 1-31
+seasons/2024/Broncos/team.yaml
+  s_56c2016c2f0956::t_23b81dcf499279 1-3
+seasons/2024/Browns/defense.csv
+  s_56c2016c2f0956::t_338777e3e53f7e 1-31
+seasons/2024/Browns/offense.csv
+  s_56c2016c2f0956::t_6944ebf3f53267 1-33
+seasons/2024/Browns/special.csv
+  s_56c2016c2f0956::t_26b6a73c0ca8f3 1-31
+seasons/2024/Browns/team.yaml
+  s_56c2016c2f0956::t_847427ae052958 1-3
+seasons/2024/Buccaneers/defense.csv
+  s_56c2016c2f0956::t_38775e634c5437 1-31
+seasons/2024/Buccaneers/offense.csv
+  s_56c2016c2f0956::t_0c309a3b8d6dc3 1-33
+seasons/2024/Buccaneers/special.csv
+  s_56c2016c2f0956::t_be51ab1f4f01d1 1-31
+seasons/2024/Buccaneers/team.yaml
+  s_56c2016c2f0956::t_d7e04dc9e23b81 1-3
+seasons/2024/Cardinals/defense.csv
+  s_56c2016c2f0956::t_fe49ec6ff67e87 1-31
+seasons/2024/Cardinals/offense.csv
+  s_56c2016c2f0956::t_3c7662e5edcab7 1-33
+seasons/2024/Cardinals/special.csv
+  s_56c2016c2f0956::t_e1bde7cb259796 1-31
+seasons/2024/Cardinals/team.yaml
+  s_56c2016c2f0956::t_3030dedc640d33 1-3
+seasons/2024/Chargers/defense.csv
+  s_56c2016c2f0956::t_a9661dc6b47b70 1-31
+seasons/2024/Chargers/offense.csv
+  s_56c2016c2f0956::t_f7c1a48ad357ae 1-33
+seasons/2024/Chargers/special.csv
+  s_56c2016c2f0956::t_a1189168c871cd 1-31
+seasons/2024/Chargers/team.yaml
+  s_56c2016c2f0956::t_bb3397ab4afe65 1-3
+seasons/2024/Chiefs/defense.csv
+  s_56c2016c2f0956::t_eaa40fd0d43e73 1-31
+seasons/2024/Chiefs/offense.csv
+  s_56c2016c2f0956::t_8b8c3f2c07462d 1-33
+seasons/2024/Chiefs/special.csv
+  s_56c2016c2f0956::t_24ccb1be30bb2f 1-31
+seasons/2024/Chiefs/team.yaml
+  s_56c2016c2f0956::t_976c416a229fcb 1-3
+seasons/2024/Colts/defense.csv
+  s_56c2016c2f0956::t_2ef3074c73a83b 1-31
+seasons/2024/Colts/offense.csv
+  s_56c2016c2f0956::t_37f6e395ca7f7e 1-33
+seasons/2024/Colts/special.csv
+  s_56c2016c2f0956::t_c24abe24bf8bf8 1-31
+seasons/2024/Colts/team.yaml
+  s_56c2016c2f0956::t_2d6a1c9414b286 1-3
+seasons/2024/Commanders/defense.csv
+  s_56c2016c2f0956::t_b1ca5dc26cc9bf 1-31
+seasons/2024/Commanders/offense.csv
+  s_56c2016c2f0956::t_a7f5c54b50b0cb 1-33
+seasons/2024/Commanders/special.csv
+  s_56c2016c2f0956::t_b56c03ae59067a 1-31
+seasons/2024/Commanders/team.yaml
+  s_56c2016c2f0956::t_ea146d46ec0549 1-3
+seasons/2024/Cowboys/defense.csv
+  s_56c2016c2f0956::t_1e8e89ed943d2d 1-31
+seasons/2024/Cowboys/offense.csv
+  s_56c2016c2f0956::t_dda915e26a3ece 1-33
+seasons/2024/Cowboys/special.csv
+  s_56c2016c2f0956::t_a8995f3b471467 1-31
+seasons/2024/Cowboys/team.yaml
+  s_56c2016c2f0956::t_09592c757c98c9 1-3
+seasons/2024/Dolphins/defense.csv
+  s_56c2016c2f0956::t_abd6c407af7494 1-31
+seasons/2024/Dolphins/offense.csv
+  s_56c2016c2f0956::t_8f0de625355086 1-33
+seasons/2024/Dolphins/special.csv
+  s_56c2016c2f0956::t_a8f243fee42ce8 1-31
+seasons/2024/Dolphins/team.yaml
+  s_56c2016c2f0956::t_597bce76eccf01 1-3
+seasons/2024/Eagles/defense.csv
+  s_56c2016c2f0956::t_8ae9f7672af69e 1-31
+seasons/2024/Eagles/offense.csv
+  s_56c2016c2f0956::t_612db90c7edb05 1-33
+seasons/2024/Eagles/special.csv
+  s_56c2016c2f0956::t_81fa90e7d038e7 1-31
+seasons/2024/Eagles/team.yaml
+  s_56c2016c2f0956::t_f74ed2e9589767 1-3
+seasons/2024/Falcons/defense.csv
+  s_56c2016c2f0956::t_ad5f4d19f3c07e 1-31
+seasons/2024/Falcons/offense.csv
+  s_56c2016c2f0956::t_81d9b8e164315e 1-33
+seasons/2024/Falcons/special.csv
+  s_56c2016c2f0956::t_672088c64aa7e5 1-31
+seasons/2024/Falcons/team.yaml
+  s_56c2016c2f0956::t_0d48c4fce38534 1-3
+seasons/2024/Giants/defense.csv
+  s_56c2016c2f0956::t_6a5569da23e96f 1-31
+seasons/2024/Giants/offense.csv
+  s_56c2016c2f0956::t_4240514fc75542 1-33
+seasons/2024/Giants/special.csv
+  s_56c2016c2f0956::t_f0641a1c150d8c 1-31
+seasons/2024/Giants/team.yaml
+  s_56c2016c2f0956::t_45f133fba8cac3 1-3
+seasons/2024/Jaguars/defense.csv
+  s_56c2016c2f0956::t_ca1edc76887d6e 1-31
+seasons/2024/Jaguars/offense.csv
+  s_56c2016c2f0956::t_db36fcc7551d34 1-33
+seasons/2024/Jaguars/special.csv
+  s_56c2016c2f0956::t_9d95d8d875b517 1-31
+seasons/2024/Jaguars/team.yaml
+  s_56c2016c2f0956::t_697f86aa71c723 1-3
+seasons/2024/Jets/defense.csv
+  s_56c2016c2f0956::t_6177d8ced654cc 1-31
+seasons/2024/Jets/offense.csv
+  s_56c2016c2f0956::t_9d90b2ecb8c97f 1-33
+seasons/2024/Jets/special.csv
+  s_56c2016c2f0956::t_f1a2f85de57351 1-31
+seasons/2024/Jets/team.yaml
+  s_56c2016c2f0956::t_819d86b19e114a 1-3
+seasons/2024/Lions/defense.csv
+  s_56c2016c2f0956::t_17a5e81ce7a24e 1-31
+seasons/2024/Lions/offense.csv
+  s_56c2016c2f0956::t_6f7aabf09635f8 1-33
+seasons/2024/Lions/special.csv
+  s_56c2016c2f0956::t_2a8268fd58b6fe 1-31
+seasons/2024/Lions/team.yaml
+  s_56c2016c2f0956::t_3744b0eac796d1 1-3
+seasons/2024/Packers/defense.csv
+  s_56c2016c2f0956::t_d87efa8924d94e 1-31
+seasons/2024/Packers/offense.csv
+  s_56c2016c2f0956::t_54dbadc585d4bc 1-33
+seasons/2024/Packers/special.csv
+  s_56c2016c2f0956::t_78c5b16eda3eb5 1-31
+seasons/2024/Packers/team.yaml
+  s_56c2016c2f0956::t_5545bafbda0678 1-3
+seasons/2024/Panthers/defense.csv
+  s_56c2016c2f0956::t_fc7085299f82f8 1-31
+seasons/2024/Panthers/offense.csv
+  s_56c2016c2f0956::t_6ad44ee453c1c8 1-33
+seasons/2024/Panthers/special.csv
+  s_56c2016c2f0956::t_2e0efdb5ce1578 1-31
+seasons/2024/Panthers/team.yaml
+  s_56c2016c2f0956::t_982ea4712d09ca 1-3
+seasons/2024/Patriots/defense.csv
+  s_56c2016c2f0956::t_384df576866cf7 1-31
+seasons/2024/Patriots/offense.csv
+  s_56c2016c2f0956::t_35a27351d91199 1-33
+seasons/2024/Patriots/special.csv
+  s_56c2016c2f0956::t_a8f6f49755428e 1-31
+seasons/2024/Patriots/team.yaml
+  s_56c2016c2f0956::t_36aa3bb77828c2 1-3
+seasons/2024/Raiders/defense.csv
+  s_56c2016c2f0956::t_9996cef0a5937d 1-31
+seasons/2024/Raiders/offense.csv
+  s_56c2016c2f0956::t_e111a4e4bd9255 1-33
+seasons/2024/Raiders/special.csv
+  s_56c2016c2f0956::t_ffc64b625afd64 1-31
+seasons/2024/Raiders/team.yaml
+  s_56c2016c2f0956::t_79ecfb522501ea 1-3
+seasons/2024/Rams/defense.csv
+  s_56c2016c2f0956::t_727bf6b8dd2da0 1-31
+seasons/2024/Rams/offense.csv
+  s_56c2016c2f0956::t_7aa441e755719c 1-33
+seasons/2024/Rams/special.csv
+  s_56c2016c2f0956::t_deb40839f9386d 1-31
+seasons/2024/Rams/team.yaml
+  s_56c2016c2f0956::t_4fa35dea31673e 1-3
+seasons/2024/Ravens/defense.csv
+  s_56c2016c2f0956::t_721e3bae107e72 1-31
+seasons/2024/Ravens/offense.csv
+  s_56c2016c2f0956::t_b6bf0efd29def0 1-33
+seasons/2024/Ravens/special.csv
+  s_56c2016c2f0956::t_7dfe97c2f97eba 1-31
+seasons/2024/Ravens/team.yaml
+  s_56c2016c2f0956::t_222b993a54a7d1 1-3
+seasons/2024/Saints/defense.csv
+  s_56c2016c2f0956::t_150886ebaa76b4 1-31
+seasons/2024/Saints/offense.csv
+  s_56c2016c2f0956::t_52d6b94d692e3a 1-33
+seasons/2024/Saints/special.csv
+  s_56c2016c2f0956::t_a5d1dad3ddee0d 1-31
+seasons/2024/Saints/team.yaml
+  s_56c2016c2f0956::t_85ea0660a5f64c 1-3
+seasons/2024/Seahawks/defense.csv
+  s_56c2016c2f0956::t_58e56513a386d3 1-31
+seasons/2024/Seahawks/offense.csv
+  s_56c2016c2f0956::t_ba1d18b88c2d2a 1-33
+seasons/2024/Seahawks/special.csv
+  s_56c2016c2f0956::t_c581a98d2740f3 1-31
+seasons/2024/Seahawks/team.yaml
+  s_56c2016c2f0956::t_a048196ac4a96d 1-3
+seasons/2024/Steelers/defense.csv
+  s_56c2016c2f0956::t_de430e2391fd11 1-31
+seasons/2024/Steelers/offense.csv
+  s_56c2016c2f0956::t_15f7124e5643ee 1-33
+seasons/2024/Steelers/special.csv
+  s_56c2016c2f0956::t_a7b74f5a8273f8 1-31
+seasons/2024/Steelers/team.yaml
+  s_56c2016c2f0956::t_b0ed764e376258 1-3
+seasons/2024/Texans/defense.csv
+  s_56c2016c2f0956::t_8f20be32d77285 1-31
+seasons/2024/Texans/offense.csv
+  s_56c2016c2f0956::t_83e023aa5543e0 1-33
+seasons/2024/Texans/special.csv
+  s_56c2016c2f0956::t_d5561427b90dc7 1-31
+seasons/2024/Texans/team.yaml
+  s_56c2016c2f0956::t_7b8b0dbf43f094 1-3
+seasons/2024/Titans/defense.csv
+  s_56c2016c2f0956::t_c5246ef675b10f 1-31
+seasons/2024/Titans/offense.csv
+  s_56c2016c2f0956::t_3efeaf1d143f79 1-33
+seasons/2024/Titans/special.csv
+  s_56c2016c2f0956::t_8f645d50ea3b6a 1-31
+seasons/2024/Titans/team.yaml
+  s_56c2016c2f0956::t_2a6b661196fd28 1-3
+seasons/2024/Vikings/defense.csv
+  s_56c2016c2f0956::t_0a2494515e287d 1-31
+seasons/2024/Vikings/offense.csv
+  s_56c2016c2f0956::t_3d3bc09575dd94 1-33
+seasons/2024/Vikings/special.csv
+  s_56c2016c2f0956::t_b25b8f8e09b0de 1-31
+seasons/2024/Vikings/team.yaml
+  s_56c2016c2f0956::t_39a1860b24d61c 1-3
+seasons/2024/generation-manifest.json
+  s_56c2016c2f0956::t_7615a899cbd806 1-323
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "33bd5b17d0b2eb33f27956e813a6a84e8a5498ce",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
