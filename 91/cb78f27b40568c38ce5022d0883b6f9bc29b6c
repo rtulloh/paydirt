@@ -1,0 +1,31 @@
+docs/dev-notes/game-audit-2026-11-02.md
+  s_56c2016c2f0956::t_f1ce2e99b8e0e2 26-33,56-58,71-74
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_ddde74a2caf488 10,12,121,155
+docs/dev-notes/issues/STAT/STAT-005.md
+  s_56c2016c2f0956::t_987770d73bcbbd 3-4,7-8,10,24-29,33-42,48-61,81-87
+docs/dev-notes/release-readiness-2026-11-02.md
+  s_56c2016c2f0956::t_6946eec8057570 16-17,19,24-26,29-31,63-70,130-132,147-148,158-165,178-181
+docs/playing.md
+  s_56c2016c2f0956::t_265e00c99b75e4 175-177
+paydirt/game_engine.py
+  s_56c2016c2f0956::t_5e70dce603bb38 1438,1474,1786-1794
+tests/test_return_penalty_narration.py
+  s_56c2016c2f0956::t_097e59178b3b42 1-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "91cb78f27b40568c38ce5022d0883b6f9bc29b6c",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
