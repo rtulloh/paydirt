@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-132 issues: 62 open, 32 resolved, 38 closed.
+132 issues: 61 open, 32 resolved, 39 closed.
 
-## Open (62)
+## Open (61)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -50,7 +50,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [RULE-012](issues/RULE/RULE-012.md) | Medium | The final-try rule is era-dependent and the engine currently applies the pre-2018 rule to every season | created 2026-10-19 | RULE-002 |
 | [STAT-001](issues/STAT/STAT-001.md) | Medium | Enforced 15-yard punt double-foul penalty moves the ball but is absent from penalty count/yardage stats | created 2026-10-19 | STAT-003 |
 | [STAT-003](issues/STAT/STAT-003.md) | Medium | Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception… | created 2026-10-19 | RULE-001, STAT-001 |
-| [STAT-005](issues/STAT/STAT-005.md) | Medium | Latest game reports one more accepted penalty and fifteen more yards than its narrated enforcements | created 2026-11-02 | — |
 | [TRACE-001](issues/TRACE/TRACE-001.md) | Medium | Secondary QB-time rolls/results are not visible consistently, especially QB-time fumbles and transaction-based… | created 2026-10-18 | TRACE-007 |
 | [TRACE-003](issues/TRACE/TRACE-003.md) | Medium | Compact traces do not explicitly identify called modifiers and the winning clock procedure | created 2026-10-18 | — |
 | [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting/double-foul procedures can omit initial rolls and rerolls, including previously observed empty… | created 2026-10-18 | TRACE-006, AI-015, AUD-020, RULE-019, RULE-020 |
@@ -119,7 +118,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (38)
+## Closed (39)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -153,6 +152,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
 | [STAT-002](issues/STAT/STAT-002.md) | Medium | Successful PAT is allocated to the live next quarter instead of the touchdown quarter | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
+| [STAT-005](issues/STAT/STAT-005.md) | Medium | Scrimmage return narration omits assessed penalties and hides their rerolls | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
 | [TRACE-009](issues/TRACE/TRACE-009.md) | Medium | Half-ending touchdown and kickoff lack elapsed-time evidence to verify whether another snap was owed | created 2026-10-28, resolved 2026-10-28, closed 2026-10-28 | AI-007 |
 | [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26, resolved 2026-10-30, closed 2026-10-30 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |

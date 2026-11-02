@@ -1435,6 +1435,7 @@ class PaydirtGameEngine:
         if chain.notes or len(chain.trace) > 1 or "reroll" in return_trace or not plain_cell:
             extra = ("; ".join(chain.notes) + " " if chain.notes else "") + f"({return_trace})"
             result.description = f"{result.description} | {extra}" if result.description else extra
+            result.rule_explanation = extra
 
         # Store return info
         result.int_return_yards = return_yards
@@ -1470,6 +1471,7 @@ class PaydirtGameEngine:
         touchdown = False
         safety = False
         first_down = False
+        chain = None
 
         off_team = self.state.possession_team.peripheral.short_name
         def_team = self.state.defense_team.peripheral.short_name
@@ -1780,6 +1782,15 @@ class PaydirtGameEngine:
                                 acting_team=def_team,
                             )
                         )
+
+        # Compact displays use the action explanation rather than the full raw
+        # description. Preserve return enforcements there, including their rolls.
+        if chain is not None and (chain.notes or len(chain.trace) > 1 or "reroll" in return_desc):
+            if result.rule_explanation:
+                evidence = ("; ".join(chain.notes) + " " if chain.notes else "")
+                result.rule_explanation += f" | {evidence}({return_desc})"
+            else:
+                result.rule_explanation = result.description
 
         # Offensive recovery touchdowns count as one scrimmage first down.
         # Defensive recovery scores never count for either offense.

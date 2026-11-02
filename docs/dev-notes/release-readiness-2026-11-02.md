@@ -13,20 +13,22 @@ result; actual overruling results replace it (`priority_chart.py`). Kickoff
 penalty choices occur before the old scrimmage spot is replaced
 (`game_engine.py:kickoff`). The missed-kick spot changed in 1994 ([Hall of Fame](https://www.profootballhof.com/news/nfl-kickers-up-up-and-away)).
 The extra fifteen penalty yards are not reproduced by either visible kickoff
-foul in isolation (STAT-005).
+foul in isolation. Follow-up identifies omitted scrimmage-fumble-return
+enforcement in the compact narration (STAT-005).
 
-**Open Questions:** 6 -> 1 (removed 5, added 0, sharpened 1).
+**Open Questions:** 6 -> 0 (removed 6, added 0).
 The user directed use of the supplied rulebook rather than a search for the
 separate standard board chart. RULE-022 adopts its action/return time with
 zero dead time for flagged scrimmage plays, consistently with the existing
 selected incompletion rule. The full alternate system is not enabled.
-STAT-005 still needs a causal
-reproduction or evidence of an unreported enforcement; no full RNG capture
-exists for the manual game.
+STAT-005 has a causal public/synthetic reproduction and complete-game
+confirmation. No full RNG capture exists for the manual game; the original
+missing numeric reroll is not reconstructed.
 
 **Status changed:** QUESTIONS_PENDING -> READY_FOR_REVIEW_WITH_LIMITS.
-STAT-005 remains open; the local commit and push review must disclose that
-unexplained historical discrepancy rather than claim five proven fixes.
+All five initial findings now have issue-specific confirmation. Statistical
+calibration still predates the clock fixes and is not re-certified by these
+completion/presentation audits.
 
 **Key revision:** Resolve sideline provenance in the priority resolver, use
 season rules for missed kicks, and generate kickoff previews in the engine.
@@ -58,8 +60,14 @@ engine fixes.
   that the CLI discarded. Four public new/resume cases failed while two
   zero-clock controls passed. All six now pass using an engine-owned expiry
   query. Neither CLI writes the clock to end the game.
-- STAT-005: two passing halftime/return/re-kick lifecycle controls; no causal
-  failing regression. No speculative accounting change was made.
+- STAT-005: initial halftime/return/re-kick controls passed but did not exercise
+  the scrimmage-fumble return. Follow-up produced 72 valid missing-explanation
+  failures and 36 clean controls, then 208 focused passes. New synthetic cases
+  cover both sides, direct/procedure/declined paths, both CLI layouts,
+  interceptions, retained/lost fumble returns and both foul attributions. The
+  fixture's opposing-team near-goal expectation was corrected to half-distance,
+  then the baseline rerun on the unchanged engine. No existing assertion or
+  accounting mutation changed.
 
 ## Timing policy and changed expectations
 
@@ -119,9 +127,9 @@ under `.ai-audits/release-readiness/` and `.ai-audits/`.
 
 | Check | Result |
 |---|---|
-| Core pytest with coverage | 6,662 passed, eight existing data-dependent skips; 79% total coverage |
-| Clean staged-files snapshot, no ignored/private charts | 6,645 passed, 25 existing data-dependent skips |
-| Backend pytest | 280 passed, 22 existing Pydantic deprecation warnings |
+| Core pytest with coverage | 6,770 passed, eight existing data-dependent skips; 79% total coverage |
+| Clean staged-files snapshot, no ignored/private charts | 6,753 passed, 25 existing data-dependent skips |
+| Backend pytest | 280 passed, twenty existing Pydantic deprecation warnings |
 | Frontend unit tests | 255 passed, one existing skipped test, 27 files passed |
 | Frontend build | Passed |
 | Real browser games and offline guide | Two tests passed; both home/receiving and away/kicking games completed |
@@ -136,8 +144,8 @@ under `.ai-audits/release-readiness/` and `.ai-audits/`.
 
 The clean snapshot exposes seventeen additional pre-existing private-data
 skips rather than hiding them with local charts; no skip was added in this
-change. The final fixture-only save/resume adjustment also passes its 65
-focused checks in that clean snapshot. Browser tooling reports existing stale Browserslist data and
+change. The current clean run includes the save/resume fixtures and all new
+return-narration cases. Browser tooling reports existing stale Browserslist data and
 NO_COLOR/FORCE_COLOR warnings. These are disclosed, not suppressed.
 
 A separate 64-game audit uses public sample teams with synthetic End Run
@@ -146,6 +154,14 @@ confirmed 767 foul clock stops, 68 late-window sideline stops, nineteen
 kickoff previews, and 34/39 era-specific missed-kick spots, without failures.
 Its 576 narrated scrimmage-penalty increments are not a complete special-teams
 accounting oracle or an exact replay of the uncaptured manual game.
+
+A separate 64-game public/synthetic return audit confirms the STAT-005 fix:
+84 interception-return fouls, four lost-fumble-return fouls and three retained
+fumble-advance fouls display their enforcement/reroll evidence in both CLI
+layouts. Formatting leaves penalty totals and gameplay RNG unchanged. This
+explicitly covers the return path omitted by the earlier lifecycle controls;
+the original game's printed six-yard return is net of the hidden fifteen-yard
+foul. Its four-for-45 total now reconciles without changing accounting.
 
 Per-team/down/distance/mode call shares, distinct alternatives and repetition
 streaks were reviewed in both required AI reports. The sole warning is legacy
@@ -159,9 +175,10 @@ These advisory findings are recorded on AI-008 without imposing a universal usag
 
 RULE-022/023/024 and AUD-026 have issue-specific full-game evidence. AUD-025
 and RULE-025 retain resolved status pending their particular post-fix
-full-game presentation/final-second observation. STAT-005 stays open because
-the extra fifteen yards in the uncaptured manual game remain unexplained.
-The resolved-ticket inventory was reviewed. AUD-009 closes after its
+full-game presentation/final-second observation. STAT-005 closes after the
+causal narration reproduction and dedicated complete-game confirmation.
+The 32 remaining resolved tickets were reviewed again after the return audit;
+no unrelated issue is closed without its own event evidence. AUD-009 closes after its
 dedicated full-game semantic oracle verifies twelve scramble-TD narratives
 and their rushing/scoring attribution. Unobserved browser, conversion,
 recovery or coaching cases are not closed from ordinary completion alone.

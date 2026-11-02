@@ -23,7 +23,14 @@ and tries occur between headers and are not included in that count.
 | Interceptions / lost fumbles | 0 / 3 | 0 / 1 |
 | Field goals | 1 / 1 | 3 / 4 |
 | Printed penalties / yards | 3 / 22 | 4 / 45 |
-| Visible accepted penalties / yards | 3 / 22 | 3 / 30 |
+| Initially visible accepted penalties / yards | 3 / 22 | 3 / 30 |
+
+Follow-up: STAT-005 identified an omitted fifteen-yard defensive-fumble-return
+enforcement in the compact narration. The generated first return cell is a
+foul, while its printed advance is net of enforcement. Including that foul
+reconciles Dallas's four penalties for 45 yards; the missing reroll itself
+cannot be recovered from this log. Public/synthetic regressions and complete
+games verify the narration fix without altering accounting.
 
 All 31 incompletions use five seconds, including hurry-up and skipped-timeout
 cases. Both two-minute warnings and halftime timeout resets occur. All 117
@@ -46,8 +53,9 @@ Philadelphia scores seven immediately on Dallas's kickoff-return giveaway.
 ## Findings and limitations
 
 - [RULE-022](issues/RULE/RULE-022.md): the declined late-game foul uses the
-  ordinary 44-second completion charge. The precise replacement duration
-  still requires standard Timing Chart verification.
+  ordinary 44-second completion charge. Fixed using the supplied 2008 rules'
+  selected action-time method: five seconds for this flagged completion,
+  without enabling the entire optional timing system.
 - [RULE-023](issues/RULE/RULE-023.md): two naturally marked out-of-bounds runs
   inside Q4's last five minutes consume 29 and 35 seconds. A full-resolver
   public/synthetic reproduction confirms numeric defense adjustments suppress
@@ -60,9 +68,10 @@ Philadelphia scores seven immediately on Dallas's kickoff-return giveaway.
 - [AUD-026](issues/AUD/AUD-026.md): the kickoff penalty menu falsely predicts
   another touchdown from a stored scoring spot. The CPU accepts the re-kick
   and the actual score remains correct. Reproduced with public sample teams.
-- [STAT-005](issues/STAT/STAT-005.md): Dallas's extra reported fifteen-yard
-  foul is unexplained. Visible accepted penalties total three for 30, not
-  four for 45. Isolated return-foul and re-kick replays do not reproduce it.
+- [STAT-005](issues/STAT/STAT-005.md): follow-up identifies the hidden
+  fifteen-yard scrimmage-fumble-return enforcement. Its return-chain evidence
+  now reaches the action explanation. The isolated kickoff controls did not
+  exercise this different return path; the total reconciles to four for 45.
 - [AUD-025](issues/AUD/AUD-025.md): this already-running process still shows
   the old punt narrative and duplicate touchdown wording. The underlying score
   is valid; this game cannot verify the later presentation patch.
