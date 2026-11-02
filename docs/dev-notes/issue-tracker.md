@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-133 issues: 61 open, 32 resolved, 40 closed.
+135 issues: 61 open, 32 resolved, 42 closed.
 
 ## Open (61)
 
@@ -118,7 +118,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (40)
+## Closed (42)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -131,6 +131,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [DATA-012](issues/DATA/DATA-012.md) | High | Defensive interception calibration concentrates risk in a high-mass Short Pass row | created 2026-11-01, resolved 2026-11-02, closed 2026-11-02 | DATA-011, AI-019 |
 | [DATA-013](issues/DATA/DATA-013.md) | High | Generated charts omit special-teams penalty results | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | DATA-014 |
 | [DATA-014](issues/DATA/DATA-014.md) | High | Comprehensive chart audit exposes lost source features and biased empirical quantization | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | DATA-006, DATA-011, DATA-013 |
+| [FLOW-012](issues/FLOW/FLOW-012.md) | High | Competing CPU fourth-down requests can restore a stale kick panel after possession changes | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | VAL-015 |
 | [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
 | [RULE-021](issues/RULE/RULE-021.md) | High | Matching second-possession field goal incorrectly ends modified sudden-death overtime tied | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | DATA-006 |
@@ -156,6 +157,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [STAT-005](issues/STAT/STAT-005.md) | Medium | Scrimmage return narration omits assessed penalties and hides their rerolls | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
 | [TRACE-009](issues/TRACE/TRACE-009.md) | Medium | Half-ending touchdown and kickoff lack elapsed-time evidence to verify whether another snap was owed | created 2026-10-28, resolved 2026-10-28, closed 2026-10-28 | AI-007 |
 | [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26, resolved 2026-10-30, closed 2026-10-30 | — |
+| [VAL-015](issues/VAL/VAL-015.md) | Medium | Browser driver waits for execution when an early defense click needs a later CPU confirmation | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | FLOW-012 |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |
 | [AUD-003](issues/AUD/AUD-003.md) | Low | QB-kneel commentary credits a running back and describes an ordinary tackled loss | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |

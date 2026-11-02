@@ -42,6 +42,9 @@ See [clock management](clock-management.md) for what those modifiers mean.
 ![Offense Play Selection](images/offense.png)
 
 On defense, choose a formation to counter the CPU's offense.
+On fourth down, wait for the CPU's decision. An early formation click waits
+for that decision. If the CPU punts or attempts a field goal, use **EXECUTE PLAY**
+in its decision panel; if it goes for it, choose your defensive formation.
 
 ![Defense Formation Selection](images/defense.png)
 

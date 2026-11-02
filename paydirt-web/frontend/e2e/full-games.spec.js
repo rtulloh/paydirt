@@ -53,6 +53,7 @@ async function completeGame(page, request, gameId) {
   let halftimeCount = 0
   let executeCount = 0
   let kickoffCount = 0
+  let lateCpuConfirmations = 0
   let previousLogLength = 0
   const actions = []
   for (let step = 0; step < 450; step++) {
@@ -82,7 +83,7 @@ async function completeGame(page, request, gameId) {
       console.info('Completed game', gameId, {
         score: [final.home_score, final.away_score], executeCount, kickoffCount, halftimeCount,
       })
-      return { final, actions, executeCount, kickoffCount, halftimeCount }
+      return { final, actions, executeCount, kickoffCount, halftimeCount, lateCpuConfirmations }
     }
     let button
     let endpoint
@@ -121,12 +122,38 @@ async function completeGame(page, request, gameId) {
       endpoint = 'execute'
     }
     await expect(button, 'No available action at step ' + step + ': ' + JSON.stringify(state)).toBeEnabled()
-    const pending = page.waitForResponse(r => r.url().endsWith('/api/game/' + endpoint) && r.request().method() === 'POST')
+    let receivedResponse
+    let responseError
+    const pending = page.waitForResponse(r => r.url().endsWith('/api/game/' + endpoint) && r.request().method() === 'POST', { timeout: 5_000 })
+      .then(response => { receivedResponse = response }, error => { responseError = error })
     await button.click()
-    if (await page.getByText('PUNT OPTIONS', { exact: true }).isVisible()) {
-      await page.getByRole('button', { name: 'NORMAL PUNT', exact: true }).click()
+    // A defense click may only reveal the asynchronously arriving CPU kick
+    // decision. Wait for either execution or the next required UI action.
+    let followup
+    let cpuConfirmation = false
+    await expect.poll(async () => {
+      if (responseError) throw responseError
+      if (receivedResponse) return true
+      const normalPunt = page.getByRole('button', { name: 'NORMAL PUNT', exact: true })
+      const cpuExecute = page.getByRole('button', { name: 'EXECUTE PLAY', exact: true })
+      if (await normalPunt.isVisible()) {
+        followup = normalPunt
+        return true
+      }
+      if (await cpuExecute.isVisible()) {
+        followup = cpuExecute
+        cpuConfirmation = true
+        return true
+      }
+      return false
+    }, { message: 'Action must execute or reveal its confirmation', timeout: 5_000 }).toBe(true)
+    if (!receivedResponse && followup) {
+      await followup.click()
+      if (cpuConfirmation) lateCpuConfirmations++
     }
-    const response = await pending
+    await pending
+    if (responseError) throw responseError
+    const response = receivedResponse
     expect(response.ok(), endpoint + ': ' + await response.text()).toBeTruthy()
     const data = await response.json()
     actions.push(endpoint)
@@ -157,6 +184,31 @@ async function completeGame(page, request, gameId) {
 test('two complete real-engine games in one browser session, home then away', async ({ page, request }, testInfo) => {
   // Each full game gets the normal three-minute budget in this shared session.
   test.setTimeout(2 * 180_000)
+  // Forward genuine engine responses, holding the first CPU kick decision
+  // until a defense click to reproduce the CI panel-arrival race.
+  let decisionHeld = false
+  let lateDecisionExercised = false
+  let delayNextDecision = true
+  let releaseDecision
+  const defenseClicked = new Promise(resolve => { releaseDecision = resolve })
+  await page.exposeBinding('paydirtDefenseClicked', () => {
+    if (decisionHeld) {
+      lateDecisionExercised = true
+      releaseDecision()
+    }
+  })
+  await page.route('**/api/game/cpu-4th-down-decision/**', async route => {
+    const delay = delayNextDecision
+    delayNextDecision = false
+    if (delay) decisionHeld = true
+    const response = await route.fetch()
+    if (delay) {
+      await defenseClicked
+      await new Promise(resolve => setTimeout(resolve, 100))
+      decisionHeld = false
+    }
+    await route.fulfill({ response })
+  })
   const errors = []
   page.on('pageerror', error => errors.push(String(error)))
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()) })
@@ -169,6 +221,11 @@ test('two complete real-engine games in one browser session, home then away', as
   // Make the UI coin toss deterministic and skip cosmetic waits only.
   // The backend RNG, dice outcomes, and full-length game clock are untouched.
   await page.addInitScript(() => {
+    document.addEventListener('click', event => {
+      if (event.target.closest('[data-testid^="defense-play-"]')) {
+        window.paydirtDefenseClicked()
+      }
+    }, true)
     Math.random = () => 0.75 // Heads; test each receive/kick choice explicitly.
     const original = window.setTimeout.bind(window)
     window.setTimeout = (fn, delay, ...args) => original(fn, delay >= 300 && delay <= 2000 ? 0 : delay, ...args)
@@ -185,6 +242,7 @@ test('two complete real-engine games in one browser session, home then away', as
       expect(ids).not.toContain(id)
       ids.push(id)
       const result = await completeGame(page, request, id)
+      if (options.home) expect(result.lateCpuConfirmations).toBeGreaterThan(0)
       await testInfo.attach('game-' + id, { body: JSON.stringify(result, null, 2), contentType: 'application/json' })
       expect(errors).toEqual([])
       await page.getByTestId('new-game-button').click()
@@ -194,7 +252,9 @@ test('two complete real-engine games in one browser session, home then away', as
       })
     }
     expect(ids).toHaveLength(2)
+    expect(lateDecisionExercised).toBe(true)
   } finally {
+    releaseDecision()
     for (const id of ids) await request.delete('http://localhost:8000/api/game/' + id)
   }
 })

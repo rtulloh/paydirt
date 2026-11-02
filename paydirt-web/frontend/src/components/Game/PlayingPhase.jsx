@@ -97,6 +97,8 @@ const PlayingPhase = () => {
   const [pendingPuntPlay, setPendingPuntPlay] = useState(null);
   const [isKickPlay, setIsKickPlay] = useState(false);
   const [cpuGoingForIt, setCpuGoingForIt] = useState(false);
+  const [cpuDecisionRetry, setCpuDecisionRetry] = useState(0);
+  const cpuDecisionPendingRef = useRef(false);
   const [showHalftime, setShowHalftime] = useState(false);
   const halftimeShownRef = useRef(false);
   const cpuPatInFlightRef = useRef(false);
@@ -154,20 +156,25 @@ const PlayingPhase = () => {
 
   // Check for 4th down CPU decision when player is on defense
   useEffect(() => {
-    if (!gameId || localExecuting || isKickoff) return;
+    if (!gameId || localExecuting || isKickoff || gameOver || pendingPat || halftimePending || showHalftime) return;
     if (playerOffense) return;  // Player is on offense, no special handling needed
     if (down !== 4) return;  // Not 4th down
     if (pendingCpuFourthDown) return;  // Already awaiting CPU decision
+    if (cpuGoingForIt) return;  // Use the engine decision already received
     
     // Clear any previous CPU decision
     clearPendingCpuFourthDown();
     
-    // Call CPU 4th down decision
+    // One request owns this rendered situation. Discard its response after
+    // navigation or a newer engine state, including a possession change.
+    let active = true;
+    cpuDecisionPendingRef.current = true;
     const checkCpuDecision = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/game/cpu-4th-down-decision/${gameId}`);
         if (res.ok) {
           const decision = await res.json();
+          if (!active) return;
           if (decision.decision === 'go_for_it') {
             // CPU going for it - player needs to pick defense
             setCpuGoingForIt(true);
@@ -179,12 +186,21 @@ const PlayingPhase = () => {
           }
         }
       } catch (err) {
-        console.error('Failed to get CPU 4th down decision:', err);
+        if (active) console.error('Failed to get CPU 4th down decision:', err);
+      } finally {
+        if (active) cpuDecisionPendingRef.current = false;
       }
     };
     
     checkCpuDecision();
-  }, [gameId, localExecuting, isKickoff, playerOffense, down, pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown, setCpuGoingForIt]);
+    return () => {
+      active = false;
+      cpuDecisionPendingRef.current = false;
+    };
+  }, [gameId, localExecuting, isKickoff, gameOver, pendingPat, halftimePending, showHalftime,
+      playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
+      homeScore, awayScore, homeTimeouts, awayTimeouts, cpuGoingForIt, cpuDecisionRetry,
+      pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
 
   // Clear cpuGoingForIt when down changes away from 4th, possession changes, kickoff, halftime, or game over
   useEffect(() => {
@@ -569,6 +585,7 @@ const PlayingPhase = () => {
     setIsKickPlay(isKick);
     
     setLocalExecuting(true);
+    setCpuGoingForIt(false);
     setLocalLastResult(null);
     setLocalDiceResult(null);
     setLocalIsRolling(false);
@@ -842,25 +859,10 @@ const PlayingPhase = () => {
     // If CPU already decided to punt/FG on 4th down, don't let player pick defense
     if (pendingCpuFourthDown) return;
     
-    // On 4th down, need to check CPU decision first
-    if (down === 4) {
-      // Call CPU decision synchronously - don't allow play until we know the decision
-      fetch(`${API_BASE}/api/game/cpu-4th-down-decision/${gameId}`)
-        .then(res => res.json())
-        .then(decision => {
-          if (decision.decision === 'punt' || decision.decision === 'field_goal') {
-            // CPU decided to kick - show panel
-            setPendingCpuFourthDown(decision);
-          } else {
-            // CPU going for it - execute the play
-            executePlay(play);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to get CPU 4th down decision:', err);
-          // On error, just execute the play
-          executePlay(play);
-        });
+    // Early clicks wait for the existing request. A failed request can be
+    // retried, but a click must not launch a competing coaching query.
+    if (down === 4 && !cpuGoingForIt) {
+      if (!cpuDecisionPendingRef.current) setCpuDecisionRetry(value => value + 1);
       return;
     }
     
