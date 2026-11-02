@@ -1,0 +1,19 @@
+docs/dev-notes/issues/DATA/DATA-006.md
+  s_56c2016c2f0956::t_a756b6af5a28c8 224-235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "293f822ce1115aa8aa04a3189df65b0c4535cdd7",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
