@@ -155,6 +155,8 @@ async function completeGame(page, request, gameId) {
 }
 
 test('two complete real-engine games in one browser session, home then away', async ({ page, request }, testInfo) => {
+  // Each full game gets the normal three-minute budget in this shared session.
+  test.setTimeout(2 * 180_000)
   const errors = []
   page.on('pageerror', error => errors.push(String(error)))
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()) })

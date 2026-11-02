@@ -28,6 +28,12 @@ final scores matching a fresh backend state query. A play/action limit is a
 must clear the log, scores, final/PAT flags, clock, and prior game ID before the
 second game proceeds.
 
+The two-game test has a six-minute total budget (three minutes per full game),
+allowing slower hosted runners to finish both games in the same browser
+session. Other tests keep the default three-minute timeout. Progress checks
+still time out after five seconds, each game still has a 450-action limit,
+and the hosted browser job retains its ten-minute limit; expiry is a failure.
+
 All game-changing actions are rendered UI clicks. The test reads (never writes)
 the Zustand store for progress and log assertions. No API responses are mocked,
 no engine state is injected, and no quarters are shortened. The test-only server
