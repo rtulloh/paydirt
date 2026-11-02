@@ -1,0 +1,83 @@
+.gitignore
+  s_56c2016c2f0956::t_84c3c9a5b6514d 69-76
+docs/README.md
+  s_56c2016c2f0956::t_99b3097734899b 16
+docs/chart-generator.md
+  s_56c2016c2f0956::t_209b045498039f 1,5-206,222,243,270,344-350
+docs/dev-notes/README.md
+  s_56c2016c2f0956::t_067256d763ab05 18-19
+docs/dev-notes/issues/DATA/DATA-003.md
+  s_acfd3acbb73f7e::t_14ac61f3a83d4a 1-38
+docs/dev-notes/issues/DATA/DATA-004.md
+  s_37382b8074964b::t_00adf8ea16d378 1-184
+docs/dev-notes/issues/DATA/DATA-005.md
+  s_56c2016c2f0956::t_e3f5ebdb0b2dbd 1-60
+docs/dev-notes/issues/RULE/RULE-021.md
+  s_56c2016c2f0956::t_e4afc2be8348f2 13,18-21,32-33,43-46
+docs/dev-notes/statistical-chart-generator.md
+  s_56c2016c2f0956::t_7a4f36549b1dbd 1-632
+docs/seasons.md
+  s_56c2016c2f0956::t_6f134b3456f95f 46-57
+generate_charts.py
+  s_56c2016c2f0956::t_3f548b2e0dfe64 1-6
+generate_pfr_charts.py
+  s_56c2016c2f0956::t_f6d6a78edea270 1-311
+paydirt/auto_game.py
+  s_56c2016c2f0956::t_9fd133ea528428 44-47
+paydirt/chart_calibration.py
+  s_56c2016c2f0956::t_7c93105778093f 1-173
+paydirt/chart_generator.py
+  s_56c2016c2f0956::t_a71fd1c4764055 1-1289
+paydirt/empirical_adjustment.py
+  s_56c2016c2f0956::t_d26c2c42673a80 1-435
+paydirt/pfr_play_by_play.py
+  s_56c2016c2f0956::t_d7dfa5f32940d9 1-797
+paydirt/play_resolver.py
+  s_56c2016c2f0956::t_d38e2536c46fe5 206-207,224-238,938-939,1333-1334
+paydirt/season_rules.py
+  s_56c2016c2f0956::t_2b802561e7997f 324-325,339,341,343,345
+tests/test_auto_game.py
+  s_56c2016c2f0956::t_219691954ebf1a 6,17-26
+tests/test_chart_calibration.py
+  s_56c2016c2f0956::t_222acd6fc77734 1-144
+tests/test_chart_generator.py
+  s_56c2016c2f0956::t_1a3fd4582609cc 1-778
+tests/test_empirical_adjustment.py
+  s_56c2016c2f0956::t_c71f241da5d16d 1-121
+tests/test_pfr_play_by_play.py
+  s_56c2016c2f0956::t_01aa4eac27c93e 1-278
+tests/test_season_rules.py
+  s_56c2016c2f0956::t_db39cd7c153bcb 90-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fbef65a24a28f7c98101daa331b51ed6f2075340",
+  "prompts": {},
+  "sessions": {
+    "s_37382b8074964b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a198e9-fa42-7422-94e0-55a96b9df013",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    },
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    },
+    "s_acfd3acbb73f7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18ee6-6b52-72a1-a5fa-fe2fdb9200e7",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
