@@ -1,0 +1,25 @@
+docs/dev-notes/issue-tracker.md
+  s_56c2016c2f0956::t_18ee8830b1556c 10,81,107
+docs/dev-notes/issues/VAL/VAL-014.md
+  s_56c2016c2f0956::t_042a4e2391ff8d 1-59
+paydirt-web/frontend/e2e/README.md
+  s_56c2016c2f0956::t_74ef3240db10c6 31-36
+paydirt-web/frontend/e2e/full-games.spec.js
+  s_56c2016c2f0956::t_10c1a08f431aba 158-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fe6c0e0c3344137a372c9c9be68fa93000d0cdd4",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
