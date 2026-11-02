@@ -1,0 +1,495 @@
+docs/README.md
+  s_56c2016c2f0956::t_f18553429bc77b 17
+docs/chart-generator.md
+  s_56c2016c2f0956::t_231919fd47a156 101-110,127-146,164,182-183,219-224,248-250,263-266,269-290,455-456,460-474
+docs/dev-notes/chart-generator-tuning-tool.md
+  s_56c2016c2f0956::t_70cbee14aedc1e 1-211
+docs/dev-notes/game-audit-2026-11-02.md
+  s_56c2016c2f0956::t_a46c20ef2d5bed 1-114
+docs/dev-notes/generated-chart-completeness-audit.md
+  s_56c2016c2f0956::t_130ab382708eb6 1-215
+docs/dev-notes/issues/AI/AI-003.md
+  s_56c2016c2f0956::t_ba73b4c3a07b8b 25-34,106-108
+docs/dev-notes/issues/AI/AI-006.md
+  s_56c2016c2f0956::t_991fc9baaa7922 31-33
+docs/dev-notes/issues/AI/AI-007.md
+  s_56c2016c2f0956::t_b85d9285d107da 128-130
+docs/dev-notes/issues/AI/AI-011.md
+  s_56c2016c2f0956::t_dfc61df3d53c70 4,8,40-42
+docs/dev-notes/issues/AI/AI-016.md
+  s_56c2016c2f0956::t_51aed83ee4f0b9 36-38
+docs/dev-notes/issues/AI/AI-019.md
+  s_56c2016c2f0956::t_e3c1d539d51d1c 14
+docs/dev-notes/issues/AI/AI-024.md
+  s_56c2016c2f0956::t_a795ae14729738 1-52
+docs/dev-notes/issues/AUD/AUD-002.md
+  s_56c2016c2f0956::t_6269c21779d7b8 4,8,25-27
+docs/dev-notes/issues/AUD/AUD-003.md
+  s_56c2016c2f0956::t_82d6a6199b0534 4,8,101-103
+docs/dev-notes/issues/AUD/AUD-006.md
+  s_56c2016c2f0956::t_0e40edd63e78b8 4,7,9-10,25-32,111-117
+docs/dev-notes/issues/AUD/AUD-018.md
+  s_56c2016c2f0956::t_c74a3e38314076 27-29
+docs/dev-notes/issues/DATA/DATA-006.md
+  s_56c2016c2f0956::t_76d27c247aeabd 15-16
+docs/dev-notes/issues/DATA/DATA-007.md
+  s_56c2016c2f0956::t_61e5e439321358 15
+docs/dev-notes/issues/RULE/RULE-014.md
+  s_56c2016c2f0956::t_1cd1cfde16aa36 45-47
+docs/dev-notes/issues/RULE/RULE-019.md
+  s_56c2016c2f0956::t_386e2b45b895be 14,78-87
+docs/dev-notes/issues/TRACE/TRACE-001.md
+  s_56c2016c2f0956::t_91000a7ec37ee7 25-27
+docs/dev-notes/issues/TRACE/TRACE-003.md
+  s_56c2016c2f0956::t_fbefb2fecc7f2b 33-35
+docs/dev-notes/punt-return-commentary.md
+  s_56c2016c2f0956::t_65109e79372266 1-43
+docs/dev-notes/statistical-chart-generator.md
+  s_56c2016c2f0956::t_51842ed434b3e7 649-696,732-785
+generate_nflverse_charts.py
+  s_56c2016c2f0956::t_3001f79efa9f6d 13,20-21,127-131,141,147,153,159,165,169-178,187-191,202,241,244-247,271-272,276-280,297-302
+generate_pfr_charts.py
+  s_56c2016c2f0956::t_370ffa6df48688 13,20-21,176-180,190,196,202,208,214,218-227,239-243,251,288,291-294,315-316,320-324,342-347
+paydirt/chart_audit.py
+  s_56c2016c2f0956::t_999976c90fb8b9 1-237
+paydirt/chart_calibration.py
+  s_56c2016c2f0956::t_7070db824a5eed 33,64-66,138,141-144
+paydirt/chart_generator.py
+  s_56c2016c2f0956::t_1356826d709540 33-53,56-94,508,518-519,525-532,571,577,583-590,650-653,656,667,670-702,727-732,818,1013-1037,1055,1068-1105,1113,1147-1153,1157-1160,1162-1164,1169-1172,1176-1183,1224-1245,1253-1265,1348,1370,1395,1440,1453-1454,1465-1474,1481,1493-1495,1497-1498,1500-1539
+paydirt/chart_source_coverage.py
+  s_56c2016c2f0956::t_9317c8d0ee7f25 1-47
+paydirt/chart_tuning.py
+  s_56c2016c2f0956::t_7e242a7732c0b5 1-687
+paydirt/nflverse_play_by_play.py
+  s_56c2016c2f0956::t_e86b21f7585469 14-19,102,109-117,191-194,198,209,265-271,283-294,300-320,322-325,329,343-362,375,392-414,472,476-477,483,503-504
+paydirt/pfr_play_by_play.py
+  s_56c2016c2f0956::t_78004e2b082157 316-354,359,369,372-374,538,591-611,631,634-645,647-654,659-677,703-723,725,774-784,786-787,793,814-816
+paydirt/priority_chart.py
+  s_56c2016c2f0956::t_12db08539d38ba 523-528,541
+paydirt/season_rules.py
+  s_56c2016c2f0956::t_d1154c11adb42f 78-92
+seasons/1983-generated/49ers/defense.csv
+  s_56c2016c2f0956::t_59f9c38570e3e5 6,11,16,18,21,26,31
+seasons/1983-generated/49ers/offense.csv
+  s_56c2016c2f0956::t_6f3415e1aa5e10 2-31
+seasons/1983-generated/49ers/special.csv
+  s_56c2016c2f0956::t_cf1d6e814cb82b 2-31
+seasons/1983-generated/Bears/defense.csv
+  s_56c2016c2f0956::t_906d26963239b0 6-8,11,16,18,21-23,26,31
+seasons/1983-generated/Bears/offense.csv
+  s_56c2016c2f0956::t_e1fea797f55955 2-31
+seasons/1983-generated/Bears/special.csv
+  s_56c2016c2f0956::t_43c09fc3c7a3b8 2-31
+seasons/1983-generated/Bengals/defense.csv
+  s_56c2016c2f0956::t_59bd6084548a8d 6,11,18,21,26,31
+seasons/1983-generated/Bengals/offense.csv
+  s_56c2016c2f0956::t_f9ae214e2fc411 2-31
+seasons/1983-generated/Bengals/special.csv
+  s_56c2016c2f0956::t_e8d7a949fad325 2-31
+seasons/1983-generated/Bills/defense.csv
+  s_56c2016c2f0956::t_ae86ff8264e4e3 21
+seasons/1983-generated/Bills/offense.csv
+  s_56c2016c2f0956::t_c425eac2106d0e 2-31
+seasons/1983-generated/Bills/special.csv
+  s_56c2016c2f0956::t_8afb8becfde7dc 2-31
+seasons/1983-generated/Broncos/defense.csv
+  s_56c2016c2f0956::t_5470ba2522da53 6,11,16,18,21,26,31
+seasons/1983-generated/Broncos/offense.csv
+  s_56c2016c2f0956::t_1181abb3b25154 2-31
+seasons/1983-generated/Broncos/special.csv
+  s_56c2016c2f0956::t_e554a3490197e6 2-31
+seasons/1983-generated/Browns/defense.csv
+  s_56c2016c2f0956::t_947c137ac61495 6,11,16,18,21,26,31
+seasons/1983-generated/Browns/offense.csv
+  s_56c2016c2f0956::t_8e7cc3ee3cc245 2-31
+seasons/1983-generated/Browns/special.csv
+  s_56c2016c2f0956::t_6eefa668e1c1a0 2-31
+seasons/1983-generated/Buccaneers/defense.csv
+  s_56c2016c2f0956::t_6481e375206483 6,11,16,18,21,26,31
+seasons/1983-generated/Buccaneers/offense.csv
+  s_56c2016c2f0956::t_729cc7d707bfe1 2-31
+seasons/1983-generated/Buccaneers/special.csv
+  s_56c2016c2f0956::t_1dd4c6eb341501 2-31
+seasons/1983-generated/Cardinals/defense.csv
+  s_56c2016c2f0956::t_5741dedb487993 6,11,16,18,21,26,31
+seasons/1983-generated/Cardinals/offense.csv
+  s_56c2016c2f0956::t_b01432b0e3295b 2-31
+seasons/1983-generated/Cardinals/special.csv
+  s_56c2016c2f0956::t_111d56fa8832f5 2-31
+seasons/1983-generated/Chargers/defense.csv
+  s_56c2016c2f0956::t_5bc81bc6fdf5f3 7-8,11,21-23,26
+seasons/1983-generated/Chargers/offense.csv
+  s_56c2016c2f0956::t_0bad4807f5342f 2-31
+seasons/1983-generated/Chargers/special.csv
+  s_56c2016c2f0956::t_e382992a3a86a4 2-31
+seasons/1983-generated/Chiefs/defense.csv
+  s_56c2016c2f0956::t_01a7859f156dd8 6,11,16,18,21,26,28,31
+seasons/1983-generated/Chiefs/offense.csv
+  s_56c2016c2f0956::t_954b91ec3b0fd4 2-31
+seasons/1983-generated/Chiefs/special.csv
+  s_56c2016c2f0956::t_43264f85187d8d 2-31
+seasons/1983-generated/Colts/defense.csv
+  s_56c2016c2f0956::t_a0feaf49305719 6,11,18,21,26,31
+seasons/1983-generated/Colts/offense.csv
+  s_56c2016c2f0956::t_2e8e14ed2b166a 2-31
+seasons/1983-generated/Colts/special.csv
+  s_56c2016c2f0956::t_000ab330ac1e71 2-31
+seasons/1983-generated/Cowboys/defense.csv
+  s_56c2016c2f0956::t_6729993820a459 6,11,16,18,21,26,31
+seasons/1983-generated/Cowboys/offense.csv
+  s_56c2016c2f0956::t_d49dcafc460a6f 2-31
+seasons/1983-generated/Cowboys/special.csv
+  s_56c2016c2f0956::t_7e2b1e08f5335e 2-31
+seasons/1983-generated/Dolphins/defense.csv
+  s_56c2016c2f0956::t_1917a241ee25bc 6,11,16,18,21,26,31
+seasons/1983-generated/Dolphins/offense.csv
+  s_56c2016c2f0956::t_56ab5613ec89ac 2-31
+seasons/1983-generated/Dolphins/special.csv
+  s_56c2016c2f0956::t_d730b2440962fd 2-31
+seasons/1983-generated/Eagles/defense.csv
+  s_56c2016c2f0956::t_1769063d5e06f9 6
+seasons/1983-generated/Eagles/offense.csv
+  s_56c2016c2f0956::t_32320c86ad6a88 2-31
+seasons/1983-generated/Eagles/special.csv
+  s_56c2016c2f0956::t_28798f1a2143fc 2-31
+seasons/1983-generated/Falcons/defense.csv
+  s_56c2016c2f0956::t_4e381bb200f2e6 11,21,26
+seasons/1983-generated/Falcons/offense.csv
+  s_56c2016c2f0956::t_e6a2b1a7f17ef4 2-31
+seasons/1983-generated/Falcons/special.csv
+  s_56c2016c2f0956::t_8cc1047837e348 2-31
+seasons/1983-generated/Giants/defense.csv
+  s_56c2016c2f0956::t_b398916002185f 6,11,16,18,21,26,31
+seasons/1983-generated/Giants/offense.csv
+  s_56c2016c2f0956::t_62e0f2e012797d 2-31
+seasons/1983-generated/Giants/special.csv
+  s_56c2016c2f0956::t_470291fda9ee17 2-31
+seasons/1983-generated/Jets/defense.csv
+  s_56c2016c2f0956::t_2a0053706f7fc8 3-4,6,8-9,11,13-14,16,18,21,23-24,26,31
+seasons/1983-generated/Jets/offense.csv
+  s_56c2016c2f0956::t_15a33cf0aae547 2-31
+seasons/1983-generated/Jets/special.csv
+  s_56c2016c2f0956::t_570780fdb5326e 2-31
+seasons/1983-generated/Lions/defense.csv
+  s_56c2016c2f0956::t_aab5b9263ff071 6,11,16,18,21,26,31
+seasons/1983-generated/Lions/offense.csv
+  s_56c2016c2f0956::t_b572d2f207f063 2-31
+seasons/1983-generated/Lions/special.csv
+  s_56c2016c2f0956::t_96ffe4f76d6f2d 2-31
+seasons/1983-generated/Oilers/defense.csv
+  s_56c2016c2f0956::t_833a49b0dd2bc8 11,21,26
+seasons/1983-generated/Oilers/offense.csv
+  s_56c2016c2f0956::t_957ac3e51e0e88 2-31
+seasons/1983-generated/Oilers/special.csv
+  s_56c2016c2f0956::t_fcc19500ba775d 2-31
+seasons/1983-generated/Packers/defense.csv
+  s_56c2016c2f0956::t_acbce918f5bfe9 11,18,21,26,31
+seasons/1983-generated/Packers/offense.csv
+  s_56c2016c2f0956::t_06740f7bbf8d45 2-31
+seasons/1983-generated/Packers/special.csv
+  s_56c2016c2f0956::t_af7e04fffea435 2-31
+seasons/1983-generated/Patriots/defense.csv
+  s_56c2016c2f0956::t_a1cadb2b2aaf43 11,21,26,31
+seasons/1983-generated/Patriots/offense.csv
+  s_56c2016c2f0956::t_99ffab51084ee0 2-31
+seasons/1983-generated/Patriots/special.csv
+  s_56c2016c2f0956::t_393730044de936 2-31
+seasons/1983-generated/Raiders/defense.csv
+  s_56c2016c2f0956::t_f7493c0cfd159f 6,11,16,18,21,26,31
+seasons/1983-generated/Raiders/offense.csv
+  s_56c2016c2f0956::t_afe689655cee06 2-31
+seasons/1983-generated/Raiders/special.csv
+  s_56c2016c2f0956::t_029f3e49de87d2 2-31
+seasons/1983-generated/Rams/defense.csv
+  s_56c2016c2f0956::t_d6709225b4c39e 2-3,6,11-13,16,18,21-23,26,31
+seasons/1983-generated/Rams/offense.csv
+  s_56c2016c2f0956::t_6cb86d42d0d18f 2-31
+seasons/1983-generated/Rams/special.csv
+  s_56c2016c2f0956::t_60426d70d62a96 2-31
+seasons/1983-generated/Redskins/defense.csv
+  s_56c2016c2f0956::t_08e9ad9fbe71f7 6,11,16,18,21,26,31
+seasons/1983-generated/Redskins/offense.csv
+  s_56c2016c2f0956::t_06bd0f72a7fe35 2-33
+seasons/1983-generated/Redskins/special.csv
+  s_56c2016c2f0956::t_621eabacfba62c 2-31
+seasons/1983-generated/Saints/defense.csv
+  s_56c2016c2f0956::t_66c00f5e8d55bd 5-6,10-11,15-16,18,20-21,25-26,31
+seasons/1983-generated/Saints/offense.csv
+  s_56c2016c2f0956::t_aff08ab6f3709e 2-31
+seasons/1983-generated/Saints/special.csv
+  s_56c2016c2f0956::t_cf26112d0953a7 2-31
+seasons/1983-generated/Seahawks/defense.csv
+  s_56c2016c2f0956::t_ae904070489344 6,11,16,18,21,26,31
+seasons/1983-generated/Seahawks/offense.csv
+  s_56c2016c2f0956::t_e1f97ba5c2cadd 2-31
+seasons/1983-generated/Seahawks/special.csv
+  s_56c2016c2f0956::t_b99b68a9461487 2-31
+seasons/1983-generated/Steelers/defense.csv
+  s_56c2016c2f0956::t_a8669513a0cf80 6,11,16,18,21,26,28,31
+seasons/1983-generated/Steelers/offense.csv
+  s_56c2016c2f0956::t_aac4fe34d43671 2-31
+seasons/1983-generated/Steelers/special.csv
+  s_56c2016c2f0956::t_b3ccd7989d71fe 2-31
+seasons/1983-generated/Vikings/defense.csv
+  s_56c2016c2f0956::t_f5d4890d83359f 6,11,16,18,21,26,31
+seasons/1983-generated/Vikings/offense.csv
+  s_56c2016c2f0956::t_8fa18336c704f0 2-31
+seasons/1983-generated/Vikings/special.csv
+  s_56c2016c2f0956::t_47c5b2c03aa51e 2-31
+seasons/1983-generated/chart-audit.json
+  s_56c2016c2f0956::t_ae563b8a60f0da 1-647
+seasons/1983-generated/generation-manifest.json
+  s_56c2016c2f0956::t_79d15800c17af0 2-8,15-16,19,21,24,30,32,37,39-42,48-104,108,111-113,117,121-122,127,130,135,139-140,144-145,147-149,153,157-158,162,166-167,171-172,174-176,180-181,184-185,189-190,193-194,207-208,211-212,216,220-221,225-226,229-230,234,238-239,243-244,247-248,252,256-257,261,265-266,270,274-275,279,283-284,288,292-293,297,301-302,306-307,310-311,315-316,318-320,324,328-329,333,337-338,342,346-347,351,355-356
+seasons/2024/49ers/defense.csv
+  s_56c2016c2f0956::t_c08b16dd7e916e 2-31
+seasons/2024/49ers/offense.csv
+  s_56c2016c2f0956::t_2991a0823ac036 2-31
+seasons/2024/49ers/special.csv
+  s_56c2016c2f0956::t_7ac59b5e8c0084 2-31
+seasons/2024/Bears/defense.csv
+  s_56c2016c2f0956::t_80125050d75d2f 6
+seasons/2024/Bears/offense.csv
+  s_56c2016c2f0956::t_38f0f3024d3929 2-31
+seasons/2024/Bears/special.csv
+  s_56c2016c2f0956::t_d1b02de5c9e768 2-31
+seasons/2024/Bengals/defense.csv
+  s_56c2016c2f0956::t_6feb758c3fbf08 2-4,6-9,11-14,16-19,21-24,26-29,31
+seasons/2024/Bengals/offense.csv
+  s_56c2016c2f0956::t_23674d7e4985f3 2-31
+seasons/2024/Bengals/special.csv
+  s_56c2016c2f0956::t_3f32c67d5e5b5f 2-31
+seasons/2024/Bills/defense.csv
+  s_56c2016c2f0956::t_e545aad1056491 2-31
+seasons/2024/Bills/offense.csv
+  s_56c2016c2f0956::t_a1f57edf98ed6d 2-31
+seasons/2024/Bills/special.csv
+  s_56c2016c2f0956::t_ea467f08f6c4b7 2-31
+seasons/2024/Broncos/defense.csv
+  s_56c2016c2f0956::t_338137c2b62e14 2-3,6-8,12-13
+seasons/2024/Broncos/offense.csv
+  s_56c2016c2f0956::t_ee845c1f093349 2-31
+seasons/2024/Broncos/special.csv
+  s_56c2016c2f0956::t_1371f4a23a7282 2-31
+seasons/2024/Browns/defense.csv
+  s_56c2016c2f0956::t_1310ae388bcc7d 2-3,5-8,10-13,15-18,21-23,26-28
+seasons/2024/Browns/offense.csv
+  s_56c2016c2f0956::t_7a4c84fa7ca787 2-31
+seasons/2024/Browns/special.csv
+  s_56c2016c2f0956::t_77fef99f704cce 2-31
+seasons/2024/Buccaneers/defense.csv
+  s_56c2016c2f0956::t_ac573e74ce85d1 6,11,16,21,26
+seasons/2024/Buccaneers/offense.csv
+  s_56c2016c2f0956::t_b5f857b2101d2c 2-31
+seasons/2024/Buccaneers/special.csv
+  s_56c2016c2f0956::t_9e7c7bc499f4b3 2-31
+seasons/2024/Cardinals/defense.csv
+  s_56c2016c2f0956::t_8163462e25cbc4 3-4,6,8-9,11,13-14,16,18-19,21,23-24,26,28-29,31
+seasons/2024/Cardinals/offense.csv
+  s_56c2016c2f0956::t_53eced86f82fe3 2-31
+seasons/2024/Cardinals/special.csv
+  s_56c2016c2f0956::t_3cc889865e8cb1 2-31
+seasons/2024/Chargers/offense.csv
+  s_56c2016c2f0956::t_29ac06c9d8666e 2-31
+seasons/2024/Chargers/special.csv
+  s_56c2016c2f0956::t_2227f8c82bd312 2-31
+seasons/2024/Chiefs/defense.csv
+  s_56c2016c2f0956::t_a48c20ec82daa9 6
+seasons/2024/Chiefs/offense.csv
+  s_56c2016c2f0956::t_4ba65200386e87 2-31
+seasons/2024/Chiefs/special.csv
+  s_56c2016c2f0956::t_e9054d1f980749 2-31
+seasons/2024/Colts/defense.csv
+  s_56c2016c2f0956::t_d7ec790e1ae889 11,21,26
+seasons/2024/Colts/offense.csv
+  s_56c2016c2f0956::t_d634d41d305a4f 2-31
+seasons/2024/Colts/special.csv
+  s_56c2016c2f0956::t_0228424689994d 2-31
+seasons/2024/Commanders/defense.csv
+  s_56c2016c2f0956::t_d71528f565bddb 6,11,16,21,26,31
+seasons/2024/Commanders/offense.csv
+  s_56c2016c2f0956::t_10f156bea1f7cf 2-31
+seasons/2024/Commanders/special.csv
+  s_56c2016c2f0956::t_a2efef70992905 2-31
+seasons/2024/Cowboys/defense.csv
+  s_56c2016c2f0956::t_b6f3e6104aa64e 3-4,6,8-9,13-14,16,21,31
+seasons/2024/Cowboys/offense.csv
+  s_56c2016c2f0956::t_347a80987c58f3 2-31
+seasons/2024/Cowboys/special.csv
+  s_56c2016c2f0956::t_97b0b43acb0216 2-31
+seasons/2024/Dolphins/defense.csv
+  s_56c2016c2f0956::t_95e407526df8f5 4,6,11,14,16,19,21,26,29,31
+seasons/2024/Dolphins/offense.csv
+  s_56c2016c2f0956::t_1e9d76f2617be6 2-31
+seasons/2024/Dolphins/special.csv
+  s_56c2016c2f0956::t_d51d5aa7f30eef 2-31
+seasons/2024/Eagles/defense.csv
+  s_56c2016c2f0956::t_e50a85e98fb0f6 2-4,6,8-9,11-14,16-19,21,23-24,26-28
+seasons/2024/Eagles/offense.csv
+  s_56c2016c2f0956::t_c73f3feaee7e4f 2-31
+seasons/2024/Eagles/special.csv
+  s_56c2016c2f0956::t_b6725b00f47106 2-31
+seasons/2024/Falcons/defense.csv
+  s_56c2016c2f0956::t_7a5f2a9799847b 6,11
+seasons/2024/Falcons/offense.csv
+  s_56c2016c2f0956::t_a18dcdf89e1c10 2-31
+seasons/2024/Falcons/special.csv
+  s_56c2016c2f0956::t_1dadf0fe187674 2-31
+seasons/2024/Giants/defense.csv
+  s_56c2016c2f0956::t_627072c33e470d 2-3,5-8,10-13,15-23,25-26,31
+seasons/2024/Giants/offense.csv
+  s_56c2016c2f0956::t_a1a50ee6bb188e 2-31
+seasons/2024/Giants/special.csv
+  s_56c2016c2f0956::t_9868d79539ed34 2-31
+seasons/2024/Jaguars/defense.csv
+  s_56c2016c2f0956::t_fe84f23b9ff5fb 6,11,16,21,26,31
+seasons/2024/Jaguars/offense.csv
+  s_56c2016c2f0956::t_e83defa8c95fe2 2-33
+seasons/2024/Jaguars/special.csv
+  s_56c2016c2f0956::t_a9b756bc1edd42 2-31
+seasons/2024/Jets/defense.csv
+  s_56c2016c2f0956::t_c0253b90224751 3,5-6,11,13,15-16,21,23,25-26
+seasons/2024/Jets/offense.csv
+  s_56c2016c2f0956::t_61a0d1aa253778 2-31
+seasons/2024/Jets/special.csv
+  s_56c2016c2f0956::t_d8312de1a7b61c 2-31
+seasons/2024/Lions/defense.csv
+  s_56c2016c2f0956::t_d55e2606a5b2ee 20-21
+seasons/2024/Lions/offense.csv
+  s_56c2016c2f0956::t_26f2819a30c79b 2-31
+seasons/2024/Lions/special.csv
+  s_56c2016c2f0956::t_0cbdd1a59c3d24 2-31
+seasons/2024/Packers/defense.csv
+  s_56c2016c2f0956::t_90e45250958003 6,11,16,21,26,31
+seasons/2024/Packers/offense.csv
+  s_56c2016c2f0956::t_a4ee87405ab6e7 2-31
+seasons/2024/Packers/special.csv
+  s_56c2016c2f0956::t_850171efd793c4 2-31
+seasons/2024/Panthers/defense.csv
+  s_56c2016c2f0956::t_d6760bb6ae8a37 6,11,16
+seasons/2024/Panthers/offense.csv
+  s_56c2016c2f0956::t_3e1cfd59e09cf9 2-31
+seasons/2024/Panthers/special.csv
+  s_56c2016c2f0956::t_083681e1e74fb0 2-31
+seasons/2024/Patriots/defense.csv
+  s_56c2016c2f0956::t_78242b830a515a 3-4,6,8-9,11,13-14,16,18-19,21,23-24,26,28-29,31
+seasons/2024/Patriots/offense.csv
+  s_56c2016c2f0956::t_74f716c4878a40 2-31
+seasons/2024/Patriots/special.csv
+  s_56c2016c2f0956::t_623ffc9dee6218 2-31
+seasons/2024/Raiders/defense.csv
+  s_56c2016c2f0956::t_27a515f3bc4edc 3-4,6,8-9,11,13-14,16,18-19,21,23-24,26
+seasons/2024/Raiders/offense.csv
+  s_56c2016c2f0956::t_44788d5e85dc77 2-31
+seasons/2024/Raiders/special.csv
+  s_56c2016c2f0956::t_a7ecf2d6ef0a66 2-31
+seasons/2024/Rams/defense.csv
+  s_56c2016c2f0956::t_588b2816225bd6 2-3,6,11-13,16-18,21,26-28
+seasons/2024/Rams/offense.csv
+  s_56c2016c2f0956::t_5711d74c2b6ce9 2-31
+seasons/2024/Rams/special.csv
+  s_56c2016c2f0956::t_e2da4fe101aa75 2-31
+seasons/2024/Ravens/defense.csv
+  s_56c2016c2f0956::t_544628e7810fa4 6,11,16,19-21,23,26,31
+seasons/2024/Ravens/offense.csv
+  s_56c2016c2f0956::t_0e871df9e4a4df 2-33
+seasons/2024/Ravens/special.csv
+  s_56c2016c2f0956::t_43beabdac63f3a 2-31
+seasons/2024/Saints/defense.csv
+  s_56c2016c2f0956::t_f739efa32bac97 2-3,5-8,10-13,15-18,20-23,25-26,31
+seasons/2024/Saints/offense.csv
+  s_56c2016c2f0956::t_6cb0052b2b11dc 2-33
+seasons/2024/Saints/special.csv
+  s_56c2016c2f0956::t_246c7468775b80 2-31
+seasons/2024/Seahawks/defense.csv
+  s_56c2016c2f0956::t_a6939a0be7440e 4-6,9-11,14-16,19-21,24-26,29-31
+seasons/2024/Seahawks/offense.csv
+  s_56c2016c2f0956::t_d6cf5de1e0de6b 2-31
+seasons/2024/Seahawks/special.csv
+  s_56c2016c2f0956::t_e06c414ba3261d 2-31
+seasons/2024/Steelers/defense.csv
+  s_56c2016c2f0956::t_193e5eedc39e00 2-4,6-8,11-14,16-19,21-23,26,28-29,31
+seasons/2024/Steelers/offense.csv
+  s_56c2016c2f0956::t_ffb6b6f93819cf 2-31
+seasons/2024/Steelers/special.csv
+  s_56c2016c2f0956::t_2a72655681b5fe 2-31
+seasons/2024/Texans/defense.csv
+  s_56c2016c2f0956::t_4203c40682e4db 4,6,11,14,16,19,21,26,29,31
+seasons/2024/Texans/offense.csv
+  s_56c2016c2f0956::t_e888fbaeebb18a 2-31
+seasons/2024/Texans/special.csv
+  s_56c2016c2f0956::t_c9cec36d5bc79d 2-31
+seasons/2024/Titans/defense.csv
+  s_56c2016c2f0956::t_ab034666ea116a 5,15,25
+seasons/2024/Titans/offense.csv
+  s_56c2016c2f0956::t_27fa0a050deaef 2-31
+seasons/2024/Titans/special.csv
+  s_56c2016c2f0956::t_79658a84574ef2 2-31
+seasons/2024/Vikings/defense.csv
+  s_56c2016c2f0956::t_fa5aac84cd6bdb 5-6,10-11,15-16,18,20-21,25-26,31
+seasons/2024/Vikings/offense.csv
+  s_56c2016c2f0956::t_aad1b6c8b4a3a5 2-31
+seasons/2024/Vikings/special.csv
+  s_56c2016c2f0956::t_b5980f718ae280 2-31
+seasons/2024/chart-audit.json
+  s_56c2016c2f0956::t_0cfaffefe399ea 1-644
+seasons/2024/generation-manifest.json
+  s_56c2016c2f0956::t_c2c921c72ea68b 2-8,10,14-15,17,22,24,30,32-35,41-93,97,101,103,106,110,112,115,119,121,124-125,128,130,133,137,139,142,146,148,151,155,157,160,164,166,169,173,175,178,182,184,187,191,193,196,200,202,205-206,209,211,214,218,220,223,227,229,232,236,238,241,245,247,250-251,253-254,256,259,263,265,268,272,274,277,281,283,286,290,292,295,299,301,304,308,310,313,317,319,322,325-326,328,331,334-335,337,340,344,346,349,353,355,358-359,362,364,367,371,373,376,380,382
+seasons/2026/Ironclads/special.csv
+  s_56c2016c2f0956::t_ffb04ea1a195b3 3,7,10-12,14-15,19,21,24,28-30
+seasons/2026/Thunderhawks/special.csv
+  s_56c2016c2f0956::t_7e4dbb10557ccd 5,7,11-13,15-16,22,24,26,31
+tests/test_chart_audit.py
+  s_56c2016c2f0956::t_34c8cf6cd07938 1-117
+tests/test_chart_calibration.py
+  s_56c2016c2f0956::t_89cb2e5ca31b41 145-162
+tests/test_chart_generator.py
+  s_56c2016c2f0956::t_dd43fbd2f766b8 17-21,123-144,582-586,588-590,592-593,676-778,837-838,854,856,915-1176
+tests/test_chart_tuning.py
+  s_56c2016c2f0956::t_ca44c0b4dc7320 1-141
+tests/test_chart_tuning_runner.py
+  s_56c2016c2f0956::t_f4afce6d1bd9cf 1-170
+tests/test_display_play_result.py
+  s_56c2016c2f0956::t_660efaa3f27ca1 664-665
+tests/test_field_goal.py
+  s_56c2016c2f0956::t_fd64a3ef264dde 7,74
+tests/test_generate_nflverse_charts.py
+  s_56c2016c2f0956::t_5be738567e3eea 106-118,134-135
+tests/test_kickoff_penalty_preview.py
+  s_56c2016c2f0956::t_8dcc17d946bc04 1-62
+tests/test_missed_field_goal_era.py
+  s_56c2016c2f0956::t_782b0e7984aee4 1-44
+tests/test_nflverse_play_by_play.py
+  s_56c2016c2f0956::t_032fe7dc21d4af 199-412
+tests/test_oob_priority_chart.py
+  s_56c2016c2f0956::t_cc1842312f0447 103,105
+tests/test_out_of_bounds.py
+  s_56c2016c2f0956::t_a5684f165337e5 242,245,247
+tests/test_pfr_play_by_play.py
+  s_56c2016c2f0956::t_5054f4d1f68465 241-251,290-458
+tests/test_punt_chain_commentary.py
+  s_56c2016c2f0956::t_e3fc0ca3e69497 1-140
+tests/test_sample_team_balance.py
+  s_56c2016c2f0956::t_0ec0bb71a0d6af 105-117
+tests/test_sample_teams.py
+  s_56c2016c2f0956::t_73dd588a7e4a5d 137-153
+tests/test_tune_charts.py
+  s_56c2016c2f0956::t_e6e0cff10fe898 1-56
+tune_charts.py
+  s_56c2016c2f0956::t_7ba770b0a3a9ed 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "86b70c323a88b1ca91a07942538899b36bce249c",
+  "prompts": {},
+  "sessions": {
+    "s_56c2016c2f0956": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19877-7498-7f32-b69e-db460ca1afc8",
+        "model": "unknown"
+      },
+      "human_author": "Rob Tulloh <rtulloh@cloudflare.com>"
+    }
+  }
+}
