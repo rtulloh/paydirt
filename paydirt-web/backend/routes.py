@@ -1149,9 +1149,12 @@ async def execute_play(request: PlayRequest):
         if offense_play is None:
             plan = _cpu_offense_plan(game)
             offense_play = plan[0]
-        elif prepared is not None and prepared[0] == _cpu_offense_context(game):
-            if prepared[1][0] == offense_play:
-                plan = prepared[1]
+        elif (
+            prepared is not None
+            and prepared[0] == _cpu_offense_context(game)
+            and prepared[1][0] == offense_play
+        ):
+            plan = prepared[1]
         game.pop("cpu_offense_plan", None)
         no_huddle = False
         if plan is not None:
