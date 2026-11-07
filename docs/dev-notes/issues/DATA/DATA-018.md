@@ -308,7 +308,9 @@ playoff-frequency differences are deferred until corrected-chart qualification;
 the 512-season packaged-chart campaign is a baseline, not evidence for updated
 charts or a reason to tune team strengths.
 
---- 2026-11-07 18:08 UTC ---
+--- 2026-11-07 18:08 ---
+
+Timestamp above is UTC.
 
 The typed owned zero-credit aborted-field-goal model now preserves recovery
 ownership without rerolling, counts a rushing snap, and records no kick attempt.
@@ -322,7 +324,9 @@ fitted, frozen or qualified. Keep open. The
 [completion boundary](../../historical-source-completion-boundary.md) records the
 remaining evidence categories and an unaccepted bounded missing-data proposal.
 
---- 2026-11-07 18:39 UTC ---
+--- 2026-11-07 18:39 ---
+
+Timestamp above is UTC.
 
 The user authorized explicit historical role/class assumptions. The implemented
 `historical_fumble_class_proxy_v1` preserves all 727 source events and supports
