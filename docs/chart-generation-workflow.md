@@ -85,6 +85,18 @@ wins, then reviewed credit, then the explicit reported proxy. Unknown class,
 recovery or required number remains unsupported. Bare exchanges, return numbers,
 QB position and box residuals cannot fill a missing originating fact.
 
+The separately selected `historical_fumble_class_proxy_v1` adds user-authorized
+modeled role assumptions after supported source facts. An identified QB gain in
+[-1,1] models a rushing snap; a gain below -1 models a sack. For an unknown role,
+below -1 models a QB sack, [-1,1] a QB snap, (1,5] a running back, and above five a
+receiver. Known non-QB positions without supported class and positive QB gains
+above one remain unsupported. The primary gain must still belong to the same
+actor; recovery movement cannot supply it. Projections keep inferred class/role
+outside source facts. PFR manifests and portable source contracts bind the exact
+version-1 `modeled_fumble_assumptions` metadata and counts with unverified-truth
+flags. This policy does not establish the former strict source-completeness claim
+or historical fit; see the [current boundary](dev-notes/historical-source-completion-boundary.md).
+
 Explicit policies also preserve a supported retained fumble followed by an
 incomplete pass as `F INC`. This joint subtype has zero passing credit and no
 modeled physical gain; it is excluded from ordinary F/QT and stochastic recovery
@@ -312,3 +324,21 @@ game-completion and AI audits do not renew those statistical tolerances. Run
 the documented training/held-out workflow again before claiming a fit under
 the revised clock. Sparse symbolic passing-TD experiments remain deferred
 under DATA-015; the current profiles preserve numeric scoring yardage.
+
+The versioned historical option `historical_fumble_class_proxy_v2` additionally
+models known RB/FB, C and WR/TE roles and positive QB rushes, while preserving
+observed-class precedence. Its optional `--fumble-exclusion-policy
+historical_isolated_fumble_exclusions_v1` retains unresolved events in the source
+ledger but omits them uniformly from fitting. Portable manifests and contracts
+must bind the exact assumption and exclusion disclosures, including full/fitted
+counts, event hashes, reasons and team impacts. This modeled scope never asserts
+complete historical source facts or changes accuracy tolerances. See the
+[historical completion boundary](dev-notes/historical-source-completion-boundary.md).
+
+CI validates the committed output through `scripts/audit_public_charts.py` with
+expected cohort counts. This source-free check covers structure, actual decoder
+coverage, loadability and exact mechanics. It does not regenerate historical
+sources or certify historical accuracy. Private source reproduction and deeper
+64-repetition fit checks remain local maintainer evidence; remote source hosting
+and repository URL/SHA variables are not release requirements. Keep raw source
+and local provenance archives out of CI/release artifacts.

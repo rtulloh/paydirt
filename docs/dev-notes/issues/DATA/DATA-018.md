@@ -321,3 +321,39 @@ under `.ai-audits/release-readiness/`. No corrected cohort has been generated,
 fitted, frozen or qualified. Keep open. The
 [completion boundary](../../historical-source-completion-boundary.md) records the
 remaining evidence categories and an unaccepted bounded missing-data proposal.
+
+--- 2026-11-07 18:39 UTC ---
+
+The user authorized explicit historical role/class assumptions. The implemented
+`historical_fumble_class_proxy_v1` preserves all 727 source events and supports
+675 projections (564 unchanged source-tier projections and 111 modeled classes),
+with 52 held and zero conflicts across all 224 games. Modeled additions comprise
+76 identified-QB snaps, nine identified-QB sacks, eighteen unknown-role snaps and
+eight unknown-role sacks. These are modeled statistical categories, not verified
+official credit or physical gain. The remaining holds comprise 29 known non-QB
+class gaps, eighteen incomplete/ambiguous primary-gain clauses, three positive-QB
+gains unsupported by the sack model, one unidentified primary actor, and one
+aborted-field-goal credit gap. Terminal recovery positions are not used as initial
+gain proxies. Portable source contracts now bind exact versioned assumption
+metadata and reconcile modeled class counts. Focused source/model/contract/docs
+validation passes 488 tests; no fit, candidate, accuracy qualification or ticket
+closure follows. See the updated [completion boundary](../../historical-source-completion-boundary.md).
+
+
+2026-11-07: User-authorized version-2 role extensions plus five unambiguous
+reordered sack losses yield 712 projections from all 727 retained source events,
+zero source conflicts. The uniform fitting-only exclusion policy retains 15
+unresolved events with hashes/reasons/team/mechanism counts: 14 primary-gain
+issues and one unknown-credit aborted field goal. Known lost counts are 420 full
+versus 415 fitted; one unknown recovery is excluded. Strict factual completeness
+remains false. Focused synthetic and adapter/portable-contract regression: 450
+passed. No full local regression, push, or historical outcome deletion.
+
+
+2026-11-07: Corrected modeled 28-team/224-game candidate generated from the
+712-event supported fitting population with all727events retained. Fixed source
+normalization completed. Separate64-repetition measurement has two completion
+exceptions under unchanged0.03bounds: SF0.610006vs0.642045; ATL0.601726vs0.633136.
+Other declared team metric bounds passed. Do not represent this as an accuracy
+pass. Fresh256-season outcome report is being run against the frozen candidate;
+source reproduction is in progress. No team tuning or relaxed test expectations.

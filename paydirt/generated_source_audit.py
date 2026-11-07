@@ -327,10 +327,46 @@ def audit_generated_source(
             if manifest.get("diagnostics", {}).get("conflicting_two_point_flags", 0):
                 errors.append("conversion population: conflicting source markers")
         checks["conversion_population"] = len(errors) == before
+    modeled_allowances: dict[str, int] = {}
+    disclosure = manifest.get("fumble_fitting_policy")
+    if disclosure is not None:
+        before = len(errors)
+        try:
+            from .fumble_source import source_record_hash
+            from .historical_fumble_proxy import (
+                POLICY_V2,
+                policy_metadata,
+                validate_fitting_metadata,
+            )
+
+            validate_fitting_metadata(disclosure)
+            if (manifest.get("fumble_gain_policy") != POLICY_V2
+                    or validation_contract is None
+                    or source_record_hash(validation_contract.get("fumble_fitting_policy")) != source_record_hash(disclosure)
+                    or source_record_hash(manifest.get("modeled_fumble_assumptions")) != source_record_hash(
+                        policy_metadata(POLICY_V2, manifest.get("diagnostics", {}))["modeled_fumble_assumptions"])
+                    or source_record_hash(validation_contract.get("modeled_fumble_assumptions")) != source_record_hash(
+                        manifest.get("modeled_fumble_assumptions"))
+                    or disclosure["fitted_unknown_ownership"] != 0
+                    or manifest.get("fumbles") != disclosure["fitted_events"]
+                    or manifest.get("diagnostics", {}).get("active_unsupported_required_fields", 0)):
+                raise ValueError("Modeled fitting population requires exact contract opt-in and complete supported ownership")
+            for name, team in manifest.get("teams", {}).items():
+                source_team = team.get("pfr_team", name)
+                if team.get("fumbles") != disclosure["teams"].get(source_team, {}).get("fitted_events"):
+                    raise ValueError("Modeled fitting team population differs from manifest")
+            modeled_allowances = {
+                "missing_required_gains": disclosure["excluded_by_mechanism"].get("fumble_gain_projection", 0),
+                "unknown_fumble_recoveries": disclosure["full_unknown_ownership"],
+            }
+        except (ValueError, TypeError, KeyError) as error:
+            errors.append(f"modeled fitting eligibility: {error}")
+        checks["modeled_fitting_scope"] = len(errors) == before
+        checks["historical_source_complete"] = False
     for diagnostic in ("unverified_field_goal_box", "unreconciled_field_goal_box",
                        "missing_required_gains", "unknown_fumble_recoveries", "unreconciled_fumble_box"):
         count = manifest.get("diagnostics", {}).get(diagnostic, 0)
-        if not _is_count(count) or count:
+        if not _is_count(count) or count != modeled_allowances.get(diagnostic, 0):
             errors.append(f"source event eligibility: {diagnostic}={count}")
     teams = manifest.get("teams")
     if not isinstance(teams, dict) or not teams:

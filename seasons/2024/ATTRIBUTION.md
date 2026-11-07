@@ -21,3 +21,9 @@ original Paydirt team charts are included.
 These unofficial charts are not endorsed by Sports Reference, nflverse, the NFL,
 Avalon Hill, or the original game designers. Team names and other trademarks belong
 to their respective owners.
+
+## Corrected release scope
+
+The corrected 2024 output retains the user-deferred Ravens rushing-fit exception: absolute yards-per-attempt error 0.417273 versus the unchanged 0.4 tolerance. This is not a passing accuracy claim.
+
+Local byte-bound source reproduction proof exists. Public CI checks committed chart structure, loadability and decoder support; it does not regenerate private sources. Only generated output and a sanitized, hash-bound release summary are published. Raw source, private review records and workbooks are excluded.

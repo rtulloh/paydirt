@@ -195,3 +195,26 @@ def test_offsetting_fouls_erase_snap_without_consuming_a_down(ownership: str) ->
     assert engine.state.down == 2 and not engine.state.home_stats.turnovers
     assert not getattr(outcome.result, "field_goal_snap_fumble", False)
     assert outcome.result.replay_down and not outcome.turnover and not outcome.field_goal_made
+
+
+@pytest.mark.parametrize("ownership", ["KEEP", "LOST"])
+def test_generated_snap_cells_load_and_audit_without_warnings(tmp_path: Path, ownership: str) -> None:
+    import warnings
+
+    from paydirt.chart_audit import audit_season
+    from paydirt.chart_loader import load_team_chart
+
+    stats = TeamSeasonStats.from_dict({"season": 2026, "team_name": "Foxes", "short_name": "FOX"})
+    from dataclasses import replace
+
+    stats = replace(stats, special_teams=replace(stats.special_teams,
+                    field_goal_snap_outcomes=(f"F SNAP {ownership} 0",),
+                    field_goal=replace(stats.special_teams.field_goal, attempts=20)))
+    generate_team_charts(stats, tmp_path / "Foxes", seed=7)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        chart = load_team_chart(tmp_path / "Foxes")
+    assert not caught, [str(item.message) for item in caught]
+    assert f"F SNAP {ownership} 0" in chart.special_teams.field_goal.values()
+    report = audit_season(tmp_path)
+    assert report["passed"], report["errors"]

@@ -1,5 +1,21 @@
 # Paydirt Release Notes
 
+## v1.10.1
+
+- Replace the packaged 1983 and 2024 charts with corrected generated candidates.
+- Add chart viewing and gameplay, clock, penalty, and fumble corrections.
+- Validate committed charts in CI without requiring hosted private source data.
+- Both updated cohorts completed 256 simulated seasons each (132,608 games total).
+
+Known limitations: 1983 uses disclosed modeling assumptions for incomplete records;
+712 of 727 fumble events are fitted, with 15 retained but excluded from fitting.
+Its strict historical-source completeness remains false. Fixed-bound development
+audits retain small completion-rate misses for the 1983 49ers (0.610006 versus
+0.642045) and Falcons (0.601726 versus 0.633136), against tolerance 0.03; 2024
+Ravens rushing averages 5.339045 versus 5.756318 yards, against tolerance 0.4.
+These exceptions remain disclosed; accuracy tolerances have not been widened.
+Simulated postseason frequencies are diagnostics, not forecasts or forced results.
+
 ## v1.10.0
 
 ### Generated Season Charts

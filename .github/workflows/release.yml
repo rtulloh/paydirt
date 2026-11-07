@@ -26,62 +26,40 @@ jobs:
         run: pytest --tb=short -v
 
   chart-quality:
+    # Public committed-chart checks only; private source reproduction stays local.
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         include:
           - directory: 1983-generated
             season: 1983
-            source_url_var: CHART_SOURCES_1983_URL
-            source_sha_var: CHART_SOURCES_1983_SHA256
+            teams: 28
           - directory: '2024'
             season: 2024
-            source_url_var: CHART_SOURCES_2024_URL
-            source_sha_var: CHART_SOURCES_2024_SHA256
+            teams: 32
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.12'
-      - name: Install chart audit dependencies
-        run: python -m pip install pyyaml
-      - name: Stage approved pinned chart sources
-        env:
-          SOURCE_URL: ${{ vars[matrix.source_url_var] }}
-          SOURCE_SHA256: ${{ vars[matrix.source_sha_var] }}
-        run: |
-          if [ -z "$SOURCE_URL" ] || [ -z "$SOURCE_SHA256" ]; then
-            echo "Approved chart source URL and SHA-256 repository variables are required" >&2
-            exit 1
-          fi
-          mkdir -p .ai-audits/chart-sources/${{ matrix.season }}
-          curl --fail --location --proto '=https' --proto-redir '=https' --url "$SOURCE_URL" --output .ai-audits/chart-sources/${{ matrix.season }}/source.tar.gz
-          python scripts/stage_chart_sources.py --archive .ai-audits/chart-sources/${{ matrix.season }}/source.tar.gz --sha256 "$SOURCE_SHA256" --destination .ai-audits/chart-sources/${{ matrix.season }}/bundle > .ai-audits/chart-sources/${{ matrix.season }}/stage.json
-      - name: Independently regenerate approved chart sources
+      - name: Install public chart check dependencies
+        run: python -m pip install pytest pyyaml
+      - name: Verify public chart validation regressions
+        run: python -m pytest tests/test_public_chart_audit.py tests/test_chart_audit.py tests/test_chart_loader.py -q -o addopts= --tb=short
+      - name: Validate every committed chart and engine decoder
         run: >-
-          python scripts/prepare_chart_sources.py
-          --bundle .ai-audits/chart-sources/${{ matrix.season }}/bundle
-          --candidate-dir seasons/${{ matrix.directory }}
-          --reproduced-dir .ai-audits/chart-sources/${{ matrix.season }}/${{ matrix.season }}-reproduced
-          --output .ai-audits/chart-sources/${{ matrix.season }}/source.json
-      - name: Reject inaccurate generated chart behavior
-        run: >-
-          python scripts/audit_generated_charts.py
+          python scripts/audit_public_charts.py
           --season-dir seasons/${{ matrix.directory }}
-          --contract config/chart-validation/${{ matrix.season }}.json
-          --output .ai-audits/chart-quality-${{ matrix.season }}.json
-          --repetitions 64 --workers 2
-      - name: Preserve chart audit evidence
+          --expected-teams ${{ matrix.teams }}
+          --output .ai-audits/public-chart-quality-${{ matrix.season }}.json
+      - name: Preserve public chart validation evidence
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: chart-quality-${{ matrix.season }}
-          path: |
-            .ai-audits/chart-quality-${{ matrix.season }}.json
-            .ai-audits/chart-sources/${{ matrix.season }}/stage.json
-            .ai-audits/chart-sources/${{ matrix.season }}/source.json
+          name: public-chart-quality-${{ matrix.season }}
+          path: .ai-audits/public-chart-quality-${{ matrix.season }}.json
 
   build:
     needs: [test, chart-quality]

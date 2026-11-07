@@ -2,17 +2,31 @@
 
 [Documentation index](README.md) · [Development guide](development.md)
 
-Generated charts must pass behavioral checks before a release. Distinct files,
-valid symbols and completed games do not establish accurate football outcomes.
-The gate runs for both public generated cohorts in pull-request and release CI;
-release builds depend on its success. Failed checks return a nonzero exit status
-and CI preserves the JSON evidence.
+Pull-request and release CI validate both committed generated cohorts using only
+public chart files. Release builds depend on this mandatory `chart-quality` job.
+It checks the complete team count, chart structure, loadability, exact mechanics
+and decoder coverage, and preserves its JSON report. It requires no private
+source host, repository URL/SHA variables, network fetch or source archive.
 
-The current chart-confidence candidate remains **held**. This gate's component
-checks do not yet cover every item in the
-[owner acceptance charter](dev-notes/chart-confidence-agent-charter.md), including
-the complete training/held-out bundle, reference comparison, prospective transfer
-and final frozen-candidate regression. A component pass is not charter readiness.
+```sh
+python3 scripts/audit_public_charts.py --season-dir seasons/1983-generated \
+  --expected-teams 28 --output .ai-audits/public-chart-quality-1983.json
+python3 scripts/audit_public_charts.py --season-dir seasons/2024 \
+  --expected-teams 32 --output .ai-audits/public-chart-quality-2024.json
+```
+
+These public checks do not claim source regeneration or historical accuracy.
+Private source reproduction and the deeper 64-repetition accuracy measurement
+remain local maintainer checks using `scripts/prepare_chart_sources.py` and
+`scripts/audit_generated_charts.py`. Their original checks and accuracy bounds
+remain intact. The corrected modeled 1983 candidate has local reproduction proof
+and explicit completion-rate exceptions for the 49ers and Falcons; the corrected
+2024 candidate has the disclosed Ravens rushing-fit exception. These exceptions
+are reported to the owner, not converted to passing accuracy assertions.
+
+The broader [owner acceptance charter](dev-notes/chart-confidence-agent-charter.md)
+tracks additional research and reference comparisons. Public CI success is not a
+claim that this larger charter or historical source truth has been established.
 
 The raw `audit_chart_decoder(team_dir)` component in `paydirt.chart_audit` checks
 the normalized CSV bytes before a reference comparison. It censuses 73 weighted
@@ -125,21 +139,14 @@ special files. A failed new directory remains diagnostic evidence; remove or
 replace it deliberately before retrying at that path. Staging and preparation
 always retain `release_certified: false`.
 
-Both CI workflows now fetch, stage and independently regenerate before the gate.
-They require approved repository variables `CHART_SOURCES_1983_URL`,
-`CHART_SOURCES_1983_SHA256`, `CHART_SOURCES_2024_URL` and
-`CHART_SOURCES_2024_SHA256`. Missing values fail before download; a changed archive
-fails its pinned digest. HTTPS downloads use the configured URL, and gate commands
-discover the resulting current preparation. CI preserves compact stage/receipt/
-gate JSON, without uploading the source bundle. Configuration variables use the
-[GitHub Actions vars context](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables).
-
-Approved distribution/configuration and the final frozen readiness bundle remain
-outstanding. No remote bundle or repository variables have been configured here;
-the bare checklist commands need successful current preparation or all three explicit source paths.
-Release remains held. Every combined report explicitly retains
-`release_certified: false`; its `passed` field describes these implemented
-components, not the full charter or an owner release decision.
+Private staging and preparation are local maintainer tools. CI does not download
+or independently regenerate their source inputs, and no remote source hosting is
+required for the release path. The byte-bound local proof remains in ignored
+`.ai-audits/`; raw source and private provenance must not be uploaded as CI or
+release artifacts. The combined local audit still requires successful current
+preparation or all three explicit source paths. Every component report retains
+`release_certified: false`; a component pass describes its stated checks, not an
+owner release decision.
 
 The audit defaults both teams to automatic touchback after an own-end-zone
 interception. Add `--attempt-end-zone-interception-returns` to declare that both
@@ -495,3 +502,19 @@ The shared engine-report validator reconciles all raw receipts, official calls, 
 Reports distinguish aggregate metric deltas from the mean of paired repetition deltas. Standard error uses differences between independent source-schedule repetitions; individual plays are not independent samples. A one-repetition training diagnostic has no estimated standard error and cannot satisfy the main gate. Mapped game-pair seeds, score differences, complete exposures, policy-conditioned strength rankings, call/repetition summaries and retained-primary tail denominators support separate outlier review.
 
 A successful CLI result sets only `paired_validated=true` and its corpus consistency verdict. `benchmark_complete`, `source_accepted`, `ready_for_owner_review` and `release_certified` remain false. Full weighted/stateful evidence, material-outlier/exploit adjudication, source fit, seed-use/announcement history, prospective transfer and independent/owner review remain required. Unit fixtures and scaled public gate stubs do not prove actual private or reserved campaigns ran.
+
+## Corrected public release outputs
+
+The maintained `seasons/1983-generated` and `seasons/2024` directories contain the
+corrected reviewed CSV output. Their public release manifests bind every chart
+hash, the original private generation-manifest hash and local reproduction-proof
+hash. They are deliberately sanitized summaries, not portable raw-source manifests.
+Team metadata and rosters are retained; raw source and private event reviews stay
+local. CI validates these committed outputs without private hosting.
+
+The 1983 model fits 712 of 727 retained fumble events; 15 are uniformly excluded
+from fitting only (2.063%). Factual source completeness remains false. Its
+unchanged completion-rate tolerance of 0.03 has two exceptions: 49ers 0.610006
+versus 0.642045, Falcons 0.601726 versus 0.633136. The 2024 Ravens rushing
+YPA absolute error is 0.417273 versus the unchanged 0.4 tolerance. These are
+explicit release limitations, not waived measurements or passing fit assertions.

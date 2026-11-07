@@ -1,47 +1,387 @@
 {
+  "accuracy_bounds_passed": false,
   "calibration_profile": {
-    "pass_completion_adjustment": -0.06,
-    "pass_interception_adjustment": -0.07,
-    "pass_pressure_adjustment": -0.07,
-    "pass_yard_multiplier": 1.55,
-    "run_yard_multiplier": 1.025
+    "pass_completion_adjustment": 0.049,
+    "pass_interception_adjustment": 0.004,
+    "pass_pressure_adjustment": 0.0,
+    "pass_yard_multiplier": 1.37,
+    "run_yard_multiplier": 1.0
   },
-  "diagnostics": {
-    "accepted_penalties": 2802,
-    "declined_penalties": 424,
-    "field_goal_attempts": 775,
-    "heuristic_pass_depth": 16141,
-    "ignored_markers": 1340,
-    "interceptions": 629,
-    "kickoff_out_of_bounds": 59,
-    "nullified_field_goals": 13,
-    "sacks": 1207,
-    "special_teams_penalties": 259,
-    "unattributed_rows": 227,
-    "unclassified_kickoffs": 2,
-    "unclassified_passes": 52,
-    "unclassified_penalties": 52,
-    "unclassified_punts": 10,
-    "unclassified_rows": 598,
-    "unclassified_runs": 2,
-    "unclassified_sacks": 11,
-    "unknown_penalty_play_family": 1128
+  "chart_hashes": {
+    "49ers/defense.csv": "e36ad5aa86e4117d3ff3f5795e2d78ce679e12685bbcba0d33954f2f524e1114",
+    "49ers/offense.csv": "0c0db67ddbcb54c98aaf6e148642efe9f73243143c92cfff199bed06bca1023f",
+    "49ers/special.csv": "1a7dcbce19e40fda01ea3d01ffc5e2b644a52e159480c55aec766a9e7c9914d5",
+    "Bears/defense.csv": "d1f15c85fe965466ad54ffba960746dc8f6ea086e4067688839120bd000a768f",
+    "Bears/offense.csv": "301ba3bafe30d573e5858bf55c4d1d8ba6f61682f7fb4cd69b21170c83842059",
+    "Bears/special.csv": "b6a8de733430de4109a7d44c3504af3994ca84a9d372fe8779ed69f854dd9af2",
+    "Bengals/defense.csv": "1a5185d747398286dc011d2ac166e4329a01a78ee3105c54b8969dd0e4c4503d",
+    "Bengals/offense.csv": "b1caadf2ec1a1a7ed36f385a9d015e39e9adcfb70018ea3c13f95c93601002f7",
+    "Bengals/special.csv": "f5ae4e59df16cfb5c86b5b00c51b3b00e0594301ea5b645460cdf2238d5f3cce",
+    "Bills/defense.csv": "11e648b57e2a56644eb45580d249db1a3eee2f2444b66284f14e67e9c07ee659",
+    "Bills/offense.csv": "db7ff8701eba98469b872eb12605b64de6458725c29fc281a979f5d9f633302a",
+    "Bills/special.csv": "b2e5c3af56eef4a1cfef71242908d576fcf2a32453abaf9a52275d49eb25213c",
+    "Broncos/defense.csv": "7380e2bb0c0418da12dcdef1211c0df464c6f1920e9573d7f2c26c43baac919d",
+    "Broncos/offense.csv": "c8f9915b1301e64a77fd68bef2b67fb688b584e9da10a25e6a934e092cf85b83",
+    "Broncos/special.csv": "ac27d806180aeda7fc7d413e361b278aec503a8b44173bca61fa2015d73ec7f1",
+    "Browns/defense.csv": "7bc9ad32da3aabe4417b767f9bdecb27c0d6fe5bdb1f9029e061f184c1cf8712",
+    "Browns/offense.csv": "8e2fb79bab771288471db704c1d0663f1edfa45413609a42b7c56fb187efa0c0",
+    "Browns/special.csv": "15d4a4abe2f3b2d3258c1446a053fda94524866c70ea99d28ca1f081258c856e",
+    "Buccaneers/defense.csv": "6a395031c8b64a722619d3f460aa8356bbb980259f4e7c00f030c5b1df5e7bbd",
+    "Buccaneers/offense.csv": "84c7fa2bd3e0975dd6ceb498f3e3c16e7035d41114c306dbc18888429a95a352",
+    "Buccaneers/special.csv": "e079a9eba4d3c5759254dc39e049c617b062b67fce9e965000c6dc95e8e6c37a",
+    "Cardinals/defense.csv": "bc4b46296f7b9f0f16442581a42ff4e503cfbff588e8c58264a39327ba7fd049",
+    "Cardinals/offense.csv": "50f4eb27ffece9bf282d243e58bcd4b8947aa8bbea5da1dad41e8695fedd0650",
+    "Cardinals/special.csv": "01a250140c466c65d094446899e8d77aff5ae395abc1cd794cd654941fccfff2",
+    "Chargers/defense.csv": "bec0da0c217dd526ae97d120025e2dbe545c0024d979a74c3cda24bee73f696a",
+    "Chargers/offense.csv": "72bdf1868c605c1a52ea242551dcf8c8e1c867a88636060983a8baebcfd4e273",
+    "Chargers/special.csv": "993831c3794f5d88b2d3461466e1eabef2103c05b183cc1e921f8d6069bfef95",
+    "Chiefs/defense.csv": "37fbacaf914921c4c45290344e2e736e4e27c5674c2f640107d72a1082bb62b2",
+    "Chiefs/offense.csv": "6cc38458c9e8813b1d4bfa5f6b46501a100f2516768232a37649acd0f29a0621",
+    "Chiefs/special.csv": "276efd815bc5f03e4eccd89ad37c65ab8c3f62a2904cb47e278b1ee1a6d08b7b",
+    "Colts/defense.csv": "42f5fc82c29a13849384127e027cf6b3e904f63236d85263cd155e61a4808085",
+    "Colts/offense.csv": "771084efcdb3f05861a0c3fe34606553c30067a933022852927558060137e9d8",
+    "Colts/special.csv": "b4544d8084f0e3ffd718bf5a00398b4ef00179affaeee2044557ddc900a8bd1f",
+    "Cowboys/defense.csv": "8306880b2b4c933476052cd30340791906c6a0f16035f3af14dd75f45f123638",
+    "Cowboys/offense.csv": "81c434cece9928c51e7effdcd1a93088c98dc93a506ab658d281cd2defbdc46d",
+    "Cowboys/special.csv": "d708cc535acedf211411b81d8007c69ed02ca05a527326caf701071b2e82d7aa",
+    "Dolphins/defense.csv": "bf06e167df419ffa906f158ddd255f42b28d85f6f6aa6ce14297d2afcbab9079",
+    "Dolphins/offense.csv": "68439ce260dd4a0c6cc6220ad4279c73f31eb1fdfb51b9553697d6ed17d4071e",
+    "Dolphins/special.csv": "a879ef124da6572c3f0c9ada6552dbcfb34344e172a8c169f052c49a23898265",
+    "Eagles/defense.csv": "47328a4f4b2a70757fd09efa0709a2a04f9a8a63a3f9667db5fdcdc23b64ee65",
+    "Eagles/offense.csv": "b76baebb48b35db41d9aaa34a14d7655bd7f085fc026c9fd7ac22b824bf11f93",
+    "Eagles/special.csv": "77a08281acafba4c7bf565f504e401f12820a0da7ab4c61479f5fb34dcfce99b",
+    "Falcons/defense.csv": "2caa1a108e8901f88f60f9071c6cdcf4efe2fe6c344e55b588b5c8a7559246ba",
+    "Falcons/offense.csv": "52e4405e0ac800af54544456a0c5fc7516fe28c06a5edb3e24bb23a21dda7ca9",
+    "Falcons/special.csv": "e0fd05f018b89cf8a3997851155a6d73f1517899198ddce3b949f60ab2265409",
+    "Giants/defense.csv": "33813535aa86c3a330ed43bbb33259a21331f86e3ee693a7bf27f6b3846b2758",
+    "Giants/offense.csv": "e56d1ecc04668802013a5225976de14130e9e9b5030ac833ff3b1a2756f0e778",
+    "Giants/special.csv": "ee38713e6899909b8b11942cca4f5264fe598044ed456d71192d75fc8df10433",
+    "Jets/defense.csv": "d11ad5535b7e2ba132a94427dc44576df4fd8a2d02756138d568c0cf2858565f",
+    "Jets/offense.csv": "5fef5c9fc2fa5a99e6e93e7ff5785be666c63306c51d3cbd70314d14bd906274",
+    "Jets/special.csv": "dccf7c9248f1888d3b3ffb2c4b0260f584d67ba1bc7a46c42119e31bd91b7f2f",
+    "Lions/defense.csv": "69d91f8418b4b586678ccd8d8f3cf33b4c70e3372055984577a3f373c503fa23",
+    "Lions/offense.csv": "2ec8e7843b16f660ff3a2a9b42ba41b676ce30eb19ebe5e94bde7bdca3c0fac0",
+    "Lions/special.csv": "9ec5dee83b430d537015e4387b8c6fea979201a56c81ac254e441653c7fa6186",
+    "Oilers/defense.csv": "da1bba4ce77fafd8dc0a08d3851f0c40208f04862497e890cc1d48bcb9ba5bd8",
+    "Oilers/offense.csv": "1357c232ad1c51f6f2e77c87e693e38486c4093a0dec1c395e7a9d4c6a745585",
+    "Oilers/special.csv": "677c96cceb83bd03983852c6f0c2d59f700b02220fb9869889e6fd4e35afd3e9",
+    "Packers/defense.csv": "1e684b05d1ca24489bf34484a743174b6e6ac1086b9399b8daf0f59d3610a85d",
+    "Packers/offense.csv": "fa374b3c4833b05c5739e9090da84d632f4168b43c063b9f5f1df8244acacdc2",
+    "Packers/special.csv": "7357c23760d60ebe76a0ab55539ee577686f32e4acc546e80bba9985b9682443",
+    "Patriots/defense.csv": "408ad3ea22323a09738babf4d9d89ecfd7e2846ee444b3d92ec475cb645e2f7a",
+    "Patriots/offense.csv": "68b8f8254c3e6920410c95e6d1bc42fc9330fb93cd7d80803a18c389f300ece7",
+    "Patriots/special.csv": "e5b41e83eef1b83164b777739dfb8f17bfc3e693985dcf5d55efc270dd678c87",
+    "Raiders/defense.csv": "f015ede2b89ef084d904ee8fd6ae7a30f488f033b2808e5b16baf8fb6d327f60",
+    "Raiders/offense.csv": "ee09cc3057c372eccb6d7a518b30219bc64085c2bc5b4526e999e25c8d71d44d",
+    "Raiders/special.csv": "5fc7b07d735b6218a76105a6588ca8cb669c1a7159121861c99c95ff83938c50",
+    "Rams/defense.csv": "34e330502362e325de0d890fb9492762e57d6fb5d67d476da8b2ac4a347d493e",
+    "Rams/offense.csv": "bfe471ca516d11b86de146af77161ee70aeba2093f029ddcea052a68aac31cf2",
+    "Rams/special.csv": "4474f71c344e13dd636ef2e7eed1a09d004f797199661e0eb54e80a236729d54",
+    "Redskins/defense.csv": "83310352f6fc81a27a0a364875b5778de96857144c6db95293eecd42b4aceef4",
+    "Redskins/offense.csv": "e72f5268ead197bdcbf4aa6df0551b9a628917a46e217212a9dca610d2f729c6",
+    "Redskins/special.csv": "a4d3c5630ad963cdaf7f270296286cb8b8b54378ab1e0ad0dbbbaa39ade30778",
+    "Saints/defense.csv": "a17d8e52349080c879aea4318334abb8fba48516c7d00a01ec772dbe347d3af3",
+    "Saints/offense.csv": "27d935eb1d137d473977f5113eb9ee652ff22939b964e92bfb30f0237722195c",
+    "Saints/special.csv": "9b28f479fec5156240585432d425dc190982d1cd4192a29600c6c8a3ae6aed4f",
+    "Seahawks/defense.csv": "da657ef23217d5950fe60023a58765084369dc8ead8da09eb417d1c86fee3ead",
+    "Seahawks/offense.csv": "1fd0740d1a1535c20e99f69ca2ed57621bf7d23729e1f4d62184a2ce20086bb5",
+    "Seahawks/special.csv": "f64b7b9be09e80b41a4557c98261425a0dac72492de75e2eb1d1079bcb704bba",
+    "Steelers/defense.csv": "839ddeef716c8972433616dcf18e265dc99e7a22662dce6af768756d2be7be14",
+    "Steelers/offense.csv": "38fe31a35569a1dbc2f6d50044db3fd45b45b840a6c672393682c1549d9fb222",
+    "Steelers/special.csv": "9dabc2ef20180d35235a815d73737437967c419325e3f6a2f8b6b7e78c41131c",
+    "Vikings/defense.csv": "634adc6ffff77692dd735ff1ff80f0708e6007cb0549b130a16f6e87bf5985fa",
+    "Vikings/offense.csv": "713c7246b8579eba7021b227bca557ac2157fab04bd91ce72caa8997e41944e0",
+    "Vikings/special.csv": "fe7c794efb97dfe7bcd13456284f642cac275b4271dc96f4b0079a47779bd03f"
   },
-  "empirical_outcomes": 40963,
-  "field_goal_attempts": 775,
-  "fumbles": 696,
+  "empirical_outcomes": 40911,
+  "field_goal_attempts": 771,
+  "fumble_fitting_summary": {
+    "contract_version": 1,
+    "excluded_by_mechanism": {
+      "aborted_field_goal_projection": 1,
+      "fumble_gain_projection": 14
+    },
+    "excluded_events": 15,
+    "fitted_events": 712,
+    "fitted_lost": 415,
+    "fitted_unknown_ownership": 0,
+    "full_events": 727,
+    "full_lost": 420,
+    "full_unknown_ownership": 1,
+    "historical_source_complete": false,
+    "modeled_scope_eligible": true,
+    "policy": "historical_isolated_fumble_exclusions_v1",
+    "rate_interpretation": "Fumble/lost-fumble fitting numerators omit exclusions; all source events remain in the ledger. No historical result is omitted.",
+    "selection": "all unresolved fumble projections, independent of team or fit performance",
+    "teams": {
+      "ATL": {
+        "excluded_events": 1,
+        "fitted_events": 26,
+        "fitted_lost": 16,
+        "full_events": 27,
+        "full_lost": 16
+      },
+      "BAL": {
+        "excluded_events": 1,
+        "fitted_events": 20,
+        "fitted_lost": 10,
+        "full_events": 21,
+        "full_lost": 10
+      },
+      "BUF": {
+        "excluded_events": 0,
+        "fitted_events": 13,
+        "fitted_lost": 7,
+        "full_events": 13,
+        "full_lost": 7
+      },
+      "CHI": {
+        "excluded_events": 1,
+        "fitted_events": 21,
+        "fitted_lost": 12,
+        "full_events": 22,
+        "full_lost": 13
+      },
+      "CIN": {
+        "excluded_events": 0,
+        "fitted_events": 25,
+        "fitted_lost": 12,
+        "full_events": 25,
+        "full_lost": 12
+      },
+      "CLE": {
+        "excluded_events": 2,
+        "fitted_events": 18,
+        "fitted_lost": 10,
+        "full_events": 20,
+        "full_lost": 10
+      },
+      "DAL": {
+        "excluded_events": 0,
+        "fitted_events": 22,
+        "fitted_lost": 11,
+        "full_events": 22,
+        "full_lost": 11
+      },
+      "DEN": {
+        "excluded_events": 1,
+        "fitted_events": 25,
+        "fitted_lost": 18,
+        "full_events": 26,
+        "full_lost": 18
+      },
+      "DET": {
+        "excluded_events": 2,
+        "fitted_events": 28,
+        "fitted_lost": 12,
+        "full_events": 30,
+        "full_lost": 13
+      },
+      "GNB": {
+        "excluded_events": 1,
+        "fitted_events": 26,
+        "fitted_lost": 14,
+        "full_events": 27,
+        "full_lost": 14
+      },
+      "HOU": {
+        "excluded_events": 0,
+        "fitted_events": 21,
+        "fitted_lost": 15,
+        "full_events": 21,
+        "full_lost": 15
+      },
+      "KAN": {
+        "excluded_events": 0,
+        "fitted_events": 26,
+        "fitted_lost": 15,
+        "full_events": 26,
+        "full_lost": 15
+      },
+      "MIA": {
+        "excluded_events": 1,
+        "fitted_events": 23,
+        "fitted_lost": 15,
+        "full_events": 24,
+        "full_lost": 15
+      },
+      "MIN": {
+        "excluded_events": 0,
+        "fitted_events": 27,
+        "fitted_lost": 9,
+        "full_events": 27,
+        "full_lost": 9
+      },
+      "NOR": {
+        "excluded_events": 0,
+        "fitted_events": 28,
+        "fitted_lost": 18,
+        "full_events": 28,
+        "full_lost": 18
+      },
+      "NWE": {
+        "excluded_events": 0,
+        "fitted_events": 31,
+        "fitted_lost": 17,
+        "full_events": 31,
+        "full_lost": 17
+      },
+      "NYG": {
+        "excluded_events": 1,
+        "fitted_events": 26,
+        "fitted_lost": 21,
+        "full_events": 27,
+        "full_lost": 22
+      },
+      "NYJ": {
+        "excluded_events": 1,
+        "fitted_events": 19,
+        "fitted_lost": 15,
+        "full_events": 20,
+        "full_lost": 16
+      },
+      "PHI": {
+        "excluded_events": 0,
+        "fitted_events": 28,
+        "fitted_lost": 14,
+        "full_events": 28,
+        "full_lost": 14
+      },
+      "PIT": {
+        "excluded_events": 0,
+        "fitted_events": 30,
+        "fitted_lost": 18,
+        "full_events": 30,
+        "full_lost": 18
+      },
+      "RAI": {
+        "excluded_events": 1,
+        "fitted_events": 32,
+        "fitted_lost": 21,
+        "full_events": 33,
+        "full_lost": 21
+      },
+      "RAM": {
+        "excluded_events": 1,
+        "fitted_events": 26,
+        "fitted_lost": 19,
+        "full_events": 27,
+        "full_lost": 20
+      },
+      "SDG": {
+        "excluded_events": 0,
+        "fitted_events": 33,
+        "fitted_lost": 18,
+        "full_events": 33,
+        "full_lost": 18
+      },
+      "SEA": {
+        "excluded_events": 1,
+        "fitted_events": 31,
+        "fitted_lost": 20,
+        "full_events": 32,
+        "full_lost": 20
+      },
+      "SFO": {
+        "excluded_events": 0,
+        "fitted_events": 26,
+        "fitted_lost": 19,
+        "full_events": 26,
+        "full_lost": 19
+      },
+      "STL": {
+        "excluded_events": 0,
+        "fitted_events": 41,
+        "fitted_lost": 22,
+        "full_events": 41,
+        "full_lost": 22
+      },
+      "TAM": {
+        "excluded_events": 0,
+        "fitted_events": 29,
+        "fitted_lost": 11,
+        "full_events": 29,
+        "full_lost": 11
+      },
+      "WAS": {
+        "excluded_events": 0,
+        "fitted_events": 11,
+        "fitted_lost": 6,
+        "full_events": 11,
+        "full_lost": 6
+      }
+    },
+    "terminal_recovery_gain_proxy": false
+  },
+  "fumble_gain_policy": "historical_fumble_class_proxy_v2",
+  "fumbles": 712,
   "games": 224,
+  "historical_source_complete": false,
+  "known_accuracy_exceptions": [
+    {
+      "measured": 0.610006,
+      "metric": "completion_rate",
+      "target": 0.642045,
+      "team": "49ers",
+      "tolerance": 0.03
+    },
+    {
+      "measured": 0.601726,
+      "metric": "completion_rate",
+      "target": 0.633136,
+      "team": "Falcons",
+      "tolerance": 0.03
+    }
+  ],
+  "local_source_reproduction": {
+    "passed": true,
+    "public_ci_regenerated_sources": false,
+    "receipt_sha256": "c871a9c7d7bfc952f2f887da74c5a7e5e224dbaf653886a20da92161aae192c3"
+  },
+  "modeled_fumble_assumptions": {
+    "class_counts": {
+      "assumed_center_snap": 7,
+      "assumed_known_receiver": 2,
+      "assumed_known_running_back": 20,
+      "assumed_qb_rush": 3,
+      "assumed_qb_sack": 9,
+      "assumed_qb_snap": 76,
+      "assumed_unknown_role_qb_sack": 8,
+      "assumed_unknown_role_qb_snap": 18,
+      "reordered_source_sack": 5
+    },
+    "contract_version": 2,
+    "identified_qb": "[-1,1] snap; below -1 sack; above 1 rush",
+    "interpretation": "User-authorized modeled classifications; source credit, actor, recovery and movement facts remain separate",
+    "known_non_qb_without_source_class": "RB/FB rush; C snap; WR/TE reception",
+    "modeled_events": 148,
+    "physical_gain_truth_verified": false,
+    "policy": "historical_fumble_class_proxy_v2",
+    "precedence": "reviewed and explicit source class before role assumptions; physical gain before credit before reported gain",
+    "source_class_truth_verified": false,
+    "statistical_categories": {
+      "qb_sack": "sack",
+      "qb_snap": "rushing",
+      "receiver": "receiving",
+      "running_back": "rushing"
+    },
+    "terminal_recovery_gain_proxy": false,
+    "unknown_role": "below -1 sack; [-1,1] snap; (1,5] running back; above 5 receiver"
+  },
   "opponent_adjustment": {
     "average_defense_effect": 0.0,
     "model": "league additive offense plus defense effects",
-    "pass_completion_adjustment": -0.06,
+    "pass_completion_adjustment": 0.049,
     "pass_event_baseline": "aggregate engine calibration",
-    "pass_interception_adjustment": -0.07,
-    "pass_pressure_adjustment": -0.07,
-    "pass_yard_multiplier": 1.55,
-    "run_yard_multiplier": 1.025,
+    "pass_interception_adjustment": 0.004,
+    "pass_pressure_adjustment": 0.0,
+    "pass_yard_multiplier": 1.37,
+    "run_yard_multiplier": 1.0,
     "shrinkage": 24.0
   },
+  "original_generation_manifest_sha256": "af75b6da0cede17edfc0c401500d4ded41bfd6fdd5c672f3d4efa83b9bc138b6",
+  "public_manifest_schema_version": 1,
+  "scope": "Public release summary of reviewed generated outputs; private source inputs and full local generation proof are deliberately not published. CI checks committed chart structure and decoder support, not historical source regeneration.",
   "season": 1983,
   "seed": 8306,
   "source": "Pro Football Reference full play-by-play archived by the Wayback Machine",
@@ -86,7 +426,6 @@
     },
     "modeled_missing_features": [
       "field_goal_block",
-      "field_goal_fumble",
       "interception_return_fumble",
       "offense_oob",
       "punt_fair_catch",
@@ -94,7 +433,7 @@
     ],
     "observed_annotations": {
       "field_goal_block": 0,
-      "field_goal_fumble": 0,
+      "field_goal_fumble": 3,
       "interception_return_fumble": 0,
       "kickoff_out": 59,
       "offense_oob": 0,
@@ -105,103 +444,158 @@
   "source_rows": 39354,
   "teams": {
     "49ers": {
-      "empirical_outcomes": 1439,
+      "empirical_outcomes": 1435,
       "fallback_columns": 1,
       "field_goal_attempts": 30,
       "fumbles": 26,
-      "generated_empirical_outcomes": 1434,
-      "opponent_adjusted_outcomes": 1439,
-      "pfr_team": "SFO"
+      "generated_empirical_outcomes": 1430,
+      "opponent_adjusted_outcomes": 1435,
+      "pfr_team": "SFO",
+      "source_event_counts": {
+        "field_goal_attempts": 30,
+        "interceptions": 12,
+        "sacks": 33
+      }
     },
     "Bears": {
-      "empirical_outcomes": 1522,
+      "empirical_outcomes": 1523,
       "fallback_columns": 1,
-      "field_goal_attempts": 26,
+      "field_goal_attempts": 25,
       "fumbles": 21,
-      "generated_empirical_outcomes": 1517,
-      "opponent_adjusted_outcomes": 1522,
-      "pfr_team": "CHI"
+      "generated_empirical_outcomes": 1518,
+      "opponent_adjusted_outcomes": 1523,
+      "pfr_team": "CHI",
+      "source_event_counts": {
+        "field_goal_attempts": 25,
+        "interceptions": 22,
+        "sacks": 53
+      }
     },
     "Bengals": {
-      "empirical_outcomes": 1421,
+      "empirical_outcomes": 1420,
       "fallback_columns": 2,
       "field_goal_attempts": 23,
       "fumbles": 25,
-      "generated_empirical_outcomes": 1414,
-      "opponent_adjusted_outcomes": 1421,
-      "pfr_team": "CIN"
+      "generated_empirical_outcomes": 1413,
+      "opponent_adjusted_outcomes": 1420,
+      "pfr_team": "CIN",
+      "source_event_counts": {
+        "field_goal_attempts": 23,
+        "interceptions": 18,
+        "sacks": 40
+      }
     },
     "Bills": {
-      "empirical_outcomes": 1459,
+      "empirical_outcomes": 1454,
       "fallback_columns": 1,
       "field_goal_attempts": 26,
-      "fumbles": 12,
-      "generated_empirical_outcomes": 1449,
-      "opponent_adjusted_outcomes": 1459,
-      "pfr_team": "BUF"
+      "fumbles": 13,
+      "generated_empirical_outcomes": 1444,
+      "opponent_adjusted_outcomes": 1454,
+      "pfr_team": "BUF",
+      "source_event_counts": {
+        "field_goal_attempts": 26,
+        "interceptions": 28,
+        "sacks": 37
+      }
     },
     "Broncos": {
-      "empirical_outcomes": 1482,
+      "empirical_outcomes": 1480,
       "fallback_columns": 2,
       "field_goal_attempts": 25,
       "fumbles": 25,
-      "generated_empirical_outcomes": 1476,
-      "opponent_adjusted_outcomes": 1482,
-      "pfr_team": "DEN"
+      "generated_empirical_outcomes": 1473,
+      "opponent_adjusted_outcomes": 1480,
+      "pfr_team": "DEN",
+      "source_event_counts": {
+        "field_goal_attempts": 25,
+        "interceptions": 22,
+        "sacks": 55
+      }
     },
     "Browns": {
-      "empirical_outcomes": 1483,
+      "empirical_outcomes": 1478,
       "fallback_columns": 1,
       "field_goal_attempts": 25,
       "fumbles": 18,
-      "generated_empirical_outcomes": 1480,
-      "opponent_adjusted_outcomes": 1483,
-      "pfr_team": "CLE"
+      "generated_empirical_outcomes": 1475,
+      "opponent_adjusted_outcomes": 1478,
+      "pfr_team": "CLE",
+      "source_event_counts": {
+        "field_goal_attempts": 25,
+        "interceptions": 28,
+        "sacks": 33
+      }
     },
     "Buccaneers": {
-      "empirical_outcomes": 1420,
+      "empirical_outcomes": 1416,
       "fallback_columns": 1,
       "field_goal_attempts": 24,
       "fumbles": 29,
-      "generated_empirical_outcomes": 1418,
-      "opponent_adjusted_outcomes": 1420,
-      "pfr_team": "TAM"
+      "generated_empirical_outcomes": 1414,
+      "opponent_adjusted_outcomes": 1416,
+      "pfr_team": "TAM",
+      "source_event_counts": {
+        "field_goal_attempts": 24,
+        "interceptions": 24,
+        "sacks": 49
+      }
     },
     "Cardinals": {
-      "empirical_outcomes": 1514,
+      "empirical_outcomes": 1516,
       "fallback_columns": 2,
-      "field_goal_attempts": 29,
-      "fumbles": 39,
-      "generated_empirical_outcomes": 1508,
-      "opponent_adjusted_outcomes": 1514,
-      "pfr_team": "STL"
+      "field_goal_attempts": 28,
+      "fumbles": 41,
+      "generated_empirical_outcomes": 1509,
+      "opponent_adjusted_outcomes": 1516,
+      "pfr_team": "STL",
+      "source_event_counts": {
+        "field_goal_attempts": 28,
+        "interceptions": 21,
+        "sacks": 59
+      }
     },
     "Chargers": {
-      "empirical_outcomes": 1459,
+      "empirical_outcomes": 1460,
       "fallback_columns": 2,
       "field_goal_attempts": 24,
-      "fumbles": 31,
-      "generated_empirical_outcomes": 1452,
-      "opponent_adjusted_outcomes": 1459,
-      "pfr_team": "SDG"
+      "fumbles": 33,
+      "generated_empirical_outcomes": 1453,
+      "opponent_adjusted_outcomes": 1460,
+      "pfr_team": "SDG",
+      "source_event_counts": {
+        "field_goal_attempts": 24,
+        "interceptions": 33,
+        "sacks": 28
+      }
     },
     "Chiefs": {
-      "empirical_outcomes": 1526,
+      "empirical_outcomes": 1522,
       "fallback_columns": 2,
       "field_goal_attempts": 30,
-      "fumbles": 25,
-      "generated_empirical_outcomes": 1515,
-      "opponent_adjusted_outcomes": 1526,
-      "pfr_team": "KAN"
+      "fumbles": 26,
+      "generated_empirical_outcomes": 1511,
+      "opponent_adjusted_outcomes": 1522,
+      "pfr_team": "KAN",
+      "source_event_counts": {
+        "field_goal_attempts": 30,
+        "interceptions": 19,
+        "sacks": 46
+      }
     },
     "Colts": {
-      "empirical_outcomes": 1448,
+      "empirical_outcomes": 1442,
       "fallback_columns": 1,
       "field_goal_attempts": 35,
       "fumbles": 20,
-      "generated_empirical_outcomes": 1442,
-      "opponent_adjusted_outcomes": 1448,
-      "pfr_team": "BAL"
+      "generated_empirical_outcomes": 1436,
+      "opponent_adjusted_outcomes": 1442,
+      "pfr_team": "BAL",
+      "source_event_counts": {
+        "field_goal_attempts": 35,
+        "interceptions": 22,
+        "sacks": 47
+      }
     },
     "Cowboys": {
       "empirical_outcomes": 1554,
@@ -210,152 +604,236 @@
       "fumbles": 22,
       "generated_empirical_outcomes": 1550,
       "opponent_adjusted_outcomes": 1554,
-      "pfr_team": "DAL"
+      "pfr_team": "DAL",
+      "source_event_counts": {
+        "field_goal_attempts": 27,
+        "interceptions": 25,
+        "sacks": 37
+      }
     },
     "Dolphins": {
       "empirical_outcomes": 1412,
-      "fallback_columns": 1,
-      "field_goal_attempts": 28,
-      "fumbles": 22,
-      "generated_empirical_outcomes": 1405,
+      "fallback_columns": 2,
+      "field_goal_attempts": 27,
+      "fumbles": 23,
+      "generated_empirical_outcomes": 1404,
       "opponent_adjusted_outcomes": 1412,
-      "pfr_team": "MIA"
+      "pfr_team": "MIA",
+      "source_event_counts": {
+        "field_goal_attempts": 27,
+        "interceptions": 11,
+        "sacks": 23
+      }
     },
     "Eagles": {
-      "empirical_outcomes": 1327,
+      "empirical_outcomes": 1326,
       "fallback_columns": 2,
       "field_goal_attempts": 26,
       "fumbles": 28,
-      "generated_empirical_outcomes": 1320,
-      "opponent_adjusted_outcomes": 1327,
-      "pfr_team": "PHI"
+      "generated_empirical_outcomes": 1319,
+      "opponent_adjusted_outcomes": 1326,
+      "pfr_team": "PHI",
+      "source_event_counts": {
+        "field_goal_attempts": 26,
+        "interceptions": 18,
+        "sacks": 57
+      }
     },
     "Falcons": {
-      "empirical_outcomes": 1450,
+      "empirical_outcomes": 1447,
       "fallback_columns": 1,
       "field_goal_attempts": 22,
       "fumbles": 26,
-      "generated_empirical_outcomes": 1444,
-      "opponent_adjusted_outcomes": 1450,
-      "pfr_team": "ATL"
+      "generated_empirical_outcomes": 1441,
+      "opponent_adjusted_outcomes": 1447,
+      "pfr_team": "ATL",
+      "source_event_counts": {
+        "field_goal_attempts": 22,
+        "interceptions": 10,
+        "sacks": 55
+      }
     },
     "Giants": {
-      "empirical_outcomes": 1582,
+      "empirical_outcomes": 1581,
       "fallback_columns": 2,
       "field_goal_attempts": 42,
-      "fumbles": 25,
-      "generated_empirical_outcomes": 1574,
-      "opponent_adjusted_outcomes": 1582,
-      "pfr_team": "NYG"
+      "fumbles": 26,
+      "generated_empirical_outcomes": 1573,
+      "opponent_adjusted_outcomes": 1581,
+      "pfr_team": "NYG",
+      "source_event_counts": {
+        "field_goal_attempts": 42,
+        "interceptions": 31,
+        "sacks": 49
+      }
     },
     "Jets": {
-      "empirical_outcomes": 1452,
+      "empirical_outcomes": 1449,
       "fallback_columns": 1,
       "field_goal_attempts": 24,
       "fumbles": 19,
-      "generated_empirical_outcomes": 1448,
-      "opponent_adjusted_outcomes": 1452,
-      "pfr_team": "NYJ"
+      "generated_empirical_outcomes": 1445,
+      "opponent_adjusted_outcomes": 1449,
+      "pfr_team": "NYJ",
+      "source_event_counts": {
+        "field_goal_attempts": 24,
+        "interceptions": 28,
+        "sacks": 43
+      }
     },
     "Lions": {
-      "empirical_outcomes": 1468,
+      "empirical_outcomes": 1466,
       "fallback_columns": 1,
       "field_goal_attempts": 32,
-      "fumbles": 27,
-      "generated_empirical_outcomes": 1456,
-      "opponent_adjusted_outcomes": 1468,
-      "pfr_team": "DET"
+      "fumbles": 28,
+      "generated_empirical_outcomes": 1454,
+      "opponent_adjusted_outcomes": 1466,
+      "pfr_team": "DET",
+      "source_event_counts": {
+        "field_goal_attempts": 32,
+        "interceptions": 23,
+        "sacks": 45
+      }
     },
     "Oilers": {
-      "empirical_outcomes": 1414,
+      "empirical_outcomes": 1411,
       "fallback_columns": 1,
       "field_goal_attempts": 21,
       "fumbles": 21,
-      "generated_empirical_outcomes": 1408,
-      "opponent_adjusted_outcomes": 1414,
-      "pfr_team": "HOU"
+      "generated_empirical_outcomes": 1405,
+      "opponent_adjusted_outcomes": 1411,
+      "pfr_team": "HOU",
+      "source_event_counts": {
+        "field_goal_attempts": 21,
+        "interceptions": 29,
+        "sacks": 49
+      }
     },
     "Packers": {
-      "empirical_outcomes": 1439,
+      "empirical_outcomes": 1435,
       "fallback_columns": 1,
       "field_goal_attempts": 26,
-      "fumbles": 25,
-      "generated_empirical_outcomes": 1432,
-      "opponent_adjusted_outcomes": 1439,
-      "pfr_team": "GNB"
+      "fumbles": 26,
+      "generated_empirical_outcomes": 1428,
+      "opponent_adjusted_outcomes": 1435,
+      "pfr_team": "GNB",
+      "source_event_counts": {
+        "field_goal_attempts": 26,
+        "interceptions": 32,
+        "sacks": 42
+      }
     },
     "Patriots": {
-      "empirical_outcomes": 1366,
+      "empirical_outcomes": 1363,
       "fallback_columns": 1,
       "field_goal_attempts": 22,
-      "fumbles": 30,
-      "generated_empirical_outcomes": 1363,
-      "opponent_adjusted_outcomes": 1366,
-      "pfr_team": "NWE"
+      "fumbles": 31,
+      "generated_empirical_outcomes": 1360,
+      "opponent_adjusted_outcomes": 1363,
+      "pfr_team": "NWE",
+      "source_event_counts": {
+        "field_goal_attempts": 22,
+        "interceptions": 18,
+        "sacks": 45
+      }
     },
     "Raiders": {
-      "empirical_outcomes": 1539,
+      "empirical_outcomes": 1538,
       "fallback_columns": 1,
       "field_goal_attempts": 27,
-      "fumbles": 31,
-      "generated_empirical_outcomes": 1537,
-      "opponent_adjusted_outcomes": 1539,
-      "pfr_team": "RAI"
+      "fumbles": 32,
+      "generated_empirical_outcomes": 1536,
+      "opponent_adjusted_outcomes": 1538,
+      "pfr_team": "RAI",
+      "source_event_counts": {
+        "field_goal_attempts": 27,
+        "interceptions": 24,
+        "sacks": 55
+      }
     },
     "Rams": {
-      "empirical_outcomes": 1405,
+      "empirical_outcomes": 1404,
       "fallback_columns": 2,
-      "field_goal_attempts": 21,
+      "field_goal_attempts": 20,
       "fumbles": 26,
-      "generated_empirical_outcomes": 1397,
-      "opponent_adjusted_outcomes": 1405,
-      "pfr_team": "RAM"
+      "generated_empirical_outcomes": 1395,
+      "opponent_adjusted_outcomes": 1404,
+      "pfr_team": "RAM",
+      "source_event_counts": {
+        "field_goal_attempts": 20,
+        "interceptions": 23,
+        "sacks": 23
+      }
     },
     "Redskins": {
-      "empirical_outcomes": 1558,
+      "empirical_outcomes": 1556,
       "fallback_columns": 2,
       "field_goal_attempts": 47,
-      "fumbles": 10,
-      "generated_empirical_outcomes": 1553,
-      "opponent_adjusted_outcomes": 1558,
-      "pfr_team": "WAS"
+      "fumbles": 11,
+      "generated_empirical_outcomes": 1551,
+      "opponent_adjusted_outcomes": 1556,
+      "pfr_team": "WAS",
+      "source_event_counts": {
+        "field_goal_attempts": 47,
+        "interceptions": 11,
+        "sacks": 35
+      }
     },
     "Saints": {
-      "empirical_outcomes": 1424,
+      "empirical_outcomes": 1426,
       "fallback_columns": 1,
       "field_goal_attempts": 24,
-      "fumbles": 26,
-      "generated_empirical_outcomes": 1420,
-      "opponent_adjusted_outcomes": 1424,
-      "pfr_team": "NOR"
+      "fumbles": 28,
+      "generated_empirical_outcomes": 1422,
+      "opponent_adjusted_outcomes": 1426,
+      "pfr_team": "NOR",
+      "source_event_counts": {
+        "field_goal_attempts": 24,
+        "interceptions": 25,
+        "sacks": 35
+      }
     },
     "Seahawks": {
-      "empirical_outcomes": 1445,
+      "empirical_outcomes": 1447,
       "fallback_columns": 1,
       "field_goal_attempts": 25,
-      "fumbles": 30,
-      "generated_empirical_outcomes": 1443,
-      "opponent_adjusted_outcomes": 1445,
-      "pfr_team": "SEA"
+      "fumbles": 31,
+      "generated_empirical_outcomes": 1445,
+      "opponent_adjusted_outcomes": 1447,
+      "pfr_team": "SEA",
+      "source_event_counts": {
+        "field_goal_attempts": 25,
+        "interceptions": 18,
+        "sacks": 47
+      }
     },
     "Steelers": {
-      "empirical_outcomes": 1484,
+      "empirical_outcomes": 1478,
       "fallback_columns": 1,
       "field_goal_attempts": 31,
       "fumbles": 30,
-      "generated_empirical_outcomes": 1481,
-      "opponent_adjusted_outcomes": 1484,
-      "pfr_team": "PIT"
+      "generated_empirical_outcomes": 1474,
+      "opponent_adjusted_outcomes": 1478,
+      "pfr_team": "PIT",
+      "source_event_counts": {
+        "field_goal_attempts": 31,
+        "interceptions": 23,
+        "sacks": 52
+      }
     },
     "Vikings": {
-      "empirical_outcomes": 1471,
+      "empirical_outcomes": 1472,
       "fallback_columns": 1,
       "field_goal_attempts": 33,
       "fumbles": 27,
-      "generated_empirical_outcomes": 1469,
-      "opponent_adjusted_outcomes": 1471,
-      "pfr_team": "MIN"
+      "generated_empirical_outcomes": 1470,
+      "opponent_adjusted_outcomes": 1472,
+      "pfr_team": "MIN",
+      "source_event_counts": {
+        "field_goal_attempts": 33,
+        "interceptions": 22,
+        "sacks": 43
+      }
     }
-  },
-  "through_date": 19831219
+  }
 }

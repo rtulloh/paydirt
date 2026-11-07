@@ -183,9 +183,9 @@ def test_cli_collects_repeat_policy_as_mechanics_stress(tmp_path, monkeypatch, p
 def test_workflows_enforce_both_public_generated_cohorts(workflow: str) -> None:
     root = Path(__file__).resolve().parents[1]
     text = (root / ".github" / "workflows" / workflow).read_text()
-    assert "scripts/audit_generated_charts.py" in text
+    assert "scripts/audit_public_charts.py" in text
     assert "1983-generated" in text and "2024" in text
-    assert "--repetitions 64" in text
+    assert "--expected-teams" in text
     assert "continue-on-error" not in text[text.index("  chart-quality:"):].split("\n  build:")[0]
 
 

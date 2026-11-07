@@ -65,6 +65,7 @@ def _classify_directory(
     event_counts: dict[str, Counter[str]] | None = None,
     event_reconciliations: EventReconciliations | None = None,
     fumble_gain_policy: str | None = None,
+    fumble_exclusion_policy: str | None = None,
 ) -> tuple[
     list[EmpiricalPlay],
     list[FieldGoalAttempt],
@@ -81,6 +82,8 @@ def _classify_directory(
     games = 0
     source_rows = 0
     ledger = []
+    exclusions = []
+    full_fumbles = []
     for path in sorted(html_dir.glob("*.htm*")):
         source_date = _source_date(path)
         if through_date is not None and source_date is not None and source_date > through_date:
@@ -90,6 +93,22 @@ def _classify_directory(
         facts = event_reconciliations.for_game(game, raw_hash) if event_reconciliations else {}
         classified = classify_pfr_game(game, seed=seed, event_facts=facts,
                                        fumble_gain_policy=fumble_gain_policy)
+        fitted_fumbles = classified.fumbles
+        game_exclusions = []
+        full_fumbles.extend(classified.fumbles)
+        if fumble_exclusion_policy is not None:
+            from paydirt.historical_fumble_proxy import (
+                FITTING_POLICY,
+                POLICY_V2,
+                fitting_population,
+            )
+
+            if fumble_exclusion_policy != FITTING_POLICY or fumble_gain_policy != POLICY_V2:
+                raise ValueError("Fitting exclusions require explicit version two historical policy")
+            fitted_fumbles, game_exclusions = fitting_population(game, classified, raw_sha256=raw_hash)
+            exclusions.extend(game_exclusions)
+        elif classified.unsupported_fields:
+            diagnostics["active_unsupported_required_fields"] += len(classified.unsupported_fields)
         if event_counts is not None:
             for team, counts in classified.event_counts.items():
                 event_counts.setdefault(team, Counter()).update(counts)
@@ -98,6 +117,7 @@ def _classify_directory(
             "raw_sha256": raw_hash,
             "event_reconciliations": [fact.to_dict() for fact in facts.values()],
             "fumble_events": [asdict(event) for event in classified.fumbles],
+            "fitting_exclusions": game_exclusions,
             "fumble_gain_projections": [event.to_dict() for event in classified.fumble_gain_projections],
             "fumble_box": game.fumble_box,
             "fumble_reconciliations": list(classified.fumble_reconciliations),
@@ -113,7 +133,7 @@ def _classify_directory(
         source_rows += len(game.plays)
         plays.extend(classified.plays)
         field_goals.extend(classified.field_goals)
-        fumbles.extend(classified.fumbles)
+        fumbles.extend(fitted_fumbles)
         diagnostics.update(classified.diagnostics)
         games += 1
     if games == 0:
@@ -121,10 +141,14 @@ def _classify_directory(
     if event_reconciliations:
         event_reconciliations.assert_all_applied()
     if ledger_path is not None:
+        from paydirt.historical_fumble_proxy import fitting_metadata, policy_metadata
+
         ledger_path.parent.mkdir(parents=True, exist_ok=True)
         ledger_path.write_text(json.dumps({
             "classification_seed": seed, "games": ledger,
             "fumble_gain_policy": fumble_gain_policy,
+            "fumble_fitting_policy": fitting_metadata(fumble_exclusion_policy, full_fumbles, fumbles, exclusions),
+            **policy_metadata(fumble_gain_policy, diagnostics),
             "interpretation": "Raw source hashes and event-to-chart representations; "
                               "multiple representations may condition one primary event. "
                               "Unobserved primary call families remain heuristic. "
@@ -276,6 +300,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=None,
         help="Engine-calibrated multiplier for resolved empirical pass yards",
     )
+    parser.add_argument("--fumble-exclusion-policy", choices=["historical_isolated_fumble_exclusions_v1"],
+                        help="Retain unresolved historical events but exclude them uniformly from fitting")
     args = parser.parse_args(argv)
     profile = apply_profile_overrides(
         load_calibration_profile(args.calibration_profile),
@@ -300,14 +326,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     plays, field_goals, fumbles, diagnostics, games, source_rows = _classify_directory(
         html_dir, args.through_date, args.seed, audit_dir / "source-ledger.json", source_events,
         reconciliations, fumble_gain_policy=args.fumble_gain_policy,
+        fumble_exclusion_policy=args.fumble_exclusion_policy,
     )
 
     if diagnostics.get("unreconciled_fumble_box", 0):
         raise ValueError("Unsupported source fields: inconsistent fumble box; see source-ledger.json")
     if any(event.lost is None for event in fumbles):
         raise ValueError("Unsupported source fields: unknown fumble recovery; see source-ledger.json")
-    if diagnostics.get("missing_required_gains", 0):
+    if diagnostics.get("active_unsupported_required_fields", 0):
         raise ValueError("Unsupported source fields: missing required gain; see source-ledger.json")
+
+    fitting_disclosure = json.loads((audit_dir / "source-ledger.json").read_text())["fumble_fitting_policy"]
 
     coverage = source_feature_coverage(
         (play.to_row() for play in plays),
@@ -410,6 +439,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     _copy_season_metadata(template, output, season)
     manifest = {
         "neutral_pressure_model": neutral_pressure.evidence,
+        "fumble_fitting_policy": fitting_disclosure,
         "fumble_gain_policy": args.fumble_gain_policy,
         "input_hashes": generation_input_hashes({
             "normalized_stats": sorted(stats_dir.glob("*.json")),
@@ -459,6 +489,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "diagnostics": dict(sorted(diagnostics.items())),
         "teams": generated_teams,
     }
+    from paydirt.historical_fumble_proxy import fitting_metadata, policy_metadata
+
+    manifest.update(policy_metadata(args.fumble_gain_policy, diagnostics))
     if normalization is not None:
         if normalization["baseline_input_hashes"] != {
                 key: value for key, value in manifest["input_hashes"].items()

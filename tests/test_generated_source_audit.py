@@ -543,3 +543,42 @@ def test_nflverse_required_source_capability_declaration_is_mandatory(generated_
     assert result["passed"] is (mutation is None)
     if mutation is not None:
         assert any("required source fields" in error.lower() for error in result["errors"])
+
+
+@pytest.mark.parametrize("damage", [None, "missing_contract", "extra_missing", "false_truth"])
+def test_versioned_modeled_exclusions_require_exact_contract_accounting(
+    generated_source: tuple[Path, Path], damage: str | None,
+) -> None:
+    from paydirt.historical_fumble_proxy import (
+        FITTING_POLICY,
+        POLICY_V2,
+        fitting_metadata,
+        policy_metadata,
+    )
+    from paydirt.pfr_play_by_play import FumbleEvent
+
+    season, _ = generated_source
+    path = season / "generation-manifest.json"
+    manifest = json.loads(path.read_text())
+    full = [FumbleEvent("Ironclads", "rushing", False, "public", 1),
+            FumbleEvent("Thunderhawks", "passing", True, "public", 2),
+            FumbleEvent("Ironclads", "passing", None, "public", 3)]
+    records = [{"event_id": "public:3", "team": "Ironclads", "unit": "passing", "lost": None,
+                "mechanism": "fumble_gain_projection", "reason": "missing primary gain",
+                "raw_game_sha256": "a" * 64, "raw_play_sha256": "b" * 64, "scope": "fitting_only"}]
+    disclosure = fitting_metadata(FITTING_POLICY, full, full[:2], records)
+    manifest.update(fumble_gain_policy=POLICY_V2, fumble_fitting_policy=disclosure,
+                    diagnostics={"missing_required_gains": 1, "unknown_fumble_recoveries": 1})
+    manifest.update(policy_metadata(POLICY_V2, manifest["diagnostics"]))
+    if damage == "extra_missing":
+        manifest["diagnostics"]["missing_required_gains"] = 2
+    if damage == "false_truth":
+        disclosure["historical_source_complete"] = True
+    path.write_text(json.dumps(manifest))
+    contract = _contract(season)
+    contract.update(fumble_fitting_policy=disclosure,
+                    modeled_fumble_assumptions=manifest["modeled_fumble_assumptions"])
+    if damage == "missing_contract":
+        contract.pop("fumble_fitting_policy")
+    report = _audit(season, validation_contract=contract)
+    assert report["passed"] is (damage is None), report["errors"]

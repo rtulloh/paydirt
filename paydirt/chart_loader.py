@@ -49,7 +49,8 @@ def _check_special_cell(filepath: str, column: str, dice_roll: int, cell: str) -
             UserWarning,
             stacklevel=3,
         )
-    elif cleaned and not _SPECIAL_CELL.match(cleaned):
+    elif (cleaned and not _SPECIAL_CELL.match(cleaned)
+          and not (column == "Field Goal" and re.fullmatch(r"F SNAP (?:KEEP|LOST) 0", cleaned))):
         warnings.warn(
             f"{filepath}: {column} roll {dice_roll} has an unreadable cell {cleaned!r}; "
             "it will play as a 0-yard result until the chart is corrected",

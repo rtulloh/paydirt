@@ -549,7 +549,9 @@ def audit_season(path: Path, strict: bool = True) -> dict[str, Any]:
                     validation_value = value if strict else re.sub(r"\s+([XY])$", r"\1", value)
                     zero_sack = (unit == "offense" and column == "qb_time"
                                  and re.fullmatch(r"SACK\s+0\*?", validation_value, re.IGNORECASE))
-                    joint = (validation_value.strip().upper() == "F INC"
+                    joint = ((validation_value.strip().upper() == "F INC"
+                              or unit == "special_teams" and column == "field_goal"
+                              and re.fullmatch(r"F SNAP (?:KEEP|LOST) 0", validation_value))
                              and supported_generated_cell(unit, column, validation_value))
                     if not pattern.fullmatch(validation_value) and not zero_sack and not joint and (strict or value not in {'*', '†'}):
                         errors.append(f'{name} {label}: invalid result {value!r}')
@@ -634,6 +636,31 @@ def audit_season(path: Path, strict: bool = True) -> dict[str, Any]:
         'numeric_ranges': {label: [min(values), max(values)] for label, values in ranges.items()},
     }
 
+
+
+def audit_public_season(path: Path, *, expected_teams: int) -> dict[str, Any]:
+    """Validate committed chart structure and actual decoders without private sources.
+
+    This deliberately makes no source-reproduction or historical accuracy claim.
+    """
+    if type(expected_teams) is not int or expected_teams <= 0:
+        raise ValueError("Public chart audit requires a positive expected team count")
+    structure = audit_season(path)
+    errors = list(structure["errors"])
+    if structure["team_count"] != expected_teams:
+        errors.append(f"Expected {expected_teams} teams; found {structure['team_count']}")
+    decoder = {name: audit_chart_decoder(Path(path) / name) for name in structure["teams"]}
+    for name, report in decoder.items():
+        errors.extend(f"{name}: {error}" for error in report["errors"])
+        if not report["fully_supported"]:
+            errors.append(f"{name}: decoder contains unsupported defaults or fallback behavior")
+    return {
+        "passed": not errors, "errors": errors, "team_count": structure["team_count"],
+        "expected_teams": expected_teams, "structure": structure, "decoder": decoder,
+        "source_reproduction_checked": False, "historical_accuracy_checked": False,
+        "release_certified": False,
+        "scope": "Public committed-chart structure, loadability, exact mechanics and decoder coverage only",
+    }
 
 def main(argv: list[str] | None = None) -> int:
     """Write a local candidate audit and optional reference feature comparison."""

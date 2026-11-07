@@ -194,6 +194,40 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
             raise ValueError("Generation manifest requires a fumble gain model object")
         policy = manifest.get("fumble_gain_policy") if pfr else model.get("policy")
         validate_fumble_gain_policy(policy)
+        if pfr:
+            from .historical_fumble_proxy import POLICIES, policy_metadata
+
+            modeled = manifest.get("modeled_fumble_assumptions")
+            bound = contract.get("modeled_fumble_assumptions")
+            if policy in POLICIES:
+                diagnostics = manifest.get("diagnostics")
+                if not isinstance(diagnostics, dict):
+                    raise ValueError("Modeled fumble assumptions require counted diagnostics")
+                counts = {key: value for key, value in diagnostics.items()
+                          if key.startswith("modeled_fumble_class")}
+                if (not counts or any(type(value) is not int or value < 0 for value in counts.values())
+                        or counts.get("modeled_fumble_classes") != sum(
+                            value for key, value in counts.items() if key.startswith("modeled_fumble_class_"))):
+                    raise ValueError("Modeled fumble class counts do not reconcile")
+                expected_model = policy_metadata(policy, diagnostics)["modeled_fumble_assumptions"]
+                # Canonical JSON preserves bool/int distinctions in version and count fields.
+                from .fumble_source import source_record_hash
+
+                if (not isinstance(modeled, dict) or not isinstance(bound, dict)
+                        or source_record_hash(modeled) != source_record_hash(expected_model)
+                        or source_record_hash(bound) != source_record_hash(expected_model)):
+                    raise ValueError("Modeled fumble assumption contract differs from versioned policy or manifest")
+            elif modeled is not None or bound is not None:
+                raise ValueError("Modeled fumble assumptions require their explicit versioned policy")
+            disclosure = manifest.get("fumble_fitting_policy")
+            bound_disclosure = contract.get("fumble_fitting_policy")
+            if disclosure is not None or bound_disclosure is not None:
+                from .fumble_source import source_record_hash
+                from .historical_fumble_proxy import POLICY_V2, validate_fitting_metadata
+
+                if (policy != POLICY_V2 or source_record_hash(disclosure) != source_record_hash(bound_disclosure)):
+                    raise ValueError("Historical fitting policy must be bound identically to version two")
+                expected["--fumble-exclusion-policy"] = validate_fitting_metadata(disclosure)
         if policy is not None:
             expected["--fumble-gain-policy"] = policy
         if not pfr:
@@ -208,7 +242,7 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
                 or shrinkage != manifest.get("opponent_adjustment", {}).get("shrinkage")):
             raise ValueError("Generation seed or shrinkage differs from bound candidate")
         for flag, value in expected.items():
-            if flag in {"--output", "--audit-dir", "--through-date", "--fumble-gain-policy",
+            if flag in {"--output", "--audit-dir", "--through-date", "--fumble-gain-policy", "--fumble-exclusion-policy",
                         "--fumble-projection-mode", "--fumble-range-policy"}:
                 continue
             path = bundle / _relative(value)

@@ -5,8 +5,6 @@ import hashlib
 import importlib
 import io
 import json
-import os
-import subprocess
 import tarfile
 from pathlib import Path
 
@@ -130,28 +128,21 @@ def test_staging_cli_reports_real_verdict_without_certifying_readiness(
 
 
 @pytest.mark.parametrize("workflow", ["test.yml", "release.yml"])
-def test_quality_workflows_stage_pinned_sources_and_regenerate_before_the_gate(workflow: str) -> None:
-    text = (Path(__file__).resolve().parents[1] / ".github/workflows" / workflow).read_text()
-    quality = text[text.index("  chart-quality:"):].split("\n  build:")[0]
-    assert "scripts/stage_chart_sources.py" in quality, "Source bytes must be staged before the component gate"
-    assert "scripts/prepare_chart_sources.py" in quality
-    assert quality.index("scripts/stage_chart_sources.py") < quality.index("scripts/prepare_chart_sources.py") < quality.index("scripts/audit_generated_charts.py")
-    assert "CHART_SOURCES_" in quality and "--sha256" in quality
-    assert "--engine-only" not in quality and "continue-on-error" not in quality
-
-
-@pytest.mark.parametrize("workflow", ["test.yml", "release.yml"])
-@pytest.mark.parametrize("url, sha", [("", ""), ("https://example.invalid/reviewed.tar.gz", ""), ("", "0" * 64)])
-def test_workflow_missing_approval_bindings_fails_before_download(
-    tmp_path: Path, workflow: str, url: str, sha: str,
-) -> None:
-    workflow_path = Path(__file__).resolve().parents[1] / ".github/workflows" / workflow
-    job = yaml.safe_load(workflow_path.read_text())["jobs"]["chart-quality"]
-    step = next(step for step in job["steps"] if "scripts/stage_chart_sources.py" in step.get("run", ""))
-    script = step["run"].replace("${{ matrix.season }}", "2026")
-    environment = dict(os.environ, SOURCE_URL=url, SOURCE_SHA256=sha)
-    result = subprocess.run(["bash", "-e", "-c", script], cwd=tmp_path, env=environment,
-                            capture_output=True, text=True, check=False)
-    assert result.returncode == 1
-    assert "repository variables are required" in result.stderr
-    assert not (tmp_path / ".ai-audits").exists()
+def test_quality_workflows_validate_public_charts_without_private_hosting(workflow: str) -> None:
+    path = Path(__file__).resolve().parents[1] / ".github/workflows" / workflow
+    job = yaml.safe_load(path.read_text())["jobs"]["chart-quality"]
+    text = json.dumps(job)
+    assert "CHART_SOURCES_" not in text
+    assert "source_url_var" not in text and "source_sha_var" not in text
+    assert "stage_chart_sources.py" not in text and "prepare_chart_sources.py" not in text
+    assert "curl " not in text and "vars[" not in text
+    assert "scripts/audit_public_charts.py" in text
+    assert "audit_generated_charts.py" not in text
+    assert not job.get("continue-on-error", False)
+    run = next(step for step in job["steps"] if "audit_public_charts.py" in step.get("run", ""))
+    assert "if" not in run and not run.get("continue-on-error", False)
+    assert "--expected-teams ${{ matrix.teams }}" in run["run"]
+    assert job["strategy"]["matrix"]["include"] == [
+        {"directory": "1983-generated", "season": 1983, "teams": 28},
+        {"directory": "2024", "season": 2024, "teams": 32},
+    ]

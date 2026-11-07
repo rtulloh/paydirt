@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass
 
 FUMBLE_GAIN_POLICIES = (
     "known_physical_v1", "credited_fumble_proxy_v1", "source_reported_gain_proxy_v1",
+    "historical_fumble_class_proxy_v1",
+    "historical_fumble_class_proxy_v2",
 )
 RUN_CHARTS = ("line_plunge", "off_tackle", "end_run", "draw")
 
@@ -43,11 +45,15 @@ class FumbleGainProjection:
     modeled_initial_yards: int | None
     modeled_gain_basis: str
     policy: str
+    modeled_originating_kind: str | None = None
+    modeled_class_basis: str | None = None
+    modeled_role: str | None = None
 
     @property
     def originating_kind(self) -> str:
         """Return the supported origin class without promoting reported credit."""
-        return self.source_facts.credited_kind or self.source_facts.reported_kind
+        return (self.source_facts.credited_kind or self.source_facts.reported_kind
+                or self.modeled_originating_kind)
 
     @property
     def chart_result(self) -> str:
@@ -62,7 +68,11 @@ class FumbleGainProjection:
 
     def to_dict(self) -> dict:
         """Retain every nullable fact and the explicit policy in JSON evidence."""
-        return {"schema_version": 1, **asdict(self)}
+        record = asdict(self)
+        for name in ("modeled_originating_kind", "modeled_class_basis", "modeled_role"):
+            if record[name] is None:
+                record.pop(name)
+        return {"schema_version": 2 if self.modeled_class_basis else 1, **record}
 
 
 def validate_fumble_gain_policy(policy: str | None) -> None:
@@ -106,7 +116,7 @@ def project_fumble_gain(facts: FumbleGainFacts, *, policy: str) -> FumbleGainPro
         return FumbleGainProjection(facts, None, "retained_incompletion", policy)
     kinds = {"rushing", "sack", "receiving"}
     reported_kinds = kinds | {"kickoff_return", "punt_return"}
-    reported_policy = policy == "source_reported_gain_proxy_v1"
+    reported_policy = policy in {"source_reported_gain_proxy_v1", "historical_fumble_class_proxy_v1", "historical_fumble_class_proxy_v2"}
     if not reported_policy and facts.credited_kind not in kinds:
         raise ValueError("Fumble projection requires a known credited statistical class")
     if type(facts.lost) is not bool:

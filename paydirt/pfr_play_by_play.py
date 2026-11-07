@@ -747,6 +747,33 @@ def _project_reviewed_fumble(
     reconciled_recovery: FumbleEvent | None = None,
 ) -> FumbleGainProjection:
     """Project distinct reviewed and reported tiers, never infer class from QB position."""
+    if policy in {"historical_fumble_class_proxy_v1", "historical_fumble_class_proxy_v2"}:
+        if fact is not None and fact.raw_play_sha256 != play_fingerprint(play):
+            raise ValueError("Reviewed fumble credit source identity differs")
+        try:
+            return replace(_project_reviewed_fumble(
+                game, play, offense, fact, "source_reported_gain_proxy_v1", reconciled_recovery), policy=policy)
+        except ValueError:
+            # Reviewed classifications and credited numbers always take precedence;
+            # an assumption must not conceal contradictory or incomplete review.
+            if (isinstance(fact, SackEventFact) or isinstance(fact, FumbleEventFact)
+                    and (fact.credited_kind is not None or fact.originating_kind is not None)):
+                raise
+        from .historical_fumble_proxy import project_historical_fumble
+
+        lost = _reviewed_fumble_lost(
+            game, play, offense, fact if isinstance(fact, FumbleEventFact) else None)
+        basis = "reviewed" if isinstance(fact, FumbleEventFact) else "reported_identity"
+        if lost is None and reconciled_recovery is not None:
+            lost, basis = reconciled_recovery.lost, "unique_team_loss_constraint"
+        facts = FumbleGainFacts(
+            f"{play.game_id}:{play.number}", play_fingerprint(play), None, None,
+            fact.initial_gain if isinstance(fact, FumbleEventFact) and fact.initial_gain_reviewed else None,
+            lost, fact.loose_ball_yards if isinstance(fact, FumbleEventFact) else None,
+            fact.recovery_advance_yards if isinstance(fact, FumbleEventFact) else None,
+            recovery_basis=basis,
+        )
+        return project_historical_fumble(game, play, offense, facts, policy=policy)
     kind, credit, physical = None, None, None
     loose_ball, recovery_advance = None, None
     if isinstance(fact, SackEventFact):
@@ -838,7 +865,7 @@ def classify_pfr_game(
     current_team: str | None = None
     reconciled_recoveries: dict[int, FumbleEvent] = {}
     recovery_receipts: tuple[Mapping[str, object], ...] = ()
-    if fumble_gain_policy == "source_reported_gain_proxy_v1":
+    if fumble_gain_policy in {"source_reported_gain_proxy_v1", "historical_fumble_class_proxy_v1", "historical_fumble_class_proxy_v2"}:
         # Reuse the complete existing loss-constraint inventory. This read-only
         # pass supplies recovery support only, never legacy gain/class inference.
         recovery_inventory = classify_pfr_game(game, seed=seed, event_facts=event_facts)
@@ -1177,6 +1204,9 @@ def classify_pfr_game(
                 continue
             projections.append(projected)
             kind = projected.originating_kind
+            if projected.modeled_class_basis is not None:
+                diagnostics["modeled_fumble_classes"] += 1
+                diagnostics[f"modeled_fumble_class_{projected.modeled_class_basis}"] += 1
             fumbles[-1] = replace(fumbles[-1], unit="rushing" if kind == "rushing" else "passing",
                                    lost=projected.source_facts.lost)
             if kind in {"sack", "receiving"}:
