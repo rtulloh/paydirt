@@ -533,3 +533,16 @@ macOS and Linux packaging receive the verified version tag explicitly, and the
 release publishes all five assets against the same existing tag. Rebuilding
 artifacts does not move, delete, or recreate the tag. Full source reproduction
 remains a local proof, separate from these public chart checks.
+
+
+The public report's `structure.interception_spots` measures offense/defense catch
+locations by team, passing call and formation, including exact reachable mass
+through the priority table against uniformly sampled cohort defenses. It includes
+self matchups and keeps formations separate; it does not represent actual coaching
+call shares. `mass` is an exact fraction and `probability` its decimal value.
+Interception return gains and stateful end-zone clipping are separate engine
+operations. Source adapters retain call classification, but aggregate fallback
+and empirical event calibration can use modeled baseline depths; this census
+neither certifies historical catch-depth fidelity nor applies a universal Screen
+cap. The current bundled cohorts contain no reachable Screen INT44. Detailed
+findings are in the [v1.10.2 investigation](dev-notes/release-1.10.2-scope.md).

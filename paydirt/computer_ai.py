@@ -308,6 +308,27 @@ class ComputerAI:
 
         return (play, use_oob, use_no_huddle, False, 0, False)
 
+    def _multi_score_fourth_down_urgent(
+        self, game: PaydirtGameEngine, distance: int, field_position: int,
+        minutes_left: float, deficit: int,
+    ) -> bool:
+        """Estimate whether punting leaves time for the required scoring drives.
+
+        This is a bounded coaching estimate, not a win-probability model. Budget
+        eighty seconds per later drive, a field-position-sensitive current drive,
+        and a defensive stop shortened by the offense's remaining timeouts.
+        """
+        points_per_score = 8 if game.season_rules.two_point_conversion else 7
+        scores_needed = (deficit + points_per_score - 1) // points_per_score
+        if scores_needed < 2 or minutes_left >= 5 or distance > 10:
+            return False
+        state = game.state
+        timeouts = state.home_timeouts if state.is_home_possession else state.away_timeouts
+        defensive_stop_seconds = 120 - 20 * max(0, min(3, timeouts))
+        current_drive_seconds = 45 + (100 - field_position) * .5
+        scoring_seconds = current_drive_seconds + 80 * (scores_needed - 1)
+        return minutes_left * 60 <= scoring_seconds + defensive_stop_seconds + 10
+
     def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> tuple:
         """
         Decide what to do on 4th down using 1983 NFL decision patterns.
@@ -376,8 +397,18 @@ class ComputerAI:
                     go_play, _, _ = self._go_for_it_play(ytg)
                     return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
-            # 2-5 minutes left, trailing
+            # 2-5 minutes left, trailing. A field goal that removes one needed
+            # possession remains useful; otherwise preserve a scarce drive.
             if time_left < 5.0:
+                points_per_score = 8 if game.season_rules.two_point_conversion else 7
+                deficit = -score_diff
+                scores_needed = (deficit + points_per_score - 1) // points_per_score
+                scores_after_fg = (max(0, deficit - 3) + points_per_score - 1) // points_per_score
+                if scores_needed >= 2 and fg_makeable and scores_after_fg < scores_needed:
+                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
+                if self._multi_score_fourth_down_urgent(game, ytg, field_pos, time_left, deficit):
+                    go_play, _, _ = self._go_for_it_play(ytg)
+                    return (go_play, punt_short_drop, punt_coffin_corner_yards)
                 if fg_easy and score_diff >= -3:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 elif ytg <= 2:

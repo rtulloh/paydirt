@@ -1613,3 +1613,45 @@ class TestReturnValueSignature:
             assert isinstance(punt_short_drop, bool)
             assert isinstance(punt_coffin, int)
             assert isinstance(call_spike, bool)
+
+
+class TestMultiScoreFourthDownUrgency:
+    """Late multi-score urgency retains time, distance and kicking controls."""
+
+    @pytest.mark.parametrize("time_left,timeouts,deficit,distance,position,quarter,expected", [
+        (217 / 60, 3, 9, 5, 16, 4, "go"),
+        (4.5, 0, 9, 5, 16, 4, "go"),
+        (4.5, 3, 9, 5, 16, 4, "punt"),
+        (217 / 60, 3, 7, 5, 16, 4, "punt"),
+        (8.0, 0, 9, 5, 16, 4, "punt"),
+        (217 / 60, 0, 9, 5, 16, 3, "punt"),
+        (217 / 60, 3, 9, 20, 16, 4, "punt"),
+        (217 / 60, 3, 9, 5, 80, 4, "kick"),
+        (217 / 60, 3, 16, 5, 80, 4, "go"),
+        (217 / 60, 3, 9, 1, 16, 4, "go"),
+    ])
+    def test_remaining_possessions_control_choice(
+        self, time_left, timeouts, deficit, distance, position, quarter, expected,
+    ):
+        game = make_sample_game()
+        game.state.down = 4
+        game.state.yards_to_go = distance
+        game.state.ball_position = position
+        game.state.time_remaining = time_left
+        game.state.quarter = quarter
+        game.state.home_score = 0
+        game.state.away_score = deficit
+        game.state.is_home_possession = True
+        game.state.home_timeouts = timeouts
+        # Modern eight-point possessions make sixteen points two scores.
+        game.season_rules.two_point_conversion = True
+        ai = ComputerAI(aggression=.5)
+        for seed in range(10):
+            random.seed(seed)
+            play = ai.select_offense(game)
+            if expected == "punt":
+                assert play == PlayType.PUNT
+            elif expected == "kick":
+                assert play == PlayType.FIELD_GOAL
+            else:
+                assert play not in {PlayType.PUNT, PlayType.FIELD_GOAL, PlayType.QB_KNEEL}

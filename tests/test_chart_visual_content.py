@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
@@ -9,10 +10,8 @@ from unittest.mock import patch
 import pytest
 
 import paydirt.chart_release_gate as gate
-from paydirt.chart_generator import TeamSeasonStats, generate_team_charts
 from paydirt.chart_loader import load_team_chart
 from tests import test_chart_visual_capture as support
-from tests.test_chart_generator import _synthetic_stats
 
 freeze_files = support.freeze_files
 capture_files = support.capture_files
@@ -82,16 +81,14 @@ def dom_view(book: dict, view: str, url: str) -> dict:
 
 
 @pytest.fixture
-def content_files(capture_files: tuple) -> tuple[Path, dict, dict, dict]:
+def content_files(capture_files: tuple, generated_visual_charts: dict[int, Path]) -> tuple[Path, dict, dict, dict]:
     root, freeze, captures = capture_files
     contexts = []
     for capture in captures["contexts"]:
         cohort = capture["cohort"]
         season = 1983 if cohort == "1983-generated" else 2024
         directory = root / freeze["cohorts"][cohort]["season_dir"]
-        data = _synthetic_stats().to_dict()
-        data.update(season=season, team_name="Synthetic0")
-        generate_team_charts(TeamSeasonStats.from_dict(data), directory / "Synthetic0", seed=8306)
+        shutil.copytree(generated_visual_charts[season], directory / "Synthetic0")
         freeze["cohorts"][cohort]["chart_fingerprint"] = gate.chart_fingerprint(directory)
     freeze_sha = gate.readiness_freeze_fingerprint(freeze)
     captures["freeze_sha256"] = freeze_sha

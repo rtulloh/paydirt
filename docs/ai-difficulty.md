@@ -156,3 +156,17 @@ historical usage targets or new timing rules.
 
 Normal `--auto` CPU-vs-CPU games use balanced AI and do not exercise interactive Hard chart analysis,
 even if `-d hard` is also supplied.
+
+
+### Late multi-score fourth downs
+
+With two to five minutes left in the final period, the shared fourth-down policy
+estimates the time for the required scoring possessions plus a defensive stop.
+Remaining offensive timeouts shorten that stop estimate, and current field
+position affects the drive budget. When multiple scores are needed and punting
+would consume that budget, fourth-and-ten or shorter can be attempted in the
+team's own territory. Earlier games, one-score deficits and long-distance
+controls retain the conservative policy. A makeable field goal remains useful
+when its three points remove one required scoring possession. These are bounded
+coaching estimates, not full-engine win probabilities; season two-point rules
+determine whether a scoring possession can supply seven or eight points.

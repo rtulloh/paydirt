@@ -1,5 +1,14 @@
 # Paydirt Release Notes
 
+## v1.10.2
+
+- Improve late multi-score fourth-down urgency using scoring possessions, clock, field position and remaining timeouts.
+- Audit interception catch locations separately by passing play and defense formation; no bundled chart content changed. Modeled catch-depth limitations remain disclosed.
+- Reuse isolated synthetic chart templates to reduce repeated visual-regression setup, preserving every case and assertion.
+- Publish verified existing release tags without requesting unavailable workflow-write token permissions.
+
+The v1.10.1 historical-source modeling and fit exceptions below remain applicable.
+
 ## v1.10.1
 
 - Replace the packaged 1983 and 2024 charts with corrected generated candidates.

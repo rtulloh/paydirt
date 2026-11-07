@@ -1,11 +1,11 @@
 ---
 id: DATA-043
 title: Audit play-specific interception spot support in generated passing charts
-status: open
+status: closed
 priority: Medium
 created-at: 2026-11-07
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-07
 tags:
   - investigating
   - cross-project
@@ -52,3 +52,20 @@ Opened after the owner's Facebook cross-project report. Read-only inspection of
 chart_generator.py, its empirical calibration and both shipped offense cohorts
 establishes the narrower Paydirt observations above. No claim that Bowl Bound
 and Paydirt share code or the exact same defect; no new acceptance bound adopted.
+
+--- 2026-11-07 16:25 ---
+Completed the all-60-team weighted offense/defense and reachable-priority
+census for all five pass calls and six formations. Screen support is 5/12 for
+1983 and 5 for 2024; no reachable INT44 Screen exists. Returns remain separately
+measured. Synthetic controls preserve a deliberately supplied INT44 (no arbitrary
+cap), independent long-pass evidence, competing shorter INT, penalty precedence,
+team identity and exact physical mass. Both public cohort/decoder audits pass.
+Source review finds per-event pass classification before grouping in both
+adapters, not a shared cross-play depth pool. Aggregate INT5/12/20 and defensive
+5/5/12/18/8 are modeled; calibration can prefer baseline depths over empirical
+ones. This limitation is now explicit in the maintained guide and reusable
+`structure.interception_spots` report. No demonstrated impossible-support defect
+justifies altering spots/rates or regenerating charts in this release. Close the
+bounded audit with that outcome, not a claim of empirical depth fidelity or a
+Bowl Bound fix. See ../../release-1.10.2-scope.md for source trace, complete support
+sets and unchanged chart/mechanics scope.

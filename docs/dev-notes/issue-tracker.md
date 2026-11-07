@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-193 issues: 113 open, 31 resolved, 49 closed.
+193 issues: 109 open, 33 resolved, 51 closed.
 
-## Open (113)
+## Open (109)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -62,7 +62,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-020](issues/AI/AI-020.md) | Medium | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
 | [AI-023](issues/AI/AI-023.md) | Medium | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
 | [AI-024](issues/AI/AI-024.md) | Medium | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
-| [AI-028](issues/AI/AI-028.md) | Medium | Fourth-down urgency falls through to conservative punting in own territory when multiple scores are needed | created 2026-11-06 | AI-003, AI-006 |
 | [AI-029](issues/AI/AI-029.md) | Medium | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
@@ -78,7 +77,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-040](issues/DATA/DATA-040.md) | Medium | Generated defenses repeat interception stripes and fixed depth patterns across formations and teams | created 2026-11-06 | DATA-022, DATA-039 |
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
-| [DATA-043](issues/DATA/DATA-043.md) | Medium | Audit play-specific interception spot support in generated passing charts | created 2026-11-07 | — |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
@@ -108,8 +106,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-010](issues/VAL/VAL-010.md) | Medium | Unit regressions still depend on private historical seasons and silently skip | created 2026-10-30 | — |
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-016](issues/VAL/VAL-016.md) | Medium | Development API proxy cannot reach an IPv4-only backend when localhost resolves to IPv6 | created 2026-11-05 | — |
-| [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
-| [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19 | AUD-025 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -130,7 +126,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (31)
+## Resolved (awaiting play-test confirmation) (33)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -165,11 +161,13 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
+| [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07, resolved 2026-11-07 | — |
+| [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07, resolved 2026-11-07 | — |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (49)
+## Closed (51)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -201,6 +199,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | AI-025 |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
 | [AI-011](issues/AI/AI-011.md) | Medium | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18, closed 2026-11-02 | — |
+| [AI-028](issues/AI/AI-028.md) | Medium | Fourth-down urgency falls through to conservative punting in own territory when multiple scores are needed | created 2026-11-06, resolved 2026-11-07, closed 2026-11-07 | AI-003, AI-006 |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19, closed 2026-11-02 | — |
 | [AUD-026](issues/AUD/AUD-026.md) | Medium | Kickoff penalty preview invents a touchdown by applying kick-penalty yards to the prior scoring spot | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
 | [DATA-004](issues/DATA/DATA-004.md) | Medium | Aggregate chart generation compresses distinct teams into coarse defensive templates | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
@@ -208,6 +207,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [DATA-006](issues/DATA/DATA-006.md) | Medium | Aggregate chart calibration omits supplied rates and lacks resolved-outcome validation | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | RULE-021, DATA-007, DATA-010, DATA-014 |
 | [DATA-010](issues/DATA/DATA-010.md) | Medium | Generated breakaway triggers and B yardage are not reconstructed from play by play | created 2026-11-01, resolved 2026-11-02, closed 2026-11-02 | DATA-006, DATA-009, DATA-011 |
 | [DATA-033](issues/DATA/DATA-033.md) | Medium | Return-penalty modifiers lack an explicit consumer interpretation | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | RULE-027 |
+| [DATA-043](issues/DATA/DATA-043.md) | Medium | Audit play-specific interception spot support in generated passing charts | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [FLOW-014](issues/FLOW/FLOW-014.md) | Medium | Save game gives no visible success or failure feedback | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | — |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |

@@ -197,8 +197,8 @@ neither workflow uses privileged fork-checkout triggers. Browser npm caching
 keeps its explicit frontend lockfile; standalone builds explicitly disable new
 automatic package-manager caching to retain their previous behavior. Artifact
 uploads retain the default zipped format and named download directories, keeping
-release asset paths unchanged. Manual build dispatch still does not publish a
-release; only a pushed `v*` tag can do that. Verify upstream tests and all four
+release asset paths unchanged. Manual dispatch with `release_tag` can build and publish an existing immutable
+version tag after the same exact-commit successful Tests gate as a tag push. Verify upstream tests and all four
 standalone platform builds before any release. These runtime upgrades do not
 remediate frontend dependency vulnerabilities.
 
@@ -225,3 +225,18 @@ checks covering game setup, save/load, season rules, chart loading and the CLI;
 these smaller checks do not establish full-suite coverage on those interpreters.
 Backend, browser, public AI and chart-quality jobs remain required separately.
 A newer push cancels an older Tests run for the same branch or pull request.
+
+
+Visual content, selection and collector regressions share session-generated
+synthetic chart templates, copying fresh files into each mutation test. They
+never share mutable evidence dictionaries or a test's candidate directory.
+The hosted full coverage run records its 30 slowest cases to expose remaining
+costs; coverage, assertions and full-suite execution remain enabled.
+
+Before publication, the release job rechecks that the existing version tag still
+resolves to the exact tested/build commit. It then omits `target_commitish` from
+the release API request: GitHub can require workflow-write permission for an
+explicit older target whose workflows differ from the default branch, and the
+automatic GITHUB_TOKEN cannot obtain that permission. The verified existing tag
+still determines released source. Platform builds and chart checks remain pinned
+to its SHA; no token scope expansion or tag recreation is needed.

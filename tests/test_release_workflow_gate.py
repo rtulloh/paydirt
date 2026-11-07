@@ -76,3 +76,38 @@ def test_gate_requires_exact_success(monkeypatch, tmp_path, head, status, conclu
         with pytest.raises(SystemExit):
             runpy.run_path(str(script), run_name="__main__")
         assert not output.exists()
+
+
+def test_publication_uses_existing_tag_without_workflow_restricted_target():
+    release = workflow()["jobs"]["release"]
+    publish = next(s for s in release["steps"] if s.get("uses", "").startswith("softprops/"))
+    assert "target_commitish" not in publish["with"]
+    guard = next(s for s in release["steps"] if s["name"] == "Recheck existing immutable tag before publication")
+    assert guard["env"]["EXPECTED_SHA"] == "${{ needs.verify-ci.outputs.sha }}"
+    assert guard["env"]["RELEASE_TAG"] == "${{ needs.verify-ci.outputs.tag }}"
+    assert release["steps"].index(guard) < release["steps"].index(publish)
+
+
+@pytest.mark.parametrize("tag_sha", [SHA, "b" * 40])
+@pytest.mark.parametrize("annotated", [False, True])
+def test_publication_rejects_a_moved_tag(monkeypatch, tmp_path, tag_sha, annotated):
+    steps = workflow()["jobs"]["release"]["steps"]
+    guard = next((s for s in steps if s["name"] == "Recheck existing immutable tag before publication"), None)
+    assert guard is not None, "Publication must recheck the existing tested tag"
+    code = guard["run"].split("python - <<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    script = tmp_path / "publish_guard.py"
+    script.write_text(code)
+    for key, value in {"GH_REPO": "owner/repo", "GH_TOKEN": "synthetic", "GH_API_URL": "https://api.example", "RELEASE_TAG": "v1.10.2", "EXPECTED_SHA": SHA}.items():
+        monkeypatch.setenv(key, value)
+    def request(req, timeout):
+        assert timeout == 30
+        obj = {"type": "commit", "sha": tag_sha}
+        if annotated and "/git/ref/tags/" in req.full_url:
+            obj = {"type": "tag", "sha": "c" * 40}
+        return io.BytesIO(json.dumps({"object": obj}).encode())
+    monkeypatch.setattr(urllib.request, "urlopen", request)
+    if tag_sha == SHA:
+        runpy.run_path(str(script), run_name="__main__")
+    else:
+        with pytest.raises(SystemExit, match="Existing tag no longer matches"):
+            runpy.run_path(str(script), run_name="__main__")

@@ -14,6 +14,7 @@ use the [documentation index](../README.md).
 ## Notes
 
 - [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
+- [v1.10.2 scope and verification](release-1.10.2-scope.md): interception-location audit, fourth-down urgency, faster tests and reliable release publication.
 - [AI play-testing](ai-playtesting.md)
 - [Chart generator tuning tool](chart-generator-tuning-tool.md): reproducible engine calibration workflow and sample-size guidance.
 - [Statistical Paydirt chart generator](statistical-chart-generator.md): investigation,

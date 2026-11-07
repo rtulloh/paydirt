@@ -139,3 +139,37 @@ def test_last_chance_call_does_not_silently_become_a_run(cpu_game):
             response = client.post("/api/game/execute", json={"game_id": game_id, "player_play": "E", "cpu_play": "H"})
     assert response.status_code == 200
     assert run.call_args.args[0] == PlayType.HAIL_MARY
+
+
+@pytest.mark.parametrize("yards", [2, 6])
+def test_multi_score_fourth_down_plan_executes_engine_conversion_or_turnover(cpu_game, yards):
+    client, game_id, record = cpu_game
+    engine = record["engine"]
+    state = engine.state
+    cpu_home = state.is_home_possession
+    state.quarter, state.time_remaining = 4, 217 / 60
+    state.down, state.yards_to_go, state.ball_position = 4, 5, 16
+    state.home_score, state.away_score = (0, 9) if cpu_home else (9, 0)
+    state.home_timeouts = state.away_timeouts = 3
+    # Isolate conversion accounting from the separately tested five-yard OOB cost.
+    record["ai"].ai_behavior.strategic.oob_designation_aggression = 0
+    before = deepcopy(state)
+    preview = client.get(f"/api/game/cpu-4th-down-decision/{game_id}")
+    assert preview.status_code == 200
+    selected = preview.json()["play"]
+    assert selected in {str(number) for number in range(1, 10)}
+    assert engine.state == before
+    with patch("paydirt.game_engine.resolve_play_with_penalties", return_value=PenaltyChoice(PlayResult(ResultType.YARDS, yards=yards))):
+        response = client.post("/api/game/execute", json={
+            "game_id": game_id, "player_play": "A", "cpu_play": selected,
+        })
+    assert response.status_code == 200
+    assert state.time_remaining < 217 / 60
+    if yards >= 5:
+        assert state.is_home_possession == cpu_home
+        assert state.down == 1
+        assert state.ball_position == 22
+    else:
+        assert state.is_home_possession != cpu_home
+        assert state.down == 1
+        assert state.ball_position == 82

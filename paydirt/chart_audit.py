@@ -12,6 +12,7 @@ import json
 import re
 import warnings as runtime_warnings
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -244,6 +245,67 @@ def feature(cell: str) -> str:
             return name
     return {'TD': 'touchdown',
             'OB': 'kick_out', 'OUT': 'kick_out', 'TB': 'touchback'}.get(value, value)
+
+
+def interception_spot_audit(charts: list[TeamChart]) -> dict[str, Any]:
+    """Census raw and reachable INT catch depths with exact physical mass.
+
+    Opponents are uniformly sampled from the supplied cohort, including self.
+    Every formation remains separate. Returns and field-position clipping are
+    subsequent engine operations and are deliberately absent from spot support.
+    This measurement imposes no invented depth cap or source-fidelity claim.
+    """
+    offense_weights = chart_roll_weights()
+    defense_weights = defense_subrow_weights()
+
+    def spots(values: Mapping[str, int], total: int) -> dict[str, dict[str, Any]]:
+        counts: Counter[int] = Counter()
+        for token, mass in values.items():
+            match = re.fullmatch(r"INT\s+([+-]?\d+)", token.strip())
+            if match:
+                counts[int(match.group(1))] += mass
+        return {str(depth): {"mass": str(Fraction(mass, total)), "probability": mass / total}
+                for depth, mass in sorted(counts.items())}
+
+    opponents: dict[tuple[str, int], Counter] = {}
+    for formation in "ABCDEF":
+        for column in range(5, 10):
+            counts: Counter = Counter()
+            for chart in charts:
+                for subrow, weight in defense_weights.items():
+                    counts[chart.defense.modifiers.get((formation, subrow), {}).get(column, "0")] += weight
+            opponents[(formation, column)] = counts
+
+    teams = {}
+    for chart in charts:
+        raw_offense, raw_defense, reachable = {}, {}, {}
+        for column, play in enumerate(_OFFENSE_NAMES[4:9], 5):
+            offense: Counter = Counter()
+            for roll, weight in offense_weights.items():
+                offense[getattr(chart.offense, play).get(roll, "0")] += weight
+            raw_offense[play] = spots(offense, 216)
+            for formation in "ABCDEF":
+                own_defense: Counter = Counter()
+                for subrow, weight in defense_weights.items():
+                    own_defense[chart.defense.modifiers.get((formation, subrow), {}).get(column, "0")] += weight
+                key = f"{play}/{formation}"
+                raw_defense[key] = spots(own_defense, 36)
+                resolved: Counter = Counter()
+                denominator = 216 * 36 * len(charts)
+                for off, off_mass in offense.items():
+                    for defense, def_mass in opponents[(formation, column)].items():
+                        if feature(off) == "penalty" or feature(defense) == "penalty":
+                            continue
+                        combined = apply_priority_chart(off, defense, is_passing_play=True)
+                        if combined.priority in (PriorityResult.INT, PriorityResult.D_INT):
+                            resolved[f"INT {combined.final_yards}"] += off_mass * def_mass
+                reachable[key] = {"spots": spots(resolved, denominator),
+                                  "interception_probability": sum(resolved.values()) / denominator}
+        identity = Path(chart.team_dir).name if chart.team_dir else chart.peripheral.team_name
+        teams[identity] = {"offense": raw_offense, "defense": raw_defense, "reachable": reachable}
+    return {"teams": teams, "source_fidelity_checked": False,
+            "opponent_policy": "uniform cohort including self, separate formations",
+            "limitation": "Catch depths only; source classification, returns and stateful clipping require separate evidence"}
 
 
 def _combined_primary_rates(charts: list[TeamChart]) -> dict[str, dict[str, float]]:
@@ -631,6 +693,7 @@ def audit_season(path: Path, strict: bool = True) -> dict[str, Any]:
                              for key, value in sorted(counts.items())}
                      for label, counts in sorted(totals.items())},
         'combined_primary_rates': _combined_primary_rates(loaded),
+        'interception_spots': interception_spot_audit(loaded),
         'exact_mechanics': exact,
         'retained_incompletion_priority_deltas': retained_incompletion_priority_deltas(loaded),
         'numeric_ranges': {label: [min(values), max(values)] for label, values in ranges.items()},

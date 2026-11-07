@@ -66,3 +66,24 @@ requires_1983_season = pytest.mark.skipif(
     not HAS_1983_SEASON,
     reason="1983 season data not available"
 )
+
+
+@pytest.fixture(scope="session")
+def generated_visual_charts(tmp_path_factory: pytest.TempPathFactory) -> dict[int, Path]:
+    """Generate immutable synthetic templates once; mutation tests copy them.
+
+    Each requesting test receives its own filesystem and dictionary fixtures.
+    Only these completed source directories are shared across visual validators.
+    """
+    from paydirt.chart_generator import TeamSeasonStats, generate_team_charts
+    from tests.test_chart_generator import _synthetic_stats
+
+    root = tmp_path_factory.mktemp("generated-visual-chart-templates")
+    directories = {}
+    for season in (1983, 2024):
+        data = _synthetic_stats().to_dict()
+        data.update(season=season, team_name="Synthetic0")
+        directory = root / str(season)
+        generate_team_charts(TeamSeasonStats.from_dict(data), directory, seed=8306)
+        directories[season] = directory
+    return directories
