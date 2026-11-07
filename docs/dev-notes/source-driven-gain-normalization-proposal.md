@@ -1,12 +1,13 @@
 # Proposed source-driven gain normalization
 
 Proposal for parent review under the [chart-confidence charter](chart-confidence-agent-charter.md).
-**The complete fitting procedure is not implemented or accepted.** Pure cohort
-math and ordinary-gain transformation components are implemented and remain
-unwired, as described below. The engine-baseline alternative remains the current
-procedure proposal; the earlier exact-initial method has unmet assumptions.
-No real normalization coefficients or normalized candidates have been derived.
-Prospective 2023 data and final seed families remain unopened.
+**The procedure is implemented as an optional generator recipe; no cohort is
+accepted from that implementation alone.** Both play-by-play commands can
+regenerate the complete baseline, run fixed development training and derive one
+ordinary-gain adjustment before layout. See the maintained
+[generator reference](../chart-generator.md#optional-source-driven-gain-normalization).
+The earlier exact-initial method retains its unmet assumptions. Prospective 2023
+data and final seed families remain unopened.
 
 ## Earlier diagnostic, superseded by the measured constraint below
 
@@ -348,12 +349,12 @@ the intended 40-yard tail after scaling, and impossible means of 100 became
 focused component and relevant allocation/calibration suites pass 133 tests.
 Ignored local receipts retain all failing baselines and subsequent runs.
 
-The complete recipe above remains unimplemented. In particular, a manually
+The preceding pure-component checkpoint predates generator integration. In particular, a manually
 selected profile outside the proposed automatic bounds cannot be relabeled as
 its first eligible baseline, and a 64-schedule diagnostic cannot substitute for
 the specified sixteen-schedule pooled derivation. Current modern source/fit
 diagnostics and historical unsupported events retain their existing limits.
-No held-out or prospective family has been opened. A future integration still
+No held-out or prospective family has been opened. Final use still
 requires eligible complete source/baseline receipts, the ordered training
 history, protected/distribution checks, fresh whole-engine validation and review.
 Adding this ordinary module also changes the broad engine fingerprint; earlier

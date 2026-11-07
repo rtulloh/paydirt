@@ -1,7 +1,8 @@
 """Prepare actual source/reproduction paths for the existing chart gate.
 
-This performs local byte-bound generation. It does not acquire remote sources,
-establish upstream truth, start games or certify complete charter readiness.
+This performs local byte-bound generation, including optional fixed development
+training. It does not acquire remote sources, establish upstream truth or certify
+complete charter readiness.
 """
 from __future__ import annotations
 
@@ -17,7 +18,12 @@ from typing import Any
 
 from .chart_engine_audit import chart_fingerprint, engine_fingerprint
 from .chart_release_gate import _strict_json_object, _strict_json_value
-from .chart_source_bindings import MODERN_GROUPS, modern_source_bindings, pfr_reconciliation_binding
+from .chart_source_bindings import (
+    MODERN_GROUPS,
+    modern_source_bindings,
+    normalization_source_binding,
+    pfr_reconciliation_binding,
+)
 from .fumble_source import validate_fumble_gain_policy
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -149,7 +155,8 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
                 raise ValueError("Generation inputs require group/filename labels, or nested replay evidence")
             groups.setdefault(relative.parts[0], []).append("inputs/" + name)
         common_groups = {"normalized_stats", "play_by_play", "team_map"}
-        allowed_groups = common_groups | {"profile"} | ({"event_reconciliations"} if pfr else MODERN_GROUPS)
+        allowed_groups = common_groups | {"profile", "normalization_contract"} | (
+            {"event_reconciliations"} if pfr else MODERN_GROUPS)
         if not common_groups <= set(groups) or set(groups) - allowed_groups or len(groups["team_map"]) != 1:
             raise ValueError("Incomplete or unsupported source input groups")
         if (not isinstance(contract.get("teams"), dict)
@@ -181,6 +188,7 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
             if len(groups["profile"]) != 1:
                 raise ValueError("Requires one bound calibration profile")
             expected["--calibration-profile"] = groups["profile"][0]
+        expected.update(normalization_source_binding(bundle, groups, manifest, values, contract))
         model = manifest.get("fumble_gain_model", {})
         if not pfr and not isinstance(model, dict):
             raise ValueError("Generation manifest requires a fumble gain model object")

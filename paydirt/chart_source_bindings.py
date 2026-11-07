@@ -13,6 +13,44 @@ MODERN_GROUPS = {"fumble_reviews", "fumble_review_evidence", "shared_exposures",
                  "shared_measurement", "projection_code"}
 
 
+def normalization_source_binding(
+    bundle: Path, groups: dict[str, list[str]], manifest: dict[str, Any],
+    values: dict[str, str], contract: dict[str, Any],
+) -> dict[str, str]:
+    """Bind automatic training inputs; independent regeneration verifies results."""
+    from .gain_recipe import TRAINING_REPETITIONS, TRAINING_SEED, load_source_training_contract
+
+    names = groups.get("normalization_contract", [])
+    model = manifest.get("gain_normalization")
+    if not names:
+        if model is not None or "--gain-normalization-contract" in values:
+            raise ValueError("Normalization model requires its bound normalization source contract")
+        return {}
+    if len(names) != 1 or not isinstance(model, dict):
+        raise ValueError("Requires one normalization source contract and normalization model")
+    path = bundle / names[0]
+    source, source_bytes = load_source_training_contract(path)
+    if model.get("source_contract_sha256") != hashlib.sha256(source_bytes).hexdigest():
+        raise ValueError("Candidate differs from normalization source contract bytes")
+    if any(source[name] != contract.get(name) for name in
+           ("season", "schedule", "targets", "teams", "games") if name in source):
+        raise ValueError("Candidate normalization source facts differ from release source facts")
+    training = model.get("training", {})
+    derivation = model.get("derivation", {})
+    if (not isinstance(training, dict) or not isinstance(derivation, dict)
+            or type(model.get("schema_version")) is not int or model["schema_version"] != 1
+            or model.get("fit_accepted") is not False
+            or model.get("source_truth_verified") is not False
+            or derivation.get("cohort") != sorted(contract["teams"])
+            or training.get("repetitions") != TRAINING_REPETITIONS
+            or training.get("seed") != TRAINING_SEED
+            or training.get("policy") != "chart-focused"
+            or training.get("attempt_end_zone_interception_returns") is not True
+            or training.get("validation_passed") is not True):
+        raise ValueError("Candidate differs from fixed normalization training procedure")
+    return {"--gain-normalization-contract": names[0]}
+
+
 def pfr_reconciliation_binding(bundle: Path, names: list[str], selected: str | None) -> str:
     """Require the complete factual/evidence closure of one selected sidecar or replay."""
     if selected not in names or not selected or not selected.endswith(".json"):

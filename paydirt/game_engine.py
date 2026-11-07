@@ -531,7 +531,7 @@ class PaydirtGameEngine:
                         trace = " | ".join(kick_rerolls + [f'RT:{return_roll}→"{ret_result}"'])
                         dice_line = self._kickoff_dice_line(dice_roll, ko_result, trace)
                         if double_foul_result["action"] == "offset":
-                            self._use_time(10)
+                            self._use_time(10, defensive_penalty=True)
                             outcome = self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
                             outcome.description = f"OFFSETTING PENALTIES on kickoff; re-kick. {dice_line} " + outcome.description
                             outcome.result.description = outcome.description
@@ -666,7 +666,7 @@ class PaydirtGameEngine:
                 )
                 if chain.offsetting:
                     # Offsetting fouls nullify the kick: ten seconds, then re-kick.
-                    self._use_time(10)
+                    self._use_time(10, defensive_penalty=True)
                     return self.kickoff(kicking_home=kicking_home, kickoff_spot=kickoff_spot)
 
         ctx = {

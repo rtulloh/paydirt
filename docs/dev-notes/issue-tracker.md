@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-187 issues: 108 open, 31 resolved, 48 closed.
+188 issues: 109 open, 31 resolved, 48 closed.
 
-## Open (108)
+## Open (109)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -41,6 +41,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-038](issues/DATA/DATA-038.md) | High | Aborted field-goal labels omit snap fumbles and distinct statistical actors | created 2026-11-06 | DATA-030, DATA-036 |
 | [FLOW-013](issues/FLOW/FLOW-013.md) | High | Web modifier panel hides defensive timeout requests and does not forward them to the engine | created 2026-11-02 | — |
 | [FLOW-016](issues/FLOW/FLOW-016.md) | High | Penalty dialog invents midfield and incorrect enforcement previews | created 2026-11-06 | — |
+| [FLOW-019](issues/FLOW/FLOW-019.md) | High | Offsetting kickoff fouls end the period before the required re-kick | created 2026-11-07 | — |
 | [RULE-026](issues/RULE/RULE-026.md) | High | Selected offensive fumble priority is misclassified as defensive interception | created 2026-11-05 | — |
 | [RULE-027](issues/RULE/RULE-027.md) | High | Cross-chart punt fouls conflate teams and omit replay timing | created 2026-11-06 | DATA-033, DATA-034, RULE-028 |
 | [RULE-029](issues/RULE/RULE-029.md) | High | Interception chart spots on or beyond the offense end line score touchdowns instead of safeties | created 2026-11-06 | — |

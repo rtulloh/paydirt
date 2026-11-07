@@ -7,6 +7,7 @@ import csv
 import hashlib
 import json
 import shutil
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict
@@ -28,6 +29,7 @@ from paydirt.empirical_adjustment import (
     scale_empirical_run_yards,
 )
 from paydirt.fumble_source import FUMBLE_GAIN_POLICIES
+from paydirt.gain_recipe import prepare_gain_recipe
 from paydirt.generated_source_audit import generation_input_hashes
 from paydirt.pfr_event_reconciliation import EventReconciliations, load_event_reconciliations
 from paydirt.pfr_play_by_play import (
@@ -193,6 +195,7 @@ def _copy_team_metadata(template: Path, output: Path, team_name: str) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the PFR play-by-play chart generation command."""
+    arguments = list(argv) if argv is not None else sys.argv[1:]
     parser = argparse.ArgumentParser(
         description="Generate team charts from aggregate stats plus archived PFR play-by-play."
     )
@@ -220,6 +223,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Optional inclusive YYYYMMDD cutoff used to exclude postseason games",
     )
     parser.add_argument("--seed", type=int, default=8306, help="Stable classification seed")
+    parser.add_argument(
+        "--gain-normalization-contract", type=Path,
+        help="Source-only calendar/targets: regenerate baseline and derive one fixed gain adjustment",
+    )
     parser.add_argument(
         "--fumble-gain-policy", choices=FUMBLE_GAIN_POLICIES,
         help="Explicit experimental separation of reviewed credit and modeled fumble gain",
@@ -350,6 +357,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         prepared_teams.append((abbreviation, team_name, calibrated, empirical,
                                generated_plays, fallback_columns))
 
+    normalization = (prepare_gain_recipe(
+        main, arguments, audit_dir=audit_dir, contract_path=args.gain_normalization_contract,
+        stats={name: stats for _, name, stats, _, _, _ in prepared_teams}, source_games=games,
+    ) if args.gain_normalization_contract else None)
     pass_calibration = EmpiricalPassCalibration(
         completion_rate_adjustment=profile.pass_completion_adjustment,
         interception_rate_adjustment=profile.pass_interception_adjustment,
@@ -372,10 +383,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             calibrate_empirical_pass_events=True,
             empirical_pass_calibration=pass_calibration,
             neutral_pressure=neutral_pressure,
+            **({"gain_multipliers": tuple(
+                normalization["derivation"]["metrics"][metric]["teams"][team_name]["multiplier"]
+                for metric in ("passing", "rushing"))} if normalization else {}),
         )
         _copy_team_metadata(template, output, team_name)
         _write_empirical_csv(audit_dir / f"{team_name}.csv", raw_team_plays)
         generated_teams[team_name] = {
+            **({"gain_normalization": charts.gain_normalization} if normalization else {}),
             "primary_layout": charts.primary_layout,
             "empirical_allocation_diagnostics": charts.empirical_allocations,
             "opponent_sampling_diagnostics": adjusted.sampling_diagnostics.get(abbreviation, {}),
@@ -403,6 +418,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                              or _source_date(path) <= args.through_date],
             "team_map": [Path(args.team_map)],
             "profile": [args.calibration_profile] if args.calibration_profile else [],
+            "normalization_contract": [args.gain_normalization_contract] if args.gain_normalization_contract else [],
         }) | (reconciliation_input_hashes(reconciliations) if reconciliations else {}),
         "season": season,
         "seed": args.seed,
@@ -443,6 +459,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "diagnostics": dict(sorted(diagnostics.items())),
         "teams": generated_teams,
     }
+    if normalization is not None:
+        if normalization["baseline_input_hashes"] != {
+                key: value for key, value in manifest["input_hashes"].items()
+                if not key.startswith("normalization_contract/")}:
+            raise ValueError("Source inputs changed between baseline and normalized generation")
+        manifest["gain_normalization"] = normalization
     (output / "generation-manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

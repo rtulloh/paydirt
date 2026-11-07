@@ -1,8 +1,7 @@
-"""Unwired, source-independent components of the reviewed gain experiment.
+"""Source-independent arithmetic and transformations for derived chart gains.
 
-No generator or game path calls these helpers. A future caller must establish
-complete supported source, eligible pooled training receipts and final recipe
-identity; this module cannot confer those approvals or statistical acceptance.
+The optional generator recipe supplies pooled training and source counts. These
+helpers cannot establish source truth or final statistical acceptance.
 """
 from __future__ import annotations
 
@@ -183,7 +182,7 @@ def transform_offense_gains(
     offense: Mapping[str, Mapping[int, str]], *,
     passing_multiplier: float, rushing_multiplier: float,
 ) -> tuple[dict[str, dict[int, str]], dict[str, Any]]:
-    """Transform an allocated synthetic offense before a future final layout.
+    """Transform an allocated offense before final layout.
 
     Ordinary primary numbers and numeric rushing B gains alone are eligible.
     F/F INC/QT, all other symbols and the complete QT column are copied exactly.

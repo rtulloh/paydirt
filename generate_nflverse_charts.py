@@ -9,6 +9,7 @@ import json
 import math
 import re
 import shutil
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict
@@ -34,6 +35,7 @@ from paydirt.empirical_adjustment import (
     scale_empirical_run_yards,
 )
 from paydirt.fumble_source import FUMBLE_GAIN_POLICIES
+from paydirt.gain_recipe import prepare_gain_recipe
 from paydirt.generated_source_audit import generation_input_hashes
 from paydirt.nflverse_fumble_ledger import FumbleLossReview
 from paydirt.nflverse_play_by_play import FUMBLE_PROJECTION_MODES, load_nflverse_play_by_play
@@ -220,6 +222,7 @@ def _copy_team_metadata(template: Path, output: Path, team_name: str) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the nflverse play-by-play chart generation command."""
+    arguments = list(argv) if argv is not None else sys.argv[1:]
     parser = argparse.ArgumentParser(
         description=(
             "Generate opponent-adjusted team charts from nflverse regular-season "
@@ -237,6 +240,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", required=True, help="Generated season directory")
     parser.add_argument("--audit-dir", required=True, help="Classified local audit CSV directory")
     parser.add_argument("--seed", type=int, default=8306, help="Stable generation seed")
+    parser.add_argument(
+        "--gain-normalization-contract", type=Path,
+        help="Source-only calendar/targets: regenerate baseline and derive one fixed gain adjustment",
+    )
     parser.add_argument(
         "--fumble-gain-policy", choices=FUMBLE_GAIN_POLICIES,
         help="Explicit experimental separation of source credit and modeled fumble gain",
@@ -422,6 +429,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         prepared_teams.append((abbreviation, team_name, calibrated, empirical,
                                generated_plays, fallback_columns))
 
+    normalization = (prepare_gain_recipe(
+        main, arguments, audit_dir=audit_dir, contract_path=args.gain_normalization_contract,
+        stats={name: stats for _, name, stats, _, _, _ in prepared_teams},
+        source_games=season_data.games,
+    ) if args.gain_normalization_contract else None)
     pass_calibration = EmpiricalPassCalibration(
         completion_rate_adjustment=profile.pass_completion_adjustment,
         interception_rate_adjustment=profile.pass_interception_adjustment,
@@ -447,6 +459,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             neutral_pressure=neutral_pressure,
             fumble_range_override=(frozen_ranges.get(abbreviation)
                                    if range_policy == "measured_diagnostic_v1" else None),
+            **({"gain_multipliers": tuple(
+                normalization["derivation"]["metrics"][metric]["teams"][team_name]["multiplier"]
+                for metric in ("passing", "rushing"))} if normalization else {}),
         )
         if args.fumble_projection_mode:
             shared = [event for event in season_data.shared_return_fumbles if event.team == abbreviation]
@@ -464,6 +479,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _copy_team_metadata(template, output, team_name)
         _write_empirical_csv(audit_dir / f"{team_name}.csv", raw_team_plays)
         generated_teams[team_name] = {
+            **({"gain_normalization": charts.gain_normalization} if normalization else {}),
             "primary_layout": charts.primary_layout,
             "empirical_allocation_diagnostics": charts.empirical_allocations,
             "opponent_sampling_diagnostics": adjusted.sampling_diagnostics.get(abbreviation, {}),
@@ -521,6 +537,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "play_by_play": [Path(args.pbp)],
             "team_map": [Path(args.team_map)],
             "profile": [args.calibration_profile] if args.calibration_profile else [],
+            "normalization_contract": [args.gain_normalization_contract] if args.gain_normalization_contract else [],
             "fumble_reviews": [args.fumble_loss_reviews] if args.fumble_loss_reviews else [],
             "fumble_review_evidence": review_evidence,
             "shared_exposures": [args.shared_return_exposures] if args.shared_return_exposures else [],
@@ -554,6 +571,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "diagnostics": dict(sorted(season_data.diagnostics.items())),
         "teams": generated_teams,
     }
+    if normalization is not None:
+        if normalization["baseline_input_hashes"] != {
+                key: value for key, value in manifest["input_hashes"].items()
+                if not key.startswith("normalization_contract/")}:
+            raise ValueError("Source inputs changed between baseline and normalized generation")
+        manifest["gain_normalization"] = normalization
     (output / "generation-manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

@@ -50,6 +50,10 @@ separate ten-second timing. At expiry, only an accepted defensive foul or
 offsetting fouls extend the period. This is a selected use of the rulebook's
 alternate method, not an implementation of that entire optional system.
 
+An offsetting kickoff foul that consumes the remaining ten seconds holds the
+original period at 0:00 for the re-kick. The replay resolves before the engine
+advances the period or ends the game; it does not consume the next period's time.
+
 ### Natural Out-of-Bounds Results
 
 A retained `*` or `†` result uses ten seconds inside the last two minutes of
