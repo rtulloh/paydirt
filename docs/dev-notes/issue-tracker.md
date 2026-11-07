@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-188 issues: 108 open, 31 resolved, 49 closed.
+192 issues: 112 open, 31 resolved, 49 closed.
 
-## Open (108)
+## Open (112)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -21,7 +21,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AUD-030](issues/AUD/AUD-030.md) | High | Engine report validator trusts unverified derived score pace and special rates | created 2026-11-06 | — |
 | [DATA-016](issues/DATA/DATA-016.md) | High | Sparse empirical event allocation can choose a worse physical probability | created 2026-11-05 | — |
 | [DATA-017](issues/DATA/DATA-017.md) | High | Public play-by-play classification totals disagree with official source counts | created 2026-11-05 | — |
-| [DATA-018](issues/DATA/DATA-018.md) | High | Promoted generated cohorts fail fresh current-engine accuracy gate | created 2026-11-05 | DATA-019, VAL-019 |
+| [DATA-018](issues/DATA/DATA-018.md) | High | Promoted generated cohorts fail fresh current-engine accuracy gate | created 2026-11-05 | DATA-019, VAL-019, DATA-042, AI-030 |
 | [DATA-019](issues/DATA/DATA-019.md) | High | Calibration observer counts QT fumbles as completed passes instead of sacks or rushing | created 2026-11-05 | DATA-018 |
 | [DATA-020](issues/DATA/DATA-020.md) | High | Calibration observer credits nullified offsetting-penalty plays | created 2026-11-05 | DATA-031 |
 | [DATA-021](issues/DATA/DATA-021.md) | High | Generated supplemental columns contain symbols that invoke unintended engine fallback | created 2026-11-05 | — |
@@ -64,6 +64,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-024](issues/AI/AI-024.md) | Medium | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
 | [AI-028](issues/AI/AI-028.md) | Medium | Fourth-down urgency falls through to conservative punting in own territory when multiple scores are needed | created 2026-11-06 | AI-003, AI-006 |
 | [AI-029](issues/AI/AI-029.md) | Medium | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
+| [AI-030](issues/AI/AI-030.md) | Medium | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
@@ -76,6 +77,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-037](issues/DATA/DATA-037.md) | Medium | Reference decoder accepts signed defensive fumbles absent from priority table | created 2026-11-06 | — |
 | [DATA-040](issues/DATA/DATA-040.md) | Medium | Generated defenses repeat interception stripes and fixed depth patterns across formations and teams | created 2026-11-06 | DATA-022, DATA-039 |
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
+| [DATA-042](issues/DATA/DATA-042.md) | Medium | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
@@ -105,6 +107,8 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-010](issues/VAL/VAL-010.md) | Medium | Unit regressions still depend on private historical seasons and silently skip | created 2026-10-30 | — |
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-016](issues/VAL/VAL-016.md) | Medium | Development API proxy cannot reach an IPv4-only backend when localhost resolves to IPv6 | created 2026-11-05 | — |
+| [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
+| [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19 | AUD-025 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |

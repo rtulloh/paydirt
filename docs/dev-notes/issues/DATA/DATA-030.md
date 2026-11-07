@@ -339,3 +339,18 @@ conflicts remain held; do not turn the incomplete-pass subgroup into F INC from
 its raw wording alone. Receipt c8e28a026b53a793f78f1b5fa748ebe086354fff661b6e0bab6bc9733e376b4d
 is retained in ignored release evidence. No source/fit acceptance or ticket
 closure follows.
+
+
+--- 2026-11-07 15:53 ---
+v1.10.1 explicitly separates observed source facts from user-authorized modeled
+role/class assignments. The 1983 fitting population contains 712 of 727 retained
+fumble events; 15 unresolved events are excluded uniformly from fitting, with
+IDs/reasons/hashes and per-team impacts retained locally. Three reviewed owned
+zero-credit aborted field goals are supported; the remaining unknown-credit
+FG is excluded. Recovery position is not used as physical initial gain.
+
+Continue this issue for evidence improvement and sensitivity of those modeling
+choices; release permission is not recovered historical evidence. Replace
+assumptions only with supported facts, retain versioned provenance and disclose
+any effects on source denominators, chart output and fit. Do not reopen broad
+source research as a release requirement without a new scope decision.

@@ -12,9 +12,23 @@ tags:
 links:
   - DATA-019
   - VAL-019
+  - DATA-042
+  - AI-030
 ---
 
 ## Description
+
+Current release checkpoint: v1.10.1 ships corrected generated cohorts with three
+retained fixed-bound exceptions: 1983 49ers completion 0.610006 versus 0.642045,
+Falcons 0.601726 versus 0.633136 (tolerance 0.03), and 2024 Ravens rushing YPA
+5.339045 versus 5.756318 (tolerance 0.4). Other declared team/league metric bounds
+pass in the respective 64-repetition development reports. These are accepted
+release limitations, not accuracy passes or widened bounds. Historical source
+completeness remains false: 1983 uses explicit role/class assumptions and fits
+712 of 727 retained fumble events, excluding 15 under a disclosed uniform policy.
+
+The following original evidence describes earlier development candidates and
+is retained as investigation history, not the current release measurement.
 
 Final corrected-observer evidence covers 64 source-schedule repetitions per
 public-generated cohort: 14,336 games/1,024 team-games per 1983 team and 17,408
@@ -361,3 +375,18 @@ exceptions under unchanged0.03bounds: SF0.610006vs0.642045; ATL0.601726vs0.63313
 Other declared team metric bounds passed. Do not represent this as an accuracy
 pass. Fresh256-season outcome report is being run against the frozen candidate;
 source reproduction is in progress. No team tuning or relaxed test expectations.
+
+--- 2026-11-07 15:53 ---
+Published v1.10.1 retains the three accuracy exceptions summarized above. Both
+corrected cohorts completed 256 seasons each, 132,608 games total, without game
+failures. The updated 1983 comparison includes typed-FG runtime changes relative
+to its old baseline; it does not isolate chart causality. Reviewed current results
+and resolved-ticket confirmation: FLOW-019 already records the same-seed kickoff
+fix evidence and remains closed. No other issue is closed from aggregate game
+completion or historical standings alone.
+
+League scoring/pace and controlled policy-transfer questions now have separate
+DATA-042 and AI-030 tickets. The 15 historical omissions (2.063% of fumble events)
+and modeled-source limits remain follow-up evidence under DATA-028/DATA-030;
+no private source facts or narratives are published. Release selection did not
+establish strict historical completeness or eliminate the fixed-bound misses.
