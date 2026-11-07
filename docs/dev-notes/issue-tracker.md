@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-192 issues: 112 open, 31 resolved, 49 closed.
+193 issues: 113 open, 31 resolved, 49 closed.
 
-## Open (112)
+## Open (113)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -78,6 +78,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-040](issues/DATA/DATA-040.md) | Medium | Generated defenses repeat interception stripes and fixed depth patterns across formations and teams | created 2026-11-06 | DATA-022, DATA-039 |
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
+| [DATA-043](issues/DATA/DATA-043.md) | Medium | Audit play-specific interception spot support in generated passing charts | created 2026-11-07 | — |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
