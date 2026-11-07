@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-188 issues: 109 open, 31 resolved, 48 closed.
+188 issues: 108 open, 31 resolved, 49 closed.
 
-## Open (109)
+## Open (108)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -41,7 +41,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-038](issues/DATA/DATA-038.md) | High | Aborted field-goal labels omit snap fumbles and distinct statistical actors | created 2026-11-06 | DATA-030, DATA-036 |
 | [FLOW-013](issues/FLOW/FLOW-013.md) | High | Web modifier panel hides defensive timeout requests and does not forward them to the engine | created 2026-11-02 | — |
 | [FLOW-016](issues/FLOW/FLOW-016.md) | High | Penalty dialog invents midfield and incorrect enforcement previews | created 2026-11-06 | — |
-| [FLOW-019](issues/FLOW/FLOW-019.md) | High | Offsetting kickoff fouls end the period before the required re-kick | created 2026-11-07 | — |
 | [RULE-026](issues/RULE/RULE-026.md) | High | Selected offensive fumble priority is misclassified as defensive interception | created 2026-11-05 | — |
 | [RULE-027](issues/RULE/RULE-027.md) | High | Cross-chart punt fouls conflate teams and omit replay timing | created 2026-11-06 | DATA-033, DATA-034, RULE-028 |
 | [RULE-029](issues/RULE/RULE-029.md) | High | Interception chart spots on or beyond the offense end line score touchdowns instead of safeties | created 2026-11-06 | — |
@@ -165,7 +164,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (48)
+## Closed (49)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -181,6 +180,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [DATA-014](issues/DATA/DATA-014.md) | High | Comprehensive chart audit exposes lost source features and biased empirical quantization | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | DATA-006, DATA-011, DATA-013 |
 | [DATA-034](issues/DATA/DATA-034.md) | High | Punt-foul rerolls discard retained kick classes and markers | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | DATA-032, RULE-027 |
 | [FLOW-012](issues/FLOW/FLOW-012.md) | High | Competing CPU fourth-down requests can restore a stale kick panel after possession changes | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | VAL-015 |
+| [FLOW-019](issues/FLOW/FLOW-019.md) | High | Offsetting kickoff fouls end the period before the required re-kick | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
 | [RULE-010](issues/RULE/RULE-010.md) | High | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
 | [RULE-017](issues/RULE/RULE-017.md) | High | Own-recovery fumble advance resets the down to second regardless of the down before | created 2026-10-27, resolved 2026-10-27, closed 2026-11-06 | — |

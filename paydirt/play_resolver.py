@@ -103,6 +103,8 @@ class PlayResult:
     punt_return_result: str = ""
     # A punt-column snap fumble occurred before any kick or punt return.
     punt_snap_fumble: bool = False
+    # No kick occurred; ownership and a zero credited-gain proxy are explicit.
+    field_goal_snap_fumble: bool = False
     # Kickoff return: the receiving team's own roll and chart cell (0/"" when no return)
     kickoff_return_dice: int = 0
     kickoff_return_result: str = ""
@@ -429,6 +431,15 @@ def parse_result_string(result_str: str) -> PlayResult:
     - "INC" -> Incomplete pass (1972 format)
     """
     result_str = result_str.strip() if result_str else ""
+    if result_str.upper().startswith("F SNAP"):
+        snap = re.fullmatch(r"F SNAP (KEEP|LOST) 0", result_str, re.IGNORECASE)
+        if snap is None:
+            raise ValueError("Unsupported field-goal snap ownership or zero-gain proxy")
+        return PlayResult(
+            ResultType.FUMBLE, 0, "Aborted field goal: snap fumbled; no kick attempted",
+            raw_result=result_str, field_goal_snap_fumble=True,
+            fumble_recovered=snap.group(1).upper() == "KEEP", fumble_resolved=True,
+        )
     if result_str == "F INC":
         raise ValueError("F INC is supported only in primary offensive passing columns")
     if not result_str or result_str.upper() == "INC":
@@ -1307,7 +1318,8 @@ def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:
 
     # Parse the final result
     is_blocked = "BK" in fg_result.upper()
-    is_fumble = bool(re.match(r"^F\s*[+-]", fg_result, re.IGNORECASE))
+    is_fumble = bool(re.match(r"^(?:F\s*[+-]|F SNAP (?:KEEP|LOST) 0$)",
+                              fg_result, re.IGNORECASE))
 
     # Parse chart yards for success check
     chart_yards = 0

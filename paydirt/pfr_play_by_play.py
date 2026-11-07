@@ -131,6 +131,7 @@ class FumbleEvent:
     game_id: str
     play_number: int
     retained_incompletion: bool = False
+    field_goal_snap_result: str = ""
 
 
 @dataclass(frozen=True)
@@ -870,12 +871,26 @@ def classify_pfr_game(
         if isinstance(fact, AbortedFieldGoalFact):
             # A reviewed bad snap is an event even when the secondary feed labels
             # it a missed kick. Its credited runner need not be the fumbler.
-            # Current FG-snap cells force opponent recovery, so these independent
-            # source facts do not silently authorize a numeric chart projection.
+            # Only explicit zero credit and ownership authorize the typed proxy;
+            # unknown physical movement remains a separate nullable fact.
             current_team = fact.offense_team
+            projection = None
+            reason = "requires explicit zero rushing credit, ownership and a supported gain policy"
+            if fumble_gain_policy is not None:
+                try:
+                    projection = project_fumble_gain(FumbleGainFacts(
+                        f"{play.game_id}:{play.number}", play_fingerprint(play),
+                        "rushing" if fact.credited_player_id is not None else None,
+                        fact.credited_rushing_yards, fact.physical_initial_yards,
+                        fact.individual_lost, recovery_basis="reviewed",
+                        aborted_field_goal=True,
+                    ), policy=fumble_gain_policy)
+                except ValueError as error:
+                    reason = str(error)
             fumbles.append(FumbleEvent(
                 fact.offense_team, "field_goal_snap", fact.individual_lost,
-                play.game_id, play.number))
+                play.game_id, play.number,
+                field_goal_snap_result=projection.chart_result if projection else ""))
             diagnostics["reconciled_aborted_field_goals"] += 1
             event_counts[fact.offense_team]["aborted_field_goals"] += 1
             receipt = {
@@ -885,12 +900,16 @@ def classify_pfr_game(
                 "official_attempt": False,
             }
             reviewed_snap_receipts.append(receipt)
-            unsupported_fields.append({
-                "game_id": play.game_id, "play_number": play.number, "team": fact.offense_team,
-                "field": "aborted_field_goal_projection",
-                "reason": "requires supported snap movement, credit and recovery model; "
-                          "current field-goal F cells force opponent recovery",
-            })
+            if projection is not None:
+                projections.append(projection)
+                diagnostics[f"fumble_gain_basis_{projection.modeled_gain_basis}"] += 1
+                outcomes.append(_empirical_play(
+                    team, "special_teams", "field_goal", projection.chart_result, play))
+            else:
+                unsupported_fields.append({
+                    "game_id": play.game_id, "play_number": play.number, "team": fact.offense_team,
+                    "field": "aborted_field_goal_projection", "reason": reason,
+                })
             continue
 
         if play.number in modeled_continuations:
@@ -1346,6 +1365,8 @@ def calibrate_stats_from_pbp(
 
     attempts = [attempt for attempt in field_goals if attempt.team == team]
     special_teams = stats.special_teams
+    special_teams = replace(special_teams, field_goal_snap_outcomes=tuple(
+        event.field_goal_snap_result for event in team_fumbles if event.field_goal_snap_result))
     if attempts:
         by_distance: dict[int, list[int]] = {}
         for attempt in attempts:

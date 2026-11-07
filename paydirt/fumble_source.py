@@ -32,6 +32,7 @@ class FumbleGainFacts:
     reported_team: str | None = None
     recovery_basis: str | None = None
     retained_incompletion: bool = False
+    aborted_field_goal: bool = False
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,9 @@ class FumbleGainProjection:
         """Return the existing F token syntax for the separate modeled gain."""
         if self.source_facts.retained_incompletion:
             return "F INC"
+        if self.source_facts.aborted_field_goal:
+            owner = "LOST" if self.source_facts.lost else "KEEP"
+            return f"F SNAP {owner} 0"
         gain = self.modeled_initial_yards
         return "F" if gain == 0 else f"F {'+' if gain > 0 else '-'} {abs(gain)}"
 
@@ -85,6 +89,15 @@ def project_fumble_gain(facts: FumbleGainFacts, *, policy: str) -> FumbleGainPro
         raise ValueError("Fumble projection requires a source event identity and raw SHA-256")
     if type(facts.retained_incompletion) is not bool:
         raise ValueError("Retained incompletion marker must be boolean")
+    if type(facts.aborted_field_goal) is not bool:
+        raise ValueError("Aborted field-goal marker must be boolean")
+    if facts.aborted_field_goal and (
+        facts.retained_incompletion or facts.credited_kind != "rushing"
+        or type(facts.credited_yards) is not int or facts.credited_yards != 0
+        or facts.physical_initial_yards is not None
+        or facts.loose_ball_yards is not None or facts.recovery_advance_yards is not None
+    ):
+        raise ValueError("Aborted field-goal projection requires explicit zero rushing credit and unknown movement")
     if facts.retained_incompletion:
         if (facts.credited_kind != "incomplete" or type(facts.credited_yards) is not int
                 or facts.credited_yards != 0 or facts.lost is not False

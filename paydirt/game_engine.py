@@ -5276,12 +5276,17 @@ class PaydirtGameEngine:
             raw_result=fg_result,
             dice_roll=dice_roll,
         )
+        if fg_result.upper().startswith("F SNAP"):
+            parsed = parse_result_string(fg_result)
+            parsed.dice_roll = dice_roll
 
         success = False
         blocked = False
         description = ""
 
-        if "BK" in fg_result.upper():
+        if parsed.field_goal_snap_fumble:
+            description = parsed.description
+        elif "BK" in fg_result.upper():
             blocked = True
             description = f"BLOCKED FG! (from {statistical_distance} yards)"
         elif re.match(r"^F\s*[+-]", fg_result, re.IGNORECASE):
@@ -5348,7 +5353,13 @@ class PaydirtGameEngine:
             blocked = False
             description = outcome.description
 
-            if "BK" in fg_result.upper():
+            if outcome.result.field_goal_snap_fumble:
+                completed = self._complete_field_goal_snap(
+                    outcome.result, ball_pos_before, outcome.down_before, ytg_before)
+                completed.penalty_choice = penalty_choice
+                outcome = completed
+                description = completed.description
+            elif "BK" in fg_result.upper():
                 # Handle blocked kick (simplified - full logic is complex)
                 blocked = True
                 # For simplicity, treat as turnover at spot of hold
@@ -5426,6 +5437,9 @@ class PaydirtGameEngine:
             # The kick was discarded: report only the enforced penalty, even if
             # the provisional kick would have scored or turned the ball over.
             outcome.penalty_applied = True
+            outcome.result.field_goal_snap_fumble = False
+            outcome.result.fumble_recovered = False
+            outcome.result.fumble_resolved = False
             outcome.field_goal_made = False
             outcome.touchdown = False
             outcome.safety = False
@@ -5484,6 +5498,31 @@ class PaydirtGameEngine:
             return self.state.quarter == scoring_quarter and self.state.time_remaining > 0
         return True
 
+    def _complete_field_goal_snap(
+        self, result: PlayResult, position: int, down: int, distance: int,
+    ) -> PlayOutcome:
+        """Consume one explicitly owned snap using its separate zero-credit proxy."""
+        field_before = self.state.field_position_str()
+        retained = result.fumble_recovered
+        turnover, touchdown, safety, first_down = self._handle_fumble(
+            result, position, 0, down, distance)
+        result.turnover = turnover
+        result.fumble_spot = 0  # Physical contact/recovery spots remain unknown.
+        owner = "Offense" if retained else "Defense"
+        description = f"Aborted field goal: snap fumbled. {owner} recovers; no kick attempted."
+        if retained and turnover:
+            description += " Turnover on downs."
+        result.description = description
+        result.rule_explanation = description
+        return PlayOutcome(
+            play_type=PlayType.FIELD_GOAL, defense_type=DefenseType.STANDARD,
+            result=result, yards_gained=0, turnover=turnover,
+            turnover_on_downs=retained and turnover, touchdown=touchdown, safety=safety,
+            first_down=first_down, field_goal_made=False,
+            field_position_before=field_before, field_position_after=self.state.field_position_str(),
+            down_before=down, down_after=self.state.down, description=description,
+        )
+
     def _handle_field_goal(self) -> PlayOutcome:
         """
         Handle a field goal attempt per official Paydirt rules with full penalty handling.
@@ -5525,6 +5564,10 @@ class PaydirtGameEngine:
 
         # Handle offsetting penalties - replay the down (rekick)
         if fg_roll_result.offsetting:
+            if parsed.field_goal_snap_fumble:
+                parsed.field_goal_snap_fumble = False
+                parsed.fumble_recovered = parsed.fumble_resolved = False
+                parsed.replay_down = True
             self._use_time(10)
             # Create a PenaltyChoice for the outcome
             penalty_choice = PenaltyChoice(
@@ -5591,6 +5634,13 @@ class PaydirtGameEngine:
             fg_outcome._fg_ytg_before = ytg_before
 
             return fg_outcome
+
+        if parsed.field_goal_snap_fumble:
+            outcome = self._complete_field_goal_snap(parsed, ball_pos_before, down_before, ytg_before)
+            self.play_log.append(outcome)
+            self._use_time(random.uniform(5, 10))
+            outcome.clock_trace = self.last_clock_trace
+            return outcome
 
         # Determine success based on result
         success = False

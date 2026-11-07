@@ -135,6 +135,9 @@ def supported_generated_cell(unit: str, column: str, cell: str) -> bool:
         return unit == "offense" and column in {
             "screen", "short_pass", "medium_pass", "long_pass", "te_short_long",
         }
+    if cell.strip().upper().startswith("F SNAP"):
+        return (unit == "special_teams" and column == "field_goal"
+                and re.fullmatch(r"F SNAP (KEEP|LOST) 0", cell, re.IGNORECASE) is not None)
     if unit == "offense":
         if column == "breakaway":
             pattern = numeric
@@ -291,6 +294,7 @@ class SpecialTeamsStats:
     field_goal: StatLine = field(default_factory=StatLine)
     extra_point: StatLine = field(default_factory=StatLine)
     field_goal_by_distance: tuple[FieldGoalDistanceStats, ...] = ()
+    field_goal_snap_outcomes: tuple[str, ...] = ()
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any] | None) -> SpecialTeamsStats:
@@ -311,6 +315,7 @@ class SpecialTeamsStats:
                 FieldGoalDistanceStats.from_dict(bucket)
                 for bucket in source.get("field_goal_by_distance", ())
             ),
+            field_goal_snap_outcomes=tuple(source.get("field_goal_snap_outcomes", ())),
         )
 
 
@@ -1717,6 +1722,18 @@ def _generate_special(stats: TeamSeasonStats, seed: int) -> dict[str, dict[int, 
         field_goal_mean = max(18.0, min(45.0, (special.field_goal.long or 45) * 0.58))
         result["field_goal"] = _special_column(field_goal_mean, 9.0, field_goal_seed, 5)
     _apply_special_penalty_profile(result, stats.team_name, seed)
+    if special.field_goal_snap_outcomes:
+        snaps = special.field_goal_snap_outcomes
+        if any(not supported_generated_cell("special_teams", "field_goal", cell)
+               or not cell.startswith("F SNAP ") for cell in snaps):
+            raise ValueError("Unsupported reviewed field-goal snap outcome")
+        available_mass = sum(_ROLL_WEIGHTS[roll] for roll, cell in result["field_goal"].items()
+                             if cell.lstrip("-").isdigit())
+        _replace_rate(
+            result["field_goal"], len(snaps) / (special.field_goal.attempts + len(snaps))
+            * available_mass / _TOTAL_WEIGHT, snaps,
+            random.Random(_seed_for(seed, stats.team_name, "field_goal_snap")), minimum_one=True,
+        )
     if special.field_goal.blocked:
         # Block risk is conditional on an actual attempt, excluding foul rerolls.
         available_mass = sum(
@@ -2023,6 +2040,9 @@ def generate_team_charts(
                 calibrated_outcomes, offense[name],
             )
         for name, outcomes in empirical.special_teams.items():
+            if name == "field_goal" and stats.special_teams.field_goal_snap_outcomes:
+                # Nonattempts have a separate denominator from actual kicks.
+                continue
             for cell in outcomes:
                 if not supported_generated_cell("special_teams", name, cell):
                     raise ValueError(f"unsupported empirical symbol in {name}: {cell!r}")
@@ -2056,6 +2076,8 @@ def generate_team_charts(
         )
     field_goal_mishap_mass = 0
     for name, (column_name, rate, result) in _MISSING_SPECIAL_PROFILES.items():
+        if name == "field_goal_fumble" and stats.special_teams.field_goal_snap_outcomes:
+            continue
         if name in missing_source_features:
             column = special[column_name]
             _replace_rate(

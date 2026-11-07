@@ -129,11 +129,12 @@ class EngineCalibrationObserver:
                 or (outcome.penalty_choice is not None and outcome.penalty_choice.offsetting)):
             return
         totals = self.team_totals(team)
-        if selected_play == PlayType.FIELD_GOAL:
+        if selected_play == PlayType.FIELD_GOAL and not outcome.result.field_goal_snap_fumble:
             totals.field_goal_attempts += 1
             totals.field_goals_made += int(outcome.field_goal_made)
             return
-        if selected_play in _NON_SCRIMMAGE_PLAY_TYPES and not outcome.result.punt_snap_fumble:
+        if (selected_play in _NON_SCRIMMAGE_PLAY_TYPES
+                and not outcome.result.punt_snap_fumble and not outcome.result.field_goal_snap_fumble):
             return
         totals.offensive_plays += 1
         if selected_play not in _PASS_PLAY_TYPES:

@@ -212,6 +212,7 @@ def _run_season(task: tuple[str, list[tuple[str, str]], int, str, bool]) -> dict
                                   "initial_yards": outcome.result.yards,
                                   "qb_time": outcome.result.qb_scramble_dice > 0,
                                   "punt_snap_fumble": outcome.result.punt_snap_fumble,
+                                  "field_goal_snap_fumble": outcome.result.field_goal_snap_fumble,
                                   "field_goal_made": bool(outcome.field_goal_made)})
                 selected.clear()
 
@@ -392,6 +393,9 @@ def _decision_errors(receipt: dict, teams: set[str]) -> list[str]:
                      and type(call["retained"]) is bool and type(call["initial_yards"]) is int
                      and type(call["qb_time"]) is bool and type(call["field_goal_made"]) is bool
                      and type(call["punt_snap_fumble"]) is bool
+                     and type(call.get("field_goal_snap_fumble", False)) is bool
+                     and (not call.get("field_goal_snap_fumble", False)
+                          or (play == "FIELD_GOAL" and call["result"] == "FUMBLE"))
                      and (not call["punt_snap_fumble"] or (play == "PUNT" and call["result"] == "FUMBLE")))
         except (KeyError, TypeError, ValueError):
             valid = False
@@ -411,10 +415,11 @@ def _decision_count_errors(receipt: dict) -> list[str]:
             continue
         team, play, *_ = call["situation"]
         count = totals[team]
-        if play == "FIELD_GOAL":
+        snap = call.get("field_goal_snap_fumble", False)
+        if play == "FIELD_GOAL" and not snap:
             count["field_goal_attempts"] += 1
             count["field_goals_made"] += int(call["field_goal_made"])
-        elif play not in {"PUNT", "KICKOFF"} or call["punt_snap_fumble"]:
+        elif play not in {"PUNT", "KICKOFF"} or call["punt_snap_fumble"] or snap:
             count["offensive_plays"] += 1
             if play not in passes:
                 count["rushing_attempts"] += 1

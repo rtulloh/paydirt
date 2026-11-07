@@ -104,7 +104,12 @@ Schema-4 sidecars may separately bind an originating class while leaving both
 credited fields null. Only the reported-proxy policy can combine that reviewed
 class with an unambiguous actor-bound source number. Reviewed aborted-field-goal
 records also preserve no-kick snap events, separate fumbling and credited actors,
-and nullable movement; their unsupported chart projection still blocks fitting.
+and nullable movement. With an explicit credited or reported proxy policy, reviewed
+zero rushing credit and known individual ownership support `F SNAP KEEP 0` or
+`F SNAP LOST 0` in the field-goal column. These consume a rushing snap without a
+kick attempt or recovery reroll. Zero is a credited-gain proxy, not inferred physical
+movement. Missing credit or ownership, nonzero credit, and physical-policy-only
+requests remain unsupported and block fitting.
 Schema-5 `reported_primary_yards` may bind an independently reviewed scoped
 number when the raw primary clause is malformed. Exact actor/team, primary class
 and one same-actor occurrence are required; supported raw-number conflicts and

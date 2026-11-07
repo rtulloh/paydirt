@@ -400,6 +400,7 @@ def test_root_generation_binds_applied_facts_and_evidence_bytes(
             "unit": "passing",
             "lost": False,
             "retained_incompletion": False,
+            "field_goal_snap_result": "",
         }
     ]
     assert ledger["games"][0]["event_counts"]["FOX"]["sacks"] == 1

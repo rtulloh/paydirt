@@ -271,3 +271,53 @@ training receipts, source coverage, untouched validation and complete charter
 checks remain pending. Historical source holds and browser validation are
 unresolved. Keep open. Immutable local receipts are under ignored
 release-readiness/push-release-20261107/normalization-experiment/.
+
+--- 2026-11-07 10:29 ---
+Inspected the frozen corrected 512-season campaign (256 per cohort), all
+132,608 games complete and all final checks pass. Current packaged 1983 charts
+qualify actual playoff teams Denver only 7/256 and Seattle 43/256, while actual
+nonqualifier Cincinnati qualifies 188/256. All sixty teams are reported in the
+ignored campaign report; no incomplete seasons were excluded. These frequencies
+are chart/model diagnostics under Hard AI and declared regression tiebreaks,
+not requirements to force historical results or evidence for team-specific
+tuning. Pending regenerated charts remain separately unqualified.
+
+The owner explicitly accepts the known modern normalized-candidate Ravens
+rushing error for this release investigation: 0.417273 exceeds the unchanged
+0.4 tolerance. The original failed 64-schedule result is retained; this is an
+accepted known issue, not an accuracy pass or a global tolerance change. Work
+now prioritizes completing the historical source/model population.
+
+--- 2026-11-07 10:36 ---
+Continued 1983 primary-source reconciliation across all 224 raw games. Fourteen
+of the original 180 held events now project from explicit official gamebook
+rushing/sack credits, including aborted-play credits with different physical
+and statistical actors. All 547 previously accepted projections are unchanged.
+The full census retains all 727 originating fumble events: 561 project (515
+reported proxies, 45 credited proxies, one retained incompletion), 166 remain
+unsupported, and there are zero source conflicts. Independent physical movement,
+loose-ball movement and recovery advances stay unknown where not established;
+statistical zero is not presented as physical zero.
+
+Ignored source-census-20 binds every new sidecar and recounts every game. No
+corrected 1983 cohort has yet been frozen, fitted, promoted or certified. Remaining
+work includes source association/action gaps and explicit snap events without
+independent credited class/gain; four reviewed aborted field-goal snaps require
+a model that preserves ownership and avoids recording a kick attempt. Historical
+playoff-frequency differences are deferred until corrected-chart qualification;
+the 512-season packaged-chart campaign is a baseline, not evidence for updated
+charts or a reason to tune team strengths.
+
+--- 2026-11-07 18:08 UTC ---
+
+The typed owned zero-credit aborted-field-goal model now preserves recovery
+ownership without rerolling, counts a rushing snap, and records no kick attempt.
+The complete 224-game recount supports three additional events: 727 events,
+564 projections, 163 held and zero conflicts. All previous 561 projection values
+are preserved; ordinary serialized facts gain an explicit false subtype marker.
+The fourth reviewed aborted field goal lacks the required credit and stays held.
+Ignored evidence: `historical-completion-20261107/source-census-21-owned-fg.json`
+under `.ai-audits/release-readiness/`. No corrected cohort has been generated,
+fitted, frozen or qualified. Keep open. The
+[completion boundary](../../historical-source-completion-boundary.md) records the
+remaining evidence categories and an unaccepted bounded missing-data proposal.

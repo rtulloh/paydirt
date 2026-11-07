@@ -24,6 +24,7 @@ use the [documentation index](../README.md).
 - [Chart-confidence charter](chart-confidence-agent-charter.md) and [implementation evidence](chart-confidence-implementation.md): active acceptance contract and recorded checkpoints; release held.
 - [Fumble source-credit experiment](fumble-source-credit-proposal.md): opt-in credited-yard proxy implementation, nullable physical facts and outstanding source/fit evidence.
 - [Source and representation review decisions](chart-source-model-review-decisions.md): bounded source-tier proxy experiment, retained-fumble/incompletion semantics and remaining shared-return model review.
+- [Historical source completion boundary](historical-source-completion-boundary.md): owned zero-credit snap implementation, complete-census hold and proposed missing-data decision.
 - [Public-only unit fixture cleanup](public-unit-fixture-cleanup.md): restored historical-independent loader, discovery, roster and season-rule checks, with changed expectations and clean-snapshot evidence.
 - [November 6 chart release preparation](chart-release-preparation-2026-11-06.md): component regression checkpoints, restored frontend coverage and remaining final-candidate requirements.
 - [Retained fumble followed by incompletion](retained-fumble-incompletion-engine.md): implemented primary passing subtype, penalty lifetime, typed observer interface and test-first evidence.
