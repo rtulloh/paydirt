@@ -178,7 +178,12 @@ that every legacy special-teams policy matches the original board-game rules.
 Loaded runtime definitions, module origins, internal aliases and literal policy
 constants must match the current package source. Parent and workers check this
 identity before and after execution; parallel runs use fresh spawned workers.
-The report must retain matching worker identities. These are consistency checks
+The report must retain matching worker identities. Unchanged source syntax,
+relative dependencies and compiled expectations use a bounded content cache;
+every check rereads source bytes and inspects live definitions, defaults,
+closures, constants, aliases and module origins. Same-size or same-timestamp
+edits cannot reuse old expectations. Successful identity results are never cached.
+These are consistency checks
 within a trusted process, not hostile-process attestation or a substitute for
 the final clean-snapshot check.
 Each report retains per-game seeds, matchups and counts, checks legal completion,

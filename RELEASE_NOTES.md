@@ -4,7 +4,7 @@
 
 - Improve late multi-score fourth-down urgency using scoring possessions, clock, field position and remaining timeouts.
 - Prevent inferred deep interception locations from entering Screen plays; use call-specific modeled fallbacks and enforce source/model support during chart generation. Refresh 259 modeled INT cells while preserving event probabilities and all other outcomes; audit catch locations separately from return yards.
-- Reuse isolated synthetic chart templates to reduce repeated visual-regression setup, preserving every case and assertion.
+- Speed up validation by reusing unchanged runtime-source expectations and isolated synthetic chart templates, preserving live integrity checks, cases and assertions.
 - Publish verified existing release tags without requesting unavailable workflow-write token permissions.
 
 The v1.10.1 historical-source modeling and fit exceptions below remain applicable.

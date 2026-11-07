@@ -19,6 +19,12 @@ from typing import Any
 # not audit/coaching policy constants. Their setters remain definition-checked.
 _DISPLAY_STATE = {"interactive_game": {"COMPACT_MODE", "AI_HELPER_ENABLED"}}
 
+# Cache only source-derived expectations. Read the actual bytes on every check;
+# loaded functions/defaults/closures/constants/imports must always be inspected.
+# Keep at most one source version per path and bound temporary-checkout growth.
+_source_cache: dict[Path, tuple[bytes, ast.Module, tuple[str, ...], dict[str, set[str]]]] = {}
+_SOURCE_CACHE_LIMIT = 128
+
 
 def _code_hash(code: CodeType) -> str:
     # Marshal preserves incidental string-interning/reference flags: equal code
@@ -51,7 +57,27 @@ def _compiled_codes(code: CodeType, prefix: str = "") -> dict[str, set[str]]:
     return codes
 
 
-def _source_modules(root: Path) -> dict[str, tuple[Path, ast.Module]]:
+def _source_expectations(path: Path) -> tuple[ast.Module, tuple[str, ...], dict[str, set[str]]]:
+    data = path.read_bytes()
+    cached = _source_cache.get(path)
+    if cached is None or cached[0] != data:
+        tree = ast.parse(data, filename=str(path))
+        dependencies: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 1:
+                if node.module and "." not in node.module:
+                    dependencies.append(node.module)
+                elif node.module is None:
+                    dependencies.extend(alias.name for alias in node.names)
+        compiled = _compiled_codes(compile(data, str(path), "exec", dont_inherit=True))
+        cached = (data, tree, tuple(dependencies), compiled)
+        if path not in _source_cache and len(_source_cache) >= _SOURCE_CACHE_LIMIT:
+            _source_cache.clear()
+        _source_cache[path] = cached
+    return cached[1], cached[2], cached[3]
+
+
+def _source_modules(root: Path) -> dict[str, tuple[Path, ast.Module, dict[str, set[str]]]]:
     """Follow the actual audit/core relative imports, including lazy imports."""
     pending, sources = ["chart_engine_audit"], {}
     while pending:
@@ -59,14 +85,9 @@ def _source_modules(root: Path) -> dict[str, tuple[Path, ast.Module]]:
         path = root / f"{name}.py"
         if name in sources or not path.is_file():
             continue
-        tree = ast.parse(path.read_bytes(), filename=str(path))
-        sources[name] = (path, tree)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.level == 1:
-                if node.module and "." not in node.module:
-                    pending.append(node.module)
-                elif node.module is None:
-                    pending.extend(alias.name for alias in node.names)
+        tree, dependencies, compiled = _source_expectations(path)
+        sources[name] = (path, tree, compiled)
+        pending.extend(dependencies)
     return sources
 
 
@@ -100,12 +121,11 @@ def loaded_runtime_identity() -> dict[str, Any]:
     sources = _source_modules(root)
     definitions, constants = [], []
     errors: list[str] = []
-    for name, (path, tree) in sorted(sources.items()):
+    for name, (path, tree, compiled) in sorted(sources.items()):
         module = importlib.import_module(f"{__package__}.{name}")
         if Path(module.__file__).resolve() != path:
             errors.append(f"{name}: module origin differs")
             continue
-        compiled = _compiled_codes(compile(path.read_bytes(), str(path), "exec", dont_inherit=True))
         def inspect_body(
             owner: Any, nodes: list[ast.stmt], prefix: str = "",
             name: str = name, compiled: dict[str, set[str]] = compiled,

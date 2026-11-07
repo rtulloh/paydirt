@@ -146,3 +146,19 @@ argument. Its new regression fails against the old caller; all 49 allocation and
 interception-policy tests pass after correction. The new fixture checks every
 profile encountered by the real audit. No existing expectation changes, chart
 regeneration or gameplay change is required for this caller correction.
+
+VAL-020 also removes repeated source parsing/compilation from runtime identity
+checks through a bounded content cache, while rereading bytes and inspecting all
+live state every time. Nine new synthetic controls cover unchanged-source reuse,
+same-size/same-mtime edits, live mutation and newly added dependencies; one reuse
+regression fails on baseline and eight controls pass. The same 91 existing
+engine-audit cases with coverage take 99.41s before and 11.90s after in cold local
+Python 3.12 processes (88.0% less). No existing assertion/case changes or identity
+result caching. Hosted overall runtime is reported separately when complete.
+
+The runtime-cache correction also passes 387 related calibration/source/freeze/
+reference-gate checks. Three initial local CLI JSON writes failed with ENOSPC;
+retaining failure logs and cleaning disposable passed-test fixtures resolves
+those environment failures without changing assertions. A clean tracked-only
+snapshot passes 544 focused integrity/engine/allocation/policy/documentation/
+tracker checks and ruff. Two runtime-identity type diagnostics match baseline.
