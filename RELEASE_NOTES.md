@@ -3,7 +3,7 @@
 ## v1.10.2
 
 - Improve late multi-score fourth-down urgency using scoring possessions, clock, field position and remaining timeouts.
-- Audit interception catch locations separately by passing play and defense formation; no bundled chart content changed. Modeled catch-depth limitations remain disclosed.
+- Prevent inferred deep interception locations from entering Screen plays; use call-specific modeled fallbacks and enforce source/model support during chart generation. Refresh 259 modeled INT cells while preserving event probabilities and all other outcomes; audit catch locations separately from return yards.
 - Reuse isolated synthetic chart templates to reduce repeated visual-regression setup, preserving every case and assertion.
 - Publish verified existing release tags without requesting unavailable workflow-write token permissions.
 

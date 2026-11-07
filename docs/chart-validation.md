@@ -541,8 +541,33 @@ through the priority table against uniformly sampled cohort defenses. It include
 self matchups and keeps formations separate; it does not represent actual coaching
 call shares. `mass` is an exact fraction and `probability` its decimal value.
 Interception return gains and stateful end-zone clipping are separate engine
-operations. Source adapters retain call classification, but aggregate fallback
-and empirical event calibration can use modeled baseline depths; this census
-neither certifies historical catch-depth fidelity nor applies a universal Screen
-cap. The current bundled cohorts contain no reachable Screen INT44. Detailed
+operations. Known interception catch depth uses the shared air-depth inference bins: at or
+behind the line maps to Screen, 1–9 yards to Short, 10–19 to Medium and 20 or more
+to Long. Explicit source Screen labels take precedence. Completion net gains
+retain their separate YAC-aware classifier; a 44-yard completed Screen does not
+imply a 44-yard interception location. Unknown interception locations and
+aggregate-only charts use disclosed per-call modeled spots: Screen 5, Short 5,
+Medium 12, Long 20 and TE Short/Long 8. Defensive modeled spots remain
+5/5/12/18/8 for those calls. Calibration reserves interception event mass even
+when both its finite baseline and empirical source omit an INT label.
+
+The generator rejects interception locations introduced from another call:
+offense support must come from that exact normalized source column or its
+modeled fallback, and defense support must match its call-specific model.
+Normalized empirical input declares source call attribution; the source adapters
+must constrain inferred eligibility before that boundary. Explicit source call
+and depth observations are retained, including unusual supported combinations.
+These checks prevent pooled deep locations from entering inferred Screen plays;
+they do not certify historical catch-depth fidelity or impose a universal cap. Detailed
 findings are in the [v1.10.2 investigation](dev-notes/release-1.10.2-scope.md).
+
+
+The v1.10.2 bundled cohorts apply the reviewed interception correction as a
+bounded post-generation migration: only INT location text changes in existing
+physical dice cells. Event mass, non-INT outcomes, fumble ranges, defenses,
+special teams and reviewed gain factors remain fixed. The compact generation
+manifests bind the original private source proof and a separate deterministic
+migration receipt. A complete corrected-source replay was reviewed locally but
+its unrelated resampling/quantization drift was not adopted; future full source
+generation can differ. Previous full-season and source-fit observations retain
+their original chart identity and are not new qualification of the migrated set.

@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-193 issues: 109 open, 33 resolved, 51 closed.
+194 issues: 110 open, 33 resolved, 51 closed.
 
-## Open (109)
+## Open (110)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -121,6 +121,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-017](issues/FLOW/FLOW-017.md) | Low | Scoreboard omits the opponent timeout budget and leaves the displayed count ambiguous | created 2026-11-06 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
+| [STAT-006](issues/STAT/STAT-006.md) | Low | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |
 | [TRACE-008](issues/TRACE/TRACE-008.md) | Low | End-line fumble depth roll is dropped from the description when the defense recovers | created 2026-10-27 | — |
 | [VAL-008](issues/VAL/VAL-008.md) | Low | CLI argv dispatch rejects the advertised -l flag, ignores -A/-H ordering and skips validation on --load | created 2026-10-27 | VAL-005 |
 | [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
@@ -207,7 +208,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [DATA-006](issues/DATA/DATA-006.md) | Medium | Aggregate chart calibration omits supplied rates and lacks resolved-outcome validation | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | RULE-021, DATA-007, DATA-010, DATA-014 |
 | [DATA-010](issues/DATA/DATA-010.md) | Medium | Generated breakaway triggers and B yardage are not reconstructed from play by play | created 2026-11-01, resolved 2026-11-02, closed 2026-11-02 | DATA-006, DATA-009, DATA-011 |
 | [DATA-033](issues/DATA/DATA-033.md) | Medium | Return-penalty modifiers lack an explicit consumer interpretation | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | RULE-027 |
-| [DATA-043](issues/DATA/DATA-043.md) | Medium | Audit play-specific interception spot support in generated passing charts | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
+| [DATA-043](issues/DATA/DATA-043.md) | Medium | Prevent cross-play interception spot allocation in generated passing charts | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [FLOW-014](issues/FLOW/FLOW-014.md) | Medium | Save game gives no visible success or failure feedback | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | — |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |

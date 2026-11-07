@@ -30,6 +30,7 @@ from .nflverse_fumble_ledger import (
     build_fumble_ledger,
     project_fumble_ledger,
 )
+from .pass_chart_policy import MODELED_INTERCEPTION_DEPTHS, pass_chart_for_air_depth
 from .pfr_play_by_play import (
     EmpiricalPlay,
     FieldGoalAttempt,
@@ -173,13 +174,7 @@ def _pass_chart(row: Mapping[str, object]) -> str:
         return "screen"
     air_yards = _number(row, "air_yards")
     if air_yards is not None:
-        if air_yards <= 0:
-            return "screen"
-        if air_yards <= 9:
-            return "short_pass"
-        if air_yards <= 19:
-            return "medium_pass"
-        return "long_pass"
+        return pass_chart_for_air_depth(air_yards)
     pass_length = _text(row, "pass_length").casefold()
     if pass_length == "deep":
         return "long_pass"
@@ -804,7 +799,9 @@ def classify_nflverse_rows(
         if play_type == "pass" or _flag(row, "pass_attempt"):
             chart = _pass_chart(row)
             if _flag(row, "interception"):
-                depth = max(0, _integer(row, "air_yards", 10))
+                depth = max(0, _integer(row, "air_yards", MODELED_INTERCEPTION_DEPTHS[chart]))
+                if _number(row, "air_yards") is None:
+                    diagnostics["modeled_interception_depth"] += 1
                 result = f"INT {depth}"
                 return_team = _text(row, "return_team").upper() or defense
                 plays.append(

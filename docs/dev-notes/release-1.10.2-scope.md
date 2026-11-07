@@ -7,7 +7,7 @@ focused test-first checks and the complete hosted workflow qualify this change.
 
 | Issue | Result / release gate | Verification |
 | --- | --- | --- |
-| [DATA-043](issues/DATA/DATA-043.md) | Audit interception locations by play type across offense/defense and correct any demonstrated allocation defect. | Synthetic/public regressions first; all-team weighted spot support and reachable outcomes, with interception and return distances separate. No arbitrary universal depth cap or claim that the Bowl Bound defect is already reproduced here. |
+| [DATA-043](issues/DATA/DATA-043.md) | Prevent cross-play interception-location allocation across offense/defense and audit all reachable support. | Synthetic/public regressions first; all-team weighted spot support and reachable outcomes, with interception and return distances separate. No arbitrary universal depth cap or claim that the Bowl Bound defect is already reproduced here. |
 | [AI-028](issues/AI/AI-028.md) | Avoid a conservative fourth-down punt when the offense needs multiple scores and remaining possession opportunities demand urgency. | Failing public scenario plus nearby conservative controls; completed gameplay confirms score/time/timeout-aware behavior. No blanket always-go-for-it rule. |
 | [VAL-020](issues/VAL/VAL-020.md) | Reduce core test runtime by removing redundant expensive fixture construction. | Record durations, identify actual hot spots, preserve assertions/cases/coverage, and compare equivalent hosted runs. Set a measurable target after profiling rather than promise an unsupported duration. |
 | [VAL-021](issues/VAL/VAL-021.md) | Publish release assets automatically without the v1.10.1 manual-token fallback. | Diagnose the actual integration restriction, preserve exact tested-commit gating and immutable tags, and verify all five downloadable assets in the next authorized publication. |
@@ -49,35 +49,62 @@ covered five-yard OOB designation cost when isolating conversion accounting;
 no existing expectation changed.
 
 Public play-selection audits complete 32/32 Hard/balanced games (4,878 calls)
-and 8/8 Medium games (1,195 calls), without concentration warnings. The largest
+and 8/8 Medium games (1,152 calls, final seed 8306 replay), without concentration warnings. The largest
 listed ordinary Hard share is 33.8% of 71 third-and-short calls (eight distinct
 plays, longest comparable streak two). Balanced retains a 43.3% share in 30
 third-and-long calls (three plays, streak three). These are observations, not
 frequency limits or evidence that unrelated coaching questions are solved.
 
-DATA-043 adds an exact weighted spot census inside the public chart audit. It
-retains each team, pass call and formation, combines uniformly sampled cohort
-defenses through the actual priority table, and separates catch depth from
-return yards. All 28 1983 and 32 2024 committed charts pass. Reachable spot sets:
+DATA-043 was reopened from its initial audit-only closure and now has a preventive fix. The owner's clarified
+requirement is preventive behavior. A synthetic known 44-yard interception was
+assigned to Screen in 56/1,000 seeds by PFR's completion/YAC-weighted heuristic;
+absence of that cell in shipped charts was insufficient evidence of correctness.
+Thirty-two behavioral regressions failed on the unchanged producer, with five
+controls passing. All 37 now pass, alongside 218 existing generator/source tests.
+No existing expectation changed. The first new sparse-calibration fixture called
+a proposed keyword too early; it was replaced before production changes with a
+public generator API regression that demonstrates lost event mass directly.
+
+Known inferred interception catch depths now use the existing nflverse taxonomy:
+at/before the line Screen, 1–9 Short, 10–19 Medium, 20+ Long. Explicit source
+Screen calls retain their depth. Completion net gains retain the separate
+YAC-aware classifier. Missing locations and aggregate models use per-call spots
+Screen5/Short5/Medium12/Long20/TE8 instead of pooled labels or a universal INT10.
+Defense retains its call-specific 5/5/12/18/8 model. Positive calibrated event mass
+gets that call's fallback even when finite baseline and source omit an INT label.
+Generation fails closed if offense introduces an INT location outside that exact
+normalized source call's support and its modeled fallback; defense must use its
+call-specific model. Normalized empirical input explicitly declares source call
+attribution; adapters constrain inference before that boundary. This preserves
+supported unusual observations without imposing an arbitrary universal cap.
+
+The reusable exact weighted census retains each team, call and formation, combines
+uniform cohort defenses through the priority table, and separates return distance.
+Its initial all-60-team baseline found Screen support 5/12 in 1983 and 5 in 2024.
+Reviewed regeneration now freezes existing gain multipliers instead of retraining
+16 schedules per cohort or tuning teams. Private replay proof records old training
+identity, current producer hashes and replay-script identity; all original source
+games/rows/FG/fumble totals must remain unchanged. Full source requantization showed small unrelated event-mass drift, so it was
+not adopted. A deterministic INT-only migration changes 151 cells in 28 historical
+teams and 108 cells in 30 modern teams. Every physical row, event mass, non-INT
+cell and defense/special/team file stays unchanged. Compact manifests explicitly
+bind the original source proof plus the post-generation migration receipt; they
+do not claim these bounded outputs equal a whole corrected-source requantization.
+
+All 60 final teams pass structure, exact mechanics and decoder checks. All five
+calls and six formations pass source/model support and weighted reachable census:
 
 | Cohort | Screen | Short | Medium | Long | T/E S/L |
 | --- | --- | --- | --- | --- | --- |
-| 1983 | 5, 12 | 5, 12 | 5, 12 | 5, 12, 18 | 5, 8, 12 |
-| 2024 | 5 | 5 | 5, 12 | 5, 18, 24 | 5, 8, 24, 25 |
+| 1983 | 5 | 5 | 12 | 18, 20 | 8 |
+| 2024 | 5 | 5 | 12 | 18, 20, 24 | 8, 24, 25 |
 
-No reachable Screen INT44 is present. Source adapters classify the pass family
-before grouping outcomes; they do not pool interception locations across plays.
-nflverse reads air yards and PFR estimates catch-minus-line depth, with a modeled
-10-yard default when absent. Their return observations enter a separate special
-column. The aggregate generator uses modeled INT5/12/20 for all passing columns;
-empirical event calibration prefers those baseline labels when available. Defense
-uses modeled call-specific 5/5/12/18/8 depths. This is an explicit source-fidelity
-limitation, not proof of physically impossible support or a justified new cap.
-No generator allocation, event mass, rates, protected mechanics or chart bytes
-changed. Historical depth fidelity is not certified. New audit tests initially
-used incorrect physical row weights; they were corrected to the actual 2/216
-primary-row and 12/36 defensive-row mass before interpreting results. No existing
-test assertion was weakened.
+Thirty complete real-engine games cover every team and validate scoring,
+termination and selected-call accounting. This is bounded gameplay proof, not
+new full source-fit qualification or a repeated-season forecast. The former
+512-season findings belong to the v1.10.1 charts. A type-checker comparison finds
+the same 22 existing diagnostics in these three producer modules before/after;
+none is introduced by this change. Ruff passes.
 
 VAL-020 moves completed synthetic visual-chart templates to a lazy session fixture;
 every mutation case still copies its own files and owns fresh dictionaries.
@@ -104,3 +131,11 @@ or permissions were changed.
 Local reports stay in ignored `.ai-audits/release-readiness/v1.10.2/`. Shipped
 v1.10.1 source-fit exceptions and the separately tracked AI-029 last-possession
 policy remain unchanged.
+
+
+Corrective validation also passes 850 broader source/ledger/visual/documentation
+checks and 142 release/packaging/AI checks. A fresh tracked-files-only snapshot
+passes 624 focused tests and ruff, without ignored local source data. Both compact
+public audit summaries bind refreshed full-report hashes and all 180 CSV hashes.
+STAT-006 records the separately requested cumulative player-facing season stats
+backlog; its implementation is outside this release.

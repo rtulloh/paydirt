@@ -24,6 +24,7 @@ from statistics import NormalDist
 from typing import Any
 
 from .chart_layout import disperse_primary_layout, rebalance_primary_allocation
+from .pass_chart_policy import MODELED_INTERCEPTION_DEPTHS
 from .play_resolver import chart_roll_weights, defense_subrow_weights
 
 _ROLL_WEIGHTS = chart_roll_weights()
@@ -680,6 +681,7 @@ def _calibrate_empirical_pass_events(
     calibration: EmpiricalPassCalibration,
     *,
     pressure_rate: float | None = None,
+    column_name: str | None = None,
 ) -> tuple[str, ...]:
     """Apply engine-calibrated pass event rates to empirical resolved outcomes.
 
@@ -728,6 +730,10 @@ def _calibrate_empirical_pass_events(
             sources = empirical_sources[name] or baseline_sources[name]
         else:
             sources = baseline_sources[name] or empirical_sources[name]
+        if not sources and name == "interception" and column_name is not None:
+            # Positive calibrated INT mass still needs call-specific support
+            # when the source and finite baseline contain no interceptions.
+            sources = [f"INT {MODELED_INTERCEPTION_DEPTHS[column_name]}"]
         if not sources:
             continue
         calibrated.extend(_resample_outcomes(sources, counts[name]))
@@ -1308,6 +1314,8 @@ def _pass_column(
     completed_yards: float,
     spread: float,
     rng: random.Random,
+    *,
+    column_name: str,
 ) -> dict[int, str]:
     """Generate one passing column with rates conditional on resolved attempts."""
     completion = max(
@@ -1340,7 +1348,7 @@ def _pass_column(
     _replace_rate(
         column,
         interception_mass,
-        ("INT 5", "INT 12", "INT 20"),
+        f"INT {MODELED_INTERCEPTION_DEPTHS[column_name]}",
         rng,
     )
     _replace_rate(column, touchdown_mass, "TD", rng)
@@ -1398,7 +1406,7 @@ def _generate_offense(stats: TeamSeasonStats, seed: int) -> dict[str, dict[int, 
     }
     for name, (delta, mean, spread) in pass_profiles.items():
         rng = random.Random(_seed_for(seed, stats.team_name, name))
-        result[name] = _pass_column(passing, delta, mean, spread, rng)
+        result[name] = _pass_column(passing, delta, mean, spread, rng, column_name=name)
 
     result["breakaway"] = _numeric_column(
         max(14.0, rushing.average * 4.45),
@@ -1942,6 +1950,35 @@ def _write_team_yaml(path: Path, stats: TeamSeasonStats) -> None:
     )
 
 
+def _validate_interception_support(
+    offense: Mapping[str, Mapping[int, str]],
+    defense: Mapping[tuple[str, int], Mapping[int, str]],
+    empirical_offense: Mapping[str, Sequence[str]] | None = None,
+) -> None:
+    """Reject INT labels introduced from another call rather than this source.
+
+    Normalized empirical columns declare their call attribution at the source
+    boundary. Their observed locations may exceed modeled support; an inferred
+    adapter must satisfy its air-depth eligibility before reaching this boundary.
+    """
+    def depths(cells: Iterable[str]) -> set[int]:
+        return {int(match.group(1)) for cell in cells
+                if (match := re.fullmatch(r"INT\s*(\d+)", cell, re.IGNORECASE))}
+
+    for name, fallback in MODELED_INTERCEPTION_DEPTHS.items():
+        allowed = {fallback} | depths((empirical_offense or {}).get(name, ()))
+        unexpected = depths(offense[name].values()) - allowed
+        if unexpected:
+            raise ValueError(f"Invalid interception spot support in offense/{name}: {sorted(unexpected)}")
+    for (formation, subrow), columns in defense.items():
+        for column, modeled in _DEFENSE_INTERCEPTION_RESULTS.items():
+            unexpected = depths((columns[column],)) - depths((modeled,))
+            if unexpected:
+                raise ValueError(
+                    f"Invalid interception spot support in defense/{formation}/{subrow}/{column}: {sorted(unexpected)}"
+                )
+
+
 def generate_team_charts(
     stats: TeamSeasonStats,
     output_dir: str | Path,
@@ -1991,6 +2028,8 @@ def generate_team_charts(
     offense = _generate_offense(stats, seed)
     defense = _generate_defense(stats, neutral_pressure=neutral_pressure)
     special = _generate_special(stats, seed)
+    _validate_interception_support(offense, defense)
+    empirical_offense: dict[str, tuple[str, ...]] = {}
     empirical_allocations: dict[str, dict[str, Any]] = {}
     if empirical is not None:
         empirical_offense = _reconstruct_empirical_breakaways(empirical.offense)
@@ -2026,6 +2065,7 @@ def generate_team_charts(
                     outcomes,
                     offense[name],
                     empirical_pass_calibration or EmpiricalPassCalibration(),
+                    column_name=name,
                     pressure_rate=_empirical_pressure_rate(
                         stats.offense.passing, name, offense[name], offense["qb_time"],
                         outcomes, empirical_pass_calibration or EmpiricalPassCalibration(),
@@ -2109,6 +2149,7 @@ def generate_team_charts(
             rushing_multiplier=gain_multipliers[1])
     offense, primary_layout = disperse_primary_layout(offense)
     primary_layout["allocation"] = primary_allocation
+    _validate_interception_support(offense, defense, empirical_offense)
     _write_offense(destination / "offense.csv", offense, recovered_range, lost_range)
     _write_defense(destination / "defense.csv", defense)
     _write_special(destination / "special.csv", special, stats.special_teams.extra_point)

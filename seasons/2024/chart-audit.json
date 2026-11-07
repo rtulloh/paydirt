@@ -1,7 +1,7 @@
 {
   "checker": {
     "module": "paydirt/chart_audit.py",
-    "module_sha256": "300f9993c54cc6ec6b72a2b65219f2870b0acd7cd65dcd19666e5a1bb134ca4e",
+    "module_sha256": "f593c5b3522be8a7e4bd7afc41c7788eb449f25ebbbf86d6a7d1282607ef3d9c",
     "script": "scripts/audit_public_charts.py",
     "script_sha256": "97180fe500281b188ce1b53a0e93a43ea48b230b7e828de331456b4385590692"
   },
@@ -14,9 +14,9 @@
   },
   "errors": [],
   "expected_teams": 32,
-  "full_report_bytes": 25759232,
+  "full_report_bytes": 26047260,
   "full_report_retention": "Detailed report retained in ignored local evidence; CI emits its own complete detailed artifact.",
-  "full_report_sha256": "80278f8c057576ec876277786b20ff16b1099d2ac9c41c17581ae9cf58362725",
+  "full_report_sha256": "cafc9225b6a195cea12f9b4182d7c2ce0384a3857de40821cd17dc1410a99ed8",
   "historical_accuracy_checked": false,
   "passed": true,
   "release_certified": false,
@@ -29,6 +29,31 @@
     "exact_mechanics_team_count": 32,
     "legacy_blank_cells": 0,
     "passed": true,
+    "reachable_interception_spots": {
+      "by_call": {
+        "long_pass": [
+          18,
+          20,
+          24
+        ],
+        "medium_pass": [
+          12
+        ],
+        "screen": [
+          5
+        ],
+        "short_pass": [
+          5
+        ],
+        "te_short_long": [
+          8,
+          24,
+          25
+        ]
+      },
+      "scope": "All teams, five passing calls, six formations; detailed per-team exact mass in full report",
+      "source_fidelity_checked": false
+    },
     "warning_count": 3,
     "warnings": [
       "Commanders punt: no penalty exposure",
@@ -41,7 +66,7 @@
     "49ers": {
       "csv_hashes": {
         "defense.csv": "c26e2dd2c703e6ee50fae97cf9ae1c0874a8f4d246f2395644ccfe688e151cc1",
-        "offense.csv": "378482f6be848f9ea2ba56d6852e6e8e1a551035d8d601b863fb0d59359c6b56",
+        "offense.csv": "c1f20ed5aa3a40fa246360ec75173e7ab7d76e82fbe86a4de392fd9e35171a3f",
         "special.csv": "8c2a763b73643a1f5ec57e6e10380b0d99e2f8c157f1bb841538d52b24f9ea91"
       },
       "decoder_error_count": 0,
@@ -54,7 +79,7 @@
     "Bears": {
       "csv_hashes": {
         "defense.csv": "960ef2ed1a2b46f50a48c5f31de4fe8443d8a746eb5e43237454f14993c88fbf",
-        "offense.csv": "4039160149dfc2912ac549193d7059754a5ff1067fa5998a1d12a4dd9d3cd985",
+        "offense.csv": "da6c31beaa9c76e8e9e40fe346afc7a0b01ed472fb65fd9f66a2ac54e21023d5",
         "special.csv": "dfe0140a640883f2553947cb9d83f23477a7b387daadf75290f6b60ddc75dac1"
       },
       "decoder_error_count": 0,
@@ -67,7 +92,7 @@
     "Bengals": {
       "csv_hashes": {
         "defense.csv": "172a409f9395ecc2b09d366eef6b5b3cd6e179f00ad8c7461b2980eee47cc692",
-        "offense.csv": "332d901248ded357e2dbda88125a86da05cd94afec96958e203727f37585ec3d",
+        "offense.csv": "91dae04fe517f0443f9b0b0932892d6cdef95853e0c59b1a8ef9e2a7d74b681d",
         "special.csv": "3bc5d2fc6a381fc4fee31c4a6319ac69d7a8f14564bac10313fbe51df2606d6d"
       },
       "decoder_error_count": 0,
@@ -80,7 +105,7 @@
     "Bills": {
       "csv_hashes": {
         "defense.csv": "49e2661c90554d32eced65b330d431d16b08006792ca759c2d49f9cbf3ea1707",
-        "offense.csv": "274b4c4b3ef5f9ed226fa3f2e7b26216cd120c0e7bac0a198e3ba39982078a09",
+        "offense.csv": "067d8b31a1aa2c54e2db4170adcd8d74d99924217f1ff34ca22691b6eff01bb2",
         "special.csv": "f938b564339485bd836022307367d60a8dbdf114b4b6777eb47888463e4002fb"
       },
       "decoder_error_count": 0,
@@ -93,7 +118,7 @@
     "Broncos": {
       "csv_hashes": {
         "defense.csv": "3c2fa5a4beb29beee5a74b6af271402f92e8a2839888362752acda67074d65bf",
-        "offense.csv": "810b79a06cc86bb25dbcf4ab58d885bd6d3272d930cd742a8ea12f4227c0584a",
+        "offense.csv": "bbce1c19ba1b08980b318c7c8b092c150dd69be724a7e221715d2f96ab8dfe9b",
         "special.csv": "f9f9b9aedbb9ef912d01c9e754cebe830172bec63249520c11471686800ee85d"
       },
       "decoder_error_count": 0,
@@ -106,7 +131,7 @@
     "Browns": {
       "csv_hashes": {
         "defense.csv": "145b8bf5f470b77f6edebc59bbf5f69e2b007b94571db4c83b4c1656f0014f4c",
-        "offense.csv": "ff55ba78b4623a45121c1549f15052082302acf27a659dfc72a406ba19c06777",
+        "offense.csv": "0ea8dea7f96d798fcb333a34e2ccad9fdccf347a6298967d48fb3a67e1735677",
         "special.csv": "216ad7e700156c8caced0b8a8de728f15ea096c70baa4ab19ba9043587887921"
       },
       "decoder_error_count": 0,
@@ -119,7 +144,7 @@
     "Buccaneers": {
       "csv_hashes": {
         "defense.csv": "b88246afbb6a9b442d6c21bb64ef1bed2fa6f36de68a21ff27007d5364232b5a",
-        "offense.csv": "6dc385bd938a341becfa7db9120d8baedcee7988c6640bb6070d37a69ab457bb",
+        "offense.csv": "669aefa61fb38f39d70438e01e35036e8a33b2204e23602435d0c46530f0f6f0",
         "special.csv": "f80b42ee69cc1698da99b69df9e98774f707831ca715a47556c6756bf1ba9512"
       },
       "decoder_error_count": 0,
@@ -132,7 +157,7 @@
     "Cardinals": {
       "csv_hashes": {
         "defense.csv": "beebfd926dd457839775ec1e45e1bfaa494cf64ce165db4ea1edece22918cfc0",
-        "offense.csv": "73c7cfba4282b2601a9be870fc5d84a24c2e3b0254634818dd60267afe3af171",
+        "offense.csv": "43b9ee67cfc9886f7ed4d6363f8a8fc0e936e74a97897bd07182597b4903096e",
         "special.csv": "bccef620d83a9ec750fcaeb3c3799306045617c7285e335284841da3ddab72c5"
       },
       "decoder_error_count": 0,
@@ -158,7 +183,7 @@
     "Chiefs": {
       "csv_hashes": {
         "defense.csv": "47240e6b646a13b884a10538e244da1621c309ecc9eab4217afb75518c6366f6",
-        "offense.csv": "e599b765823d10f86c31058b69e4e9514876b57b9ed37b1105e1bc4ccc8f8ccf",
+        "offense.csv": "eb31387cbffdf13c12b3421b6418e1ee31118c3bfa69dc58d4c80dc1c05cd1f0",
         "special.csv": "10ed145d184f81ac30f17a3364b8f9424f910251cd1f073267bae8cee1b42959"
       },
       "decoder_error_count": 0,
@@ -171,7 +196,7 @@
     "Colts": {
       "csv_hashes": {
         "defense.csv": "0071d0503d3944a05fade0e05b1f7778d4e5bf120879680a3bb47464a97b1fd3",
-        "offense.csv": "1742cc4d8153db9afa696b9e411bdcd86be66f8acf1b2370c92a8ae9994f7250",
+        "offense.csv": "5cd67dd45ec66952f2161aa7d24a81249db9f1d15c056c5d7090ac9613470059",
         "special.csv": "7940587b8a5cdd8c6f4b87168451540a15d01fa0671c079a313add8226b7ba4f"
       },
       "decoder_error_count": 0,
@@ -184,7 +209,7 @@
     "Commanders": {
       "csv_hashes": {
         "defense.csv": "4c89cbd94b6061dec4464e75c4ac516773aeec41c8fc700d36b24770fe7e6365",
-        "offense.csv": "2924943062443c223c988806235dc51af88b0999b817d2359a8651641d3550b3",
+        "offense.csv": "7a959ff5b3e94e874d3d0916dba6848899e68fe8f8685c6cbbb4be91430184d9",
         "special.csv": "c0f358c85dfa5316a0539193106be493a10a5ae1541cdd9d402656f209464644"
       },
       "decoder_error_count": 0,
@@ -197,7 +222,7 @@
     "Cowboys": {
       "csv_hashes": {
         "defense.csv": "fe10e7d78311665b7f8561cc0c94f25eb8f6f5b573870ea1c9dd2c9a6e78fb22",
-        "offense.csv": "d1a65b43ba508759e01e3e969db3b6011b57460bdb7346afc053886bd77a7019",
+        "offense.csv": "4572f719e877319a07b4fef990f2c88d9e21aac22aaf47c04c516e55fdf82344",
         "special.csv": "395c3e6fa6ca455c858fbdf8f052b788c5fd9b783aed31da123df0c9fe18deac"
       },
       "decoder_error_count": 0,
@@ -210,7 +235,7 @@
     "Dolphins": {
       "csv_hashes": {
         "defense.csv": "c2be1c5a10969f24737952a91bfe333acb9bda7092dbe988903293990feb78ae",
-        "offense.csv": "6724cc075b4c507578d76f9199f985f997c8201a7243b8d7dea8314bcf850dbe",
+        "offense.csv": "0d59a8db2a6f143f0e470f4901477b87245e95b856a3f3353091e859a290bfae",
         "special.csv": "f973e2a85146aaa8cae7610d1e4afea0e5613c4dad2d73c9f38ec14db035669a"
       },
       "decoder_error_count": 0,
@@ -223,7 +248,7 @@
     "Eagles": {
       "csv_hashes": {
         "defense.csv": "0fe1baf0cf603ace29e183046c1e8294e7d9d47f22ce1832bf4ea3416edf0cf9",
-        "offense.csv": "cc66aa642ee03f2e2cdc2077a4b069e42f2e518cee382e4ee53417f21b1b41cd",
+        "offense.csv": "9d7dddeaf423184d23bf889d51f494962a763aacd3085419618bfbb40639ac0c",
         "special.csv": "7847ab4d49abc58ead84a8d03b23ee3a68fd259b58517ebb66cc2e9ac463a4a8"
       },
       "decoder_error_count": 0,
@@ -236,7 +261,7 @@
     "Falcons": {
       "csv_hashes": {
         "defense.csv": "2564411dee6af6171498a8f00b24ec212bc5e5c30fe02c830988be8a577da3db",
-        "offense.csv": "0f00af00c1ca1e43e74579d457eaf03e0e9c385129859c2182666ef9bc6f87c7",
+        "offense.csv": "399b9e197ce53d4ec514bf1a0c07378dd2728f915f2e49608c51eb66b3b74f1d",
         "special.csv": "1f99ddf0a3f8d7bf8ff70dd763d63e2fc6ec9dab1df4d04f1db999af89c406ad"
       },
       "decoder_error_count": 0,
@@ -249,7 +274,7 @@
     "Giants": {
       "csv_hashes": {
         "defense.csv": "ec2e3ec29dcb1eac495c4646f8ddf5d2ead03bf2e4431dd32423c8fa1d555b98",
-        "offense.csv": "b947537bf4a923aa370a7ae835899ba6583747f9f82bb30a2dc7dff9092687e3",
+        "offense.csv": "d296109d8a3ee8c90f139eb62a6b2e6f2d969a59aee9d70439e7c14b11f55c49",
         "special.csv": "ed865b6a94ca9e9ffc5d63c634f7057058a0b117e0a50754847f8e91b4a4d14f"
       },
       "decoder_error_count": 0,
@@ -262,7 +287,7 @@
     "Jaguars": {
       "csv_hashes": {
         "defense.csv": "adbddcb8548b9781357a720e0abbe5f7f94ed56be6f625858a509c6e9016e7f0",
-        "offense.csv": "3f72c7f1653440b74c00a44ece7c5b209c98ac95755b93748eae44ed1ce8726d",
+        "offense.csv": "269408891a2f7b677b7410ddfc8435e26a26115c4fbf0ef0bb05d9d8deb63f57",
         "special.csv": "2839e6a1b021d40f829a3b14666144068aa34befd9066d06a666cce8ba5c02ac"
       },
       "decoder_error_count": 0,
@@ -275,7 +300,7 @@
     "Jets": {
       "csv_hashes": {
         "defense.csv": "71a0191ddeb73d9b5aa46f3de02ccaa5d4b518360a45fafe01bbcef53b084cd2",
-        "offense.csv": "250d37f8d91e5d7a8bbf285ecb7bf4b71ee2a8344581549faf336282bd7cd3db",
+        "offense.csv": "bd66f2f15f22ab46a59e9b63572dfc3ef2084f4dec568b1f82a63824ffcd874e",
         "special.csv": "96fb88c460ee6f8f0428ea4ec30d986391251776736843b0cbea55a98f9df413"
       },
       "decoder_error_count": 0,
@@ -288,7 +313,7 @@
     "Lions": {
       "csv_hashes": {
         "defense.csv": "a341c4b3335b356cd58a0d3eb99122da58028b07ee66b68289a854e184de4230",
-        "offense.csv": "7ce263a9028264ea2b1e2ecadf5c2c2bd96f0816db6159ab1b8fd9b7bbd74b13",
+        "offense.csv": "1e57fd8ddc0785cb1df96348d93b7957c6a6a4c1105cb394ea224555c38e9569",
         "special.csv": "7fb521d6c67c93ab53c3c59b33fbe980bf71dfc1de285d087f77ad03589593ab"
       },
       "decoder_error_count": 0,
@@ -301,7 +326,7 @@
     "Packers": {
       "csv_hashes": {
         "defense.csv": "3cc9b063a299b908720500a7acf47846c8c7ac995c5a800437b2d67c5a89897a",
-        "offense.csv": "7480300fd94bf85fb1f1aa2ac51886b86475ea20a64760fd903df7d475c2dc4f",
+        "offense.csv": "dd0f20d274551146457ad0b9ef089cfa1e00aa1f97977fdd8ea10ff9e289d5e3",
         "special.csv": "3b72e89f1d35d9c669a7482ef07c321cfd79b0ba5c0f7d9756e168a6646b7c4c"
       },
       "decoder_error_count": 0,
@@ -314,7 +339,7 @@
     "Panthers": {
       "csv_hashes": {
         "defense.csv": "3e11735943694a1829874db7fbb59e1c93859d1bfca07a4254f2bfd1bb3a986a",
-        "offense.csv": "a20edc420ba450fdeed336e007af241de3505229019021f223bc196b697fdb33",
+        "offense.csv": "f191f0a782736b26c3fe141281abc5df02481f64ea70e9d2f77e0dfa6a37bc41",
         "special.csv": "5a341b3b4696871f3b779746902ac10b2f855c0cf4f279fa67f90168b8f28ec9"
       },
       "decoder_error_count": 0,
@@ -327,7 +352,7 @@
     "Patriots": {
       "csv_hashes": {
         "defense.csv": "85dd22e6927a6f19dbb148a0b9737cd687cff06b4492a8047ebb785bca19ceba",
-        "offense.csv": "50ea3c64ec035a26c0c975bb81aecc873216bfd5be67002767f9ee88dce23768",
+        "offense.csv": "f8927d0e024b0a1193fd9cea4f084d2612c3b05d42df2764e913eb361b249f06",
         "special.csv": "c9cc534421a9af7146eb67d2002d7fe3bf18e9399836e49c2011d6c9764e38b5"
       },
       "decoder_error_count": 0,
@@ -340,7 +365,7 @@
     "Raiders": {
       "csv_hashes": {
         "defense.csv": "74ab6de332f9beaf9d2f540ccbfee7bc2fbfebd1a99337f1c1f2d9b85afa6067",
-        "offense.csv": "3f70f13a727ee2087b6f41ee208990898565fab368c2e52dcaf9cbf404f9e07c",
+        "offense.csv": "ffa27d859c35b88cc9b56bf66bd027f19d34ba4f421148581dd9636776bd3027",
         "special.csv": "4bff1ead775b22008a46db1b42b1a03acc82a88fc276c52bc5185087fb7861b1"
       },
       "decoder_error_count": 0,
@@ -353,7 +378,7 @@
     "Rams": {
       "csv_hashes": {
         "defense.csv": "8d0f413fa1fb6011d6b5da889034de07e1bba7c0086dcfecffcb5ee69d47bace",
-        "offense.csv": "bc45304f654902f9757bde290d6153d5be1b52aba5c63a96a650f5a9150e3fd3",
+        "offense.csv": "06e86ce6108136f8be1b1a7d7f7045cba0cec4e3f2324b8d5b24672b38235ff8",
         "special.csv": "bb97a659e8e1d793dc8f36b6d123d43b0ba2ef3fdc14714a30f7a39465a80841"
       },
       "decoder_error_count": 0,
@@ -379,7 +404,7 @@
     "Saints": {
       "csv_hashes": {
         "defense.csv": "4a5448d735677399e97943df4b089ee7a0bd8c24a9453321bddd238d4b839cd2",
-        "offense.csv": "6bd85e027d97d1f528c2268bcb62a2c4bb438a3397b6b260703d18e4e115844d",
+        "offense.csv": "fff3a6874b61594ebc05d57d727b0767c3259a3a59c2f9c0a646813a81a9911c",
         "special.csv": "2901cc708b082c78a08cfc5acb206b6e590b2175c5f54471b86c38a1f3779f70"
       },
       "decoder_error_count": 0,
@@ -392,7 +417,7 @@
     "Seahawks": {
       "csv_hashes": {
         "defense.csv": "5159d0e6c55b12f7060f94d8743b924270eb26ca60aeb64fc62ebb9901a267d6",
-        "offense.csv": "9a6ffd4de6d9606af4d7175f614b70dc26383363a03fcbad7a5671d4e49dc621",
+        "offense.csv": "aeb25515d05e27a88214497dc17ba24494c140ce54e105de063905a045bad615",
         "special.csv": "6031d2e06c57eff5f4a6e1691763e836c14c22413d760e77e38d958180edcd79"
       },
       "decoder_error_count": 0,
@@ -405,7 +430,7 @@
     "Steelers": {
       "csv_hashes": {
         "defense.csv": "85a99f2b4466a76d2b5fb450b0a46a1ca15e22acaf3cac8eda373e88b3400d82",
-        "offense.csv": "c29fc74424273bc7fe23a56cd1e280a601489051ef446db68e1ca12bf2ff8a8d",
+        "offense.csv": "d71bc17c2990731bf3c0cb9327ab7bfd240c4b256c5c269e64281c5bc2cb289f",
         "special.csv": "298a6c6a7b018bfafce230049a4b1e7c14ef1e6ba651506e34e14846cae4807a"
       },
       "decoder_error_count": 0,
@@ -418,7 +443,7 @@
     "Texans": {
       "csv_hashes": {
         "defense.csv": "c06c56c3b1b74a8aae14be117834d1dadfed29eefd4a65debc106a42f28bdb7c",
-        "offense.csv": "78ad5040e1a4490e52eeb1fb7896616d2986ce4e026c03439c6d459eb5061817",
+        "offense.csv": "100612ffe344bcbccdf9588caf346fc335c99b22964dd5f62d86ba2873ebfa79",
         "special.csv": "ac9e93587966a75a85a0038bcd777fa9bb613c9f862abc73add2caf8811e055c"
       },
       "decoder_error_count": 0,
@@ -431,7 +456,7 @@
     "Titans": {
       "csv_hashes": {
         "defense.csv": "d104ef4a56953774d707cfe8936190b578057ff5eb5369ce43e0f08f631c43b7",
-        "offense.csv": "331a36779da2c5ccd487f7b957a558a6bccdbe69f9812d5b1e0e4cfd7bd2c44c",
+        "offense.csv": "c959c3a4ec53e0f9cfe157b0d3fc17e88e96cd5004dfe06994e7d2c344ab8783",
         "special.csv": "67296c263e7c54229d8467220609de9535568709817557bc65e5364d896eb9ad"
       },
       "decoder_error_count": 0,
@@ -444,7 +469,7 @@
     "Vikings": {
       "csv_hashes": {
         "defense.csv": "0abf83a357646eb82fab32ff91909857a1ba731210112b771d67f2f7f552853f",
-        "offense.csv": "749a3e2544138046767eba0bc9f4d8f8df340869dde4253bdea8085029420e93",
+        "offense.csv": "35a227eb9377e8481f7c5670cb115aa4292ab9a8c9ec2ca9493002ef62da4212",
         "special.csv": "c5694dbea910a22aa88493bbebc1ee91c7e55bf4d0dd56c7b38c1671153b2145"
       },
       "decoder_error_count": 0,

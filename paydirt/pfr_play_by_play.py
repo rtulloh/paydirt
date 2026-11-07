@@ -22,6 +22,7 @@ from .fumble_source import (
     project_fumble_gain,
     validate_fumble_gain_policy,
 )
+from .pass_chart_policy import MODELED_INTERCEPTION_DEPTHS, pass_chart_for_air_depth
 from .pfr_event_reconciliation import (
     AbortedFieldGoalFact,
     EventFact,
@@ -631,6 +632,10 @@ def _pass_chart(play: PfrPlay, observed_yards: int | None, seed: int) -> tuple[s
     detail = play.detail.casefold()
     if "screen" in detail:
         return "screen", False
+    if observed_yards is not None and "intercepted by" in detail:
+        # Interception location is known air depth, unlike a completion gain
+        # that may include YAC. Never distribute it through the YAC weights.
+        return pass_chart_for_air_depth(observed_yards), True
     if observed_yards is not None:
         if observed_yards <= 3:
             weights = (28, 60, 12, 0)
@@ -1261,7 +1266,9 @@ def classify_pfr_game(
             if heuristic:
                 diagnostics["heuristic_pass_depth"] += 1
             if interception:
-                result = f"INT {depth if depth is not None else 10}"
+                result = f"INT {depth if depth is not None else MODELED_INTERCEPTION_DEPTHS[chart]}"
+                if depth is None:
+                    diagnostics["modeled_interception_depth"] += 1
                 defense = _other_linked_team(game, play, offense) or _opponent(game, offense)
                 outcomes.append(
                     _empirical_play(
