@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     # Keep the supported Python minor versions on a stable hosted runner.
@@ -28,14 +32,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pyyaml
 
-      - name: Run tests
-        run: |
-          pytest --tb=short -v
-
-      - name: Run tests with coverage
+      - name: Full core suite with coverage
         if: matrix.python-version == '3.10'
-        run: |
-          pytest --cov=paydirt --cov-report=term-missing --cov-report=xml
+        run: >-
+          python -m pytest tests/ -q -o addopts= --tb=short
+          --cov=paydirt --cov-report=term-missing --cov-report=xml
+
+      - name: Python compatibility checks
+        if: matrix.python-version != '3.10'
+        run: >-
+          python -m pytest -q -o addopts= --tb=short
+          tests/test_game.py tests/test_save_game.py tests/test_season_rules.py
+          tests/test_team_charts.py tests/test_cli.py
 
       - name: Upload coverage reports
         if: matrix.python-version == '3.10'

@@ -143,3 +143,25 @@ def test_python_matrix_matches_declared_supported_versions(jobs: dict) -> None:
     declared = re.findall(r'"Programming Language :: Python :: (\d+\.\d+)"', metadata)
     assert declared, "Package metadata must declare supported Python minor versions"
     assert jobs["test"]["strategy"]["matrix"]["python-version"] == declared
+
+
+def test_full_core_suite_runs_once_with_coverage_on_release_python(jobs: dict) -> None:
+    steps = jobs["test"]["steps"]
+    runs = [step for step in steps if "pytest" in step.get("run", "") and "pip install" not in step["run"]]
+    full = [step for step in runs if "--cov=paydirt" in step["run"]]
+    assert len(full) == 1
+    assert full[0]["if"] == "matrix.python-version == '3.10'"
+    assert "python -m pytest tests/" in full[0]["run"]
+    compatibility = [step for step in runs if step is not full[0]]
+    assert len(compatibility) == 1
+    assert compatibility[0]["if"] == "matrix.python-version != '3.10'"
+    for module in ("test_game.py", "test_save_game.py", "test_season_rules.py", "test_team_charts.py", "test_cli.py"):
+        assert f"tests/{module}" in compatibility[0]["run"]
+
+
+def test_superseded_branch_runs_are_cancelled() -> None:
+    workflow = Path(__file__).resolve().parents[1] / ".github/workflows/test.yml"
+    concurrency = yaml.safe_load(workflow.read_text())["concurrency"]
+    assert concurrency["cancel-in-progress"] is True
+    assert "github.workflow" in concurrency["group"]
+    assert "github.ref" in concurrency["group"]

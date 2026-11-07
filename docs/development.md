@@ -216,3 +216,12 @@ pre-push validation is still mandatory even when hosted checks are green.
 Personal standings directories and backups matching `standings_data*/` are
 ignored. Keep those files local; never force-add them or include them in release
 artifacts. This does not remove existing standings or change persistence behavior.
+
+### Hosted Python test coverage
+
+The Tests workflow runs the complete core suite once with coverage on Python 3.10,
+the standalone release build interpreter. Python 3.11 and 3.12 run compatibility
+checks covering game setup, save/load, season rules, chart loading and the CLI;
+these smaller checks do not establish full-suite coverage on those interpreters.
+Backend, browser, public AI and chart-quality jobs remain required separately.
+A newer push cancels an older Tests run for the same branch or pull request.
