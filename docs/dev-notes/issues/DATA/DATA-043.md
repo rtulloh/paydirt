@@ -101,3 +101,13 @@ preventive allocation defect, not historical catch-depth fidelity or every rare
 source-supported observation. Evidence remains ignored under
 .ai-audits/release-readiness/v1.10.2/data043/; maintained semantics are in
 ../../../chart-validation.md and ../../release-1.10.2-scope.md.
+
+--- 2026-11-07 17:12 ---
+Follow-up caller review found the physical-allocation audit still invoked the
+new call-specific pass model without naming its synthetic 15-yard Medium profile.
+A new public-only regression fails on the unchanged caller and verifies all five
+modeled profiles through the real allocation audit. The named-profile fix passes
+all 49 allocation/policy cases in 13.40s. A clean tracked-only snapshot
+also passes all 444 allocation/policy/documentation/tracker cases in 14.34s. This corrects the validation caller,
+without changing generated charts or gameplay; the running hosted coverage job
+is retained until completion before the corrective push.

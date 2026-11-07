@@ -1,5 +1,9 @@
 """Synthetic controls for the release chart-allocation audit."""
 
+from typing import Any
+
+import pytest
+
 from paydirt.chart_allocation_gate import audit_allocations, check_symbolic_allocation
 from paydirt.play_resolver import chart_roll_weights
 
@@ -136,3 +140,27 @@ def test_gate_rejects_invalid_targets_and_empty_sampling_plan() -> None:
         assert check_symbolic_allocation(_column(), _column(), target, ("QT",))
     with pytest.raises(ValueError, match="at least one seed"):
         audit_allocations(seeds=())
+
+
+def test_allocation_audit_identifies_its_synthetic_pass_profiles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from paydirt import chart_generator
+
+    original = chart_generator._pass_column
+    seen = []
+    modeled = {"screen": 5, "short_pass": 5, "medium_pass": 12,
+               "long_pass": 20, "te_short_long": 8}
+
+    def named_profile(*args: Any, **kwargs: Any) -> dict[int, str]:
+        name = kwargs.get("column_name")
+        assert name in modeled, "Allocation audit must identify its pass profile"
+        column = original(*args, **kwargs)
+        assert {cell for cell in column.values() if cell.startswith("INT")} <= {f"INT {modeled[name]}"}
+        seen.append(name)
+        return column
+
+    monkeypatch.setattr(chart_generator, "_pass_column", named_profile)
+    report = audit_allocations(seeds=(8306,))
+    assert set(seen) == set(modeled)
+    assert report["passed"], report["errors"]

@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-194 issues: 110 open, 33 resolved, 51 closed.
+195 issues: 111 open, 33 resolved, 51 closed.
 
-## Open (110)
+## Open (111)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -119,6 +119,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-039](issues/DATA/DATA-039.md) | Low | Primary chart dispersion scores BLACK only and leaves other reducible result clusters | created 2026-11-06 | DATA-040, DATA-041 |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-017](issues/FLOW/FLOW-017.md) | Low | Scoreboard omits the opponent timeout budget and leaves the displayed count ambiguous | created 2026-11-06 | — |
+| [FLOW-020](issues/FLOW/FLOW-020.md) | Low | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 | [STAT-006](issues/STAT/STAT-006.md) | Low | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |

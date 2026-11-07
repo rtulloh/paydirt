@@ -180,7 +180,11 @@ def audit_allocations(seeds: Sequence[int] = (8306, 9241, 11713)) -> dict[str, A
                 attempts=1000, completions=round(completion * 1000), yards=12000,
                 touchdowns=40, interceptions=round(interception * 1000), sacks=sacks,
             )
-            generator._pass_column(stats, delta, 15, 9, random.Random(seed))
+            # This synthetic 15-yard completion profile audits physical event
+            # allocation; name its call so INT support uses the correct model.
+            generator._pass_column(
+                stats, delta, 15, 9, random.Random(seed), column_name="medium_pass",
+            )
         for style, fumbles, touchdowns, seed in itertools.product(
             ("line", "tackle", "end", "draw"), (0, 12, 30), (0, 20, 40), seeds
         ):

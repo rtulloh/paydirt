@@ -139,3 +139,10 @@ passes 624 focused tests and ruff, without ignored local source data. Both compa
 public audit summaries bind refreshed full-report hashes and all 180 CSV hashes.
 STAT-006 records the separately requested cumulative player-facing season stats
 backlog; its implementation is outside this release.
+
+Follow-up validation identifies the allocation gate’s synthetic 15-yard pass
+profile explicitly as Medium, satisfying the new required call-specific model
+argument. Its new regression fails against the old caller; all 49 allocation and
+interception-policy tests pass after correction. The new fixture checks every
+profile encountered by the real audit. No existing expectation changes, chart
+regeneration or gameplay change is required for this caller correction.
