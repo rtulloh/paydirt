@@ -11,7 +11,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import product
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from .chart_loader import DefenseChart, OffenseChart, TeamChart
 from .play_events import (
@@ -20,8 +20,10 @@ from .play_events import (
     create_fumble_event,
     create_recovery_event,
 )
-from .priority_chart import apply_priority_chart, categorize_result
+from .priority_chart import PriorityResult, apply_priority_chart, categorize_result
 
+if TYPE_CHECKING:
+    from .game_engine import ReturnChain
 
 class PlayType(Enum):
     """Offensive play types matching the chart columns."""
@@ -69,6 +71,7 @@ class ResultType(Enum):
     YARDS = "yards"  # Simple yardage gain/loss
     BREAKAWAY = "breakaway"  # B - big gain, roll on breakaway chart
     FUMBLE = "fumble"  # F +/- X
+    BLOCKED_KICK = "blocked_kick"  # BK +/- X; recovery is resolved by special teams.
     INTERCEPTION = "interception"  # INT X
     TOUCHDOWN = "touchdown"  # TD
     INCOMPLETE = "incomplete"  # INC or empty for pass
@@ -98,6 +101,8 @@ class PlayResult:
     # Punt return: the receiving team's own roll and raw chart cell (0/"" when no return)
     punt_return_dice: int = 0
     punt_return_result: str = ""
+    # A punt-column snap fumble occurred before any kick or punt return.
+    punt_snap_fumble: bool = False
     # Kickoff return: the receiving team's own roll and chart cell (0/"" when no return)
     kickoff_return_dice: int = 0
     kickoff_return_result: str = ""
@@ -105,6 +110,8 @@ class PlayResult:
     int_return_yards: int = 0
     int_return_dice: int = 0
     int_spot: int = 0
+    # Preserve recovery, possession and accepted fouls when retaining a resolved play.
+    int_return_chain: ReturnChain | None = field(default=None, repr=False, compare=False)
     # Fumble recovery details (set by game engine)
     fumble_recovery_roll: int = 0
     fumble_spot: int = 0
@@ -131,6 +138,9 @@ class PlayResult:
     fumble_end_zone_touchdown: bool = False
     # Offsetting fouls on a return nullified the play: replay the down, ten seconds.
     replay_down: bool = False
+    # Selected retained fumble followed by an incomplete primary pass. Internal
+    # fumble/recovery spots are unknown; ordinary fumble dice fields stay unset.
+    retained_fumble_incompletion: bool = False
 
 
 @dataclass
@@ -419,10 +429,18 @@ def parse_result_string(result_str: str) -> PlayResult:
     - "INC" -> Incomplete pass (1972 format)
     """
     result_str = result_str.strip() if result_str else ""
+    if result_str == "F INC":
+        raise ValueError("F INC is supported only in primary offensive passing columns")
     if not result_str or result_str.upper() == "INC":
         return PlayResult(ResultType.INCOMPLETE, 0, "Incomplete", raw_result=result_str)
 
     result_str = result_str.strip()
+
+    # A blocked kick is distinct from a B breakaway; spaces do not change its gain.
+    blocked = re.fullmatch(r"BK\s*([+-]?\s*\d+)", result_str, flags=re.IGNORECASE)
+    if blocked:
+        yards = int("".join(blocked.group(1).split()))
+        return PlayResult(ResultType.BLOCKED_KICK, yards, "Blocked kick", raw_result=result_str)
 
     # Check for Breakaway
     if result_str.startswith("B"):
@@ -627,6 +645,7 @@ def resolve_qb_sneak(chart: OffenseChart, dice_roll: int) -> PlayResult:
         result_str = "0"
 
     result_str = str(result_str).strip()
+    _validate_primary_passing_result(result_str, PlayType.QB_SNEAK)
 
     # Determine box color based on result content
     # Red box = Fumble (F, F+X, F-X)
@@ -842,6 +861,7 @@ class ColumnResult:
     yards: int
     out_of_bounds: bool = False
     is_fumble: bool = False
+    is_sack: bool = False
 
 
 def _parse_column_value(raw: str) -> ColumnResult:
@@ -854,6 +874,8 @@ def _parse_column_value(raw: str) -> ColumnResult:
     Returns None if the value cannot be parsed.
     """
     raw = raw.strip()
+    if raw == "F INC":
+        raise ValueError("F INC is supported only in primary offensive passing columns")
     if not raw:
         return None
 
@@ -893,6 +915,14 @@ def resolve_breakaway(chart: OffenseChart, dice_roll: int) -> ColumnResult:
     return ColumnResult(yards=random.randint(15, 40))
 
 
+def _parse_qb_time_value(raw: str) -> ColumnResult | None:
+    """Parse QT gains, preserving an explicit nonfumble zero-yard sack."""
+    zero_sack = re.fullmatch(r"SACK\s+0(\*)?", raw.strip(), re.IGNORECASE)
+    if zero_sack:
+        return ColumnResult(yards=0, out_of_bounds=bool(zero_sack.group(1)), is_sack=True)
+    return _parse_column_value(raw)
+
+
 def resolve_qb_scramble(chart: OffenseChart, dice_roll: int) -> ColumnResult:
     """
     Resolve a QB scramble using the QT column.
@@ -901,11 +931,19 @@ def resolve_qb_scramble(chart: OffenseChart, dice_roll: int) -> ColumnResult:
     """
     qt_result = chart.qb_time.get(dice_roll, "")
     if qt_result:
-        parsed = _parse_column_value(qt_result)
+        parsed = _parse_qb_time_value(qt_result)
         if parsed is not None:
             return parsed
     # Default scramble result
     return ColumnResult(yards=random.randint(-5, 10))
+
+
+def _validate_primary_passing_result(result_str: str, play_type: PlayType) -> None:
+    """Reject the retained-incompletion subtype outside its supported columns."""
+    if result_str.strip() == "F INC" and (
+        play_type not in CHART_PLAY_TYPES or not is_passing_play(play_type)
+    ):
+        raise ValueError("F INC is supported only in primary offensive passing columns")
 
 
 def resolve_play(
@@ -940,6 +978,7 @@ def resolve_play(
 
     # Get offensive result from offensive team's chart
     off_result_str = get_offense_result(offense_chart.offense, play_type, off_dice_roll)
+    _validate_primary_passing_result(off_result_str, play_type)
 
     # Get defensive result from defensive team's chart
     play_column = _play_type_to_column(play_type)
@@ -963,6 +1002,7 @@ def resolve_play(
         defense_modifier=def_result_str,
         defense_dice=f"R{def_red}+G{def_green}={sub_row}",
         out_of_bounds=combined.out_of_bounds,
+        retained_fumble_incompletion=combined.retained_fumble_incompletion,
     )
 
     # Handle special priority outcomes
@@ -982,8 +1022,8 @@ def resolve_play(
         else:
             result.yards = qt_col.yards
             result.out_of_bounds = qt_col.out_of_bounds
-            result.result_type = ResultType.QB_SCRAMBLE if qt_col.yards >= 0 else ResultType.SACK
-            if qt_col.yards >= 0:
+            result.result_type = ResultType.SACK if qt_col.is_sack or qt_col.yards < 0 else ResultType.QB_SCRAMBLE
+            if not qt_col.is_sack and qt_col.yards >= 0:
                 result.description = f"QB scrambles for {qt_col.yards} yards (QT roll: {qt_desc})"
             else:
                 result.description = (
@@ -1002,14 +1042,14 @@ def resolve_play(
         result.description = f"BREAKAWAY! Roll {b_desc} = {b_col.yards} yards!"
 
     elif combined.is_turnover:
-        if "INT" in off_result_str or "INT" in def_result_str:
+        if combined.priority in (PriorityResult.INT, PriorityResult.D_INT):
             result.result_type = ResultType.INTERCEPTION
         else:
             result.result_type = ResultType.FUMBLE
 
     elif combined.is_incomplete:
         result.result_type = ResultType.INCOMPLETE
-        result.description = "Incomplete pass"
+        result.description = combined.description
 
     elif combined.is_touchdown:
         result.result_type = ResultType.TOUCHDOWN
@@ -1361,6 +1401,7 @@ def resolve_play_with_penalties(
     while reroll_count < max_rerolls:
         off_dice_roll, off_dice_desc = roll_chart_dice()
         off_result_str = get_offense_result(offense_chart.offense, play_type, off_dice_roll)
+        _validate_primary_passing_result(off_result_str, play_type)
 
         is_off_pen, off_pen_type = _is_penalty_result(off_result_str)
 
@@ -1426,6 +1467,10 @@ def resolve_play_with_penalties(
     combined = apply_priority_chart(
         off_result_str, def_result_str, is_passing_play=is_passing_play(play_type)
     )
+    if off_result_str.strip() == "F INC" and is_def_pen:
+        # The foul remains an option, but declining it retains this selected
+        # terminal pass, rather than interpreting penalty yardage as a gain.
+        combined = apply_priority_chart(off_result_str, "0", is_passing_play=True)
 
     # Build transaction to capture all play events
     txn = PlayTransaction()
@@ -1459,6 +1504,7 @@ def resolve_play_with_penalties(
         defense_modifier=def_result_str,
         defense_dice=def_dice_desc,
         out_of_bounds=combined.out_of_bounds,
+        retained_fumble_incompletion=combined.retained_fumble_incompletion,
     )
 
     # Store original offense yards before penalty override
@@ -1485,9 +1531,9 @@ def resolve_play_with_penalties(
             play_result.yards = qt_col.yards
             play_result.out_of_bounds = qt_col.out_of_bounds
             play_result.result_type = (
-                ResultType.QB_SCRAMBLE if qt_col.yards >= 0 else ResultType.SACK
+                ResultType.SACK if qt_col.is_sack or qt_col.yards < 0 else ResultType.QB_SCRAMBLE
             )
-            if qt_col.yards >= 0:
+            if not qt_col.is_sack and qt_col.yards >= 0:
                 play_result.description = (
                     f"QB scrambles for {qt_col.yards} yards (QT roll: {qt_desc})"
                 )
@@ -1507,7 +1553,7 @@ def resolve_play_with_penalties(
         play_result.description = f"BREAKAWAY! Roll {b_desc} = {b_col.yards} yards!"
 
     elif combined.is_turnover:
-        if "INT" in off_result_str or "INT" in def_result_str:
+        if combined.priority in (PriorityResult.INT, PriorityResult.D_INT):
             play_result.result_type = ResultType.INTERCEPTION
         else:
             # Fumble - roll for recovery NOW so outcome is known before penalty choice
@@ -1542,7 +1588,7 @@ def resolve_play_with_penalties(
 
     elif combined.is_incomplete:
         play_result.result_type = ResultType.INCOMPLETE
-        play_result.description = "Incomplete pass"
+        play_result.description = combined.description
 
     elif combined.is_touchdown:
         play_result.result_type = ResultType.TOUCHDOWN

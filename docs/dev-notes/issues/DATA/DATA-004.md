@@ -182,3 +182,24 @@ historically. Follow-up empirical marker loss and calibration gaps are recorded
 in DATA-005 and DATA-006. No additional resolved ticket has sufficient new
 play-level confirmation from these summaries to close. See the review section
 in the statistical chart generator development note.
+
+--- 2026-11-05 16:11 ---
+Read-only cross-team audit prompted by the web chart display confirms 28/28 unique
+defenses in `1983-generated` and 32/32 in `2024`, with all 60 distinct across sets.
+The original duplicate-chart defect has not recurred; DATA-004 remains closed.
+The repeated visual structure is real: 252/270 and 254/270 result-mechanism
+positions, respectively, are invariant across each cohort. The closest 2024
+pair differs in only two cells, though median pairwise exact agreement is 55.2%.
+The shared-template modeling limitation remains separate from uniqueness and
+historical fit. See the [full audit](../../generated-defense-similarity-audit.md)
+for scope, comparisons and five passing synthetic regressions. Reviewed the
+resolved inventory; this read-only audit supplies no new play-level evidence
+for additional closures. No generator or team data changed.
+
+--- 2026-11-06 00:49 ---
+Current source-generated cohorts complete renewed policy/stress validation:
+13,392 games and 1,947,385 calls reconcile; source/exact mechanics remain passing.
+Hard/balanced points per team-game are 26.04/19.44 and 25.49/18.34 for 1983/2024.
+These policy differences are not historical accuracy passes. Seven reference-
+policy team-yardage misses remain tracked under DATA-018; no closed defense-
+quantization claim is broadened or reopened from aggregate policy sensitivity.

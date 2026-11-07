@@ -80,7 +80,7 @@ rolls from an earlier game. This evidence does not change timing rules.
 | No-huddle | `N`, then a play | Eligible 40-second sequences become 20 seconds; may trigger the no-huddle penalty procedure |
 | Out-of-bounds designation | `7+` | Eligible final-minutes play uses ten seconds, with the applicable five-yard offensive cost |
 | Timeout after a play | `7T` on offense; `AT` on defense | Eligible preceding play is reduced to ten seconds and the requesting team is charged a timeout |
-| Standalone spike | `S` | A separate short clock-stopping play that consumes a down |
+| Standalone spike | `S` | A separate three-second clock-stopping play that consumes a down |
 | Play-plus-spike modifier | `7S` | Requests a spike after an eligible play; total play-plus-spike time is capped at 20 seconds |
 
 No-huddle is not a universal halving of every play's duration. Likewise, a designation does not remove
@@ -102,6 +102,17 @@ Do not combine `+` and `-` on one call. A play can still end a period or the gam
 Each team starts regulation halves with three timeouts; the budget resets at halftime.
 Offense and defense can request them. Use a play/formation suffix (`7T` or `AT`);
 entering `T` alone asks you to choose a play and is not a completed timeout call.
+
+In the browser, select **Timeout (remaining left) [T]** in the modifier panel before
+calling your offensive play or defensive formation. The **T** shortcut
+selects it; **None [0]** or **0** cancels it. This requests a timeout after
+the next play, using the same engine procedure as CLI `7T` or `AT`.
+Modifier controls are disabled while a play or required decision is pending.
+
+The browser CPU uses the shared AI's selected no-huddle, out-of-bounds, spike,
+and punt options. Its offensive and defensive timeout policies request the same
+engine procedure used by human controls. The engine applies a request only when
+the resolved play needs it; a naturally stopped clock does not spend a timeout.
 
 A timeout is charged only when the core engine applies it. Requests with no timeouts remaining must not
 shorten a play for free. Incomplete passes, existing clock stops, possession changes, penalties,

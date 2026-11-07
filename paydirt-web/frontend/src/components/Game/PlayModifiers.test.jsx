@@ -34,28 +34,28 @@ describe('PlayModifiers', () => {
   it('renders no huddle button', () => {
     render(<PlayModifiers selectedPlay="7" />)
     expect(screen.getByText(/No Huddle:/)).toBeDefined()
-    expect(screen.getByText(/OFF\[N\]|ON\[N\]/i)).toBeDefined()
+    expect(screen.getByText(/OFF \[N\]|ON \[N\]/i)).toBeDefined()
   })
 
   it('renders modifier radio buttons', () => {
     render(<PlayModifiers selectedPlay="7" />)
     expect(screen.getByText(/Modifier:/)).toBeDefined()
-    expect(screen.getByLabelText(/None\[0\]/i)).toBeDefined()
-    expect(screen.getByLabelText(/T\(3\)\[T\]/i)).toBeDefined()
-    expect(screen.getByLabelText(/OOB\[O\]/i)).toBeDefined()
-    expect(screen.getByLabelText(/Spike\[S\]/i)).toBeDefined()
+    expect(screen.getByLabelText(/None \[0\]/i)).toBeDefined()
+    expect(screen.getByLabelText(/Timeout \(3 left\) \[T\]/i)).toBeDefined()
+    expect(screen.getByLabelText(/Out of bounds \[O\]/i)).toBeDefined()
+    expect(screen.getByLabelText(/Spike \[S\]/i)).toBeDefined()
   })
 
   it('calls toggleNoHuddleMode when button clicked', () => {
     render(<PlayModifiers selectedPlay="7" />)
-    const button = screen.getByText(/OFF\[N\]|ON\[N\]/i)
+    const button = screen.getByText(/OFF \[N\]|ON \[N\]/i)
     fireEvent.click(button)
     expect(mockToggleNoHuddleMode).toHaveBeenCalledTimes(1)
   })
 
   it('calls setModifier when radio button selected', () => {
     render(<PlayModifiers selectedPlay="7" />)
-    const timeoutRadio = screen.getByLabelText(/T\(3\)\[T\]/i)
+    const timeoutRadio = screen.getByLabelText(/Timeout \(3 left\) \[T\]/i)
     fireEvent.click(timeoutRadio)
     expect(mockSetModifier).toHaveBeenCalledWith('T')
   })

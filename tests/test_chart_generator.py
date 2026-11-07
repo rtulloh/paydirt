@@ -1,9 +1,13 @@
 import json
 import re
+from collections import Counter
+from copy import deepcopy
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
+from paydirt import chart_generator
 from paydirt.chart_generator import (
     EmpiricalChartData,
     EmpiricalPassCalibration,
@@ -13,6 +17,7 @@ from paydirt.chart_generator import (
     weighted_chart_mean,
     weighted_chart_rate,
 )
+from paydirt.chart_layout import PRIMARY_COLUMNS
 from paydirt.chart_loader import load_team_chart
 from paydirt.play_resolver import (
     chart_roll_weights,
@@ -199,7 +204,29 @@ def test_generated_charts_are_loadable_and_deterministic(tmp_path) -> None:
     assert chart.peripheral.short_name == "FOX '26"
 
 
-def test_empirical_play_results_override_one_offense_column(tmp_path) -> None:
+@pytest.mark.parametrize("penalties", [False, True])
+def test_empirical_play_results_override_one_offense_column(tmp_path, monkeypatch, penalties) -> None:
+    from paydirt.play_resolver import (
+        DefenseType,
+        PlayType,
+    )
+    from tests.primary_distribution import primary_result_distribution
+
+    quantized = []
+    allocated = []
+    reallocate = chart_generator.rebalance_primary_allocation
+    layout = chart_generator.disperse_primary_layout
+
+    def capture_quantization(columns):
+        quantized.append(deepcopy(columns))
+        return reallocate(columns)
+
+    def capture(columns):
+        allocated.append(deepcopy(columns))
+        return layout(columns)
+
+    monkeypatch.setattr(chart_generator, "disperse_primary_layout", capture)
+    monkeypatch.setattr(chart_generator, "rebalance_primary_allocation", capture_quantization)
     stats = _synthetic_stats()
     samples = EmpiricalChartData.from_rows(
         [
@@ -216,12 +243,54 @@ def test_empirical_play_results_override_one_offense_column(tmp_path) -> None:
         empirical=samples,
     )
 
-    assert empirical.offense["line_plunge"] == baseline.offense["line_plunge"]
+    weights = chart_roll_weights()
+
+    def physical_mass(column):
+        mass = Counter()
+        for row, token in column.items():
+            mass[token] += weights[row]
+        return mass
+
+    for name in baseline.offense:
+        if name not in {"short_pass", "te_short_long"}:
+            # Existing TE pooling consumes Short Pass when no TE sample is supplied.
+            # Every other source/default allocation stays exactly independent.
+            assert quantized[1][name] == quantized[0][name], name
+        for generated, raw, before in ((baseline, quantized[0], allocated[0]),
+                                       (empirical, quantized[1], allocated[1])):
+            # Reallocation may change printed counts but preserves every exact
+            # full-token physical probability, including each flag variant.
+            assert physical_mass(raw[name]) == physical_mass(before[name]), name
+            # Complete raw tokens and their multiplicity within each weight group
+            # must survive joint placement, including OOB and rare symbols.
+            assert Counter((weights[row], token) for row, token in generated.offense[name].items()) == (
+                Counter((weights[row], token) for row, token in before[name].items())
+            ), name
+        if name not in PRIMARY_COLUMNS:
+            assert empirical.offense[name] == baseline.offense[name], name
+    assert quantized[1]["short_pass"] != quantized[0]["short_pass"]
+    assert quantized[1]["te_short_long"] != quantized[0]["te_short_long"]
+    assert empirical.defense == baseline.defense
+    assert empirical.special_teams == baseline.special_teams
+
+    public = Path(__file__).resolve().parents[1] / "seasons" / "2026"
+    defender = load_team_chart(public / "Thunderhawks")
+    charts = [load_team_chart(tmp_path / name) for name in ("baseline", "empirical")]
+    for play in [*(PlayType(name) for name in PRIMARY_COLUMNS
+                   if name not in {"short_pass", "te_short_long"}),
+                 PlayType.QB_SNEAK]:
+        for defense in DefenseType:
+            distributions = [primary_result_distribution(chart, defender, play, defense, penalties)
+                             for chart in charts]
+            assert distributions[0] == distributions[1], (play, defense, penalties)
     assert empirical.offense["short_pass"] != baseline.offense["short_pass"]
     assert weighted_chart_rate(empirical.offense["short_pass"], "BLACK") == pytest.approx(
         0.25, abs=0.025
     )
     assert weighted_chart_mean(empirical.offense["short_pass"]) == pytest.approx(4.0)
+    # Joint geometry may relocate an unaffected column, while its complete
+    # physical token distribution remains exactly the default allocation.
+    assert physical_mass(empirical.offense["line_plunge"]) == physical_mass(baseline.offense["line_plunge"])
 
 
 def test_empirical_play_csv_loads_normalized_outcomes(tmp_path) -> None:
@@ -834,8 +903,9 @@ def test_empirical_event_calibration_uses_compact_baseline_symbols(tmp_path) -> 
         if result.startswith(("INT ", "QT", "OFF ", "DEF ", "PI "))
         or result == "BLACK"
     }
-    assert calibrated_events <= baseline_events | {"DEF 5X"}
-    assert "DEF 5X" in calibrated_events
+    source_penalties = {"OFF 5", "OFF 10", "DEF 5X", "PI 8"}
+    assert calibrated_events <= baseline_events | source_penalties
+    assert source_penalties <= calibrated_events
 
 
 def test_empirical_quantization_preserves_combined_fumble_family_rate(tmp_path) -> None:
@@ -991,7 +1061,9 @@ def test_defensive_interception_strength_uses_distributed_low_mass_rows(tmp_path
         for formation in "ABCDEF"
         for column in range(5, 10)
     ) <= (1 / 36) + 1e-12
-    assert call_rate(strong, "D", 6) == pytest.approx(4 / 36)
+    # The old 4/36 expectation included a hidden 3/36 neutral-template floor.
+    # Generated interceptions now occupy only the rare 1/36 subrow.
+    assert call_rate(strong, "D", 6) == pytest.approx(1 / 36)
 
 
 def test_defensive_interception_threshold_has_no_large_call_specific_jump(tmp_path) -> None:
@@ -1174,3 +1246,116 @@ def test_missing_rare_special_events_retain_engine_mechanisms(tmp_path) -> None:
     assert any(v.startswith('F ') for v in charts.special_teams['field_goal'].values())
     assert any(v.startswith('F') for v in charts.special_teams['punt'].values())
     assert any(v.startswith('F') for v in charts.special_teams['interception_return'].values())
+
+
+@pytest.mark.parametrize("column,cell", [("qb_time", "OFF 5"), ("breakaway", "F + 2"),
+                                        ("qb_time", "BLACK")])
+def test_generator_rejects_unusable_conditional_samples(tmp_path, column, cell):
+    empirical = EmpiricalChartData(offense={column: (cell, "4", "-5")}, special_teams={})
+    with pytest.raises(ValueError, match="unsupported.*" + column):
+        generate_team_charts(_synthetic_stats(), tmp_path, empirical=empirical)
+
+
+@pytest.mark.parametrize("sack_samples", [25, 75, 100])
+def test_empirical_pressure_reserves_defense_and_uses_actual_qt_sack_mix(tmp_path, sack_samples):
+    """Equal sack targets require different QT mass for mobile and immobile QBs."""
+    from fractions import Fraction
+
+    from paydirt.chart_generator import _generate_defense
+    from paydirt.chart_loader import DefenseChart
+    from paydirt.chart_tactics_audit import resolved_outcome_distribution
+    from paydirt.play_resolver import DefenseType, PlayType
+
+    stats = _synthetic_stats()
+    stats = replace(stats, offense=replace(stats.offense, passing=replace(
+        stats.offense.passing, attempts=920, sacks=80,
+    )), defense=replace(stats.defense, passing=replace(
+        stats.defense.passing, attempts=1000, sacks=65, interceptions=25,
+    )))
+    samples = EmpiricalChartData(offense={
+        **{name: ("8",) * 1000 for name in
+           ("screen", "short_pass", "medium_pass", "long_pass", "te_short_long")},
+        "qb_time": ("-6",) * sack_samples + ("5",) * (100 - sack_samples),
+    })
+    generate_team_charts(stats, tmp_path, empirical=samples,
+                         calibrate_empirical_pass_events=True)
+    chart = load_team_chart(tmp_path)
+    neutral = DefenseChart(_generate_defense(stats))
+    sack_mass, scramble_mass, retained_mass = Fraction(), Fraction(), Fraction()
+    for formation, weight in zip(DefenseType, [22, 12, 16, 20, 14, 16]):
+        for call, call_weight in zip(
+            (PlayType.SCREEN, PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
+             PlayType.LONG_PASS, PlayType.TE_SHORT_LONG), (8, 22, 16, 6, 4),
+        ):
+            distribution = resolved_outcome_distribution(chart, neutral, call, formation)
+            for outcome, probability in distribution.items():
+                mass = probability * weight * call_weight / 5600
+                if outcome.kind == "sack":
+                    sack_mass += mass
+                elif outcome.kind == "qb_scramble":
+                    scramble_mass += mass
+                if outcome.kind != "pending_penalty":
+                    retained_mass += mass
+    # Official denominator excludes QB scrambles, rather than treating all QT
+    # branches as sacks. Finite 216-face allocation is the only approximation.
+    observed = sack_mass / (retained_mass - scramble_mass)
+    assert float(observed) == pytest.approx(.08, abs=.006)
+
+
+def test_empirical_pressure_rejects_missing_sack_support(tmp_path):
+    samples = EmpiricalChartData(offense={"short_pass": ("8",) * 100,
+                                         "qb_time": ("5",) * 100})
+    with pytest.raises(ValueError, match="QT.*sack"):
+        generate_team_charts(_synthetic_stats(), tmp_path, empirical=samples,
+                             calibrate_empirical_pass_events=True)
+
+
+def test_empirical_pressure_exposes_unattainable_defensive_sack_floor(tmp_path):
+    stats = _synthetic_stats()
+    stats = replace(stats, offense=replace(stats.offense, passing=replace(
+        stats.offense.passing, attempts=1000, sacks=1,
+    )))
+    samples = EmpiricalChartData(offense={"short_pass": ("8",) * 1000,
+                                         "qb_time": ("-6",) * 100})
+    with pytest.raises(ValueError, match="QT.*attainable"):
+        generate_team_charts(stats, tmp_path, empirical=samples,
+                             calibrate_empirical_pass_events=True)
+
+
+def test_empirical_allocation_discloses_unrepresented_rare_variant(tmp_path):
+    samples = EmpiricalChartData(offense={"short_pass": ("8",) * 9999 + ("INT 5",)})
+    generated = generate_team_charts(_synthetic_stats(), tmp_path, empirical=samples)
+    evidence = generated.empirical_allocations["offense/short_pass"]
+    assert evidence["population"] == "modeled column inputs, not raw event counts"
+    assert evidence["variants"]["INT 5"] == {
+        "requested_samples": 1, "requested_probability": .0001,
+        "physical_mass": 0, "physical_probability": 0.0,
+    }
+    assert evidence["unrepresented_variants"] == ["INT 5"]
+    assert evidence["physical_denominator"] == 216
+    assert all(value == "8" for value in generated.offense["short_pass"].values())
+
+
+def test_neutral_defense_interception_mass_fits_declared_offense_allowance(tmp_path):
+    from fractions import Fraction
+
+    stats = _synthetic_stats()
+    stats = replace(stats, defense=replace(stats.defense, passing=replace(
+        stats.defense.passing, attempts=1000, interceptions=25,
+    )))
+    generated = generate_team_charts(stats, tmp_path)
+    # Independent specification of the declared normal chart-focused pass mix.
+    formations = dict(zip("ABCDEF", [22, 12, 16, 20, 14, 16]))
+    calls = dict(zip(range(5, 10), [8, 22, 16, 6, 4]))
+    mass = sum(Fraction(formation_weight * play_weight * row_weight, 100 * 56 * 36)
+               for formation, formation_weight in formations.items()
+               for column, play_weight in calls.items()
+               for row, row_weight in defense_subrow_weights().items()
+               if generated.defense[(formation, row)][column].startswith("INT"))
+    assert 0 < mass <= Fraction(6, 1000), mass
+
+
+def test_generated_interception_strength_only_uses_rare_defensive_subrows(tmp_path):
+    generated = generate_team_charts(_synthetic_stats(), tmp_path)
+    assert all(row == 5 for (formation, row), cells in generated.defense.items()
+               for cell in cells.values() if cell.startswith("INT"))

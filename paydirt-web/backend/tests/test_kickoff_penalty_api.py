@@ -72,7 +72,7 @@ def test_human_kicker_chooses_after_recovering_the_reroll_fumble() -> None:
             assert result["penalty_choice"]["kick_phase"] == "return_fumble"
             assert result["penalty_choice"]["offended_team"] == "defense"
             assert "22" in result["penalty_choice"]["play_result_preview"]
-            assert "7" in result["penalty_choice"]["penalty_options"][0]["result_preview"]
+            assert result["penalty_choice"]["penalty_options"][0]["result_preview"] == "1st and 10 at MCT 11"
             with patch("paydirt.game_engine.random.uniform", return_value=8):
                 decided = client.post("/api/game/penalty-decision", json={
                     "game_id": game_id, "accept_penalty": False, "penalty_index": 0,

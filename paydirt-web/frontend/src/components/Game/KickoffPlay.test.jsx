@@ -68,9 +68,9 @@ describe('KickoffPlay', () => {
     expect(screen.getByText('CONTINUE')).toBeDefined()
   })
 
-  // Skipped: needs fake timers or async fetch mocking rework
-  it.skip('shows touchdown result when applicable', async () => {
+  it('shows touchdown result when applicable', async () => {
     const onComplete = vi.fn()
+    const gameState = { ball_position: 100, down: 1, yards_to_go: 10 }
     
     mockFetch({
       result: {
@@ -79,20 +79,21 @@ describe('KickoffPlay', () => {
         turnover: false,
         touchdown: true,
       },
-      game_state: {
-        ball_position: 100,
-        down: 1,
-        yards_to_go: 10,
-      },
+      game_state: gameState,
       dice_roll_offense: 70,
       dice_roll_defense: 100,
     })
     
     render(<KickoffPlay homeTeam={{ name: 'Home', short_name: 'HOM' }} awayTeam={{ name: 'Away', short_name: 'AWY' }} playerOffense={false} gameId="test123" onComplete={onComplete} />)
+    fireEvent.click(screen.getByRole('button', { name: 'KICKOFF' }))
     
     await waitFor(() => {
-      expect(screen.getByText(/TOUCHDOWN!/)).toBeDefined()
+      expect(screen.getByText('TOUCHDOWN!', { exact: true })).toBeVisible()
     }, { timeout: 15000 })
+    expect(onComplete).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'CONTINUE' }))
+    expect(onComplete).toHaveBeenCalledTimes(1)
+    expect(onComplete).toHaveBeenCalledWith(gameState)
   })
 
   it('calls onComplete when continue is clicked', async () => {

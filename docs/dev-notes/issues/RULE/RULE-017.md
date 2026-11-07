@@ -1,11 +1,11 @@
 ---
 id: RULE-017
 title: Own-recovery fumble advance resets the down to second regardless of the down before
-status: resolved
+status: closed
 priority: High
 created-at: 2026-10-27
 resolved-at: 2026-10-27
-closed-at:
+closed-at: 2026-11-06
 tags:
   - reproduced
 links:
@@ -54,3 +54,22 @@ recovery spot, but this is a first-down call with no recovery advance
 (local lines 1269-1277). It is only a passing control. The reported
 second/third-down advance short of the sticks is not exercised, so keep
 resolved pending that specific full-game evidence. No closure inferred.
+
+--- 2026-11-06 02:17 ---
+Issue-specific confirmation now comes from complete public-generated training
+games at runtime `871af55a…`, not unit tests alone. A read-only replay captures
+all 37 own-recovery advances across 496 legally completed games. Every one of
+the eight qualifying second/third-down recoveries short of the sticks preserves
+the original down progression and remaining distance, with no first down or
+turnover incorrectly reported.
+
+Two examples include actual positive recovery advances: Saints at Packers,
+development seed 20502259, third-and-five at the 20, six-yard recovery advance
+after the initial loss, finishes fourth-and-five at the 20; Jaguars at Colts,
+seed 20524457, second-and-four at the 83, a three-yard advance, finishes
+third-and-one at the 86. These are generated 2024 games, not historical results.
+The retained local evidence binds runtime, chart fingerprints, every game seed
+and all qualifying cases. The seeds derive from development master 20261108;
+no reserved family was opened. Close RULE-017 on this specific play-test
+confirmation. DATA-033's separate accepted-penalty rights and RULE-027's
+cross-chart foul/timing work do not change these unpenalized passing cases.

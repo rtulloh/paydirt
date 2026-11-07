@@ -23,6 +23,18 @@ describe('PlayLogDisplay', () => {
     expect(screen.getByText(/Test play/i)).toBeInTheDocument()
   })
 
+  it.each([
+    [2, 41, 'Q2 0:41'],
+    [3, 900, 'Q3 15:00'],
+    [1, 850, 'Q1 14:10'],
+    [4, 9, 'Q4 0:09'],
+    [4, 0, 'Q4 0:00'],
+    [1, undefined, 'Q1 --:--'],
+  ])('formats quarter %s, seconds %s as a clock', (quarter, timeRemaining, label) => {
+    render(<PlayLogDisplay plays={[{ quarter, timeRemaining, description: 'Timed play' }]} />)
+    expect(screen.getByText((_, element) => element.textContent === label)).toBeVisible()
+  })
+
   it('renders multiple plays', () => {
     const plays = [
       { quarter: 1, timeRemaining: 900, down: 1, yardsToGo: 10, description: 'Play 1', yards: 5 },

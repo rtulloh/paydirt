@@ -84,6 +84,12 @@ generated 1983 and 2024 sets use the same file format but are not unit-test fixt
 Keep symbolic entries and number formatting intact. Empty cells are not interchangeable with numeric zero.
 A successful file load is not proof that imported values match the source workbook; inspect the charts.
 
+In the QT column, `SACK 0` explicitly represents a sack with zero yards lost;
+`SACK 0*` also carries the out-of-bounds marker. Plain numeric `0` is a scramble,
+and `F 0` is a real fumble at the line with its recovery procedure. These entries
+are distinct. The explicit zero-yard sack syntax is supported only in QT, not
+the primary play, B or special-team columns.
+
 ## Team Metadata and Rosters
 
 Example `team.yaml`, using fictional data:

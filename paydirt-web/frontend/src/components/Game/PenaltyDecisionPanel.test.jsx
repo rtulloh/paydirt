@@ -6,6 +6,7 @@ describe('PenaltyDecisionPanel', () => {
   const mockPenaltyData = {
     penalty_choice: {
       offended_team: 'offense',
+      play_result_preview: '+15 yards — 1st & 10 at HOME 47',
       offsetting: false,
       penalty_options: [
         {
@@ -33,6 +34,33 @@ describe('PenaltyDecisionPanel', () => {
     new_yards_to_go: 8,
     new_ball_position: 32
   };
+
+  it('uses engine previews for an incomplete pass and both penalty choices', () => {
+    const onDecision = vi.fn();
+    render(<PenaltyDecisionPanel onDecision={onDecision} penaltyData={{
+      description: 'Incomplete pass', yards: 0, new_down: 3, new_yards_to_go: 9, new_ball_position: 77,
+      penalty_choice: {
+        offended_team: 'defense',
+        play_result_preview: '4th & 9 at KC 23',
+        penalty_options: [{ penalty_type: 'OFF', yards: 5, description: 'Offensive penalty, 5 yards', result_preview: '3rd & 14 at KC 28' }],
+      },
+    }} />);
+    expect(screen.getByRole('button', { name: /REJECT PENALTY.*4th & 9 at KC 23/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /3rd & 14 at KC 28/ })).toBeVisible();
+    expect(screen.queryByText('3rd & 9')).not.toBeInTheDocument();
+    expect(screen.queryByText(/OFFENSE is offended/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /REJECT PENALTY/ }));
+    expect(onDecision).toHaveBeenCalledWith(false, 0);
+  });
+
+  it('never invents midfield or down and distance when a legacy response lacks previews', () => {
+    render(<PenaltyDecisionPanel penaltyData={{
+      description: 'Incomplete pass', yards: 0, new_down: 3, new_yards_to_go: 9, new_ball_position: 77,
+      penalty_choice: { offended_team: 'defense', penalty_options: [{ penalty_type: 'OFF', yards: 5, description: 'Offensive penalty, 5 yards' }] },
+    }} />);
+    expect(screen.queryByText(/OWN 50|4th & 4|3rd & 9/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /REJECT PENALTY.*Incomplete pass/ })).toBeVisible();
+  });
 
   const mockOffsettingPenaltyData = {
     penalty_choice: {
@@ -136,7 +164,7 @@ describe('PenaltyDecisionPanel', () => {
   })
 
   describe('Touchdown detection near goal line', () => {
-    it('shows TOUCHDOWN when yards reach goal line (engine did not flag)', () => {
+    it('does not invent a touchdown when the engine has not confirmed one', () => {
       // Ball at 99, gain 1 yard → TD, but engine didn't set touchdown flag
       const tdData = {
         penalty_choice: {
@@ -154,8 +182,7 @@ describe('PenaltyDecisionPanel', () => {
         new_ball_position: 99
       }
       render(<PenaltyDecisionPanel penaltyData={tdData} onDecision={vi.fn()} />)
-      const tdElements = screen.getAllByText(/TOUCHDOWN!/i)
-      expect(tdElements.length).toBeGreaterThanOrEqual(1)
+      expect(screen.queryByText(/TOUCHDOWN!/i)).not.toBeInTheDocument()
     })
 
     it('shows TOUCHDOWN when engine also flagged it', () => {
@@ -181,6 +208,7 @@ describe('PenaltyDecisionPanel', () => {
 
     it('does not show TOUCHDOWN for gain that does not reach goal', () => {
       const noTdData = {
+        description: '+3 yards',
         penalty_choice: {
           offended_team: 'offense',
           offsetting: false,
@@ -268,6 +296,7 @@ describe('PenaltyDecisionPanel', () => {
 
     it('still shows yardage for normal play type', () => {
       const normalData = {
+        description: '+5 yards',
         penalty_choice: {
           offended_team: 'offense',
           offsetting: false,

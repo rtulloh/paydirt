@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Validate a generated 16-week 1983 season and postseason, not historical results.
+"""Validate a selected historical calendar and a separately simulated postseason.
 
-Run from the repository root: python3 tests/run_full_season.py
-Uses real engine rules/dice and CLI flow, with AI supplying human decisions.
-Requires the test dependencies (pytest). Never writes saved standings.
+Run: python3 tests/run_full_season.py [YEAR] --charts PATH
+Defaults to 1983 and available generated charts. Historical scores are diagnostics;
+regression tiebreaks are explicit approximations, not official qualification proof.
+The old rotating schedule is retained only with --generated-regression.
 """
 from __future__ import annotations
 
+import argparse
 import contextlib
+import hashlib
 import io
+import json
 import logging
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
@@ -20,6 +25,7 @@ import pytest
 # Support direct execution as well as importing this runner in unit tests.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from paydirt import historical_season as historical
 from paydirt.computer_ai import ComputerAI
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import PlayType
@@ -27,6 +33,8 @@ from paydirt.standings import Season
 from tests.test_untimed_down_flow import run_seeded_cli_game
 
 SEASON_DIR = Path(__file__).resolve().parents[1] / "seasons" / "1983"
+load_historical_schedule = historical.load_historical_schedule
+audit_historical_season = historical.audit_historical_season
 
 
 def build_schedule(teams: list[str]) -> list[tuple[int, int, str, str, int]]:
@@ -285,7 +293,10 @@ def run_historical_reproductions() -> int:
         # This current-dice supplement awards and plays a real untimed down.
         ("Chiefs", "Giants", 19831631, False),
         ("Chiefs", "Giants", 19831673, False),
-        ("Chiefs", "Giants", 19831617, True),
+        # Current corrected runtime no longer reaches an extension in 19831617.
+        # Keep that complete game and require the independently observed supplement.
+        ("Chiefs", "Giants", 19831617, False),
+        ("Chiefs", "Giants", 19831648, True),
         ("Rams", "49ers", 19830601, False),
         ("Browns", "Buccaneers", 19830914, False),
     )
@@ -306,7 +317,7 @@ def run_historical_reproductions() -> int:
     return 1 if failures else 0
 
 
-def main() -> int:
+def run_generated_regression() -> int:
     """Run local integration using private, untracked 1983 data."""
     try:
         teams = [path.name for path in SEASON_DIR.iterdir() if path.is_dir() and (path / "team.yaml").is_file()]
@@ -316,6 +327,84 @@ def main() -> int:
         return reproduction_status or season_status
     except (OSError, ValueError) as error:
         print(f"Full-season validation failed: {error}", file=sys.stderr)
+        return 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run actual selected-year fixtures with available engine charts."""
+    root = Path(__file__).resolve().parents[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("year", type=int, nargs="?", default=1983)
+    parser.add_argument("--charts", type=Path)
+    parser.add_argument("--schedule", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--seed", type=int, default=20261108)
+    parser.add_argument("--policy", choices=("hard", "balanced"), default="hard")
+    parser.add_argument("--postseason-mode", choices=("simulated", "historical"), default="simulated")
+    parser.add_argument("--generated-regression", action="store_true",
+                        help="Additional legacy 1983 rotating-schedule regression only")
+    args = parser.parse_args(argv)
+    if args.generated_regression:
+        if args.year != 1983:
+            parser.error("The additional generated regression supports only 1983")
+        return run_generated_regression()
+    schedule = (args.schedule or root / "config" / "season-schedules" / f"{args.year}.json").resolve()
+    default_charts = root / "seasons" / f"{args.year}-generated"
+    if not default_charts.is_dir():
+        default_charts = root / "seasons" / str(args.year)
+    charts = (args.charts or default_charts).resolve()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    output = (args.output or root / ".ai-audits" / "season-qualification" /
+              f"{args.year}-{stamp}" / "report.json").resolve()
+    allowed = False
+    try:
+        if (not output.is_relative_to((root / ".ai-audits").resolve()) or output.exists()
+                or args.output is not None and args.output.is_symlink()
+                or output == schedule or output.is_relative_to(charts)):
+            raise ValueError("Season report requires a new ignored path outside chart/source inputs")
+        allowed = True
+        source_hash = hashlib.sha256(schedule.read_bytes()).hexdigest()
+        spec = load_historical_schedule(schedule, args.year)
+        if source_hash != hashlib.sha256(schedule.read_bytes()).hexdigest():
+            raise ValueError("Historical source changed while parsing; no games started")
+        chart_hashes = historical.validate_chart_inputs(spec, charts)
+        report = audit_historical_season(spec, charts, master=args.seed, policy=args.policy,
+                                          postseason_mode=args.postseason_mode)
+        unchanged = (source_hash == hashlib.sha256(schedule.read_bytes()).hexdigest()
+                     and chart_hashes == historical.validate_chart_inputs(spec, charts))
+        report.update(year=args.year, schedule=str(schedule), schedule_sha256=source_hash,
+                      charts=str(charts), chart_hashes=chart_hashes, inventory_unchanged=unchanged,
+                      developer_reproductions="not_applicable", release_certified=False)
+        if not unchanged:
+            report["errors"].append("Historical source or selected charts changed during execution")
+            report["passed"] = False
+        # Preserve all private-chart regressions when their original local data exists.
+        # Missing optional developer charts never blocks the source-only season audit.
+        required = {"Raiders", "Eagles", "Chiefs", "Giants", "Rams", "49ers", "Browns", "Buccaneers"}
+        if args.year == 1983 and all((SEASON_DIR / team / "offense.csv").is_file() for team in required):
+            status = run_historical_reproductions()
+            report["developer_reproductions"] = "passed" if status == 0 else "failed"
+            if status:
+                report["passed"] = False
+                report["errors"].append("Local historical reproduction regression failed")
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with output.open("x") as stream:
+            json.dump(report, stream, indent=2, sort_keys=True, allow_nan=False)
+            stream.write("\n")
+        regular = sum(r["phase"] == "REG" for r in report["game_receipts"])
+        postseason = sum(r["phase"] != "REG" for r in report["game_receipts"])
+        print(f"Historical calendar {args.year}: {regular} regular games; {postseason} postseason games; "
+              f"mode={args.postseason_mode}; policy={args.policy}")
+        print(f"{'PASS' if report['passed'] else 'FAIL'}: {output}")
+        print("Official NFL tiebreaks and repeated-season probabilities remain UNVERIFIED.")
+        return 0 if report["passed"] else 1
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
+        print(f"Historical full-season validation failed: {error}", file=sys.stderr)
+        if allowed and not output.exists():
+            output.parent.mkdir(parents=True, exist_ok=True)
+            with output.open("x") as stream:
+                json.dump({"passed": False, "errors": [str(error)], "release_certified": False}, stream, indent=2)
+                stream.write("\n")
         return 1
 
 

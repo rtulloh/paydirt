@@ -11,6 +11,7 @@ links:
   - RULE-007
   - STAT-003
   - AI-022
+  - FLOW-018
 tags:
   - reproduced
 ---
@@ -39,3 +40,28 @@ Q3 15:00. The try still uses ordinary run_play. No change to conversion
 mechanics is included in TRACE-009, and its zero-charge evidence is limited
 to PAT kicks. This issue remains open; do not label two-point tries as
 observed zero-time events until the conversion sandbox is implemented.
+
+--- 2026-11-06 10:34 ---
+Synthetic/public retained-fumble/incompletion controls reconfirm ordinary BLACK
+incomplete two-point attempts charge five seconds despite the untimed comment.
+The new F INC subtype matches that existing path; its passing conversion checks
+are compatibility evidence, not verification of zero-time conversion mechanics.
+See `docs/dev-notes/retained-fumble-incompletion-engine.md`. Keep this ticket
+open; no conversion sandbox or play-test closure is included in the chart fix.
+
+--- 2026-11-06 14:20 ---
+Uncommitted test-first repair and validation are in progress. See
+[conversion completion evidence](../../two-point-conversion-completion.md) for
+expected RED controls, implementation boundaries, and the disclosed retained-
+fumble test expectation change. Keep open until the scoped fix is committed;
+closure additionally needs actual engine/API/browser play-test evidence.
+
+--- 2026-11-06 14:35 ---
+Actual chart, API and browser checks now confirm exact two-point scoring,
+defensive-return ownership, zero ordinary accounting/time/history changes and
+restoration after early and late resolution exceptions. Both full real-engine
+browser games and eight compiled conversion/0:00 final cases pass. The clean
+public snapshot passes 10,166 core tests. The mandatory chart source gates fail
+their missing source-preparation prerequisite; no full-regression or release
+qualification is claimed. Keep open because the scoped repair is uncommitted.
+See the linked completion evidence for receipts and remaining validation.

@@ -205,7 +205,8 @@ def test_blocked_kick_return_fumble_safety_propagates_to_outcome(kind: str, reco
         chart.special_teams.interception_return[13] = "F - 100"
     fg_result = create_fg_result(24, "F - 8" if kind == "snap" else "BK -8", is_blocked=kind != "snap")
     game.state.home_chart.special_teams.punt[24] = "BK -8"
-    rolls = [recovery, 13, 20] if kind != "punt" else [24, recovery, 13, 20]
+    # VI-12-D-iii/F-ii: F -100 is out of play; it has no recovery roll.
+    rolls = [recovery, 13] if kind != "punt" else [24, recovery, 13]
     with (
         patch("paydirt.game_engine.resolve_field_goal_with_penalties", return_value=fg_result),
         patch("paydirt.game_engine.roll_chart_dice", side_effect=[(roll, f"Roll {roll}") for roll in rolls]) as dice,

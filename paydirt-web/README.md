@@ -83,11 +83,62 @@ Useful endpoints include `GET /api/health`, `GET /api/seasons`, `GET /api/teams?
 `POST /api/game/new`, and `GET /api/game/state/{game_id}`.
 The running backend's **http://localhost:8000/docs** provides its API schema.
 
+`POST /api/game/new` accepts
+`player_attempt_end_zone_interception_returns` and
+`opponent_attempt_end_zone_interception_returns` (booleans, default `false`).
+They follow the human/CPU roles regardless of `play_as_home`. The engine stores
+the mapped choices as `home_end_zone_interception_return` and
+`away_end_zone_interception_return`; game-state responses and saved replays
+include those keys. Missing keys in older saves restore automatic touchbacks.
+Direct engine callers can set each team's preference before play with
+`engine.set_end_zone_interception_return(home=True, attempt_return=True)`.
+The core resolves the return and all subsequent fumbles, fouls and scores.
+Completed blocked kicks use the engine result class `blocked_kick`, including a
+retained blocked punt completed after a declined kick foul. Display the core
+result description and state supplied with the response.
+
+Vite proxies relative `/api` requests, including offline guide images, to
+`127.0.0.1:8000` to match Uvicorn's default IPv4 listener. This avoids a local
+proxy failure on systems where Node resolves `localhost` to IPv6 first.
+
+`GET /api/game/charts/{game_id}?side=home` returns the active home team's
+offense, defense, auxiliary B/QT/fumble, and special-teams tables; use
+`side=away` for the visitor. Each table supplies column/row groups and cell
+labels, colors, and descriptions for the browser's **CHARTS** viewer. The
+endpoint serializes engine-loaded charts without reading arbitrary paths or
+advancing play. Result labels retain the loaded symbols; cell fills are
+reconstructed from those symbols because CSV files do not preserve spreadsheet
+formatting. `backend/chart_viewer.py` owns this display metadata, and the frontend
+only renders it. Public-team browser coverage lives in `frontend/e2e/charts.spec.js`.
+
+The chart viewer can also open a standalone reference at
+`/?charts=<game_id>&side=home&view=offense`. It shares the modal's display
+component without mounting game controls or using the game store. The URL
+preserves the selected side and section when opening or reloading a tab/window;
+all chart requests remain read-only. Unknown/expired games offer a retry, and
+invalid links do not send requests. The desktop layout fits all 30 rows with
+the legend collapsed; narrow screens retain scrolling.
+
+Offense renders the loaded Special Plays table beside its main grid at viewport
+widths of 1200px and above, aligning the 30 roll rows. Narrower screens stack
+the strip below Offense. Special Plays uses a 272px table with a 32px roll
+column on the right. Navigation offers Offense, Defense and Special Teams;
+Special Plays is included only in Offense. Older `view=special_plays` links
+open combined Offense with the selected side preserved. The strip shares the
+table renderer and supplied cell labels/colors, without extra chart requests.
+
 `POST /api/game/execute` accepts offensive play keys `1`–`9`, `Q`, `K`, `P`,
 `F`, and `S`, with optional `+`, `-`, `T`, and `S` suffixes; defensive keys are
 `A`–`E`. Calls are case-insensitive. Omit `cpu_play` (or send `null`) to let
 the CPU choose. `/api/game/two-point` accepts the same keys without suffixes.
 Invalid calls return HTTP 400 without advancing the game.
+
+When the human is defending, `/api/game/execute` also accepts
+`call_defensive_timeout: true` alongside the unchanged formation key.
+The engine determines whether to charge the timeout after resolving the
+play and any pending penalty decision. Sending this flag while the human
+is on offense returns HTTP 400 without advancing the game. Execute and
+penalty-decision results expose the engine's `defensive_timeout_used` flag.
 
 Browser saved replays are not resumable CLI games or deterministic engine-log replay.
 See [saved games](../docs/saved-games-and-standings.md) and the separately labeled

@@ -341,6 +341,7 @@ class TestPuntPenaltyDecision:
         
         # Set the current game state ball position (where the punt occurred)
         engine.state.ball_position = 45  # Kicking team at their 45
+        engine.state.down = 4
         engine.state.is_home_possession = True  # Home is kicking (offense)
         
         engine._pending_punt_state = {
@@ -350,14 +351,15 @@ class TestPuntPenaltyDecision:
             'return_yards': 10,
             'punt_penalty_yards': 5,
             'is_offensive_penalty': True,
-            'field_pos_before': "OWN 45",
+            'field_pos_before': 45,
+            'down_before': 4,
             'ytg_before': 10,
         }
         
         penalty_options = [
             PenaltyOption(
-                penalty_type="OFF 5",
-                raw_result="REPLAY_PUNT",
+                penalty_type="OFF",
+                raw_result="OFF 5",
                 yards=5,
                 description="Replay punt from own 40",
                 auto_first_down=False
@@ -404,7 +406,7 @@ class TestPuntPenaltyDecision:
         assert engine.state.yards_to_go == 15  # 10 + 5 penalty yards
         
         # Verify it says "punt replayed"
-        assert "Punt replayed" in result.description
+        assert "Replay the down." in result.description
 
 
 if __name__ == "__main__":

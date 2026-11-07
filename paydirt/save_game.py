@@ -90,6 +90,8 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         ],
         # Optional game-local coaching context; absent in legacy version-1 saves.
         "offensive_call_history": engine.offensive_call_history,
+        "home_end_zone_interception_return": engine.home_end_zone_interception_return,
+        "away_end_zone_interception_return": engine.away_end_zone_interception_return,
     }
 
     # Version-1 readers ignore this optional metadata. Without it, a later load
@@ -153,6 +155,8 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
     engine = PaydirtGameEngine(home_chart, away_chart)
     state = engine.state
     engine.restore_offensive_call_history(save_data.get("offensive_call_history", []))
+    engine.set_end_zone_interception_return(True, save_data.get("home_end_zone_interception_return", False))
+    engine.set_end_zone_interception_return(False, save_data.get("away_end_zone_interception_return", False))
     
     # Restore core game state
     state.home_score = save_data["home_score"]

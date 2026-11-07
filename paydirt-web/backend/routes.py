@@ -9,7 +9,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import yaml
 from fastapi import APIRouter, HTTPException
@@ -34,6 +34,8 @@ from paydirt.packaging import get_all_season_paths, get_builtin_seasons_path
 
 # For backwards compatibility - SEASONS_DIR points to built-in seasons
 SEASONS_DIR = get_builtin_seasons_path()
+
+from chart_viewer import ChartBookResponse, build_chart_book
 
 from paydirt.chart_loader import load_team_chart
 from paydirt.computer_ai import cpu_should_accept_penalty, create_computer_ai
@@ -332,6 +334,9 @@ class PlayResult(BaseModel):
     penalty_choice: Optional[PenaltyChoiceModel] = None
     play_type: Optional[str] = None
     rule_explanation: Optional[str] = None
+    defensive_timeout_used: bool = False
+    conversion_success: Optional[bool] = None
+    defense_points: int = 0
 
     headline: Optional[str] = None
     commentary: Optional[str] = None
@@ -378,6 +383,8 @@ class NewGameRequest(BaseModel):
     play_as_home: bool = True
     opponent_team: Optional[str] = None
     difficulty: str = "medium"
+    player_attempt_end_zone_interception_returns: bool = False
+    opponent_attempt_end_zone_interception_returns: bool = False
 
 
 class GameStateResponse(BaseModel):
@@ -411,6 +418,8 @@ class GameStateResponse(BaseModel):
     season: str = "1983"  # Season year for replay saving
     # Engine-owned: the first half has ended and the second-half kickoff is still owed.
     halftime_pending: bool = False
+    home_end_zone_interception_return: bool = False
+    away_end_zone_interception_return: bool = False
 
 
 class NewGameResponse(BaseModel):
@@ -426,6 +435,7 @@ class PlayRequest(BaseModel):
     short_drop: bool = False
     coffin_corner_yards: int = 0
     no_huddle: bool = False  # Mode, not a one-play modifier
+    call_defensive_timeout: bool = False
 
 
 class GameIdRequest(BaseModel):
@@ -634,6 +644,8 @@ def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = No
         home_timeouts=game["engine"].state.home_timeouts,
         away_timeouts=game["engine"].state.away_timeouts,
         player_offense=player_offense,
+        home_end_zone_interception_return=game["engine"].home_end_zone_interception_return,
+        away_end_zone_interception_return=game["engine"].away_end_zone_interception_return,
         human_team_id=game.get("player_team_id"),
         cpu_team_id=game.get("cpu_team_id"),
         human_is_home=human_is_home,
@@ -666,6 +678,7 @@ def get_play_type_from_key(key: str) -> PlayType:
         "P": PlayType.PUNT,
         "F": PlayType.FIELD_GOAL,
         "S": PlayType.SPIKE_BALL,
+        "H": PlayType.HAIL_MARY,
     }
     try:
         return play_map[key.upper()]
@@ -680,6 +693,7 @@ def get_defense_type_from_key(key: str) -> DefenseType:
         "C": DefenseType.SPREAD,
         "D": DefenseType.SHORT_PASS,
         "E": DefenseType.LONG_PASS,
+        "F": DefenseType.BLITZ,
     }
     try:
         return defense_map[key.upper()]
@@ -871,6 +885,10 @@ async def new_game(request: NewGameRequest):
     game_id = f"game_{uuid.uuid4().hex[:8]}"
 
     engine = PaydirtGameEngine(home_chart, away_chart)
+    engine.set_end_zone_interception_return(
+        player_is_home, request.player_attempt_end_zone_interception_returns)
+    engine.set_end_zone_interception_return(
+        not player_is_home, request.opponent_attempt_end_zone_interception_returns)
 
     difficulty = request.difficulty.lower() if request.difficulty else "medium"
 
@@ -904,6 +922,16 @@ async def get_game_state(game_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
 
     return game_state_to_response(games[game_id])
+
+
+@router.get("/api/game/charts/{game_id}", response_model=ChartBookResponse)
+async def get_game_charts(game_id: str, side: Literal["home", "away"] = "home") -> ChartBookResponse:
+    """Display a team's already-loaded charts without advancing the game."""
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    game = games[game_id]
+    chart = getattr(game["engine"].state, f"{side}_chart")
+    return build_chart_book(chart, game[f"{side}_team"].model_dump(), game["season"])
 
 
 class CoinTossRequest(BaseModel):
@@ -953,6 +981,41 @@ async def process_coin_toss(request: CoinTossRequest):
     }
 
 
+def _cpu_offense_context(game: dict[str, Any]) -> tuple:
+    """Identify the situation for which a prepared CPU call is valid."""
+    engine = game["engine"]
+    state = engine.state
+    return (
+        state.quarter, state.time_remaining, state.is_home_possession,
+        state.ball_position, state.down, state.yards_to_go,
+        state.home_score, state.away_score, state.home_timeouts, state.away_timeouts,
+        state.is_overtime, state.ot_period, state.game_over,
+        state.untimed_down_pending, state.two_minute_warning_called, len(engine.play_log),
+    )
+
+
+def _cpu_offense_plan(game: dict[str, Any]) -> tuple:
+    """Keep one AI call and its options through preview and execution."""
+    context = _cpu_offense_context(game)
+    prepared = game.get("cpu_offense_plan")
+    if prepared is None or prepared[0] != context:
+        prepared = (context, game["ai"].select_offense_with_clock_management(game["engine"]))
+        game["cpu_offense_plan"] = prepared
+    return prepared[1]
+
+
+def _offense_play_key(play: PlayType) -> str:
+    """Return the API key without silently substituting a different play."""
+    return {
+        PlayType.LINE_PLUNGE: "1", PlayType.OFF_TACKLE: "2", PlayType.END_RUN: "3",
+        PlayType.DRAW: "4", PlayType.SCREEN: "5", PlayType.SHORT_PASS: "6",
+        PlayType.MEDIUM_PASS: "7", PlayType.LONG_PASS: "8", PlayType.TE_SHORT_LONG: "9",
+        PlayType.QB_SNEAK: "Q", PlayType.QB_KNEEL: "K", PlayType.PUNT: "P",
+        PlayType.FIELD_GOAL: "F", PlayType.SPIKE_BALL: "S", PlayType.HAIL_MARY: "H",
+        PlayType.KICKOFF: "KO",
+    }[play]
+
+
 @router.post("/api/game/cpu-play", response_model=CPUPlayResponse)
 async def get_cpu_play(request: GameIdRequest):
     if request.game_id not in games:
@@ -970,23 +1033,7 @@ async def get_cpu_play(request: GameIdRequest):
     cpu_is_offense = not player_offense
 
     if cpu_is_offense:
-        cpu_play_type = game["ai"].select_offense(game["engine"])
-        cpu_play = {
-            PlayType.LINE_PLUNGE: "1",
-            PlayType.OFF_TACKLE: "2",
-            PlayType.END_RUN: "3",
-            PlayType.DRAW: "4",
-            PlayType.SCREEN: "5",
-            PlayType.SHORT_PASS: "6",
-            PlayType.MEDIUM_PASS: "7",
-            PlayType.LONG_PASS: "8",
-            PlayType.TE_SHORT_LONG: "9",
-            PlayType.QB_SNEAK: "Q",
-            PlayType.QB_KNEEL: "K",
-            PlayType.PUNT: "P",
-            PlayType.FIELD_GOAL: "F",
-            PlayType.SPIKE_BALL: "S",
-        }.get(cpu_play_type, "1")
+        cpu_play = _offense_play_key(_cpu_offense_plan(game)[0])
     else:
         cpu_defense = game["ai"].select_defense(game["engine"])
         cpu_play = {
@@ -995,6 +1042,7 @@ async def get_cpu_play(request: GameIdRequest):
             DefenseType.SPREAD: "C",
             DefenseType.SHORT_PASS: "D",
             DefenseType.LONG_PASS: "E",
+            DefenseType.BLITZ: "F",
         }.get(cpu_defense, "A")
 
     return CPUPlayResponse(cpu_play=cpu_play)
@@ -1022,25 +1070,8 @@ async def get_cpu_4th_down_decision(game_id: str):
     if not (cpu_is_offense and state.down == 4):
         return CPUFourthDownResponse(decision="none")
 
-    play_map = {
-        PlayType.LINE_PLUNGE: "1",
-        PlayType.OFF_TACKLE: "2",
-        PlayType.END_RUN: "3",
-        PlayType.DRAW: "4",
-        PlayType.SCREEN: "5",
-        PlayType.SHORT_PASS: "6",
-        PlayType.MEDIUM_PASS: "7",
-        PlayType.LONG_PASS: "8",
-        PlayType.TE_SHORT_LONG: "9",
-        PlayType.QB_SNEAK: "Q",
-        PlayType.QB_KNEEL: "K",
-        PlayType.PUNT: "P",
-        PlayType.FIELD_GOAL: "F",
-        PlayType.SPIKE_BALL: "S",
-    }
-
-    play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(game["engine"])
-    play_key = play_map.get(play, "1")
+    play = _cpu_offense_plan(game)[0]
+    play_key = _offense_play_key(play)
 
     if play == PlayType.PUNT:
         return CPUFourthDownResponse(decision="punt", play="P")
@@ -1077,6 +1108,9 @@ async def execute_play(request: PlayRequest):
 
     cpu_play = request.cpu_play.upper() if request.cpu_play is not None else None
 
+    if request.call_defensive_timeout and player_offense:
+        raise HTTPException(status_code=400, detail="Defensive timeout requires the human team on defense")
+
     # Initialize modifier flags
     call_spike = False
     call_timeout = False
@@ -1099,39 +1133,30 @@ async def execute_play(request: PlayRequest):
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
+    punt_short_drop = request.short_drop
+    punt_coffin_corner_yards = request.coffin_corner_yards
+    cpu_defensive_timeout = False
     if player_offense:
         if defense_play is None:
             defense_play = game["ai"].select_defense(engine)
+        cpu_defensive_timeout = game["ai"].should_call_timeout_on_defense(engine)
     else:
-        # CPU on offense - check for 4th down decision if no cpu_play provided
-        if engine.state.down == 4 and cpu_play is None:
-            play, _, _, _, _, _ = game["ai"].select_offense_with_clock_management(engine)
-            play_map = {
-                PlayType.LINE_PLUNGE: "1",
-                PlayType.OFF_TACKLE: "2",
-                PlayType.END_RUN: "3",
-                PlayType.DRAW: "4",
-                PlayType.SCREEN: "5",
-                PlayType.SHORT_PASS: "6",
-                PlayType.MEDIUM_PASS: "7",
-                PlayType.LONG_PASS: "8",
-                PlayType.TE_SHORT_LONG: "9",
-                PlayType.QB_SNEAK: "Q",
-                PlayType.QB_KNEEL: "K",
-                PlayType.PUNT: "P",
-                PlayType.FIELD_GOAL: "F",
-                PlayType.SPIKE_BALL: "S",
-            }
-            if play == PlayType.PUNT:
-                cpu_play = "P"
-            elif play == PlayType.FIELD_GOAL:
-                cpu_play = "F"
-            else:
-                cpu_play = play_map.get(play, "1")
-
+        # The browser previews the call before execution. Retain the associated
+        # clock and punt options, but never reuse a plan from a different state
+        # or silently change an explicitly supplied offensive call.
+        prepared = game.get("cpu_offense_plan")
+        plan = None
         if offense_play is None:
-            offense_play = (get_play_type_from_key(cpu_play) if cpu_play is not None
-                            else game["ai"].select_offense(engine))
+            plan = _cpu_offense_plan(game)
+            offense_play = plan[0]
+        elif prepared is not None and prepared[0] == _cpu_offense_context(game):
+            if prepared[1][0] == offense_play:
+                plan = prepared[1]
+        game.pop("cpu_offense_plan", None)
+        no_huddle = False
+        if plan is not None:
+            _, out_of_bounds, no_huddle, punt_short_drop, punt_coffin_corner_yards, call_spike = plan
+        call_timeout = game["ai"].should_call_timeout_on_offense(engine)
 
     home_score_before = engine.state.home_score
     away_score_before = engine.state.away_score
@@ -1140,23 +1165,6 @@ async def execute_play(request: PlayRequest):
     distance_before = engine.state.yards_to_go
 
     # Map play types to display keys for logging
-    offense_key_map = {
-        PlayType.LINE_PLUNGE: "1",
-        PlayType.OFF_TACKLE: "2",
-        PlayType.END_RUN: "3",
-        PlayType.DRAW: "4",
-        PlayType.SCREEN: "5",
-        PlayType.SHORT_PASS: "6",
-        PlayType.MEDIUM_PASS: "7",
-        PlayType.LONG_PASS: "8",
-        PlayType.TE_SHORT_LONG: "9",
-        PlayType.QB_SNEAK: "Q",
-        PlayType.QB_KNEEL: "K",
-        PlayType.PUNT: "P",
-        PlayType.FIELD_GOAL: "F",
-        PlayType.SPIKE_BALL: "S",
-        PlayType.KICKOFF: "KO",
-    }
     defense_key_map = {
         DefenseType.STANDARD: "A",
         DefenseType.SHORT_YARDAGE: "B",
@@ -1166,7 +1174,7 @@ async def execute_play(request: PlayRequest):
         DefenseType.BLITZ: "F",
     }
 
-    off_key = offense_key_map.get(offense_play, "?")
+    off_key = _offense_play_key(offense_play)
     def_key = defense_key_map.get(defense_play, "?")
 
     # Get team abbreviations
@@ -1181,8 +1189,9 @@ async def execute_play(request: PlayRequest):
         no_huddle=no_huddle,
         call_spike=call_spike,
         call_timeout=call_timeout,
-        punt_short_drop=request.short_drop,
-        punt_coffin_corner_yards=request.coffin_corner_yards,
+        call_defensive_timeout=cpu_defensive_timeout or request.call_defensive_timeout,
+        punt_short_drop=punt_short_drop,
+        punt_coffin_corner_yards=punt_coffin_corner_yards,
     )
 
     if player_offense and game["ai"].opponent_model is not None:
@@ -1254,7 +1263,7 @@ async def execute_play(request: PlayRequest):
     penalty_choice_model = None
     if should_prompt_human:
         # Human decides - save outcome and return pending decision
-        penalty_choice_model = _penalty_choice_model(result.penalty_choice)
+        penalty_choice_model = _penalty_choice_model(engine.get_penalty_choice_preview(result))
     elif pending_penalty:
         # CPU decides - apply penalty decision automatically
         human_is_home = game.get("human_is_home", False)
@@ -1264,7 +1273,9 @@ async def execute_play(request: PlayRequest):
         accept_penalty = not accept_play
 
         if result.play_type == PlayType.PUNT:
-            result = engine.apply_punt_penalty_decision(result, accept_penalty)
+            result = engine.apply_punt_penalty_decision(
+                result, accept_penalty, penalty_index=penalty_index if penalty_index is not None else 0,
+            )
         elif result.play_type == PlayType.FIELD_GOAL:
             result = engine.apply_fg_penalty_decision(
                 result, accept_play=accept_play, penalty_index=penalty_index
@@ -1329,6 +1340,7 @@ async def execute_play(request: PlayRequest):
             yards=result.yards_gained,
             description=result.description,
             rule_explanation=result.result.rule_explanation,
+            defensive_timeout_used=result.defensive_timeout_used,
             turnover=result.turnover,
             scoring=scoring,
             touchdown=result.touchdown,
@@ -1563,7 +1575,7 @@ async def perform_kickoff(request: KickoffRequest):
         human_decides = (result.penalty_choice.offended_team == "offense") == human_receives
         if human_decides:
             engine._last_play_outcome = result
-            penalty_choice_model = _penalty_choice_model(result.penalty_choice)
+            penalty_choice_model = _penalty_choice_model(engine.get_penalty_choice_preview(result))
         else:
             accept_play, _ = cpu_should_accept_penalty(
                 result, is_human_offense=human_receives, human_is_home=human_is_home
@@ -1678,7 +1690,7 @@ async def attempt_two_point(request: TwoPointRequest):
             detail="Two-point conversions are not available in this season",
         )
 
-    _success, _defense_points, description = engine.attempt_two_point(offense_play, defense_play)
+    success, defense_points, description = engine.attempt_two_point(offense_play, defense_play)
 
     # Log two-point conversion
     scoring_abbrev = home_abbrev if engine.state.is_home_possession else away_abbrev
@@ -1700,17 +1712,19 @@ async def attempt_two_point(request: TwoPointRequest):
             result="two_point_conversion",
             yards=0,
             description=description,
-            scoring=True,
+            scoring=success or bool(defense_points),
+            conversion_success=success,
+            defense_points=defense_points,
             touchdown=False,
             new_ball_position=engine.state.ball_position,
             new_down=engine.state.down,
             new_yards_to_go=engine.state.yards_to_go,
             new_score_home=engine.state.home_score,
             new_score_away=engine.state.away_score,
-            possession_changed=True,
+            possession_changed=False,
             game_over=engine.state.game_over,
         ),
-        game_state=game_state_to_response(game, is_kickoff=True),
+        game_state=game_state_to_response(game),
     )
 
 
@@ -1786,7 +1800,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
 
     penalty_choice_model = None
     if new_outcome.penalty_choice:
-        penalty_choice_model = _penalty_choice_model(new_outcome.penalty_choice)
+        penalty_choice_model = _penalty_choice_model(engine.get_penalty_choice_preview(new_outcome))
 
     play_result = PlayResult(
         result=new_outcome.result.result_type.value
@@ -1794,6 +1808,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         else str(new_outcome.result),
         yards=new_outcome.yards_gained,
         description=new_outcome.description,
+        defensive_timeout_used=new_outcome.defensive_timeout_used,
         turnover=new_outcome.turnover,
         scoring=scoring,
         touchdown=new_outcome.touchdown,
@@ -1934,6 +1949,11 @@ async def load_replay(request: LoadReplayRequest):
     game_id = f"game_{uuid.uuid4().hex[:8]}"
 
     engine = PaydirtGameEngine(home_chart, away_chart)
+    try:
+        engine.set_end_zone_interception_return(True, game_state.get("home_end_zone_interception_return", False))
+        engine.set_end_zone_interception_return(False, game_state.get("away_end_zone_interception_return", False))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     difficulty = replay_data.get("difficulty", "medium")
 

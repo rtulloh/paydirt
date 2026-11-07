@@ -632,6 +632,7 @@ class TestPuntPenalties:
     def test_defensive_penalty_on_punt_accept_no_first_down(self, game):
         """When kicking team accepts DEF penalty but doesn't get first down, still 4th down."""
         game.state.ball_position = 30
+        game.state.down = 4
         game.state.yards_to_go = 10  # 4th and 10
         game.state.is_home_possession = True
         
@@ -864,6 +865,7 @@ class TestPuntPenaltyIndex:
     def test_off_penalty_replay_with_penalty_index_0(self, game):
         """OFF penalty: penalty_index=0 should select replay option."""
         game.state.ball_position = 40
+        game.state.down = 4
         game.state.is_home_possession = True
         
         with patch('paydirt.game_engine.roll_chart_dice') as mock_dice:
@@ -1722,7 +1724,7 @@ def punt_preview_game(mock_team_chart):
         (24, "38*", "0", 0, 48, "own 48"),
         (24, "38†", "0", 0, 48, "own 48"),
         (50, "65", "0", 0, 30, "own 30"),
-        (24, "34", "0", 15, 52, "opponent 48"),
+        (24, "34", "0", 15, 67, "opponent 33"),
         (24, "34", "50", 0, 96, "opponent 4"),
         (24, "34", "60", 0, 100, "touchdown"),
         (5, "34", "2", 0, 73, "opponent 27"),
@@ -1812,7 +1814,7 @@ def test_cli_punt_keep_choice_shows_receiving_team_spot(
         (24, "38*", "0", 0, 38, False),
         (24, "38†", "0", 0, 38, False),
         (50, "65", "0", 0, 20, False),
-        (24, "34", "0", 15, 42, False),
+        (24, "34", "0", 15, 57, False),
         (24, "34", "60", 0, 100, True),
     ],
 )
@@ -1845,7 +1847,7 @@ def test_declining_offensive_punt_penalty_preserves_unpenalized_result(
     assert not applied.pending_penalty_decision
     assert not hasattr(game, "_pending_punt_state")
     assert applied.description.startswith("Receiving team declines penalty.")
-    assert applied.yards_gained == int(punt_result.rstrip("*†"))
+    assert applied.yards_gained == max(0, int(punt_result.rstrip("*†")) - coffin_corner_yards)
     assert game.play_log[-1] is applied
     assert game.state.home_score == (6 if touchdown and not kicking_is_home else 0)
     assert game.state.away_score == (6 if touchdown and kicking_is_home else 0)

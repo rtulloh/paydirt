@@ -7,6 +7,8 @@ import gzip
 import json
 from pathlib import Path
 
+import pytest
+
 
 def _stats(team_name: str, short_name: str) -> dict[str, object]:
     """Return a compact synthetic season-stat payload."""
@@ -29,6 +31,7 @@ def _play(play_id: int, offense: str, defense: str) -> dict[str, object]:
     """Return one nflverse-shaped regular-season rushing row."""
     return {
         "season_type": "REG",
+        "two_point_attempt": 0,
         "game_id": "2026_01_AAA_BBB",
         "play_id": play_id,
         "posteam": offense,
@@ -67,9 +70,20 @@ def _play(play_id: int, offense: str, defense: str) -> dict[str, object]:
     }
 
 
-def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Path) -> None:
+def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Path, monkeypatch) -> None:
     """The command should turn nflverse rows into empirical team charts and audits."""
+    import generate_nflverse_charts as command
     from generate_nflverse_charts import main
+
+    original_generate = command.generate_team_charts
+    pressure_models = []
+
+    def generate_with_shared_pressure(*args, **kwargs):
+        assert kwargs.get("neutral_pressure") is not None
+        pressure_models.append(kwargs["neutral_pressure"])
+        return original_generate(*args, **kwargs)
+
+    monkeypatch.setattr(command, "generate_team_charts", generate_with_shared_pressure)
 
     stats_dir = tmp_path / "stats"
     template_dir = tmp_path / "template"
@@ -145,9 +159,18 @@ def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Pat
     assert (output_dir / "2026.yaml").exists()
     assert (audit_dir / "Alphas.csv").exists()
     manifest = json.loads((output_dir / "generation-manifest.json").read_text())
+    assert pressure_models
+    assert all(model is pressure_models[0] for model in pressure_models)
+    assert manifest["neutral_pressure_model"] == pressure_models[0].evidence
     assert manifest["source"] == "nflverse regular-season play-by-play"
+    assert all(team.get("primary_layout", {}).get("invariants_passed") is True
+               for team in manifest["teams"].values())
     assert manifest["games"] == 1
     assert manifest["source_rows"] == 24
+    assert manifest["conversion_population"]["structured_flag_rows"] == 24
+    assert manifest["conversion_population"]["unknown_flag_rows"] == 0
+    assert manifest["conversion_population"]["excluded_count"] == 0
+    assert json.loads((audit_dir / "excluded-conversions.json").read_text()) == []
     assert manifest["opponent_adjustment"]["model"] == (
         "league additive offense plus defense effects"
     )
@@ -155,3 +178,34 @@ def test_nflverse_chart_command_generates_opponent_adjusted_charts(tmp_path: Pat
     assert manifest["teams"]["Alphas"]["empirical_outcomes"] == 12
     assert manifest["teams"]["Alphas"]["generated_empirical_outcomes"] == 12
     assert manifest["teams"]["Alphas"]["fallback_columns"] == 0
+
+
+@pytest.mark.parametrize("missing", ["gain", "recovery"])
+def test_generation_refuses_unsupported_required_source_fields(tmp_path: Path, missing: str) -> None:
+    from generate_nflverse_charts import main
+
+    stats_dir, template = tmp_path / "stats", tmp_path / "template"
+    stats_dir.mkdir()
+    template.mkdir()
+    (template / "2026.yaml").write_text("season: 2026\ntwo_point_conversion: true\n")
+    for team, short in (("Alphas", "AAA"), ("Betas", "BBB")):
+        (stats_dir / f"{team}.json").write_text(json.dumps(_stats(team, short)))
+        (template / team).mkdir()
+    team_map = tmp_path / "teams.json"
+    team_map.write_text(json.dumps({"AAA": "Alphas", "BBB": "Betas"}))
+    rows = [_play(i, "AAA" if i < 13 else "BBB", "BBB" if i < 13 else "AAA") for i in range(1, 25)]
+    if missing == "gain":
+        rows[0]["yards_gained"] = ""
+    else:
+        rows[0].update(fumble=1, fumble_lost="")
+    pbp = tmp_path / "plays.csv"
+    fields = sorted(set().union(*(row.keys() for row in rows)))
+    with pbp.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    with pytest.raises(ValueError, match="Unsupported source fields"):
+        main(["--pbp", str(pbp), "--stats-dir", str(stats_dir), "--template-season", str(template),
+              "--team-map", str(team_map), "--output", str(tmp_path / "output"),
+              "--audit-dir", str(tmp_path / "audit")])
+    assert not (tmp_path / "output" / "generation-manifest.json").exists()

@@ -1,6 +1,8 @@
 """
 Tests for team charts and play resolution.
 """
+import csv
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import patch
 
@@ -292,285 +294,203 @@ class TestSpecialTeams:
         assert 25 <= successes <= 65
 
 
+@pytest.fixture
+def chart_factory(tmp_path: Path) -> Callable[..., Path]:
+    """Write independent synthetic CSV charts, with no historical input data."""
+    def make(
+        name: str = "Foundry",
+        recovered_end: int = 29,
+        short_name: str | None = None,
+        extra_points: dict[int, str] | None = None,
+        legacy_xp: bool = False,
+    ) -> Path:
+        directory = tmp_path / "2026" / name
+        directory.mkdir(parents=True)
+        with (directory / "offense.csv").open("w", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["#", "Line Plunge", "Off Tackle", "End Run", "Draw",
+                             "Screen", "Short", "Med", "Long", "T/E S/L", "B", "QT", "Fumble"])
+            for roll in range(10, 40):
+                values = ["4"] * 9 + ["30", "-6"]
+                if roll == 24:
+                    values = ["B", "-4", "", "6", "BLACK", "BLACK", "BLACK",
+                              "BLACK", "14", "35", "-7"]
+                elif roll == 25:
+                    values[4] = "QT"
+                elif roll == 26:
+                    values[0] = "12*"
+                writer.writerow([roll, *values, "R" if roll <= recovered_end else "L"])
+            writer.writerow(["# Recovered", f"10-{recovered_end}"])
+            writer.writerow(["# Lost", f"{recovered_end + 1}-39"])
+        with (directory / "defense.csv").open("w", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["#", "Formation", "Sub", *range(1, 10)])
+            for formation in "ABCDEF":
+                for row in range(1, 6):
+                    values = ["0"] * 9
+                    if (formation, row) == ("B", 3):
+                        values = ["(2)", "(3)", "", "-2", "", "(8)", "", "", ""]
+                    elif (formation, row) == ("D", 5):
+                        values = ["", "", "", "4", "-3", "-2", "(TD)", "(TD)", "(5)"]
+                    writer.writerow([f"{formation}-{row}", formation, row, *values])
+        if extra_points is None:
+            extra_points = {20: "0"} if legacy_xp else dict.fromkeys((13, 18, 19, 20), "NG")
+        with (directory / "special.csv").open("w", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["#", "Kickoff", "Kickoff Return", "Punt", "Punt Return",
+                             "Int. Return", "Field Goal", "Extra Point"])
+            for roll in range(10, 40):
+                writer.writerow([roll, "60", "20", "40", "5", "8", "45",
+                                 extra_points.get(roll, "1" if legacy_xp else "")])
+        if short_name is not None:
+            (directory / "team.yaml").write_text(f"short_name: {short_name}\n")
+        return directory
+    return make
+
+
+@pytest.fixture
+def chart_season(chart_factory: Callable[..., Path]) -> Path:
+    """Retain a 28-team loader inventory using entirely invented charts."""
+    for index in range(28):
+        directory = chart_factory(
+            f"Fixture{index:02d}", recovered_end=16 + index % 14,
+            extra_points={10 + index % 30: "NG"},
+        )
+    return directory.parent
+
+
 class TestChartLoaderPeripheralFromOffense:
-    """Tests for extracting peripheral data from offense.csv (no PERIPHERAL file needed)."""
-    
-    def test_load_team_extracts_year_and_name(self):
-        """Chart loader should extract year and team name from directory."""
-        team_dir = Path('seasons/1983/Bills')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-        
-        chart = load_team_chart(team_dir)
-        
-        assert chart.peripheral.year == 1983
-        assert chart.peripheral.team_name == "Bills"
-    
-    def test_load_team_extracts_fumble_ranges(self):
-        """Chart loader should extract fumble recovery ranges from offense.csv."""
-        team_dir = Path('seasons/1983/Bills')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-        
-        chart = load_team_chart(team_dir)
-        
-        # Bills have fumble recovered 10-29, lost 30-39 (from Excel PERIPHERAL DATA)
+    """Parse chart metadata without depending on imported developer charts."""
+
+    def test_load_team_extracts_year_and_name(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        assert chart.peripheral.year == 2026
+        assert chart.peripheral.team_name == "Foundry"
+
+    def test_load_team_extracts_fumble_ranges(self, chart_factory):
+        chart = load_team_chart(chart_factory())
         assert chart.peripheral.fumble_recovered_range == (10, 29)
         assert chart.peripheral.fumble_lost_range == (30, 39)
-    
-    def test_load_team_generates_short_name(self):
-        """Chart loader should generate correct short names."""
-        team_dir = Path('seasons/1983/Bills')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-        
-        chart = load_team_chart(team_dir)
-        
-        assert chart.peripheral.short_name == "BUF '83"
-    
-    def test_load_team_disambiguates_ny_teams(self):
-        """Chart loader should correctly distinguish Giants vs Jets."""
-        giants_dir = Path('seasons/1983/Giants')
-        jets_dir = Path('seasons/1983/Jets')
-        
-        if not giants_dir.exists() or not jets_dir.exists():
-            pytest.skip("Test data not available")
-        
-        giants = load_team_chart(giants_dir)
-        jets = load_team_chart(jets_dir)
-        
-        assert giants.peripheral.short_name == "NYG '83"
-        assert jets.peripheral.short_name == "NYJ '83"
-    
-    def test_load_team_disambiguates_la_teams(self):
-        """Chart loader should correctly distinguish Raiders vs Rams."""
-        raiders_dir = Path('seasons/1983/Raiders')
-        rams_dir = Path('seasons/1983/Rams')
-        
-        if not raiders_dir.exists() or not rams_dir.exists():
-            pytest.skip("Test data not available")
-        
-        raiders = load_team_chart(raiders_dir)
-        rams = load_team_chart(rams_dir)
-        
-        assert raiders.peripheral.short_name == "OAK '83"
-        assert rams.peripheral.short_name == "LAR '83"
-    
-    def test_fumble_ranges_vary_by_team(self):
-        """Different teams should have different fumble recovery ranges."""
-        teams_dir = Path('seasons/1983')
-        if not teams_dir.exists():
-            pytest.skip("Test data not available")
-        
-        fumble_ranges = set()
-        for team_dir in teams_dir.iterdir():
-            if team_dir.is_dir():
-                chart = load_team_chart(team_dir)
-                fumble_ranges.add(chart.peripheral.fumble_recovered_range)
-        
-        # Should have multiple different fumble ranges (not all defaults)
-        assert len(fumble_ranges) > 5, "Expected varied fumble ranges across teams"
-    
-    def test_all_teams_load_without_peripheral_file(self):
-        """All 28 teams should load successfully without PERIPHERAL file."""
-        teams_dir = Path('seasons/1983')
-        if not teams_dir.exists():
-            pytest.skip("Test data not available")
-        
-        loaded_count = 0
-        for team_dir in teams_dir.iterdir():
-            if team_dir.is_dir():
-                # This should not raise an error
-                chart = load_team_chart(team_dir)
-                assert chart.peripheral.short_name  # Should have a short name
-                assert chart.peripheral.fumble_recovered_range[0] == 10  # All start at 10
-                loaded_count += 1
-        
-        assert loaded_count == 28, f"Expected 28 teams, got {loaded_count}"
+
+    def test_load_team_generates_short_name(self, chart_factory):
+        """Without metadata, the loader derives an abbreviation from the directory."""
+        chart = load_team_chart(chart_factory())
+        assert chart.peripheral.short_name == "FOU '26"
+
+    def test_load_team_disambiguates_shared_city_names(self, chart_factory):
+        """Explicit metadata distinguishes two clubs with the same city prefix."""
+        east = load_team_chart(chart_factory("MetroEast", short_name="MTE '26"))
+        west = load_team_chart(chart_factory("MetroWest", short_name="MTW '26"))
+        assert east.peripheral.short_name == "MTE '26"
+        assert west.peripheral.short_name == "MTW '26"
+
+    def test_load_team_disambiguates_shared_port_names(self, chart_factory):
+        north = load_team_chart(chart_factory("PortNorth", short_name="PTN '26"))
+        south = load_team_chart(chart_factory("PortSouth", short_name="PTS '26"))
+        assert north.peripheral.short_name == "PTN '26"
+        assert south.peripheral.short_name == "PTS '26"
+
+    def test_fumble_ranges_vary_by_team(self, chart_season):
+        ranges = {load_team_chart(team).peripheral.fumble_recovered_range
+                  for team in chart_season.iterdir()}
+        assert ranges == {(10, end) for end in range(16, 30)}
+
+    def test_all_teams_load_without_peripheral_file(self, chart_season):
+        teams = list(chart_season.iterdir())
+        assert len(teams) == 28
+        for directory in teams:
+            assert not (directory / "PERIPHERAL DATA-Table 1.csv").exists()
+            chart = load_team_chart(directory)
+            assert chart.peripheral.short_name
+            assert chart.peripheral.fumble_recovered_range[0] == 10
 
 
 class TestExtraPointChartLoading:
-    """Tests for loading extra point no-good rolls from special.csv."""
+    """Parse both supported XP encodings from explicitly written fixtures."""
 
-    def test_extra_point_no_good_loaded_from_csv(self):
-        """Chart loader should extract extra_point_no_good rolls from special.csv."""
-        team_dir = Path('seasons/1983/Bills')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(team_dir)
-
-        # Bills have extra point failures on rolls 13, 18, 19, 20 (per user input)
-        assert 13 in chart.special_teams.extra_point_no_good
-        assert 18 in chart.special_teams.extra_point_no_good
-        assert 19 in chart.special_teams.extra_point_no_good
-        assert 20 in chart.special_teams.extra_point_no_good
-        
-        # Verify other rolls are NOT NG
+    def test_extra_point_no_good_loaded_from_csv(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        assert set(chart.special_teams.extra_point_no_good) == {13, 18, 19, 20}
         assert 10 not in chart.special_teams.extra_point_no_good
         assert 11 not in chart.special_teams.extra_point_no_good
 
-    def test_1972_format_uses_zero_for_no_good(self):
-        """1972 format uses 0 for no good, 1 for good - should parse correctly."""
-        team_dir = Path('seasons/1972/Dolphins')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(team_dir)
-
-        # 1972 Dolphins should have roll 20 as no good (column has 0)
-        assert 20 in chart.special_teams.extra_point_no_good
-
-        # Other rolls should be good (not in no_good list)
+    def test_numeric_encoding_uses_zero_for_no_good(self, chart_factory):
+        chart = load_team_chart(chart_factory(legacy_xp=True))
+        assert set(chart.special_teams.extra_point_no_good) == {20}
         assert 10 not in chart.special_teams.extra_point_no_good
         assert 12 not in chart.special_teams.extra_point_no_good
 
-    def test_1972_format_all_teams_have_no_good_roll(self):
-        """All 1972 teams should have roll 20 as no good (era rule)."""
-        teams_dir = Path('seasons/1972')
-        if not teams_dir.exists():
-            pytest.skip("Test data not available")
+    def test_numeric_encoding_in_multiple_teams(self, chart_factory):
+        for index in range(28):
+            chart = load_team_chart(chart_factory(f"Legacy{index:02d}", legacy_xp=True))
+            assert set(chart.special_teams.extra_point_no_good) == {20}
 
-        for team_dir in sorted(teams_dir.iterdir()):
-            if team_dir.is_dir():
-                chart = load_team_chart(team_dir)
-                # In 1972 era, only roll 20 fails (boxcars)
-                assert 20 in chart.special_teams.extra_point_no_good, \
-                    f"{team_dir.name} should have roll 20 as no good"
-
-    def test_1983_format_uses_ng_for_no_good(self):
-        """1983 format uses NG for no good, blank for good - should parse correctly."""
-        team_dir = Path('seasons/1983/Jets')
-        if not team_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(team_dir)
-
-        # 1983 Jets have roll 13 as no good (column has NG)
-        assert 13 in chart.special_teams.extra_point_no_good
-        # Roll 10 should be good (column is blank)
+    def test_text_encoding_uses_ng_for_no_good(self, chart_factory):
+        chart = load_team_chart(chart_factory(extra_points={13: "NG"}))
+        assert set(chart.special_teams.extra_point_no_good) == {13}
         assert 10 not in chart.special_teams.extra_point_no_good
 
-    def test_different_teams_have_different_no_good_rolls(self):
-        """Different teams should have different extra point failure rolls."""
-        teams_dir = Path('seasons/1983')
-        if not teams_dir.exists():
-            pytest.skip("Test data not available")
+    def test_different_teams_have_different_no_good_rolls(self, chart_factory):
+        first = load_team_chart(chart_factory("First", extra_points={12: "NG"}))
+        second = load_team_chart(chart_factory("Second", extra_points={17: "NG"}))
+        assert set(first.special_teams.extra_point_no_good) == {12}
+        assert set(second.special_teams.extra_point_no_good) == {17}
+        assert first.special_teams.extra_point_no_good != second.special_teams.extra_point_no_good
 
-        bills = load_team_chart(teams_dir / 'Bills')
-        dolphins = load_team_chart(teams_dir / 'Dolphins')
-
-        # Teams should have different no-good rolls
-        assert bills.special_teams.extra_point_no_good != dolphins.special_teams.extra_point_no_good
-
-    def test_all_teams_have_extra_point_data(self):
-        """All 28 teams should have extra_point_no_good data."""
-        teams_dir = Path('seasons/1983')
-        if not teams_dir.exists():
-            pytest.skip("Test data not available")
-
-        for team_dir in teams_dir.iterdir():
-            if team_dir.is_dir():
-                chart = load_team_chart(team_dir)
-                assert chart.special_teams.extra_point_no_good is not None
+    def test_all_teams_have_extra_point_data(self, chart_season):
+        teams = list(chart_season.iterdir())
+        assert len(teams) == 28
+        for directory in teams:
+            chart = load_team_chart(directory)
+            assert chart.special_teams.extra_point_no_good is not None
+            assert len(chart.special_teams.extra_point_no_good) == 1
 
 
-class Test1983BearsDefenseChart:
-    """Tests for 1983 Bears defense chart values."""
+class TestDefenseChartParsing:
+    """Parse synthetic replacement markers, negative modifiers and empty cells."""
 
-    def test_bears_defense_b3_modifiers(self):
-        """Bears defense B-3 should have correct modifier values."""
-        bears_dir = Path('seasons/1983/Bears')
-        if not bears_dir.exists():
-            pytest.skip("Test data not available")
+    def test_defense_b3_modifiers(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        modifiers = chart.defense.modifiers[("B", 3)]
+        assert modifiers == {1: "(2)", 2: "(3)", 4: "-2", 6: "(8)"}
+        assert all(column not in modifiers for column in (3, 5, 7, 8, 9))
 
-        chart = load_team_chart(bears_dir)
+    def test_defense_d5_modifiers(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        modifiers = chart.defense.modifiers[("D", 5)]
+        assert modifiers == {4: "4", 5: "-3", 6: "-2", 7: "(TD)", 8: "(TD)", 9: "(5)"}
+        assert all(column not in modifiers for column in (1, 2, 3))
 
-        # B-3: dice 1=(1), dice 2=(1), dice 4=-1, dice 6=(6) - parens from Excel format
-        b3_modifiers = chart.defense.modifiers.get(('B', 3), {})
-        
-        assert b3_modifiers.get(1) == '(1)'
-        assert b3_modifiers.get(2) == '(1)'
-        assert b3_modifiers.get(4) == '-1'
-        assert b3_modifiers.get(6) == '(6)'
-        # Empty columns should not be present
-        assert 3 not in b3_modifiers
-        assert 5 not in b3_modifiers
-        assert 7 not in b3_modifiers
-        assert 8 not in b3_modifiers
-        assert 9 not in b3_modifiers
-
-    def test_bears_defense_d5_modifiers(self):
-        """Bears defense D-5 should have correct modifier values."""
-        bears_dir = Path('seasons/1983/Bears')
-        if not bears_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(bears_dir)
-
-        # D-5: dice 4=2, dice 5=-1, dice 6=-1, dice 7=(TD), dice 8=(TD), dice 9=(3)
-        d5_modifiers = chart.defense.modifiers.get(('D', 5), {})
-        
-        assert d5_modifiers.get(4) == '2'
-        assert d5_modifiers.get(5) == '-1'
-        assert d5_modifiers.get(6) == '-1'
-        assert d5_modifiers.get(7) == '(TD)'
-        assert d5_modifiers.get(8) == '(TD)'
-        assert d5_modifiers.get(9) == '(3)'
-        # Empty columns should not be present
-        assert 1 not in d5_modifiers
-        assert 2 not in d5_modifiers
-        assert 3 not in d5_modifiers
-
-    def test_bears_defense_has_30_rows(self):
-        """Bears defense chart should have all 30 formation/sub-row combinations."""
-        bears_dir = Path('seasons/1983/Bears')
-        if not bears_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(bears_dir)
-
-        # Should have 6 formations (A-F) x 5 sub-rows (1-5) = 30 entries
+    def test_defense_has_30_rows(self, chart_factory):
+        chart = load_team_chart(chart_factory())
         assert len(chart.defense.modifiers) == 30
 
-    def test_bears_defense_all_formations_present(self):
-        """Bears defense chart should have all formations A-F."""
-        bears_dir = Path('seasons/1983/Bears')
-        if not bears_dir.exists():
-            pytest.skip("Test data not available")
-
-        chart = load_team_chart(bears_dir)
-
-        modifiers = chart.defense.modifiers
-        
-        for formation in ['A', 'B', 'C', 'D', 'E', 'F']:
-            for sub_row in range(1, 6):
-                assert (formation, sub_row) in modifiers, f"Missing {formation}-{sub_row}"
+    def test_defense_all_formations_present(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        assert set(chart.defense.modifiers) == {
+            (formation, row) for formation in "ABCDEF" for row in range(1, 6)
+        }
 
 
-class Test1983BearsOffenseChart:
-    """Tests for 1983 Bears offense chart values."""
+class TestOffenseChartParsing:
+    """Retain empty cells, BLACK, supplemental values and primary symbols."""
 
-    def test_bears_offense_roll_24(self):
-        """Bears offense roll 24 should have correct values including empty cell and BLACK cells."""
-        bears_dir = Path('seasons/1983/Bears')
-        if not bears_dir.exists():
-            pytest.skip("Test data not available")
+    def test_offense_mixed_roll(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        assert chart.offense.line_plunge[24] == "B"
+        assert chart.offense.off_tackle[24] == "-4"
+        assert chart.offense.end_run.get(24) is None
+        assert chart.offense.draw[24] == "6"
+        assert chart.offense.screen[24] == "BLACK"
+        assert chart.offense.short_pass[24] == "BLACK"
+        assert chart.offense.medium_pass[24] == "BLACK"
+        assert chart.offense.long_pass[24] == "BLACK"
+        assert chart.offense.te_short_long[24] == "14"
+        assert chart.offense.breakaway[24] == "35"
+        assert chart.offense.qb_time[24] == "-7"
+        assert chart.peripheral.fumble_recovered_range == (10, 29)
 
-        chart = load_team_chart(bears_dir)
-
-        # Roll 24: Line Plunge=B, Off Tackle=-3, End Run=(empty), Draw=3, 
-        # Screen=BLACK, Short=BLACK, Med=BLACK, Long=BLACK, T/E S/L=10, B=10, QT=8, Fumble=R
-        assert chart.offense.line_plunge.get(24) == 'B'
-        assert chart.offense.off_tackle.get(24) == '-3'
-        assert chart.offense.end_run.get(24) is None  # Empty cell
-        assert chart.offense.draw.get(24) == '3'
-        assert chart.offense.screen.get(24) == 'BLACK'  # Incomplete pass
-        assert chart.offense.short_pass.get(24) == 'BLACK'  # Incomplete pass
-        assert chart.offense.medium_pass.get(24) == 'BLACK'  # Incomplete pass
-        assert chart.offense.long_pass.get(24) == 'BLACK'  # Incomplete pass
-        assert chart.offense.te_short_long.get(24) == '10'
-        assert chart.offense.breakaway.get(24) == '10'
-        assert chart.offense.qb_time.get(24) == '8'
-        # Fumble is stored in peripheral - check that's loaded
-        assert chart.peripheral.fumble_recovered_range is not None
+    def test_offense_qt_and_sideline_symbols(self, chart_factory):
+        chart = load_team_chart(chart_factory())
+        assert chart.offense.screen[25] == "QT"
+        assert chart.offense.line_plunge[26] == "12*"

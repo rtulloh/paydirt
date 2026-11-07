@@ -27,9 +27,22 @@ from paydirt.season_rules import (
 
 
 @pytest.fixture
-def seasons_dir():
-    """Use the real seasons directory for tests that need actual YAML files."""
-    return Path(__file__).parent.parent / "seasons"
+def seasons_dir(tmp_path: Path) -> Path:
+    """Use independent synthetic legacy rules plus the public modern rules."""
+    for year in (2050, 2051):
+        directory = tmp_path / str(year)
+        directory.mkdir()
+        (directory / f"{year}.yaml").write_text(
+            f"season: {year}\ntwo_point_conversion: false\n"
+            "overtime:\n  enabled: true\n  format: sudden_death\n"
+            "  period_length_minutes: 15\n  max_periods_regular: 1\n"
+            "  max_periods_playoff: 0\n  can_end_in_tie_regular: true\n"
+            "  can_end_in_tie_playoff: false\n  coin_toss_winner_receives: true\n"
+        )
+    (tmp_path / "2026").mkdir()
+    shutil.copyfile(Path(__file__).parent.parent / "seasons/2026/2026.yaml",
+                    tmp_path / "2026/2026.yaml")
+    return tmp_path
 
 
 @pytest.fixture
@@ -42,40 +55,23 @@ def temp_season_dir():
     shutil.rmtree(tmp)
 
 
-# Check if season data exists for skipif markers
-_seasons_dir = Path(__file__).parent.parent / 'seasons'
-_has_1972_season = (_seasons_dir / '1972' / '1972.yaml').exists()
-_has_1983_season = (_seasons_dir / '1983' / '1983.yaml').exists()
-
-requires_1972_season = pytest.mark.skipif(
-    not _has_1972_season,
-    reason="1972 season rules not available"
-)
-requires_1983_season = pytest.mark.skipif(
-    not _has_1983_season,
-    reason="1983 season rules not available"
-)
-
-
 class TestLoadSeasonRules:
     """Tests for loading season rules from YAML files."""
 
-    @requires_1972_season
-    def test_load_1972_rules(self, seasons_dir):
-        """1972 season: no 2-point conversion, sudden death OT."""
-        rules = load_season_rules(seasons_dir / "1972")
-        assert rules.season == 1972
+    def test_load_synthetic_legacy_rules(self, seasons_dir):
+        """Configured legacy rules load without a historical season file."""
+        rules = load_season_rules(seasons_dir / "2050")
+        assert rules.season == 2050
         assert rules.two_point_conversion is False
         assert rules.overtime.format == "sudden_death"
         assert rules.overtime.period_length_minutes == 15
         assert rules.overtime.max_periods_regular == 1
         assert rules.overtime.can_end_in_tie_regular is True
 
-    @requires_1983_season
-    def test_load_1983_rules(self, seasons_dir):
-        """1983 season: same rules as 1972."""
-        rules = load_season_rules(seasons_dir / "1983")
-        assert rules.season == 1983
+    def test_load_second_synthetic_legacy_rules(self, seasons_dir):
+        """A separate configured season retains its own year and legacy rules."""
+        rules = load_season_rules(seasons_dir / "2051")
+        assert rules.season == 2051
         assert rules.two_point_conversion is False
         assert rules.overtime.format == "sudden_death"
 
@@ -147,12 +143,11 @@ class TestLoadSeasonRules:
 class TestSeasonRulesToDict:
     """Tests for SeasonRules.to_dict() method."""
 
-    @requires_1972_season
     def test_to_dict_returns_correct_structure(self, seasons_dir):
         """to_dict should return properly structured dictionary."""
-        rules = load_season_rules(seasons_dir / "1972")
+        rules = load_season_rules(seasons_dir / "2050")
         d = rules.to_dict()
-        assert d["season"] == 1972
+        assert d["season"] == 2050
         assert d["two_point_conversion"] is False
         assert "overtime" in d
         assert d["overtime"]["format"] == "sudden_death"
@@ -162,10 +157,9 @@ class TestSeasonRulesToDict:
 class TestSeasonRulesToOvertimeRules:
     """Tests for converting SeasonRules to OvertimeRules."""
 
-    @requires_1972_season
     def test_sudden_death_conversion(self, seasons_dir):
         """Sudden death season should convert to SUDDEN_DEATH format."""
-        rules = load_season_rules(seasons_dir / "1972")
+        rules = load_season_rules(seasons_dir / "2050")
         ot_rules = season_rules_to_overtime_rules(rules)
         assert isinstance(ot_rules, OvertimeRules)
         assert ot_rules.format == OvertimeFormat.SUDDEN_DEATH

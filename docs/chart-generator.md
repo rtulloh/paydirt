@@ -17,8 +17,58 @@ The statistical generator uses the real chart dice distribution: rows 10 through
 represent 216 equally likely three-die combinations with unequal row weights. Season rates
 set symbolic outcome frequency and numeric strength. Symbolic outcome classes reserve distinct
 rows, and a subset-sum allocator chooses the closest available dice probability without allowing
-later classes to overwrite earlier ones. A stable seed changes where equivalent results appear
-without changing the inputs.
+later classes to overwrite earlier ones. A stable generation seed makes an invocation
+reproducible, including finite quantile assignment. Changing it can change weighted
+gains; it is not a layout-only transformation.
+
+The allocator compares attainable mass directly with the unrounded target.
+Equivalent masses reserve rows for later event families. QT and QT* share one
+pressure allocation before their variants are distributed. Empirical generation
+reports requested and represented symbolic variants, including omissions below
+finite resolution, in `generation-manifest.json`; these are modeled column
+inputs rather than raw source event counts.
+
+A supported retained fumble followed by an incomplete pass uses `F INC` in a
+primary passing column. Its joint occurrence stays separate from ordinary F and
+QT allocation, while remaining one incomplete attempt. It does not contribute to
+the stochastic fumble-recovery denominator. The source ledger retains the event
+and leaves internal physical movement unknown. Finite representation is disclosed
+alongside other variants; fumble priority can suppress defensive INT, QT and TD
+outcomes, so preserving incomplete mass does not establish unchanged engine risk.
+
+After quantization, `exact-token-mass-primary-exchanges-v1` corrects constrained
+primary masks using exchanges of up to three rows of one complete token against
+up to three rows of another, with exactly equal physical mass on both sides.
+This preserves each raw value and flag variant's calibrated probability exactly,
+while allowing its printed count and weight-group inventory to change. BLACK
+positions and all dependent tables stay fixed. The original empirical quantizer
+remains the probability target; this step changes no source or calibration target.
+Its joint objective includes exact tokens, families, flags, numeric bands and the
+actual viewer color unions. It records every exchange and exact mass checks
+under `primary_layout.allocation`.
+
+Then `equal-weight-primary-outcome-dispersion-v3` first reduces
+contiguous BLACK runs and blocks in the nine primary offense columns, then
+freezes that BLACK map and jointly disperses exact tokens, result families,
+penalties, viewer colors, sideline/replacement flags and numeric gain/loss bands. The second
+stage minimizes frequency-normalized runs, aligned rows across every call pair,
+and adjacent 2-by-2-block costs.
+It swaps whole tokens only between rows with exactly equal physical dice weight,
+preserving every value and marker at its original probability. Supplements,
+recovery data, defense and special teams stay fixed. Because feature frequencies
+and neighboring columns are scored across the whole primary grid, changing one
+input column can relocate tokens in another column. The unaffected column's
+quantized full-token probability distribution stays identical; printed row
+positions and weight-group inventories need not. Existing empirical pooling into
+TE Short/Long still applies.
+Each team's manifest records both stages' metrics, swap counts and the exact
+per-weight token-inventory check against the corrected allocation under
+`primary_layout`. Each search reaches a
+local optimum; fixed-weight rows and competing features can leave clusters, and
+an individual category need not improve on every step. There is no universal run
+cap. Retained patterns and per-category tradeoffs require review; a lower total
+cost alone cannot clear them. This placement check does not establish historical accuracy or change the
+chart-confidence release hold.
 
 Aggregate totals provide a fallback estimate when complete play-by-play is unavailable. They
 do not uniquely determine an original chart. For example, one passing total does not reveal
@@ -109,6 +159,19 @@ is learned from the full distribution of observed gains of 10 yards or more. Agg
 columns apply the same direct-gain cap to their modeled distribution. This keeps ordinary long
 gains field-position aware and uses the two-stage chart mechanism for exceptional runs.
 
+When empirical QB Time outcomes and pass-event calibration are supplied, primary
+QT allocation uses that team's physical conditional sack/scramble mix. It reserves
+the neutral defense's QT contribution and uses core priority survival, including
+protected primary fumbles. The reference mix is the declared chart-focused pass
+and defense mix, not recovered historical route intent. Numeric zero is a scramble;
+`SACK 0` in QB Time explicitly records a nonfumble sack with zero yards lost;
+`SACK 0*` retains its sideline marker. This token is invalid in primary,
+Breakaway and special-teams columns. QT F0 is a real sack fumble before any
+recovery movement. Official sack rate excludes
+scrambles from attempts plus sacks. Infeasible targets and missing conditional
+sack support raise an error instead of inventing negative QT yards. Full engine
+replay remains the fit measurement.
+
 ```sh
 python generate_charts.py team-stats.json \
   --plays classified-plays.csv \
@@ -172,11 +235,129 @@ generation. The audit directory contains source rows for local review. Keep down
 audit rows, historical templates, and intermediate generated seasons local and ignored. A reviewed
 final chart set may be published without those source materials under the publication policy below.
 
+For an independently reviewed missing sack annotation, optionally pass
+`--event-reconciliations /path/to/reviewed-event-facts.json`. The version-1 input
+contains an `events` array: each event declares `game_id`, `play_number`,
+`raw_game_sha256`, `raw_play_sha256`, `credited_sack: true`, nullable
+`credited_sack_loss` and nullable `initial_gain`. Compute the parsed-play hash
+with `paydirt.pfr_event_reconciliation.play_fingerprint`. Each event requires
+`evidence` entries with a relative `file`, its `sha256`, a public HTTPS `url`
+and positive reviewed `pages`. The loader checks actual local evidence bytes,
+raw-event identity, duplicates and unused records; it rejects nullified events.
+Keep this reviewed source input and its documents local and ignored.
+
+Schema 4 additionally supports field-specific `originating_kind` on a fumble
+record (`rushing`, `receiving`, `sack`, `kickoff_return` or `punt_return`). With both credited fields null, this
+records reviewed class support only. The explicit reported-gain policy can
+combine it with an unambiguous same-actor primary number in the unchanged source;
+it does not establish official credited yards or physical movement. Conflicting
+explicit source classes are rejected. The stricter physical/credited policies
+still require their original gain evidence.
+
+An optional schema-4 `originating_player_id` / `originating_team` pair records
+independently reviewed primary-actor team support when player metadata is absent.
+Both fields are required together. The bound actor must be the source's exact
+primary named and linked player, and the team must be in that game. Known
+conflicting metadata is rejected; a recovering player's team does not supply
+the missing fact. Raw player metadata, credited gain and physical gain are not
+rewritten by this review.
+
+Schema 5 may add `reported_primary_yards` when an independently reviewed book
+supplies a scoped primary number that the secondary feed's malformed clause
+cannot parse. It requires an exact actor/team pair and primary originating class,
+one same-actor fumble and signed integer yards (nonpositive for a sack). The raw
+row and evidence hashes remain bound. A different supported raw primary number,
+compound occurrence or lateral scope is rejected. This field supplies only
+reported proxy gain; credited and physical yards remain separately nullable,
+and the stricter policies cannot use it as their missing evidence.
+
+Standalone `returned by` rows require a reviewed kick-return family and the
+actor/team pair. Their unambiguous same-player number before the fumble can
+supply `return_before_fumble` reported gain under the explicit reported proxy.
+It remains separate from official statistical credit and physical movement.
+The adapter emits one special-team return F and excludes it from primary
+rushing/passing fumble calibration. Missing gains and recovery-only numbers
+remain unsupported. The kick family is not guessed from the standalone row.
+
+Starter-table home/visitor identities resolve after the entire HTML is read,
+so table order does not erase a starter's explicit team. Conflicting starter
+sides or known team metadata are rejected.
+
+Schema 4 `kind: "aborted_field_goal"` records retain a reviewed bad snap that
+the secondary feed labels as a missed kick. They declare `offense_team`,
+`fumbling_player_id`, nullable `recovering_team` and `individual_lost`, nullable
+paired `credited_player_id`/`credited_rushing_yards`, and nullable
+`physical_initial_yards`, with the same identity/evidence bindings. A recovering
+player's statistical credit is distinct from the snapper's fumble. The adapter
+excludes the reviewed nonattempt from field-goal attempts while retaining its
+snap event and unsupported projection identity. These records currently block
+generation: the engine's existing field-goal F path forces opponent recovery
+and does not supply a general snap-credit/movement model. They cannot erase an
+independently credited kicker's attempt or bypass source-fit requirements.
+
+Credited sack loss does not establish physical initial fumble yardage. An unknown
+`initial_gain` preserves the credited occurrence and known fumble ownership but
+supplies no invented numeric QT sample. The ledger records all applied facts,
+fumble events and unsupported required-field identities. Unknown ownership or
+missing required completion/run gain prevents generation. Recovery-return and
+penalty yardage cannot fill an absent initial gain; known zero stays zero. The manifest hashes the sidecar and evidence documents. These checks
+verify identity and consistency; they do not read scans or certify their review.
+See the [reconciliation design](dev-notes/pfr-event-reconciliation-proposal.md)
+for scope and limitations.
+
+Schema 2 also accepts `kind: "fumble"` records with the same identity/evidence
+fields, boolean `fumble_lost` and `out_of_bounds`, and an optional nullable
+`initial_gain`. Omitting that field retains the parsed gain; an explicit null
+keeps severity unknown. Conflicting known ownership/gain is rejected. This
+bounded capability supports ordinary retained or lost recoveries and retained
+out-of-bounds fumbles; an out-of-bounds touchback needs separate review.
+Schema-1 sack records remain valid in either schema.
+
+For a reviewed own-recovered fumble preceding an incomplete pass on the same
+snap, schema 2 accepts `kind: "prepass_fumble"`, `continuation_play_number` and
+`continuation_play_sha256`, with the common identity/evidence fields. Both raw
+rows must be adjacent and agree on actor, quarter, clock, down, distance and
+location. The classifier keeps one passing fumble occurrence and one incomplete
+pass, without adding a rush or sack. The `unmodeled_prepass_fumbles` diagnostic
+discloses that a BLACK chart outcome cannot reproduce that earlier fumble.
+Likewise, reviewed out-of-bounds F events retain their source facts but still
+use the engine's generic F recovery model. Neither capability proves exact
+conditional physical behavior or resolves credited-versus-initial yardage.
+
+A complete PFR `Fumbles-Lost` team box can also determine unknown loss ownership
+when every feasible assignment agrees. Exhausted known loss credit proves the
+remaining events retained; proving all unknowns lost additionally requires the
+observed fumbles to equal the complete team box. Mixed assignments remain unknown.
+The ledger retains the exact integer constraints for each deduction. Missing or
+invalid boxes supply no implicit zero; contradictory known counts prevent
+generation. These deductions identify loss credit, not a recoverer name or
+physical initial gain. See the [constraint rules and controls](dev-notes/pfr-fumble-recovery-constraints.md).
+
+
 The adapter fits a league-wide additive model that separates relative offense and defense effects
 under an explicit average-defense-zero constraint. Every offensive audit row therefore includes
 its opponent. Offense outcomes are translated to a league-average defense, while fitted defense
 residuals replace schedule-biased allowed rates before the defense template is generated. A ridge
 pseudo-count, configurable with `--opponent-shrinkage`, partially pools small samples.
+
+Opponent gain adjustment reads normalized numeric/initial-fumble tokens, never
+interception return or sack prose as primary passing gains. Actual source scoring
+gains remain numeric; unsupported bare TD/B initial gains fail explicitly.
+Incomplete and intercepted retained pass attempts contribute zero passing yards;
+unknown completed gains do not. QB Time severity adjustment preserves the source
+sack/scramble class, including typed zero-yard sacks. Recorded constraints and
+source/adjusted/selected class distributions expose finite/model changes.
+
+When fitted category totals change, midpoint quantiles of the entire adjusted
+conditional population replace chronological-prefix sampling. Ordering retains
+complete result tokens and attached flags. Each team/chart/category manifest
+records sample counts, result histograms, gain means/ranges and omitted variants.
+A small sample may omit a rare tail; the method does not force extra probability.
+These adjusted conditional diagnostics are distinct from raw source event rates.
+Missing required nflverse gains and unknown fumble recoveries remain unsupported,
+and actual generation refuses them rather than substituting zero/retention.
+Conversion procedures are separately inventoried, including credited offensive
+attempts, voided fouls and defensive returns; they supply no ordinary chart samples.
 
 Pass event families use the aggregate generator's engine-calibrated baseline by default, while
 empirical play by play supplies resolved yard distributions, scoring-play yardage, fumbles, and
@@ -223,6 +404,54 @@ when present. Field-goal accuracy is calibrated only across numeric cells becaus
 rerolls penalty cells; accepted field goals marked `no play` are excluded from kick calibration.
 Review the manifest, including `special_teams_penalties`, before using the charts.
 
+#### Diagnostic ordered fumble projection
+
+The opt-in `--fumble-projection-mode ordered_ledger_v1` requires
+`--fumble-gain-policy source_reported_gain_proxy_v1`. It preserves one primary
+origin and ordered conditional fumbles, including a separately credited actor
+after an aborted punt. Retained `F INC` stays outside stochastic recovery-range
+calibration. Normal generation keeps its existing unsupported-compound guard.
+
+`--fumble-loss-reviews PATH` accepts a JSON list of typed individual-loss
+reviews. Each review binds the raw play hash, event ordinal, fumbling team and
+player ID, loss flag, evidence hash/page and relative `evidence_file`. The adapter
+checks the actual PDF bytes and page, exact event association and duplicate or
+unapplied reviews; a review label supplies no missing gain or physical movement.
+
+`--shared-return-exposures PATH` additionally enables the diagnostic shared
+return-column allocation. Its JSON wrapper binds `source_sha256`, a relative
+`measurement_file` and its hash, complete `terminal_exposures_by_team`, and frozen
+`fumble_ranges_by_team`. The measurement must complete every game in each
+declared source schedule, have no unresolved retention, and agree on exposures
+and ranges. Counts represent outcome-bearing nonfoul terminal segments rather
+than raw lookups or recovery counts. The generator deduplicates INT-return F
+events, allocates the joint column once, preserves baseline penalty mass and the
+declared ranges, and records quantization and scoped-gain diagnostics.
+
+For ordered generation, `--fumble-range-policy measured_diagnostic_v1` preserves
+that measured recovery-range prior and remains the default. Explicit
+`--fumble-range-policy source_primary_v1` instead applies recovery ranges from
+the corrected primary source fumble counts through the existing generator.
+Both modes still require and validate the full source-bound exposure receipt,
+including its complete measured range pairs; selecting source ranges never
+bypasses measurement hashes, schedule completion, retention or source checks.
+The ordered manifest and joint ledger record `range_policy`, while each team's
+range inputs retain the measured prior, source-derived pairs and actual
+`applied_range_cells`. Shared/combined losses are not refit. An explicit range
+selection requires ordered projection; unsupported modes fail without fallback.
+Portable source recipes bind this scalar flag to the manifest's range policy;
+a source-primary candidate requires its explicit matching flag. Legacy recipes
+with no declaration retain only the measured diagnostic default. Both modes
+preserve the same complete typed source/evidence validators.
+
+These switches implement a local diagnostic experiment. Non-F conditional gain
+targets and unknown physical gains remain null; the manifest reports
+`fit_accepted: false`. Candidate exposures must be measured again after repair,
+and the all-consumer residuals require review before accepting the shared model.
+They do not certify source fit or chart release readiness. See the
+[source/model decisions](dev-notes/chart-source-model-review-decisions.md) and
+[recorded recipe](dev-notes/compound-fumble-projection-proposal.md#recorded-diagnostic-allocation-recipe).
+
 The source approach is informed by the archived
 [Data-Driven Football design process](https://web.archive.org/web/20250524072210/http://www.datadrivenfootball.com/designprocess.html),
 which describes parsing every regular-season gamebook, reviewing every record, adding information
@@ -247,7 +476,11 @@ coexist with ignored private comparison charts; release packaging maps it to `se
   Fractional shifts are distributed across defense sub-rows according to the actual red/green
   dice probabilities. Defensive interception strength is allocated across sub-row-five cells,
   limiting any one play-and-formation adjustment to 1/36 while preserving team differences; sack
-  rates alter separate rare pressure outcomes.
+  rates alter separate rare pressure outcomes. The interception queue preserves parenthesized
+  Screen counterplay in B/C/F, assigning those formations' later strength tiers to existing
+  BLACK coverage cells instead. Pressure relocation reserves those destinations. This is a
+  modeled allocation across calls, not recovered formation-specific turnover rates; fixed
+  interception depths 5/12/18/8 remain modeled support and require renewed source-fit review.
 - Classified plays preserve team-specific distributions that aggregate totals discard.
 
 Exact reproduction still needs charting judgment. Historical descriptions often identify run
@@ -459,6 +692,27 @@ Only reviewed generator outputs intended for a release belong in the public seas
 and historical release charts remain outside unit fixtures.
 
 ### Automatic completeness audit
+
+PFR classification requires explicit scramble or sack evidence before assigning
+a quarterback run to QB Time. Quarterback position alone does not establish a
+dropback: a run with no observed direction/design uses the declared line-plunge
+fallback and increments `heuristic_quarterback_run_family`. Explicit direction
+and draw descriptions keep their observed family. This prevents a zero/negative
+rushing fumble from becoming a sack merely because the runner is a quarterback;
+it does not resolve credited yardage versus physical fumble-spot uncertainty.
+
+Both source-cohort commands prepare all teams before writing charts and derive
+one shared neutral pressure model from their source constraints. When the default
+defensive QT floor makes an official sack target unattainable, the bounded
+procedure swaps QT into lower-probability subrows of the same formation/column,
+preserving tokens and protected strength cells. Offense overlap allocation and
+defense generation use that same model. An infeasible protected layout fails;
+targets are never clamped. `generation-manifest.json` records the constraints,
+resolved cells, moves and unsupported teams under `neutral_pressure_model`.
+Missing empirical QT observations retain an explicitly disclosed default; they
+do not establish conditional source accuracy. Standalone aggregate generation
+retains its default model. See the
+[pressure design and limitations](dev-notes/source-constrained-pressure-proposal.md).
 
 Both PBP generation commands write `chart-audit.json` and reject invalid or incomplete generated
 charts. The audit checks all primary and secondary columns, result symbols, physical yardage limits,

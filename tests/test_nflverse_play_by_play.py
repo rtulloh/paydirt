@@ -6,6 +6,8 @@ import csv
 import gzip
 from pathlib import Path
 
+import pytest
+
 from paydirt.nflverse_play_by_play import (
     classify_nflverse_rows,
     load_nflverse_play_by_play,
@@ -15,6 +17,7 @@ from paydirt.nflverse_play_by_play import (
 def _row(**overrides: object) -> dict[str, object]:
     row: dict[str, object] = {
         "season_type": "REG",
+        "two_point_attempt": 0,
         "game_id": "2024_01_ARI_BUF",
         "play_id": 1,
         "posteam": "ARI",
@@ -55,6 +58,153 @@ def _row(**overrides: object) -> dict[str, object]:
     }
     row.update(overrides)
     return row
+
+
+@pytest.mark.parametrize("overrides", [
+    {"play_type": "run", "yards_gained": 2},
+    {"play_type": "run", "yards_gained": 0, "fumble": 1, "fumble_lost": 1},
+    {"play_type": "pass", "pass_attempt": 1, "complete_pass": 1, "yards_gained": 2},
+    {"play_type": "pass", "pass_attempt": 1, "incomplete_pass": 1},
+    {"play_type": "pass", "pass_attempt": 1, "interception": 1},
+    {"play_type": "pass", "pass_attempt": 1, "sack": 1, "yards_gained": -5},
+    {"penalty": 1, "penalty_team": "BUF", "penalty_type": "Offside", "penalty_yards": 5},
+])
+def test_two_point_attempts_do_not_supply_regular_chart_events(overrides: dict) -> None:
+    conversion = classify_nflverse_rows([_row(two_point_attempt=1, **overrides)])
+    assert not conversion.plays
+    assert not conversion.fumbles
+    assert not conversion.field_goals
+    assert not conversion.event_counts
+    assert conversion.diagnostics["excluded_two_point_attempts"] == 1
+    assert conversion.games == conversion.source_rows == 1
+    assert len(conversion.excluded_conversions) == 1
+    excluded = conversion.excluded_conversions[0]
+    assert (excluded["game_id"], excluded["play_number"], excluded["team"]) == (
+        "2024_01_ARI_BUF", 1, "ARI",
+    )
+    assert excluded["evidence"] == "structured_flag"
+    assert excluded["sack"] == bool(overrides.get("sack"))
+    # The same ordinary scrimmage remains eligible; no broad run/pass filter.
+    regular = classify_nflverse_rows([_row(two_point_attempt=0, **overrides)])
+    assert regular.plays
+    assert regular.diagnostics.get("excluded_two_point_attempts", 0) == 0
+
+
+def test_missing_conversion_capability_stays_explicit_and_does_not_drop_touchdown() -> None:
+    row = _row(yards_gained=2, touchdown=1)
+    row.pop("two_point_attempt")
+    ordinary = classify_nflverse_rows([row])
+    assert [(play.chart, play.result) for play in ordinary.plays] == [("end_run", "2")]
+    assert ordinary.diagnostics["missing_two_point_flags"] == 1
+    assert not ordinary.excluded_conversions
+
+
+@pytest.mark.parametrize("play_type,penalty", [("pass", 0), ("no_play", 1)])
+def test_explicit_conversion_marker_survives_missing_provider_flag(play_type: str, penalty: int) -> None:
+    row = _row(play_type=play_type, penalty=penalty, penalty_team="BUF",
+               penalty_type="Offside", penalty_yards=5,
+               desc="TWO-POINT CONVERSION ATTEMPT. Pass incomplete. PENALTY Offside - No Play")
+    row.pop("two_point_attempt")
+    season = classify_nflverse_rows([row])
+    assert not season.plays
+    assert season.diagnostics["excluded_conversion_rows"] == 1
+    assert season.diagnostics.get("excluded_two_point_attempts", 0) == 0
+    assert season.excluded_conversions[0]["credited_offensive_attempt"] is None
+    assert season.diagnostics["missing_two_point_flags"] == 1
+    assert season.excluded_conversions[0]["evidence"] == "explicit_description"
+
+
+
+@pytest.mark.parametrize("overrides,procedure", [
+    ({"play_type": "no_play", "penalty": 1, "penalty_team": "BUF",
+      "penalty_type": "Offside", "penalty_yards": 5,
+      "desc": "TWO-POINT CONVERSION ATTEMPT. Offside - No Play"}, "voided_offensive_attempt"),
+    ({"play_type": "extra_point", "extra_point_attempt": 1,
+      "desc": "Extra point is BLOCKED. DEFENSIVE TWO-POINT ATTEMPT. Returner scores."},
+     "defensive_return"),
+])
+def test_zero_conversion_flag_has_known_noncredited_procedures(
+    overrides: dict[str, object], procedure: str,
+) -> None:
+    season = classify_nflverse_rows([_row(**overrides)])
+    assert not season.plays and not season.fumbles and not season.event_counts
+    assert season.diagnostics.get("conflicting_two_point_flags", 0) == 0
+    assert season.diagnostics["excluded_conversion_rows"] == 1
+    assert season.diagnostics.get("excluded_two_point_attempts", 0) == 0
+    assert season.excluded_conversions[0]["procedure"] == procedure
+    assert season.excluded_conversions[0]["credited_offensive_attempt"] is False
+
+
+@pytest.mark.parametrize("play_type,extra", [
+    ("", {}), ("no_play", {}), ("kickoff", {}),
+])
+def test_missing_conversion_flag_on_non_scrimmage_context_is_inventoried(
+    play_type: str, extra: dict[str, object],
+) -> None:
+    row = _row(play_type=play_type, desc="Administrative or special-teams procedure", **extra)
+    row.pop("two_point_attempt")
+    season = classify_nflverse_rows([row])
+    assert season.diagnostics.get("missing_two_point_flags", 0) == 0
+    assert season.diagnostics["not_applicable_two_point_flags"] == 1
+    assert not season.excluded_conversions
+
+
+@pytest.mark.parametrize("play_type,penalty", [("run", 0), ("pass", 0), ("no_play", 1)])
+def test_missing_conversion_flag_remains_unknown_on_scrimmage_or_foul(
+    play_type: str, penalty: int,
+) -> None:
+    row = _row(play_type=play_type, penalty=penalty)
+    row.pop("two_point_attempt")
+    season = classify_nflverse_rows([row])
+    assert season.diagnostics["missing_two_point_flags"] == 1
+    assert season.diagnostics.get("not_applicable_two_point_flags", 0) == 0
+
+
+def test_zero_flag_with_retained_ordinary_conversion_marker_remains_conflicting() -> None:
+    season = classify_nflverse_rows([_row(
+        play_type="pass", desc="TWO-POINT CONVERSION ATTEMPT. Pass complete.", complete_pass=1,
+    )])
+    assert season.diagnostics["conflicting_two_point_flags"] == 1
+    assert season.excluded_conversions[0]["procedure"] == "offensive_attempt"
+    assert season.excluded_conversions[0]["credited_offensive_attempt"] is False
+
+
+def test_credited_and_noncredited_conversion_rows_reconcile_separately() -> None:
+    season = classify_nflverse_rows([
+        _row(two_point_attempt=1),
+        _row(play_id=2, play_type="no_play", penalty=1,
+             desc="TWO-POINT CONVERSION ATTEMPT. Offside - No Play"),
+        _row(play_id=3, play_type="extra_point", extra_point_attempt=1,
+             desc="Extra point BLOCKED. DEFENSIVE TWO-POINT ATTEMPT."),
+    ])
+    assert season.diagnostics["excluded_conversion_rows"] == 3
+    assert season.diagnostics["excluded_two_point_attempts"] == 1
+    assert sum(row["credited_offensive_attempt"] for row in season.excluded_conversions) == 1
+
+
+def test_retained_sack_penalty_keeps_official_source_count() -> None:
+    row = _row(
+        play_type="pass", sack=1, pass_attempt=1, yards_gained=-5,
+        desc="Passer sacked for 5 yards. Unnecessary Roughness, 15 yards",
+        penalty=1, penalty_type="Unnecessary Roughness", penalty_team="BUF", penalty_yards=15,
+    )
+    season = classify_nflverse_rows([row])
+    assert season.diagnostics["sacks"] == 1
+    assert season.event_counts["ARI"]["sacks"] == 1
+    assert season.diagnostics["sacks_with_retained_penalty"] == 1
+    # The chart penalty sample and official event count have different purposes.
+    assert [play.result for play in season.plays] == ["DEF 15"]
+
+
+def test_ordinary_sack_and_nullified_sack_counts_are_separate() -> None:
+    ordinary = _row(play_type="pass", sack=1, pass_attempt=1, yards_gained=-8)
+    nullified = _row(play_id=2, play_type="no_play", sack=0, penalty=1,
+                     penalty_team="BUF", penalty_type="Offside", penalty_yards=5,
+                     desc="Passer sacked. Offside - No Play")
+    season = classify_nflverse_rows([ordinary, nullified])
+    assert season.diagnostics["sacks"] == 1
+    assert season.diagnostics.get("sacks_with_retained_penalty", 0) == 0
+    assert len([play for play in season.plays if play.result == "QT"]) == 1
 
 
 def test_classifies_empirical_offense_with_opponents_and_markers() -> None:
@@ -410,3 +560,53 @@ def test_kickoff_oob_penalty_uses_the_illegal_kick_procedure() -> None:
         kickoff_out_of_bounds=1,
     )])
     assert [(p.chart,p.result) for p in season.plays] == [('kickoff','OB')]
+
+
+def test_qb_scramble_foul_is_not_a_supplemental_penalty_sample():
+    row = {"season_type": "REG", "game_id": "2026-TEST", "play_id": "17",
+           "posteam": "AAA", "defteam": "BBB", "play_type": "run", "qb_scramble": "1",
+           "rush_attempt": "1", "yards_gained": "4", "ydstogo": "8",
+           "penalty": "1", "penalty_team": "AAA", "penalty_type": "Offensive Holding",
+           "penalty_yards": "10", "desc": "QB scrambles. PENALTY Offensive Holding, no play"}
+    classified = classify_nflverse_rows([row])
+    assert len(classified.plays) == 1
+    assert classified.plays[0].chart in {"screen", "short_pass", "medium_pass", "long_pass"}
+    assert classified.plays[0].result == "OFF 10"
+    assert classified.diagnostics["supplemental_penalties_as_primary"] == 1
+    assert classified.diagnostics["heuristic_penalty_pass_family"] == 1
+
+
+@pytest.mark.parametrize("gain", [None, "", "nan", "invalid"])
+@pytest.mark.parametrize("overrides", [
+    {"play_type": "pass", "sack": 1},
+    {"play_type": "pass", "complete_pass": 1},
+    {"play_type": "run"},
+])
+def test_unknown_required_gain_is_not_a_zero_outcome(gain: object, overrides: dict) -> None:
+    season = classify_nflverse_rows([_row(yards_gained=gain, **overrides)])
+    assert not season.plays
+    assert season.diagnostics["missing_required_gains"] == 1
+    if overrides.get("sack"):
+        assert season.event_counts["ARI"]["sacks"] == 1
+
+
+@pytest.mark.parametrize("lost,expected", [(None, None), ("", None), ("invalid", None), (0, False), (1, True)])
+def test_fumble_loss_capability_preserves_unknown_and_known_zero(lost: object, expected: bool | None) -> None:
+    season = classify_nflverse_rows([_row(fumble=1, fumble_lost=lost)])
+    assert len(season.fumbles) == 1
+    assert season.fumbles[0].lost is expected
+    assert season.diagnostics.get("unknown_fumble_recoveries", 0) == int(expected is None)
+
+
+@pytest.mark.parametrize("overrides", [{"play_type": "run"}, {"play_type": "pass", "complete_pass": 1}])
+def test_known_zero_required_gain_remains_eligible(overrides: dict) -> None:
+    season = classify_nflverse_rows([_row(yards_gained=0, **overrides)])
+    assert [play.result for play in season.plays] == ["0"]
+    assert season.diagnostics.get("missing_required_gains", 0) == 0
+
+
+
+def test_retained_touchdown_does_not_erase_known_fumble_occurrence() -> None:
+    season = classify_nflverse_rows([_row(touchdown=1, fumble=1, fumble_lost=0)])
+    assert len(season.fumbles) == 1
+    assert season.fumbles[0].lost is False

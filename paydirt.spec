@@ -17,6 +17,7 @@ datas = [
     # Include web backend code
     ('paydirt-web/backend/main.py', 'paydirt-web/backend/main.py'),
     ('paydirt-web/backend/routes.py', 'paydirt-web/backend/routes.py'),
+    ('paydirt-web/backend/chart_viewer.py', 'paydirt-web/backend'),
     ('paydirt-web/backend/__init__.py', 'paydirt-web/backend/__init__.py'),
 ]
 
@@ -40,6 +41,7 @@ a = Analysis(
     datas=all_datas,
     hiddenimports=all_hiddenimports + [
         'yaml', 'pkg_resources', 'msvcrt', 'winreg', '_winapi', 'nt', 'typing_extensions',
+        'paydirt.chart_layout',
         'python_multipart',
         'wsproto', 'wsproto.extensions', 'wsproto.frame',
         'httptools', 'httptools.parser', 'httptools.parser.http_parser',

@@ -55,3 +55,75 @@ def test_chart_attribution_describes_generated_sources_and_license() -> None:
     in_app_notice = (ROOT / "docs/seasons.md").read_text()
     assert "archived Pro Football Reference" in in_app_notice
     assert "nflverse play-by-play is provided under CC BY 4.0" in in_app_notice
+
+
+def test_bundled_backend_can_find_its_local_imports(tmp_path: Path) -> None:
+    """The runtime-loaded routes need their local helpers outside the module archive."""
+    import ast
+    import shutil
+    from importlib.machinery import PathFinder
+
+    tree = ast.parse((ROOT / "paydirt.spec").read_text())
+    assignment = next(node for node in tree.body if isinstance(node, ast.Assign)
+                      and any(isinstance(target, ast.Name) and target.id == "datas"
+                              for target in node.targets))
+    for source, destination in ast.literal_eval(assignment.value):
+        if not source.startswith("paydirt-web/backend/") or not source.endswith(".py"):
+            continue
+        staged = tmp_path / destination / Path(source).name
+        staged.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / source, staged)
+
+    backend = ROOT / "paydirt-web/backend"
+    routes = ast.parse((backend / "routes.py").read_text())
+    local_modules = {node.module for node in ast.walk(routes)
+                     if isinstance(node, ast.ImportFrom) and node.module
+                     and (backend / f"{node.module}.py").is_file()}
+    assert "chart_viewer" in local_modules, "The chart API must exercise its actual helper import"
+    for module in local_modules:
+        spec = PathFinder.find_spec(module, [str(tmp_path / "paydirt-web/backend")])
+        assert spec is not None, f"Bundled routes cannot import local helper {module}"
+        assert Path(spec.origin).read_bytes() == (backend / f"{module}.py").read_bytes()
+
+
+def test_runtime_loaded_backend_core_dependencies_are_collected() -> None:
+    """Dynamic backend files need every core module in the executable's import graph."""
+    import ast
+
+    tree = ast.parse((ROOT / "paydirt.spec").read_text())
+    data_assignment = next(node for node in tree.body if isinstance(node, ast.Assign)
+                           and any(isinstance(target, ast.Name) and target.id == "datas"
+                                   for target in node.targets))
+    backend_files = [ROOT / source for source, _ in ast.literal_eval(data_assignment.value)
+                     if source.startswith("paydirt-web/backend/") and source.endswith(".py")]
+    analysis = next(node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name) and node.func.id == "Analysis")
+    hidden_imports = next(keyword.value for keyword in analysis.keywords
+                          if keyword.arg == "hiddenimports")
+    collected = {node.value for node in ast.walk(hidden_imports)
+                 if isinstance(node, ast.Constant) and isinstance(node.value, str)}
+    modules = {"paydirt." + path.stem: path for path in (ROOT / "paydirt").glob("*.py")}
+    modules["paydirt"] = ROOT / "paydirt/__init__.py"
+
+    def imports(path: Path) -> set[str]:
+        names = set()
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.ImportFrom):
+                parent = ("paydirt." if node.level else "") + (node.module or "")
+                names.add(parent)
+                names.update(parent + "." + alias.name for alias in node.names)
+            elif isinstance(node, ast.Import):
+                names.update(alias.name for alias in node.names)
+        return names & modules.keys()
+
+    pending = {"paydirt"} | imports(ROOT / "paydirt_runner.py") | (collected & modules.keys())
+    visited = set()
+    while pending:
+        module = pending.pop()
+        if module not in visited:
+            visited.add(module)
+            collected.add(module)
+            pending.update(imports(modules[module]) - visited)
+    required = set().union(*(imports(path) for path in backend_files))
+    assert required, "The bundled backend must exercise its actual engine imports"
+    assert required <= collected, f"Uncollected dynamic backend dependencies: {sorted(required - collected)}"

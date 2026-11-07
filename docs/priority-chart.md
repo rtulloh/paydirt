@@ -21,11 +21,25 @@ This reference describes the categories used by Paydirt's implementation; it is 
 | BLACK | Incomplete pass if the final priority is BLACK; on a running play, no gain |
 | `INT n` | Interception at the specified depth, followed by the interception-return procedure |
 | `F`, `F+n`, `F-n` | Fumble procedure; recovery determines whether possession changes |
+| `F INC` | Offense retains a fumble, then throws an incomplete pass; primary passing columns only. Uses fumble priority, one down and the normal incomplete-pass clock, with no recovery roll. |
 | `BK` | Blocked-kick procedure on the appropriate special-teams play |
 | `OFF`, `DEF`, `PI` | Offensive penalty, defensive penalty, or pass interference |
 
 Parentheses matter: ordinary defensive `4` adds to ordinary offensive yardage, while defensive `(4)`
 replaces it. Do not confuse a defensive chart outcome with a score or gain by the defending team.
+
+The interception spot is measured from the line of scrimmage before any return.
+A spot within the offense's own end zone gives the defense a touchdown. On or
+beyond the offense's own end line (ten yards behind its goal line), the ball is
+out of play: a safety results and no interception return is rolled. The offense
+keeps possession temporarily for its free kick from the 20. When the defense
+intercepts in its own end zone, its pre-game coaching preference selects an
+automatic touchback (the default) or a return attempt. A catch on or beyond that
+team's end line is marked nine yards deep before applying this choice. An
+attempt counts the end-zone depth; failing to cross the goal line gives a
+touchback. Return fumbles and fouls use the normal return procedure. A fumble
+on or behind the returner's own end line is out of play before any recovery
+roll. See [browser setup](web-interface.md#starting-a-browser-game).
 
 ## Combining Offense and Defense
 

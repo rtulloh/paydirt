@@ -145,13 +145,14 @@ def test_penalty_reroll_fumble_preserves_recovery_and_live_foul(
     assert len(game.play_log) == 1
 
 
-def test_offsetting_return_fouls_rekick_with_ten_second_runoff() -> None:
+def test_offsetting_return_fouls_preserve_the_next_play_choice() -> None:
     game = punt_game({13: "OFF 10", 14: "DEF 15", 16: "10"})
     game.state.time_remaining = 8
-    outcome = punt(game, 24, 13, 14, 25, 16)
-    assert not game.state.is_home_possession
-    assert game.state.ball_position == 45
-    assert round((8 - game.state.time_remaining) * 60) == 18
+    outcome = punt(game, 24, 13, 14)
+    assert game.state.is_home_possession
+    assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == (25, 4, 10)
+    assert outcome.result.replay_down
+    assert round((8 - game.state.time_remaining) * 60) == 10
     assert "OFFSETTING" in outcome.description
     assert "13" in outcome.description and "14" in outcome.description
     assert game.state.home_stats.penalties == game.state.away_stats.penalties == 0

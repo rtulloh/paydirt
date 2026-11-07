@@ -8,7 +8,9 @@ logs are exported. Reports are local developer evidence, not usage quotas.
 import contextlib
 import hashlib
 import io
+import json
 import logging
+import math
 import platform
 import random
 from collections import Counter, defaultdict
@@ -26,6 +28,9 @@ from tests.run_full_season import validate_game
 from tests.semantic_audit import SemanticAudit
 
 DIFFICULTIES = ("easy", "medium", "hard", "balanced")
+SITUATION_CSV_FIELDS = ("team", "difficulty", "mode", "down", "distance_band", "calls",
+                        "largest_share", "distinct_plays", "longest_streak", "small_sample",
+                        "play_counts", "primary_play_shares")
 
 
 @dataclass(frozen=True)
@@ -254,3 +259,98 @@ def make_report(games: list[dict]) -> dict:
                 "failed": sum(g["status"] != "passed" for g in games), "calls": all_calls,
                 "balance_calls": completed_calls, "situations": situations, "warnings": warnings,
             }}
+
+
+def validate_report(report: dict, teams: list[str]) -> dict:
+    """Reconcile saved checklist evidence without rerunning games or trusting totals.
+
+    The report retains final-state and selected-call receipts, not complete box
+    scores or runtime identity. Those still require the actual bound execution
+    and the engine/regression controls. Concentration warnings are advisory.
+    """
+    errors = []
+    games, calls, warnings = 0, 0, []
+    try:
+        if (not isinstance(report, dict) or type(report.get("schema_version")) is not int
+                or report["schema_version"] != 1):
+            raise ValueError("Requires a schema-1 AI report")
+        if report.get("python") != platform.python_version():
+            errors.append("AI report belongs to a different Python runtime")
+        if (report.get("run") != {"master_seed": 8306, "comparison": True, "schedule": "generated regular season"}
+                or type(report["run"].get("master_seed")) is not int
+                or report["run"].get("comparison") is not True):
+            errors.append("AI evidence must use the complete seed-8306 generated schedule and balanced comparison")
+        expected = generated_schedule(teams, 16, 8306)
+        expected += [GameSpec(spec.away, spec.home, spec.seed, "balanced", "balanced", spec.week) for spec in expected]
+        recorded = report.get("games")
+        if not isinstance(recorded, list) or len(recorded) != len(expected):
+            raise ValueError("AI evidence omits or adds scheduled games")
+        valid_plays = {play.value for play in PlayType}
+        boolean_results = {
+            "first_down", "turnover", "turnover_on_downs", "touchdown", "safety", "field_goal_made",
+            "penalty_applied", "pending_penalty_decision", "spike_used", "timeout_used",
+        }
+        for number, (game, spec) in enumerate(zip(recorded, expected), 1):
+            try:
+                if not isinstance(game, dict):
+                    raise TypeError("Invalid game receipt")
+                config = game.get("config")
+                if (not isinstance(config, dict) or config != asdict(spec)
+                        or any(type(config.get(key)) is not int for key in ("week", "seed"))
+                        or config.get("is_playoff") is not False):
+                    raise ValueError("Wrong matchup, week, seed or difficulty")
+                if game.get("status") != "passed" or "error" in game:
+                    raise ValueError("Failed or contradictory game receipt")
+                final = game.get("final")
+                if (not isinstance(final, dict) or final.get("game_over") is not True
+                        or final.get("untimed_down_pending") is not False
+                        or any(type(final.get(key)) is not int or final[key] < 0
+                               for key in ("home_score", "away_score", "overtime_periods"))):
+                    raise ValueError("Invalid final state")
+                semantics = game.get("semantics")
+                covered = semantics.get("covered") if isinstance(semantics, dict) else None
+                if (not isinstance(covered, dict) or set(covered) != set(SemanticAudit.EVENTS)
+                        or any(type(value) is not int or value < 0 for value in covered.values())
+                        or semantics.get("unexercised") != [event for event in SemanticAudit.EVENTS if not covered[event]]):
+                    raise ValueError("Invalid or missing semantic coverage")
+                observations = game.get("calls")
+                if not isinstance(observations, list) or not observations:
+                    raise ValueError("Missing selected-call evidence")
+                for call in observations:
+                    before, result = call["before"], call["result"]
+                    if (not isinstance(before, dict) or not isinstance(result, dict)
+                            or type(before.get("is_home")) is not bool):
+                        raise ValueError("Missing call/result identity")
+                    home = before["is_home"]
+                    if (before.get("team") != (spec.home if home else spec.away)
+                            or before.get("difficulty") != (spec.home_difficulty if home else spec.away_difficulty)
+                            or not isinstance(before.get("mode"), str) or not before["mode"]
+                            or type(before.get("down")) is not int or before["down"] not in range(1, 5)
+                            or type(before.get("distance")) is not int or before["distance"] < 0
+                            or before.get("play") not in valid_plays or result.get("play") != before["play"]):
+                        raise ValueError("Selected call has inconsistent team, situation or result")
+                    if (any(type(result.get(key)) is not bool for key in boolean_results)
+                            or result["pending_penalty_decision"] is not False
+                            or type(result.get("yards")) is not int):
+                        raise ValueError("Invalid or pending finalized result")
+                    probabilities = before.get("probabilities")
+                    if (not isinstance(probabilities, dict)
+                            or any(key not in valid_plays or type(value) not in (int, float)
+                                   or not math.isfinite(value) or not 0 <= value <= 1
+                                   for key, value in probabilities.items())
+                            or probabilities and (not math.isclose(sum(probabilities.values()), 1, abs_tol=1e-9)
+                                                  or probabilities.get(before["play"], 0) <= 0)):
+                        raise ValueError("Invalid recorded selection probabilities")
+            except (ValueError, KeyError, TypeError) as error:
+                errors.append(f"Game {number}: {error}")
+        rebuilt = make_report(recorded)
+        for field in ("summary", "semantic_coverage"):
+            saved_json = json.dumps(report.get(field), sort_keys=True, allow_nan=False)
+            rebuilt_json = json.dumps(rebuilt[field], sort_keys=True, allow_nan=False)
+            if saved_json != rebuilt_json:
+                errors.append(f"Saved {field} does not reconcile with game receipts")
+        games, calls = len(recorded), rebuilt["summary"]["calls"]
+        warnings = rebuilt["summary"]["warnings"]
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
+        errors.append(str(error))
+    return {"passed": not errors, "errors": errors, "games": games, "calls": calls, "warnings": warnings}

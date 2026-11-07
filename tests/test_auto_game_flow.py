@@ -21,7 +21,8 @@ class StopScenario(Exception):
 def run_scenario(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> Callable:
     def run(setup: Callable = lambda game: None, plays: tuple = (),
             after_opening: Callable = lambda game: None, accept_play: bool = True,
-            engine_rolls: tuple = (16,), offense_rolls: tuple = (16,)) -> dict:
+            engine_rolls: tuple = (16,), offense_rolls: tuple = (16,),
+            analysis: bool = False) -> dict:
         game = make_sample_game()
         for chart in (game.state.home_chart, game.state.away_chart):
             chart.offense.line_plunge = dict.fromkeys(range(10, 40), "1")
@@ -36,7 +37,7 @@ def run_scenario(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture)
             chart.special_teams.extra_point_no_good = []
         setup(game)
         calls = iter(plays)
-        ais = [ComputerAI(), ComputerAI()]  # Away, then home, matching auto mode.
+        ais = [ComputerAI(use_analysis=analysis), ComputerAI(use_analysis=analysis)]  # Away, then home.
         for ai in ais:
             ai.should_accept_penalty = create_autospec(
                 ai.should_accept_penalty, return_value=(accept_play, 0))
@@ -473,3 +474,35 @@ def test_interactive_conversion_respects_engine_terminal_kick_query(
     assert game.needs_overtime() is not pat_good
     choice.assert_not_called()
     kick.assert_not_called()
+
+
+@pytest.mark.parametrize("home", [False, True])
+@pytest.mark.parametrize("status", ["run", "pass", "accepted", "declined", "offsetting", "interception", "punt", "field-goal"])
+def test_auto_game_feeds_only_opponent_model_after_final_resolution(
+    run_scenario: Callable, home: bool, status: str,
+) -> None:
+    def setup(game: PaydirtGameEngine) -> None:
+        for chart in (game.state.home_chart, game.state.away_chart):
+            chart.offense.medium_pass[16] = "8"
+            if status in {"accepted", "declined", "offsetting"}:
+                chart.offense.medium_pass.update({16: "OFF 5", 17: "DEF 5" if status == "offsetting" else "8"})
+            elif status == "interception":
+                chart.offense.medium_pass[16] = "INT 5"
+    def position(game: PaydirtGameEngine) -> None:
+        set_scrimmage(game, home, 50)
+        game.state.down, game.state.yards_to_go = 2, 7
+    play = {"run": PlayType.LINE_PLUNGE, "punt": PlayType.PUNT,
+            "field-goal": PlayType.FIELD_GOAL}.get(status, PlayType.MEDIUM_PASS)
+    result = run_scenario(setup, (play,), position, accept_play=status != "accepted",
+                          offense_rolls=(16, 17), analysis=True)
+    defending = result["ais"][0 if home else 1].opponent_model.tracker
+    attacking = result["ais"][1 if home else 0].opponent_model.tracker
+    expected = int(status not in {"punt", "field-goal"})
+    tendency = defending.get_tendency(2, 7)
+    assert tendency.total_plays == expected
+    assert tendency.run_plays == int(status == "run")
+    assert tendency.pass_plays == int(expected and status != "run")
+    assert sum(len(plays) for plays in defending.situation_plays.values()) == expected
+    assert not any(attacking.situation_plays.values())
+    assert defending.get_tendency(1, 10).total_plays == 0
+    assert all(not outcome.pending_penalty_decision for outcome in result["game"].play_log)

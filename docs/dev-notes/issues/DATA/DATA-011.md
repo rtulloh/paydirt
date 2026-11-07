@@ -99,3 +99,47 @@ a claim of historical fit. Keep open pending commit, with the documented calibra
 
 --- 2026-11-02 10:50 ---
 The reproducible tuning tool and promoted source/profile outputs are prepared for commit. The intentionally deferred sparse symbolic-TD experiment is now DATA-015. The recorded 64/256-season fitting evidence predates the new RULE-022/RULE-023 engine timing; it remains historical evidence, not a fresh fit claim for the current engine. Current full-game and AI audits validate completion and selection, not renewed season-statistic tolerances.
+
+--- 2026-11-05 16:35 ---
+The fresh generated-chart release audit completed 31,744 current-engine games
+across both promoted public cohorts with at least 1,000 team-games per team.
+It confirms accuracy misses under an explicitly instantiated fixed measurement
+policy; DATA-018 records them separately from this tooling issue. The former
+ignored batch helper's chart-focused factory instantiated the base ComputerAI,
+so its label is not proof of the declared mix. Source discrepancies (DATA-017),
+sparse probability allocation (DATA-016), and selected-priority misclassification
+(RULE-026) need resolution before a fresh fit claim. Existing historical evidence
+is retained with its caveats. Reviewed resolved tickets; this audit provides no
+scenario-specific evidence for unrelated play-test closures. See the
+[combined audit](../../generated-chart-release-audit.md).
+
+--- 2026-11-05 19:14 ---
+Current-engine progress checks complete 224/224 generated regular games, all nine
+playoffs without ties, fifteen historical reproductions, and both public/local
+Hard-versus-balanced audits. Reports remain ignored and no private narratives
+are attached. Selection audits reconcile 32/32 public and 448/448 local games,
+with zero concentration warnings; this is not final generated-chart calibration.
+Fresh staged cohort fit remains outside fixed league/team bounds. DATA-018,
+DATA-021 and DATA-022 require final evidence, and 1983 source coverage remains
+unmet. Keep this ticket resolved pending its required final chart assessment.
+
+--- 2026-11-05 22:49 ---
+The new staged four-repetition audits reconcile 896 historical-source and
+1,088 public-2024 games, 135,468 and 156,523 selected calls, and ordered results.
+Normal situations with at least thirty calls have maximum shares 32.4% (n=142,
+nine calls) and 31.6% (n=193, nine calls). Longest supported situation streaks
+are fourth-down punts (ten/nine), with clock-killing buckets reviewed separately.
+This is fixed chart-focused policy evidence, not a Hard-predictability assessment.
+The resolved issue inventory was inspected; no specific newly confirmed closure
+trigger is supplied for the pending Hard/manual or CLI scenarios. No ticket is
+closed from unit tests or generic completion. DATA-018 records fresh fit misses;
+source/mechanics passes do not renew an accuracy claim.
+
+--- 2026-11-06 00:49 ---
+Current generated cohorts finish all 64 reference-policy training schedules,
+plus 7,936 Hard/balanced and 5,456 family/repeated-call games. Full source and
+mechanics pass, while seven unchanged team-yardage bounds still fail. These
+manual development profiles are not the frozen automated transfer procedure.
+The existing tuner is not invoked to avoid automatically opening a configured
+validation family during calibration. Retain resolved pending the ticket's final
+chart assessment; gameplay completion does not supply that criterion.

@@ -7,14 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Skipif markers for tests requiring specific seasons
-requires_1972_season = pytest.mark.skipif(
-    not Path("seasons/1972").exists(), reason="1972 season data not available"
-)
-requires_1983_season = pytest.mark.skipif(
-    not Path("seasons/1983").exists(), reason="1983 season data not available"
-)
-
 from paydirt.chart_loader import (
     DefenseChart,
     OffenseChart,
@@ -747,6 +739,21 @@ class TestAIOpponentAnalysis:
         assert streak == PlayCategory.PASS
 
 
+@pytest.fixture
+def discovery_seasons(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Discover only temporary synthetic teams, never installed season data."""
+    for year, names in (("2026", ("Amber", "Cobalt")), ("2027", ("Copper",))):
+        for name in names:
+            directory = tmp_path / year / name
+            directory.mkdir(parents=True)
+            (directory / "offense.csv").write_text("#,Line Plunge\n10,4\n")
+    (tmp_path / "notes").mkdir()
+    (tmp_path / "2026" / "Not A Team").mkdir()
+    monkeypatch.setattr("paydirt.interactive_game.get_all_season_paths", lambda: [tmp_path])
+    return tmp_path
+
+
+@pytest.mark.usefixtures("discovery_seasons")
 class TestGetAvailableSeasons:
     """Tests for get_available_seasons function."""
 
@@ -756,12 +763,14 @@ class TestGetAvailableSeasons:
 
         seasons = get_available_seasons()
         assert isinstance(seasons, list)
+        assert seasons == ["2027", "2026"]
 
     def test_seasons_are_strings(self):
         """Each season should be a string."""
         from paydirt.interactive_game import get_available_seasons
 
         seasons = get_available_seasons()
+        assert len(seasons) == 2
         for season in seasons:
             assert isinstance(season, str)
 
@@ -774,6 +783,7 @@ class TestGetAvailableSeasons:
         assert seasons == sorted(seasons, reverse=True)
 
 
+@pytest.mark.usefixtures("discovery_seasons")
 class TestGetAvailableTeams:
     """Tests for get_available_teams function."""
 
@@ -783,39 +793,27 @@ class TestGetAvailableTeams:
 
         teams = get_available_teams()
         assert isinstance(teams, list)
-        if teams:
-            assert isinstance(teams[0], tuple)
-            assert len(teams[0]) == 2
+        assert len(teams) == 3
+        assert all(isinstance(team, tuple) and len(team) == 2 for team in teams)
 
-    @requires_1972_season
-    @requires_1983_season
-    def test_with_season_filter(self):
+    def test_with_season_filter(self, discovery_seasons):
         """Should return only teams from the specified season."""
         from paydirt.interactive_game import get_available_teams
 
-        teams_1972 = get_available_teams("1972")
-        teams_1983 = get_available_teams("1983")
+        assert get_available_teams("2026") == [
+            (str(discovery_seasons / "2026" / name), name) for name in ("Amber", "Cobalt")
+        ]
+        assert get_available_teams("2027") == [
+            (str(discovery_seasons / "2027" / "Copper"), "Copper")
+        ]
 
-        # Teams should have at least some entries
-        assert len(teams_1972) > 0
-        assert len(teams_1983) > 0
-
-        # Each team path should contain the season
-        for path, name in teams_1972:
-            assert "1972" in path
-        for path, name in teams_1983:
-            assert "1983" in path
-
-    @requires_1972_season
     def test_team_names_do_not_include_season(self):
         """Team names should not include the season prefix (it's shown separately now)."""
         from paydirt.interactive_game import get_available_teams
 
-        teams = get_available_teams("1972")
-
-        for path, name in teams:
-            # Name should be just the team name (e.g., "Dolphins"), not "1972 Dolphins"
-            assert not name.startswith("1972 ")
+        teams = get_available_teams("2026")
+        assert [name for _, name in teams] == ["Amber", "Cobalt"]
+        assert all(not name.startswith("2026 ") for _, name in teams)
 
 
 class TestSelectTeamTwoStep:
@@ -831,18 +829,18 @@ class TestSelectTeamTwoStep:
         from paydirt.interactive_game import select_team
 
         # Setup mocks
-        mock_select_season.return_value = "1972"
+        mock_select_season.return_value = "2026"
         mock_get_teams.return_value = [
-            ("seasons/1972/Dolphins", "Dolphins"),
-            ("seasons/1972/Bills", "Bills"),
+            ("seasons/2026/Ironclads", "Ironclads"),
+            ("seasons/2026/Thunderhawks", "Thunderhawks"),
         ]
-        mock_load.return_value = create_mock_chart("Dolphins")
+        mock_load.return_value = create_mock_chart("Ironclads")
 
         with patch("builtins.input", side_effect=["1"]):
             select_team("Select your team:")
 
         mock_select_season.assert_called_once()
-        mock_get_teams.assert_called_once_with("1972")
+        mock_get_teams.assert_called_once_with("2026")
 
     @patch("paydirt.interactive_game.select_season")
     @patch("paydirt.interactive_game.get_available_teams")
@@ -851,11 +849,11 @@ class TestSelectTeamTwoStep:
         """select_team should return the selected team chart."""
         from paydirt.interactive_game import select_team
 
-        mock_chart = create_mock_chart("Dolphins")
-        mock_select_season.return_value = "1972"
+        mock_chart = create_mock_chart("Ironclads")
+        mock_select_season.return_value = "2026"
         mock_get_teams.return_value = [
-            ("seasons/1972/Dolphins", "Dolphins"),
-            ("seasons/1972/Bills", "Bills"),
+            ("seasons/2026/Ironclads", "Ironclads"),
+            ("seasons/2026/Thunderhawks", "Thunderhawks"),
         ]
         mock_load.return_value = mock_chart
 
@@ -863,7 +861,7 @@ class TestSelectTeamTwoStep:
             result = select_team("Select your team:")
 
         assert result == mock_chart
-        mock_load.assert_called_once_with("seasons/1972/Dolphins")
+        mock_load.assert_called_once_with("seasons/2026/Ironclads")
 
     @patch("paydirt.interactive_game.select_season")
     @patch("paydirt.interactive_game.get_available_teams")
@@ -872,17 +870,17 @@ class TestSelectTeamTwoStep:
         """select_team should re-prompt on invalid input."""
         from paydirt.interactive_game import select_team
 
-        mock_select_season.return_value = "1972"
+        mock_select_season.return_value = "2026"
         mock_get_teams.return_value = [
-            ("seasons/1972/Dolphins", "Dolphins"),
+            ("seasons/2026/Ironclads", "Ironclads"),
         ]
-        mock_load.return_value = create_mock_chart("Dolphins")
+        mock_load.return_value = create_mock_chart("Ironclads")
 
         # First input is invalid, second is valid
         with patch("builtins.input", side_effect=["invalid", "99", "1"]):
             result = select_team("Select your team:")
 
-        assert result.short_name == "Dolphins"
+        assert result.short_name == "Ironclads"
         # Should have been called 3 times (2 invalid + 1 valid)
         assert mock_load.call_count == 1
 

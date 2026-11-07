@@ -298,8 +298,8 @@ def game(mock_team_chart):
 class TestPuntDoubleFoulIntegration:
     """Integration tests for punt double foul handling."""
     
-    def test_punt_five_vs_fifteen_enforced(self, game):
-        """Test full punt play with 5 vs 15 penalties - 15-yard penalty enforced."""
+    def test_same_receiver_five_and_fifteen_offer_one_foul(self, game):
+        """DEF on a punt and OFF on its return both name the receiving team."""
         game.state.ball_position = 34  # Own 34
         game.state.down = 4
         game.state.yards_to_go = 3
@@ -325,18 +325,21 @@ class TestPuntDoubleFoulIntegration:
             
             outcome = game.run_play(PlayType.PUNT, None)
             
-            # Punt from 34 + 35 = 69 landing spot (opponent's 31)
-            # Landing spot = 69, OFF 15 penalty = 69 - 15 = 54 (opponent's 46)
-            assert game.state.ball_position == 54
-            # First down after penalty
+            assert outcome.pending_penalty_decision
+            assert game.state.ball_position == 34
+            assert "NFL Rule 14-5-1" not in outcome.description
+            outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=False)
+            # Return starts at the receiver's 31, advances 20, then loses 15.
+            assert game.state.ball_position == 36
+            assert not game.state.is_home_possession
             assert game.state.down == 1
             assert game.state.yards_to_go == 10
-            # Verify description contains NFL Rule 14-5-1
-            assert "NFL Rule 14-5-1" in outcome.description
-            assert "5-yard penalty is disregarded" in outcome.description
+            assert game.state.away_stats.penalties == 1
+            assert game.state.away_stats.penalty_yards == 15
+            assert game.state.home_stats.penalties == 0
     
-    def test_punt_five_vs_five_offset(self, game):
-        """Test full punt play with 5 vs 5 penalties - should offset and replay."""
+    def test_same_receiver_five_and_five_do_not_offset(self, game):
+        """Two receiving-team fouls offer one assessment, never an offset."""
         game.state.ball_position = 34
         game.state.down = 4
         game.state.yards_to_go = 3
@@ -358,11 +361,17 @@ class TestPuntDoubleFoulIntegration:
             
             outcome = game.run_play(PlayType.PUNT, None)
             
-            # Should offset - ball position unchanged, down unchanged
-            assert "OFFSETTING PENALTIES" in outcome.description
-            assert "Down replayed" in outcome.description
+            assert outcome.pending_penalty_decision
+            assert "OFFSETTING" not in outcome.description
             assert game.state.ball_position == 34
             assert game.state.down == 4
+            outcome = game.apply_punt_penalty_decision(outcome, accept_penalty=True)
+            assert game.state.ball_position == 39
+            assert game.state.is_home_possession
+            assert game.state.down == 1
+            assert game.state.away_stats.penalties == 1
+            assert game.state.away_stats.penalty_yards == 5
+            assert game.state.home_stats.penalties == 0
 
 
 class TestKickoffDoubleFoulIntegration:

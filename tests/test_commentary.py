@@ -4,20 +4,11 @@ Tests for the commentary system and roster loading.
 import json
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
 from paydirt.commentary import Commentary, TeamRoster, get_roster, load_roster_from_file
 from paydirt.play_resolver import PlayType, ResultType
-
-# Check if 1972/Dolphins season data exists
-_seasons_dir = Path(__file__).parent.parent / 'seasons'
-_has_1972_dolphins = (_seasons_dir / '1972' / 'Dolphins').exists()
-requires_1972_dolphins = pytest.mark.skipif(
-    not _has_1972_dolphins,
-    reason="1972/Dolphins season data not available"
-)
 
 
 class TestTeamRoster:
@@ -133,11 +124,11 @@ class TestRosterLoading:
 class TestGetRoster:
     """Tests for the get_roster function."""
     
-    @requires_1972_dolphins
-    def test_get_roster_from_file(self):
+    def test_get_roster_from_file(self, tmp_path):
         """Should return roster from roster.json file when team_dir provided."""
-        roster = get_roster("1972 Miami Dolphins", team_dir="seasons/1972/Dolphins")
-        assert len(roster.rb) > 0
+        (tmp_path / "roster.json").write_text(json.dumps({"rb": ["Fixture Runner"]}))
+        roster = get_roster("Synthetic Roster Team", team_dir=str(tmp_path))
+        assert roster.rb == ["Fixture Runner"]
     
     def test_get_roster_unknown_team(self):
         """Should return empty roster for unknown team."""

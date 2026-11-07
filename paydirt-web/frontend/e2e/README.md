@@ -16,10 +16,47 @@ The GitHub Actions `browser-games` job runs this suite on pushes and PRs.
 
 ## What it tests
 
+The chart viewer test opens all three sections for the public 2026 teams, switches
+teams, checks the original-style grids and cell fills, and verifies narrow-screen
+scrolling, dialog focus, Escape, and unchanged engine state while browsing. Its
+offense/defense screenshots stay in ignored `test-results/`. Additional chart
+checks verify that every sheet fits at 1366×768, 1280×900, 1440×1100 and
+1920×1080 with text at least 12px, no grid or dialog scrolling, and closed help.
+Both new-tab and separate-window launches retain the chosen team/sheet, survive
+reload, allow independent chart navigation, and leave the parent game playable.
+Browsing must leave engine state unchanged; each launch test then performs a
+real kickoff in the parent. Expired links show recovery controls without game
+setup or gameplay requests.
+
+The Offense checks also require the compact Special Plays strip beside the
+main grid with aligned roll rows, all loaded auxiliary values preserved,
+a strip no wider than 300px, and a roll column no wider than 36px on the right.
+The phone check verifies that the strip stacks below Offense and fits without
+horizontal scrolling; detached charts retain the combined view too. There is
+no separate Special Plays control or screen, and older Special Plays links
+open combined Offense while preserving the selected team.
+
 One browser session completes **two real, full-length games**, first as home
 (receiving) and then as away (kicking), against Hard CPU. It selects teams,
 performs coin tosses, calls runs/passes/FGs/punts, resolves penalty choices,
 handles PATs and kickoffs, continues halftime, and reaches the final screen.
+Both games request defensive timeouts through the modifier panel and must
+record at least one engine-confirmed timeout for the human team. The suite
+checks the returned timeout budget and description, exhausted controls,
+the absence of offense-only modifiers on defense, and cleared selections
+after submissions, including pending penalty choices.
+Both games also execute every defensive formation A–F and check that each
+ordinary request carries the exact selected key. CPU punt/field-goal confirmations
+use the existing A placeholder. Each game verifies SAVE GAME's visible success
+status and the stored game ID, clock and field position in its isolated browser
+storage.
+
+Separate phone-viewport checks load synthetic saved positions using the public
+2026 teams and real load API. They verify minutes:seconds log labels, offensive
+and defensive modifier names/tooltips, and save confirmation remaining inside
+the viewport after scrolling back to the top. They also require both teams'
+labeled timeout budgets to fit inside the phone viewport. These focused checks use synthetic
+history; the two full-game tests retain normal game lengths and actual histories.
 
 Assertions require all four quarters, exactly one halftime with an untouched
 third-quarter clock, a populated play log, API success, no browser errors, and

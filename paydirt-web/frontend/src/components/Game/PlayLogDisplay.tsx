@@ -66,6 +66,12 @@ interface PlayLogDisplayProps {
   onPlayClick?: (play: PlayLogEntry) => void;
 }
 
+function formatClock(seconds: number | undefined): string {
+  if (seconds === undefined || !Number.isFinite(seconds)) return '--:--';
+  const wholeSeconds = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(wholeSeconds / 60)}:${String(wholeSeconds % 60).padStart(2, '0')}`;
+}
+
 const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(plays?.length || 0);
@@ -106,8 +112,8 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
           >
             <div className="flex justify-between items-start mb-1">
               <div className="text-xs text-gray-300">
-                <span className="font-bold">Q{play.quarter}</span> {' '}
-                {play.timeRemaining}"
+                <span className="font-bold">Q{play.quarter}</span>{' '}
+                {formatClock(play.timeRemaining)}
               </div>
               <div className="text-xs text-gray-400">
                 {play.offenseTeam} vs {play.defenseTeam}

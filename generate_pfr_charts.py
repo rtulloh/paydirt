@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import shutil
 from collections import Counter, defaultdict
 from collections.abc import Sequence
+from dataclasses import asdict
 from pathlib import Path
 
 from paydirt.chart_audit import audit_season
@@ -16,6 +18,7 @@ from paydirt.chart_generator import (
     EmpiricalPassCalibration,
     TeamSeasonStats,
     generate_team_charts,
+    resolve_cohort_pressure,
 )
 from paydirt.chart_source_coverage import source_feature_coverage
 from paydirt.chart_tuning import apply_profile_overrides, load_calibration_profile
@@ -24,6 +27,9 @@ from paydirt.empirical_adjustment import (
     calibrate_defense_stats,
     scale_empirical_run_yards,
 )
+from paydirt.fumble_source import FUMBLE_GAIN_POLICIES
+from paydirt.generated_source_audit import generation_input_hashes
+from paydirt.pfr_event_reconciliation import EventReconciliations, load_event_reconciliations
 from paydirt.pfr_play_by_play import (
     EmpiricalPlay,
     FieldGoalAttempt,
@@ -32,6 +38,7 @@ from paydirt.pfr_play_by_play import (
     classify_pfr_game,
     parse_pfr_boxscore,
 )
+from paydirt.pfr_reconciliation_replay import ReconciliationReplay, reconciliation_input_hashes
 
 
 def _source_date(path: Path) -> int | None:
@@ -52,6 +59,10 @@ def _classify_directory(
     html_dir: Path,
     through_date: int | None,
     seed: int,
+    ledger_path: Path | None = None,
+    event_counts: dict[str, Counter[str]] | None = None,
+    event_reconciliations: EventReconciliations | None = None,
+    fumble_gain_policy: str | None = None,
 ) -> tuple[
     list[EmpiricalPlay],
     list[FieldGoalAttempt],
@@ -67,12 +78,36 @@ def _classify_directory(
     diagnostics: Counter[str] = Counter()
     games = 0
     source_rows = 0
+    ledger = []
     for path in sorted(html_dir.glob("*.htm*")):
         source_date = _source_date(path)
         if through_date is not None and source_date is not None and source_date > through_date:
             continue
+        raw_hash = hashlib.sha256(path.read_bytes()).hexdigest()
         game = parse_pfr_boxscore(path.read_text(encoding="utf-8"), path.stem)
-        classified = classify_pfr_game(game, seed=seed)
+        facts = event_reconciliations.for_game(game, raw_hash) if event_reconciliations else {}
+        classified = classify_pfr_game(game, seed=seed, event_facts=facts,
+                                       fumble_gain_policy=fumble_gain_policy)
+        if event_counts is not None:
+            for team, counts in classified.event_counts.items():
+                event_counts.setdefault(team, Counter()).update(counts)
+        ledger.append({
+            "game_id": path.stem, "raw_filename": path.name,
+            "raw_sha256": raw_hash,
+            "event_reconciliations": [fact.to_dict() for fact in facts.values()],
+            "fumble_events": [asdict(event) for event in classified.fumbles],
+            "fumble_gain_projections": [event.to_dict() for event in classified.fumble_gain_projections],
+            "fumble_box": game.fumble_box,
+            "fumble_reconciliations": list(classified.fumble_reconciliations),
+            "unsupported_required_fields": list(classified.unsupported_fields),
+            "source_rows": len(game.plays), "field_goal_box": game.field_goal_box,
+            "diagnostics": dict(classified.diagnostics),
+            "source_conflicts": list(classified.source_conflicts),
+            "event_counts": dict(classified.event_counts),
+            "representations": [{"play_number": play.play_number, "team": play.team,
+                                 "unit": play.unit, "chart": play.chart, "result": play.result}
+                                for play in classified.plays],
+        })
         source_rows += len(game.plays)
         plays.extend(classified.plays)
         field_goals.extend(classified.field_goals)
@@ -81,6 +116,18 @@ def _classify_directory(
         games += 1
     if games == 0:
         raise ValueError(f"No PFR boxscore HTML files found in {html_dir}")
+    if event_reconciliations:
+        event_reconciliations.assert_all_applied()
+    if ledger_path is not None:
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        ledger_path.write_text(json.dumps({
+            "classification_seed": seed, "games": ledger,
+            "fumble_gain_policy": fumble_gain_policy,
+            "interpretation": "Raw source hashes and event-to-chart representations; "
+                              "multiple representations may condition one primary event. "
+                              "Unobserved primary call families remain heuristic. "
+                              "Field-goal conflicts retain unknown underlying mechanisms.",
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return plays, field_goals, fumbles, diagnostics, games, source_rows
 
 
@@ -174,6 +221,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--seed", type=int, default=8306, help="Stable classification seed")
     parser.add_argument(
+        "--fumble-gain-policy", choices=FUMBLE_GAIN_POLICIES,
+        help="Explicit experimental separation of reviewed credit and modeled fumble gain",
+    )
+    parser.add_argument(
+        "--event-reconciliations", type=Path,
+        help="Reviewed primary-source sack facts with raw-event and evidence byte hashes",
+    )
+    parser.add_argument(
         "--calibration-profile",
         type=Path,
         help="JSON generator profile; explicit adjustment flags override its values",
@@ -232,9 +287,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     output = Path(args.output)
     audit_dir = Path(args.audit_dir)
     team_map = _load_team_map(Path(args.team_map))
+    source_events: dict[str, Counter[str]] = {}
+    reconciliations = (load_event_reconciliations(args.event_reconciliations)
+                       if args.event_reconciliations else None)
     plays, field_goals, fumbles, diagnostics, games, source_rows = _classify_directory(
-        html_dir, args.through_date, args.seed
+        html_dir, args.through_date, args.seed, audit_dir / "source-ledger.json", source_events,
+        reconciliations, fumble_gain_policy=args.fumble_gain_policy,
     )
+
+    if diagnostics.get("unreconciled_fumble_box", 0):
+        raise ValueError("Unsupported source fields: inconsistent fumble box; see source-ledger.json")
+    if any(event.lost is None for event in fumbles):
+        raise ValueError("Unsupported source fields: unknown fumble recovery; see source-ledger.json")
+    if diagnostics.get("missing_required_gains", 0):
+        raise ValueError("Unsupported source fields: missing required gain; see source-ledger.json")
 
     coverage = source_feature_coverage(
         (play.to_row() for play in plays),
@@ -256,6 +322,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raw_plays_by_team[play.team].append(play)
 
     generated_teams: dict[str, dict[str, int | str]] = {}
+    prepared_teams = []
     season: int | None = None
     for abbreviation, team_name in sorted(team_map.items(), key=lambda item: item[1]):
         stats_path = stats_dir / f"{team_name}.json"
@@ -280,24 +347,41 @@ def main(argv: Sequence[str] | None = None) -> int:
             calibrated = calibrate_defense_stats(calibrated, defense_profile)
         generated_plays, fallback_columns = _select_empirical_plays(team_plays)
         empirical = EmpiricalChartData.from_rows(play.to_row() for play in generated_plays)
-        generate_team_charts(
+        prepared_teams.append((abbreviation, team_name, calibrated, empirical,
+                               generated_plays, fallback_columns))
+
+    pass_calibration = EmpiricalPassCalibration(
+        completion_rate_adjustment=profile.pass_completion_adjustment,
+        interception_rate_adjustment=profile.pass_interception_adjustment,
+        pressure_rate_adjustment=profile.pass_pressure_adjustment,
+        resolved_yard_multiplier=profile.pass_yard_multiplier,
+    )
+    neutral_pressure = resolve_cohort_pressure(
+        [(stats, empirical) for _, _, stats, empirical, _, _ in prepared_teams],
+        seed=args.seed, calibration=pass_calibration,
+    )
+    for abbreviation, team_name, calibrated, empirical, generated_plays, fallback_columns in prepared_teams:
+        team_plays = plays_by_team[abbreviation]
+        raw_team_plays = raw_plays_by_team[abbreviation]
+        charts = generate_team_charts(
             calibrated,
             output / team_name,
             seed=args.seed,
             empirical=empirical,
             missing_source_features=coverage["modeled_missing_features"],
             calibrate_empirical_pass_events=True,
-            empirical_pass_calibration=EmpiricalPassCalibration(
-                completion_rate_adjustment=profile.pass_completion_adjustment,
-                interception_rate_adjustment=profile.pass_interception_adjustment,
-                pressure_rate_adjustment=profile.pass_pressure_adjustment,
-                resolved_yard_multiplier=profile.pass_yard_multiplier,
-            ),
+            empirical_pass_calibration=pass_calibration,
+            neutral_pressure=neutral_pressure,
         )
         _copy_team_metadata(template, output, team_name)
         _write_empirical_csv(audit_dir / f"{team_name}.csv", raw_team_plays)
         generated_teams[team_name] = {
+            "primary_layout": charts.primary_layout,
+            "empirical_allocation_diagnostics": charts.empirical_allocations,
+            "opponent_sampling_diagnostics": adjusted.sampling_diagnostics.get(abbreviation, {}),
             "pfr_team": abbreviation,
+            "source_event_counts": {key: source_events.get(abbreviation, {}).get(key, 0)
+                                    for key in ("interceptions", "sacks", "field_goal_attempts")},
             "empirical_outcomes": len(raw_team_plays),
             "opponent_adjusted_outcomes": len(team_plays),
             "generated_empirical_outcomes": len(generated_plays),
@@ -310,6 +394,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError(f"No team statistics found in {stats_dir}")
     _copy_season_metadata(template, output, season)
     manifest = {
+        "neutral_pressure_model": neutral_pressure.evidence,
+        "fumble_gain_policy": args.fumble_gain_policy,
+        "input_hashes": generation_input_hashes({
+            "normalized_stats": sorted(stats_dir.glob("*.json")),
+            "play_by_play": [path for path in html_dir.glob("*.htm*")
+                             if args.through_date is None or _source_date(path) is None
+                             or _source_date(path) <= args.through_date],
+            "team_map": [Path(args.team_map)],
+            "profile": [args.calibration_profile] if args.calibration_profile else [],
+        }) | (reconciliation_input_hashes(reconciliations) if reconciliations else {}),
         "season": season,
         "seed": args.seed,
         "calibration_profile": profile.to_dict(),
@@ -328,6 +422,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         "source": "Pro Football Reference full play-by-play archived by the Wayback Machine",
         "games": games,
         "source_rows": source_rows,
+        "classification_ledger": {
+            "sha256": hashlib.sha256((audit_dir / "source-ledger.json").read_bytes()).hexdigest(),
+            "games": games,
+        },
+        "event_reconciliations": {
+            "schema_version": (None if isinstance(reconciliations, ReconciliationReplay)
+                               else reconciliations.schema_version if reconciliations else 1),
+            "applied_events": len(reconciliations.facts) if reconciliations else 0,
+            "review": "Reviewed source facts; hashes verify identity, not interpretation of scans",
+        },
+        **({"event_reconciliation_replay": {
+            "schema_version": 1, "source_schema_versions": list(reconciliations.source_schema_versions),
+            "replay_sha256": hashlib.sha256(reconciliations.replay_path.read_bytes()).hexdigest(),
+        }} if isinstance(reconciliations, ReconciliationReplay) else {}),
         "through_date": args.through_date,
         "empirical_outcomes": len(plays),
         "field_goal_attempts": len(field_goals),

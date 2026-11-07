@@ -2434,6 +2434,9 @@ def handle_penalty_decision(
         if safety_preview:
             play_outcome_str = safety_preview
             play_field_str = ""
+        elif penalty_choice.play_result_preview:
+            play_outcome_str = penalty_choice.play_result_preview
+            play_field_str = ""
         elif is_fg_penalty:
             if outcome.field_goal_made:
                 play_outcome_str = "FIELD GOAL GOOD!"

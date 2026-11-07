@@ -124,7 +124,7 @@ def test_end_zone_return_penalty_is_assessed_too() -> None:
     kicker.kickoff[24] = "74"  # Nine yards deep.
     receiver.kickoff_return.update({31: "OFF 15", 13: "30"})
     kick(game, True, 24, 31, 13)
-    assert game.state.ball_position == 6  # (30 - 9) - 15
+    assert game.state.ball_position == 11  # End at 21; half-distance assessment is 10.
 
 
 class TestReturnFumbles:
@@ -160,7 +160,7 @@ class TestReturnFumbles:
         outcome = kick(game, True, 24, 31, 13, 20)  # Reroll fumble, recovered.
         assert outcome.pending_penalty_decision is False
         assert game.state.is_home_possession is False
-        assert game.state.ball_position == 7  # 5 + 17 - 15
+        assert game.state.ball_position == 11  # End at 22; half-distance assessment is 11.
         assert game.state.away_stats.penalties == 1
 
     def test_fumble_after_a_penalty_recovered_by_the_kicking_team_is_its_choice(self) -> None:
@@ -173,7 +173,7 @@ class TestReturnFumbles:
         assert choice.kick_phase == "return_fumble"
         assert choice.offended_team == "defense", "the kicking team recovered and chooses"
         assert "HOME" in choice.play_result_preview and "22" in choice.play_result_preview
-        assert "AWAY 7" in choice.penalty_options[0].result_preview
+        assert "AWAY 11" in choice.penalty_options[0].result_preview
         assert game.state.is_home_possession is True  # Nothing applied yet.
         # Keep the recovery.
         with patch("paydirt.game_engine.random.uniform", return_value=8):
@@ -192,7 +192,7 @@ class TestReturnFumbles:
         with patch("paydirt.game_engine.random.uniform", return_value=8):
             outcome = game.apply_kickoff_penalty_decision(pending, accept_penalty=True)
         assert game.state.is_home_possession is False
-        assert game.state.ball_position == 7
+        assert game.state.ball_position == 11
         assert outcome.turnover is False
         assert game.state.away_stats.fumbles_lost == 0
         assert game.state.away_stats.penalties == 1

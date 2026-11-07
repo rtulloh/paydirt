@@ -65,7 +65,7 @@ export function Scoreboard({
   const ordinals = ['1st', '2nd', '3rd', '4th']
   const ordinal = ordinals[down - 1] || `${down}th`
 
-  // Determine which team's timeouts to show based on human team
+  // The timeout action belongs to the human team; both budgets stay visible.
   const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts
   const humanAbbr = humanIsHome ? homeAbbr : awayAbbr
 
@@ -73,8 +73,8 @@ export function Scoreboard({
   const quarterDisplay = isOvertime ? `OT${otPeriod}` : `Q${quarter}`
 
   return (
-    <div className={`px-6 py-3 ${isOvertime ? 'bg-yellow-900' : 'bg-gray-800'}`} data-testid="scoreboard">
-      <div className="flex items-center justify-between max-w-4xl mx-auto">
+    <div className={`px-4 sm:px-6 py-3 ${isOvertime ? 'bg-yellow-900' : 'bg-gray-800'}`} data-testid="scoreboard">
+      <div className="flex flex-wrap items-center justify-between gap-4 max-w-4xl mx-auto">
         <div className="flex items-center gap-8">
           <div className="text-center">
             <div className={`text-sm font-bold ${homeHasBall ? 'text-white' : 'text-gray-500'}`}>
@@ -83,6 +83,9 @@ export function Scoreboard({
             <div className="text-xs text-gray-500 mb-1">{homeName}</div>
             <div className={`text-2xl font-bold ${homeHasBall ? 'text-yellow-400' : 'text-gray-600'} ${homeScoreFlash ? 'animate-pulse bg-yellow-500/30 rounded px-2' : ''}`}>
               {homeScore}
+            </div>
+            <div className="text-sm font-bold text-gray-300" aria-label={`${homeName} timeouts remaining`}>
+              TO: {homeTimeouts}
             </div>
           </div>
           
@@ -94,10 +97,13 @@ export function Scoreboard({
             <div className={`text-2xl font-bold ${!homeHasBall ? 'text-yellow-400' : 'text-gray-600'} ${awayScoreFlash ? 'animate-pulse bg-yellow-500/30 rounded px-2' : ''}`}>
               {awayScore}
             </div>
+            <div className="text-sm font-bold text-gray-300" aria-label={`${awayName} timeouts remaining`}>
+              TO: {awayTimeouts}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-8">
           <div className="text-center">
             <div className="text-xs text-gray-500 mb-1">TIME</div>
             <div className="text-lg font-bold text-cyan-400">
@@ -126,23 +132,15 @@ export function Scoreboard({
             </div>
           </div>
 
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">TIMEOUTS</div>
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-bold text-gray-400">
-                {humanTimeouts}
-              </div>
-              {canCallTimeout && humanTimeouts > 0 && (
-                <button
-                  onClick={onCallTimeout}
-                  className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-500 transition-colors"
-                  title={`Call ${humanAbbr} timeout`}
-                >
-                  TO
-                </button>
-              )}
-            </div>
-          </div>
+          {canCallTimeout && humanTimeouts > 0 && (
+            <button
+              onClick={onCallTimeout}
+              className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-500 transition-colors"
+              title={`Call ${humanAbbr} timeout`}
+            >
+              Call timeout
+            </button>
+          )}
         </div>
       </div>
     </div>

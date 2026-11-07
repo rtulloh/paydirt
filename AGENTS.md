@@ -49,6 +49,8 @@ python3 tests/run_all_games.py
 python3 tests/run_full_season.py
 python3 tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/public-season.json
 python3 tests/run_ai_audit.py --season 1983 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/local-season.json --csv .ai-audits/local-season.csv
+python3 scripts/audit_generated_charts.py --season-dir seasons/1983-generated --contract config/chart-validation/1983.json --output .ai-audits/chart-quality-1983.json --repetitions 64 --workers 4
+python3 scripts/audit_generated_charts.py --season-dir seasons/2024 --contract config/chart-validation/2024.json --output .ai-audits/chart-quality-2024.json --repetitions 64 --workers 4
 ```
 
 **Play-selection and play-balance audit is part of full regression**, not merely
@@ -79,24 +81,31 @@ Playwright starts and stops its own isolated services using public 2026 teams
 only. Missing browsers/services or reaching the action limit are failures, not
 reasons to skip this check. See `paydirt-web/frontend/e2e/README.md` for details.
 
-`tests/run_full_season.py` runs a deterministic, generated 16-week/224-game
-1983 schedule followed by a ten-team/nine-game postseason through real engine
-rules, dice, and CLI flow. It is **not** the historical NFL schedule or results.
-Playoff seeds use the generated regular-season standings: three division winners
-and two wildcards per conference, ranked by winning percentage, point differential,
-points scored, then team name (deterministic regression tiebreakers, not the full
-NFL tiebreaking procedure). Divisional matchups avoid same-division opponents.
-It checks final game/untimed-down flags, period and scoring-log totals, rejects
-kickoffs after game end, and fails any tied playoff final. Regular-season ties
-remain valid under the season rules. Both phases print pass/fail, overtime, and
-tie totals; playoffs also print round results and the champion. Failed playoff
-games do not advance either team; dependent games are reported as not played.
-It never saves standings. Failures include the matchup and seed for reproduction,
-and the script exits nonzero. Playoffs do not run after regular-season failures.
-The runner requires pytest and private, local-only 1983 team data; these files
-are intentionally ignored and must never be committed or exported. It also runs
-fifteen historical full-game reproductions outside the unit suite, including two
-mandatory untimed-down scenarios verified with corrected dice and punt-recovery flow.
+`tests/run_full_season.py [YEAR]` runs the selected year's actual regular-season
+calendar followed by a postseason seeded from simulated standings. No argument
+selects 1983 (224 regular games, nine playoff games); 2024 has 272 regular games
+and thirteen playoff games. It prefers available generated charts, accepts explicit
+chart/source paths, and fails before games if actual fixtures/results, membership,
+charts or source-year rules are missing. Developer charts are optional for this
+historical-results audit. The separate 14-game runner still requires local data.
+See [historical season validation](docs/historical-seasons.md) for commands,
+provenance, selected-action accounting and the distinct historical-playoff replay
+mode. Historical outcomes and champions are diagnostics, never forced results.
+
+Seeds use simulated winning fraction, point differential, points scored and team
+name: declared regression tiebreaks, not the full official NFL procedure. The
+1983 bracket prevents divisional rematches before conference championships; the
+2024 bracket has one bye per conference and reseeds the divisional round. Final
+scoring/box and termination checks remain mandatory; tied playoff finals fail.
+Failed games do not advance teams, missing dependent games fail, and regular-season
+failures prevent a simulated postseason. Reports bind source/chart/runtime identity,
+retain failures and stay in ignored `.ai-audits/`. All sixteen existing private
+1983 reproductions, including two mandatory untimed-down scenarios, run additionally
+when their original local charts exist. Their absence is explicitly not applicable
+for a generated-chart historical audit. The old rotating 1983 calendar is available
+only with `--generated-regression` as an additional regression. Official tiebreak
+qualification, complete per-action proof and repeated-season probabilities remain
+unverified; this runner does not waive source-fit or the rest of full regression.
 
 **When writing unit tests, use only synthetic fixtures or the public sample
 teams under `seasons/2026/`. Never load or depend on any other season data,

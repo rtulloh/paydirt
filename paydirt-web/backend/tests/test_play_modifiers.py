@@ -3,6 +3,7 @@ Tests for play modifiers functionality: suffix parsing and modifier handling.
 """
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -10,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi.testclient import TestClient
 from main import app
-from routes import parse_play_with_modifiers
+from routes import games, parse_play_with_modifiers
 
 from paydirt.play_resolver import PlayType
 
@@ -184,11 +185,13 @@ class TestModifierIntegration:
         })
         assert response.status_code == 200
         
-        # Kickoff
-        response = client.post("/api/game/kickoff", json={
-            "game_id": game_id,
-            "kickoff_spot": 35,
-        })
+        # Keep this modifier fixture deterministic: a random return turnover or
+        # pending kickoff foul does not establish the required offensive state.
+        with patch("paydirt.game_engine.roll_chart_dice", return_value=(24, "Fixture kickoff")):
+            response = client.post("/api/game/kickoff", json={
+                "game_id": game_id,
+                "kickoff_spot": 35,
+            })
         assert response.status_code == 200
         
         # Verify human is on offense
@@ -307,23 +310,33 @@ class TestModifierIntegration:
         assert response.status_code == 400
         assert "play" in response.json()["detail"].lower()
     
-    def test_no_huddle_persistence_across_plays(self, client, game_with_human_on_offense):
-        """Test that no_huddle flag persists across multiple plays."""
-        game_id = game_with_human_on_offense
-        
-        # First play with no_huddle
-        response = client.post("/api/game/execute", json={
-            "game_id": game_id,
-            "player_play": "7",
-            "no_huddle": True,
-        })
-        assert response.status_code == 200
-        
-        # Second play without specifying no_huddle (should persist from previous?)
-        # Actually, no_huddle is a per-play parameter, not stored in game state
-        # So it won't persist automatically. This test just ensures both work.
-        response = client.post("/api/game/execute", json={
-            "game_id": game_id,
-            "player_play": "7",
-        })
-        assert response.status_code == 200
+    def test_no_huddle_persistence_across_plays(self, client: TestClient) -> None:
+        """Each play receives its own no-huddle request without inheriting it."""
+        game_id = client.post("/api/game/new", json={
+            "player_team": "Ironclads", "season": "2026", "play_as_home": True,
+        }).json()["game_id"]
+        game = games[game_id]
+        engine, state = game["engine"], game["engine"].state
+        game["is_kickoff"] = False
+        state.is_home_possession = True
+        state.ball_position, state.down, state.yards_to_go = 50, 1, 10
+        state.defense_team.defense.modifiers = {}
+        state.possession_team.offense.medium_pass = {26: "5"}
+        try:
+            # Keep both real plays on offense: a random turnover/penalty makes
+            # a second execute request invalid for reasons unrelated to huddle.
+            with (patch("paydirt.play_resolver.roll_chart_dice", return_value=(26, "Pass26")),
+                  patch.object(engine, "run_play_with_penalty_procedure",
+                               wraps=engine.run_play_with_penalty_procedure) as execute):
+                first = client.post("/api/game/execute", json={
+                    "game_id": game_id, "player_play": "7", "cpu_play": "A", "no_huddle": True,
+                })
+                second = client.post("/api/game/execute", json={
+                    "game_id": game_id, "player_play": "7", "cpu_play": "A",
+                })
+            assert first.status_code == second.status_code == 200
+            assert [call.kwargs["no_huddle"] for call in execute.call_args_list] == [True, False]
+            assert state.ball_position == 60
+            assert len(engine.play_log) == 2
+        finally:
+            client.delete(f"/api/game/{game_id}")

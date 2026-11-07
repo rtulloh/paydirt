@@ -7,9 +7,18 @@ import PlayingPhase from './components/Game/PlayingPhase';
 import Halftime from './components/Game/Halftime';
 import GameOver from './components/Game/GameOver';
 import HelpGuide from './components/Game/HelpGuide';
+import { DetachedCharts } from './components/Game/ChartViewer';
 import { API_BASE } from './config';
 
 function App() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('charts')) {
+    return <DetachedCharts gameId={params.get('charts')} initialSide={params.get('side')} initialChart={params.get('view')} />;
+  }
+  return <GameApp />;
+}
+
+function GameApp() {
   const { gamePhase, setGamePhase, reset } = useGameStore();
   const [backendStatus, setBackendStatus] = useState('checking');
 

@@ -131,7 +131,7 @@ def categorize_result(result_str: str) -> tuple[ResultCategory, int | None]:
     if fumble_minus:
         return ResultCategory.FUMBLE_MINUS, -int(fumble_minus.group(1))
 
-    if result_str == "F":
+    if result_str in ("F", "F INC"):
         return ResultCategory.FUMBLE, 0
 
     # Check for (TD) - touchdown in parentheses (overrules)
@@ -354,6 +354,8 @@ class CombinedResult:
     offense_result: str
     defense_result: str
     out_of_bounds: bool = False
+    # Selected primary passing subtype; no internal recovery spot is asserted.
+    retained_fumble_incompletion: bool = False
 
 
 def apply_priority_chart(offense_result: str, defense_result: str,
@@ -372,6 +374,12 @@ def apply_priority_chart(offense_result: str, defense_result: str,
     Returns:
         CombinedResult with the final outcome
     """
+    # This terminal composite is supported only on primary offensive pass cells.
+    if (defense_result or "").strip() == "F INC" or (
+        (offense_result or "").strip() == "F INC" and not is_passing_play
+    ):
+        raise ValueError("F INC is supported only in primary offensive passing columns")
+
     # Categorize both results
     off_cat, off_yards = categorize_result(offense_result)
     def_cat, def_yards = categorize_result(defense_result)
@@ -421,6 +429,7 @@ def apply_priority_chart(offense_result: str, defense_result: str,
     is_incomplete = False
     use_qt = False
     use_breakaway = False
+    retained_fumble_incompletion = False
     description = ""
 
     if priority == PriorityResult.ADD:
@@ -497,10 +506,17 @@ def apply_priority_chart(offense_result: str, defense_result: str,
 
     elif priority in [PriorityResult.FUMBLE, PriorityResult.D_FUMBLE,
                       PriorityResult.FUMBLE_PLUS, PriorityResult.FUMBLE_MINUS]:
-        is_turnover = True
-        # Fumble always wins - use offense fumble yards
-        final_yards = off_yards if off_yards is not None else 0
-        description = f"FUMBLE! {final_yards} yards before fumble"
+        if priority == PriorityResult.FUMBLE and offense_result.strip() == "F INC":
+            # The fumble was retained before an incomplete pass. Its internal
+            # movement is unknown, and it requires no new recovery/return roll.
+            retained_fumble_incompletion = True
+            is_incomplete = True
+            description = "Fumble retained; incomplete pass"
+        else:
+            is_turnover = True
+            # Fumble always wins - use offense fumble yards
+            final_yards = off_yards if off_yards is not None else 0
+            description = f"FUMBLE! {final_yards} yards before fumble"
 
     elif priority == PriorityResult.BLACK:
         # BLACK result means incomplete for passing plays, no gain for running plays
@@ -539,4 +555,5 @@ def apply_priority_chart(offense_result: str, defense_result: str,
         offense_result=offense_result,
         defense_result=defense_result,
         out_of_bounds=off_has_oob and offense_retained and not is_turnover,
+        retained_fumble_incompletion=retained_fumble_incompletion,
     )

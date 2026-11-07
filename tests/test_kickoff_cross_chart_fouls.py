@@ -42,12 +42,13 @@ def test_same_team_fouls_offer_rekick_or_resolved_return(
     assert dice.call_count == len(rolls)
     assert not outcome.pending_penalty_decision
     assert game.state.is_home_possession is (not kicking_home)
-    expected_spot = (15 if kind == "OFF" else 35) if accept else (10 if kind == "OFF" else 40)
+    expected_spot = (15 if kind == "OFF" else 35) if accept else (13 if kind == "OFF" else 40)
     assert game.state.ball_position == expected_spot
     fouling_home = not kicking_home if kind == "OFF" else kicking_home
     stats = game.state.home_stats if fouling_home else game.state.away_stats
     other = game.state.away_stats if fouling_home else game.state.home_stats
-    assert (stats.penalties, stats.penalty_yards) == (1, 10 if accept else 15)
+    expected_yards = 10 if accept else 12 if kind == "OFF" else 15
+    assert (stats.penalties, stats.penalty_yards) == (1, expected_yards)
     assert other.penalties == 0
     assert len(game.play_log) == 1
     assert not hasattr(game, "_pending_kickoff_penalty_state")

@@ -89,3 +89,34 @@ passing controls. Their final expectations now require fifteen attempts,
 fourteen successes after one injected failure, and thirteen after both
 mandatory events are omitted. The dice, live AI, original thirteen complete
 games, final-state checks and requirement for two real extensions are retained.
+
+## Chart-confidence runtime checkpoint (2026-11-06)
+
+The current corrected engine (`52d48a1f…`) completes `19831617` without an
+untimed down. The integration runner correctly failed that requirement while
+all 224 generated regular-season games and nine playoff games passed. Replacing
+only the shared return half-distance helper with its previous implementation
+still produces no extension. The earlier isolated `c31059f8…` review runtime also
+produces none. These controls do not isolate the first trajectory change; do not
+attribute the drift to the latest half-distance correction alone.
+
+A declared, bounded local event-coverage search checks Chiefs/Giants seeds
+`19831600` through `19831699` in ascending order and stops at the first real
+extension, `19831648`. All 49 attempted games finish and reconcile scoring.
+The frozen supplement awards and consumes a Q2 untimed down; the existing
+Raiders/Eagles `19831153` awards and consumes its Q1 extension. Both finish
+without a pending extension. The observer records the engine consumption method
+used by both direct and penalty-procedure entry points; the earlier diagnostic
+that observed only `run_play` missed the Raiders procedure entry and is retained
+as an incomplete observation, not evidence that its extra down was absent.
+Ignored receipts bind the current engine and diagnostic script hashes; raw
+private narrative remains local. This search is integration coverage, not chart
+calibration or held-out/reference/transfer evidence.
+
+Before the runner change, synthetic tests produced eight expected failures and
+17 passing controls. The runner now retains every one of the previous fifteen
+complete games, adds `19831648`, and still requires two real extensions. The
+expectations increase to sixteen attempts, fifteen successes after one injected
+failure, and fourteen after both required events are omitted. The old
+`19831617` remains mandatory as a complete game. No dice, engine rules, private
+charts, final-state validation or live generated-season AI are changed.

@@ -16,6 +16,9 @@ Backend dependencies are separate from core dependencies. The release workflow c
 use a Python version compatible with the pinned backend packages and available wheels.
 
 Run `ruff check paydirt/ tests/ paydirt-web/backend/` for Python lint checks.
+The [generated chart release gate](chart-validation.md) must pass for both public
+generated cohorts before release builds. It also runs in pull-request CI and
+retains failed JSON evidence.
 Runtime-inspected API annotations retain Python 3.9-compatible typing for the
 existing local checks; this does not lower the declared Python 3.10+ requirement.
 Optional-operation fallback failures emit traceback diagnostics at DEBUG level
@@ -58,13 +61,16 @@ Do not treat the quick unit-test command above as full release validation.
 - Core and backend pytest suites, frontend tests, production build, and Ruff.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two complete real-engine games, including clean new-game state.
 - `tests/run_all_games.py`: standalone game integration checks.
-- `tests/run_full_season.py`: generated 224-game regular season, nine-game playoffs, and historical reproductions.
+- [Historical season runner](historical-seasons.md): selected-year actual calendar, simulated or historical-replay postseason, generated-chart support and optional local reproductions.
 - `tests/run_ai_audit.py`: full generated Hard-vs-Hard seasons and legacy balanced comparisons; review [play-selection/balance evidence](ai-auditing.md), not just final scores.
 - Clean tracked-files-only unit tests, so ignored local data cannot mask CI failures.
 
-Historical integration runners need private local 1983 data and never export it. The generated season is not the
-historical schedule or results. Regular-season ties are allowed by rules; tied playoff finals are failures.
-All 224 regular games and nine playoff games must pass before pushing.
+The historical calendar audit works with generated charts and does not require developer charts.
+The separate local integration games and optional sixteen 1983 reproductions need private data;
+keep their logs local. Default 1983 validation requires all 224 actual regular fixtures and nine
+postseason games; selected 2024 validation requires 272 and thirteen. Regular-season ties are
+allowed by source-year rules; tied playoff finals fail. Official NFL tiebreak qualification remains
+unverified. The old rotating calendar is an explicit additional regression only.
 
 ## Building Standalone Applications
 
@@ -77,6 +83,9 @@ pyinstaller paydirt.spec --clean
 ```
 
 Prepare the frontend assets and Python dependencies first, following the workflow.
+The spec includes the runtime-loaded routes and their local chart viewer helper.
+Keep these helper modules directly in the bundled backend import directory,
+and declare their core dependencies as hidden imports when the entry point does not import them.
 Do not add `--onefile` when using the spec file; the spec defines executable packaging.
 Platform packaging uses NSIS for the Windows installer, `create-dmg` and
 `packaging/macos/create_app.sh` on macOS, and `packaging/linux/create_appimage.sh` on Linux.
@@ -126,6 +135,15 @@ whether a try is still owed: regulation tries are played even when the clock has
 expired and the game is provisionally over; both try methods recompute
 `game_over` afterwards.
 
+Two-point attempts resolve the chart and return sequence on an isolated
+conversion state. Only a two-point scoring entry and the untimed clock trace
+reach the live game; ordinary statistics, possession, periods and play/call
+histories stay intact. The try scoring entry uses the preceding touchdown's
+explicit period and timestamp. The `/api/game/two-point` result supplies
+`conversion_success` and `defense_points`; the frontend displays those fields
+without parsing scoring prose. Its returned `game_state` owns `pending_pat`,
+`can_go_for_two`, and `is_kickoff`, including final tries at 0:00.
+
 ## Halftime and the second-half kicker
 
 The engine records which team kicked to open the game (`GameState.opening_kicking_home`,
@@ -157,9 +175,8 @@ does not blanket-allow arbitrary `python3` scripts or retain Bowl Bound-specific
 frontend paths/environment variables. These permissions are convenience rules,
 not a sandbox or a replacement for the required pre-push validation.
 
-The hosted test jobs pin Ubuntu 24.04 rather than following `ubuntu-latest`: the
-Ubuntu 26.04 transition removed the Python 3.9 builds used by the existing
-matrix. All four Python versions remain tested, and matrix failures no longer
+The hosted test jobs pin Ubuntu 24.04 and test Python 3.10, 3.11 and 3.12,
+matching the package's declared supported minor versions. Matrix failures do not
 cancel the other versions. Browser backend, npm, and Chromium/system dependency
 installs have separate required steps so setup failures are identifiable even
 from the job summary. Local macOS success does not prove hosted Linux setup.

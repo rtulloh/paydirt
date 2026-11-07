@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from paydirt.packaging import get_seasons_path
 from tests.ai_audit import (
     DIFFICULTIES,
+    SITUATION_CSV_FIELDS,
     GameSpec,
     game_seed,
     generated_schedule,
@@ -77,11 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         if args.csv is not None:
             args.csv.parent.mkdir(parents=True, exist_ok=True)
-            fields = ("team", "difficulty", "mode", "down", "distance_band", "calls",
-                      "largest_share", "distinct_plays", "longest_streak", "small_sample",
-                      "play_counts", "primary_play_shares")
             with args.csv.open("w", newline="", encoding="utf-8") as output:
-                writer = csv.DictWriter(output, fieldnames=fields)
+                writer = csv.DictWriter(output, fieldnames=SITUATION_CSV_FIELDS)
                 writer.writeheader()
                 for group in report["summary"]["situations"]:
                     writer.writerow({key: json.dumps(value, sort_keys=True) if isinstance(value, dict) else value

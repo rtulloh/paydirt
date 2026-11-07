@@ -12,6 +12,7 @@ const snapshot = page => page.evaluate(async () => {
     isKickoff: s.isKickoff, pendingPat: s.pendingPat,
     pendingCpuFourthDown: s.pendingCpuFourthDown,
     selectedModifier: s.selectedModifier, noHuddleMode: s.noHuddleMode,
+    humanTimeouts: s.humanIsHome ? s.homeTimeouts : s.awayTimeouts,
     log: s.playLog,
   }
 })
@@ -54,7 +55,13 @@ async function completeGame(page, request, gameId) {
   let executeCount = 0
   let kickoffCount = 0
   let lateCpuConfirmations = 0
+  let defensiveTimeouts = 0
+  let timeoutKeyboardExercised = false
   let previousLogLength = 0
+  let defenseSelectionCount = 0
+  let lastDefenseCall = null
+  let saveVerified = false
+  const defensiveCalls = new Set()
   const actions = []
   for (let step = 0; step < 450; step++) {
     const state = await snapshot(page)
@@ -80,10 +87,14 @@ async function completeGame(page, request, gameId) {
       expect(actions).toContain('execute')
       expect(actions).toContain('penalty-decision')
       expect(actions).toContain('extra-point')
+      expect(defensiveTimeouts, 'Use a defensive timeout through the rendered controls').toBeGreaterThan(0)
+      expect(timeoutKeyboardExercised).toBe(true)
+      expect([...defensiveCalls].sort()).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
+      expect(saveVerified).toBe(true)
       console.info('Completed game', gameId, {
-        score: [final.home_score, final.away_score], executeCount, kickoffCount, halftimeCount,
+        score: [final.home_score, final.away_score], executeCount, kickoffCount, halftimeCount, defensiveTimeouts,
       })
-      return { final, actions, executeCount, kickoffCount, halftimeCount, lateCpuConfirmations }
+      return { final, actions, executeCount, kickoffCount, halftimeCount, lateCpuConfirmations, defensiveTimeouts }
     }
     let button
     let endpoint
@@ -118,8 +129,39 @@ async function completeGame(page, request, gameId) {
     } else {
       // Simple human policy: varied run/pass calls; punt or FG on fourth down.
       const play = state.down === 4 ? (state.ballPosition < 55 ? 'p' : 'f') : ['1', '2', '6', '7'][executeCount % 4]
-      button = page.getByTestId(state.playerOffense ? 'offense-play-' + play : 'defense-play-a')
+      const defense = ['a', 'b', 'c', 'd', 'e', 'f'][defenseSelectionCount % 6]
+      if (!state.playerOffense) {
+        lastDefenseCall = defense.toUpperCase()
+        defenseSelectionCount++
+      }
+      button = page.getByTestId(state.playerOffense ? 'offense-play-' + play : 'defense-play-' + defense)
       endpoint = 'execute'
+    }
+    const saveButton = page.getByRole('button', { name: 'SAVE GAME', exact: true })
+    if (!saveVerified && await saveButton.isEnabled()) {
+      await saveButton.click()
+      await expect(page.getByRole('status')).toHaveText('Game saved in this browser.')
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('paydirt_save')))
+      expect(saved).toMatchObject({ gameId, timeRemaining: state.timeRemaining, ballPosition: state.ballPosition })
+      saveVerified = true
+    }
+    if (endpoint === 'execute' && !state.playerOffense) {
+      const modifiers = page.getByTestId('play-modifiers')
+      await expect(modifiers.getByRole('radio', { name: 'Out of bounds [O]' })).toHaveCount(0)
+      await expect(modifiers.getByRole('radio', { name: 'Spike [S]' })).toHaveCount(0)
+      const timeout = modifiers.getByRole('radio', { name: `Timeout (${state.humanTimeouts} left) [T]` })
+      if (state.humanTimeouts > 0) {
+        await timeout.check()
+        if (!timeoutKeyboardExercised) {
+          await page.keyboard.press('0')
+          await expect(modifiers.getByRole('radio', { name: 'None [0]' })).toBeChecked()
+          await page.keyboard.press('t')
+          await expect(timeout).toBeChecked()
+          timeoutKeyboardExercised = true
+        }
+      } else {
+        await expect(timeout).toBeDisabled()
+      }
     }
     await expect(button, 'No available action at step ' + step + ': ' + JSON.stringify(state)).toBeEnabled()
     let receivedResponse
@@ -156,6 +198,26 @@ async function completeGame(page, request, gameId) {
     const response = receivedResponse
     expect(response.ok(), endpoint + ': ' + await response.text()).toBeTruthy()
     const data = await response.json()
+    if (data.result?.defensive_timeout_used) {
+      defensiveTimeouts++
+      const sent = response.request().postDataJSON()
+      expect(sent.call_defensive_timeout).toBe(true)
+      expect(sent.player_play).toBe(['P', 'F'].includes(sent.cpu_play) ? 'A' : lastDefenseCall)
+      const remaining = data.game_state.human_is_home ? data.game_state.home_timeouts : data.game_state.away_timeouts
+      expect(remaining).toBe(state.humanTimeouts - 1)
+      expect(data.result.description).toContain('Defensive timeout: clock stopped.')
+    }
+    if (endpoint === 'execute') {
+      if (!state.playerOffense) {
+        const sent = response.request().postDataJSON()
+        // A confirmed CPU kick uses A as a placeholder; its formation is not
+        // used by kick resolution. Ordinary plays must use the selected call.
+        const cpuKick = ['P', 'F'].includes(sent.cpu_play)
+        expect(sent.player_play).toBe(cpuKick ? 'A' : lastDefenseCall)
+        if (!cpuKick) defensiveCalls.add(sent.player_play)
+      }
+      await expect.poll(async () => (await snapshot(page)).selectedModifier).toBeNull()
+    }
     actions.push(endpoint)
     if (endpoint === 'execute') executeCount++
     // Pending decisions do not add a log entry until resolved; PATs update state.

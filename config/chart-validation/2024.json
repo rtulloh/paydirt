@@ -1,0 +1,1960 @@
+{
+  "attribution": "nflverse regular-season play-by-play",
+  "chart_hashes": {
+    "49ers/defense.csv": "44929046401fd23aa98a3d155f53358191b1e67a0dad5ca4ce338916962eb5c3",
+    "49ers/offense.csv": "69b2d9675254a60da5ece65343a8acb57c6e8ea52f87a0036f071c847bd93a91",
+    "49ers/special.csv": "8b2bc4467dfe37d2490d2591aa30e4def0283147ad7526c0eb5e8851303bd03c",
+    "Bears/defense.csv": "096423c26cb8e35390bd2576669f583f9f4e474431f40bb3eeaa1e570d08c2d9",
+    "Bears/offense.csv": "dd3494dc2d8693dfdbafda52eea6c4d2cc61c1d8439eb139556f2ed7b003e3e2",
+    "Bears/special.csv": "6dfd700954a06edd79e2c4598f4a7eab5b1445fad5a801310810bda8b0462a85",
+    "Bengals/defense.csv": "f509b43ba114418282f3039793d76a907b67b232c8e14271af9acf8fd6e2b5e8",
+    "Bengals/offense.csv": "c3c74d674d00ea1d5dee894e0d2d619a87aed1b342a41ecd04dc0e724d455553",
+    "Bengals/special.csv": "3cd356fe511d760e04294a5fbc1868ef110d6155645855f498c5111b443448e9",
+    "Bills/defense.csv": "72f85d8f5d3c1eb911168134614ffc9f378e21b153ce3057b88146112fc1e924",
+    "Bills/offense.csv": "ca6b1d34b4c0ec12b785734df37c53c6895ec289ef488851e1de1379defb8d20",
+    "Bills/special.csv": "813c57c43ffee31a652ef978792579570acb11c190ce4293647b1b67e7132d23",
+    "Broncos/defense.csv": "7a81e3fb50b329282ca0f17f258ec73a884ffb9a604384fff57efea23c7228c7",
+    "Broncos/offense.csv": "5ff7e1ba07540a22775336995cd25a65386598c4ec5f5d181eed0436316a01bb",
+    "Broncos/special.csv": "8dbb64352d323c2eac4026c6351a683eca3b2f7de8a616e2ea9c3c448aec25f1",
+    "Browns/defense.csv": "23727815a79871834899ec70a156df11b83e42059af8474cfe545fb1ad14c7bd",
+    "Browns/offense.csv": "36d5940ed4de74fc9b8fbb27e2719535acb20c5e973bbabbba4aa2aba9dae353",
+    "Browns/special.csv": "295ec460eb711900f73246d532afc8e501e68ec6115f13bbb1b325f0107ce75e",
+    "Buccaneers/defense.csv": "0e75ba002e4edc8b545c45d966fd0ff5b8988dfa8d04903aed412ff9f6c0de5f",
+    "Buccaneers/offense.csv": "e8cb6af2a2d641fedc07f8bc8a3e55d281c079425d48359f6369b4c4090bb2e1",
+    "Buccaneers/special.csv": "649a75704dd6c916422a54416e449f5bca87d3475400322e12d019a2049c90ee",
+    "Cardinals/defense.csv": "82e535bb1f9d8fdc36ec346c8c12ff466b98e92801c3fb41ad66ecde5958fcd1",
+    "Cardinals/offense.csv": "97d262de3b8a76923678aa0e21986da5e773ddfd4aa8d7772fc52926c38d88cd",
+    "Cardinals/special.csv": "6793ecd44719ce4cfaf883e76387da321c74cf28f2adb2caf1d2c3abb50b10ae",
+    "Chargers/defense.csv": "84f1c3116b48867ce690647022c99063371cab258ea59d67af425807bf0a4cd1",
+    "Chargers/offense.csv": "a35ab5bcb42e4b4d76cde1105f4ea194cf98631f0fd68f337440c2da2a28ecb3",
+    "Chargers/special.csv": "1874c45df7b18ba19203668744b27ff212e9aec8df73dfc2b12c0c000bcb6bee",
+    "Chiefs/defense.csv": "e7cbb6eba6ce01bf9356a6e81b541d578f63e01bc2732ef3b8d2362bd8870251",
+    "Chiefs/offense.csv": "de0913dbc4b5739f33f93dcced2612767d0cf55084be1fd5a4200a4a6fbc4983",
+    "Chiefs/special.csv": "103e91478bc4f85a66afd9346b80e59640cc61f1608231bbafa2b70258ebd290",
+    "Colts/defense.csv": "9588c894d8a1f09d29e0f3e289a3260be4b072675714e6e920ab962e4382a58e",
+    "Colts/offense.csv": "17e1901379c586e7348679afb41885e8054d3d1a84699c92a8ae8e154e653454",
+    "Colts/special.csv": "7e8dffe972a42ee0f23cad50f70e9f98662cc333e77b4a7dba0c36d30d56452c",
+    "Commanders/defense.csv": "214991624fac426eee579c07d2c700d37c6c7963110b5e0c19e6eb209e77857d",
+    "Commanders/offense.csv": "1a71288eb0d8a92cd213a62ca8f609643e8dc13ebff06fd6cb74dd06ec42143b",
+    "Commanders/special.csv": "609b66726f2605ff58acd1169d51383048ce2907422f83c7d5622c3d31950af7",
+    "Cowboys/defense.csv": "3f6d42397edeb8d45e5f8906a1bc050b9b9880e646acb8b967723f350dd8b721",
+    "Cowboys/offense.csv": "6ddc88adca33ece514a2b995bd763676bc747d1ccd875a8dd71d67e6e9c3dbf7",
+    "Cowboys/special.csv": "1627845e329b3a0b1e0178c25656495061d11dd3790c802bf263566d0299fd71",
+    "Dolphins/defense.csv": "65d1a4346ae8434fec5e3db4fd3136f0f212d4dc3f21499cdafa3cfccb7802cb",
+    "Dolphins/offense.csv": "dd8defd7039ef8dfe383a45199b770ea0a739ff6a5a4b1868a0644a0f9106d6b",
+    "Dolphins/special.csv": "75451100fdc16861373f738a7335dd9dfec5ec02a156b142fea4c99bcf8a4ce3",
+    "Eagles/defense.csv": "3c5200a94746b238be70e117836b92cd30795263893008c939f28f9b3592578e",
+    "Eagles/offense.csv": "51b09ef3d6dd606b1382da68b4b5d11050a61a6ff01d9d6fdcc1e9a2bdf0fa38",
+    "Eagles/special.csv": "1cc69ddb67595c0aa55a1bd1ad2c870637bfec9f0618c3d3d37aa2f2e0e6e514",
+    "Falcons/defense.csv": "269cd78bdd9f4f6ff8c2c719979c20430f125feebd9304ea8c8b6502c2f62945",
+    "Falcons/offense.csv": "aaf28e47d34bfba4943c010273196fb64b9a1e13218e497da581fecd9c42efba",
+    "Falcons/special.csv": "8775cf43a2af61e86d940531a3731d0e922a1d1a5ed0d27348c88f1b41375a7a",
+    "Giants/defense.csv": "a566aa74885a4d3377a6bffec4e67009b6742b699e5056f1c54feb465f1c0497",
+    "Giants/offense.csv": "a2efa8eb27f62ebc73b8c2dcf3cdda3ef1f46ae3923af405ec50c958e8005a6b",
+    "Giants/special.csv": "8056339d1714dcc60b5829ce9cfc4ffd4b939d4735f7b61080847425032a7186",
+    "Jaguars/defense.csv": "1941acfdef1d377943e8e328cc08b79a972985b9b7646a43e024016445448f46",
+    "Jaguars/offense.csv": "6d9d557a0ecb7f6b943021da393b156fa8c816fdcb945c4359a92fe395e9d3ed",
+    "Jaguars/special.csv": "003dfac9e55cc734967e7d5a67ca752298b851b5278538e2b404cdc13e619812",
+    "Jets/defense.csv": "5c95a37c479e925b9ea10ca05faf0f3ba5b2bf8a9d086179a558d808c3bb59f4",
+    "Jets/offense.csv": "2b42f74b0b47b255fcf48d09a705fe8eae38943d2e0f6f6902d0217003fb0c47",
+    "Jets/special.csv": "77e559fb5e9d7c0bb99b5ab1ac57f4051092219b40be4977effedafcb0a96d57",
+    "Lions/defense.csv": "be7a716ac9195f993cb29c906328bb274ac6f5ba8ecfb987a64d7a9c6d770eed",
+    "Lions/offense.csv": "7bfd38e84d8da5a3c46ac16a4c2dcc5ee0a7fd16240840a871eef725bd6e0fd4",
+    "Lions/special.csv": "9b4724bb4880ec886f40085eb179e589a9abae4b6307331ffb5f46d96f80392b",
+    "Packers/defense.csv": "11eaf7ad527db985a8787ce6bba2a6dc0b363c78719c3eda4001c3f595b6473a",
+    "Packers/offense.csv": "05b41d590364f020fec50b44d48761e75a84e0d5d7f85c215070c598fcf2969e",
+    "Packers/special.csv": "a1602f9b4b77f4bae7c871920216d3709199a6f3e53d32298cbcee85900261c1",
+    "Panthers/defense.csv": "3d08e48bc649e65aa747b960d561fc437774307455f8de42a43411539faf0fa5",
+    "Panthers/offense.csv": "b911ac7b460be17658da80269555d8f7e38b0bb3baa4bd8764b04de3a6e08956",
+    "Panthers/special.csv": "d8dccc43236bec9d3383106fb2de45abfa02c2ac6791623c5d79fd0414e76951",
+    "Patriots/defense.csv": "5a0b2415733f2cbaa07b6c9576d9ec8b1c02623a9fc05509f516f673073cb019",
+    "Patriots/offense.csv": "4916654d7ab3a0f11460bb449959aaba8d55ffc2a5f2b5da949af84710424e28",
+    "Patriots/special.csv": "1e4ec6c56653e93c10ca3e8401c5b03d26664672c86e8cd3a11e05e88ec9b0fe",
+    "Raiders/defense.csv": "ce28ee06e39da061e97d17827dc609f8aad775c3f1a4f413479f5779a747cffc",
+    "Raiders/offense.csv": "9947683bcba47394558adbcea9aa894f5f0d693bcf2dd66ab911961baf95757d",
+    "Raiders/special.csv": "0cc849e75d09134c03ee714bc6ec482d58853eeed8c9f916bde1567da26dc4ff",
+    "Rams/defense.csv": "0dede4fc175cc0df245bf371e4e0f218329baa6b400aa063cc13ee252fe85aba",
+    "Rams/offense.csv": "db4081d9f0f781d0c4f36fd564a92531cf0fcdf450922d85d5d760692a3758f9",
+    "Rams/special.csv": "bef813fdc355dcd83e90779dac37e51b711398fc45cf8e9062bca8129526b736",
+    "Ravens/defense.csv": "24fab48d81b1b51767c6b12247434754096a4d9df322a8945d8953d9d80b7619",
+    "Ravens/offense.csv": "d966e0b339675a23df4e51eac9c54340a17348ece331cc42844852f523739afc",
+    "Ravens/special.csv": "9b38c7b263a47739bff67c29bd110795311c2f3c5898362fa25e68d870084a12",
+    "Saints/defense.csv": "3c2a1b128437496126df17ff8db0dc881e1781ddc580f4b57fe1849307493c29",
+    "Saints/offense.csv": "b73bd4d1efd7049eb1b0d54fe4f505f0d2ef53feb11f04ab35c402d9689fd681",
+    "Saints/special.csv": "2906af24db2ebaa0955a44f6a618b1a83fb540a1e3b0bb691475c07c151745eb",
+    "Seahawks/defense.csv": "650f45d91397da01b20d67320ac1f9a7079b60ff66e3e648b9281e90b30674a4",
+    "Seahawks/offense.csv": "52669a66126158679143fb6cd4dce6562bdfbc3736ee0c77aac21f1e7cef27d0",
+    "Seahawks/special.csv": "175ae88a3f151e9f62f75d16d34e91b7fdf4cab3d9e596d534b438b20d7f73bb",
+    "Steelers/defense.csv": "18692bf146180db6db95b67ce092772e49f2729afd324b763aab30de07acff2f",
+    "Steelers/offense.csv": "6f8b6c3b0391dabe9dd684f42c9e3feb371a689c5e9a90a6820a9215f9d1ae49",
+    "Steelers/special.csv": "98ee426014a3c699a84f0e1628cc381a52f246e9dbaecf575e416eb96365bf3e",
+    "Texans/defense.csv": "d273c776ea1ca819607c9c90867d4dd2d56e5c7686954a944d94bea0ef450aba",
+    "Texans/offense.csv": "3477219c4a836f284297ddc94c2ae54dc57197c7146644af0d0d38ce8c291130",
+    "Texans/special.csv": "499711ad373db9e2f634c0dda43da7114f589e769546e33435ffaf3392cad0fc",
+    "Titans/defense.csv": "a0987392a21b49c78985822b302769618b160860a21ca0ba606ac5256354cd0e",
+    "Titans/offense.csv": "4d26d560313625437cddfed77f0a3b6a61082e002e5facd0ac5fefd8e94ec298",
+    "Titans/special.csv": "b923384a4841682a31ecdbaed8aa9335269f41b66ec62671b9f10c00ffc5d4cc",
+    "Vikings/defense.csv": "125916d05a9d888dc48dfc6efb3ec0b6aa5fd43c7949052ce22ab6cb4ac39be3",
+    "Vikings/offense.csv": "ce035ea95fa0e8964616955fc14b359a360ef8c746073bc1731e781440380dc0",
+    "Vikings/special.csv": "fed77a5173e7eca1c42917ab13903cde4d7bd4165044fb0a7d7fcc2c3c9d0ab5"
+  },
+  "games": 272,
+  "generation_manifest_sha256": "1ebe4baafbfbd5826eb7af3ad23071dabfcb240d087575ebe7fab8ad2ddd48b0",
+  "generation_profile": {
+    "pass_completion_adjustment": 0.02,
+    "pass_interception_adjustment": -0.06,
+    "pass_pressure_adjustment": -0.02,
+    "pass_yard_multiplier": 1.3,
+    "run_yard_multiplier": 1.0
+  },
+  "league": {
+    "counts": {
+      "completions": 11629,
+      "field_goal_attempts": 1115,
+      "field_goals_made": 937,
+      "interceptions": 387,
+      "pass_attempts": 17811,
+      "passing_yards": 127024,
+      "rushing_attempts": 14687,
+      "rushing_yards": 65174,
+      "sacks": 1314
+    },
+    "rates": {
+      "completion_rate": 0.6529111223401269,
+      "interception_rate": 0.021728145528044467,
+      "rushing_yards_per_attempt": 4.437529788248111,
+      "sack_rate": 0.06870588235294117,
+      "yards_per_pass_attempt": 7.131772500140363
+    }
+  },
+  "limitations": [
+    "Tolerances are the existing declared chart-calibration tolerances, not chosen from current audit results.",
+    "League tolerances do not establish team-level accuracy, scoring, pace, or policy-independent fit.",
+    "Source hashes identify locally reviewed normalized inputs; they do not independently verify upstream accuracy."
+  ],
+  "schedule": [
+    {
+      "away": "Ravens",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Packers",
+      "home": "Eagles"
+    },
+    {
+      "away": "Steelers",
+      "home": "Falcons"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Bills"
+    },
+    {
+      "away": "Titans",
+      "home": "Bears"
+    },
+    {
+      "away": "Patriots",
+      "home": "Bengals"
+    },
+    {
+      "away": "Texans",
+      "home": "Colts"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Panthers",
+      "home": "Saints"
+    },
+    {
+      "away": "Vikings",
+      "home": "Giants"
+    },
+    {
+      "away": "Raiders",
+      "home": "Chargers"
+    },
+    {
+      "away": "Broncos",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Browns"
+    },
+    {
+      "away": "Commanders",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Rams",
+      "home": "Lions"
+    },
+    {
+      "away": "Jets",
+      "home": "49ers"
+    },
+    {
+      "away": "Bills",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Raiders",
+      "home": "Ravens"
+    },
+    {
+      "away": "Chargers",
+      "home": "Panthers"
+    },
+    {
+      "away": "Saints",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Lions"
+    },
+    {
+      "away": "Colts",
+      "home": "Packers"
+    },
+    {
+      "away": "Browns",
+      "home": "Jaguars"
+    },
+    {
+      "away": "49ers",
+      "home": "Vikings"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Patriots"
+    },
+    {
+      "away": "Jets",
+      "home": "Titans"
+    },
+    {
+      "away": "Giants",
+      "home": "Commanders"
+    },
+    {
+      "away": "Rams",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Steelers",
+      "home": "Broncos"
+    },
+    {
+      "away": "Bengals",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Bears",
+      "home": "Texans"
+    },
+    {
+      "away": "Falcons",
+      "home": "Eagles"
+    },
+    {
+      "away": "Patriots",
+      "home": "Jets"
+    },
+    {
+      "away": "Giants",
+      "home": "Browns"
+    },
+    {
+      "away": "Bears",
+      "home": "Colts"
+    },
+    {
+      "away": "Texans",
+      "home": "Vikings"
+    },
+    {
+      "away": "Eagles",
+      "home": "Saints"
+    },
+    {
+      "away": "Chargers",
+      "home": "Steelers"
+    },
+    {
+      "away": "Broncos",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Packers",
+      "home": "Titans"
+    },
+    {
+      "away": "Panthers",
+      "home": "Raiders"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Lions",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Ravens",
+      "home": "Cowboys"
+    },
+    {
+      "away": "49ers",
+      "home": "Rams"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Falcons"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Bills"
+    },
+    {
+      "away": "Commanders",
+      "home": "Bengals"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Giants"
+    },
+    {
+      "away": "Saints",
+      "home": "Falcons"
+    },
+    {
+      "away": "Bengals",
+      "home": "Panthers"
+    },
+    {
+      "away": "Rams",
+      "home": "Bears"
+    },
+    {
+      "away": "Vikings",
+      "home": "Packers"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Texans"
+    },
+    {
+      "away": "Steelers",
+      "home": "Colts"
+    },
+    {
+      "away": "Broncos",
+      "home": "Jets"
+    },
+    {
+      "away": "Eagles",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Commanders",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Patriots",
+      "home": "49ers"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Chargers"
+    },
+    {
+      "away": "Browns",
+      "home": "Raiders"
+    },
+    {
+      "away": "Bills",
+      "home": "Ravens"
+    },
+    {
+      "away": "Titans",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Lions"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Falcons"
+    },
+    {
+      "away": "Jets",
+      "home": "Vikings"
+    },
+    {
+      "away": "Panthers",
+      "home": "Bears"
+    },
+    {
+      "away": "Ravens",
+      "home": "Bengals"
+    },
+    {
+      "away": "Bills",
+      "home": "Texans"
+    },
+    {
+      "away": "Colts",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Patriots"
+    },
+    {
+      "away": "Browns",
+      "home": "Commanders"
+    },
+    {
+      "away": "Raiders",
+      "home": "Broncos"
+    },
+    {
+      "away": "Cardinals",
+      "home": "49ers"
+    },
+    {
+      "away": "Packers",
+      "home": "Rams"
+    },
+    {
+      "away": "Giants",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Steelers"
+    },
+    {
+      "away": "Saints",
+      "home": "Chiefs"
+    },
+    {
+      "away": "49ers",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Bears"
+    },
+    {
+      "away": "Commanders",
+      "home": "Ravens"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Packers"
+    },
+    {
+      "away": "Texans",
+      "home": "Patriots"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Saints"
+    },
+    {
+      "away": "Browns",
+      "home": "Eagles"
+    },
+    {
+      "away": "Colts",
+      "home": "Titans"
+    },
+    {
+      "away": "Chargers",
+      "home": "Broncos"
+    },
+    {
+      "away": "Steelers",
+      "home": "Raiders"
+    },
+    {
+      "away": "Falcons",
+      "home": "Panthers"
+    },
+    {
+      "away": "Lions",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Bengals",
+      "home": "Giants"
+    },
+    {
+      "away": "Bills",
+      "home": "Jets"
+    },
+    {
+      "away": "Broncos",
+      "home": "Saints"
+    },
+    {
+      "away": "Patriots",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Falcons"
+    },
+    {
+      "away": "Titans",
+      "home": "Bills"
+    },
+    {
+      "away": "Bengals",
+      "home": "Browns"
+    },
+    {
+      "away": "Texans",
+      "home": "Packers"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Colts"
+    },
+    {
+      "away": "Lions",
+      "home": "Vikings"
+    },
+    {
+      "away": "Eagles",
+      "home": "Giants"
+    },
+    {
+      "away": "Raiders",
+      "home": "Rams"
+    },
+    {
+      "away": "Panthers",
+      "home": "Commanders"
+    },
+    {
+      "away": "Chiefs",
+      "home": "49ers"
+    },
+    {
+      "away": "Jets",
+      "home": "Steelers"
+    },
+    {
+      "away": "Ravens",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Chargers",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Vikings",
+      "home": "Rams"
+    },
+    {
+      "away": "Eagles",
+      "home": "Bengals"
+    },
+    {
+      "away": "Ravens",
+      "home": "Browns"
+    },
+    {
+      "away": "Titans",
+      "home": "Lions"
+    },
+    {
+      "away": "Colts",
+      "home": "Texans"
+    },
+    {
+      "away": "Packers",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Jets",
+      "home": "Patriots"
+    },
+    {
+      "away": "Falcons",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Saints",
+      "home": "Chargers"
+    },
+    {
+      "away": "Bills",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Panthers",
+      "home": "Broncos"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Raiders"
+    },
+    {
+      "away": "Bears",
+      "home": "Commanders"
+    },
+    {
+      "away": "Cowboys",
+      "home": "49ers"
+    },
+    {
+      "away": "Giants",
+      "home": "Steelers"
+    },
+    {
+      "away": "Texans",
+      "home": "Jets"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Falcons"
+    },
+    {
+      "away": "Broncos",
+      "home": "Ravens"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Bills"
+    },
+    {
+      "away": "Saints",
+      "home": "Panthers"
+    },
+    {
+      "away": "Raiders",
+      "home": "Bengals"
+    },
+    {
+      "away": "Chargers",
+      "home": "Browns"
+    },
+    {
+      "away": "Commanders",
+      "home": "Giants"
+    },
+    {
+      "away": "Patriots",
+      "home": "Titans"
+    },
+    {
+      "away": "Bears",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Eagles"
+    },
+    {
+      "away": "Lions",
+      "home": "Packers"
+    },
+    {
+      "away": "Rams",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Colts",
+      "home": "Vikings"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Bengals",
+      "home": "Ravens"
+    },
+    {
+      "away": "Giants",
+      "home": "Panthers"
+    },
+    {
+      "away": "Patriots",
+      "home": "Bears"
+    },
+    {
+      "away": "Bills",
+      "home": "Colts"
+    },
+    {
+      "away": "Vikings",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Broncos",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Falcons",
+      "home": "Saints"
+    },
+    {
+      "away": "49ers",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Steelers",
+      "home": "Commanders"
+    },
+    {
+      "away": "Titans",
+      "home": "Chargers"
+    },
+    {
+      "away": "Jets",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Eagles",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Lions",
+      "home": "Texans"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Rams"
+    },
+    {
+      "away": "Commanders",
+      "home": "Eagles"
+    },
+    {
+      "away": "Packers",
+      "home": "Bears"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Lions"
+    },
+    {
+      "away": "Raiders",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Rams",
+      "home": "Patriots"
+    },
+    {
+      "away": "Browns",
+      "home": "Saints"
+    },
+    {
+      "away": "Colts",
+      "home": "Jets"
+    },
+    {
+      "away": "Ravens",
+      "home": "Steelers"
+    },
+    {
+      "away": "Vikings",
+      "home": "Titans"
+    },
+    {
+      "away": "Falcons",
+      "home": "Broncos"
+    },
+    {
+      "away": "Seahawks",
+      "home": "49ers"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Bills"
+    },
+    {
+      "away": "Bengals",
+      "home": "Chargers"
+    },
+    {
+      "away": "Texans",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Steelers",
+      "home": "Browns"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Panthers"
+    },
+    {
+      "away": "Vikings",
+      "home": "Bears"
+    },
+    {
+      "away": "Titans",
+      "home": "Texans"
+    },
+    {
+      "away": "Lions",
+      "home": "Colts"
+    },
+    {
+      "away": "Patriots",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Giants"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Commanders"
+    },
+    {
+      "away": "Broncos",
+      "home": "Raiders"
+    },
+    {
+      "away": "49ers",
+      "home": "Packers"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Eagles",
+      "home": "Rams"
+    },
+    {
+      "away": "Ravens",
+      "home": "Chargers"
+    },
+    {
+      "away": "Bears",
+      "home": "Lions"
+    },
+    {
+      "away": "Giants",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Packers"
+    },
+    {
+      "away": "Raiders",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Chargers",
+      "home": "Falcons"
+    },
+    {
+      "away": "Steelers",
+      "home": "Bengals"
+    },
+    {
+      "away": "Texans",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Vikings"
+    },
+    {
+      "away": "Colts",
+      "home": "Patriots"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Jets"
+    },
+    {
+      "away": "Titans",
+      "home": "Commanders"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Panthers"
+    },
+    {
+      "away": "Rams",
+      "home": "Saints"
+    },
+    {
+      "away": "Eagles",
+      "home": "Ravens"
+    },
+    {
+      "away": "49ers",
+      "home": "Bills"
+    },
+    {
+      "away": "Browns",
+      "home": "Broncos"
+    },
+    {
+      "away": "Packers",
+      "home": "Lions"
+    },
+    {
+      "away": "Jets",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Falcons",
+      "home": "Vikings"
+    },
+    {
+      "away": "Saints",
+      "home": "Giants"
+    },
+    {
+      "away": "Panthers",
+      "home": "Eagles"
+    },
+    {
+      "away": "Browns",
+      "home": "Steelers"
+    },
+    {
+      "away": "Raiders",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Titans"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Bills",
+      "home": "Rams"
+    },
+    {
+      "away": "Bears",
+      "home": "49ers"
+    },
+    {
+      "away": "Chargers",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Bengals",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Rams",
+      "home": "49ers"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Panthers"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Browns"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Texans"
+    },
+    {
+      "away": "Jets",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Commanders",
+      "home": "Saints"
+    },
+    {
+      "away": "Ravens",
+      "home": "Giants"
+    },
+    {
+      "away": "Bengals",
+      "home": "Titans"
+    },
+    {
+      "away": "Patriots",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Colts",
+      "home": "Broncos"
+    },
+    {
+      "away": "Bills",
+      "home": "Lions"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Chargers"
+    },
+    {
+      "away": "Steelers",
+      "home": "Eagles"
+    },
+    {
+      "away": "Packers",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Bears",
+      "home": "Vikings"
+    },
+    {
+      "away": "Falcons",
+      "home": "Raiders"
+    },
+    {
+      "away": "Broncos",
+      "home": "Chargers"
+    },
+    {
+      "away": "Texans",
+      "home": "Chiefs"
+    },
+    {
+      "away": "Steelers",
+      "home": "Ravens"
+    },
+    {
+      "away": "Giants",
+      "home": "Falcons"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Panthers"
+    },
+    {
+      "away": "Lions",
+      "home": "Bears"
+    },
+    {
+      "away": "Browns",
+      "home": "Bengals"
+    },
+    {
+      "away": "Titans",
+      "home": "Colts"
+    },
+    {
+      "away": "Rams",
+      "home": "Jets"
+    },
+    {
+      "away": "Eagles",
+      "home": "Commanders"
+    },
+    {
+      "away": "Vikings",
+      "home": "Seahawks"
+    },
+    {
+      "away": "Patriots",
+      "home": "Bills"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Raiders"
+    },
+    {
+      "away": "49ers",
+      "home": "Dolphins"
+    },
+    {
+      "away": "Buccaneers",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Saints",
+      "home": "Packers"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Steelers"
+    },
+    {
+      "away": "Ravens",
+      "home": "Texans"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Bears"
+    },
+    {
+      "away": "Chargers",
+      "home": "Patriots"
+    },
+    {
+      "away": "Broncos",
+      "home": "Bengals"
+    },
+    {
+      "away": "Cardinals",
+      "home": "Rams"
+    },
+    {
+      "away": "Jets",
+      "home": "Bills"
+    },
+    {
+      "away": "Titans",
+      "home": "Jaguars"
+    },
+    {
+      "away": "Raiders",
+      "home": "Saints"
+    },
+    {
+      "away": "Colts",
+      "home": "Giants"
+    },
+    {
+      "away": "Cowboys",
+      "home": "Eagles"
+    },
+    {
+      "away": "Panthers",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Browns"
+    },
+    {
+      "away": "Packers",
+      "home": "Vikings"
+    },
+    {
+      "away": "Falcons",
+      "home": "Commanders"
+    },
+    {
+      "away": "Lions",
+      "home": "49ers"
+    },
+    {
+      "away": "Browns",
+      "home": "Ravens"
+    },
+    {
+      "away": "Bengals",
+      "home": "Steelers"
+    },
+    {
+      "away": "Panthers",
+      "home": "Falcons"
+    },
+    {
+      "away": "Commanders",
+      "home": "Cowboys"
+    },
+    {
+      "away": "Bears",
+      "home": "Packers"
+    },
+    {
+      "away": "Jaguars",
+      "home": "Colts"
+    },
+    {
+      "away": "Bills",
+      "home": "Patriots"
+    },
+    {
+      "away": "Giants",
+      "home": "Eagles"
+    },
+    {
+      "away": "Saints",
+      "home": "Buccaneers"
+    },
+    {
+      "away": "Texans",
+      "home": "Titans"
+    },
+    {
+      "away": "49ers",
+      "home": "Cardinals"
+    },
+    {
+      "away": "Chiefs",
+      "home": "Broncos"
+    },
+    {
+      "away": "Seahawks",
+      "home": "Rams"
+    },
+    {
+      "away": "Chargers",
+      "home": "Raiders"
+    },
+    {
+      "away": "Dolphins",
+      "home": "Jets"
+    },
+    {
+      "away": "Vikings",
+      "home": "Lions"
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Public season aggregate statistics and regular-season schedule; no original game charts or raw play-by-play included.",
+  "season": 2024,
+  "source_hashes": {
+    ".ai-audits/chart-generation/2024-source/actual-games.csv": "c122084e1831e764a6bf0f3b38dab4a2257865a952154476aeb796c3b033d74c",
+    ".ai-audits/chart-generation/2024-stats/49ers.json": "5dda9209475f6ea96c27e14644b551c270e47f351303131d99ab45c73a5637e0",
+    ".ai-audits/chart-generation/2024-stats/Bears.json": "fae52b46fd941f62ebffe906f88d48ca4d2fc0fb6a62a7e9b725f5ed4343860f",
+    ".ai-audits/chart-generation/2024-stats/Bengals.json": "63f9f8e9446605178be705162d72d1b50e3fd8d22597ce97581b8c000a73645b",
+    ".ai-audits/chart-generation/2024-stats/Bills.json": "1d84d7311360eb092b6fd5b81dc9181fc4420e84f92b96c287be45b0f2c6e6ae",
+    ".ai-audits/chart-generation/2024-stats/Broncos.json": "1111bb48cc4d2b494617e5e510ca02b9e2a03e04c1a99388401800809be6535f",
+    ".ai-audits/chart-generation/2024-stats/Browns.json": "a6b98871d5e8d0f7c647490f6bf83bdc887f5d87468a4fb197fec133dccfa247",
+    ".ai-audits/chart-generation/2024-stats/Buccaneers.json": "8f013e339eec8ae5eb5824a062cab8e3bb29bebaf932fbcddb0b4de9145e8645",
+    ".ai-audits/chart-generation/2024-stats/Cardinals.json": "15d2d535f6e71826ec03caabdfc8608a0d00483cb7bf028924a0de034cf92638",
+    ".ai-audits/chart-generation/2024-stats/Chargers.json": "ebbb1b7a676fc8fcd01e54db3ae88cdbad8c1047dfd84b4cf77f59b7f0ed8014",
+    ".ai-audits/chart-generation/2024-stats/Chiefs.json": "aa85d1a8dc899722909a06dfe694c2e3545abf319c45b86c7b2a0dd41afec628",
+    ".ai-audits/chart-generation/2024-stats/Colts.json": "0bfd7b6cecb7288b4433e9d68713ffb67330b2568d81744dfc346edf319b2cd9",
+    ".ai-audits/chart-generation/2024-stats/Commanders.json": "b7203eea6e252ad98f4c32ae6c18c269863a82d151636fabcdae9eeb5986dd8f",
+    ".ai-audits/chart-generation/2024-stats/Cowboys.json": "f154e5d8d1e82e41938328eeaac1b67d4d13d14d6965949c5c302afc9f78959b",
+    ".ai-audits/chart-generation/2024-stats/Dolphins.json": "2cb94e4711de6788f95898d88d67ffd55682c3771da700ded0d746e961242d95",
+    ".ai-audits/chart-generation/2024-stats/Eagles.json": "524bc43269ce6468bcd32f5c522fcee86817af6c402a277c6b4cb5372ee1e720",
+    ".ai-audits/chart-generation/2024-stats/Falcons.json": "a88a8162cbbe94033833e1f846f736483884335b998674d46be9ba026f7309d9",
+    ".ai-audits/chart-generation/2024-stats/Giants.json": "82a8fb733a2a6990dd07d1edcc3fcbe4c36378c02c5751d9ab9760ae6d8ae907",
+    ".ai-audits/chart-generation/2024-stats/Jaguars.json": "e3bb79414cf7f7a48275a5c8fabf809c709a122f8e476e6547049c0ee9a9e894",
+    ".ai-audits/chart-generation/2024-stats/Jets.json": "58eefa486d8c2d90a044de337e565f65cac005c0d5313873c86716f137207db3",
+    ".ai-audits/chart-generation/2024-stats/Lions.json": "0d96025b77dbe7666d2446c62ed8a02e399547fdcde3996b362e41d0fd83e3d5",
+    ".ai-audits/chart-generation/2024-stats/Packers.json": "6bd58aa0a560e9fca1e8633e383161d71880b67e71241362729a3d7fffa126cb",
+    ".ai-audits/chart-generation/2024-stats/Panthers.json": "68dd7d1efde1db10cd2005f575c34a6749cc28a2c3f2d14d1700c4882dcbaa32",
+    ".ai-audits/chart-generation/2024-stats/Patriots.json": "fd3b2000aff342bdf43379a4d485708d7989cf84c6ae4676dea106389ab01508",
+    ".ai-audits/chart-generation/2024-stats/Raiders.json": "fe51b90728ce37471fa24cb739a4a45ab528d5b25047d7d62dda705228795bdb",
+    ".ai-audits/chart-generation/2024-stats/Rams.json": "427818f432c7779f1d8cd62866fad88618dcd7d989b0b2a42a08540f52e4686f",
+    ".ai-audits/chart-generation/2024-stats/Ravens.json": "4125bb6eb3b5b54d2f7792801e808e07a9b2b3de22841855270d0dfd0b9ffe93",
+    ".ai-audits/chart-generation/2024-stats/Saints.json": "9b4b7684efd1da5c0bbcc6c3d8b60e54a563ef363ac70f04b143806a65697b9d",
+    ".ai-audits/chart-generation/2024-stats/Seahawks.json": "df33f3f343836798781171eb5296acf7ce156a31daf25dcfe4a8db6e94e72714",
+    ".ai-audits/chart-generation/2024-stats/Steelers.json": "7216544ddb31624fcdf668f7e7eb99c77a777d2905fe122ca6cc1393ca24fc5e",
+    ".ai-audits/chart-generation/2024-stats/Texans.json": "d473b6b7805247ce88fd0882d020a8d236fa25fcf34cf848f07df98d187750e6",
+    ".ai-audits/chart-generation/2024-stats/Titans.json": "2a21e69c198829d1abbe35424b6893f5ccaf100fc3cc317b0a3e66d86295e063",
+    ".ai-audits/chart-generation/2024-stats/Vikings.json": "2eea91c89fc4698bd63884157f4b9a93035eb8fe4d4d126444b454fc2ef44e90",
+    "seasons/2024/generation-manifest.json": "1ebe4baafbfbd5826eb7af3ad23071dabfcb240d087575ebe7fab8ad2ddd48b0"
+  },
+  "targets": {
+    "completion_rate": {
+      "tolerance": 0.015,
+      "value": 0.6529111223401269
+    },
+    "interception_rate": {
+      "tolerance": 0.01,
+      "value": 0.021728145528044467
+    },
+    "rushing_yards_per_attempt": {
+      "tolerance": 0.15,
+      "value": 4.437529788248111
+    },
+    "sack_rate": {
+      "tolerance": 0.01,
+      "value": 0.06870588235294117
+    },
+    "yards_per_pass_attempt": {
+      "tolerance": 0.25,
+      "value": 7.131772500140363
+    }
+  },
+  "teams": {
+    "49ers": {
+      "counts": {
+        "completions": 349,
+        "field_goal_attempts": 43,
+        "field_goals_made": 33,
+        "interceptions": 16,
+        "pass_attempts": 533,
+        "passing_yards": 4424,
+        "rushing_attempts": 457,
+        "rushing_yards": 2163,
+        "sacks": 36
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6547842401500938,
+        "interception_rate": 0.0300187617260788,
+        "rushing_yards_per_attempt": 4.733041575492341,
+        "sack_rate": 0.0632688927943761,
+        "yards_per_pass_attempt": 8.300187617260788
+      }
+    },
+    "Bears": {
+      "counts": {
+        "completions": 353,
+        "field_goal_attempts": 25,
+        "field_goals_made": 21,
+        "interceptions": 7,
+        "pass_attempts": 566,
+        "passing_yards": 3552,
+        "rushing_attempts": 431,
+        "rushing_yards": 1734,
+        "sacks": 68
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6236749116607774,
+        "interception_rate": 0.012367491166077738,
+        "rushing_yards_per_attempt": 4.023201856148492,
+        "sack_rate": 0.10725552050473186,
+        "yards_per_pass_attempt": 6.275618374558304
+      }
+    },
+    "Bengals": {
+      "counts": {
+        "completions": 460,
+        "field_goal_attempts": 33,
+        "field_goals_made": 25,
+        "interceptions": 9,
+        "pass_attempts": 652,
+        "passing_yards": 4918,
+        "rushing_attempts": 380,
+        "rushing_yards": 1574,
+        "sacks": 48
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.7055214723926381,
+        "interception_rate": 0.013803680981595092,
+        "rushing_yards_per_attempt": 4.1421052631578945,
+        "sack_rate": 0.06857142857142857,
+        "yards_per_pass_attempt": 7.542944785276074
+      }
+    },
+    "Bills": {
+      "counts": {
+        "completions": 329,
+        "field_goal_attempts": 29,
+        "field_goals_made": 24,
+        "interceptions": 6,
+        "pass_attempts": 520,
+        "passing_yards": 3938,
+        "rushing_attempts": 491,
+        "rushing_yards": 2230,
+        "sacks": 14
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6326923076923077,
+        "interception_rate": 0.011538461538461539,
+        "rushing_yards_per_attempt": 4.541751527494909,
+        "sack_rate": 0.026217228464419477,
+        "yards_per_pass_attempt": 7.573076923076923
+      }
+    },
+    "Broncos": {
+      "counts": {
+        "completions": 379,
+        "field_goal_attempts": 34,
+        "field_goals_made": 31,
+        "interceptions": 12,
+        "pass_attempts": 570,
+        "passing_yards": 3808,
+        "rushing_attempts": 461,
+        "rushing_yards": 1908,
+        "sacks": 24
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6649122807017543,
+        "interception_rate": 0.021052631578947368,
+        "rushing_yards_per_attempt": 4.13882863340564,
+        "sack_rate": 0.04040404040404041,
+        "yards_per_pass_attempt": 6.680701754385965
+      }
+    },
+    "Browns": {
+      "counts": {
+        "completions": 395,
+        "field_goal_attempts": 27,
+        "field_goals_made": 18,
+        "interceptions": 23,
+        "pass_attempts": 661,
+        "passing_yards": 3879,
+        "rushing_attempts": 391,
+        "rushing_yards": 1608,
+        "sacks": 66
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.5975794251134644,
+        "interception_rate": 0.03479576399394856,
+        "rushing_yards_per_attempt": 4.112531969309463,
+        "sack_rate": 0.0907840440165062,
+        "yards_per_pass_attempt": 5.868381240544629
+      }
+    },
+    "Buccaneers": {
+      "counts": {
+        "completions": 408,
+        "field_goal_attempts": 32,
+        "field_goals_made": 30,
+        "interceptions": 16,
+        "pass_attempts": 571,
+        "passing_yards": 4505,
+        "rushing_attempts": 483,
+        "rushing_yards": 2536,
+        "sacks": 40
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.7145359019264448,
+        "interception_rate": 0.028021015761821366,
+        "rushing_yards_per_attempt": 5.250517598343685,
+        "sack_rate": 0.06546644844517185,
+        "yards_per_pass_attempt": 7.889667250437828
+      }
+    },
+    "Cardinals": {
+      "counts": {
+        "completions": 374,
+        "field_goal_attempts": 38,
+        "field_goals_made": 34,
+        "interceptions": 11,
+        "pass_attempts": 543,
+        "passing_yards": 3859,
+        "rushing_attempts": 463,
+        "rushing_yards": 2451,
+        "sacks": 30
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6887661141804788,
+        "interception_rate": 0.020257826887661142,
+        "rushing_yards_per_attempt": 5.293736501079914,
+        "sack_rate": 0.05235602094240838,
+        "yards_per_pass_attempt": 7.106813996316759
+      }
+    },
+    "Chargers": {
+      "counts": {
+        "completions": 336,
+        "field_goal_attempts": 42,
+        "field_goals_made": 39,
+        "interceptions": 3,
+        "pass_attempts": 510,
+        "passing_yards": 3901,
+        "rushing_attempts": 463,
+        "rushing_yards": 1882,
+        "sacks": 44
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6588235294117647,
+        "interception_rate": 0.0058823529411764705,
+        "rushing_yards_per_attempt": 4.064794816414687,
+        "sack_rate": 0.07942238267148015,
+        "yards_per_pass_attempt": 7.649019607843138
+      }
+    },
+    "Chiefs": {
+      "counts": {
+        "completions": 404,
+        "field_goal_attempts": 37,
+        "field_goals_made": 32,
+        "interceptions": 11,
+        "pass_attempts": 600,
+        "passing_yards": 4046,
+        "rushing_attempts": 450,
+        "rushing_yards": 1790,
+        "sacks": 41
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6733333333333333,
+        "interception_rate": 0.018333333333333333,
+        "rushing_yards_per_attempt": 3.977777777777778,
+        "sack_rate": 0.06396255850234009,
+        "yards_per_pass_attempt": 6.743333333333333
+      }
+    },
+    "Colts": {
+      "counts": {
+        "completions": 289,
+        "field_goal_attempts": 37,
+        "field_goals_made": 31,
+        "interceptions": 19,
+        "pass_attempts": 513,
+        "passing_yards": 3599,
+        "rushing_attempts": 496,
+        "rushing_yards": 2331,
+        "sacks": 32
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.5633528265107213,
+        "interception_rate": 0.037037037037037035,
+        "rushing_yards_per_attempt": 4.699596774193548,
+        "sack_rate": 0.05871559633027523,
+        "yards_per_pass_attempt": 7.015594541910332
+      }
+    },
+    "Commanders": {
+      "counts": {
+        "completions": 365,
+        "field_goal_attempts": 42,
+        "field_goals_made": 34,
+        "interceptions": 9,
+        "pass_attempts": 525,
+        "passing_yards": 3932,
+        "rushing_attempts": 526,
+        "rushing_yards": 2619,
+        "sacks": 50
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6952380952380952,
+        "interception_rate": 0.017142857142857144,
+        "rushing_yards_per_attempt": 4.979087452471483,
+        "sack_rate": 0.08695652173913043,
+        "yards_per_pass_attempt": 7.48952380952381
+      }
+    },
+    "Cowboys": {
+      "counts": {
+        "completions": 398,
+        "field_goal_attempts": 47,
+        "field_goals_made": 40,
+        "interceptions": 14,
+        "pass_attempts": 637,
+        "passing_yards": 4092,
+        "rushing_attempts": 429,
+        "rushing_yards": 1705,
+        "sacks": 38
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6248037676609105,
+        "interception_rate": 0.02197802197802198,
+        "rushing_yards_per_attempt": 3.9743589743589745,
+        "sack_rate": 0.056296296296296296,
+        "yards_per_pass_attempt": 6.423861852433281
+      }
+    },
+    "Dolphins": {
+      "counts": {
+        "completions": 413,
+        "field_goal_attempts": 41,
+        "field_goals_made": 37,
+        "interceptions": 10,
+        "pass_attempts": 591,
+        "passing_yards": 4036,
+        "rushing_attempts": 448,
+        "rushing_yards": 1795,
+        "sacks": 43
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6988155668358714,
+        "interception_rate": 0.01692047377326565,
+        "rushing_yards_per_attempt": 4.006696428571429,
+        "sack_rate": 0.06782334384858044,
+        "yards_per_pass_attempt": 6.829103214890017
+      }
+    },
+    "Eagles": {
+      "counts": {
+        "completions": 303,
+        "field_goal_attempts": 36,
+        "field_goals_made": 28,
+        "interceptions": 6,
+        "pass_attempts": 448,
+        "passing_yards": 3517,
+        "rushing_attempts": 621,
+        "rushing_yards": 3048,
+        "sacks": 45
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6763392857142857,
+        "interception_rate": 0.013392857142857142,
+        "rushing_yards_per_attempt": 4.908212560386473,
+        "sack_rate": 0.09127789046653144,
+        "yards_per_pass_attempt": 7.850446428571429
+      }
+    },
+    "Falcons": {
+      "counts": {
+        "completions": 364,
+        "field_goal_attempts": 41,
+        "field_goals_made": 29,
+        "interceptions": 19,
+        "pass_attempts": 559,
+        "passing_yards": 4283,
+        "rushing_attempts": 495,
+        "rushing_yards": 2219,
+        "sacks": 32
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6511627906976745,
+        "interception_rate": 0.03398926654740608,
+        "rushing_yards_per_attempt": 4.482828282828283,
+        "sack_rate": 0.05414551607445008,
+        "yards_per_pass_attempt": 7.661896243291592
+      }
+    },
+    "Giants": {
+      "counts": {
+        "completions": 366,
+        "field_goal_attempts": 28,
+        "field_goals_made": 23,
+        "interceptions": 13,
+        "pass_attempts": 591,
+        "passing_yards": 3521,
+        "rushing_attempts": 424,
+        "rushing_yards": 1783,
+        "sacks": 48
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6192893401015228,
+        "interception_rate": 0.021996615905245348,
+        "rushing_yards_per_attempt": 4.205188679245283,
+        "sack_rate": 0.07511737089201878,
+        "yards_per_pass_attempt": 5.957698815566836
+      }
+    },
+    "Jaguars": {
+      "counts": {
+        "completions": 343,
+        "field_goal_attempts": 29,
+        "field_goals_made": 27,
+        "interceptions": 15,
+        "pass_attempts": 546,
+        "passing_yards": 3717,
+        "rushing_attempts": 414,
+        "rushing_yards": 1729,
+        "sacks": 32
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6282051282051282,
+        "interception_rate": 0.027472527472527472,
+        "rushing_yards_per_attempt": 4.176328502415459,
+        "sack_rate": 0.05536332179930796,
+        "yards_per_pass_attempt": 6.8076923076923075
+      }
+    },
+    "Jets": {
+      "counts": {
+        "completions": 385,
+        "field_goal_attempts": 28,
+        "field_goals_made": 20,
+        "interceptions": 11,
+        "pass_attempts": 607,
+        "passing_yards": 4016,
+        "rushing_attempts": 363,
+        "rushing_yards": 1561,
+        "sacks": 40
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6342668863261944,
+        "interception_rate": 0.018121911037891267,
+        "rushing_yards_per_attempt": 4.300275482093664,
+        "sack_rate": 0.061823802163833076,
+        "yards_per_pass_attempt": 6.616144975288303
+      }
+    },
+    "Lions": {
+      "counts": {
+        "completions": 399,
+        "field_goal_attempts": 29,
+        "field_goals_made": 26,
+        "interceptions": 12,
+        "pass_attempts": 551,
+        "passing_yards": 4718,
+        "rushing_attempts": 534,
+        "rushing_yards": 2488,
+        "sacks": 33
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.7241379310344828,
+        "interception_rate": 0.021778584392014518,
+        "rushing_yards_per_attempt": 4.659176029962547,
+        "sack_rate": 0.05650684931506849,
+        "yards_per_pass_attempt": 8.562613430127042
+      }
+    },
+    "Packers": {
+      "counts": {
+        "completions": 308,
+        "field_goal_attempts": 38,
+        "field_goals_made": 32,
+        "interceptions": 11,
+        "pass_attempts": 479,
+        "passing_yards": 3939,
+        "rushing_attempts": 526,
+        "rushing_yards": 2496,
+        "sacks": 22
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6430062630480167,
+        "interception_rate": 0.022964509394572025,
+        "rushing_yards_per_attempt": 4.745247148288973,
+        "sack_rate": 0.043912175648702596,
+        "yards_per_pass_attempt": 8.22338204592902
+      }
+    },
+    "Panthers": {
+      "counts": {
+        "completions": 341,
+        "field_goal_attempts": 26,
+        "field_goals_made": 22,
+        "interceptions": 15,
+        "pass_attempts": 547,
+        "passing_yards": 3411,
+        "rushing_attempts": 410,
+        "rushing_yards": 1878,
+        "sacks": 36
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.623400365630713,
+        "interception_rate": 0.027422303473491772,
+        "rushing_yards_per_attempt": 4.580487804878048,
+        "sack_rate": 0.06174957118353345,
+        "yards_per_pass_attempt": 6.235831809872029
+      }
+    },
+    "Patriots": {
+      "counts": {
+        "completions": 342,
+        "field_goal_attempts": 33,
+        "field_goals_made": 26,
+        "interceptions": 11,
+        "pass_attempts": 529,
+        "passing_yards": 3343,
+        "rushing_attempts": 446,
+        "rushing_yards": 1969,
+        "sacks": 52
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6465028355387523,
+        "interception_rate": 0.020793950850661626,
+        "rushing_yards_per_attempt": 4.414798206278027,
+        "sack_rate": 0.08950086058519793,
+        "yards_per_pass_attempt": 6.319470699432892
+      }
+    },
+    "Raiders": {
+      "counts": {
+        "completions": 410,
+        "field_goal_attempts": 40,
+        "field_goals_made": 34,
+        "interceptions": 16,
+        "pass_attempts": 635,
+        "passing_yards": 4117,
+        "rushing_attempts": 380,
+        "rushing_yards": 1357,
+        "sacks": 50
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6456692913385826,
+        "interception_rate": 0.025196850393700787,
+        "rushing_yards_per_attempt": 3.5710526315789473,
+        "sack_rate": 0.072992700729927,
+        "yards_per_pass_attempt": 6.4834645669291335
+      }
+    },
+    "Rams": {
+      "counts": {
+        "completions": 367,
+        "field_goal_attempts": 34,
+        "field_goals_made": 29,
+        "interceptions": 9,
+        "pass_attempts": 559,
+        "passing_yards": 4096,
+        "rushing_attempts": 450,
+        "rushing_yards": 1765,
+        "sacks": 31
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6565295169946332,
+        "interception_rate": 0.016100178890876567,
+        "rushing_yards_per_attempt": 3.922222222222222,
+        "sack_rate": 0.05254237288135593,
+        "yards_per_pass_attempt": 7.32737030411449
+      }
+    },
+    "Ravens": {
+      "counts": {
+        "completions": 318,
+        "field_goal_attempts": 30,
+        "field_goals_made": 22,
+        "interceptions": 4,
+        "pass_attempts": 477,
+        "passing_yards": 4189,
+        "rushing_attempts": 554,
+        "rushing_yards": 3189,
+        "sacks": 24
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6666666666666666,
+        "interception_rate": 0.008385744234800839,
+        "rushing_yards_per_attempt": 5.756317689530686,
+        "sack_rate": 0.04790419161676647,
+        "yards_per_pass_attempt": 8.781970649895179
+      }
+    },
+    "Saints": {
+      "counts": {
+        "completions": 340,
+        "field_goal_attempts": 31,
+        "field_goals_made": 27,
+        "interceptions": 12,
+        "pass_attempts": 551,
+        "passing_yards": 3730,
+        "rushing_attempts": 444,
+        "rushing_yards": 1954,
+        "sacks": 37
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.617059891107078,
+        "interception_rate": 0.021778584392014518,
+        "rushing_yards_per_attempt": 4.400900900900901,
+        "sack_rate": 0.06292517006802721,
+        "yards_per_pass_attempt": 6.769509981851179
+      }
+    },
+    "Seahawks": {
+      "counts": {
+        "completions": 413,
+        "field_goal_attempts": 30,
+        "field_goals_made": 26,
+        "interceptions": 16,
+        "pass_attempts": 593,
+        "passing_yards": 4379,
+        "rushing_attempts": 383,
+        "rushing_yards": 1627,
+        "sacks": 54
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6964586846543002,
+        "interception_rate": 0.026981450252951095,
+        "rushing_yards_per_attempt": 4.248041775456919,
+        "sack_rate": 0.08346213292117466,
+        "yards_per_pass_attempt": 7.3844856661045535
+      }
+    },
+    "Steelers": {
+      "counts": {
+        "completions": 321,
+        "field_goal_attempts": 44,
+        "field_goals_made": 41,
+        "interceptions": 6,
+        "pass_attempts": 499,
+        "passing_yards": 3607,
+        "rushing_attempts": 533,
+        "rushing_yards": 2166,
+        "sacks": 49
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6432865731462926,
+        "interception_rate": 0.012024048096192385,
+        "rushing_yards_per_attempt": 4.063789868667917,
+        "sack_rate": 0.08941605839416059,
+        "yards_per_pass_attempt": 7.228456913827655
+      }
+    },
+    "Texans": {
+      "counts": {
+        "completions": 357,
+        "field_goal_attempts": 42,
+        "field_goals_made": 36,
+        "interceptions": 12,
+        "pass_attempts": 570,
+        "passing_yards": 3952,
+        "rushing_attempts": 434,
+        "rushing_yards": 1909,
+        "sacks": 54
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6263157894736842,
+        "interception_rate": 0.021052631578947368,
+        "rushing_yards_per_attempt": 4.3986175115207375,
+        "sack_rate": 0.08653846153846154,
+        "yards_per_pass_attempt": 6.933333333333334
+      }
+    },
+    "Titans": {
+      "counts": {
+        "completions": 336,
+        "field_goal_attempts": 27,
+        "field_goals_made": 25,
+        "interceptions": 21,
+        "pass_attempts": 530,
+        "passing_yards": 3621,
+        "rushing_attempts": 450,
+        "rushing_yards": 1855,
+        "sacks": 52
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6339622641509434,
+        "interception_rate": 0.03962264150943396,
+        "rushing_yards_per_attempt": 4.122222222222222,
+        "sack_rate": 0.08934707903780069,
+        "yards_per_pass_attempt": 6.832075471698113
+      }
+    },
+    "Vikings": {
+      "counts": {
+        "completions": 364,
+        "field_goal_attempts": 42,
+        "field_goals_made": 35,
+        "interceptions": 12,
+        "pass_attempts": 548,
+        "passing_yards": 4379,
+        "rushing_attempts": 457,
+        "rushing_yards": 1855,
+        "sacks": 49
+      },
+      "games": 17,
+      "rates": {
+        "completion_rate": 0.6642335766423357,
+        "interception_rate": 0.021897810218978103,
+        "rushing_yards_per_attempt": 4.059080962800875,
+        "sack_rate": 0.08207705192629816,
+        "yards_per_pass_attempt": 7.990875912408759
+      }
+    }
+  }
+}

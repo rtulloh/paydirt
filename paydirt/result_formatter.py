@@ -110,6 +110,9 @@ class ResultFormatter:
         if outcome.safety:
             return "SAFETY!"
 
+        if getattr(result, "punt_snap_fumble", False) is True:
+            return "PUNT SNAP FUMBLE!"
+
         yards = outcome.yards_gained
 
         if result.result_type == ResultType.SACK:

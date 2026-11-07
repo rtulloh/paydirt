@@ -169,7 +169,7 @@ def test_legacy_half_distance_stats(
 
 
 @pytest.mark.parametrize("code,position,return_yards,expected_penalty", [
-    ("OFF 15", 43, 12, 15),  # Reported punt: lands at 17, returns to 29, penalty to 14.
+    ("OFF 15", 43, 12, 14),  # Lands at 17, returns to 29; half-distance enforcement leaves 15.
     ("OFF 15", 55, 0, 2),
     ("DEF 15", 43, 12, 15),
 ])
@@ -278,12 +278,12 @@ def test_audited_remaining_plays_produce_reconciled_box_score(
     assert (away.passing_yards, home.passing_yards) == (234, 59)
     assert (away.net_passing_yards, home.net_passing_yards) == (228, 55)
     assert (away.penalties, home.penalties) == (8, 6)
-    assert (away.penalty_yards, home.penalty_yards) == (110, 53)
+    assert (away.penalty_yards, home.penalty_yards) == (109, 53)
     for stats in (away, home):
         assert stats.total_yards == stats.rushing_yards + stats.net_passing_yards
     cli.display_box_score(engine)
     output = capsys.readouterr().out
-    for label, values in [("Total Yards", ["264", "250"]), ("Net Passing", ["228", "55"]), ("Penalty Yards", ["110", "53"])]:
+    for label, values in [("Total Yards", ["264", "250"]), ("Net Passing", ["228", "55"]), ("Penalty Yards", ["109", "53"])]:
         line = next(line for line in output.splitlines() if label in line)
         assert [cell.strip() for cell in line.split("|")[2:4]] == values
 

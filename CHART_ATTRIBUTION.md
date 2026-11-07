@@ -21,3 +21,10 @@ original Paydirt team charts are included.
 These unofficial charts are not endorsed by Sports Reference, nflverse, the NFL,
 Avalon Hill, or the original game designers. Team names and other trademarks belong
 to their respective owners.
+
+Historical-calendar validation also includes normalized fixture/result facts under
+`config/season-schedules/`, with per-source hashes and attribution. The 1983 facts
+come from archived Pro Football Reference and the 2024 facts from nflverse nfldata;
+see [fixture provenance](docs/historical-seasons.md#fixture-provenance). These facts
+are distinct from raw play-by-play and from the generated chart model. No developer
+charts or historical narrative logs are included.

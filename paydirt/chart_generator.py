@@ -12,15 +12,18 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import random
 import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from fractions import Fraction
 from pathlib import Path
 from statistics import NormalDist
 from typing import Any
 
+from .chart_layout import disperse_primary_layout, rebalance_primary_allocation
 from .play_resolver import chart_roll_weights, defense_subrow_weights
 
 _ROLL_WEIGHTS = chart_roll_weights()
@@ -57,10 +60,14 @@ _EMPIRICAL_LONG_RUN_YARDS = 10
 _EMPIRICAL_BREAKAWAY_TRIGGER_YARDS = 19
 _DEFENSE_INTERCEPTION_NEUTRAL_RATE = 0.025
 _DEFENSE_INTERCEPTION_RATE_SCALE = 500.0
+_DEFENSE_INTERCEPTION_BASE_CELLS = (("D", 6), ("E", 8))
+# Keep the rare strength budget within each formation without consuming the
+# parenthesized Screen counters in B/C/F. Their later tiers use existing BLACK
+# coverage cells instead; resolve_cohort_pressure reserves this same list.
 _DEFENSE_INTERCEPTION_ADD_CELLS = (
-    ("D", 6),
+    ("D", 7),
     ("B", 8),
-    ("E", 8),
+    ("E", 7),
     ("F", 6),
     ("D", 9),
     ("E", 9),
@@ -68,23 +75,13 @@ _DEFENSE_INTERCEPTION_ADD_CELLS = (
     ("C", 7),
     ("D", 8),
     ("A", 5),
-    ("B", 5),
-    ("C", 5),
-    ("D", 5),
-    ("E", 5),
-    ("F", 5),
-)
-_DEFENSE_INTERCEPTION_REMOVE_CELLS = (
-    ("A", 6),
-    ("A", 8),
     ("B", 6),
     ("C", 6),
-    ("C", 8),
-    ("D", 7),
-    ("E", 6),
-    ("E", 7),
+    ("D", 5),
+    ("E", 5),
     ("F", 7),
 )
+_DEFENSE_INTERCEPTION_REMOVE_CELLS = _DEFENSE_INTERCEPTION_BASE_CELLS
 _DEFENSE_INTERCEPTION_RESULTS = {
     5: "INT 5",
     6: "INT 5",
@@ -124,6 +121,38 @@ _SPECIAL_EMPIRICAL_RESULT = re.compile(
     r"(?:OFF|DEF)\s*(?:\d+|S|R)(?:X|Y)?|OB|OUT|TB|BK\s*-?\s*\d+|NG)$",
     re.IGNORECASE,
 )
+def supported_generated_cell(unit: str, column: str, cell: str) -> bool:
+    """Require the symbol grammar actually consumed in a generated column.
+
+    Legacy charts retain the engine's fallback. Generation cannot intentionally
+    rely on an unparsed result becoming random yardage or a silent zero.
+    """
+    numeric = r"[+-]?\d+[*†]?"
+    fumble = r"F(?:\s*[+-]\s*\d+)?"
+    penalty = r"(?:OFF|DEF)\s*(?:\d+|S|R)(?:X|Y)?"
+    blocked = r"BK\s*-?\s*\d+"
+    if cell.strip().upper() == "F INC":
+        return unit == "offense" and column in {
+            "screen", "short_pass", "medium_pass", "long_pass", "te_short_long",
+        }
+    if unit == "offense":
+        if column == "breakaway":
+            pattern = numeric
+        elif column == "qb_time":
+            pattern = f"(?:{numeric}|{fumble}|SACK\\s+0\\*?)"
+        else:
+            return _OFFENSE_EMPIRICAL_RESULT.fullmatch(cell) is not None
+    elif column == "kickoff":
+        pattern = f"(?:[+-]?\\d+|{penalty}|OB|OUT|TB)"
+    elif column == "field_goal":
+        pattern = f"(?:[+-]?\\d+|{penalty}|{blocked}|F\\s*[+-]\\s*\\d+|NG)"
+    elif column == "punt":
+        pattern = f"(?:{numeric}|{penalty}|{blocked}|{fumble})"
+    else:
+        pattern = f"(?:{numeric}|{penalty}|{fumble})"
+    return re.fullmatch(pattern, cell, re.IGNORECASE) is not None
+
+
 _DEFENSE_TEMPLATE = {
     "A": (
         ("0", "0", "0", "0", "(4)", "-2", "-3", "-4", "-2"),
@@ -187,6 +216,7 @@ class StatLine:
     made: int = 0
     long: int = 0
     blocked: int = 0
+    retained_fumble_incompletions: int = 0
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any] | None) -> StatLine:
@@ -325,6 +355,9 @@ class GeneratedCharts:
     offense: dict[str, dict[int, str]]
     defense: dict[tuple[str, int], dict[int, str]]
     special_teams: dict[str, dict[int, str]]
+    empirical_allocations: dict[str, dict[str, Any]] = field(default_factory=dict)
+    primary_layout: dict[str, Any] = field(default_factory=dict)
+    gain_normalization: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -347,6 +380,14 @@ class EmpiricalPassCalibration:
                 raise ValueError(f"{name} must be between -1 and 1")
         if self.resolved_yard_multiplier <= 0:
             raise ValueError("resolved_yard_multiplier must be positive")
+
+
+@dataclass(frozen=True)
+class NeutralPressureModel:
+    """One source-constrained reference defense shared by a generated cohort."""
+
+    defense: dict[tuple[str, int], dict[int, str]]
+    evidence: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -397,7 +438,10 @@ class EmpiricalChartData:
                 if unit == "offense"
                 else _SPECIAL_EMPIRICAL_RESULT
             )
-            if not result_pattern.fullmatch(result):
+            if not result_pattern.fullmatch(result) and not (
+                (unit == "offense" and chart == "qb_time" or result.upper() == "F INC")
+                and supported_generated_cell(unit, chart, result)
+            ):
                 raise ValueError(
                     f"Invalid empirical result {result!r} on row {line_number}"
                 )
@@ -433,14 +477,21 @@ def _seed_for(seed: int, *parts: str) -> int:
 
 def _nearest_roll_mass(target_rate: float, candidates: Sequence[int]) -> set[int]:
     """Choose chart rows whose combined dice mass is nearest the target rate."""
-    target = round(max(0.0, min(1.0, target_rate)) * _TOTAL_WEIGHT)
+    # Compare feasible integer masses to the actual probability target. Rounding
+    # first can turn a strict optimum into a tie and erase a rare event.
+    target = max(0.0, min(1.0, target_rate)) * _TOTAL_WEIGHT
     subsets: dict[int, tuple[int, ...]] = {0: ()}
     for roll in candidates:
         weight = _ROLL_WEIGHTS[roll]
         for mass, selected in tuple(subsets.items()):
             combined = mass + weight
-            if combined <= _TOTAL_WEIGHT and combined not in subsets:
-                subsets[combined] = (*selected, roll)
+            candidate = (*selected, roll)
+            if combined <= _TOTAL_WEIGHT and (
+                combined not in subsets or len(candidate) < len(subsets[combined])
+            ):
+                # Equal mass has identical event probability. Reserve unused
+                # rows for later rare families and conditional variants.
+                subsets[combined] = candidate
     best_mass = min(subsets, key=lambda mass: (abs(mass - target), mass))
     return set(subsets[best_mass])
 
@@ -552,7 +603,7 @@ def _mark_numeric_out_of_bounds(
 def _empirical_event_category(result: str) -> str:
     """Classify engine-level pass events separately from resolved outcomes."""
     normalized = result.strip().upper()
-    if normalized in {"BLACK", "INC"}:
+    if normalized in {"BLACK", "INC", "F INC"}:
         return "incomplete"
     if normalized.startswith("INT "):
         return "interception"
@@ -588,10 +639,42 @@ def _resample_outcomes(values: Sequence[str], count: int) -> tuple[str, ...]:
                  for index in range(count))
 
 
+def _empirical_pass_rates(
+    baseline: Mapping[int, str],
+    calibration: EmpiricalPassCalibration,
+    pressure_rate: float | None,
+) -> dict[str, float]:
+    """Keep attempt-conditional events conditional when primary QT mass moves."""
+    rates = dict.fromkeys(("incomplete", "interception", "pressure", "penalty"), 0.0)
+    for roll, result in baseline.items():
+        category = _empirical_event_category(result)
+        if category in rates:
+            rates[category] += _ROLL_WEIGHTS[roll] / _TOTAL_WEIGHT
+    if pressure_rate is not None:
+        old_attempt_mass = 1 - rates["penalty"] - rates["pressure"]
+        adjusted_pressure = min(1 - rates["penalty"], max(
+            0.0, pressure_rate + calibration.pressure_rate_adjustment,
+        ))
+        new_attempt_mass = 1 - rates["penalty"] - adjusted_pressure
+        for category in ("incomplete", "interception"):
+            rates[category] *= _rate(new_attempt_mass, old_attempt_mass)
+        rates["pressure"] = adjusted_pressure
+    else:
+        rates["pressure"] = max(0.0, rates["pressure"] + calibration.pressure_rate_adjustment)
+    rates["incomplete"] = max(0.0, rates["incomplete"] - calibration.completion_rate_adjustment)
+    rates["interception"] = max(0.0, rates["interception"] + calibration.interception_rate_adjustment)
+    event_mass = sum(rates.values())
+    if event_mass > 1:
+        rates = {name: rate / event_mass for name, rate in rates.items()}
+    return rates
+
+
 def _calibrate_empirical_pass_events(
     outcomes: Sequence[str],
     baseline: Mapping[int, str],
     calibration: EmpiricalPassCalibration,
+    *,
+    pressure_rate: float | None = None,
 ) -> tuple[str, ...]:
     """Apply engine-calibrated pass event rates to empirical resolved outcomes.
 
@@ -604,11 +687,9 @@ def _calibrate_empirical_pass_events(
         return ()
     event_names = ("incomplete", "interception", "pressure", "penalty")
     baseline_sources: dict[str, list[str]] = {name: [] for name in (*event_names, "resolved")}
-    baseline_mass: Counter[str] = Counter()
     for roll, result in baseline.items():
         category = _empirical_event_category(result)
         weight = _ROLL_WEIGHTS.get(roll, 0)
-        baseline_mass[category] += weight
         baseline_sources[category].extend([result] * weight)
 
     empirical_sources: dict[str, list[str]] = {name: [] for name in (*event_names, "resolved")}
@@ -616,25 +697,7 @@ def _calibrate_empirical_pass_events(
         empirical_sources[_empirical_event_category(result)].append(result)
 
     total = len(outcomes)
-    rates = {
-        name: baseline_mass[name] / _TOTAL_WEIGHT
-        for name in event_names
-    }
-    rates["incomplete"] = max(
-        0.0,
-        rates["incomplete"] - calibration.completion_rate_adjustment,
-    )
-    rates["interception"] = max(
-        0.0,
-        rates["interception"] + calibration.interception_rate_adjustment,
-    )
-    rates["pressure"] = max(
-        0.0,
-        rates["pressure"] + calibration.pressure_rate_adjustment,
-    )
-    event_mass = sum(rates.values())
-    if event_mass > 1.0:
-        rates = {name: rate / event_mass for name, rate in rates.items()}
+    rates = _empirical_pass_rates(baseline, calibration, pressure_rate)
     exact = {name: rates[name] * total for name in event_names}
     counts = {name: int(value) for name, value in exact.items()}
     remaining_events = min(total, round(sum(exact.values()))) - sum(counts.values())
@@ -645,8 +708,17 @@ def _calibrate_empirical_pass_events(
     for name in order[:remaining_events]:
         counts[name] += 1
 
-    calibrated: list[str] = []
+    joint = [result for result in empirical_sources["incomplete"]
+             if result.strip().upper() == "F INC"]
+    if len(joint) > counts["incomplete"]:
+        raise ValueError("Calibrated incomplete population cannot contain retained fumble incompletions")
+    calibrated: list[str] = list(joint)
     for name in event_names:
+        if name == "incomplete":
+            sources = [result for result in baseline_sources[name] or empirical_sources[name]
+                       if result.strip().upper() != "F INC"]
+            calibrated.extend(_resample_outcomes(sources, counts[name] - len(joint)))
+            continue
         if name == "penalty":
             sources = empirical_sources[name] or baseline_sources[name]
         else:
@@ -666,6 +738,246 @@ def _calibrate_empirical_pass_events(
     ]
     calibrated.extend(_resample_outcomes(scaled_sources, resolved_count))
     return tuple(calibrated)
+
+
+def _empirical_qt_sack_probability(qt_column: Mapping[int, str]) -> float:
+    """Measure conditional sack mass, preserving zero-sack and F gain semantics."""
+    sack_mass = 0
+    for roll, result in qt_column.items():
+        numeric = re.fullmatch(r"([+-]?\d+)\*?", result)
+        fumble = re.fullmatch(r"F(?:\s*([+-])\s*(\d+))?", result)
+        if (re.fullmatch(r"SACK\s+0\*?", result, re.IGNORECASE)
+                or (numeric and int(numeric.group(1)) < 0)
+                or (fumble and (fumble.group(1) != "+" or int(fumble.group(2)) == 0))):
+            sack_mass += _ROLL_WEIGHTS[roll]
+    return sack_mass / _TOTAL_WEIGHT
+
+
+def _empirical_pressure_rate(
+    stats: StatLine,
+    column_name: str,
+    baseline: Mapping[int, str],
+    qt_column: Mapping[int, str],
+    outcomes: Sequence[str] = (),
+    calibration: EmpiricalPassCalibration | None = None,
+    neutral_pressure: NeutralPressureModel | None = None,
+) -> float:
+    """Allocate primary QT around actual conditional sacks and neutral defense.
+
+    This is a reference-policy model, before state, penalty choices and finite
+    primary allocation. A QT scramble is excluded from official dropbacks. The
+    defensive QT contribution must be reserved before adding offensive QT mass;
+    otherwise the same source sack rate is charged twice. Final engine replay
+    remains the acceptance measurement.
+    """
+    from .priority_chart import apply_priority_chart
+
+    calibration = calibration or EmpiricalPassCalibration()
+    conditional_sacks = _empirical_qt_sack_probability(qt_column)
+    target = _rate(stats.sacks, stats.attempts + stats.sacks)
+    if target and not conditional_sacks:
+        raise ValueError("QT column has no sack support for the supplied sack target")
+    if not conditional_sacks:
+        return 0.0
+    penalty_rate = sum(_ROLL_WEIGHTS[roll] for roll, result in baseline.items()
+                       if _empirical_event_category(result) == "penalty") / _TOTAL_WEIGHT
+    resolved = [result for result in outcomes if _empirical_event_category(result) == "resolved"]
+    protected_fumbles = _rate(sum(result.startswith("F") for result in resolved), len(resolved))
+    desired_qt = target * (1 - penalty_rate) / (
+        conditional_sacks + target * (1 - conditional_sacks)
+    )
+    # Use the canonical neutral template, never this team's own defense, as
+    # the average opponent. Tactical strength deviations remain on defenses.
+    neutral = neutral_pressure.defense if neutral_pressure else _neutral_pressure_cells()
+    defense_qt, offense_qt_survival = 0.0, 0.0
+    for formation, formation_weight in zip("ABCDEF", (22, 12, 16, 20, 14, 16)):
+        for subrow, weight in _DEFENSE_SUBROW_WEIGHTS.items():
+            for column, call_weight in zip(range(5, 10), (8, 22, 16, 6, 4)):
+                modifier = neutral[(formation, subrow)][column]
+                mass = formation_weight * weight * call_weight / (3600 * 56)
+                defense_qt += mass * apply_priority_chart(
+                    "0", modifier, is_passing_play=True,
+                ).use_qt_column
+                offense_qt_survival += mass * apply_priority_chart(
+                    "QT", modifier, is_passing_play=True,
+                ).use_qt_column
+    if offense_qt_survival <= defense_qt:
+        raise ValueError(f"QT allocation has no primary pressure support in {column_name}")
+    neutral_pressure = EmpiricalPassCalibration(
+        completion_rate_adjustment=calibration.completion_rate_adjustment,
+        interception_rate_adjustment=calibration.interception_rate_adjustment,
+    )
+
+    def joint_qt(primary_rate: float) -> float:
+        rates = _empirical_pass_rates(baseline, neutral_pressure, primary_rate)
+        # Primary fumbles beat defensive QT; use their conditional resolved
+        # share, after the other events, rather than independent subtraction.
+        joint_incomplete_mass = _rate(
+            sum(result.strip().upper() == "F INC" for result in outcomes), len(outcomes),
+        )
+        fumble_mass = (joint_incomplete_mass
+                       + protected_fumbles * max(0.0, 1 - sum(rates.values())))
+        return (defense_qt * (1 - penalty_rate - primary_rate - fumble_mass)
+                + offense_qt_survival * primary_rate)
+
+    lower, upper = 0.0, 1 - penalty_rate
+    if desired_qt < joint_qt(lower) - 1e-12 or desired_qt > joint_qt(upper) + 1e-12:
+        raise ValueError(
+            f"QT sack target is not attainable in {column_name}: "
+            f"requires joint QT mass {desired_qt:.6f}, "
+            f"available {joint_qt(lower):.6f}..{joint_qt(upper):.6f}"
+        )
+    for _ in range(40):
+        midpoint = (lower + upper) / 2
+        if joint_qt(midpoint) < desired_qt:
+            lower = midpoint
+        else:
+            upper = midpoint
+    return (lower + upper) / 2
+
+
+def _neutral_pressure_cells() -> dict[tuple[str, int], dict[int, str]]:
+    """Return an independent canonical neutral defense with rare interceptions."""
+    neutral = {(formation, subrow): dict(enumerate(row, 1))
+               for formation, rows in _DEFENSE_TEMPLATE.items()
+               for subrow, row in enumerate(rows, 1)}
+    _allocate_defense_interceptions(neutral, _DEFENSE_INTERCEPTION_NEUTRAL_RATE)
+    return neutral
+
+
+def _neutral_qt_probability(defense: Mapping[tuple[str, int], Mapping[int, str]]) -> float:
+    """Measure defensive QT exactly under the declared normal reference mix."""
+    from .priority_chart import apply_priority_chart
+
+    return sum(
+        formation_weight * weight * call_weight / (3600 * 56)
+        * apply_priority_chart("0", defense[(formation, subrow)][column],
+                               is_passing_play=True).use_qt_column
+        for formation, formation_weight in zip("ABCDEF", (22, 12, 16, 20, 14, 16))
+        for subrow, weight in _DEFENSE_SUBROW_WEIGHTS.items()
+        for column, call_weight in zip(range(5, 10), (8, 22, 16, 6, 4))
+    )
+
+
+def resolve_cohort_pressure(
+    teams: Sequence[tuple[TeamSeasonStats, EmpiricalChartData]],
+    seed: int = 8306,
+    calibration: EmpiricalPassCalibration | None = None,
+) -> NeutralPressureModel:
+    """Resolve a shared pressure floor from every supported source constraint.
+
+    Relocations preserve each formation/column's tokens and protected strength
+    cells. This bounded greedy model is not historical formation-level evidence.
+    Unattainable protected layouts fail instead of clamping official targets.
+    """
+    calibration = calibration or EmpiricalPassCalibration()
+    constraints: list[dict[str, Any]] = []
+    prepared: list[tuple[TeamSeasonStats, str, dict[int, str], dict[int, str], tuple[str, ...]]] = []
+    unconstrained: list[str] = []
+    for stats, empirical in sorted(teams, key=lambda pair: pair[0].team_name):
+        empirical_offense = dict(empirical.offense)
+        if "te_short_long" not in empirical_offense:
+            empirical_offense["te_short_long"] = tuple(
+                result for name in ("short_pass", "medium_pass", "long_pass")
+                for result in empirical_offense.get(name, ())
+            )
+        qt_samples = empirical_offense.get("qb_time")
+        if not qt_samples:
+            unconstrained.append(stats.team_name)
+            continue
+        qt = _empirical_column(qt_samples, _seed_for(seed, stats.team_name, "empirical", "qb_time"))
+        conditional_sacks = _empirical_qt_sack_probability(qt)
+        target = _rate(stats.offense.passing.sacks,
+                       stats.offense.passing.attempts + stats.offense.passing.sacks)
+        if target and not conditional_sacks:
+            raise ValueError("QT column has no sack support for the supplied sack target")
+        if not conditional_sacks:
+            unconstrained.append(stats.team_name)
+            continue
+        baseline = _generate_offense(stats, seed)
+        neutral_calibration = EmpiricalPassCalibration(
+            completion_rate_adjustment=calibration.completion_rate_adjustment,
+            interception_rate_adjustment=calibration.interception_rate_adjustment,
+        )
+        for name in ("screen", "short_pass", "medium_pass", "long_pass", "te_short_long"):
+            outcomes = empirical_offense.get(name, ())
+            if not outcomes:
+                continue
+            penalty = sum(_ROLL_WEIGHTS[roll] for roll, result in baseline[name].items()
+                          if _empirical_event_category(result) == "penalty") / _TOTAL_WEIGHT
+            resolved = [result for result in outcomes
+                        if _empirical_event_category(result) == "resolved"]
+            protected = _rate(sum(result.startswith("F") for result in resolved), len(resolved))
+            rates = _empirical_pass_rates(baseline[name], neutral_calibration, 0.0)
+            fumble_mass = protected * max(0.0, 1 - sum(rates.values()))
+            desired = target * (1 - penalty) / (
+                conditional_sacks + target * (1 - conditional_sacks)
+            )
+            exposed = 1 - penalty - fumble_mass
+            ceiling = desired / exposed if exposed > 0 else 1.0
+            constraints.append({
+                "team": stats.team_name, "column": name, "source_sack_rate": target,
+                "conditional_sack_probability": conditional_sacks, "penalty_mass": penalty,
+                "protected_fumble_mass": fumble_mass, "desired_joint_qt": desired,
+                "neutral_qt_ceiling": ceiling,
+            })
+            prepared.append((stats, name, baseline[name], qt, tuple(outcomes)))
+    neutral = _neutral_pressure_cells()
+    ceiling = min((item["neutral_qt_ceiling"] for item in constraints), default=None)
+    reserved = {(formation, 5, column) for formation, column in (
+        *_DEFENSE_INTERCEPTION_BASE_CELLS, *_DEFENSE_INTERCEPTION_ADD_CELLS,
+        *_DEFENSE_INTERCEPTION_REMOVE_CELLS,
+    )} | {("D", 3, 8), ("F", 2, 7)}
+    moves: list[dict[str, Any]] = []
+    initial = _neutral_qt_probability(neutral)
+    while ceiling is not None and _neutral_qt_probability(neutral) > ceiling + 1e-12:
+        current = _neutral_qt_probability(neutral)
+        needed = current - ceiling
+        choices: list[tuple[int, float, str, int, int, int, float]] = []
+        for (formation, source_row), cells in sorted(neutral.items()):
+            for column, cell in cells.items():
+                if cell != "QT" or (formation, source_row, column) in reserved:
+                    continue
+                for target_row, weight in _DEFENSE_SUBROW_WEIGHTS.items():
+                    target_cell = neutral[(formation, target_row)][column]
+                    if (weight >= _DEFENSE_SUBROW_WEIGHTS[source_row]
+                            or (formation, target_row, column) in reserved
+                            or (target_cell != "BLACK"
+                                and not re.fullmatch(r"[+-]?\d+", target_cell))):
+                        continue
+                    trial = {key: dict(row) for key, row in neutral.items()}
+                    trial[(formation, source_row)][column] = target_cell
+                    trial[(formation, target_row)][column] = "QT"
+                    reduction = current - _neutral_qt_probability(trial)
+                    if reduction <= 1e-12:
+                        continue
+                    sufficient = reduction >= needed - 1e-12
+                    choices.append((0 if sufficient else 1,
+                                    reduction - needed if sufficient else -reduction,
+                                    formation, column, source_row, target_row, reduction))
+        if not choices:
+            raise ValueError("Shared pressure relocation is infeasible for source QT ceiling")
+        _, _, formation, column, source_row, target_row, reduction = min(choices)
+        neutral[(formation, source_row)][column], neutral[(formation, target_row)][column] = (
+            neutral[(formation, target_row)][column], neutral[(formation, source_row)][column]
+        )
+        moves.append({"formation": formation, "column": column, "from_subrow": source_row,
+                      "to_subrow": target_row, "neutral_qt_reduction": reduction})
+    model = NeutralPressureModel(neutral, {
+        "algorithm": "shared-source-ceiling-qt-relocation-v1",
+        "initial_neutral_qt": initial, "source_ceiling": ceiling,
+        "attained_neutral_qt": _neutral_qt_probability(neutral), "moves": moves,
+        "constraints": constraints, "unconstrained_teams": unconstrained,
+        "resolved_cells": [{"formation": formation, "subrow": subrow,
+                            "results": [cells[column] for column in range(1, 10)]}
+                           for (formation, subrow), cells in sorted(neutral.items())],
+        "scope": "Bounded reference-policy allocation; not historical formation truth or final fit",
+    })
+    for stats, name, baseline_column, qt, outcomes in prepared:
+        _empirical_pressure_rate(stats.offense.passing, name, baseline_column, qt,
+                                 outcomes, calibration, neutral_pressure=model)
+    return model
+
 
 def _reconstruct_empirical_breakaways(
     offense: Mapping[str, tuple[str, ...]],
@@ -703,10 +1015,16 @@ def _reconstruct_empirical_breakaways(
 def _empirical_symbol_family(cell: str) -> str:
     """Group variants that share one empirical probability mass."""
     normalized = cell.upper()
+    if normalized.strip() == "F INC":
+        return "retained_incompletion"
+    if re.fullmatch(r"SACK\s+0\*?", normalized):
+        return "zero_sack"
     if normalized.startswith("F"):
         return "fumble"
     if normalized.startswith("INT "):
         return "interception"
+    if normalized.startswith("QT"):
+        return "pressure"
     if normalized.startswith(("OFF ", "DEF ", "PI ")):
         return "penalty"
     numeric = re.fullmatch(r"[+-]?\d+([*†])", cell)
@@ -765,6 +1083,27 @@ def _empirical_column(outcomes: Sequence[str], seed: int) -> dict[int, str]:
     )
     for family, values in ordered_families:
         chosen = _nearest_roll_mass(len(values) / total_samples, tuple(available))
+        variants = len(set(values))
+        if 1 < variants <= len(available):
+            # Keep the selected probability mass exactly fixed. Where that
+            # mass supports multiple printed rows, use sufficiently small rows
+            # to retain source variants rather than collapsing a foul/marker.
+            target_mass = sum(_ROLL_WEIGHTS[roll] for roll in chosen)
+            subsets: dict[tuple[int, int], tuple[int, ...]] = {(0, 0): ()}
+            for roll in sorted(available):
+                weight = _ROLL_WEIGHTS[roll]
+                for (mass, count), rows in tuple(subsets.items()):
+                    key = mass + weight, min(variants, count + 1)
+                    if key[0] > target_mass:
+                        continue
+                    candidate = (*rows, roll)
+                    previous = subsets.get(key)
+                    def spread_key(selected: tuple[int, ...]) -> tuple:
+                        weights = [_ROLL_WEIGHTS[item] for item in selected]
+                        return max(weights), -min(weights), selected
+                    if previous is None or spread_key(candidate) < spread_key(previous):
+                        subsets[key] = candidate
+            chosen = set(subsets.get((target_mass, variants), tuple(chosen)))
         _assign_empirical_variants(
             column,
             tuple(chosen),
@@ -788,6 +1127,139 @@ def _empirical_column(outcomes: Sequence[str], seed: int) -> dict[int, str]:
         seed,
     )
     return column
+
+
+def _empirical_allocation_evidence(
+    outcomes: Sequence[str], column: Mapping[int, str],
+) -> dict[str, Any]:
+    """Disclose finite representation without forcing a rare variant to appear."""
+    requested = Counter(outcomes)
+    physical: Counter[str] = Counter()
+    for roll, result in column.items():
+        physical[result] += _ROLL_WEIGHTS[roll]
+    variants = {
+        result: {
+            "requested_samples": count,
+            "requested_probability": count / len(outcomes),
+            "physical_mass": physical[result],
+            "physical_probability": physical[result] / _TOTAL_WEIGHT,
+        }
+        for result, count in sorted(requested.items())
+        if not re.fullmatch(r"[+-]?\d+", result)
+    }
+    return {
+        "population": "modeled column inputs, not raw event counts",
+        "source_sample_size": len(outcomes), "physical_denominator": _TOTAL_WEIGHT,
+        "variants": variants,
+        "unrepresented_variants": [result for result in variants if not physical[result]],
+    }
+
+
+def project_shared_return_column(
+    *, interception_outcomes: Mapping[str, str], shared_fumble_outcomes: Mapping[str, str],
+    shared_fumble_losses: Mapping[str, bool], terminal_exposures: float | Fraction,
+    baseline_column: Mapping[int, str], seed: int,
+) -> tuple[dict[int, str], dict[str, Any]]:
+    """Diagnose one exchangeable return distribution without accepting a fit.
+
+    Exposures are nonfoul outcome-bearing terminal segments per source season.
+    The INT-F subset enters the shared F inventory once. Ordinary INT gains and
+    existing penalty risk enter the same finite allocation as scoped F gains.
+    """
+    def is_return_foul(cell: str) -> bool:
+        return re.fullmatch(r"(?:OFF|DEF)\s*(?:\d+|S|R)(?:X|Y)?", cell, re.IGNORECASE) is not None
+
+    if (isinstance(terminal_exposures, bool)
+            or not isinstance(terminal_exposures, (int, float, Fraction))
+            or isinstance(terminal_exposures, float) and not math.isfinite(terminal_exposures)
+            or terminal_exposures < 0):
+        raise ValueError("Shared projection requires finite nonnegative terminal exposures")
+    exposure = Fraction(terminal_exposures)
+    if set(baseline_column) != set(_ROLLS):
+        raise ValueError("Shared projection requires a complete baseline dice column")
+    if any(not isinstance(cell, str) or not supported_generated_cell(
+            "special_teams", "interception_return", cell) for cell in baseline_column.values()):
+        raise ValueError("Shared penalty prior contains unsupported baseline symbols")
+    if (set(shared_fumble_losses) != set(shared_fumble_outcomes)
+            or any(type(value) is not bool for value in shared_fumble_losses.values())):
+        raise ValueError("Every shared fumble requires separately supported individual loss")
+    for source in (interception_outcomes, shared_fumble_outcomes):
+        if any(not isinstance(key, str) or not key.strip() for key in source):
+            raise ValueError("Shared source events require unique nonempty identities")
+    fumble_gains = []
+    for cell in shared_fumble_outcomes.values():
+        match = re.fullmatch(r"F(?: ([+-]) (\d+))?", cell) if isinstance(cell, str) else None
+        if match is None:
+            raise ValueError("Shared fumbles require a supported scoped numeric gain")
+        gain = int(match[2] or 0) * (-1 if match[1] == "-" else 1)
+        fumble_gains.append(gain)
+    ordinary_gains = []
+    int_fumbles = 0
+    for event_id, cell in interception_outcomes.items():
+        if isinstance(cell, str) and cell.startswith("F"):
+            if shared_fumble_outcomes.get(event_id) != cell:
+                raise ValueError("INT-F subset must occur exactly once in the shared inventory")
+            int_fumbles += 1
+        elif isinstance(cell, str) and re.fullmatch(r"[+-]?\d+", cell):
+            if event_id in shared_fumble_outcomes:
+                raise ValueError("One event cannot be ordinary and a shared fumble")
+            ordinary_gains.append(int(cell))
+        elif not isinstance(cell, str) or not is_return_foul(cell):
+            raise ValueError("Unsupported ordinary interception outcome")
+    if fumble_gains and (not exposure or len(fumble_gains) > exposure):
+        raise ValueError("Shared F risk is infeasible for the measured terminal exposures")
+    f_probability = Fraction(len(fumble_gains), exposure) if exposure else Fraction(0)
+    if f_probability < 1 and not ordinary_gains:
+        raise ValueError("Shared ordinary distribution requires supported INT gains")
+    penalty_values = [cell.strip().upper() for roll, cell in baseline_column.items()
+                      if is_return_foul(cell)
+                      for _ in range(_ROLL_WEIGHTS[roll])]
+    penalty_probability = Fraction(len(penalty_values), _TOTAL_WEIGHT)
+    if penalty_probability == 1:
+        raise ValueError("Shared baseline has no outcome-bearing nonfoul mass")
+    requested = {"penalty": penalty_probability,
+                 "fumble": (1 - penalty_probability) * f_probability}
+    available = set(_ROLLS)
+    column: dict[int, str] = {}
+    for family in sorted(requested, key=lambda name: (-requested[name], name)):
+        if not requested[family]:
+            continue
+        chosen = _nearest_roll_mass(requested[family], tuple(available))
+        values = (penalty_values if family == "penalty" else
+                  [str(gain) for gain in sorted(fumble_gains)])
+        _assign_empirical_variants(column, tuple(chosen), values, _seed_for(seed, family))
+        if family == "fumble":
+            for roll in chosen:
+                gain = int(column[roll])
+                column[roll] = "F" if gain == 0 else f"F {'+' if gain > 0 else '-'} {abs(gain)}"
+        available.difference_update(chosen)
+    if available:
+        if not ordinary_gains:
+            raise ValueError("Quantization leaves ordinary mass without supported gains")
+        _assign_empirical_variants(column, tuple(available),
+                                   [str(gain) for gain in sorted(ordinary_gains)], seed)
+    physical: Counter[str] = Counter()
+    for roll, cell in column.items():
+        physical[cell] += _ROLL_WEIGHTS[roll]
+    f_mass = sum(mass for cell, mass in physical.items() if cell.startswith("F"))
+    penalty_mass = sum(mass for cell, mass in physical.items() if is_return_foul(cell))
+    return column, {
+        "model": "diagnostic_exchangeable_shared_return_v1", "fit_accepted": False,
+        "terminal_exposures_per_source_season": float(exposure),
+        "terminal_exposure_fraction": [exposure.numerator, exposure.denominator],
+        "source_shared_fumbles": len(fumble_gains), "interception_fumble_subset": int_fumbles,
+        "source_shared_fumble_ids": sorted(shared_fumble_outcomes),
+        "source_individual_losses": sum(shared_fumble_losses.values()),
+        "source_fumble_gains": sorted(fumble_gains), "ordinary_int_gains": sorted(ordinary_gains),
+        "requested_nonfoul_f_probability": float(f_probability),
+        "requested_penalty_probability": float(penalty_probability),
+        "physical_nonfoul_f_probability": f_mass / (_TOTAL_WEIGHT - penalty_mass),
+        "physical_penalty_mass": penalty_mass, "physical_fumble_mass": f_mass,
+        "physical_denominator": _TOTAL_WEIGHT, "physical_distribution": dict(sorted(physical.items())),
+        "conditional_nonfoul_gain_target": None, "physical_initial_gains_verified": False,
+        "objective": "Nearest attainable family mass, descending requested mass; "
+                     "seeded within-family weighted gain quantiles; ordinary INT exchangeability.",
+    }
 
 
 def _run_column(
@@ -1020,7 +1492,24 @@ def _allocate_defense_interceptions(
     the probability for that play and formation. The scale assigns roughly half
     of a defense's deviation from the neutral interception rate to its chart;
     offense generation and engine calibration retain the other contribution.
+    The neutral baseline stays below the offense's .006 defense allowance under
+    the declared normal reference mix; it is a model allocation, not recovered
+    historical formation-specific truth. Stronger tiers retain replacement
+    Screen costs and QT pressure; moving those tiers into coverage changes call
+    exposure even though each formation's total rare-event budget is preserved.
+    Fixed call-specific interception depths are modeled support, not source depths.
     """
+    # The tactical template historically included high-mass row-three/four
+    # interceptions that survived every low-rate adjustment. Normalize that
+    # hidden floor first: incompletions preserve coverage without inventing
+    # yardage, and rare baseline interceptions retain the short/deep benefits.
+    for cells in defense.values():
+        for column, cell in cells.items():
+            if cell.startswith("INT"):
+                cells[column] = "BLACK"
+    for formation, column in _DEFENSE_INTERCEPTION_BASE_CELLS:
+        defense[(formation, 5)][column] = _DEFENSE_INTERCEPTION_RESULTS[column]
+
     row_units = round(
         (interception_rate - _DEFENSE_INTERCEPTION_NEUTRAL_RATE)
         * _DEFENSE_INTERCEPTION_RATE_SCALE
@@ -1035,7 +1524,10 @@ def _allocate_defense_interceptions(
             defense[(formation, 5)][column] = "BLACK"
 
 
-def _generate_defense(stats: TeamSeasonStats) -> dict[tuple[str, int], dict[int, str]]:
+def _generate_defense(
+    stats: TeamSeasonStats,
+    neutral_pressure: NeutralPressureModel | None = None,
+) -> dict[tuple[str, int], dict[int, str]]:
     """Adjust the tactical defense template for team efficiency and disruption rates."""
     rushing = stats.defense.rushing
     passing = stats.defense.passing
@@ -1048,6 +1540,9 @@ def _generate_defense(stats: TeamSeasonStats) -> dict[tuple[str, int], dict[int,
         for sub, template_row in enumerate(rows, start=1):
             row = {column: cell for column, cell in enumerate(template_row, start=1)}
             defense[(formation, sub)] = row
+
+    if neutral_pressure is not None:
+        defense = {key: dict(row) for key, row in neutral_pressure.defense.items()}
 
     _apply_defense_efficiency_shift(defense, range(1, 5), run_shift)
     _apply_defense_efficiency_shift(defense, range(5, 10), pass_shift)
@@ -1438,13 +1933,16 @@ def generate_team_charts(
     calibrate_empirical_pass_events: bool = False,
     empirical_pass_calibration: EmpiricalPassCalibration | None = None,
     missing_source_features: Sequence[str] = (),
+    neutral_pressure: NeutralPressureModel | None = None,
+    fumble_range_override: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    gain_multipliers: tuple[float, float] | None = None,
 ) -> GeneratedCharts:
     """Generate and write offense, defense, and special-teams charts.
 
     Args:
         stats: Normalized full-season statistics.
         output_dir: Team directory that will receive the chart CSV files.
-        seed: Stable seed used only to distribute outcomes among equivalent rows.
+        seed: Stable generation seed, including finite quantile assignment.
         empirical: Optional classified full-season outcomes. Supplied columns
             replace aggregate estimates; other columns keep their estimates.
         calibrate_empirical_pass_events: Preserve aggregate engine calibration
@@ -1452,15 +1950,31 @@ def generate_team_charts(
         empirical_pass_calibration: Optional offsets found through engine replay.
         missing_source_features: Explicitly unobserved source annotations for which
             documented modeling defaults should preserve engine mechanisms.
+        neutral_pressure: Shared cohort model for defense and offensive QT overlap.
+        fumble_range_override: Explicit measured baseline ranges for a diagnostic
+            that holds loss risk fixed while source counts are repaired.
+        gain_multipliers: Optional derived passing/rushing factors applied once
+            after probability allocation and before final layout.
 
     Returns:
         The generated chart cells.
     """
+    if fumble_range_override is not None:
+        valid_shape = (isinstance(fumble_range_override, tuple)
+                       and len(fumble_range_override) == 2
+                       and all(isinstance(pair, tuple) and len(pair) == 2
+                               and all(type(value) is int for value in pair)
+                               for pair in fumble_range_override))
+        legal_ranges = {((0, 0), (10, 39)), ((10, 39), (0, 0))}
+        legal_ranges.update(((10, end), (end + 1, 39)) for end in _ROLLS if end < 39)
+        if not valid_shape or fumble_range_override not in legal_ranges:
+            raise ValueError("Diagnostic fumble ranges must partition the legal physical dice")
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
     offense = _generate_offense(stats, seed)
-    defense = _generate_defense(stats)
+    defense = _generate_defense(stats, neutral_pressure=neutral_pressure)
     special = _generate_special(stats, seed)
+    empirical_allocations: dict[str, dict[str, Any]] = {}
     if empirical is not None:
         empirical_offense = _reconstruct_empirical_breakaways(empirical.offense)
         if "te_short_long" not in empirical_offense:
@@ -1471,7 +1985,18 @@ def generate_team_charts(
             )
             if te_outcomes:
                 empirical_offense["te_short_long"] = te_outcomes
+        empirical_qt = empirical_offense.get("qb_time")
+        if empirical_qt:
+            for cell in empirical_qt:
+                if not supported_generated_cell("offense", "qb_time", cell):
+                    raise ValueError(f"unsupported empirical symbol in qb_time: {cell!r}")
+            offense["qb_time"] = _empirical_column(
+                empirical_qt, _seed_for(seed, stats.team_name, "empirical", "qb_time"),
+            )
         for name, outcomes in empirical_offense.items():
+            for cell in outcomes:
+                if not supported_generated_cell("offense", name, cell):
+                    raise ValueError(f"unsupported empirical symbol in {name}: {cell!r}")
             calibrated_outcomes = outcomes
             if calibrate_empirical_pass_events and name in {
                 "screen",
@@ -1484,18 +2009,32 @@ def generate_team_charts(
                     outcomes,
                     offense[name],
                     empirical_pass_calibration or EmpiricalPassCalibration(),
+                    pressure_rate=_empirical_pressure_rate(
+                        stats.offense.passing, name, offense[name], offense["qb_time"],
+                        outcomes, empirical_pass_calibration or EmpiricalPassCalibration(),
+                        neutral_pressure=neutral_pressure,
+                    ) if empirical_qt else None,
                 )
             offense[name] = _empirical_column(
                 calibrated_outcomes,
                 _seed_for(seed, stats.team_name, "empirical", name),
             )
+            empirical_allocations[f"offense/{name}"] = _empirical_allocation_evidence(
+                calibrated_outcomes, offense[name],
+            )
         for name, outcomes in empirical.special_teams.items():
+            for cell in outcomes:
+                if not supported_generated_cell("special_teams", name, cell):
+                    raise ValueError(f"unsupported empirical symbol in {name}: {cell!r}")
             calibrated_outcomes = _calibrate_empirical_special_penalties(
                 outcomes, special[name]
             )
             special[name] = _empirical_column(
                 calibrated_outcomes,
                 _seed_for(seed, stats.team_name, "empirical", name),
+            )
+            empirical_allocations[f"special_teams/{name}"] = _empirical_allocation_evidence(
+                calibrated_outcomes, special[name],
             )
     if "offense_oob" in missing_source_features:
         for name, rate in _MISSING_OOB_RATES.items():
@@ -1537,12 +2076,24 @@ def generate_team_charts(
             special["field_goal"], stats.special_teams.field_goal_by_distance,
             _seed_for(seed, stats.team_name, "field_goal"), success_multiplier=factor,
         )
-    recovered_range, lost_range = _fumble_ranges(stats)
+    recovered_range, lost_range = fumble_range_override or _fumble_ranges(stats)
+    offense, primary_allocation = rebalance_primary_allocation(offense)
+    gain_normalization: dict[str, Any] = {}
+    if gain_multipliers is not None:
+        from .gain_normalization import transform_offense_gains
+
+        offense, gain_normalization = transform_offense_gains(
+            offense, passing_multiplier=gain_multipliers[0],
+            rushing_multiplier=gain_multipliers[1])
+    offense, primary_layout = disperse_primary_layout(offense)
+    primary_layout["allocation"] = primary_allocation
     _write_offense(destination / "offense.csv", offense, recovered_range, lost_range)
     _write_defense(destination / "defense.csv", defense)
     _write_special(destination / "special.csv", special, stats.special_teams.extra_point)
     _write_team_yaml(destination / "team.yaml", stats)
-    return GeneratedCharts(offense=offense, defense=defense, special_teams=special)
+    return GeneratedCharts(offense=offense, defense=defense, special_teams=special,
+                           empirical_allocations=empirical_allocations, primary_layout=primary_layout,
+                           gain_normalization=gain_normalization)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1564,7 +2115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--seed",
         type=int,
         default=8306,
-        help="Stable result-placement seed (default: 8306)",
+        help="Stable generation seed (default: 8306)",
     )
     args = parser.parse_args(argv)
     stats = TeamSeasonStats.from_json(args.stats)

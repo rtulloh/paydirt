@@ -10,7 +10,9 @@ keep a copy if you want multiple saved games rather than overwriting the default
 
 A save includes score, clock, field position, down/distance, possession, remaining timeouts,
 statistics, scoring history, and supported game/AI state. It relies on the referenced team charts remaining available;
-a save is not a way to distribute those charts.
+a save is not a way to distribute those charts. It also preserves each team's
+own-end-zone interception return preference. Older saves without these preferences
+restore automatic touchbacks for both teams.
 
 ## Resuming a CLI Game
 

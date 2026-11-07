@@ -1526,13 +1526,21 @@ def test_cpu_play_returns_defense_when_cpu_on_defense():
         },
     )
 
-    client.post(
-        "/api/game/kickoff",
-        json={
-            "game_id": game_id,
-            "kickoff_spot": 35,
-        },
-    )
+    from unittest.mock import patch
+
+    # Public row 25 is a legal kick and return on both sample teams. Establish
+    # the intended receiving possession without a random pending kickoff foul.
+    with (
+        patch("paydirt.play_resolver.roll_chart_dice", return_value=(25, "controlled kickoff")),
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(25, "controlled kickoff")),
+    ):
+        kickoff = client.post(
+            "/api/game/kickoff",
+            json={"game_id": game_id, "kickoff_spot": 35},
+        )
+    assert kickoff.status_code == 200
+    state = client.get(f"/api/game/state/{game_id}").json()
+    assert state["player_offense"] is True
 
     # Get CPU play
     cpu_response = client.post(

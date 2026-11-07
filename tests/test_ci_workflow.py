@@ -18,7 +18,7 @@ def test_hosted_test_jobs_pin_supported_runner(jobs: dict, job: str) -> None:
 
 
 def test_python_matrix_keeps_all_versions_and_collects_independent_failures(jobs: dict) -> None:
-    assert jobs["test"]["strategy"]["matrix"]["python-version"] == ["3.9", "3.10", "3.11", "3.12"]
+    assert jobs["test"]["strategy"]["matrix"]["python-version"] == ["3.10", "3.11", "3.12"]
     assert jobs["test"]["strategy"].get("fail-fast") is False
 
 
@@ -133,3 +133,13 @@ def test_ci_runs_complete_public_ai_audit_without_private_data(jobs: dict) -> No
     )
     assert not run.get("continue-on-error", False)
     assert "if" not in run
+
+
+def test_python_matrix_matches_declared_supported_versions(jobs: dict) -> None:
+    """CI should test the Python versions the package declares as supported."""
+    import re
+
+    metadata = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
+    declared = re.findall(r'"Programming Language :: Python :: (\d+\.\d+)"', metadata)
+    assert declared, "Package metadata must declare supported Python minor versions"
+    assert jobs["test"]["strategy"]["matrix"]["python-version"] == declared

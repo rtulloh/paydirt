@@ -45,3 +45,19 @@ snapshots can safely resume, rather than inventing missing historical state.
 Separately, a new Hard game reports top-level `difficulty: hard` but nested
 `game_state.difficulty: medium` because `game_state_to_response` never sets
 that field. Cover state-response difficulty as well as persistence.
+
+--- 2026-11-06 13:55 ---
+A completed resumed owner game exposes the accounting limit in practice:
+browser history contains 162 display entries (105 loaded, 57 resumed), while
+the backend save-replay export retains only the 105 loaded entries. The fresh
+engine's final statistics cover the resumed portion. Do not treat these as
+full-game totals or a deterministic replay. Preserve authoritative state and
+maintain a coherent event ledger as part of this existing restoration issue.
+No behavior changes in this audit. See ../../game-audit-2026-11-06.md.
+
+--- 2026-11-06 13:57 ---
+Retained this existing open save/resume issue rather than create a duplicate.
+Its acceptance checks must compare pre-save/post-load authoritative statistics
+and phase, then execute additional plays and verify that exported history
+contains both the loaded and newly completed entries. Use synthetic/public-2026
+fixtures and failing round-trip regressions before changing behavior.

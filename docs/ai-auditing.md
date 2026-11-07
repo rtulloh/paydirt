@@ -14,8 +14,13 @@ Normal `--auto` and season-management defaults remain unchanged.
 This audits **live auto-game coaching**, not every interactive coaching feature.
 Existing auto mode uses extra-point kicks after touchdowns and does not introduce
 new two-point or explicit defensive-timeout policies here. No persistent opponent
-learning file is loaded or saved, and the harness does not add opponent-tendency
-observations absent from existing auto mode. Game-local executed-call history still applies.
+learning file is loaded or saved. Auto mode now feeds each finalized selected call
+to the defending Hard AI's game-local opponent model, using the original down and
+distance before returns or scoring chains. A coach can observe a call that a foul
+later voids; this learning observation does not credit official play statistics.
+The existing tendency classifier excludes punts and field goals. Balanced auto
+has no opponent learner. Earlier reports collected before this correction test
+the former nonlearning policy and cannot establish adaptive response.
 
 ## Commands
 

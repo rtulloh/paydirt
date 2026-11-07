@@ -1,22 +1,25 @@
 """Isolated real API for browser tests; never run this as a production server."""
 
-from collections.abc import Awaitable, Callable
-from pathlib import Path
 import random
 import shutil
 import sys
+from collections.abc import Awaitable, Callable
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import uvicorn
 from fastapi import Request
 from starlette.responses import Response
-import uvicorn
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "paydirt-web" / "backend"))
 
-from main import app  # noqa: E402
-import routes  # noqa: E402
+import routes
+from main import app
+from try_fixture import install_try_fixture
+
+install_try_fixture(app)
 
 
 @app.middleware("http")

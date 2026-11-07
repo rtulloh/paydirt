@@ -1302,6 +1302,13 @@ class ComputerAI:
         # Turnover is relative to the original offense, not to home/human control.
         if play_td:
             return (offended_is_offense != bool(play_turnover), best_penalty_idx)
+        if is_punt_penalty and not offended_is_offense:
+            # The engine offers KEEP+ only when the receiver can retain the
+            # result and possession with the kicking-team foul added. This
+            # dominates declining the same result without its extra yardage.
+            for option in filtered_penalties:
+                if option.raw_result.startswith("KEEP+"):
+                    return (False, penalty_choice.penalty_options.index(option))
         if is_fg_penalty:
             if outcome.field_goal_made:
                 accept_play = True
@@ -1317,11 +1324,9 @@ class ComputerAI:
                 if best_penalty.auto_first_down:
                     accept_play = False  # Accept penalty for automatic first down
                 elif (is_punt_penalty or is_kickoff_penalty) and offended_is_offense:
-                    accept_play = (
-                        False  # Decline penalty when offense is offended (kickoffs and punts)
-                    )
+                    accept_play = False  # Accept the penalty and replay the kick.
                 else:
-                    accept_play = True  # Accept penalty, decline the result
+                    accept_play = True  # Keep the play when no better kick option is offered.
             else:
                 accept_play = True
         elif play_turnover:

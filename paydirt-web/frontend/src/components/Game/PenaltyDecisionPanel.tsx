@@ -48,96 +48,13 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
     return null;
   }
 
-  const yards = penaltyData.yards || 0;
   const turnover = penaltyData.turnover || false;
-  const newDown = penaltyData.new_down;
-  const newYardsToGo = penaltyData.new_yards_to_go;
-  const newBallPosition = penaltyData.new_ball_position;
+  const isTouchdown = penaltyData.touchdown || false;
+  // The engine supplies projected situations. A legacy response can provide
+  // a retained description, but cannot supply an unrecorded field position.
+  const getPlayResultSummary = (): string =>
+    penalty_choice.play_result_preview || penaltyData.description || 'play result';
 
-    // Detect touchdown: engine may not flag TD for small gains near goal line.
-    // When pending_penalty_decision, new_ball_position is pre-play; if
-    // position + yards >= 100 the play result would score.
-    const isTouchdown = penaltyData.touchdown ||
-      (!turnover && (newBallPosition || 0) + yards >= 100);
-
-    const formatFieldPosition = (pos: number): string => {
-    if (pos <= 50) return `OWN ${pos}`;
-    return `OPP ${100 - pos}`;
-  };
-
-  const formatDown = (down: number): string => {
-    if (down === 1) return '1st';
-    if (down === 2) return '2nd';
-    if (down === 3) return '3rd';
-    return `${down}th`;
-  };
-
-  const getPenaltyResult = (opt: PenaltyOption): { down: number; yardsToGo: number; ballPos: number } => {
-    const penaltyYards = opt.yards || 0;
-    const startingPos = newBallPosition || 50;
-    const newPos = Math.max(0, Math.min(100, startingPos - penaltyYards));
-    const gained = penaltyYards;
-    
-    let down = 1;
-    let yardsToGo = 10;
-    
-    if (opt.auto_first_down) {
-      down = 1;
-      yardsToGo = 10;
-    } else if (gained >= (newYardsToGo || 10)) {
-      down = 1;
-      yardsToGo = 10;
-    } else {
-      down = (newDown || 1) + 1;
-      yardsToGo = (newYardsToGo || 10) - gained;
-    }
-    
-    return { down, yardsToGo: Math.max(1, yardsToGo), ballPos: newPos };
-  };
-
-  const formatPenaltyChoice = (opt: PenaltyOption): string => {
-    // The engine's preview is authoritative when it supplies one.
-    if (opt.result_preview) return opt.result_preview;
-    const result = getPenaltyResult(opt);
-    return `${formatDown(result.down)} & ${result.yardsToGo} at ${formatFieldPosition(result.ballPos)}`;
-  };
-
-  const getPlayResultSummary = (): string => {
-    if (penalty_choice.play_result_preview) {
-      return penalty_choice.play_result_preview;
-    }
-    if (turnover) {
-      return `TURNOVER at ${formatFieldPosition(newBallPosition || 0)}`;
-    }
-    if (isTouchdown) {
-      return 'TOUCHDOWN!';
-    }
-
-    // Special plays: FG, punt, kickoff show play-specific text, not generic yardage
-    const playType = penaltyData.play_type || '';
-    if (playType === 'field_goal') {
-      return penaltyData.description || 'Field Goal attempt';
-    }
-    if (playType === 'punt') {
-      return penaltyData.description || 'Punt';
-    }
-    if (playType === 'kickoff') {
-      return penaltyData.description || 'Kickoff';
-    }
-
-    // Calculate the actual new position based on play result
-    // newBallPosition is the position AFTER penalty application, but we want position AFTER play
-    const playStartPos = penaltyData.line_of_scrimmage || 50;
-    const actualNewPos = Math.min(100, playStartPos + yards);
-
-    if (yards > 0) {
-      return `+${yards} yards → ${formatFieldPosition(actualNewPos)}`;
-    } else if (yards < 0) {
-      return `${yards} yards → ${formatFieldPosition(actualNewPos)}`;
-    }
-    return `No gain → ${formatFieldPosition(playStartPos)}`;
-  };
-  
   const isDefenseChoosing = penalty_choice.offended_team === 'defense';
   const cpuDeciding = isDefenseChoosing && cpuIsOnDefense;
   // Kickoffs: the receiving team is "offense"; a receiving-team foul is the kicking team's choice.
@@ -185,7 +102,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
               {penaltyData.description || getPlayResultSummary()}
             </div>
             <div className="text-gray-300 text-sm">
-              {formatDown(newDown)} & {newYardsToGo}
+              {penalty_choice.play_result_preview}
             </div>
             {turnover && (
               <div className="text-red-400 font-bold mt-1">TURNOVER!</div>
@@ -200,7 +117,7 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
            penalty_choice.penalty_options.length > 0 && (
             <div className="mb-4">
               <div className="text-yellow-200 text-sm mb-2 font-bold">
-                Penalty Options ({penalty_choice.offended_team === 'offense' ? 'DEFENSE' : 'OFFENSE'} is offended):
+                Penalty Options:
               </div>
               <div className="flex flex-col gap-2">
                 {penalty_choice.penalty_options.map((opt, idx) => (
@@ -216,9 +133,9 @@ const PenaltyDecisionPanel = ({ penaltyData, onDecision, cpuIsOnDefense = false 
                         <span className="text-yellow-300 text-sm ml-2">AUTO 1ST</span>
                       )}
                     </div>
-                    {opt.yards !== 0 && (
+                    {opt.result_preview && (
                       <div className={`text-xs mt-1 ${cpuDeciding ? 'text-gray-500' : 'text-red-200'}`}>
-                        {opt.yards > 0 ? '+' : ''}{opt.yards} yards → {formatPenaltyChoice(opt)}
+                        {opt.result_preview}
                       </div>
                     )}
                   </button>

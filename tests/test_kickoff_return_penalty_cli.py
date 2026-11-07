@@ -26,7 +26,7 @@ def test_human_kicker_is_offered_the_recovery_or_the_penalty(monkeypatch, capsys
     play_line = next(line for line in out.splitlines() if "[1] Accept PLAY result" in line)
     assert "HOME" in play_line and "22" in play_line
     penalty_line = next(line for line in out.splitlines() if "[2] Accept PENALTY" in line)
-    assert "AWAY 7" in penalty_line
+    assert "1st and 10 at AWAY 11" in penalty_line
     assert game.state.is_home_possession is True
     assert game.state.ball_position == 78
     assert outcome.turnover is True
@@ -38,7 +38,7 @@ def test_human_kicker_may_take_the_penalty(monkeypatch) -> None:
     with patch("paydirt.game_engine.random.uniform", return_value=8):
         handle_penalty_decision(game, pending, is_human_offense=False, human_is_home=True)
     assert game.state.is_home_possession is False
-    assert game.state.ball_position == 7
+    assert game.state.ball_position == 11
 
 
 def test_cpu_kicker_keeps_the_recovery_and_is_named_correctly(monkeypatch, capsys) -> None:

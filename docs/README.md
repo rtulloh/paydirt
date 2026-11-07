@@ -25,6 +25,8 @@ Published builds include generated 1983 and 2024 charts plus the fictional 2026 
 - [Web setup](../paydirt-web/README.md): frontend and backend development.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two full real-engine games.
 - [AI audit harness](ai-auditing.md): reproducible game/season play-selection and play-balance testing.
+- [Historical season runner](historical-seasons.md): selected-year actual calendars/results, generated charts and distinct postseason modes.
+- [Generated chart release gate](chart-validation.md): source consistency, weighted tactics, event allocation and current-engine accuracy checks.
 - [AGENTS.md](../AGENTS.md): authoritative agent workflow and mandatory pre-push checks.
 
 ## Testing and Design Notes

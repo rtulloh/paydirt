@@ -124,6 +124,7 @@ export const useGameStore = create((set, get) => ({
       // Engine-owned halftime signal (first half over, second-half kickoff owed).
       halftimePending: state.halftime_pending || false,
       pendingPat: pendingPat,
+      canGoForTwo: state.can_go_for_two === true,
       isOvertime: isOvertime,
       otPeriod: otPeriod,
       // Reset no-huddle mode on possession change
@@ -148,6 +149,7 @@ export const useGameStore = create((set, get) => ({
     
     set({
       gameId: gameData.game_id,
+      canGoForTwo: gameData.can_go_for_two === true,
       homeTeam: gameData.home_team,
       awayTeam: gameData.away_team,
       homeScore: gameData.home_score,
@@ -290,6 +292,7 @@ export const useGameStore = create((set, get) => ({
               isKickoff: backendData.game_state.is_kickoff,
               halftimePending: backendData.game_state.halftime_pending || false,
               pendingPat: backendData.game_state.pending_pat || false,
+              canGoForTwo: backendData.game_state.can_go_for_two === true,
               currentSeason: backendData.game_state.season || replayData.season || '1983',
             });
           })

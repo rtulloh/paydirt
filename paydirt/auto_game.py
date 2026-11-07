@@ -17,7 +17,7 @@ from .computer_ai import ComputerAI
 from .game_engine import PaydirtGameEngine, PlayOutcome
 from .interactive_game import display_box_score
 from .packaging import get_seasons_path
-from .play_resolver import DefenseType, PlayType
+from .play_resolver import DefenseType, PlayType, is_passing_play
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -350,6 +350,24 @@ def run_auto_game(
         # Run the play with OOB designation, punt options, and spike modifier
         offense_home = state.is_home_possession
         quarter_before = state.quarter
+        down_before, distance_before = state.down, state.yards_to_go
+
+        def observe_selected_call(
+            game: PaydirtGameEngine, resolved: PlayOutcome,
+            def_ai: ComputerAI = def_ai, down_before: int = down_before,
+            distance_before: int = distance_before, play_type: PlayType = play_type,
+        ) -> None:
+            # Coaches observe the selected call even if a foul voids its stats.
+            # Capture its original situation before returns or scoring chains.
+            if def_ai.use_analysis and def_ai.opponent_model is not None:
+                def_ai.opponent_model.record_opponent_play(
+                    down=down_before, distance=distance_before,
+                    play_type=play_type.value, yards_gained=resolved.yards_gained,
+                    is_pass=is_passing_play(play_type),
+                )
+            if on_result is not None:
+                on_result(game, resolved)
+
         outcome = game.run_play_with_penalty_procedure(play_type, def_type,
                                                         out_of_bounds_designation=use_oob,
                                                         punt_short_drop=punt_short_drop,
@@ -358,7 +376,7 @@ def run_auto_game(
                                                         call_spike=use_spike)
 
         _complete_auto_outcome(
-            game, outcome, offense_home, quarter_before, home_ai, away_ai, on_result)
+            game, outcome, offense_home, quarter_before, home_ai, away_ai, observe_selected_call)
 
         play_count += 1
         time.sleep(delay)

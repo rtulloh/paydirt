@@ -12,6 +12,7 @@ import PlayModifiers from './PlayModifiers';
 import PlayLogDisplay from './PlayLogDisplay';
 import GameControls from './GameControls.tsx';
 import Halftime from './Halftime';
+import ChartViewer from './ChartViewer';
 import { useGameStore } from '../../store/gameStore';
 import { checkPendingPat, deriveKickoffTeams } from '../../utils/gameFlowLogic';
 import { API_BASE } from '../../config';
@@ -82,6 +83,7 @@ const PlayingPhase = () => {
   } = store;
 
   const [localLastResult, setLocalLastResult] = useState(null);
+  const [saveFeedback, setSaveFeedback] = useState(null);
   const [localDiceResult, setLocalDiceResult] = useState(null);
   const [localIsRolling, setLocalIsRolling] = useState(false);
   const [localShowPatChoice, setLocalShowPatChoice] = useState(false);
@@ -417,12 +419,13 @@ const PlayingPhase = () => {
         const data = await res.json();
         setLocalPatResult({
           type: 'two_point',
-          success: data.result.description.includes('GOOD'),
+          success: data.result.conversion_success,
           description: data.result.description,
         });
         updateGameState(data.game_state);
         await new Promise(r => setTimeout(r, 2000));
         setLocalPatResult(null);
+        setLocalLastResult(null);
       }
     } catch (err) {
       console.error('Failed to attempt two-point conversion:', err);
@@ -531,7 +534,7 @@ const PlayingPhase = () => {
   const handleSaveGame = () => {
     const { saveGame } = useGameStore.getState();
     const state = useGameStore.getState();
-    saveGame({
+    const saved = saveGame({
       gameId: state.gameId,
       homeTeam: state.homeTeam,
       awayTeam: state.awayTeam,
@@ -550,6 +553,10 @@ const PlayingPhase = () => {
       cpuTeamId: state.cpuTeamId,
       playLog: state.playLog,
       currentSeason: state.currentSeason,
+    });
+    setSaveFeedback({
+      error: !saved,
+      message: saved ? 'Game saved in this browser.' : 'Could not save game in this browser.',
     });
   };
 
@@ -573,6 +580,8 @@ const PlayingPhase = () => {
     if (!gameId || localExecuting) return;
     
     // Store state BEFORE the play for the log
+    const prePlayQuarter = quarter;
+    const prePlayTimeRemaining = timeRemaining;
     const prePlayDown = down;
     const prePlayYardsToGo = yardsToGo;
     const prePlayBallPosition = ballPosition;
@@ -642,7 +651,8 @@ const PlayingPhase = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game_id: gameId,
-          player_play: selectedModifier ? play + selectedModifier : play,
+          player_play: playerOffense && selectedModifier ? play + selectedModifier : play,
+          call_defensive_timeout: !playerOffense && selectedModifier === 'T',
           cpu_play: cpuPlayValue,
           short_drop: puntOptions?.short_drop || false,
           coffin_corner_yards: puntOptions?.coffin_corner_yards || 0,
@@ -661,6 +671,8 @@ const PlayingPhase = () => {
       
       if (res.ok) {
         const data = await res.json();
+        // The engine retains any timeout request across a pending penalty choice.
+        clearModifiers();
         
         if (data.result && data.result.pending_penalty_decision && data.result.penalty_choice) {
           setLocalPendingPenaltyData(data.result);
@@ -672,7 +684,6 @@ const PlayingPhase = () => {
         
         setLocalLastResult(data.result);
         updateGameState(data.game_state);
-        clearModifiers(); // Clear one-play modifiers after successful play
         setLocalIsRolling(false);
         
         // Use dice from backend response - already calculated correctly
@@ -714,8 +725,8 @@ const PlayingPhase = () => {
         
         // Use pre-play state for the play description, post-play for new position
         addToPlayLog({
-          quarter: data.game_state.quarter,
-          timeRemaining: data.game_state.time_remaining,
+          quarter: prePlayQuarter,
+          timeRemaining: prePlayTimeRemaining,
           down: prePlayDown,
           yardsToGo: prePlayYardsToGo,
           ballPosition: prePlayBallPosition,
@@ -745,14 +756,9 @@ const PlayingPhase = () => {
         
         // After a touchdown, show PAT choice instead of transitioning to kickoff
         // Uses shared checkPendingPat — if this function is removed, tests will fail
-        const { isPendingPat, scoringTeamIsPlayer: scoringIsPlayer, canGoForTwo: can2pt } = checkPendingPat(data.game_state);
+        const { isPendingPat, scoringTeamIsPlayer: scoringIsPlayer } = checkPendingPat(data.game_state);
         if (isPendingPat) {
           setScoringTeamIsPlayer(scoringIsPlayer);
-          // Update canGoForTwo in store based on season rules
-          if (can2pt !== undefined) {
-            store.setCanGoForTwo?.(can2pt);
-          }
-          
           if (scoringIsPlayer) {
             // Player scored — show PAT choice panel
             setLocalShowPatChoice(true);
@@ -1212,17 +1218,13 @@ const PlayingPhase = () => {
             </div>
           )}
           
-          {/* Right column: modifiers (when on offense) + play log */}
+          {/* Right column: modifiers + play log */}
           <div className="flex flex-col gap-2">
-            {playerOffense && (
-              <PlayModifiers 
-                selectedPlay={humanPlaySelected}
-                onModifierChange={(modifier) => {
-                  // Modifier state is already managed in store via PlayModifiers
-                  // This callback can be used for additional logic if needed
-                }}
-              />
-            )}
+            <PlayModifiers
+              selectedPlay={humanPlaySelected}
+              disabled={!gameId || localExecuting || isKickoff || pendingPat || gameOver ||
+                halftimePending || showHalftime || localShowPatChoice || localShowPenaltyChoice}
+            />
             <PlayLogDisplay plays={playLog} onPlayClick={() => {}} />
           </div>
         </div>
@@ -1251,14 +1253,26 @@ const PlayingPhase = () => {
       )}
 
       {/* Bottom Controls */}
-      <div className="px-4 pb-4 flex justify-between items-center">
+      {saveFeedback && (
+        <p role={saveFeedback.error ? 'alert' : 'status'} className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] rounded-lg border border-gray-400 bg-gray-800 px-4 py-3 text-sm text-white shadow-lg pointer-events-none">
+          {saveFeedback.message}
+        </p>
+      )}
+      <div className="px-4 pb-4 flex flex-wrap gap-2 justify-between items-center">
         <button
           onClick={handleReturnToMenu}
           className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
         >
           EXIT
         </button>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ChartViewer
+            gameId={gameId}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            initialSide={humanIsHome ? 'home' : 'away'}
+            initialChart={playerOffense ? 'offense' : 'defense'}
+          />
           <button
             onClick={handleSaveReplay}
             disabled={isKickoff || pendingPat || pendingPenaltyData}

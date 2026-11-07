@@ -54,7 +54,11 @@ def test_touchdown_that_ends_the_half_waits_for_halftime_and_the_other_kicker(hu
             assert tried["game_state"]["is_kickoff"] is True
             # The second-half kicker is the opening receiver, not the scoring team.
             assert tried["game_state"]["possession"] == ("away" if human_is_home else "home")
-            with patch("paydirt.game_engine.random.uniform", return_value=8):
+            for team in (engine.state.home_chart, engine.state.away_chart):
+                team.special_teams.kickoff = {10: "60"}
+                team.special_teams.kickoff_return = {10: "20"}
+            with (patch("paydirt.game_engine.random.uniform", return_value=8),
+                  patch("paydirt.game_engine.roll_chart_dice", return_value=(10, "Kickoff"))):
                 kicked = client.post("/api/game/kickoff", json={"game_id": game_id, "kickoff_spot": 35}).json()
             assert kicked["game_state"]["halftime_pending"] is False
             assert engine.state.is_home_possession is human_is_home, "the scoring team receives the second half"

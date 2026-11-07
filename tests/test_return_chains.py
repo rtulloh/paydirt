@@ -115,7 +115,7 @@ class TestFumbleReturnsByTheKickingTeam:
         choice = pending.penalty_choice
         assert choice.kick_phase == "return_fumble"
         assert "AWAY 2" in choice.play_result_preview  # HOME at 98 after the return.
-        assert "AWAY 7" in choice.penalty_options[0].result_preview
+        assert "AWAY 11" in choice.penalty_options[0].result_preview
         with patch("paydirt.game_engine.random.uniform", return_value=8):
             outcome = game.apply_kickoff_penalty_decision(pending, accept_penalty=False)
         assert game.state.is_home_possession is True

@@ -101,6 +101,49 @@ Where a separate fourth-down menu offers `G`, select it to proceed to play selec
 in compact play selection, enter the desired play directly.
 Early-down punts and field goals are also offered.
 
+A punt-chart `F` result is a snap fumble before the kick. Move to the signed
+fumble spot and use the punting team's normal recovery range; no punt-return
+roll occurs. An own recovery short of the first-down marker still consumes the
+down and can turn the ball over on fourth down, unless an accepted defensive
+return penalty awards an automatic first down. Short-drop and coffin-corner
+options do not replace the fumble. Recovery rolls 19 and 39 follow ordinary
+fumble returns here; they do not grant the automatic touchdown used for blocked
+kicks.
+
+If a punt-chart foul is followed by a snap-fumble reroll, the offended team
+chooses between enforcing the foul and keeping that fumble. Recovery remains
+pending until the choice: accepting the foul cancels the fumble; declining it
+resolves the stored fumble without rolling another punt.
+The same choice preserves a blocked-punt reroll and defers its recovery.
+Fair-catch/downed markers remain effective after a foul reroll, and a touchback
+retains the kick-foul choice. A declined foul stays in the final description
+alongside the saved kick result.
+
+On a kicking-team punt foul, the receiving CPU takes an offered option to keep
+the return and add the penalty yards rather than decline those yards. An
+announced coffin-corner subtraction also applies to the punt-yardage reroll
+after a kick-chart foul; it does not reduce the penalty yardage.
+
+Punt and return charts name different teams as offense. If both chart fouls
+name the same actual team, the offended team can take the kick foul from the
+previous spot or keep the resolved return with its return foul. These choices
+enforce one foul. A genuine offset cancels the punt, preserves the down and
+charges ten seconds. An accepted defensive foul or offset at period expiry
+preserves an untimed down. An accepted kick foul preserves its own first-down
+rights and the original down when no first down is awarded.
+When a replay is announced, choose the next play from that preserved situation.
+A return foul cannot exceed half the distance to the offender's goal line. A
+half-yard spot rounds toward midfield, and the box score records the actual
+assessed yards.
+
+The game's five-versus-fifteen exception applies when opposite teams have one
+five-yard foul and one fifteen-yard foul, and neither awards an automatic first
+down. It disregards the five, cancels the return and assesses the fifteen from
+the catch against the actual fouling team, using half the distance when needed.
+The receiving team starts first and ten; canceled return scores and fumble
+recoveries do not count. An accepted foul against the kicking team preserves an
+untimed down when time expires.
+
 After a touchdown, kick for one point or try for two if the season rules permit it.
 Availability is controlled by [season YAML](seasons.md#season-rules), not just the year in the team name.
 Conversion points belong to the touchdown's quarter, even if the live clock has
@@ -205,7 +248,9 @@ future game outcomes.
 - Four 15-minute regulation quarters; overtime follows the home team's season rules.
 - Four downs to gain ten yards, or reach the goal line in goal-to-go situations.
 - Failing on fourth down turns over possession. Offsetting penalties replay the same down without
-  changing possession; a replayed fourth down is not a turnover on downs.
+  changing possession; a replayed fourth down is not a turnover on downs. A nullified
+  fumble, including one voided by offsetting return fouls, credits no scrimmage
+  yardage or sack.
 - Touchback placement depends on the event and applicable engine rules; do not assume every touchback is at the 20.
 - Time depends on the play result and applicable modifiers; see [Time Management](clock-management.md).
 - A touchdown on the last play of a half or of regulation still gets its try; the scoring team does not
@@ -218,6 +263,13 @@ future game outcomes.
 | Two-point conversion, when enabled | 2 |
 | Field goal | 3 |
 | Safety | 2 |
+
+Two-point tries start at the opponent’s two-yard line when the season permits them.
+A successful try adds exactly two points; a failed try adds none. A defensive
+return to the opposite goal awards two points to the defense. Tries are untimed,
+belong to the touchdown’s period, and do not add ordinary yardage, first downs,
+or turnovers to the box score. The touchdown team still kicks off afterward,
+except when halftime or the final result determines the next phase.
 
 ## Strategy Tips
 

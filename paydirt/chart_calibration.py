@@ -43,6 +43,7 @@ class TeamCalibrationTotals:
     turnovers: int = 0
     field_goal_attempts: int = 0
     field_goals_made: int = 0
+    retained_fumble_incompletions: int = 0
 
     def add_box_score(self, stats: TeamStats, points: int) -> None:
         """Add authoritative final engine totals from one team-game."""
@@ -124,25 +125,35 @@ class EngineCalibrationObserver:
         self._pending = None
         if selected_play != outcome.play_type:
             raise ValueError("Calibration result does not match the selected play")
-        if outcome.penalty_applied or outcome.result.replay_down:
+        if (outcome.penalty_applied or outcome.result.replay_down
+                or (outcome.penalty_choice is not None and outcome.penalty_choice.offsetting)):
             return
         totals = self.team_totals(team)
         if selected_play == PlayType.FIELD_GOAL:
             totals.field_goal_attempts += 1
             totals.field_goals_made += int(outcome.field_goal_made)
             return
-        if selected_play in _NON_SCRIMMAGE_PLAY_TYPES:
+        if selected_play in _NON_SCRIMMAGE_PLAY_TYPES and not outcome.result.punt_snap_fumble:
             return
         totals.offensive_plays += 1
         if selected_play not in _PASS_PLAY_TYPES:
             totals.rushing_attempts += 1
             return
         result_type = outcome.result.result_type
-        if result_type == ResultType.QB_SCRAMBLE:
+        qt_fumble = result_type == ResultType.FUMBLE and outcome.result.qb_scramble_dice > 0
+        # Match the engine's credited-yardage classification. A QB fumble at
+        # the line is a sack even when an own recovery later advances the ball.
+        is_sack = (
+            result_type == ResultType.SACK
+            or (result_type == ResultType.QB_SCRAMBLE and outcome.yards_gained < 0)
+            or (qt_fumble and outcome.result.yards <= 0)
+        )
+        if is_sack:
+            return
+        if result_type == ResultType.QB_SCRAMBLE or qt_fumble:
             totals.rushing_attempts += 1
             return
-        if result_type == ResultType.SACK:
-            return
+        totals.retained_fumble_incompletions += int(outcome.result.retained_fumble_incompletion)
         totals.pass_attempts += 1
         if result_type not in {ResultType.INCOMPLETE, ResultType.INTERCEPTION}:
             totals.completions += 1
