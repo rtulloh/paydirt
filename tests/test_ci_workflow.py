@@ -77,7 +77,8 @@ def test_runtime_upgrade_preserves_release_safety_and_artifact_layout(jobs: dict
     release = yaml.safe_load((root / ".github/workflows/release.yml").read_text())
     release_jobs = release["jobs"]
     assert release_jobs["release"]["if"] == (
-        "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')"
+        "github.event_name == 'workflow_dispatch' || "
+        "(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))"
     )
     assert len(release_jobs["build"]["strategy"]["matrix"]["include"]) == 4
     download = release_jobs["release"]["steps"][0]

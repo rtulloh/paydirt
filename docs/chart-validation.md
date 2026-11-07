@@ -518,3 +518,18 @@ unchanged completion-rate tolerance of 0.03 has two exceptions: 49ers 0.610006
 versus 0.642045, Falcons 0.601726 versus 0.633136. The 2024 Ravens rushing
 YPA absolute error is 0.417273 versus the unchanged 0.4 tolerance. These are
 explicit release limitations, not waived measurements or passing fit assertions.
+
+## Rebuilding an existing release tag
+
+The release workflow accepts a manual `release_tag` input (for example,
+`gh workflow run release.yml --ref main -f release_tag=v1.10.1`). This uses the
+current orchestrator while preserving the existing immutable tag. The gate
+resolves annotated or lightweight tags to a commit and requires a completed,
+successful `test.yml` run on that exact SHA; a newer unrelated green run cannot
+qualify it. The release does not repeat the full application test suite.
+
+Public chart checks and all four platform builds check out that verified SHA.
+macOS and Linux packaging receive the verified version tag explicitly, and the
+release publishes all five assets against the same existing tag. Rebuilding
+artifacts does not move, delete, or recreate the tag. Full source reproduction
+remains a local proof, separate from these public chart checks.
