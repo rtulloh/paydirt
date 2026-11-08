@@ -1212,3 +1212,34 @@ unknown neutral utility would silently change that declared score. The ignored
 floating-equality fixture correction. Offensive penalty risk and unresolved
 defensive penalty choices also require separate review; a blanket pending flag
 does not establish which coaching utility is unknown.
+
+The bounded diagnostic correction passes 14 risk controls after six expected
+failures and eight passing controls against its unchanged helper. It preserves
+primary/QT fumble risk, the actual B-column numeric treatment of `F + 3`, and
+own-chart OFF risk. Defensive, mixed/offsetting and defense-chart penalty
+procedures remain unresolved. The helper explicitly requires constant defensive
+rows per call; this is not a generic compiler fix. A separate frozen inventory
+finds no OFF/DEF/PI cells in the 60 defensive CSVs, so the defense-chart penalty
+limitation does not alter the rejected seventh campaign's evidence.
+
+The next 66 public cases complete with neutral B/QT identity on all three downs,
+positive/adverse secondary values, both physical sides and released repetition
+history; new admission with empty-family fallback; zero-family blindness and
+new admission beyond singleton released support. Unknown outcomes remain visible:
+replacing a known adverse defensive result with an unresolved result can increase
+its play's probability under neutral-point correction. Lower-estimate correction
+does not exhibit that increase in these controls, but subtracting two marginal
+lower estimates still does not bound the true effect. Identical opaque charts
+can cancel their point scores while retaining full unresolved physical mass;
+the uncoupled marginal difference interval is a loose outer bound, not a sharp
+claim about identical-event uncertainty.
+
+Root independently reproduces all 1,188 actual-core physical distributions,
+7,128 formation/call matrix entries, exact intervals, original scores, history
+weights, global admission and family projection. Ignored
+`full-matchup-family-public-controls-r2.json` SHA
+`4acfbbabfa91bf2fcab0e8e7548c3cca8c601fdb57ba5ca6cc48f8446673a3ed`
+and `root-full-matchup-r2-independent-review.json` bind the complete evidence.
+No uncertainty estimator or formation assumption is selected from these cases;
+general matchup ranking, independent prior justification and production test-first
+scope remain required before a new frozen campaign.
