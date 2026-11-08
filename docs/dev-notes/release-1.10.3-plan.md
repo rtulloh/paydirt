@@ -1562,3 +1562,30 @@ A successful paired pilot correctness/cost receipt must precede the remaining
 14 development seasons; all development gates must pass before held-out review.
 No eighth historical outcomes or held-out seeds have been executed, and AI-026's
 wider capabilities remain open.
+
+## Eighth pilot integrity and cost gate
+
+Root independently verifies the complete first-seed pilot before authorizing
+remaining development work. Both candidate seasons pass (1983: 233 games,
+2024: 285 games), and all 1,036 candidate-plus-retained-baseline game receipts
+reconcile identity, physical return settings, REG/postseason inventory, scores,
+play/call accounting and raw aggregates. Pilot workers finish in 102.74 and
+126.05 seconds; the conservative sequential full-campaign projection is
+5,946.05 seconds and 67,785,888 compressed bytes, within all original cost limits.
+Measured free disk is 23,922,556,928 bytes.
+
+Ignored `paired-v8-pilot-cost-gate.json` SHA
+`124efa5bcc24bb278d1ead305b66bdf5bbae829974a1d108332f51e7f4d74872`
+is written before any remainder launch. Independent
+`root-v8-pilot-cost-review.json` and
+`root-v8-development-remainder-authorization.json` authorize exactly indices
+1 through 7 in each cohort, using the frozen source/protocol/context, max four
+workers and the reviewed stop-submitting-on-failure behavior. All failures must
+remain; no seed replacement or overwrite. No pilot efficacy aggregate is used
+to select, tune or accept this policy.
+
+The complete eight-seed development set must first pass integrity against the
+original 16 baseline reports, then every unchanged primary, individual-metric,
+scoring and pace gate is evaluated. Held-out seasons, promotion, merge and push
+remain unauthorized. Source artifacts and the committed pre-outcome lock remain
+immutable; this paragraph records only the subsequent pilot/remainder state.
