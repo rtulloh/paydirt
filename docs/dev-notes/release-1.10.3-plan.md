@@ -968,3 +968,50 @@ goal into a tiny compatibility-only candidate. No seventh production policy,
 campaign, cutoff, coefficient adjustment or held-out access follows. A distinct
 chart-conditioned defensive threat-prior concept requires analysis and review
 of prior overlap, observability, ignorance and unknown-mass behavior first.
+
+
+## Defensive threat-prior analysis: conditional prediction and ignorance
+
+A distinct unimplemented concept weights each defensive formation's full-mass
+upper utility by the opposing offense's released ordinary chart/state/history
+weights. Released offense stays unchanged. This differs from the fifth
+candidate's maximum-over-calls objective and from negative frequency forecasts;
+none of the six historical candidates used this defensive point threat model.
+It is an explicit conditional coaching assumption, not human probabilities or
+worst-case robustness over offensive calls.
+
+Independent public controls verify the prior before actual selection against
+48 ordinary Hard factory distributions, both sides/down/distance/history. Its
+inputs can be public charts, exact situation and existing engine call history;
+no selected call, opposing AI object/mode, hidden RNG or future dice is needed.
+Released history holds 96 primary calls total, not all-game memory. CLI saves
+it; released web replay omits it and both own coaching/prior would use the same
+reset engine history. This cannot be described as full continuity. Defensive
+ordinary eligibility also does not prove offensive ordinary eligibility: hurry,
+clock-killing and other helper boundaries differ and require explicit review.
+
+A separate approved public synthetic diagnostic retains a coupled-input limit.
+With Screen TD/Short 10 and other calls excluded, actual released prior is
+.708660825/.291339175. A stops Short, B stops Screen; weighted upper utility
+chooses B, with actual conditional utility .291339175. Replacing Screen with
+unsupported primary makes the actual released policy choose only Short; the
+weighted choice becomes A, with actual conditional utility zero. The switch
+follows a changed actual opponent policy; it is not a same-policy prediction
+failure or historical improvement. Screen has full unresolved interval mass
+and upper 1.8, but zero prior weight: arbitrary human behavior remains outside
+that conservative claim.
+
+Separate baseline/model processes have identical four physical inputs,
+actual-core matrices, factory vectors and RNG records. Independent review
+recomputes exact weighted bounds/ties: 204 known cells match actual utility,
+12 unknown cells contain actual utility, and 216 fixed-prior own-defense
+opacity substitutions cannot lower that formation's weighted upper or make a
+previously unselected opaque formation win. Fixed-prior monotonicity does not
+establish robustness when the opposing chart changes the prior itself.
+
+Ignored `defense-threat-prior-coupled-input-review.json`, baseline/model receipts,
+independent review and `defense-chart-threat-prior-analysis-proposal.md` retain
+all evidence and limitations. A proposed static census would report all nine
+calls, zero-weight threats, per-team effects and exact coverage at fixed
+situations. It requires review; no production policy or historical campaign
+follows. All original outcome gates and wider AI-026 work remain open.
