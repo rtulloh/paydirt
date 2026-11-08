@@ -1025,8 +1025,8 @@ reported. Baseline completion and gross passing yards per attempt already fall
 below historical sources; stronger modeled defensive stops may worsen that fit.
 
 Root reviewed the concrete production proposal against released offensive and
-defensive branch ordering. Only isolated protocol freezing and actual-behavior
-failing tests are authorized at this stage. The public-state guard must exclude
+defensive branch ordering. Isolated protocol freezing and actual-behavior
+failing tests preceded the implementation approval recorded below. The public-state guard must exclude
 victory, end-of-half kicks, last-chance touchdown attempts, hurry-up, clock-kill,
 red-zone and goal-line offense, including overtime's effective fourth-quarter
 semantics. Existing defensive raw-quarter semantics and prediction/pressure RNG
@@ -1034,7 +1034,28 @@ order remain unchanged. Fresh pending-primary lifecycle tests precede any core
 instrumentation; no new save or UI schema is proposed.
 
 The ignored `root-defense-threat-production-scope-review.json` binds the reviewed
-proposal and released source. Root reviews expected failures and passing controls
-before production editing, then implementation and frozen identities before a
-pilot. No historical campaign or held-out access is authorized. All original
-outcome gates and wider AI-026 work remain open.
+proposal and released source. Test-first review is now complete: the combined
+116 public/synthetic cases produce 55 intended assertion failures and 61 passing
+controls against unchanged released source, independently reproduced by root.
+Four test files, 63 production Python files and six evidence logs are hash-bound.
+The tests distinguish the proposed weighted objective from both uniform-call and
+maximum-call objectives, validate history-sensitive priors, same-instance B/QT
+mutations, zero-weight threats, actual-core utility, exact phase boundaries,
+model-update order and RNG behavior on both physical sides.
+
+An initial hand-computed floating expectation caused two fixture precision
+failures; their source/log remain preserved and they do not count as behavioral
+RED evidence. Only that hand calculation uses absolute 1e-12/relative-zero
+comparison. Actual factory vectors remain exact, and rational priors use actual
+released computational floats. Pending-handle lifecycle tests fail initially at
+the absent marker; later success/no-op/exception assertions still require green
+execution and are not claimed as baseline evidence.
+
+Root authorized isolated implementation within the frozen proposal/protocol v10
+scope, bound by `root-chart-threat-implementation-approval.json` and
+`chart-threat-combined-red-receipt-r1.json`. Independent public baseline oracles
+retain 900 offensive phase classifications and exact defensive choice/RNG records
+for 724 excluded situations. Candidate checks must preserve those records. Root
+reviews implementation and frozen identities before a pilot. No historical
+campaign or held-out access is authorized. All original outcome gates and wider
+AI-026 work remain open.
