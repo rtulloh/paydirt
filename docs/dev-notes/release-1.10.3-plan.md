@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: not release-qualified; all eight historical candidates remain rejected. The user extended the timebox to one bounded ninth attempt ending 2026-11-08 23:18:53 UTC. Read-only exposure/cost review and explicit implementation approval come first; held-out seasons remain unopened.
+Status: no-go; bounded attempt finished early after its fixed feasibility gate failed. The simulation-improvement goal remains incomplete, AI-026 remains open and v1.10.3 is not release-qualified. No further experiment is authorized; held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -1787,3 +1787,31 @@ unit capability. No push unless every applicable AGENTS pre-push check passes;
 do not spend beyond the deadline trying to obtain a pass. Existing human
 fairness, all original source/scoring/pace gates and preserved failures remain
 binding. No held-out or historical result is replaced by the public proofs.
+
+
+## Final feasibility gate: no-go, finish early
+
+The one approved fixed real-chart check completes all 720 roots/60 pairs with
+outward-rounded bounds and exact final certificate/vector arithmetic. Root
+independently reproduces all certificates and TV values. Historical cohort:
+zero nonidentity certified changes in 336 roots/all 28 teams. Modern cohort:
+four in 384 roots, limited to two teams on third down (TV .116527–.125795).
+The predeclared requirement for material exposure in both cohorts fails.
+No prior, bound, coefficient or sample is changed to rescue this attempt.
+
+The run takes 21.31 seconds and 117,702,656-byte peak RSS. Cold-root extrapolation
+for the declared candidate campaign alone is 3.05 hours at four workers; the
+8.14-minute all-warm extreme assumes unmeasured cache hits and excludes game/
+baseline/validation cost. These are not proven operational timings. Full input,
+rows and the independent review remain in ignored evidence; the
+[final proposal findings](ai026-remaining-down-planning-proposal.md#final-fixed-feasibility-result-stop-without-production)
+record exact identities and limitations.
+
+**Stop now, ahead of the 23:18:53 UTC cap.** The goal is incomplete and AI-026
+stays open; all eight prior historical candidates remain rejected and v1.10.3
+is not release-qualified. No ninth implementation/test-first RED, campaign,
+held-out access, merge or push occurs. No further investigation or experiment
+is authorized. The unresolved gap is broad uncertainty/formation bounds preventing
+material certified chart response. No new implementation proposal is selected.
+v1.10.2 remains released; all human fairness and original validation constraints
+remain. Proof/feasibility sessions have finished and user services are preserved.

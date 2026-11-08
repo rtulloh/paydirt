@@ -363,3 +363,50 @@ Local evidence commands (completed, terminal exit zero; no seasons):
 Each script's separately retained `--freeze` input predates its run. Scripts
 refuse to overwrite existing proof files; these commands document the completed
 executions, not an instruction to rerun them over preserved outputs.
+
+## Final fixed feasibility result: stop without production
+
+The user extended the original stop to one bounded attempt within ninety minutes,
+ending 2026-11-08 23:18:53 UTC, with permission to finish early. The approved
+feasibility check selects each of 60 attacking teams' alphabetically first
+actual-calendar defender, independent of outcomes. It evaluates 720 ordinary
+counterfactual roots: all three downs, distances three/ten, empty/repeated history,
+own 40, Q1 ten minutes. Q-baseline intervals conservatively cover every one of
+six formations at every continuation; no nominal forecast or selected-formation
+peek. F/OFF/DEF/unsupported branches retain [0,1]. Known numeric geometry and
+45-second-per-snap bounds close this specific field/clock scope; history ages
+and 96-total-call eviction remain intact. No new yardage-factor mechanic is added.
+
+Outward-rounded nonnegative probability operations enclose DP bounds. The final
+advantage certificate uses exact rational normalization of actual returned raw
+weights and bound endpoints, with no floating epsilon. Inputs and fixed
+300-second/128-MiB limits precede execution. Ignored
+`remaining-down-real-exposure-r1.json.gz` SHA
+`5d023d2650b60b70daadb8598aa64a8b3b208673cea2f1aabdb3ba8be0253bf4`
+retains every bound, raw/returned vector, certificate, TV, timing and team stratum.
+Root independently verifies all 720 certificates/vectors/TV values exactly.
+
+The frozen feasibility gate fails: **zero of 336 historical-cohort roots**
+certify a nonidentity change, across all 28 teams/down/history strata. The modern
+cohort has four of 384, on third down for only two of 32 teams; TV ranges
+.116527–.125795 and certified local gain bounds .0000724–.0040629. There is no
+material breadth in both cohorts. This is insufficient certification under broad
+uncertainty/formation bounds, not proof that no football policy can improve.
+No alternative prior, interval rule, coefficient or sample is selected.
+
+The check completes in 21.31 seconds with 117,702,656-byte peak RSS. Mean cold
+root time is .02455/.02144 seconds (1983/2024), warm .001043/.000996. A declared
+48-candidate-season, 40,000-query/season, four-worker projection spans 8.14 minutes
+if every query is warm to 3.05 hours if cold; actual cache hit/exposure/parallel
+scaling is unmeasured, and engine/baseline/validation costs are additional. These
+are feasibility bounds, not a promised campaign runtime.
+
+**Final no-go; finish early.** The simulation-improvement goal is incomplete,
+AI-026 stays open, all eight historical rejections remain and v1.10.3 is not
+release-qualified. No ninth production implementation, RED stage, historical
+campaign, held-out access, merge or push occurs. No future experiment is
+authorized. The identified gap is uncertainty/formation bounds too broad for
+material certified chart response; it is recorded without another design loop.
+Public-information limits, stochastic variety, unchanged Easy/Medium and human
+playability requirements remain. All evidence and failures are preserved, owned
+proof/feasibility sessions are terminal and user game services are untouched.
