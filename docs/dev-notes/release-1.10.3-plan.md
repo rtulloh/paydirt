@@ -644,3 +644,70 @@ the unchanged limits. The receipt binds both existing candidate pilot hashes,
 frozen context and scope clarification. Launcher preflight rejects a missing
 or unsuccessful receipt and altered pilot bytes. Development remainder uses
 four workers; held-out remains closed pending all development gates.
+
+
+## Fifth experiment outcome: robust capability, historical gates fail
+
+The frozen defense-only candidate `d531935` is rejected before held-out.
+All 16 candidate development seasons and their 16 retained baseline pairs
+complete: 8,288 games total, with no reported game errors. The predeclared
+analysis and independent root recomputation agree:
+
+| Measure | Paired change | 95% paired interval | Frozen requirement |
+| --- | ---: | --- | --- |
+| 1983 normalized source error | -.042174 | [-.066710, -.016930] | Mean <= 0; upper <= .05: passes |
+| 2024 normalized source error | +.012622 | [-.023434, +.049646] | Mean <= 0: fails |
+| Equal-cohort source error | -.014776 | [-.036091, +.009825] | Upper < 0: fails |
+| 1983 points absolute source gap | +.020647 | [-.362737, +.495815] | Upper <= locked .25: fails |
+
+The positive 2024 mean does not establish a statistically certain worsening;
+it fails the already-frozen nonpositive-mean rule. The 1983 scoring mean is
+nearly unchanged, but its uncertainty exceeds the fixed allowance. Neither
+justifies opening held-out or increasing the development sample. All ten
+individual metric guards and both pace guards pass. 2024 scoring improves
+25.31664 to 24.33824 points per team-game, toward source 22.91176; this does
+not override the failed guards.
+
+Signed errors retain the efficiency tradeoff. 2024 team-macro completion
+bias is -.07662 to -.07967 and passing-YPA bias -.20106 to -.40176; their
+absolute errors worsen .076785 to .079698 and .405328 to .489062. Sack-rate
+absolute error improves .017626 to .014251. Descriptive REG third-down
+records whose emitted offense mode is normal shift heavily toward formations
+A/E and away from C/D. These records cannot establish actual defensive
+eligibility or causal effects; no claim ties the improvement to blitz F.
+A plausible limitation is the minimax objective's worst-call hedge versus
+actual unadapted offensive call tradeoffs. This remains a hypothesis requiring
+a diagnostic, rather than a reason to add a fitted blend or weaken bounds.
+
+The direct frozen compiler census covers all 788 ordered calendar matchups,
+all nine legal calls and six formations: 42,552 exact coverage cells, with
+U0/L/H at six declared static targets. The selected-call/formation
+counterfactual census reconciles all 1,217,422 REG callbacks: 1,082,899 primary
+and 134,523 special calls. Weighted unresolved mass changes .01373923 to
+.01384712 for 1983 and .00895019 to .00896005 for 2024; all is classified as
+unmodeled defensive-penalty utility. Known-zero and category mass reconcile.
+These are all-primary counterfactual coverage values, including excluded
+branches; exact actual eligibility exposure remains unverified. The initial
+census draft confused receipt enum names with catalog enum values. Root
+caught this before execution; the corrected separate census normalizes via
+the authoritative resolver enum, rejects unknown names, preserves raw-name
+counts and checks every actual lookup. A preliminary import of the distinct
+legacy model enum also fails before emitting evidence and is corrected.
+The frozen static compiler/catalog remains unchanged.
+
+Every newly crossed team bound remains in the private review: 104 team/metric
+pairs in 1983 and 90 in 2024 cross at least one paired seed, including nine
+new mean-error crossings per cohort. These counts are not numbers of teams
+or proven causal defects. Exact numerators, denominators, fixed targets and
+tolerances, eight paired errors and uncertainty are retained for all entries;
+none is dismissed as an outlier or used for team-specific tuning.
+
+Ignored `candidate-v5-rejection.json` binds the frozen protocol/context,
+compatibility and scope clarification, prelaunch cost receipt, actual-selector
+resolver proof, aggregate analysis, full static coverage, corrected census
+and new-team-bound review. This is a fifth honest rejection despite demonstrated
+synthetic robust chart-response capability. No held-out seeds, promotion,
+source/tolerance changes or sample expansion follow. Released offense and
+main production source remain unchanged; AI-026's wider offensive/defensive
+capabilities remain open. Review a general mechanism before any sixth
+candidate or protocol change.
