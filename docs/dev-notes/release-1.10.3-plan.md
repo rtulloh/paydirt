@@ -124,3 +124,23 @@ proposed exposure. At sixteen held-out seasons per year, qualification frequenci
 move in increments of 1/16 and remain coarse diagnostics, not precise estimates
 of an individual team's playoff chances. Record uncertainty and reserve stronger
 team-specific claims for sufficient independent exposure.
+
+### Protocol review and unresolved outcomes
+
+The initial protocol specifies eight paired development and sixteen paired
+held-out seasons per cohort, conditional on the pilot's cost limits and verified
+1.10.2 delivery. Baseline-only development variation locks numerical scoring
+and pace budgets before any candidate outcomes are observed. Retain all failure
+seeds and do not expand or replace held-out samples after seeing efficacy.
+
+Review identified that neutral unknown utility zero can outrank known adverse
+utility. The reviewed candidate therefore preserves the neutral full-mass
+estimate for disclosure but ranks unresolved mass conservatively at the existing
+ordinary utility floor of -1.5. This is a declared modeling assumption, not an
+assertion that unknown results are interceptions or that the neutral estimate
+proves safety. Show coverage and a utility interval under the declared range
+[-1.5, 1.8]. Known incompletions and BLACK outcomes must not be relabeled as
+unsupported. Add controls proving that replacing known interception/fumble mass
+with unsupported outcomes cannot improve selection weight. Record this explicit
+change to the earlier neutral-ranking proposal in the frozen protocol before
+production implementation or candidate evaluation.
