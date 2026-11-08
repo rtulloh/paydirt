@@ -1059,3 +1059,52 @@ for 724 excluded situations. Candidate checks must preserve those records. Root
 reviews implementation and frozen identities before a pilot. No historical
 campaign or held-out access is authorized. All original outcome gates and wider
 AI-026 work remain open.
+
+## Seventh experiment: frozen chart-conditioned defensive response
+
+Isolated source `c6ecfcef56f93f9494c502f9a7f5ebac020e77cf` implements the reviewed
+ordinary-third-down point-prior objective from released `10d7130`; offense and
+other defensive branches remain released. Protocol v10 SHA
+`a360028b48d6707d1420c30a1df7502a4bc98f027e50c97c84ae21e1a5999191`
+keeps all original comparative sections and outcome limits. The frozen context
+SHA `f1ffe86b64c8f1a9c9e4e8345ae4de9205fde253894f0fd930ef393c1af1c59c`
+binds the exact source/runtime, unchanged chart/adapter identities, original
+baseline and variance budget, and verified 1.10.2 asset receipt. Root independently
+verified every tracked archive file and both freshly loaded cohort identities.
+
+All 116 reviewed RED/control cases pass unchanged, including the previously
+blocked pending adjudication/no-op/exception assertions. Additional actual-core
+controls exposed a reused compiler issue: it parsed invalid B/QT tables even when
+no priority path reached them. Four expected failures and nine controls preceded
+a narrow lazy-parsing correction. Reachable invalid secondary tokens still raise
+the core error; unused tables create no error. Source/test/log revisions remain
+retained. Final phase/cache/CLI/auto checks pass 132 cases; the selected existing
+AI/core/save/penalty suite plus these checks and documentation passes 2,224.
+Backend checks pass 431 with 20 existing deprecation warnings; lint and documentation
+checks pass. Root independently runs the 132 candidate/cache/adapter checks in a
+fresh tracked-only archive without historical data; all pass. The copied per-call cache oracle now uses actual per-call resolver
+utility instead of the changed aggregate weighting. Auto adapter exposure excludes
+actual clock-killing offense, preserving the new explicit ordinary scope; no old
+assertion was weakened or skipped.
+
+The frozen actual shared-factory proof runs released and candidate policies in
+separate processes on 24 public/synthetic contrasts, with identical released raw
+call vectors and 1,296 exact physical per-call payoff cells per policy. Candidate
+true point-prior utility improves in 20 cases and ties in four; state, history and
+RNG remain unchanged. It covers both physical sides, own/opponent chart reversals,
+weighted versus uniform/max-call distinctions, repeated history, B/QT content
+changes and exact ties. This establishes only the declared conditional mechanism.
+It is not human calibration, worst-call robustness or historical fitness. The
+ignored `candidate-v7-frozen-factory-utility-proof.json` SHA
+`e5ea937c93141f28ade71f56fdebd164a0d3d03afa822ec87dc8fc3912901385`
+binds all inputs and complete payoff matrices.
+
+Pre-outcome status: no seventh-candidate historical season or held-out report
+exists. The versioned launcher retains unique/range-checked seeds, at most four
+active workers, halt-on-first-failure with running evidence preserved, verified
+source/context/release prerequisites and cost receipt before the remainder.
+Twelve synthetic launcher checks pass. Pilot authorization still requires root
+review of source/capability identities and this durable lock; the original
+scoring .25, pace .50, five-metric, cohort, correctness and cost gates stay fixed.
+Already understated completion/passing efficiency may worsen with more modeled
+stops. All adverse prior experiments remain rejected, and wider AI-026 work is open.
