@@ -860,3 +860,60 @@ work on the first failed worker or exception. No historical worker runs in these
 checks. Every original
 source/scoring/pace/team-review gate stays fixed; held-out remains closed and
 AI-026's wider offensive matchup/defensive capabilities remain open.
+
+
+## Sixth experiment outcome: source-error gains fail scoring and pace
+
+Candidate `9f52f77` is rejected before held-out. The two pilots passed full
+1,036-game paired correctness/identity accounting; their cost receipt preceded
+all fourteen remaining development launches. The bounded launcher completed
+those fourteen with zero failures in 52.77 seconds. All 16 candidate seasons
+and reused released-baseline seasons complete 8,288 paired games. The original
+cohort targets, tolerances, variance budgets, seeds and analysis remain frozen.
+Independent raw-count/bootstrap review matches all 17 reported means/intervals
+and all 32 input hashes exactly.
+
+| Normalized five-metric source-error change | Mean | Paired 95% interval |
+| --- | ---: | ---: |
+| 1983 | −.057796 | [−.095399, −.016814] |
+| 2024 | −.047137 | [−.083015, −.021631] |
+| Equal-cohort pooled | −.052466 | [−.079377, −.024452] |
+
+Both cohort primary estimates improve; all ten individual metric nonregression
+guards pass. Those gains do not override two failed 1983 guardrails:
+
+| 1983 absolute source-gap change | Mean | Paired 95% interval | Frozen limit |
+| --- | ---: | ---: | ---: |
+| Plays per team/game | +.723214 | [.488281, .919364] | .50 |
+| Points per team/game | +.055525 | [−.362165, .491071] | .25 |
+
+The 1983 mean plays move 65.231585 → 64.508371 against source 65.787946;
+the candidate moves farther below the source. Mean points move 23.900112 →
+23.955636 against source 21.828125; scoring uncertainty exceeds the locked
+limit. Both 2024 scoring/pace guards pass. These are outcome tradeoffs, not
+unit-test failures or grounds to relax a bound, add seeds or tune teams.
+
+Coverage checks all 60 teams, 16 fixed contexts and candidate/default score
+cells against the reviewed static atlas. Exact disjoint primary mass reconciles
+without renormalization. All 1,210,309 REG callbacks reconcile to 1,077,580
+primaries plus 132,729 specials. Across selected primaries, conditional own
+secondary mass is 5.388% → 5.282% for 1983 and 6.619% → 6.568% for 2024;
+known secondary fallback mass is zero. Retained other-neutral primary mass is
+reported separately (about 1.39%/.90% for the candidate). This all-primary
+counterfactual census includes excluded phases; compact records cannot prove
+actual ordinary opt-in exposure or defense-adjusted secondary reachability.
+
+All 94/86 newly crossed team/metric pairs are retained with raw numerators,
+denominators, fixed targets/tolerances and eight paired season intervals.
+Thirteen/five newly cross a mean bound; these counts are team/metric pairs,
+not numbers of teams. No breach is dismissed as an outlier or tuned away.
+Ignored `candidate-v6-rejection.json`, `development-v6-analysis-08.json.gz`,
+`development-v6-coverage-08.json.gz`,
+`development-v6-new-team-bounds-review.json.gz` and independent review receipts
+retain identities, full results and adverse evidence compactly.
+
+No held-out report exists, no promotion is permitted and AI-026 remains open.
+The narrower secondary-information capability and credible development source
+improvement are preserved as findings; they do not satisfy the full acceptance
+goal. A subsequent proposal requires a general, source-backed pace mechanism
+and review, without stacking rejected policies or fitting a pace coefficient.
