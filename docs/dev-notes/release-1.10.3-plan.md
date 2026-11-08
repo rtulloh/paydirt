@@ -329,3 +329,103 @@ The next diagnostic compares the neutral uniform formation assumption with
 released Hard defense's observable-situation policy mixture; it must not read
 the selected defense or future dice. No fourth candidate is yet authorized or
 implemented. AI-026 remains open, including early-down and defensive response.
+
+## Reviewed fourth experiment: learn from revealed formations
+
+The fourth bounded candidate replaces the fixed uniform formation prior with
+p(f) = (N_f + 1) / (N + 6), using only earlier revealed primary-snap formations
+in the current game. Counters belong to each physical offensive side, start
+cold for a new game, and are published once at the engine's first public outcome,
+including a pending or voided foul. Penalty adjudication cannot count a snap
+twice. Preview, failed validation/application, conversions and special plays do
+not add observations. Normal CLI and opaque web save/replay transport preserve
+counts; legacy saves with no field start balanced. No UI computes coaching.
+All third-down continuation/risk/unknown values and early/special/defensive
+policies remain fixed, as do every source/scoring/pace gate, budget and seed.
+
+Past-only, untuned prequential formation forecasts improve Brier score from
+uniform .83333 to .61755/.54711 for released 1983/2024 development games.
+This supports a general observable forecast, without proving better coaching.
+Contrary static evidence is retained: at third-and-10, weighting observed
+baseline formations rather than uniform lowers empty-history pass weight
+.61744 to .58740 in 1983 and .64294 to .61540 in 2024. Learning is not presented
+as a pace rescue; only the unchanged paired outcome gates can qualify it.
+
+Test-first observation/selection controls fail before production: 42 expected
+core/CLI/auto failures and six passing controls, four web failures and two
+frontend save-transport failures. The earlier 33-failure/12-control receipt is
+preserved as the initial test revision. Direct-play penalty labels in that first
+matrix are ordinary direct-resolution controls; procedure cases exercise actual
+pending, offsetting, accepted and declined foul paths. Actual conversion clones,
+physical-side credit, save/legacy continuity, nonuniform full mass, unknown
+substitution and prior-cache changes are covered. No v4 existing expectation is
+weakened. The broader run exposed a public AI audit observer that still recorded
+old own-offense weights; an actual RNG-distribution regression fails before
+selector/observer share the same pure weight query. Existing probability and
+accounting assertions stay intact. The original historical experiment adapter
+and released-baseline identities are unchanged.
+
+Candidate source `853f915` and protocol v7 SHA256
+`2796a1e721eb5edaa019014076e96766025ab195ce91cfcd74238a4839f77b24`
+are frozen before historical candidate outcomes. 1,837 focused AI/resolver/
+priority/history/conversion/save/auto/docs checks, 431 backend checks, all 352
+frontend tests and the frontend build pass. Existing backend deprecation and
+Browserslist warnings remain; this is not a full release regression claim.
+
+An external proof executes actual released, rejected-v3 and frozen-v4 selectors
+in separate processes after real synthetic chart snaps reveal past formations.
+Independent true-resolver continuation utility rises .55556 to .86873 in a
+matching pass-favoring regime and .44444 to .80900 in a matching run-favoring
+regime, on both physical sides. Misleading history lowers utility by .31318 and
+.36456 respectively. Changing only the future oracle formation leaves selection
+weights unchanged; a cold game retains v3 parity. This establishes the intended
+learning response and its limitation, not whole-season acceptance. Ignored
+`v4-released-weight-utility-proof.json`, `frozen-candidate-v4-context.json`,
+`v7-baseline-compatibility.json` and prior diagnostics retain reproducible hashes.
+Pilot cost/correctness must pass before the remaining development runs; held-out
+stays closed until every development gate passes. AI-026's early-down and
+full defensive-strength remainders remain open.
+
+### Fourth experiment process exception: pilot cost receipt
+
+The pilot completed both cohorts without game/accounting errors. Its immutable
+cost receipt was written after the remaining development workers launched,
+contrary to the required ordering: the first receipt writer used the wrong
+selected-call key, and orchestration continued after that command failed.
+The corrected receipt explicitly records this chronology; independent review
+recomputes 2,852.67 projected sequential seconds and 67,730,328 retained bytes,
+within the unchanged eight-hour/1.5-GiB limits. This uses pilot cost measurements
+only, without outcome-based selection. Preserve the running evidence rather
+than rerun to conceal the omission. All dependent commands now require an
+explicit successful exit before launching the next step. This process exception
+remains part of qualification review; it is not described as a prelaunch gate.
+Ignored `paired-v4-pilot-cost-gate.json` and
+`root-v4-postlaunch-cost-review.json` preserve the calculation and chronology.
+
+### Fourth experiment outcome: learning capability, pace still fails
+
+All eight v4 development seasons per cohort complete without game/accounting
+errors. Both cohorts' five-metric source error improves: 1983 -.08768
+[-.10029, -.07099], 2024 -.05614 [-.08524, -.02879], equal-cohort mean
+-.07191 [-.09014, -.05186]. All individual metric and scoring guards pass.
+The actual-selector learning proof and public real-game observation
+reconstruction also pass, including five voided primary snaps.
+
+The unchanged 1983 pace guard fails: plays per team-game fall 65.2316 to
+64.7026 against source 65.7879, worsening the absolute source gap +.52902
+[.36523, .69448], above .50. The 2024 pace gap improves .84076. Reject v4;
+closeness to the budget is not a reason to relax it or open held-out seeds.
+No candidate is promoted, and no fifth production experiment is authorized by
+these results. All rejected snapshots and reports remain immutable.
+
+Dynamic coverage integrates each formation's physical mass using the actual
+predecision Laplace prior reconstructed from earlier primary callbacks, with
+the current formation added afterward. All selected calls, including specials,
+reconcile separately from observed primary snaps. Defensive-penalty effects
+remain unresolved; no mass is renormalized away. Utilities in this coverage
+report use a declared reference third-and-15 because compact receipts retain
+distance band rather than exact target. Ignored
+`development-v4-analysis-08.json.gz`, `development-v4-coverage-08.json.gz`,
+`v4-revealed-reconstruction-proof.json` and `candidate-v4-rejection.json`
+retain identities, receipt hashes and the cost-receipt process exception.
+AI-026 remains open, including early-down and defensive chart response.
