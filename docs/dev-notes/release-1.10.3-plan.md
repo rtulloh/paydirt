@@ -103,16 +103,23 @@ or historical results to satisfy this requirement.
 
 ## Cost and time limit for the current investigation
 
-On November 8 the user required a time constraint because token spend is limited.
-The current investigation has a hard deadline of **2026-11-08 22:03:53 UTC**
-(15 minutes from 21:48:53 UTC). Finish only the already-frozen opposing-defense
-public proof, persist the evidence and provide a concise go/no-go decision.
-Do not start another variant, design loop, static sweep or historical campaign.
-Stop additional investigation at the deadline, or earlier when this work finishes.
+On November 8 the user required a time constraint because token spend is limited,
+then extended the initial 15-minute limit to **90 minutes total**. The hard
+deadline is **2026-11-08 23:18:53 UTC** (5:18 p.m. Central), measured from the
+original 21:48:53 UTC budget request. Finish earlier when a defensible result is
+available; the limit is a ceiling, not a target.
+
+Authorize only one bounded interval-certified remaining-down candidate attempt:
+fixed feasibility and cost checks, reviewed scope, test-first implementation if
+feasible, and qualification within the remaining time. No additional redesign
+cycle, replacement candidate, coefficient search or historical sample expansion.
+Stop on a decisive no-go or at the deadline, preserving findings and unfinished
+work. Do not start checks that cannot finish within the remaining budget.
 
 This time limit does not relax any release criterion or make the objective
 complete. If historical improvement is still unproven, report AI-026 as not
-qualified for release and identify the remaining work without starting it.
+qualified for release. The earlier 15-minute stop record remains historical;
+this user extension supersedes that operational limit.
 
 ## Handoff and reporting
 
