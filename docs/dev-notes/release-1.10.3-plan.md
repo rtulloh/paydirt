@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: approved direction; first offense candidate rejected in development.
+Status: approved direction; first two offense candidates rejected in development.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -204,3 +204,63 @@ Ignored compact evidence is retained under
 all 32 immutable compressed season receipts. Original historical diagnostic
 `source_accepted=false` and `release_certified=false` flags remain in receipts;
 they do not replace or contradict the separately verified published-release gate.
+
+## Reviewed second experiment: ordinary third downs only
+
+The next reviewed candidate retains the released own-offense/history mixture
+on first and second downs and applies the unchanged full matchup model only
+on ordinary third downs. Goal-line, red-zone, fourth-down, hurry-up, conversion,
+clock and defensive policies remain fixed. Third down's full line-to-gain
+objective directly values continuation; the early-down half/70%-distance
+surrogates omit remaining downs and clock. This is a narrower capability
+experiment, without a fitted blend, distance cutoff or team/era adjustment.
+
+Static calendar-weighted, empty-history estimates support the diagnosis, without
+establishing a causal season decomposition. At first-and-10, 1983 pass weight
+moves 69.81% (legacy own chart), 66.71% (core semantics with neutral defense),
+then 56.16% (actual opponent chart under the uniform formation prior). The
+2024 values are 75.08%, 74.15%, and 60.07%. Most of the modeled shift comes
+from the opponent-priority adjustment, rather than secondary-column
+interpretation alone.
+
+Candidate v2 is isolated at `2ac517d`, protocol v4 SHA256
+`9fa767be8fc70ed47b0e72ccece9d613a5596820b72196479ebbd9fbb1d3627b`.
+Four first/second-down home/away regressions fail against v1 while 48 existing
+phase controls pass; after the scope correction, 695 focused regressions and
+148 adapter/auto/documentation checks pass. Existing third-down true-resolver
+utility, full-mass/unknown, fallback, physical-side and special controls remain.
+
+Both cohorts retain every original source-efficiency/scoring/pace gate and
+seed. An explicit compatibility receipt reuses immutable released-baseline v3
+receipts and the pre-candidate variance budgets; their stored identities are
+not rewritten to v4. Candidate v2 has separate snapshot, runtime and outcome
+paths. Early-down and defensive capability remain unfinished under AI-026.
+No promotion or improvement is claimed before outcome validation.
+
+### Second experiment outcome: improved accuracy, pace gate failed
+
+All eight v2 development seasons per cohort complete without game/accounting
+errors. Team-macro normalized source error improves: 1983 -.03368
+[-.06123, -.00387], 2024 -.05759 [-.10278, -.01181], equal-cohort mean
+-.04563 [-.06870, -.02462]. Every individual metric guardrail passes.
+
+The complete gate still fails. 1983 plays per team-game fall 65.2316 to
+64.5876 against source 65.7879. Absolute source-gap worsening is +.64397
+[.46903, .82840], exceeding the fixed .50 budget. Scoring gaps improve in
+both cohorts; 2024 pace improves. Reject v2 without sample expansion,
+changed limits or opening any held-out seed.
+
+Normal third-down run share rises 30.90% to 41.32% in 1983 and 24.17% to
+37.65% in 2024; incompletions fall 25.90% to 18.80% and 27.58% to 18.95%.
+Core incompletions consume five seconds versus a normal in-bounds uniform
+25–45 seconds. This supports a clock mechanism, without exact causal
+attribution or conversion/drive conclusions from distance bands.
+
+Eligible third-down modeled coverage is 98.6274% in 1983 and 99.0132% in
+2024. Remaining mass is defensive-penalty effect, retained unresolved.
+The unchanged model's coverage catalog has explicit source-byte compatibility.
+Ignored `development-v2-analysis-08.json.gz`, `development-v2-coverage-08.json.gz`
+and `candidate-v2-rejection.json` retain identities and raw receipt hashes.
+Statistical/pace eligibility is explicitly separate from final promotion,
+which also requires resolver utility, coverage, new-team-bound review and
+complete release qualification.

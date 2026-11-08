@@ -509,6 +509,10 @@ python -m paydirt --teams
 
 ## Releases and Tagging
 
+Prefix every Git commit message with the applicable release or milestone tag,
+followed by a colon and a concise description. Use the target release or milestone
+for the work, for example: `v1.10.3: Improve third-down matchup selection`.
+
 When creating releases:
 
 - **Always increment tag numbers** - Don't delete and recreate tags. If a build fails, fix the issue and create the next tag number (e.g., if `v1.0.0-beta.70` fails, push the fix and create `v1.0.0-beta.71`)
