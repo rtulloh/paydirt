@@ -16,6 +16,7 @@ use the [documentation index](../README.md).
 - [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
 - [v1.10.2 scope and verification](release-1.10.2-scope.md): interception-location audit, fourth-down urgency, faster tests and reliable release publication.
 - [v1.10.3 simulation-improvement plan](release-1.10.3-plan.md): AI-026 scope, controlled paired-season experiments, and outcome exit criteria after 1.10.2.
+- [Full-matchup policy comparison](ai026-full-matchup-policy-comparison.md): public capability controls, retained opacity and utility counterexamples, and an unimplemented formation-objective recommendation.
 - [AI play-testing](ai-playtesting.md)
 - [Chart generator tuning tool](chart-generator-tuning-tool.md): reproducible engine calibration workflow and sample-size guidance.
 - [Statistical Paydirt chart generator](statistical-chart-generator.md): investigation,
