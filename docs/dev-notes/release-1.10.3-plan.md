@@ -1200,3 +1200,15 @@ prediction, unknown-mass safety nor season pace/accuracy. History, zero-family,
 opaque-mass and support limitations still require review. No production change,
 historical sweep, eighth protocol or season campaign is authorized by these
 diagnostics; the original acceptance gates remain unchanged.
+
+Review of the next public-control draft finds a scoring distinction that must
+be fixed before it can support a policy: the tactical audit marks fumble
+recovery pending, while released coaching deliberately assigns known fumble
+risk utility −1 irrespective of recovery. An independent synthetic all-`F + 3`
+offense against neutral defense confirms full pending-fumble mass but released
+utility −1 (up to floating accumulation). Treating every pending outcome as
+unknown neutral utility would silently change that declared score. The ignored
+`root-full-matchup-fumble-semantics-review.json` retains the control and initial
+floating-equality fixture correction. Offensive penalty risk and unresolved
+defensive penalty choices also require separate review; a blanket pending flag
+does not establish which coaching utility is unknown.
