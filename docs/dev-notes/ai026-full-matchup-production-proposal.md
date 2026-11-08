@@ -56,7 +56,7 @@ weights, actual priority branches, and lazily reachable B/QT secondary mass.
 Parser-None secondary tokens (including opaque/blank/missing rows) use actual
 uniform fallback B15..40 or QT-5..10; they are not unknown mass or parser errors.
 Valid primary blank/missing-row semantics follow the core. Parser-RAISED invalid
-secondary tokens such as `F_INC` retain `ValueError`, lazily only when reached;
+secondary tokens such as `F INC` retain `ValueError`, lazily only when reached;
 do not turn them into uniform fallback. Unreachable invalid tables are unread.
 
 Penalty source is part of the model: own OFF plus no defensive penalty retains

@@ -1509,3 +1509,56 @@ bridge; root must verify original seeds, metric/scoring/pace/correctness gates
 and cost limits before authorizing a bounded first-seed historical pilot. No
 historical outcome from this candidate has yet been generated or inspected.
 
+
+## Eighth experiment frozen source and pre-outcome capability proof
+
+Candidate source `e58d1238191942ee8ca00df2eaf2d9d4ab22527c` is frozen in a
+tracked-only snapshot after 2,193 focused passes, 431 backend passes (20 existing
+deprecation warnings), CLI/complete-auto controls and physical-side web replay
+checks. The retained initial 54 existing failures are repaired only by explicitly
+neutralizing defenses in two own-only test fixtures; every assertion, threshold,
+parameter and sample size remains unchanged. The 4,866 released phase records and
+independent nonconstant physical resolver oracle still match the stable source.
+The public coaching/audit guides describe this as an experimental, unqualified
+policy and retain the strategic-mass, uncertainty and finite-temperature limits.
+
+The original protocol's five comparative sections and four numerical outcome
+guard sections, all seeds, variance budgets and cost limits remain unchanged.
+The first eighth-candidate protocol v11 accidentally inherited two execution-order
+strings referring to the seventh defensive candidate. Because its first context
+already existed, both files remain immutable; metadata-only protocol v12
+(`de7443a2da3ae33009cce88f5e938128db50d9078d3431939ef085d1853e4705`)
+corrects those strings before any outcomes. The final context is
+`frozen-candidate-v8-context-r2.json` SHA
+`7e2ef43f12f677118ea8b505b2298925a24d24d68959f8f806eb90de6244a57a`.
+It binds the same source, exact original baseline charts/adapter and freshly
+attested loaded runtime. The v12 compatibility bridge retains the original
+released baseline's identity rather than relabeling its existing receipts.
+
+Ignored `candidate-v8-frozen-factory-utility-proof.json` SHA
+`07a237ac2d4c04d6c382d05a23dcd21cef0ad4ee4a6387e774badf975ff11b85`
+binds separate actual baseline and candidate processes to 36 frozen public tables:
+the retained 28 distinct-formation tables plus eight first/second-down material
+admission/history controls. Each policy evaluates 1,944 matchup and 1,944 neutral
+formation/call distributions with full physical mass and original offensive
+utility. Actual factory vectors match the independent centered-score, global
+admission, repetition and family projection oracle; both policies preserve state,
+history/global RNG and consume the same single namespace draw in these controls.
+
+Of 216 formation comparisons, 102 supported comparisons improve, 50 worsen and
+60 remain unchanged; four have weighted unknown mass and cannot be treated as
+true expected-utility comparisons. Every one of the 72 material-support
+comparisons improves by .66 to .86. The contrary-formation losses (minimum
+-.439375), neutral identity, zero-family limitations and uncertainty are retained,
+not averaged away to claim universal improvement. This proves the declared
+conditional coaching capability, not historical acceptance or an optimal mixture.
+
+The eighth launcher, worker, pilot verifier and analyzer preserve the reviewed
+fail-halt/identity/accounting/statistical logic with version/path substitutions.
+Twelve synthetic launcher controls pass, including invalid indices and stopping
+new submissions after failure. Root source/context/proof review, a committed
+pre-outcome lock and explicit first-seed pilot authorization remain required.
+A successful paired pilot correctness/cost receipt must precede the remaining
+14 development seasons; all development gates must pass before held-out review.
+No eighth historical outcomes or held-out seeds have been executed, and AI-026's
+wider capabilities remain open.
