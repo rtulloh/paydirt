@@ -794,3 +794,69 @@ historical campaign follows from this diagnostic. Ignored
 `own-secondary-static-summary.json` and
 `own-secondary-isolation-history-review.json` retain inputs, identities,
 controls and all per-call effects. All original outcome gates remain fixed.
+
+
+## Sixth experiment frozen: ordinary own-secondary information
+
+Root approved isolated own-secondary information and explicitly retained original
+neutral primary behavior. Source `9f52f77` starts from released `10d7130`, without
+stacking rejected policies. Only ordinary Hard selection opts in. Default calls,
+hurry-up, fourth downs, other special phases, conversions and every defense stay
+released. A shared pure ordinary-weight helper keeps selector/observer vectors
+identical. Targets, progress, risks, temperature, gap, history and RNG namespaces
+remain fixed. A separate 100-context cache invalidates on relevant own primary/
+secondary contents and returns independent mappings. Only referenced tables are
+parsed. Core fallback constants preserve the same RNG calls/distributions.
+
+Released test-first evidence expands from 44 intended failures/28 controls to
+49 failures/57 controls; no missing-API or setup failures establish the behavior.
+After initial implementation, four additional actual-core tests expose the new
+path incorrectly resolving lowercase b/qt. They fail before a narrow raw-category
+support gate corrects that introduced edge. Other primary semantics, including
+BLACK* and F INC, remain released. Prior test/golden bytes remain preserved.
+
+The complete-auto test initially assumes .5/.5 despite executed call history.
+Its corrected independent oracle retains original numeric admission, temperature,
+distance bands, history decay/floor and both-side secondary contrasts. A missing
+import during correction is retained as a setup failure. No existing regression
+expectation changes. Golden vector floats use absolute 1e-12, relative zero, for
+platform libm rounding; plays, mode, RNG states and within-platform full high/low
+records remain exact.
+
+Final checks pass: 128 phase/CLI/complete-auto/docs, 1,727 existing core AI/resolver/
+save/auto tests, and 435 backend tests with 22 existing warnings. Eight backend
+cases cover fresh/replayed preview and actual execution, both sides/B/QT. Ruff
+passes. The same 128 checks pass in the tracked-only archive. These are focused
+checks, not full release regression. Independent review verifies 8,640 candidate
+and 8,640 default score cells, history vectors, cache adversarial controls and
+320 secondary resolver cases with identical post-call RNG across both sources.
+
+Separate frozen actual-factory processes use identical public synthetic inputs
+and actual-core physical-mass oracles. Twenty-four favorable/adverse contrasts
+across both sides/first-second-third downs strictly improve weighted ordinary
+utility (minimum .0574664); four zero controls keep identical vectors/utility.
+Inputs, oracle scores and RNG consumption match; preview leaves engine/history/
+global RNG unchanged. This proves conditional own-information capability at
+neutral defense, not actual-opponent performance or historical acceptance.
+
+Protocol v9 SHA256
+`f2c7bfe119abe89bd64361a22c6a042c5ad6c515671a2c92f77b0eb7cfc26e6b`
+and context SHA256
+`770691e8df80c7f5b1d1cbfbedd6a94509992eedaf7e9d766d2e1f71f4158871`
+bind source, original charts/adapter and published v1.10.2 verification. The
+strict v3/v9 bridge preserves every comparative section, seed and numerical
+budget. Ignored `v6-released-selector-utility-proof.json`,
+`frozen-candidate-v6-context.json`, `v9-baseline-compatibility.json` and independent
+`root-v6-*-review.json` retain detailed proof. The tracked-only snapshot adds
+about 11 MB without a redundant retained archive or node_modules.
+
+No sixth historical outcome exists at this lock. Final root identity review
+precedes the two-seed pilot. A successful pilot cost/correctness receipt must
+precede the remaining fourteen development seasons. Launcher regression first reproduces seven failures with two passing controls.
+Twelve synthetic subprocess checks now pass: invalid/duplicate/out-of-range
+indices, unexpected cohorts and changed protocol identity are rejected before
+workers; at most four active submissions drain existing receipts and halt new
+work on the first failed worker or exception. No historical worker runs in these
+checks. Every original
+source/scoring/pace/team-review gate stays fixed; held-out remains closed and
+AI-026's wider offensive matchup/defensive capabilities remain open.
