@@ -517,6 +517,7 @@ def main():
             print("Use 'standings games <year>' to see the game list.")
             return 1
 
+        game_idx = sorted(range(len(season.games)), key=lambda i: season.games[i].week)[game_idx]
         game = season.games[game_idx]
         print(f"Deleting: Game #{args.game_number} - Week {game.week}: "
               f"{game.away_team} {game.away_score} @ {game.home_team} {game.home_score}")
@@ -540,6 +541,7 @@ def main():
             print("Use 'standings games <year>' to see the game list.")
             return 1
 
+        game_idx = sorted(range(len(season.games)), key=lambda i: season.games[i].week)[game_idx]
         game = season.games[game_idx]
         print(f"Editing: Game #{args.game_number} - Week {game.week}: "
               f"{game.away_team} {game.away_score} @ {game.home_team} {game.home_score}")

@@ -487,8 +487,38 @@ def parse_dice_from_description(description: str) -> dict[str, Any]:
     return dice_info
 
 
+def _confined_directory(parent: Path, identifier: str) -> Optional[Path]:
+    """Resolve a single directory entry without escaping its configured parent."""
+    if not isinstance(identifier, str) or not identifier or identifier in {".", ".."}:
+        return None
+    if "/" in identifier or "\\" in identifier or "\x00" in identifier:
+        return None
+    try:
+        directory = parent / identifier
+        if directory.is_dir() and directory.resolve().is_relative_to(parent.resolve()):
+            return directory
+    except (OSError, ValueError, RuntimeError):
+        pass
+    return None
+
+
+def _team_directory(season_dir: Path, team_id: str) -> Optional[Path]:
+    """Require team assets as well as their directory to stay in the season."""
+    directory = _confined_directory(season_dir, team_id)
+    if directory is None:
+        return None
+    try:
+        if any(not child.resolve().is_relative_to(season_dir.resolve()) for child in directory.iterdir()):
+            return None
+    except (OSError, ValueError, RuntimeError):
+        return None
+    return directory
+
+
 def load_team_info(season_dir: Path, team_id: str) -> Team:
-    team_dir = season_dir / team_id
+    team_dir = _team_directory(season_dir, team_id)
+    if team_dir is None:
+        raise HTTPException(status_code=404, detail="Team not found")
     team_info = {"id": team_id, "name": team_id}
 
     yaml_file = team_dir / "team.yaml"
@@ -755,8 +785,15 @@ def _find_season_dir(season: str) -> Optional[Path]:
         Path to season directory, or None if not found
     """
     for seasons_path in get_all_season_paths():
-        season_dir = seasons_path / season
-        if season_dir.exists() and season_dir.is_dir():
+        season_dir = _confined_directory(seasons_path, season)
+        if season_dir is not None:
+            try:
+                if any(child.is_symlink() and not child.is_dir()
+                       and not child.resolve().is_relative_to(season_dir.resolve())
+                       for child in season_dir.iterdir()):
+                    continue
+            except (OSError, ValueError, RuntimeError):
+                continue
             return season_dir
     return None
 
@@ -771,7 +808,7 @@ async def get_seasons():
         if seasons_path.exists():
             for d in seasons_path.iterdir():
                 # Only include directories with numeric names (valid season years)
-                if d.is_dir() and d.name.isdigit():
+                if d.name.isdigit() and _find_season_dir(d.name) is not None:
                     seasons_set.add(d.name)
 
     seasons = sorted(seasons_set, reverse=True)
@@ -786,7 +823,7 @@ async def get_teams(season: str):
 
     teams = []
     for team_dir in sorted(season_dir.iterdir()):
-        if team_dir.is_dir():
+        if _team_directory(season_dir, team_dir.name) is not None:
             teams.append(load_team_info(season_dir, team_dir.name))
 
     return {"teams": teams}
@@ -835,7 +872,8 @@ async def new_game(request: NewGameRequest):
     if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{request.season}' not found")
 
-    available_teams = [d.name for d in season_dir.iterdir() if d.is_dir()]
+    available_teams = [d.name for d in season_dir.iterdir()
+                       if _team_directory(season_dir, d.name) is not None]
     if player_team not in available_teams:
         raise HTTPException(
             status_code=404, detail=f"Team '{player_team}' not found in season '{request.season}'"
@@ -1884,21 +1922,17 @@ async def load_replay(request: LoadReplayRequest):
 
     game_state = replay_data["game_state"]
 
-    home_team_id = game_state.get("home_team", {}).get("id")
-    away_team_id = game_state.get("away_team", {}).get("id")
+    def replay_team_id(value: Any) -> Optional[str]:
+        team_id = value.get("id") if isinstance(value, dict) else value
+        if (not isinstance(team_id, str) or not team_id or team_id in {".", ".."}
+                or any(character in team_id for character in ("/", "\\", "\x00"))):
+            return None
+        return team_id
 
-    # Also handle case where home_team/away_team is just a string ID
-    if not home_team_id:
-        home_team_id = (
-            game_state.get("home_team") if isinstance(game_state.get("home_team"), str) else None
-        )
-    if not away_team_id:
-        away_team_id = (
-            game_state.get("away_team") if isinstance(game_state.get("away_team"), str) else None
-        )
-
-    if not home_team_id or not away_team_id:
-        raise HTTPException(status_code=400, detail="Invalid replay data: missing team info")
+    home_team_id = replay_team_id(game_state.get("home_team"))
+    away_team_id = replay_team_id(game_state.get("away_team"))
+    if home_team_id is None or away_team_id is None:
+        raise HTTPException(status_code=400, detail="Invalid replay data: invalid team info")
 
     def find_season_for_teams(home_id, away_id):
         """Find a season that contains BOTH teams (searches all season paths)."""
@@ -1907,9 +1941,9 @@ async def load_replay(request: LoadReplayRequest):
                 continue
             for season_dir in sorted(seasons_path.iterdir()):
                 if (
-                    season_dir.is_dir()
-                    and (season_dir / home_id).exists()
-                    and (season_dir / away_id).exists()
+                    _confined_directory(seasons_path, season_dir.name) is not None
+                    and _team_directory(season_dir, home_id) is not None
+                    and _team_directory(season_dir, away_id) is not None
                 ):
                     return season_dir.name
         return None
@@ -1922,8 +1956,8 @@ async def load_replay(request: LoadReplayRequest):
         season_dir = _find_season_dir(season)
         if (
             season_dir is None
-            or not (season_dir / home_team_id).exists()
-            or not (season_dir / away_team_id).exists()
+            or _team_directory(season_dir, home_team_id) is None
+            or _team_directory(season_dir, away_team_id) is None
         ):
             season = None  # Invalid season, will detect from teams
 
@@ -1938,7 +1972,7 @@ async def load_replay(request: LoadReplayRequest):
     if season_dir is None:
         raise HTTPException(status_code=404, detail=f"Season '{season}' not found")
 
-    if not (season_dir / home_team_id).exists():
+    if _team_directory(season_dir, home_team_id) is None:
         raise HTTPException(
             status_code=400, detail=f"Team '{home_team_id}' not found in season '{season}'"
         )

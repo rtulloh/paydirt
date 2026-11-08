@@ -46,7 +46,8 @@ python -m paydirt.standings show 2026
 python -m paydirt.standings games 2026
 ```
 
-The games listing numbers recorded results. Use those numbers when editing or deleting:
+The games listing numbers recorded results in week order, preserving entry order within each week.
+Use those numbers when editing or deleting; run the listing again after changing a week or deleting a game:
 
 ```sh
 python -m paydirt.standings edit 2026 1 --home-score 31

@@ -124,3 +124,5 @@ available so you can retry.
 Browser saved replays preserve displayed game history. They are distinct from
 [CLI saved games](saved-games-and-standings.md), which resume an unfinished game,
 and from proposed deterministic engine-log replay tooling.
+
+Season and team selections, including imported replays, must refer to entries within configured season directories. Links to outside directories or assets are rejected.
