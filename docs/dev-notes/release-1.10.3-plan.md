@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: no-go for release promotion; all eight candidates rejected in development. Bounded public remaining-down evidence is complete and work stops at the cost/time limit. No ninth implementation or campaign is authorized; held-out seasons remain unopened.
+Status: not release-qualified; all eight historical candidates remain rejected. The user extended the timebox to one bounded ninth attempt ending 2026-11-08 23:18:53 UTC. Read-only exposure/cost review and explicit implementation approval come first; held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -1758,3 +1758,25 @@ response and material exposure/phase/procedure validity before selector wiring;
 it is deferred and not authorized by these results. Easy/Medium, public
 information, stochastic variety, human browser checks and all original outcome
 gates remain requirements. AI-026 and broader release work remain open.
+
+
+## User extension: one attempt within a ninety-minute total cap
+
+After the fifteen-minute stop decision above, the user extended the total cap
+to ninety minutes from 2026-11-08 21:48:53 UTC: **hard stop 23:18:53 UTC**
+(5:18:53 p.m. Central). This authorizes one bounded end-to-end attempt, not a
+further redesign loop or variant tournament. First freeze a compact closure/
+formation/production scope and perform one fixed small real-chart interval
+certificate exposure/cost check. If exposure is ineffective, closure is
+untrustworthy or projected cost exceeds the bound, stop with no-go; do not choose
+another formation prior, threshold, coefficient or sample from the results.
+
+Production still requires independent scope review and meaningful actual-factory
+RED before source changes. Keep authoritative field rules, current absence of
+YF scaling in core, own-history aging, future special/clock eligibility, full
+unknown F/OFF/DEF [0,1] bounds, no selected-formation access, stochastic variety
+and Easy/Medium identity explicit. No historical launch follows merely from
+unit capability. No push unless every applicable AGENTS pre-push check passes;
+do not spend beyond the deadline trying to obtain a pass. Existing human
+fairness, all original source/scoring/pace gates and preserved failures remain
+binding. No held-out or historical result is replaced by the public proofs.
