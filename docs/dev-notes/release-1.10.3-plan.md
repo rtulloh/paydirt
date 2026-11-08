@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: no-go; bounded attempt finished early after its fixed feasibility gate failed. The simulation-improvement goal remains incomplete, AI-026 remains open and v1.10.3 is not release-qualified. No further experiment is authorized; held-out seasons remain unopened.
+Status: resumed by the owner on November 8 within the original 23:18:53 UTC deadline. A bounded continuation-analysis foundation passes focused validation; selectors remain unchanged. The earlier feasibility no-go remains valid, AI-026 remains open and v1.10.3 is not release-qualified. Held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -88,8 +88,10 @@ the work open. Do not claim incremental progress without measured support.
 ## Human playability and fair information
 
 User requirement added November 8: improved Hard coaching must leave a fair,
-playable challenge for a human. Use public charts and observed play history;
-never inspect the opponent's hidden selected call or future dice. Preserve
+playable challenge for a human. Use public printed charts and earlier revealed
+play history. The opponent's current defensive formation is hidden while choosing
+offense, even if a UI happens to display it; the current offensive call is likewise
+hidden while choosing defense. Never inspect either current selection or future dice. Preserve
 probabilistic call variety and uncertainty rather than replacing Hard with an
 always-best or deterministic countercall selector. Easy and Medium behavior
 remain unchanged by this bounded Hard experiment.
@@ -1815,3 +1817,29 @@ is authorized. The unresolved gap is broad uncertainty/formation bounds preventi
 material certified chart response. No new implementation proposal is selected.
 v1.10.2 remains released; all human fairness and original validation constraints
 remain. Proof/feasibility sessions have finished and user services are preserved.
+
+
+## Owner resumption: bounded exact diagnostic foundation
+
+The owner explicitly resumed work after the early no-go; the original
+**2026-11-08 23:18:53 UTC** deadline still applies. This supersedes earlier
+statements that no further work is authorized, without changing any rejection
+or outcome gate. The bounded next step is the
+[exact continuation-analysis foundation](ai026-exact-series-analysis-foundation.md),
+with test-first controls and actual synthetic resolver/core/factory witnesses.
+No tenth historical policy variant or source-tuning campaign is selected.
+
+This foundation adds exact rational validation, full caller state identity,
+conservative cycle/resource bounds, immutable diagnostics and support-preserving
+local certificates. It deliberately does not wire a near-no-op rule into Hard:
+the known zero/336 historical exposure remains unresolved. A full-state football
+adapter and historical improvement are still unproven. AI-026 stays open and
+v1.10.3 remains unqualified. Current hidden formation/call access is forbidden
+even when a UI displays it; prior revealed history and public charts are allowed.
+
+The resumed foundation passes 623 focused diagnostic/AI/documentation/tracker
+checks without skips or warnings; changed-file Ruff and whitespace checks pass.
+The six actual numeric resolver/core/factory witnesses preserve game state and
+global RNG and respond to public opponent charts on both physical sides. This
+is reusable analysis capability, not measured historical improvement. The
+missing full-state adapter and practical real-chart exposure remain explicit.
