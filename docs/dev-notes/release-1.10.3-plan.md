@@ -1243,3 +1243,16 @@ and `root-full-matchup-r2-independent-review.json` bind the complete evidence.
 No uncertainty estimator or formation assumption is selected from these cases;
 general matchup ranking, independent prior justification and production test-first
 scope remain required before a new frozen campaign.
+
+A fixed-input algebra review additionally establishes a limited projection
+property: lowering one corrected call score cannot increase that call's
+probability when every other score, original family mass and repetition factor
+is fixed. A falling global maximum can admit competitors; an empty-family
+fallback changes a sole admitted call's conditional probability from one to at
+most one. Zero original families remain zero. All 21,384 finite controls agree,
+including history, global support changes and empty/zero families. Ignored
+`root-family-projection-fixed-input-opacity-review.json` binds the argument and
+script. This supports investigating lower-estimate ranking when one call becomes
+opaque with its own-chart reference fixed; simultaneous opacity changes across
+calls, changes to the own-chart reference, true utility and historical outcomes
+remain outside the claim. No formation objective is chosen by this property.
