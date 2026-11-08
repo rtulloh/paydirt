@@ -506,3 +506,109 @@ order. Use pure content-cached chart analysis and exact ties, with no learned
 observations, save schema or UI change. Require a fresh test-first baseline,
 source/protocol freeze and unchanged paired historical gates before promotion.
 No production work is authorized by the diagnostic alone.
+
+### Defensive candidate implementation review (2026-11-08 UTC)
+
+Root subsequently approved the bounded defense-only proposal for an isolated
+experiment, not promotion. Frozen protocol v8 has SHA-256
+`cd31b2d7874cf49ad37193cac3c483fcfd3f6580201a5c59f612d2ff7298f6d5`;
+historical metrics, seeds, scoring/pace budgets and held-out restrictions stay
+unchanged. Released offense remains intact. No v5 historical outcomes have
+been evaluated at this checkpoint.
+
+Initial test receipts require qualification: the reported 28 failures and 38
+controls included pending-penalty fixture errors, so the count does not prove
+28 intended behavior failures. The first implementation produced 62 passes
+and four failures: two pending-log assumptions and two unreachable breakaway
+fallback controls. Preserve those receipts and correct the fixtures against
+the actual resolver before claiming a clean failing baseline. Missing-row
+controls use physical chart roll keys, and the QT fallback control uses a
+reachable five-yard target.
+
+The pending fixture exposed a real exclusion gap: the core returns an
+unresolved primary outcome before appending to the play log. A narrow,
+engine-owned transient handle is authorized by the ignored immutable
+`pending-primary-scope-addendum-v8.json`. It must identify the actual pending
+outcome, clear only after successful adjudication of that outcome, and survive
+no-op, unrelated or failed adjudication. Existing untimed-down and special
+procedures remain unchanged. Backend reload already cannot reconstruct pending
+outcomes; this experiment adds no save schema or pending-save continuity claim.
+Independent tests against the unchanged engine yield seven expected missing-
+handle failures and one passing control, without setup exceptions.
+
+Independent review also confirms 221 existing resolver/priority tests pass and
+1,521 constant synthetic primary-cell cases match actual resolver utility
+across all nine calls, with complete deterministic secondary columns. These
+checks do not establish missing-secondary fallback correctness, full selector
+qualification or historical improvement. Ignored `root-v5-*-review.json`,
+`root-v5-core-resolver-check.json` and
+`root-v5-synthetic-core-crosscheck.json` retain the detailed evidence. Corrected
+test-first checks, actual-selector proof, source freeze and cost gate remain
+required before the paired development campaign; held-out seeds remain closed.
+
+The corrected released-source baseline subsequently produces 35 intended
+failures and 39 passing controls, with no fixture exceptions. Independent
+review confirms the B/QT fallback oracle assertions pass before the expected
+released-selector mismatch. After the narrow pending-handle implementation,
+all 74 focused selector/lifecycle tests pass; another 83 existing save and
+penalty regressions pass. Runtime attestation includes `matchup_analysis.py`.
+These results clear the identified fixture/lifecycle problems only. Broader
+model and adapter checks, frozen source identity, actual-selector proof and
+paired historical acceptance remain outstanding. Ignored
+`root-v5-corrected-red-review.json`, `root-v5-pending-green-review.json`,
+`root-v5-save-penalty-regressions.json` and
+`root-v5-current-runtime-review.json` retain exact commands, hashes and limits.
+
+## Fifth experiment frozen before historical outcomes
+
+Root approved the distinct defense-only worst-upper-utility experiment from
+released `10d7130`. Source `d531935` and protocol v8 SHA256
+`cd31b2d7874cf49ad37193cac3c483fcfd3f6580201a5c59f612d2ff7298f6d5`
+are frozen before candidate seasons. The strict v3/v8 bridge reuses original
+released baseline receipts, seed arrays and variance budgets without rebinding
+identities. No rejected offensive policy is stacked. Source/AST comparison
+confirms released offense is unchanged apart from constructing a pure defensive
+analysis field; all other existing offensive methods and strategy bytes match.
+
+Test-first disclosure: the early reported 28 failures included two pending-log
+IndexErrors and two unreachable B-fallback assumptions; they were not all
+expected behavior failures. The 111-row fixture was also replaced by an actual
+physical roll, with explicit removal assertions. QT fallback is -5 through 10,
+so the missing-table target was corrected from 15 to 5. Final controls use primary
+B/QT with reachable priority, enumerate actual resolver fallback supports and
+retain exact expected utility. No assertion is weakened or skipped. Corrected
+released-source import origins prove 35 expected failures and 39 controls.
+The corrected rerun uses the unchanged release after the first isolated AI
+implementation; the seven new absent-handle lifecycle failures precede engine
+instrumentation. All
+earlier receipts remain retained with this correction.
+
+The accepted pending exclusion required a narrow transient engine handle,
+because unresolved primary outcomes return before logging. Immutable
+`pending-primary-scope-addendum-v8.json` was reviewed before engine edits.
+The actual pending outcome installs the handle; only successful matching
+accept-play/accept-penalty resolution clears it. No-op, failure and unrelated
+resolution retain it. Existing penalty-index fallback remains. No result,
+clock, RNG, log event, save schema or UI transport is changed. Existing reload
+cannot reconstruct pending outcomes; this is documented without claiming new
+pending-save continuity. Legitimate untimed downs remain distinct.
+
+1,805 relevant core regressions pass, followed by 84 focused mass/cache/lifecycle/
+real CLI/auto controls and 431 backend checks; 21 existing backend warnings
+remain. The new web cases exercise actual preview and execution for fresh and
+replayed games on both physical sides. The complete synthetic auto game
+exercises both defenders. Exact secondary-cache mutation and bounded-target
+controls pass. Final focused/docs count is 85. Ruff passes; this is not a full
+release regression claim. No existing test expectation changes were required.
+
+The actual frozen released and candidate selectors run separately against
+identical public synthetic inputs and an independent real-resolver oracle.
+Six contrasts reduce true worst numeric conversion utility 1 to 0; two
+retained-choice controls stay 0, covering both physical sides and all nine calls.
+This establishes the stated robust capability rather than historical acceptance.
+Ignored `v5-released-selector-utility-proof.json`,
+`frozen-candidate-v5-context.json`, `v8-baseline-compatibility.json` and
+`v5-offense-source-identity.json` bind source, charts, runtime, protocol and
+inputs. Pilot correctness and an explicit successful cost receipt must precede
+remaining development launches. Every original historical gate remains fixed,
+held-out remains closed, and AI-026's wider capabilities remain open.
