@@ -1337,3 +1337,18 @@ only special branches. Ignored
 `42b6433cbe2fd67b4a953b5883c4c5edd6bd76300762919fe1542232f5781500`
 binds fixture, baseline context and source; this is a pre-change public oracle,
 not evidence that any unimplemented candidate already preserves those records.
+Root independently reruns the broadened unchanged-source batch: 82 expected
+baseline failures and 114 passing controls in 5.74 seconds, with no setup errors.
+All 63 production hashes still match released source. Coverage now includes
+actual factory vectors, history and family projection, penalty-source risks,
+reachable B/QT physical fallback mass, lazy parser errors, live chart mutation,
+preview purity, cache limits and exact excluded-phase/RNG records. Earlier
+secondary/punt fixture mistakes are retained separately and are not counted as
+behavior evidence. Seven pending lifecycle cases currently stop at the absent
+identity handle; their downstream assertions remain an implementation gate.
+Ignored `root-full-matchup-combined-red-review-r1.json` binds the complete test,
+fixture and production hashes and terminal log. Actual audit-observer parity
+coverage and the boundary between ordinary caches and unchanged default/hurry
+caches require clarification before production authorization. No season campaign
+or historical source-fit claim follows from this baseline evidence.
+
