@@ -1589,3 +1589,65 @@ original 16 baseline reports, then every unchanged primary, individual-metric,
 scoring and pace gate is evaluated. Held-out seasons, promotion, merge and push
 remain unauthorized. Source artifacts and the committed pre-outcome lock remain
 immutable; this paragraph records only the subsequent pilot/remainder state.
+
+## Eighth outcome: modern source gains do not qualify both cohorts
+
+All 16 candidate development seasons complete successfully. The paired integrity
+verifier rechecks all 32 candidate/baseline reports and 8,288 games, including
+postseason inventories, score/period/box/call accounting, physical return controls,
+raw aggregates and strict original policy-specific identities. No game failures,
+seed replacements or held-out outcomes occur. The complete frozen analyzer and
+root's independent raw-total/20,000 paired-bootstrap calculation agree exactly
+on all 17 means/intervals and all 32 input hashes.
+
+The eighth candidate is rejected. Primary normalized source-error changes are:
+
+| Cohort | Candidate minus baseline | Paired 95% interval |
+| --- | ---: | --- |
+| 1983 | +.002497742 | [-.051642913, +.050782838] |
+| 2024 | -.049463213 | [-.081803527, -.011009074] |
+| Equal-cohort pooled | -.023482735 | [-.061211168, +.013719298] |
+
+The 1983 mean is above zero and its upper endpoint exceeds .05; the pooled upper
+endpoint is not below zero. The 1983 scoring absolute-source-gap change is
++.155691964 with interval [-.117473493, +.424114118]; its upper endpoint exceeds
+the original .25 budget. Both pace guards, all ten individual-metric guards and
+2024 scoring pass. These passes do not override the failed joint acceptance
+conditions. No sample expansion, seed change, bound relaxation, promotion, merge,
+push or held-out campaign follows from the modern-cohort improvement.
+
+Signed gaps retain contrary source evidence: completion already falls below
+historical targets in both released cohorts; the candidate narrows that gap in
+2024 but widens it in 1983. Rushing efficiency already exceeds both sources, and
+its league gap and team-macro absolute error increase. Sack rates remain below
+sources. These are descriptive results, not causal explanations or permission to
+fit team coefficients. Improving declared coaching utility and improving source
+fidelity remain separate claims.
+
+The frozen generic compiler's native coverage catalog retains all 788 ordered
+calendar matchups, 42,552 call/formation cells and six explicitly static utility
+targets, plus all 60 same-own-chart neutral references. Each physical mass and
+unknown-category sum reconciles. The census independently validates all 32 input
+identities/aggregates and accounts for 1,215,523 REG callbacks: 1,081,351 primary
+calls plus 134,172 specials. Selected-call/formation counterfactual unresolved
+mass is 1.3739% to 1.3538% (1983 baseline/candidate) and .8950% to .9082% (2024).
+Only defensive-penalty uncertainty occurs in these charts. Compact mode/distance
+bands do not establish actual ordinary-branch exposure or exact per-snap targets.
+Neutral-reference uncertainty is retained; lower subtraction is not presented as
+a conservative causal bound.
+
+All newly exceeded team bounds remain reported with denominators, paired errors
+and intervals: 118/93 new pairwise-or-mean team/metric crossings, including 13/7
+new mean crossings (1983/2024). No team is tuned or dismissed as an outlier.
+Ignored `development-v8-new-team-bounds-review.json.gz`,
+`development-v8-coverage-08.json.gz` and the native catalog preserve complete
+rows. The final local rejection receipt is `candidate-v8-rejection-complete.json`;
+the original rejection, source, pre-outcome lock, negative tests and every season
+receipt remain immutable. AI-026 and the release objective remain open.
+
+Eight rejected experiments now show that a resolved chart response or improved
+synthetic coaching objective does not establish historical fidelity. Another
+small utility/prior variation is not selected. The next work is a proposal and
+public test design for a structural football mechanism, explicitly separating
+remaining-down/first-down planning and strategic counterplay from historical
+source calibration. No ninth implementation or campaign is authorized.
