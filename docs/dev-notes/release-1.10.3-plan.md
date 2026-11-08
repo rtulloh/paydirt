@@ -1395,3 +1395,43 @@ an incorrect defensive metadata attribute; that setup failure and its correction
 are retained separately and are not evidence of a production defect. No candidate
 comparison or historical improvement is yet established by this frozen oracle.
 
+## Initial eighth implementation and independent review
+
+The final test-only baseline receipt records 82 expected behavior failures and
+116 controls, zero errors/skips, across seven modules and two public fixtures.
+Root verifies the complete frozen hashes/log and reviews the lint-only changes;
+assertions remain intact. The initial implementation then passes all 198 focused
+cases, including the downstream pending lifecycle assertions and actual audit
+observer parity. The separate ordinary model leaves the default strategy source
+unchanged. Shared fallback constants and the narrow pending identity lifecycle
+reuse the previously reviewed seventh-experiment core diffs.
+
+An additional actual-core oracle revision explicitly includes `TD` and defensive
+`(TD)` outcomes: the first oracle's offensive `(TD)` token did not itself produce
+a touchdown. Both inputs/results remain immutable; this is a fixture coverage
+clarification, not a gameplay finding. Ignored
+`root-full-matchup-varied-physical-core-oracle-r2.json` SHA
+`2d6834b2d588c2529dcc380ed1f65892f93f1481a3a9440a8c6cb6996764c1ed`
+binds 8,100 core cells. Root independently compares all 54 compiled physical
+distributions and 270 exact original-utility estimates: zero mismatches against
+the initial model. The oracle binds the shared-constants resolver source; no
+penalty or B/QT claim follows from this complementary numeric/risk check.
+
+Independent review nevertheless finds a missing availability edge: an offensive
+column with no physical rows is absent from released selectable calls, but the
+new compiler still traverses its defensive QT branch and can raise on an invalid
+secondary token. Merely old-threshold-excluded populated calls must remain in
+scope for new admission. The ignored
+`root-unavailable-call-lazy-secondary-probe.json` retains the reproduction. The
+agent confirms the finding and is adding empty/nonphysical-column regressions
+before the fix, retaining populated full/sparse-column controls that must raise
+for genuinely reachable invalid secondary data. This stays within the declared
+availability/lazy compiler contract; it does not change the selected policy.
+
+The initial candidate also matches all 4,866 phase records exactly. That result
+is provisional: its first comparator binds only the main AI source and predates
+the availability correction. The final comparison will use the separate revised
+verifier, which binds all production source files before imports and requires
+those bytes to remain unchanged through comparison. Stable-source qualification,
+existing regressions and the frozen paired-season gates remain outstanding.
+
