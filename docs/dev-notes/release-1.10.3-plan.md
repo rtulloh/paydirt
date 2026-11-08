@@ -85,6 +85,22 @@ metrics after observing results.
 If evidence is neutral, adverse, or too uncertain, report that outcome and keep
 the work open. Do not claim incremental progress without measured support.
 
+## Human playability and fair information
+
+User requirement added November 8: improved Hard coaching must leave a fair,
+playable challenge for a human. Use public charts and observed play history;
+never inspect the opponent's hidden selected call or future dice. Preserve
+probabilistic call variety and uncertainty rather than replacing Hard with an
+always-best or deterministic countercall selector. Easy and Medium behavior
+remain unchanged by this bounded Hard experiment.
+
+Before release, inspect call concentration and repetition in the required AI
+audits and complete the existing human-home and human-away real-engine browser
+games. Review difficulty separation and practical human playability alongside
+simulation accuracy. Automated game completion alone does not establish a human
+win rate; do not claim one without evidence. Do not force human wins, handicaps
+or historical results to satisfy this requirement.
+
 ## Handoff and reporting
 
 The existing release subagent owns preparation and implementation after 1.10.2.
