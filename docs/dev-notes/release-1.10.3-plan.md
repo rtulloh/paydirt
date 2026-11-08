@@ -1108,3 +1108,56 @@ review of source/capability identities and this durable lock; the original
 scoring .25, pace .50, five-metric, cohort, correctness and cost gates stay fixed.
 Already understated completion/passing efficiency may worsen with more modeled
 stops. All adverse prior experiments remain rejected, and wider AI-026 work is open.
+
+## Seventh outcome: defensive gains fail modern completion fit
+
+Reject source `c6ecfc` at development. All 16 candidate seasons and retained
+16 baseline seasons complete: 8,288 paired games, with every raw game's scoring,
+box, periods, selected-action accounting, physical return settings, playoff
+completion and regular aggregates revalidated. The pilot cost receipt preceded
+the remaining 14 seasons; bounded workers finish without failures. Root independently
+recomputes all 17 primary/cohort/metric/scoring/pace means and paired-bootstrap
+95% intervals exactly, with identical 32 input receipt hashes.
+
+Normalized source-error changes (candidate minus baseline; lower is better) are:
+
+| Scope | Mean | Paired 95% interval |
+|---|---:|---:|
+| 1983 cohort | −.031862 | [−.067999, +.005272] |
+| 2024 cohort | +.060015 | [+.027169, +.086322] |
+| Equal-cohort pooled | +.014076 | [−.005262, +.034911] |
+
+The 2024 cohort worsens and fails its mean/upper-bound requirements; pooled
+upper uncertainty also fails improvement. Modern completion-rate normalized
+MAE rises +.349063, 95% [.254871, .417920], exceeding the fixed .25 guard.
+The 1983 points absolute-gap change is −.053013, but its upper uncertainty
+.361607 exceeds the fixed .25 scoring limit. The other nine individual metric
+guards and both pace guards pass. These passing checks cannot override the
+failed gates. Conditional synthetic defensive utility improvements do not
+establish historical outcome improvement, consistent with the previously
+declared risk that stronger modeled stops worsen understated passing fit.
+
+The current native compiler's 788-pair, 42,552 call/formation-cell inventory
+exactly matches the previously reviewed physical distributions and all six
+static-target utility intervals. The selected-call/formation counterfactual
+census reconciles all 1,219,215 REG callbacks, including primary and special
+calls, enum names and policy-specific identities. Unresolved defensive-penalty
+mass remains explicit: historical .013739→.013775 and modern .008950→.008915.
+This census includes branches outside the candidate and does not infer actual
+defensive eligibility/exposure or per-snap utility from compact offense mode/bands.
+
+All newly crossed team bounds remain recorded with targets/tolerances, eight
+paired raw numerators/denominators/source errors and original intervals:
+106 historical and 90 modern team-metric pairs, including 11/13 newly exceeded
+mean bounds. No crossing is dismissed as an outlier or used for team tuning.
+Development playoff frequencies remain coarse diagnostics at 1/8 increments.
+
+Ignored `candidate-v7-rejection.json` SHA
+`6ec633fa694f7aa8d3981c46f788e207caa399baa27b99829798e25df915b216`
+binds integrity, analysis, independent agreement, full coverage, team review,
+pre-outcome lock and source/protocol identities. No held-out season was run,
+no limit/sample changed, and the candidate is not promoted. Wider AI-026 remains
+open. The next authorized work is read-only hypothesis comparison of strategic
+run/pass mass versus tactical full-matchup call choice; it is distinct from the
+rejected fixed-support own-secondary family tilt. It has no production or
+season-campaign authorization.
