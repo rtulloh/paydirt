@@ -48,7 +48,7 @@ penalty, first-down or possession rules. The first public witness has identical
 neutral effects in all six formations, so no empirical/uniform/robust prior is
 chosen to manufacture its result.
 
-No production sampling formula is selected here. In particular, replacing a
+At this initial diagnostic stage no production sampling formula is selected. In particular, replacing a
 scalar score while retaining a temperature would introduce another finite-mixture
 tradeoff; proving the best-action oracle does not prove the actual sampled
 coach's value. The diagnostic must calculate the actual released mixture's
@@ -94,7 +94,7 @@ initial LONG_PASS's .8120490376. Thus changing only the first call to the safe
 one would worsen that policy. Values one and 7/8 assume optimal continuation;
 they must not be substituted for the sampled policy's future. This is a
 whole-series planning opportunity, not proof that the isolated released first
-choice is dominated. No candidate sampling rule has been chosen or tested.
+choice is dominated. At that initial stage no candidate sampling rule had been tested; the later read-only mixed-policy demonstration below is separate.
 
 Core zero/negative gains, first-down reset, goal-to-go touchdown, original-offense
 interception/safety attribution and an unreachable eighty-yard target pass.
@@ -179,3 +179,96 @@ coverage and unresolved-transition limits, then decide whether a bounded planner
 and operational mixture are justified. Do not launch a campaign simply because
 the arithmetic oracle is better. The defensive and broader chart-strength
 capabilities of AI-026 remain open throughout.
+
+## Operational rule proposed for one read-only mixed-policy demonstration
+
+Fix the released same-state raw weights as prior b, including its global
+admission and history. Keep that positive support; do not admit zero-prior calls
+or preserve separate run/pass masses. First-down value is independent of call
+family, while the prior retains excluded-call and zero-family limitations. No
+variant or development outcome chooses this rule.
+
+Work backward over legal remaining downs. Compute Q_pi using the continuation
+value of the same tilted policy, then set pi proportional to
+b * exp((Q_pi - max Q_pi)/.45), with the existing .45 temperature and ordered
+calls. Equal Q values return exact released weights. This inherited preference
+scale is not a calibrated football constant. No additional gap or threshold.
+
+In a fully known acyclic series, weighting monotonically with Q gives
+E_pi[Q_pi] >= E_b[Q_pi]. Backward induction with improved future values then
+gives V_pi >= V_b. Verify actual computational mixed values state by state;
+optimal-max continuation is a separate oracle. Initial safe-call probability
+need not increase. This is not an optimal mixture or historical-fidelity proof.
+
+Abstain to exact released weights if any positive-prior transition or its future
+policy is unresolved, cyclic, unsupported or outside known field/phase/clock
+semantics. Never renormalize unknown mass away. Future special branches must use
+the retained policy or explicit uncertainty, never assumed continued planning.
+For the frozen witness, the first-down line is own 50: nonterminal gains remain
+below it, losses remain ordinary until safety, and the three Q1 snaps stay above
+five minutes. Those bounds and history/actual-vector checks justify this case's
+closure only; no generic distance-only cache or phase claim follows.
+
+Fallback can raise a call's probability relative to a previous supported tilt;
+this is not universal opacity-monotonic safety. Unknown zero-prior calls remain
+unselected. Real charts contain penalty/DEF mass, so this scope may yield little
+or no usable exposure. Before production, demonstrate material transition
+coverage or review authoritative resolution of those branches; do not implement
+a near-no-op or silently replace unknown enforcement with heuristic risk.
+Better conversions may worsen scoring/pace. Only the fixed public mixed-policy
+demonstration is approved, not a ninth production policy or historical campaign.
+
+## Fixed mixed-policy result and real-chart applicability limit
+
+The single rule above was frozen before execution on the same public table.
+Ignored `remaining-down-mixed-inputs-r1.json` SHA
+`70114e0dc3efbbd9b8371c7857903e20910a45148e174411f34e5e0f1365031f`
+binds the proposal, source, exact table and formula.
+`remaining-down-mixed-proof-r1.json` SHA
+`c6570a71fcafaab3b6cdf0772fce3279f5dce0ab1ff6a8f5992106b680146ec1`
+reconstructs all 16,200 actual physical cells on both sides. Actual released
+series success .7981686716503044 increases to .837995829443849 under the
+self-consistent sampled continuation, a gain of .03982715779354462. Every
+reached-state action value, prior, tilted vector and monotonicity certificate
+is retained; root's independent reconstruction agrees exactly. Optimal value
+one remains a separate oracle. This does not establish historical fidelity,
+new-support capability, opponent-defense response or generic phase/clock closure.
+
+The pre-execution proposal is preserved byte-for-byte in ignored evidence.
+An immutable clarification corrects inherited proof labels saying "no candidate
+sampling formula": one read-only formula was explicitly demonstrated, while no
+production policy was selected or deployed. Numerical/source bytes are unchanged.
+
+The fixed applicability census then checks all 788 ordered calendar matchups,
+downs 1–3, distances 1/3/6/7/10/15 and empty/repeated own history: 28,368 explicit
+ordinary counterfactual contexts. **Zero** have all released positive-support
+calls utility-supported across all six formations, even under that optimistic
+necessary condition. The stricter count additionally treating fumble recovery
+and offensive-penalty transition as unmodeled is also zero. The cohorts contain
+12,240/16,128 contexts (1983/2024), or 16,128/19,584 calendar-weighted contexts.
+Every row retains full prior/mass and all runtime/chart identities reconcile.
+Root's independent reconstruction agrees. Ignored
+`remaining-down-support-availability-r1.json.gz` SHA
+`9f058a1e3f37559b7aa51c5265c07d910bd789de8eaa0af66f3bf4c54d324d90`
+contains complete rows.
+
+These are current-result necessary conditions, not future-state closure or
+actual eligible-snap frequencies. Utility support is insufficient for planning:
+fumble risk -1 can be known while recovery/possession is not; offensive-foul
+risk -.3 does not specify adjudication. Clock/phase/legal procedures require
+further modeling even in a clean row. The exact-only fallback rule is therefore
+impractical here and is **not** proposed for production. No near-no-op rollout,
+unknown-mass renormalization, ninth implementation or season campaign follows.
+
+The next approved public evidence task considers a single uncertainty-aware
+baseline-policy advantage certificate. It must keep actual Q-baseline bounds,
+proper-process assumptions and unresolved replay/pending states explicit;
+endpoint algebra alone cannot establish those football assumptions. AI-026
+still requires both own-offense and opponent-defense chart response. The neutral
+witness establishes neither full matchup capability nor historical fidelity.
+
+Any eventual coaching policy must also satisfy the plan's human-playability
+constraint: public information only, no selected-call/future-dice access,
+probabilistic variety, unchanged Easy/Medium, call-mix/repetition review and both
+human browser games. Positive finite-temperature support is a mathematical
+property, not evidence of a practical human win rate or difficulty balance.

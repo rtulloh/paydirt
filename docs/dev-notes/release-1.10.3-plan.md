@@ -1677,7 +1677,7 @@ and opponent counterplay. Root's exact public own-chart arithmetic witness is
 retained alongside the completed bounded actual-core/factory proof; generic
 legal-state planning and a production sampling rule remain unimplemented. The earlier third-down-only binary
 objective could not value early-down progress through its continuation states.
-No ninth sampling formula, production implementation or campaign is selected.
+No ninth production implementation or campaign is selected; a separate read-only sampled-policy diagnostic follows.
 
 Independent eighth native-catalog arithmetic and raw callback reviews are now
 retained in `root-v8-coverage-catalog-arithmetic-review.json` and
@@ -1695,3 +1695,18 @@ safety, turnover, touchdown/reset, zero/negative and very-long controls pass.
 The proposal retains both earlier tooling setup errors, fixed-Q1 memo limits,
 explicit unsupported branches and exact special-clone execution/RNG comparison.
 This is read-only public evidence, not a ninth policy or fidelity qualification.
+
+The single frozen public self-consistent mixed-policy demonstration improves
+series conversion from .7981686716503044 to .837995829443849. Root independently
+reconstructs every state/action/prior/certificate. This is not a production or
+fidelity result. The fixed real-chart applicability census then finds zero
+known-result roots among 28,368 ordinary counterfactual contexts across all
+788 calendar matchups, three downs, six distances and empty/repeated history.
+Even optimistic utility support fails; recovery/enforcement and future clock
+closure require more. Root's independent census agrees. The exact-only planner
+would be impractical, so no near-no-op rollout is proposed. The
+[proposal](ai026-remaining-down-planning-proposal.md#fixed-mixed-policy-result-and-real-chart-applicability-limit)
+retains full counts/hashes and the distinction between known risk utility and
+known legal transition. Only a separate read-only uncertainty-certificate proof
+is authorized next, with no ninth production or season campaign. Both own/O and
+opponent/D chart response and human playability remain required.
