@@ -711,3 +711,86 @@ source/tolerance changes or sample expansion follow. Released offense and
 main production source remain unchanged; AI-026's wider offensive/defensive
 capabilities remain open. Review a general mechanism before any sixth
 candidate or protocol change.
+
+
+## Fifth defensive objective: static binding-call tradeoffs
+
+The approved post-rejection diagnostic retains exact all-nine-call signed
+utility/bound changes for every ordered calendar matchup, six declared static
+targets and all six hypothetical released tie baselines. At target 10 with
+released C, 2024 worst-upper utility improves .121386, but neutral offensive
+utility increases .24356 for Screen, .17293 for Short Pass and .15950 for
+Draw, while decreasing .24699 for Long Pass and .10774 for Medium Pass.
+The original C bound is driven by Medium/Long Pass in 58.82%/41.18% of
+calendar-weighted pairs. For hypothetical released D, Long Pass binds 94.12%;
+reducing its hedge increases Screen .13280 and Short Pass .19745.
+These are explicit static conditional tradeoffs, not observed offensive
+probabilities, actual eligibility, expected points or causal season effects.
+Exact ties retain the hypothetical released recommendation, then enum order.
+Ignored `defense-v5-binding-tradeoffs.json.gz` preserves every signed interval,
+full-source catalog identity and calendar weights; no production follows.
+
+Review also confirms no retained campaign isolates only own offensive B/QT
+secondary information. The earlier neutral-defense ablation simultaneously
+changed primary priority semantics, secondary resolution and unknown-floor
+ranking. Released ordinary offense explicitly assigns neutral full mass to
+B/QT despite available secondary columns. An approved next diagnostic will
+isolate that information from released source while retaining every original
+ordinary target/progress/risk/weight/history parameter and all defensive,
+special-phase and conversion policies. Actual-core synthetic controls precede
+the 60-team static comparison. No sixth production candidate or season campaign
+is authorized by this diagnostic; wider AI-026 remains open.
+
+
+## Own-secondary diagnostic: a distinct missing-information case
+
+The released Hard selector is insensitive to changing only its own B/QT
+secondary tables in public synthetic charts, on both physical sides.
+Independent root actual-factory checks retain the same scores, weights and
+seeded selection. An isolated diagnostic resolves only primary B/QT mass;
+all other primary interpretation, ordinary down targets, numeric progress,
+risks, temperature, competitive gap and repetition handling stay released.
+This differs from the earlier combined neutral-defense ablation.
+
+Forty-four final controls pass against the actual released resolver. They
+cover favorable/adverse and zero secondary gains, both sides, physical
+secondary dice mass, partial/missing/unparseable fallback tables, and QT
+secondary fumbles. B-column fumble notation currently yields numeric
+Breakaway yards in the core; that asymmetry is preserved. Secondary F INC
+is explicitly rejected by both core and diagnostic, not treated as fallback.
+Non-B/QT primary scores across all four downs, chart/RNG purity, repetition
+factors and conversion scores remain unchanged. Root caught an invalid
+mocked defensive-dice tuple in an earlier control revision; that receipt is
+retained as unaccepted evidence. Final controls use physical (1, 0, 1).
+An earlier metadata enum/name tooling error also precedes accepted evidence.
+
+The static comparison covers all 60 teams and 16 fixed down/distance
+contexts, with original frozen chart/runtime identities checked before and
+after execution. Calendar-weighted empty-history pass weight shares are:
+
+| Cohort/context | Released | Own secondary only |
+| --- | ---: | ---: |
+| 1983 first-and-10 | .698138 | .665916 |
+| 1983 third-and-10 | .778439 | .752198 |
+| 2024 first-and-10 | .750775 | .734858 |
+| 2024 third-and-10 | .851435 | .812157 |
+
+All teams change. B/QT accounts for roughly 7.4%/8.8% of primary mass in
+passing calls for the two cohorts; run calls contain less. Existing generated
+secondary tables require no fallback in this inventory. Other neutral primary
+mass remains untouched with full probability mass. These are conditional
+own-chart utility estimates, not defense-adjusted probabilities or historical
+acceptance. The runward shift is contrary evidence given earlier pace failures;
+no favorable season result is implied.
+
+Wiring requires care before any candidate: released hurry-up weights reuse
+`OffensiveStrategy.weights`. A global score change would therefore alter an
+excluded phase. A concrete sixth proposal must opt in only ordinary Hard
+selection, retain default/hurry/conversion behavior, and keep the audit observer
+on the exact same ordinary distribution. No production change or sixth
+historical campaign follows from this diagnostic. Ignored
+`own-secondary-core-controls.json`, `own-secondary-static-diagnostic.json.gz`,
+`own-secondary-static-identity-verification.json`,
+`own-secondary-static-summary.json` and
+`own-secondary-isolation-history-review.json` retain inputs, identities,
+controls and all per-call effects. All original outcome gates remain fixed.
