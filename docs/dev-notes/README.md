@@ -17,7 +17,8 @@ use the [documentation index](../README.md).
 - [v1.10.2 scope and verification](release-1.10.2-scope.md): interception-location audit, fourth-down urgency, faster tests and reliable release publication.
 - [v1.10.3 simulation-improvement plan](release-1.10.3-plan.md): AI-026 scope, controlled paired-season experiments, and outcome exit criteria after 1.10.2.
 - [Full-matchup policy comparison](ai026-full-matchup-policy-comparison.md): public capability controls, retained opacity and utility counterexamples, and an unimplemented formation-objective recommendation.
-- [Full-matchup implementation proposal](ai026-full-matchup-production-proposal.md): isolated test-first scope for ordinary Hard tactical substitution with unchanged strategic family masses; production and campaigns unapproved.
+- [Full-matchup implementation proposal](ai026-full-matchup-production-proposal.md): isolated test-first scope for ordinary Hard tactical substitution with unchanged strategic family masses; eighth candidate implemented locally and rejected under the unchanged outcome gates.
+- [Remaining-down planning proposal](ai026-remaining-down-planning-proposal.md): structural lessons from eight rejections and public actual-core test design; no ninth implementation authorized.
 - [AI play-testing](ai-playtesting.md)
 - [Chart generator tuning tool](chart-generator-tuning-tool.md): reproducible engine calibration workflow and sample-size guidance.
 - [Statistical Paydirt chart generator](statistical-chart-generator.md): investigation,

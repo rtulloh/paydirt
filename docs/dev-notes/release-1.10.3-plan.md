@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: seven candidates rejected in development; eighth frozen candidate passed the paired pilot and is running the remaining development seasons. Held-out evaluation and promotion remain gated.
+Status: all eight candidates rejected in development; remaining-down structural proposal and public test design under review. No ninth implementation or campaign is authorized; held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -21,8 +21,9 @@ playoff participants, records, or champions.
 2. Reconcile AI-026 against the released implementation and reproduce its
    controlled synthetic/public chart-response failures and passing controls.
 3. Review the experimental design and a bounded first mechanism before rollout
-   or an expensive season campaign. The agent's current proposal is ordinary
-   Hard offense responding to opponent defense; defense remains unchanged.
+   or an expensive season campaign. After eight rejections, review the
+   [remaining-down structural proposal](ai026-remaining-down-planning-proposal.md)
+   before selecting any ninth production mechanism.
 4. Add meaningful failing tests, implement the reviewed mechanism, then verify
    focused correctness and actual gameplay before paired season comparisons.
 5. Review the measured result. Retain only a supported improvement, or revise
@@ -1651,3 +1652,30 @@ small utility/prior variation is not selected. The next work is a proposal and
 public test design for a structural football mechanism, explicitly separating
 remaining-down/first-down planning and strategic counterplay from historical
 source calibration. No ninth implementation or campaign is authorized.
+
+## Structural review after eight rejections
+
+The [remaining-down proposal](ai026-remaining-down-planning-proposal.md) separates
+a bounded three-down first-down objective from one-step utility, strategic mixing
+and opponent counterplay. Root's exact public own-chart arithmetic witness is
+retained alongside the completed bounded actual-core/factory proof; generic
+legal-state planning and a production sampling rule remain unimplemented. The earlier third-down-only binary
+objective could not value early-down progress through its continuation states.
+No ninth sampling formula, production implementation or campaign is selected.
+
+Independent eighth native-catalog arithmetic and raw callback reviews are now
+retained in `root-v8-coverage-catalog-arithmetic-review.json` and
+`root-v8-coverage-independent-review.json`; every reported fraction and defender
+aggregate matches. The rejection remains unchanged. A better series-continuation
+coach might worsen already-high scoring/pace; synthetic coaching correctness is
+explicitly distinct from historical fidelity and all original gates remain.
+
+The first read-only remaining-down prototype passes 16,200 actual physical core
+cells on both sides. The actual released whole-series conversion probability is
+.7981686716503044 versus one for optimal continuation. Crucially, released-future
+conditional values favor initial gamble (.8120490376) over initial safe call
+(.7478002608); the opportunity requires changing continuation too. Core field,
+safety, turnover, touchdown/reset, zero/negative and very-long controls pass.
+The proposal retains both earlier tooling setup errors, fixed-Q1 memo limits,
+explicit unsupported branches and exact special-clone execution/RNG comparison.
+This is read-only public evidence, not a ninth policy or fidelity qualification.
