@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: approved direction; two rejected candidates, third continuation experiment under evaluation.
+Status: seven candidates rejected in development; eighth frozen candidate passed the paired pilot and is running the remaining development seasons. Held-out evaluation and promotion remain gated.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
