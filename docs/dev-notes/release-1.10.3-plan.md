@@ -1256,3 +1256,42 @@ script. This supports investigating lower-estimate ranking when one call becomes
 opaque with its own-chart reference fixed; simultaneous opacity changes across
 calls, changes to the own-chart reference, true utility and historical outcomes
 remain outside the claim. No formation objective is chosen by this property.
+
+## Selected public objective and distinct-formation evidence
+
+Before distinct-formation controls, root accepts the recommendation in
+[full-matchup policy comparison](ai026-full-matchup-policy-comparison.md):
+`released_score(p) + min_f L(match(p,f)) - L(neutral(p))`, followed by released
+global admission/repetition and preserved released run/pass masses. This is an
+explicit pessimistic per-call ranking under formation ignorance, not a forecast,
+causal bound, equilibrium or guaranteed improvement of a sampled mixture.
+Uniform-six averaging remains an explanatory alternative, not another candidate
+to select by historical results. No current defense or hidden AI/RNG input is used.
+
+All 28 exact public input tables are frozen before resolution (input SHA
+`60bc7119ecebeac260e7c1ff269396ad364969ed267608b9064c6a8edcc37318`).
+Both-side/history controls confirm material new support: previously excluded
+Screen enters a positive pass family with mass .5; utility improves .08 → .74
+against its least favorable formation and .94 elsewhere. Neutral B/QT identity,
+empty/zero families, singleton support expansion and single-call opacity controls
+also pass. Root independently reconstructs all 3,024 physical distributions,
+minimum/mean/worst-formation identities, scores, history, admission, projection,
+weighted utilities and intervals. Ignored
+`full-matchup-distinct-formation-controls-r3.json` SHA
+`b4bb7c4c7f1498428635a6954266ffa9b77710b30c2bb063cce3a79fb1ab8f2a`
+and `root-distinct-formation-r3-independent-review.json` retain full evidence.
+
+A contrary frozen table retains the objective's cost: min-ranking utility is
+.146009 in every formation, versus released .585383 in A–E and −.298724 in F.
+Uniform ranking instead yields 1.212359 in A–E and −.933346 in F. No formation
+probabilities are inferred and neither gain nor loss is hidden. Root's separate
+108-cell actual-core control matches the empty-history result on both sides.
+
+Next authorized work is a concrete isolated implementation proposal and public/
+synthetic failing tests from released `10d7130`, observing actual ordinary Hard
+factory vectors on all three downs and retaining special-phase/RNG controls.
+Generic penalty-source classification, full physical mass, lazy secondary parsing
+and bounded content-aware caches require explicit tests. Production edits require
+that review and meaningful RED evidence first. No historical sweep, eighth
+candidate campaign or held-out access is authorized by these capability controls;
+all original source-fit, correctness, scoring, pace and cost limits remain fixed.
