@@ -1435,3 +1435,23 @@ verifier, which binds all production source files before imports and requires
 those bytes to remain unchanged through comparison. Stable-source qualification,
 existing regressions and the frozen paired-season gates remain outstanding.
 
+The availability correction follows four expected failing regressions and four
+passing reachable-error controls before the fix; all eight then pass. Root
+independently reproduces both groups. Empty/nonphysical-only columns retain full
+unavailable bookkeeping mass and skip secondary parsing; populated full/sparse
+columns remain analyzed even outside released competitive support. No existing
+assertion is weakened. The combined focused suite passes 206 cases in 6.92 seconds.
+
+Stable model SHA
+`a7119a503f313a2facd8eba98f682d0456abddca706902e63f7a1c886eef9e77`
+passes root's repeated independent 54-distribution/270-utility comparison and all
+4,866 frozen phase records, with zero mismatches. The revised phase verifier binds
+all 64 production source hashes before imports and verifies unchanged bytes after
+execution. Ignored `root-full-matchup-phase-stable-candidate-review-r1.json` SHA
+`b8ca75cb79de208f46149f7125269239dd2535c4e9ddfdd98827b7aaa49ef6da`
+and `root-full-matchup-varied-physical-compiler-review-r2.json` retain these checks.
+Existing focused regressions, adapter paths, clean tracked-source validation and
+runtime freeze/pilot review remain required before a paired historical campaign.
+The seventh experiment remains rejected; the eighth is not yet historically
+qualified and no held-out outcomes have been opened.
+
