@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-195 issues: 112 open, 31 resolved, 52 closed.
+197 issues: 114 open, 31 resolved, 52 closed.
 
-## Open (112)
+## Open (114)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -83,6 +83,8 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-015](issues/FLOW/FLOW-015.md) | Medium | Browser play log shows raw seconds and attributes half-ending plays to the next period | created 2026-11-06 | — |
 | [FLOW-018](issues/FLOW/FLOW-018.md) | Medium | Browser omits the season-enabled two-point conversion choice after a touchdown | created 2026-11-06 | RULE-001, STAT-003 |
+| [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
+| [FLOW-022](issues/FLOW/FLOW-022.md) | Medium | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
 | [RULE-001](issues/RULE/RULE-001.md) | Medium | Two-point tries run through run_play | created 2026-10-19 | RULE-002, RULE-007, STAT-003, AI-022, FLOW-018 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
