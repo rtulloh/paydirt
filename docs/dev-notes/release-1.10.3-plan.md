@@ -917,3 +917,54 @@ The narrower secondary-information capability and credible development source
 improvement are preserved as findings; they do not satisfy the full acceptance
 goal. A subsequent proposal requires a general, source-backed pace mechanism
 and review, without stacking rejected policies or fitting a pace coefficient.
+
+
+## Post-sixth diagnostic: strategic family mass and tactical information
+
+Read-only retained-receipt/atlas analysis finds a broad runward shift in the
+sixth candidate. For REG primaries with emitted offense mode `normal`, run
+shares on first/second/third downs rise about 2.8/3.0/3.1 percentage points in
+1983 and 1.55/2.06/2.95 in 2024. The compact mode does not establish exact
+ordinary eligibility. Independent raw decomposition finds 1983 runs per team/
+game +.8867, pass attempts −1.4944, incompletions −1.0717 and sacks −.1155.
+This supports a clock hypothesis without per-play clock or causal mediation.
+
+One declared diagnostic separates released run/pass mass from within-family
+secondary information. It freezes the released globally admitted support and
+history-derived group mass, then tilts existing call weights by
+`exp((corrected_score - released_score)/.45)` within each group. The run group
+is Line Plunge/Off Tackle/End Run/Draw; the other five chart calls form the pass
+group. Empty, zero, singleton and constant-delta groups retain original weights.
+No family-local admission occurs: that alternative changes calls even without
+new information. Previously excluded strong calls and zero-family blindness
+remain explicit limitations. Identical-state family probability preservation
+does not guarantee season mix, pace or source fit after trajectories diverge.
+
+Eighty-eight actual-core controls cover both sides/B/QT, history, physical mass
+and independent hand weighting. Forty-eight extreme favorable/adverse contrasts
+improve conditional utility; 24 zero controls retain vectors. Twelve zero/
+singleton limitations and four contrary weaker-secondary cases remain recorded.
+A still weaker B3 versus numeric4 gains probability and lowers expected utility:
+finite-temperature information correction is not universal utility maximization.
+An initial zero-group fixture used −8, still admitted at global gap .84; its
+corrected −20 fixture is excluded at gap .92. The original unaccepted source/log
+are retained as a fixture error, without a production change.
+
+All 960 static team-context vectors agree with independent review. There are
+303 adverse conditional utility changes (136 historical/167 modern), including
+calendar-weighted first-and-3 losses −.000126184/−.000157173. Third-and-10 gains
+are only +.000169815/+.000170954, with total variation .003817/.003291; first-
+and-10 total variation is .005443/.005644. These are tiny identical-state weight
+changes, not historical benefit. Maximum family-mass error is 1.11e−16.
+Fifteen modern contexts retain a zero family; one retains an excluded corrected-
+best call within a positive family. Full support/opportunity rows remain stored.
+
+Ignored `own-secondary-family-controls.json`,
+`own-secondary-family-static-diagnostic.json.gz`,
+`own-secondary-family-support-review.json.gz` and independent root receipts retain
+all positive/adverse evidence compactly. The related proposed production scope
+is marked **not selected**: these findings do not justify narrowing the wider
+goal into a tiny compatibility-only candidate. No seventh production policy,
+campaign, cutoff, coefficient adjustment or held-out access follows. A distinct
+chart-conditioned defensive threat-prior concept requires analysis and review
+of prior overlap, observability, ignorance and unknown-mass behavior first.
