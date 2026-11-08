@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-195 issues: 111 open, 33 resolved, 51 closed.
+195 issues: 112 open, 31 resolved, 52 closed.
 
-## Open (111)
+## Open (112)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -106,6 +106,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-010](issues/VAL/VAL-010.md) | Medium | Unit regressions still depend on private historical seasons and silently skip | created 2026-10-30 | — |
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-016](issues/VAL/VAL-016.md) | Medium | Development API proxy cannot reach an IPv4-only backend when localhost resolves to IPv6 | created 2026-11-05 | — |
+| [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19 | AUD-025 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -128,7 +129,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (33)
+## Resolved (awaiting play-test confirmation) (31)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -163,13 +164,11 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
-| [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07, resolved 2026-11-07 | — |
-| [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07, resolved 2026-11-07 | — |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (51)
+## Closed (52)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -218,6 +217,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [TRACE-009](issues/TRACE/TRACE-009.md) | Medium | Half-ending touchdown and kickoff lack elapsed-time evidence to verify whether another snap was owed | created 2026-10-28, resolved 2026-10-28, closed 2026-10-28 | AI-007 |
 | [VAL-007](issues/VAL/VAL-007.md) | Medium | Corrected offensive dice invalidated two seeded untimed-down reproduction requirements | created 2026-10-26, resolved 2026-10-30, closed 2026-10-30 | — |
 | [VAL-015](issues/VAL/VAL-015.md) | Medium | Browser driver waits for execution when an early defense click needs a later CPU confirmation | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | FLOW-012 |
+| [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |
 | [AUD-003](issues/AUD/AUD-003.md) | Low | QB-kneel commentary credits a running back and describes an ordinary tackled loss | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |

@@ -1,7 +1,8 @@
 # v1.10.2 scope and verification
 
-Status: November 7, 2026 authorized implementation. Local checks below are
-completed; hosted CI and automatic publication remain release gates. The owner
+Status: November 7, 2026 published and verified. Immutable v1.10.2 selects
+10d71305411c9e630819697dcbbde11e810828c8; hosted correctness CI and automatic
+publication pass. VAL-020 remains open for a subsequent release. The owner
 explicitly waived another full local historical regression in this release cycle;
 focused test-first checks and the complete hosted workflow qualify this change.
 
@@ -9,7 +10,7 @@ focused test-first checks and the complete hosted workflow qualify this change.
 | --- | --- | --- |
 | [DATA-043](issues/DATA/DATA-043.md) | Prevent cross-play interception-location allocation across offense/defense and audit all reachable support. | Synthetic/public regressions first; all-team weighted spot support and reachable outcomes, with interception and return distances separate. No arbitrary universal depth cap or claim that the Bowl Bound defect is already reproduced here. |
 | [AI-028](issues/AI/AI-028.md) | Avoid a conservative fourth-down punt when the offense needs multiple scores and remaining possession opportunities demand urgency. | Failing public scenario plus nearby conservative controls; completed gameplay confirms score/time/timeout-aware behavior. No blanket always-go-for-it rule. |
-| [VAL-020](issues/VAL/VAL-020.md) | Reduce core test runtime by removing redundant expensive fixture construction. | Record durations, identify actual hot spots, preserve assertions/cases/coverage, and compare equivalent hosted runs. Set a measurable target after profiling rather than promise an unsupported duration. |
+| [VAL-020](issues/VAL/VAL-020.md) | Open: retain measured focused fixture/source-expectation reuse; defer total core-runtime investigation to a subsequent release. Does not hold v1.10.2. | Preserve actual hosted duration and remaining hot spots without claiming an overall runtime fix; retain all assertions, cases and coverage. |
 | [VAL-021](issues/VAL/VAL-021.md) | Publish release assets automatically without the v1.10.1 manual-token fallback. | Diagnose the actual integration restriction, preserve exact tested-commit gating and immutable tags, and verify all five downloadable assets in the next authorized publication. |
 
 The two player-facing items and the two delivery items form the authorized
@@ -174,3 +175,32 @@ contract; it does not weaken the generator guard or change generated charts.
 Slowest individual baseline cases include combined gate147.86s, mixed-QT
 allocation94.15s and empirical OOB generation88.85s. Corrected hosted total and
 remaining costs will be reported with the baseline’s five-failure limitation.
+
+Owner decision (2026-11-07 19:10): VAL-020 remains open. This release retains the measured
+focused fixture/source-expectation reuse, without claiming that total hosted core
+runtime is solved. Further full-suite performance investigation is deferred to a
+subsequent release and does not hold v1.10.2 publication on correctness-green CI.
+
+## Published release verification
+
+Verified 2026-11-07 19:22 local time: [v1.10.2](https://github.com/rtulloh/paydirt/releases/tag/v1.10.2).
+[Exact-source Tests](https://github.com/rtulloh/paydirt/actions/runs/42428496248)
+passes all nine jobs: 10,893 core tests with 85% coverage, 427 backend tests,
+350 frontend tests, 18 browser checks and 131 compatibility checks per additional
+Python version. Core pytest reports no skips or warnings. Backend output retains
+328 existing httpx/Pydantic deprecation warnings; npm reports 17 dependency
+vulnerabilities (one low, five moderate, eight high, three critical). These
+warnings were not suppressed.
+
+[Release run](https://github.com/rtulloh/paydirt/actions/runs/42433593080) passes
+the immutable-tag gate, both public chart cohorts, all four platform builds and
+automatic publication. All five downloaded release assets match successful build
+artifacts and API digests by size and SHA-256. Executables were not run on every
+native platform. The ignored artifact-verification.json receipt SHA-256 is
+38a3efe134c969b1c05b26ae03f570c4f7c781e1f5985ff7a39b7151ee4fb848.
+
+Core pytest takes 3,956.93s versus the earlier 3,932.11s; core wall time takes
+66m19s versus 65m50s. No total speedup is established. The earlier baseline had
+five failures and the passing run executes additional paths, so these are not
+identical workloads. VAL-020 stays open; further full-suite investigation is
+deferred by owner decision.

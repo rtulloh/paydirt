@@ -129,3 +129,10 @@ Corrected primary/allocation/policy/cache checks: 105 pass in 81.96s;
 documentation/tracker: 395 pass. Clean tracked-only failing-case/caller/cache/
 documentation coverage: 418 pass in 13.46s. Ruff passes. No existing assertion
 is weakened and no production change is needed for this source-fixture correction.
+
+--- 2026-11-07 19:22 ---
+Release verification: v1.10.2 is published from 10d7130, with all 10,893 core
+regressions and both committed-chart cohort checks passing. The prior four
+allocation-audit failures shared one caller missing the required profile name.
+All five release assets match successful platform builds and API hashes; see
+../../release-1.10.2-scope.md for identities and retained limitations.
