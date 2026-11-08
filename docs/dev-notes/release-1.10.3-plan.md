@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: all eight candidates rejected in development; remaining-down structural proposal and public test design under review. No ninth implementation or campaign is authorized; held-out seasons remain unopened.
+Status: no-go for release promotion; all eight candidates rejected in development. Bounded public remaining-down evidence is complete and work stops at the cost/time limit. No ninth implementation or campaign is authorized; held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -1723,3 +1723,38 @@ retains full counts/hashes and the distinction between known risk utility and
 known legal transition. Only a separate read-only uncertainty-certificate proof
 is authorized next, with no ninth production or season campaign. Both own/O and
 opponent/D chart response and human playability remain required.
+
+
+## Bounded planning evidence complete: no-go and stop
+
+The final approved read-only interval-certificate proof uses released-prior
+midpoint tilting only when every allowed Q-baseline interval endpoint has
+nonnegative local advantage. Its public numeric actual mixed value is
+.839161932948482 versus .7981686716503044 baseline; independent reconstruction
+passes. Optimistic unknown gamble is rejected, equal/complete-unknown values
+retain exact prior and zero support stays zero. Whole-policy claims still
+require valid actual-state bounds and properness; penalty/replay/clock branches
+are not assumed acyclic or solved.
+
+Two frozen opponent-D controls retain the same own chart/prior and all six
+identical formation effects. Actual-core series values change .7707350774 to
+.8227549206 (SHORT_PASS -4 defense), and .0411100468 to .1929260342 (LONG_PASS
+-10 defense), on both sides. The initial proposed SHORT_PASS probability changes
+.1534423888 versus .2960818469 while released stays .2160409373. Complete
+32,400-cell matrices, Q-baseline bounds, certificates and signed values are
+retained in `remaining-down-opponent-proof-r1.json`. The
+[proposal's final evidence/decision](ai026-remaining-down-planning-proposal.md#certified-baseline-advantage-diagnostic-and-stop-decision)
+records hashes, assumptions, limitations and exact commands.
+
+**No-go for release promotion.** Eight historical candidates remain rejected;
+public capability proofs establish neither historical improvement nor practical
+uncertainty-aware chart exposure/human playability. Exact-only coverage is zero
+in the fixed 28,368-state census. The authorized cost/time bound ends work after
+this evidence: no more variants, sweeps, seasons, production edits, merge or
+push. No held-out results are opened. v1.10.2 remains released. The smallest
+separately resumed implementation would be a pure test-first full-state
+Q-baseline interval preview/certificate helper, with own/O and opponent/D
+response and material exposure/phase/procedure validity before selector wiring;
+it is deferred and not authorized by these results. Easy/Medium, public
+information, stochastic variety, human browser checks and all original outcome
+gates remain requirements. AI-026 and broader release work remain open.

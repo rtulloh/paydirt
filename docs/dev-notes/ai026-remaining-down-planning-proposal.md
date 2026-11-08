@@ -272,3 +272,94 @@ constraint: public information only, no selected-call/future-dice access,
 probabilistic variety, unchanged Easy/Medium, call-mix/repetition review and both
 human browser games. Positive finite-temperature support is a mathematical
 property, not evidence of a practical human win rate or difficulty balance.
+
+## Certified baseline-advantage diagnostic and stop decision
+
+A single separately frozen rule addresses uncertain transitions in a public
+proof. Let b be released normalized positive-support weights and [L,U] bounds
+on each action's conversion probability followed by **released** future policy.
+Unknown branches retain full mass with continuation [0,1]. Form midpoint m and
+proposal t proportional to b exp((m-max m)/.45). Apply t only if
+sum((t-b) * (L where t>=b else U)) >= 0; otherwise return exact b. Equal
+midpoints retain b exactly; zero-prior calls stay zero. No coefficient/variant
+search occurs. This ranks using Q-baseline, distinct from the earlier rule
+whose ranking uses its own future mixture.
+
+Ignored `remaining-down-certified-proof-r1.json` SHA
+`38894081fa10ec6a06eef6b0f27bf835c75aef6b9643b5dc1e7e598fb956c468`
+retains every independent interval endpoint for five small controls: material
+accepted change, rejected optimistic gamble, equal values, complete uncertainty
+and zero support. The accepted example retains 4/5 known success, 1/10 known
+failure and 1/10 unknown mass, giving [4/5,9/10]. On the unchanged numeric
+football witness, actual future candidate choices are recomputed independently;
+series conversion is .839161932948482 versus released .7981686716503044. Root's
+independent verifier reproduces all five controls, ten states and both sides.
+Inherited generic scope wording is clarified immutably: a read-only formula was
+demonstrated; no production formula was deployed. No proof bytes were rewritten.
+
+The local certificate bounds expected Q-baseline advantage for all independent
+interval endpoints. A whole-policy improvement argument additionally requires
+valid bounds for the actual full state/history and a proper absorbing process
+(or separate termination justification). Penalty replays, enforcement choices,
+pending states, clock/phase changes and recovery cannot silently be treated as
+acyclic. Endpoint arithmetic does not prove those football assumptions. Loose
+bounds can force exact-baseline fallback, and fallback is not universal
+individual-action opacity monotonicity. No real-chart material coverage is
+established for this uncertainty-aware rule.
+
+The final approved public control fixes the same own nine-call table and varies
+only opponent defense: D1 modifies SHORT_PASS by -4; D2 modifies LONG_PASS by
+-10; all other modifiers are zero. Each chart has identical effects across all
+six formations/subrows, avoiding a hidden selected-formation input or a fitted
+formation prior. All tables are frozen before execution. Ignored
+`remaining-down-opponent-inputs-r1.json` SHA
+`cddd22411b09f8df2e8f11dbc619bb0b2395a13825250c1fbea9c6abb43b3b4e`
+and `remaining-down-opponent-proof-r1.json` SHA
+`63fbf8b7f4fd031910b1380310396544f9ceb03b3fc21c6d021276361f2522d4`
+bind 32,400 actual physical resolver cells on both physical sides.
+
+| Fixed opponent chart | Released series value | Certified sampled series value | Initial SHORT_PASS probability |
+| --- | ---: | ---: | ---: |
+| D1 SHORT_PASS -4 | .7707350774 | .8227549206 | .1534423888 |
+| D2 LONG_PASS -10 | .0411100468 | .1929260342 | .2960818469 |
+
+The released initial SHORT_PASS probability is .2160409373 in both controls;
+every reached state's released prior is independently checked against a
+same-state neutral-defense clone. Only the opponent chart changes the actual
+payoff distributions, Q-baseline values and certified vector. All local
+certificates pass; the earlier optimistic-unknown control retains the required
+rejection/fallback behavior. Full matrices, signed changes, vectors and RNG/
+source identities remain available. Both sides match. These fixed favorable
+controls prove a bounded matchup response, not universal optimality, historical
+improvement, human balance or safe generic clock/enforcement handling.
+
+**No-go for AI-026 release promotion.** All eight historical candidates remain
+rejected; these later public proofs do not replace unchanged source/scoring/pace
+gates or demonstrate real-chart operational exposure. No ninth production
+implementation, historical season, held-out access, merge or push follows.
+The cost/time limit ends this investigation here, without another variant or
+design loop. The current released version remains v1.10.2.
+
+If separately resumed, the smallest concrete next implementation is a pure,
+test-first ordinary-state Q-baseline interval preview plus certificate helper
+in an isolated checkout, using actual own/O and opponent/D physical transitions,
+full state/history and explicit unknown branch bounds. It must first demonstrate
+material chart exposure and correct phase/clock/procedure limits before selector
+wiring. Default/special policies, Easy/Medium, charts and all historical gates
+stay fixed; unresolved replay/properness cannot be papered over. This is deferred
+work, not present authorization or a claim that it will qualify a release.
+Probabilistic variety and public information remain necessary, with practical
+human difficulty and both human browser games still unverified for any future
+policy. AI-026's wider capabilities remain open.
+
+Local evidence commands (completed, terminal exit zero; no seasons):
+
+```bash
+/tmp/paydirt-release-env/bin/python3 .ai-audits/release-readiness/v1.10.3/ai026-preparation/remaining_down_support_availability.py --run
+/tmp/paydirt-release-env/bin/python3 .ai-audits/release-readiness/v1.10.3/ai026-preparation/remaining_down_certified_probe.py --run
+/tmp/paydirt-release-env/bin/python3 .ai-audits/release-readiness/v1.10.3/ai026-preparation/remaining_down_opponent_probe.py --run
+```
+
+Each script's separately retained `--freeze` input predates its run. Scripts
+refuse to overwrite existing proof files; these commands document the completed
+executions, not an instruction to rerun them over preserved outputs.
