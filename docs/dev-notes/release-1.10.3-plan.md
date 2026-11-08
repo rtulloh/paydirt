@@ -1169,3 +1169,34 @@ open. The next authorized work is read-only hypothesis comparison of strategic
 run/pass mass versus tactical full-matchup call choice; it is distinct from the
 rejected fixed-support own-secondary family tilt. It has no production or
 season-campaign authorization.
+
+## Post-seventh public mechanism controls
+
+The next read-only comparison separates released run/pass probability mass from
+full-matchup choice within each family. It compares absolute matchup utility
+with released scores plus matchup utility minus same-own-chart neutral-defense
+utility. The latter cancels added secondary information when defense changes
+nothing; it is a coaching estimate, not a causal or conservative bound. Both
+matchup and neutral calculations use the original offensive attainment/progress/
+negative-yard utility, rather than the seventh defensive experiment's binary
+numeric conversion utility. No policy or formation prior is selected.
+
+The first eight public actual-core cases cover both physical sides with all six
+formation effects equal. Four neutral B/QT controls retain the exact released
+weight mapping, while absolute utility changes it. Two material controls admit
+a formerly excluded Screen into a positive-mass pass family, improving modeled
+utility .08 → .94 while preserving run/pass probability .5/.5; a run family
+with no globally admitted corrected call retains its released conditional mix.
+Two adverse controls retain the loss when Screen 0 gains a defensive +3 but
+remains weaker than Short 4: modeled utility .149621 → .147965. Information
+correction with finite-temperature weighting is not universal maximization.
+
+Root independently resolves all 864 constant-column physical payoff cells and
+reconstructs the score differences, global admission, projected weights, family
+masses and utility changes. Ignored `full-matchup-family-public-controls-r1.json`
+and `root-full-matchup-controls-r1-review.json` bind the fixtures and verifier.
+These empty-history, fully supported examples establish neither hidden-formation
+prediction, unknown-mass safety nor season pace/accuracy. History, zero-family,
+opaque-mass and support limitations still require review. No production change,
+historical sweep, eighth protocol or season campaign is authorized by these
+diagnostics; the original acceptance gates remain unchanged.
