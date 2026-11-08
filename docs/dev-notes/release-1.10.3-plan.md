@@ -1381,3 +1381,17 @@ weakening; source review and focused/clean-checkout checks precede runtime freez
 No historical sweep, pilot, campaign, held-out access, merge or push is approved
 by this implementation authorization. Original acceptance gates remain fixed.
 
+For independent compiler review, root freezes a complementary nonconstant-row
+public synthetic oracle before candidate comparison. It enumerates all 8,100
+actual resolver cells (nine calls, six formations, 30 offensive physical rows,
+five defensive rows), retaining exact physical outcome mass and original utility
+at targets 1, 3, 7, 10 and 29. Inputs vary numeric gains/losses, BLACK,
+interception, fumble, touchdown and terminal passing-fumble/incompletion cells;
+this oracle deliberately excludes penalties and B/QT, covered by separate tests.
+Ignored `root-full-matchup-varied-physical-core-oracle.json` SHA
+`e6bc1da0b08df32d5e75b72f071d2047e3daeedcc621707e6190bcd246e41d5c`
+binds the actual resolver and exact inputs/results. Initial serialization used
+an incorrect defensive metadata attribute; that setup failure and its correction
+are retained separately and are not evidence of a production defect. No candidate
+comparison or historical improvement is yet established by this frozen oracle.
+
