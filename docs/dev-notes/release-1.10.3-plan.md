@@ -1011,7 +1011,30 @@ establish robustness when the opposing chart changes the prior itself.
 
 Ignored `defense-threat-prior-coupled-input-review.json`, baseline/model receipts,
 independent review and `defense-chart-threat-prior-analysis-proposal.md` retain
-all evidence and limitations. A proposed static census would report all nine
-calls, zero-weight threats, per-team effects and exact coverage at fixed
-situations. It requires review; no production policy or historical campaign
-follows. All original outcome gates and wider AI-026 work remain open.
+all evidence and limitations. The completed static census covers all 788 ordered
+calendar pairs at six fixed third-down distances, retaining all nine calls,
+zero-weight threats and per-team effects. Independent review exactly matches
+113,472 weighted utility/coverage values and 28,368 tie decisions. These are
+conditional model comparisons, not actual branch exposure or historical gains.
+
+Unresolved mass is common across formations in all 2,040 historical and 2,688
+modern pair-contexts, so the upper-bound ranking equals neutral-utility ranking
+on these charts. Zero-weight calls occur in 6/168 and 26/192 unique opponent/
+distance priors, affecting 73/364 pair-contexts respectively. Their payoffs remain
+reported. Baseline completion and gross passing yards per attempt already fall
+below historical sources; stronger modeled defensive stops may worsen that fit.
+
+Root reviewed the concrete production proposal against released offensive and
+defensive branch ordering. Only isolated protocol freezing and actual-behavior
+failing tests are authorized at this stage. The public-state guard must exclude
+victory, end-of-half kicks, last-chance touchdown attempts, hurry-up, clock-kill,
+red-zone and goal-line offense, including overtime's effective fourth-quarter
+semantics. Existing defensive raw-quarter semantics and prediction/pressure RNG
+order remain unchanged. Fresh pending-primary lifecycle tests precede any core
+instrumentation; no new save or UI schema is proposed.
+
+The ignored `root-defense-threat-production-scope-review.json` binds the reviewed
+proposal and released source. Root reviews expected failures and passing controls
+before production editing, then implementation and frozen identities before a
+pilot. No historical campaign or held-out access is authorized. All original
+outcome gates and wider AI-026 work remain open.
