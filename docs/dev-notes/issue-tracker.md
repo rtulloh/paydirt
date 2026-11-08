@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-200 issues: 72 open, 58 resolved, 70 closed.
+200 issues: 72 open, 57 resolved, 71 closed.
 
 ## Open (72)
 
@@ -89,7 +89,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (58)
+## Resolved (awaiting play-test confirmation) (57)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -134,7 +134,6 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [VAL-002](issues/VAL/VAL-002.md) | High | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [VAL-017](issues/VAL/VAL-017.md) | High | Engine audit disk fingerprints do not identify replaced loaded observers | created 2026-11-05, resolved 2026-11-07 | — |
 | [VAL-018](issues/VAL/VAL-018.md) | High | Engine report validation ignores policy and selected-call evidence | created 2026-11-05, resolved 2026-11-07 | DATA-031 |
-| [VAL-022](issues/VAL/VAL-022.md) | High | Frozen web launcher leaves API model annotations unresolved | created 2026-11-08, resolved 2026-11-08 | — |
 | [AI-004](issues/AI/AI-004.md) | Medium | Chart analysis treated rows as equally likely | created 2026-10-17, resolved 2026-10-17 | — |
 | [AI-005](issues/AI/AI-005.md) | Medium | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |
@@ -155,7 +154,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (70)
+## Closed (71)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -191,6 +190,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [VAL-003](issues/VAL/VAL-003.md) | High | Standings_data.save/season_1983.json is untracked and not ignored and contains private-season results | created 2026-10-19, resolved 2026-10-27, closed 2026-10-27 | — |
 | [VAL-009](issues/VAL/VAL-009.md) | High | Review season lookup path confinement at API boundaries | created 2026-10-30, resolved 2026-11-08, closed 2026-11-08 | — |
 | [VAL-014](issues/VAL/VAL-014.md) | High | Two complete browser games share a single three-minute test budget in hosted CI | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
+| [VAL-022](issues/VAL/VAL-022.md) | High | Frozen web launcher leaves API model annotations unresolved | created 2026-11-08, resolved 2026-11-08, closed 2026-11-08 | — |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-003, AI-018 |
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | AI-025 |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
