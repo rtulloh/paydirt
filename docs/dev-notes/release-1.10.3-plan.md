@@ -1352,3 +1352,32 @@ coverage and the boundary between ordinary caches and unchanged default/hurry
 caches require clarification before production authorization. No season campaign
 or historical source-fit claim follows from this baseline evidence.
 
+## Eighth isolated implementation authorization
+
+The remaining cache scope is clarified: the new ordinary model owns separate,
+bounded, content-aware estimates; the existing default/hurry strategy and its
+cache behavior remain unchanged. A primed 123-context default-cache preservation
+control passes. A complete public-2026 auto-game control also confirms that the
+existing audit observer records the actual ordinary selector vectors after
+history. Root independently reproduces the revised state/observer batch's nine
+expected behavior failures and three passing controls, with all 63 released
+production hashes unchanged. This clarifies which cache is bounded; it does not
+weaken a behavior expectation.
+
+Root's explicit-checkout phase comparator additionally reproduces the immutable
+4,866-row released oracle exactly, including all selected tuples, weight vectors,
+modes and global/offense/defense RNG hashes. This baseline self-control validates
+the comparator before candidate use; candidate preservation remains unverified.
+
+Production implementation is now authorized **only in the eighth isolated
+checkout**, following the selected full-matchup lower/min objective, original
+family masses and phase boundaries, generic lazy physical compiler, separate
+ordinary caches, shared audit weights and narrowly scoped transient pending
+identity handle. Ignored `root-full-matchup-production-scope-approval-r1.json`
+SHA `11e1b4e75fe34c8878941521555f975b8282c602e8133dfe27c75cf1ff36d351`
+binds the reviewed proposal, full test/fixture hashes, released production hashes
+and independent evidence. All original failing assertions must pass without
+weakening; source review and focused/clean-checkout checks precede runtime freeze.
+No historical sweep, pilot, campaign, held-out access, merge or push is approved
+by this implementation authorization. Original acceptance gates remain fixed.
+
