@@ -612,3 +612,35 @@ Ignored `v5-released-selector-utility-proof.json`,
 inputs. Pilot correctness and an explicit successful cost receipt must precede
 remaining development launches. Every original historical gate remains fixed,
 held-out remains closed, and AI-026's wider capabilities remain open.
+
+
+## Fifth experiment resumed with gated pilot reuse
+
+The explicit user pause stopped new work after the two pilot reports had
+completed. No remainder or analysis ran during the pause. On resume, those
+unchanged outputs are reused: 233 games for 1983 and 285 for 2024, with zero
+reported errors. Independent root review and the resumed verifier reconcile
+all 1,036 paired baseline/candidate game receipts, including postseason,
+physical return settings, scoring and call totals, raw aggregates, frozen
+identities and declared seeds. Original baseline receipts use their original
+index/seed schema; candidate receipts additionally carry phase/index fields.
+A verifier setup assumption about those original phase fields was corrected
+before any remaining season launched.
+
+Immutable `protocol-v8-defensive-scope-clarification.json` records the conflict
+between inherited offensive utility wording and v8's already-approved distinct
+defensive scope. Frozen protocol bytes and every numerical acceptance gate
+remain unchanged. The fifth candidate must demonstrate the approved robust
+defensive resolver capability separately from source-fit acceptance; full
+AI-026 completion is not implied. Coverage includes full static call/formation
+support, unresolved categories, known-zero mass and utility bounds, plus a
+clearly labeled selected-call/formation counterfactual census. Compact offense
+mode/band records cannot establish exact defensive eligibility exposure.
+
+`paired-v5-pilot-cost-gate.json` passes before the remaining 14 development
+seasons launch. Its conservative sequential projection is 3,034.41 seconds
+and 68,052,240 compressed bytes, with 23.92 GB free at verification, within
+the unchanged limits. The receipt binds both existing candidate pilot hashes,
+frozen context and scope clarification. Launcher preflight rejects a missing
+or unsuccessful receipt and altered pilot bytes. Development remainder uses
+four workers; held-out remains closed pending all development gates.
