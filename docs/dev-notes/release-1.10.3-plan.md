@@ -1470,3 +1470,22 @@ by the separate full-matchup regressions. Production policy is unchanged by this
 fixture correction. Adapter and clean tracked-source validation remain pending
 before the frozen runtime/protocol and bounded historical pilot can be reviewed.
 
+Concrete adapter validation now passes: the CLI both-side controls and complete
+synthetic auto game pass three cases. The auto callback independently reconstructs
+original numeric utility, global competitive admission, repetition history and
+family projection at actual ordinary decisions, with at least three materially
+changed calls on each offense and real game completion. Root separately verifies
+both CLI dispatch cases.
+
+Fresh and loaded-replay web cases preview three times without state/global-RNG/
+history mutation, then execute the newly admitted Screen on both physical sides.
+The complete web AI-mode file passes 36 cases; root independently reproduces the
+four new cases (one existing Starlette deprecation warning). The full backend
+suite passes 431 cases in 6.69 seconds, with 20 existing Starlette/Pydantic
+deprecation warnings and no reported skips. Root rechecks all 64 production hashes
+against the stable phase receipt; no production bytes changed. Ignored
+`root-full-matchup-adapter-review-r1.json` binds reviewed adapter sources, terminal
+logs and the complete production identity. No further adapter expansion is needed
+for this implementation scope. Clean tracked-source focused validation and the
+source commit/receipt precede frozen protocol and historical pilot review.
+
