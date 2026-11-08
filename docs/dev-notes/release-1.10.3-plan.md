@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: approved direction, implementation and experimental details pending.
+Status: approved direction; first offense candidate rejected in development.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -144,3 +144,63 @@ unsupported. Add controls proving that replacing known interception/fumble mass
 with unsupported outcomes cannot improve selection weight. Record this explicit
 change to the earlier neutral-ranking proposal in the frozen protocol before
 production implementation or candidate evaluation.
+
+## First offense experiment: rejected in development
+
+Release 1.10.2 is published and its five assets are verified. The first AI-026
+candidate remains isolated and unshipped: baseline `10d7130`, candidate `f64b3c2`,
+reviewed protocol v3 SHA256
+`b371b9827ffc643aaf2c7d85cc6d6b7dc163f5368e7b5a804e36b159eedbafff`.
+The candidate combines physical offense/defense dice mass through actual priority
+semantics under the declared uniform six-formation prior. Existing defensive,
+special-situation, clock, utility-coefficient and repetition policies are fixed.
+
+The unchanged baseline produced 28 expected offense failures and 12 controls.
+The implementation passed 48 phase checks, 691 focused AI/resolver regressions,
+and 148 adapter/auto/documentation checks (one existing backend deprecation
+warning). Two existing fixture assumptions required correction: equal synthetic
+offense now uses neutral synthetic defense, and selector-weight comparisons
+include the actual public opponent defense. Existing assertions were retained;
+a new real-resolver control proves public defense breaks offense-only equality.
+
+All eight development seasons per cohort/policy completed: 32 seasons, 8,288 games,
+zero game/accounting errors, both physical interception-return settings fixed true,
+and all postseason games included. Baseline-only variation locked .25 points and
+.50 plays per team-game nonregression budgets before any candidate outcomes.
+These development comparisons use paired season bootstrap intervals, not independent
+team/game samples. They are diagnostics rather than held-out acceptance.
+
+| Team-macro normalized source error | Baseline | Candidate | Paired change, 95% interval |
+| --- | ---: | ---: | --- |
+| 1983 | .8457 | 1.0567 | +.2110 [.1677, .2594] |
+| 2024 | 1.1222 | .7660 | -.3562 [-.3954, -.3146] |
+| Equal-cohort mean change | | | -.0726 [-.1081, -.0352] |
+
+The pooled decrease does not qualify. In 1983, completion-error change is +.6848
+normalized units and sack-error change is +.4355; both exceed the fixed individual
+metric guardrail. Plays per team-game fall 65.232 to 61.720 against source 65.788:
+the absolute source-gap worsening is +3.512 [3.336, 3.667], exceeding .50.
+In 2024, sack-error change is +.2074 with upper interval .2845, also exceeding
+the .25 metric guardrail. Scoring source gaps improve in both cohorts.
+
+Reject candidate v1 for promotion. No held-out season has been run or opened;
+no coefficient, tolerance, chart, seed or team-specific adjustment is made to
+rescue these results. AI-026 remains open, including its defensive remainder.
+A revised general mechanism requires a new reviewed protocol before another
+production experiment or season campaign.
+
+Mode-stratified selected-call evidence localizes the large change to the emitted
+ordinary (`normal`) coaching label: run share moves 31.72% to 43.34% in 1983
+and 26.31% to 39.56% in 2024, with increases in Screen and Draw. Comparable
+special-mode run shares remain close. This is a mechanism hypothesis; changed
+calls also change later state and clock exposure. Full-mass modeled coverage
+remains explicit rather than renormalized. The compact callbacks retain emitted
+mode and distance band, but do not retain exact distance or a full branch trace.
+
+Ignored compact evidence is retained under
+`.ai-audits/release-readiness/v1.10.3/ai026-preparation/`:
+`baseline-variance-budget-lock.json`, `frozen-candidate-context.json`,
+`development-analysis-08.json.gz`, `development-mode-coverage-08.json.gz`, and
+all 32 immutable compressed season receipts. Original historical diagnostic
+`source_accepted=false` and `release_certified=false` flags remain in receipts;
+they do not replace or contradict the separately verified published-release gate.
