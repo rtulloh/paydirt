@@ -99,3 +99,28 @@ behavior belongs in the canonical player/developer guides when implemented.
 The newly requested season-statistics feature (STAT-006) and mixed-season UI
 selection (FLOW-020) remain separate backlog items, not implicit requirements
 for this simulation-improvement phase.
+
+## First design review
+
+The first offense-only mechanism is approved for work after verified 1.10.2
+delivery. A uniform prior across six formations is an explicit neutral modeling
+assumption for this experiment, not a claim about historical defensive usage.
+Do not consult the opponent's selected formation. Keep unresolved mass explicit,
+with neutral utility and no renormalization; verify that missing coverage cannot
+masquerade as evidence of safety. Keep all defensive policy unchanged.
+
+Before candidate evaluation, freeze a machine-readable protocol containing the
+five metric definitions, denominators, tolerances, aggregation, seeds, statistical
+method, and numerical guardrails. The held-out paired 95% interval for candidate
+minus baseline normalized source-efficiency error must lie below zero. Report
+each cohort separately; pooled improvement cannot conceal a materially worse
+cohort. Derive scoring/pace non-regression limits from source gaps and baseline
+variation before seeing candidate outcomes. Also verify intended improvement
+against actual resolver matchup utility: closer source averages alone do not
+prove better coaching.
+
+Benchmark one paired development season per year before committing to the full
+proposed exposure. At sixteen held-out seasons per year, qualification frequencies
+move in increments of 1/16 and remain coarse diagnostics, not precise estimates
+of an individual team's playoff chances. Record uncertainty and reserve stronger
+team-specific claims for sufficient independent exposure.
