@@ -1,8 +1,8 @@
 ---
 id: RULE-027
-title: Cross-chart punt fouls conflate teams and omit replay timing
+title: Review legacy punt double-foul enforcement and ambiguous penalty classification
 status: open
-priority: High
+priority: Medium
 created-at: 2026-11-06
 resolved-at:
 closed-at:
@@ -17,16 +17,32 @@ links:
 
 ## Description
 
-The punt chart names the kicking team as offense; the return chart names the
-returning team as offense. `_handle_punt` sends both chart fouls to its double-
-foul handler without first comparing the actual fouling teams. A kicking-team
-OFF foul followed by a return-chart DEF foul is therefore called offsetting,
-although both fouls are against the kicking team. The offended team should be
-able to choose one foul instead of losing the return to an invented double foul.
+The original same-team/offsetting identity and replay-clock defects have committed
+repairs. The remaining open work is a rule/model decision about the legacy
+five-versus-fifteen exception and the timing/type of generic chart penalties.
+Earlier findings and test-first evidence remain below as investigation history.
 
-For an actual opposite-team offset, the branch announces a replay but does not
-set `result.replay_down`, charge ten seconds or apply defensive untimed-down
-handling. This makes ordered retained-play evidence and game timing incorrect.
+Current behavior compares actual fouling teams across the Punt and Punt Return
+charts, whose OFF/DEF labels are relative to each chart owner. Same-team fouls
+do not invent an offset. Genuine opposite-team offsets ordinarily cancel the
+play and produce a ten-second replay with the applicable period-extension rights.
+However, a five-yard and fifteen-yard pair without automatic-first-down flags
+uses the retained legacy exception: disregard the five-yard foul, cancel the
+return, and enforce the fifteen-yard foul from the catch (with applicable
+half-distance treatment), leaving the receiving team in possession.
+
+Recorded development games confirm repaired team identity, replay timing and
+assessment accounting. They do not establish that this blanket exception matches
+Paydirt or every historical NFL rule. Paydirt VI-4(A)(ii) specifies a canceled
+play and ten-second replay for offsetting penalties. NFL enforcement additionally
+depends on possession changes, foul timing/type and applicable rules. Generic
+OFF/DEF yardage cells do not supply all those facts.
+
+Priority is Medium: the demonstrated broad implementation errors have been
+repaired; the remaining narrow special-teams policy/model ambiguity warrants
+follow-up without retaining the original High defect framing. Frequency and
+season-level impact have not been quantified, so this is not a claim of zero
+impact or a measured rarity. No new release blocker or rule change is created.
 
 ## Resolution / verification
 
@@ -36,6 +52,65 @@ recovery/return chains, zero double-counting, ordinary replay timing and an
 offset reaching the end of a half. Preserve the individual penalty's first-down
 rights and choose one foul, never combine unrelated yardage or flags. Reuse the
 core return/penalty machinery and update the existing gate controls.
+
+## Options for consideration — not approved behavior
+
+The owner is considering an engine-owned penalty classification rather than
+relying only on ambiguous chart yardage. No implementation or preferred policy
+has been selected.
+
+- Distinguish a pre-snap whistle-stopping foul, an at-snap/live kick foul, a
+  return foul, and a post-play/dead-ball foul. Enforcement from the previous
+  spot does not by itself mean the whistle stopped play before the snap.
+- False start, play-clock expiration before snap, encroachment and qualifying
+  neutral-zone infractions are candidates for explicit pre-snap handling. No
+  kick/return is resolved; enforce the foul and preserve the down, subject to
+  an earned first down and applicable clock rules. Do not assume no clock
+  adjustment in every end-of-half situation.
+- Ordinary illegal formation/motion/shift can be live-ball fouls. Roughing or
+  running into the kicker happens after the snap. Do not classify these as
+  immediate pre-snap stoppages merely because enforcement uses the previous spot.
+- OFF/DEF identifies the fouler relative to the chart owner, not an absolute
+  offense/defense identity. Punt OFF plus Return OFF names opposite teams;
+  Punt OFF plus Return DEF names the same kicking team.
+- Paydirt already supports X/Y enforcement information; these modifiers do not
+  uniquely identify foul timing or type. Yardage, chart phase, team and modifiers
+  can constrain a classification, but cannot prove an unspecified foul's identity.
+- For a generic Punt OFF 5, consider predefined engine subtypes such as false
+  start (no snap) or illegal shift (live kick/return), rather than treating all
+  five-yard fouls alike. This is an explicit model assumption, not recovered
+  historical source evidence. A predefined deterministic mapping or declared
+  probability mixture would need review; no percentages have been chosen.
+- Preserve explicit PBP foul identity when suitable source evidence exists.
+  Generic legacy charts need a disclosed fallback. Source flags, original cells
+  and inferred subtype/provenance should remain distinguishable.
+- Select any modeled subtype before resolving the subsequent kick/return and
+  independently of whether that outcome would favor either team. Preserve the
+  chart event probability; disclose any intentional change to downstream clock,
+  possession, penalty rates, return exposure or statistics. Keep coaching fairness.
+- Keep subtype, phase and enforcement in authoritative engine-owned results,
+  saves and logs; make inference reproducible without UI rule logic. Do not add
+  a casual random draw that invisibly perturbs unrelated dice/coaching streams.
+- Consider season configuration for genuine historical changes, including
+  kick-foul keep-ball/tack-on choices and post-scrimmage-kick enforcement. Verify
+  effective years and detailed conditions before encoding them; the owner's
+  supplied dates and examples are research leads, not verified specifications.
+- Alternative: follow Paydirt's explicit canceled-play/replay procedure for
+  genuine chart offsets and remove the blanket legacy exception. Compare this
+  bounded approach with richer NFL-style classification before choosing scope.
+
+Future implementation must be test-first with synthetic/public fixtures. Cover
+both chart owners and possession sides; pre-snap fouls with no return consultation;
+live kick/return and same/opposite-team fouls; five/fifteen with X/Y controls;
+clock/end-of-half behavior; half-distance, choices, accounting and reproducibility.
+Require issue-specific play testing before closure. Do not invent source facts,
+force favorable outcomes, or make unknown legacy timing look historically exact.
+
+Research references:
+
+- [Reprinted Paydirt rulebook, V and VI-4](https://www.rulespal.com/paydirt/rulebook).
+- [Official NFL rules and approved rulings, Rules 4, 7 and 14](https://media.nfl.com/content/dam/communications/Official%20Playing%20Rules/2026%20Official%20Playing%20Rules.pdf).
+  Modern rules are not proof of identical 1983 enforcement.
 
 ## Comments
 
@@ -166,3 +241,11 @@ replace the existing repository policy without reconciling its intended rule
 source and season applicability. Current enforcement receipts pass at `f0cfc25a…`;
 the separate legacy-policy question stays open. No production rule changes follow
 from this read-only review.
+
+--- 2026-11-08 17:03 ---
+Owner requested recording the penalty-classification/season-policy discussion
+and a priority assessment. Updated the current description and title, retained
+original implementation evidence, and lowered High to Medium because the broad
+team-identity/replay/accounting repairs are committed. The remaining policy/model
+decision keeps this ticket open, rather than resolved. No rules or gameplay code
+changed, no inference mixture selected, and no historical change date certified.

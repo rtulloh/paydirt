@@ -1,10 +1,10 @@
 ---
 id: DATA-027
 title: Opponent yard adjustment changes QB Time sack and scramble classes
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -48,3 +48,14 @@ changes remain disclosed. This does not establish NFL fumble-credit equivalence.
 Confirmed separately from DATA-025 narrative contamination and DATA-026 prefix
 sampling. The original source classes, official targets and reserved seeds stay
 unchanged. No per-team fitting table or transition mechanism is proposed.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: QB-time class preservation is committed and SACK 0 supersedes the temporary minus-one floor; final source/campaign confirmation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

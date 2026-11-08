@@ -1,10 +1,10 @@
 ---
 id: FLOW-016
 title: Penalty dialog invents midfield and incorrect enforcement previews
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-06
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -46,3 +46,15 @@ were corrected; yardage fixtures now supply their engine descriptions/previews
 instead of relying on frontend rules. The owner's pending decision was not
 submitted or changed during investigation. Keep open pending updated-service
 play-test confirmation.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Engine-owned preview fix exists, but the recorded pending updated-service play-test confirmation has not been located. Keep open; do not reimplement the already-shipped projection.
+See the [full review](../../open-issue-reconciliation-2026-11-08.md). No status or acceptance criterion changed.
+
+--- 2026-11-08 16:47 ---
+Status correction requested by the owner: the implementation is committed in
+8c0bb8b and included in the published release line. Mark resolved, not open,
+while the recorded issue-specific play-test/qualification evidence remains
+outstanding. Closed-at stays empty; focused tests and general release success
+alone do not close this ticket. Earlier keep-open wording is superseded for
+implementation status, without waiving the remaining confirmation criteria.

@@ -1,10 +1,10 @@
 ---
 id: DATA-029
 title: Zero-yard nonfumble sacks are represented as QT scrambles
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -55,3 +55,14 @@ from relocated actual inputs. This supplies fresh source reproducibility,
 not final source-fit/held-out or complete play-test acceptance. Representation
 and source-model distinctions remain explicit; retain open pending the remaining
 charter validation. No private reference inputs are opened or exported.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: QT-only SACK 0 is committed across source, resolver, engine, observer, generator and audit paths; final source/charter validation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

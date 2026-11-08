@@ -1,15 +1,21 @@
 ---
 id: DATA-028
-title: Missing required source gains and recoveries become favorable zero or retention
-status: open
+title: Unknown required source facts remain explicit; qualification pending
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
   - regression-test
 ---
+
+## Current audit — 2026-11-08
+
+The committed adapters preserve unknown recovery as None, inventory missing required gains and reject unsupported required fields instead of manufacturing zero gain or retention. The source gate checks required-field coverage and ledger identity. Reviewed 1983 source facts and explicitly opted-in modeled fitting exclusions are separate from fabricating facts. Current parser, calibration and gate controls pass. Mark resolved, not closed: final source/candidate and play-test review remains required. Physical-versus-credited movement and compound-event modeling stay separately tracked under DATA-030 and DATA-036.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -118,3 +124,12 @@ from relocated actual inputs. This supplies fresh source reproducibility,
 not final source-fit/held-out or complete play-test acceptance. Representation
 and source-model distinctions remain explicit; retain open pending the remaining
 charter validation. No private reference inputs are opened or exported.
+
+--- 2026-11-08 17:08 ---
+The committed adapters preserve unknown recovery as None, inventory missing required gains and reject unsupported required fields instead of manufacturing zero gain or retention. The source gate checks required-field coverage and ledger identity. Reviewed 1983 source facts and explicitly opted-in modeled fitting exclusions are separate from fabricating facts. Current parser, calibration and gate controls pass. Mark resolved, not closed: final source/candidate and play-test review remains required. Physical-versus-credited movement and compound-event modeling stay separately tracked under DATA-030 and DATA-036.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).

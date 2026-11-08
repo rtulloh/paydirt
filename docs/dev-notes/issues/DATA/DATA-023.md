@@ -1,10 +1,10 @@
 ---
 id: DATA-023
 title: Primary pressure allocation ignores conditional QB Time sacks and defensive overlap
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -73,3 +73,14 @@ output completes under a neutral profile with one common relocation; all 84 CSVs
 reproduce and the source component passes. 2024 requires zero relocations and all
 96 CSVs reproduce/source-pass. Fixed targets/bounds stay unchanged. Four-repetition
 training diagnostics are pending; this is feasibility, not final fit or closure.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Conditional sack/defensive-overlap allocation and shared neutral-pressure preparation are committed; final all-team/held-out/policy validation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

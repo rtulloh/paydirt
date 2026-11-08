@@ -2,7 +2,7 @@
 id: DATA-036
 title: Multiple fumbles on one source play collapse into one calibration event
 status: open
-priority: High
+priority: Medium
 created-at: 2026-11-06
 resolved-at:
 closed-at:
@@ -14,6 +14,12 @@ links:
   - DATA-035
   - DATA-038
 ---
+
+## Current audit — 2026-11-08
+
+Lowered High to Medium. This remains a real compound-event projection limitation: the corrected modern screen has five compound plays, not the original four, and a historical omitted secondary occurrence is documented. Ordered event ledgers preserve ownership; unsupported generation paths are guarded instead of silently duplicating a primary event. Complete shared-return exposure/residual qualification and production projection remain unfinished. The bounded known source cases warrant follow-up, but do not establish a broad current gameplay failure; small counts do not prove zero outcome impact. No existing generation guard or acceptance criterion is waived.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -201,3 +207,12 @@ receipts are under release-readiness/return-exposure-03/.
 
 --- 2026-11-06 18:47 ---
 The historical source review found another multiplicity case in the November 20, 1983 Cleveland–New England official book, page 8. After Collins's primary carry/fumble, Morgan recovers, returns, then explicitly fumbles and recovers himself. The raw PFR play text reports Collins's fumble and Morgan's recovery/return but omits Morgan's second occurrence. Root independently viewed the bound scan. The primary rushing-class finding can be retained separately; it does not reconcile the conditional event or establish its physical gain, individual credit or shared-chart projection. Keep the omitted occurrence explicit in the held source inventory. The 727-record historical classifier census is not proof of a complete individual-fumble ledger. No duplicate primary F mass or zero-gain substitution is authorized. Evidence remains ignored under `gsis-1983-reconciliation/recovery-source-07/`; no production code or chart changed for this finding.
+
+--- 2026-11-08 17:08 ---
+Lowered High to Medium. This remains a real compound-event projection limitation: the corrected modern screen has five compound plays, not the original four, and a historical omitted secondary occurrence is documented. Ordered event ledgers preserve ownership; unsupported generation paths are guarded instead of silently duplicating a primary event. Complete shared-return exposure/residual qualification and production projection remain unfinished. The bounded known source cases warrant follow-up, but do not establish a broad current gameplay failure; small counts do not prove zero outcome impact. No existing generation guard or acceptance criterion is waived.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).

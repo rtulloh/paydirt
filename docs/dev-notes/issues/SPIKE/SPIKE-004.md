@@ -1,11 +1,11 @@
 ---
 id: SPIKE-004
 title: Standalone spike passes a minute value to the seconds-based clock
-status: open
+status: closed
 priority: Medium
 created-at: 2026-11-06
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 links:
 ---
 
@@ -29,3 +29,12 @@ Found while staging the corrected sixty-team visual-review candidate. The frozen
 --- 2026-11-06 20:24 ---
 
 The separate port8159 snapshot now includes the fix. Four actual HTTP season/role cases preserve the unchanged 90→87 seconds and down-two assertions; twelve additional HTTP cases confirm Q2/Q4 expiration and fourth-down turnovers. The parent independently verified the runtime identity and served asset bytes, and rehashed all nineteen bound service artifacts and 434 snapshot files. Related core clock/spike/timeout regression passes 302 cases; the backend suite passes 421 cases with eighteen existing Pydantic `dict` deprecation warnings. Documentation/tracker checks pass. Service receipt: ignored `current-ui-review-02/service-readiness-01.json`, SHA-256 `a92566a66ad3d9c9232a51310b3b29ed0eb884a3513e73b8d48dc834e788ab2a`. Browser launch remains blocked by the host permission error; no full E2E pass or release qualification is claimed. No issue status or existing expectation changed.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: The standalone three-second clock call shipped in 8c0bb8b. November 6 served HTTP checks verify 90 to 87 seconds, half/game expiration and fourth-down possession changes across 16 cases. Current standalone-spike regressions pass, and later v1.10.2 hosted core/browser qualification is recorded. This does not close unrelated spike/modifier issues.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

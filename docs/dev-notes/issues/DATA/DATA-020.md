@@ -1,11 +1,11 @@
 ---
 id: DATA-020
 title: Calibration observer credits nullified offsetting-penalty plays
-status: open
+status: closed
 priority: High
 created-at: 2026-11-05
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - reproduced
   - regression-test
@@ -62,3 +62,12 @@ Final renewed evidence completed 31,744 full games across both public generated
 cohorts. Eight stateful observer controls and every per-team/league play identity
 pass with the corrected measurement code. Chart accuracy/source/priority blockers
 remain separate. This fix is verified but uncommitted; keep open.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: The offsetting-penalty observer exclusion shipped in 8c0bb8b. November 5 exact previously failing game replays and the renewed 31,744-game campaign confirm reconciled accounting. Current real-engine/observer regressions pass. Broader nullified fumble-return handling remains under DATA-031.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

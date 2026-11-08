@@ -2,7 +2,7 @@
 id: DATA-018
 title: Promoted generated cohorts fail fresh current-engine accuracy gate
 status: open
-priority: High
+priority: Medium
 created-at: 2026-11-05
 resolved-at:
 closed-at:
@@ -18,34 +18,39 @@ links:
 
 ## Description
 
-Current release checkpoint: v1.10.1 ships corrected generated cohorts with three
-retained fixed-bound exceptions: 1983 49ers completion 0.610006 versus 0.642045,
-Falcons 0.601726 versus 0.633136 (tolerance 0.03), and 2024 Ravens rushing YPA
-5.339045 versus 5.756318 (tolerance 0.4). Other declared team/league metric bounds
-pass in the respective 64-repetition development reports. These are accepted
-release limitations, not accuracy passes or widened bounds. Historical source
-completeness remains false: 1983 uses explicit role/class assumptions and fits
-712 of 727 retained fumble events, excluding 15 under a disclosed uniform policy.
+The current PBP-derived generated charts retain three small calibration misses
+in the latest recorded 64-repetition measurements. This is a bounded follow-up
+for accepted release limitations, not the original broad failure of both cohorts.
 
-The following original evidence describes earlier development candidates and
-is retained as investigation history, not the current release measurement.
+| Team / metric | Simulated | Historical target | Allowed absolute difference |
+| --- | --- | --- | --- |
+| 1983 49ers completion rate | 61.0006% | 64.2045% | 3 percentage points |
+| 1983 Falcons completion rate | 60.1726% | 63.3136% | 3 percentage points |
+| 2024 Ravens rushing yards per attempt | 5.339045 | 5.756318 | 0.4 yards |
 
-Final corrected-observer evidence covers 64 source-schedule repetitions per
-public-generated cohort: 14,336 games/1,024 team-games per 1983 team and 17,408
-games/1,088 per 2024 team. All measurement conformance controls, complete samples,
-raw totals and play-denominator identities pass. Earlier observer-derived values
-were superseded after DATA-019 and DATA-020; use the
-[final audit](../../generated-chart-release-audit.md).
+Other declared team/league metric bounds pass in the respective recorded
+64-repetition reports. These three misses were explicitly accepted for release;
+they do not block shipping. Acceptance did not widen the tolerances or turn
+these measurements into accuracy passes. They were recorded for v1.10.1 and
+remain tracked through v1.10.2; no newer measurement establishes their removal.
 
-1983 completion 53.58% misses 56.90%, and passing YPA 7.84 misses 7.18.
-2024 completion 61.95% misses 65.29%, INT 3.26% misses 2.17%, and passing YPA 7.95
-misses 7.13. Existing tolerances are unchanged. Other core measured metrics pass.
+Play-by-play provides the chart-generation inputs. This ticket measures whether
+those inputs produce matching statistics when quantized into charts and played
+through the engine under the declared coaching policy. PBP availability alone
+does not guarantee that calibration, and the present evidence does not establish
+a single cause for these remaining differences.
 
-The former ignored batch helper defined ChartFocusedAI but instantiated base
-ComputerAI. Its label does not prove that the declared fixed mix was used.
-Policy and engine changes preclude attributing the new deltas to one parameter.
-Source/priority/allocation defects remain independent blockers; do not retune
-around unresolved RULE-026 outcome classification.
+Keep related work separate: DATA-042 tracks league scoring/play-volume inflation;
+AI-030 tracks calibration-policy versus Hard-policy effects; DATA-028/DATA-030
+track missing-source and historical modeling limitations. The 1983 fitting
+population uses 712 of 727 retained fumble events with disclosed assumptions
+and 15 exclusions; that source limitation is not another calibration miss to
+solve by changing this ticket's historical targets.
+
+Older, larger failures and intermediate candidates remain in the comments and
+linked audit records as investigation history. They are not the current shipped
+cohort measurements. See the [published scope](../../release-1.10.2-scope.md) and
+[historical source boundary](../../historical-source-completion-boundary.md).
 
 ## Resolution / verification
 
@@ -390,3 +395,19 @@ DATA-042 and AI-030 tickets. The 15 historical omissions (2.063% of fumble event
 and modeled-source limits remain follow-up evidence under DATA-028/DATA-030;
 no private source facts or narratives are published. Release selection did not
 establish strict historical completeness or eliminate the fixed-bound misses.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: The shipped cohorts retain explicitly accepted fit exceptions; publication is not proof these accuracy misses are fixed. DATA-042 and AI-030 separately own pace/scoring and policy-transfer diagnostics.
+See the [full review](../../open-issue-reconciliation-2026-11-08.md). No status or acceptance criterion changed.
+
+--- 2026-11-08 16:41 ---
+Owner-requested description refresh: identify the three remaining accepted
+calibration misses, distinguish PBP inputs from engine-result validation, and
+separate superseded broad failures from current release limitations. Existing
+history, numeric targets, tolerances, status and priority are unchanged. No new
+measurement, chart change or release blocker is introduced.
+
+--- 2026-11-08 16:42 ---
+Priority reconciled with the narrowed description: Medium for the three accepted,
+nonblocking calibration misses. The earlier High rating described broader
+superseded cohort failures. Status remains open; bounds and evidence unchanged.

@@ -1,15 +1,21 @@
 ---
 id: DATA-017
-title: Public play-by-play classification totals disagree with official source counts
-status: open
+title: Source event-count corrections implemented; final qualification pending
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
   - chart-audit
 ---
+
+## Current audit — 2026-11-08
+
+The original event-count defects have committed parser/reconciliation fixes: retained versus nullified sacks and interceptions are distinguished, and official field-goal credit controls attempt classification. Historical review already reconciled the 1983 totals to 1,215 sacks, 620 interceptions and 771 field-goal attempts. Current synthetic parser/source-gate checks pass. Mark resolved, not closed: independently renewed full-cohort source totals (including the 2024 1,314-sack target), regenerated candidate bindings and final acceptance still need an issue-specific closing review. The public release manifest explicitly describes baseline generation plus INT-only migration, not full corrected-source requantization; publication alone does not satisfy that requirement.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -60,3 +66,12 @@ remain correct. The latest source checkpoint passes 7,366 root tests/eight
 existing skips/82% coverage. This is not candidate acceptance: 25 sacks have
 unknown physical severity, F conditional limitations remain, and neutral-profile
 chart regeneration stops at a pressure feasibility failure. Keep open.
+
+--- 2026-11-08 17:08 ---
+The original event-count defects have committed parser/reconciliation fixes: retained versus nullified sacks and interceptions are distinguished, and official field-goal credit controls attempt classification. Historical review already reconciled the 1983 totals to 1,215 sacks, 620 interceptions and 771 field-goal attempts. Current synthetic parser/source-gate checks pass. Mark resolved, not closed: independently renewed full-cohort source totals (including the 2024 1,314-sack target), regenerated candidate bindings and final acceptance still need an issue-specific closing review. The public release manifest explicitly describes baseline generation plus INT-only migration, not full corrected-source requantization; publication alone does not satisfy that requirement.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).

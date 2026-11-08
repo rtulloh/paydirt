@@ -1,10 +1,10 @@
 ---
 id: DATA-026
 title: Opponent adjustment reduces outcome categories with chronological prefixes
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -47,3 +47,14 @@ sampling evidence, not proof of exact raw-source tail preservation.
 --- 2026-11-05 21:05 ---
 Independent-review reproduction is synthetic and public-safe. Reserved seeds and
 prospective transfer data remain unopened. Original source rows remain intact.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Representative midpoint-quantile selection is committed in empirical_adjustment.py; regenerated source/population and independent validation remain pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

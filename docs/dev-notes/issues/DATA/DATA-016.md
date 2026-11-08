@@ -1,10 +1,10 @@
 ---
 id: DATA-016
 title: Sparse empirical event allocation can choose a worse physical probability
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -52,3 +52,14 @@ rows. The sparse 5/1000 fixture now has a closer 1/216 row available; its former
 isolated mass-2-only oracle remains unchanged. Source foul-variant preservation
 is strengthened; unrepresented rare variants are disclosed, never forced.
 Final play/audit verification remains pending.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Unrounded-target finite-mass selection and QT/QT* allocation controls are committed; final regenerated play/audit confirmation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

@@ -1,11 +1,11 @@
 ---
 id: FLOW-017
 title: Scoreboard omits the opponent timeout budget and leaves the displayed count ambiguous
-status: open
+status: closed
 priority: Low
 created-at: 2026-11-06
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - reproduced
   - play-test-reproduced
@@ -55,3 +55,12 @@ run uses the compiled service's normal same-origin API routing. Cleanup now
 uses the actual load-response origin so it deletes the created game from the
 correct service. No existing test expectations changed. No complete pre-push
 regression or release qualification is claimed by these focused checks.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Both team timeout counts shipped in 8c0bb8b. November 6 focused Chromium checks verify both counts within a 390px viewport; v1.10.2 hosted player-help checks retain team-labeled counts. Current scoreboard tests pass. The old uncommitted-fix condition is satisfied; this is not new 1.10.3 work.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

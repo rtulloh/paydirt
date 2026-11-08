@@ -2,7 +2,7 @@
 id: DATA-038
 title: Aborted field-goal labels omit snap fumbles and distinct statistical actors
 status: open
-priority: High
+priority: Low
 created-at: 2026-11-06
 resolved-at:
 closed-at:
@@ -27,14 +27,20 @@ official table, demonstrating why final field-specific review is required.
 
 ## Resolution / verification
 
-The generic schema-4 reviewed fact path preserves these no-kick events, separate
-actors and nullable gains. It clears the explained attempt-label conflicts
-without changing official attempt targets. Every snap retains an explicit
-unsupported projection entry: the current engine field-goal F path forces an
-opponent recovery and does not model arbitrary snap credit/movement. Do not map
-own recoveries to that cell or silently resample these as designed rushing plays.
-Keep open until a reviewed projection and fresh complete-source/candidate
-qualification demonstrate the remaining model behavior.
+The reviewed fact path preserves these no-kick events, separate statistical
+actors and nullable gains without changing official field-goal attempt targets.
+Subsequent implementation supports three reviewed zero-credit aborted-field-goal
+plays, preserving recovery ownership, consuming a rushing snap and recording no
+field-goal attempt. The original all-four-unsupported limitation below is
+superseded by that implementation.
+
+One reviewed Chicago aborted field goal still has unknown individual credited
+yardage and remains explicitly excluded rather than assigned an invented gain.
+This narrow source-data gap is optional future work, not a release blocker. Its
+impact on aggregate simulation outcomes has not been measured; the user accepts
+the remaining omission as negligible for current gameplay and it may remain
+unaddressed indefinitely. Keep open at Low priority to retain the limitation and
+its provenance; no gameplay or source-projection change is authorized here.
 
 ## Comments
 
@@ -49,3 +55,10 @@ unexplained field-goal conflicts. It includes two separately tested directional
 scramble grammar corrections. These are source-development counts, not complete
 source acceptance, final chart fit or play-test evidence. Ignored receipts remain
 under `gsis-1983-reconciliation/recovery-source-01/` and census revision 04.
+
+--- 2026-11-08 17:06 ---
+Lowered High to Low at the user's request. Three of the four reviewed aborted
+field-goal cases gained support after this ticket was written; only the unknown-
+credit Chicago event remains excluded. The user considers this residual gap
+negligible for the game and accepts that it may never be addressed. Updated the
+current resolution description while retaining the original investigation below.

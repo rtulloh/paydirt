@@ -1,11 +1,11 @@
 ---
 id: FLOW-018
 title: Browser omits the season-enabled two-point conversion choice after a touchdown
-status: open
+status: closed
 priority: Medium
 created-at: 2026-11-06
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 links:
   - RULE-001
   - STAT-003
@@ -87,3 +87,12 @@ snapshot CSVs. The attempted fresh browser recheck was blocked before page
 interaction by macOS Chromium launch permission; earlier successful browser
 receipts remain unchanged. Keep open while the fix is uncommitted. Recovery
 receipts remain local in ignored release-readiness/resume-2026-11-06-01/.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Pending-try eligibility propagation shipped in 8c0bb8b. November 6 real-engine browser success/failure checks cover both human sides, prohibited seasons and final/halftime flow; the owner confirmed the choice was visible. The v1.10.2 hosted two-point browser cases pass, and current conversion API tests pass.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

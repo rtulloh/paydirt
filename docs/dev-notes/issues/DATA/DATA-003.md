@@ -36,3 +36,9 @@ in unit tests; keep any private chart checks local.
 Opened at the user's request; deferred until the Bowl Bound PDF extractor is
 stable. The planned integration will parse PDFs directly and share the
 normalized-output path with the existing `.xls` reader.
+
+--- 2026-11-08 16:40 ---
+Owner confirms Low priority: play-by-play chart generation is the preferred
+season-addition workflow, so PDF import is optional deferred backlog work.
+It is not a requirement for the next release or new-season generation.
+Priority was already Low and remains Low; no implementation started.

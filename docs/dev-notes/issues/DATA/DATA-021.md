@@ -1,11 +1,11 @@
 ---
 id: DATA-021
 title: Generated supplemental columns contain symbols that invoke unintended engine fallback
-status: open
+status: closed
 priority: High
 created-at: 2026-11-05
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - reproduced
   - regression-test
@@ -40,3 +40,28 @@ Newly confirmed by the exact mechanics implementation and independently checked
 by the parent. The analytical audit measures existing fallback behavior for the
 baseline; measuring it does not grant generated compatibility acceptance.
 Release remains held. See the [implementation record](../../chart-confidence-implementation.md).
+
+--- 2026-11-08 16:38 ---
+Follow-up review corrects the overly conservative November 8 reconciliation.
+This specific compatibility defect is fixed in the shipped v1.10.2 source:
+column-specific supported_generated_cell guards reject unusable empirical QT/B
+and special-team symbols; PFR/nflverse regressions preserve QB fouls as primary
+samples rather than conditional QB-time penalties. The legacy engine fallback
+is intentionally retained and is not itself an unresolved generated-chart bug.
+
+Fresh scan of all 60 shipped teams finds zero OFF/DEF penalty cells in either
+B or QT (formerly 53 affected teams). Both complete public season audits pass
+structure/consumer compatibility with no errors, including special columns.
+Fifteen focused producer/adapter/column-guard regressions pass; 189 unrelated
+cases were deselected. Existing release evidence includes reproduced source
+cohorts and the v1.10.2 all-60-team mechanics/decoder checks and thirty complete
+real-engine games, followed by successful hosted qualification. The INT-only
+1.10.2 migration preserved B/QT and special-team files. Combined with the
+fresh complete artifact inspection, this satisfies the narrow compatibility
+finding beyond unit tests alone; broader source-model and fit tickets remain
+open. No historical accuracy, new full regression or general release
+certification is claimed by the public component audits.
+
+Receipts remain ignored under .ai-audits/issue-reconciliation-20261108/.
+See [published scope/evidence](../../release-1.10.2-scope.md) and the updated
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

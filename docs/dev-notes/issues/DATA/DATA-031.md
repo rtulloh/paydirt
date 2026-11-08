@@ -1,10 +1,10 @@
 ---
 id: DATA-031
 title: Fumble return replay still credits nullified yardage and sacks
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -74,3 +74,14 @@ box/play/scoring identity and 1,947,385 calls reconciled. The receipts contain
 credit correction. The real isolated public unit checkpoint also passes 7,761
 core tests with 25 preexisting private-data skips. Full charter acceptance and
 independent review remain separate and incomplete; retain pending final review.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Replay-down credit guard is committed with natural nullified-fumble campaign evidence; final independent confirmation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

@@ -1,10 +1,10 @@
 ---
 id: DATA-024
 title: Two-point rushing attempts contaminate regular nflverse chart inputs
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -45,3 +45,14 @@ uses full physical `yards_gained`, which is distinct from individual yard credit
 See [nflfastR field documentation](https://nflfastr.com/reference/fast_scraper.html)
 for the individual/lateral rushing-yard distinction. No public data promotion,
 commit, push, tag or release is authorized. Prospective 2023 remains unopened.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Conversion exclusion, provenance and coverage guards are committed; final regenerated and independent qualification remain pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

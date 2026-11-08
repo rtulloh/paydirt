@@ -1,11 +1,11 @@
 ---
 id: STAT-003
 title: Two-point tries pollute team statistics, play log, and call history (yardage, first downs, turnovers, interception…
-status: open
+status: closed
 priority: Medium
 created-at: 2026-10-19
-resolved-at: 
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - reproduced
 links:
@@ -45,3 +45,12 @@ statistics/log/call-history changes, including Q4 0:00. The former conversion
 log expectation is explicitly corrected and disclosed in the completion note;
 the retained-incompletion resolver subtype assertions remain. Keep open pending
 the scoped commit; mandatory chart source gates remain failed prerequisites.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Ordinary-statistics isolation shipped with RULE-001 in 8c0bb8b. November 6 real chart/API/compiled-browser cases confirm no ordinary statistics, play-log or call-history credit for successful, failed, intercepted and fumbled tries. Current unmocked isolation/API tests pass. STAT-001 punt accounting is separate.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

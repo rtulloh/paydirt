@@ -15,7 +15,9 @@ use the [documentation index](../README.md).
 
 - [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
 - [v1.10.2 scope and verification](release-1.10.2-scope.md): interception-location audit, fourth-down urgency, faster tests and reliable release publication.
-- [v1.10.3 simulation-improvement plan](release-1.10.3-plan.md): AI-026 scope, controlled paired-season experiments, and outcome exit criteria after 1.10.2.
+- [v1.10.3 targeted-fix plan](release-1.10.3-plan.md): current ticket/season scope and retained historical AI investigation.
+- [v1.10.3 validation checkpoint](release-1.10.3-validation.md): ticket acceptance, required checks and unresolved release blockers.
+- [1977 source feasibility](1977-season-feasibility.md): source-access findings and the missing generation dependency.
 - [Full-matchup policy comparison](ai026-full-matchup-policy-comparison.md): public capability controls, retained opacity and utility counterexamples, and an unimplemented formation-objective recommendation.
 - [Full-matchup implementation proposal](ai026-full-matchup-production-proposal.md): isolated test-first scope for ordinary Hard tactical substitution with unchanged strategic family masses; eighth candidate implemented locally and rejected under the unchanged outcome gates.
 - [Remaining-down planning proposal](ai026-remaining-down-planning-proposal.md): structural lessons from eight rejections and public actual-core test design; no ninth implementation authorized.
@@ -56,3 +58,7 @@ or historical game logs.
 - [November 2 manual game audit](game-audit-2026-11-02.md): reconciled generated-chart game statistics, clock and era-rule findings, and ticket review.
 - [November 6 web game audit](game-audit-2026-11-06.md): confirmed CPU timeout use, reproduced endgame coaching concerns, and save/resume evidence limits.
 - [November 2 release readiness](release-readiness-2026-11-02.md): test-first fixes, remaining investigations and pre-push evidence.
+
+- [November 8 open-issue reconciliation](open-issue-reconciliation-2026-11-08.md) — review of all 116 open tickets; 16 shipped fixes closed.
+
+- [Open High-priority issue audit — 2026-11-08](high-priority-issue-audit-2026-11-08.md): current implementation evidence, resolved fixes and remaining priorities.

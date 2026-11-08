@@ -1,11 +1,11 @@
 ---
 id: RULE-001
 title: Two-point tries run through run_play
-status: open
+status: closed
 priority: Medium
 created-at: 2026-10-19
-resolved-at: 
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 links:
   - RULE-002
   - RULE-007
@@ -65,3 +65,12 @@ public snapshot passes 10,166 core tests. The mandatory chart source gates fail
 their missing source-preparation prerequisite; no full-regression or release
 qualification is claimed. Keep open because the scoped repair is uncommitted.
 See the linked completion evidence for receipts and remaining validation.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: The isolated untimed conversion implementation shipped in 8c0bb8b. November 6 actual chart/API/browser checks verify +2-only scoring, defensive ownership, no ordinary time/statistics/history changes and restoration on exceptions. v1.10.2 hosted two-point browser checks and current unmocked conversion tests pass.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

@@ -1,10 +1,10 @@
 ---
 id: DATA-022
 title: Generated defense interception floor overwhelms low-risk quarterback inputs
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -90,3 +90,14 @@ Real-resolver ordinary-10 controls retain 5–6 full formation distributions in 
 shared interception component can repeat while other outcomes differ. No chart,
 source target, tolerance or policy changes; final fit/play-test closure remains
 pending. The resolved tracker was reviewed without new closure evidence.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Neutral interception-floor correction and low-mass strength ordering are committed; final fit/stress confirmation remains pending, with depth/stripe model limits retained.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

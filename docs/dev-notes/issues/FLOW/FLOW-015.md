@@ -1,10 +1,10 @@
 ---
 id: FLOW-015
 title: Browser play log shows raw seconds and attributes half-ending plays to the next period
-status: open
+status: resolved
 priority: Medium
 created-at: 2026-11-06
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -38,3 +38,18 @@ requested text changes, retaining selection, budgets, disabled controls and
 request-payload assertions. No gameplay rule or stored history is rewritten.
 Keep open until browser confirmation of the updated display. The development
 review banner was removed from the owner's current page without a reload.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Clock formatting/start-state changes exist, but the ticket requires issue-specific browser confirmation of half-ending log attribution. Generic passing browser games do not assert that display detail.
+See the [full review](../../open-issue-reconciliation-2026-11-08.md). No status or acceptance criterion changed.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Clock formatting and preplay-clock attribution are committed; issue-specific half-ending log browser confirmation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

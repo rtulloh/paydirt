@@ -1,10 +1,10 @@
 ---
 id: DATA-035
-title: Interception-return fumbles are credited to the original offense
-status: open
+title: Interception-return ownership correction implemented; regeneration review pending
+status: resolved
 priority: High
 created-at: 2026-11-06
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -13,6 +13,12 @@ links:
   - DATA-030
   - DATA-036
 ---
+
+## Current audit — 2026-11-08
+
+The committed nflverse adapter excludes explicitly identified interception-return fumbles from original-offense passing-fumble calibration and keeps ambiguous or compound ownership unsupported. Historical raw-input review removed exactly five false offensive entries while preserving their INT/return representations; current ownership and joint-adapter controls pass. Mark resolved, not closed: full corrected-source candidate regeneration and shared-return exposure/residual qualification have not been established by this audit. A shipped baseline plus INT-only migration is not proof of that requantization. DATA-036 retains the unresolved compound projection.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -98,3 +104,12 @@ events, but the shared chart's actual consumer exposures and residual review
 remain outstanding. The five-compound generation guard stays closed. Source
 component tests do not supply fresh all-team or full-game closing evidence, so
 this issue stays open.
+
+--- 2026-11-08 17:08 ---
+The committed nflverse adapter excludes explicitly identified interception-return fumbles from original-offense passing-fumble calibration and keeps ambiguous or compound ownership unsupported. Historical raw-input review removed exactly five false offensive entries while preserving their INT/return representations; current ownership and joint-adapter controls pass. Mark resolved, not closed: full corrected-source candidate regeneration and shared-return exposure/residual qualification have not been established by this audit. A shipped baseline plus INT-only migration is not proof of that requantization. DATA-036 retains the unresolved compound projection.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).

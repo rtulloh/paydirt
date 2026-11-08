@@ -1,10 +1,10 @@
 ---
 id: RULE-026
 title: Selected offensive fumble priority is misclassified as defensive interception
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-05
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -44,3 +44,14 @@ Combined new regressions: 20 expected baseline failures, 17 passing controls;
 438 focused tests now pass, including recovery/penalty and allocator mutants.
 See [implementation evidence](../../chart-confidence-implementation.md).
 Keep open pending regenerated candidate, required full-game/audit evidence and review.
+
+--- 2026-11-08 16:48 ---
+Owner-requested implementation-status reconciliation: Selected-priority fumble classification is corrected in committed code; required regenerated/full-game/audit confirmation remains pending.
+
+The implementation was integrated into the shipped release line by November 7;
+older uncommitted/keep-open checkpoint wording is superseded for status only.
+Mark resolved because the code fix is committed, and retain empty closed-at
+until the recorded issue-specific play/audit/review requirements are met.
+No gameplay, tolerance, source model or test expectation changed. General green
+CI or unit tests alone are not used to close this ticket. See the
+[reconciliation](../../open-issue-reconciliation-2026-11-08.md).

@@ -1,11 +1,11 @@
 ---
 id: RULE-007
 title: Uncommitted _log_score try attribution relies on scoring_plays[-1] being the TD
-status: open
+status: closed
 priority: Medium
 created-at: 2026-10-19
-resolved-at: 
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - code-read
 links:
@@ -45,3 +45,12 @@ by a successful or defensive-return try while live state is Q3 15:00: only the
 proper try entry is added, with the captured touchdown's period/time. The failed
 try adds no score entry. Both human sides and the following second-half kickoff
 pass. These add play-flow evidence without changing the production repair.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Explicit touchdown-entry attribution in both try methods shipped with the conversion repair in 8c0bb8b. November 6 actual API halftime cases verify touchdown period/time attribution for successful, failed and defensive-return tries on both sides. Current conversion regressions pass; this is completed shared work with RULE-001, not another implementation task.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

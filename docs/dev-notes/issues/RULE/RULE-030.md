@@ -1,10 +1,10 @@
 ---
 id: RULE-030
 title: Own-end-zone interceptions lack the permitted coaching return choice
-status: open
+status: resolved
 priority: High
 created-at: 2026-11-06
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -78,3 +78,11 @@ phrase "owner's integration step" above refers to that parent-agent work, not
 an exhaustive validation assignment for the human owner. The human owner gets
 the compact visual review and release decision. Existing receipts remain
 immutable, and this clarification supplies no new fit or closure evidence.
+
+--- 2026-11-08 16:47 ---
+Status correction requested by the owner: the implementation is committed in
+8c0bb8b and included in the published release line. Mark resolved, not open,
+while the recorded issue-specific play-test/qualification evidence remains
+outstanding. Closed-at stays empty; focused tests and general release success
+alone do not close this ticket. Earlier keep-open wording is superseded for
+implementation status, without waiving the remaining confirmation criteria.

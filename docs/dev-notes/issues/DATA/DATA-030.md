@@ -2,7 +2,7 @@
 id: DATA-030
 title: Source credited fumble yardage and physical initial gain need separate definitions
 status: open
-priority: High
+priority: Medium
 created-at: 2026-11-05
 resolved-at:
 closed-at:
@@ -14,6 +14,12 @@ links:
   - DATA-036
   - DATA-038
 ---
+
+## Current audit — 2026-11-08
+
+Lowered High to Medium. Source facts and modeled statistical classes are now explicitly separated, including the user-authorized historical proxy and uniform fitting-only exclusion policy. The published 1983 summary discloses 712 fitted of 727 events, with 15 exclusions and historical completeness false. Remaining work concerns stronger evidence and sensitivity of credited-versus-physical yardage and modeling assumptions, including modern data; it is not a newly discovered release blocker or permission to claim exact fidelity. No current aggregate impact magnitude is established by this review.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -354,3 +360,12 @@ choices; release permission is not recovered historical evidence. Replace
 assumptions only with supported facts, retain versioned provenance and disclose
 any effects on source denominators, chart output and fit. Do not reopen broad
 source research as a release requirement without a new scope decision.
+
+--- 2026-11-08 17:08 ---
+Lowered High to Medium. Source facts and modeled statistical classes are now explicitly separated, including the user-authorized historical proxy and uniform fitting-only exclusion policy. The published 1983 summary discloses 712 fitted of 727 events, with 15 exclusions and historical completeness false. Remaining work concerns stronger evidence and sensitivity of credited-versus-physical yardage and modeling assumptions, including modern data; it is not a newly discovered release blocker or permission to claim exact fidelity. No current aggregate impact magnitude is established by this review.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).

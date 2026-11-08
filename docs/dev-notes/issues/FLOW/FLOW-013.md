@@ -1,11 +1,11 @@
 ---
 id: FLOW-013
 title: Web modifier panel hides defensive timeout requests and does not forward them to the engine
-status: open
+status: closed
 priority: High
 created-at: 2026-11-02
-resolved-at:
-closed-at:
+resolved-at: 2026-11-07
+closed-at: 2026-11-08
 tags:
   - reproduced
 ---
@@ -78,3 +78,12 @@ Health, API schema and served-JavaScript checksum confirm the new UI/API are
 active. Raw reports remain ignored in `.ai-audits/flow-013/`. Implementation
 and browser verification are complete locally; this ticket remains open
 until the uncommitted fix is committed. No push or release was performed.
+
+--- 2026-11-08 16:36 ---
+Completed-work reconciliation: Human defensive timeout controls and engine routing shipped in 8c0bb8b. The recorded November 2 full browser games verify six human defensive timeouts per game, correct home/away ownership, exhausted budgets and keyboard cancellation/reselection. The v1.10.2 hosted 18-browser-check pass includes both real-engine games; current API and component regressions pass.
+
+The earlier keep-open/uncommitted wording records its original checkpoint;
+it is superseded by this closure. See the [full review](../../open-issue-reconciliation-2026-11-08.md)
+and [published verification](../../release-1.10.2-scope.md#published-release-verification).
+Closure uses the recorded issue-specific gameplay/integration evidence plus
+committed-source review, not unit tests alone. No new full regression was run.

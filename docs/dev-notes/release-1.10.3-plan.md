@@ -1,4 +1,43 @@
-# Release 1.10.3: controlled simulation improvement
+# Release 1.10.3: targeted fixes and the 1977 season
+
+
+## Current release scope — supersedes the AI experiment plan below
+
+The owner redirected this release to concrete ticket fixes and one additional
+season. AI-026 is Low priority and excluded; released coaching selectors remain
+the baseline. The earlier experiment plan/results are retained as history only.
+
+Working ticket scope, awaiting the owner's response to a clarification: STAT-004
+(consistent standings record selection) and VAL-009 (API path confinement).
+Proceed with these independently useful fixes; do not silently add other tickets.
+Add the 1977 season from reviewed public play-by-play/statistical sources after
+verifying actual coverage, attribution, era rules and generator compatibility.
+1977 availability has not yet been locally qualified; missing facts remain
+explicit and must not be invented.
+
+Two low-reasoning agents own this work: `release103_fixes` fixes the selected
+tickets and owns integration, full regression, upstream CI and publication;
+`season1977` obtains/reviews source inputs and generates/audits the new season.
+Coordinate shared files and commits. Preserve the existing uncommitted tracker
+review. Follow test-first synthetic/public-2026 tests and every AGENTS.md push
+requirement, including the clean tracked-only checkout and browser checks.
+
+The release owner integrates reviewed generated 1977 outputs, docs, selectors,
+packaging and validation configuration as needed; runs all required checks and
+1977-specific source/chart and complete-season validation; reviews play-selection
+findings and resolved-ticket closing evidence; then pushes the stable candidate.
+Require successful upstream qualification, increment an immutable unused release
+tag, publish via the configured release workflow and verify downloadable assets.
+Never weaken checks, overwrite tags or claim release success from a pushed tag.
+No new large AI research campaign is part of this goal. Report blockers promptly.
+
+## Current implementation and validation checkpoint
+
+STAT-004 and VAL-009 now have test-first fixes and independent synthetic CLI/API acceptance; actual per-change Codex reviews found no actionable defects. Existing test expectations were not changed. The [1977 source feasibility check](1977-season-feasibility.md) found no accessible compatible source bundle, so no season outputs or packaging changes exist.
+
+The mandatory 1983 and 2024 64-repetition chart commands currently fail before games because verified source-input/statistics/reproduction preparation is absent. This is a release blocker, not a skipped check or permission to weaken source gates. Other validation is in progress; no push, tag, version bump or publication is claimed. Actual final integrated Codex review is also required before completion.
+
+## Previous AI investigation (historical)
 
 Status: resumed by the owner on November 8 within the original 23:18:53 UTC deadline. A bounded continuation-analysis foundation passes focused validation; selectors remain unchanged. The earlier feasibility no-go remains valid, AI-026 remains open and v1.10.3 is not release-qualified. Held-out seasons remain unopened.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
@@ -1843,3 +1882,8 @@ The six actual numeric resolver/core/factory witnesses preserve game state and
 global RNG and respond to public opponent charts on both physical sides. This
 is reusable analysis capability, not measured historical improvement. The
 missing full-state adapter and practical real-chart exposure remain explicit.
+
+
+## Current release review gate
+
+The owner requires actual `codex review` for each coherent change and the final integrated release. Findings must be inspected and addressed before completion; self-review alone does not satisfy this gate. STAT-004 and VAL-009 use synthetic/public-only test-first regressions. AI-026 remains Low and excluded from this release.

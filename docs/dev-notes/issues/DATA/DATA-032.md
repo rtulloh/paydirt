@@ -1,10 +1,10 @@
 ---
 id: DATA-032
-title: Punt snap fumbles silently become forty-yard punts
-status: open
+title: Punt snap-fumble routing fixed; final closing review pending
+status: resolved
 priority: High
 created-at: 2026-11-06
-resolved-at:
+resolved-at: 2026-11-07
 closed-at:
 tags:
   - reproduced
@@ -14,6 +14,12 @@ links:
   - DATA-034
 ---
 
+
+## Current audit — 2026-11-08
+
+The committed engine routes original punt F tokens through snap-fumble resolution, including the first nonpenalty reroll after a kick foul; pending choices preserve the result and resolve it only when appropriate. Current punt snap-fumble regressions pass. Earlier recorded natural-game campaigns include 496-game cohorts and the larger exposure census, so this is no longer an unimplemented forty-yard fallback defect. Mark resolved, not closed pending a current issue-specific final play-test/binding review. Statistical-credit fidelity and broad source-fit acceptance remain separate DATA-030 concerns; do not reimplement the routing fix.
+
+The original investigation and checkpoints below are retained as history.
 
 ## Description
 
@@ -140,3 +146,12 @@ DATA-030's model review remains pending, and DATA-035 independently exposes five
 interception-return fumbles misattributed by the modern source adapter. Keep this
 broader source/credit acceptance issue open. Original runtime for these games is
 `f0cfc25a…`; subsequent adapter changes require fresh candidate bindings.
+
+--- 2026-11-08 17:08 ---
+The committed engine routes original punt F tokens through snap-fumble resolution, including the first nonpenalty reroll after a kick foul; pending choices preserve the result and resolve it only when appropriate. Current punt snap-fumble regressions pass. Earlier recorded natural-game campaigns include 496-game cohorts and the larger exposure census, so this is no longer an unimplemented forty-yard fallback defect. Mark resolved, not closed pending a current issue-specific final play-test/binding review. Statistical-credit fidelity and broad source-fit acceptance remain separate DATA-030 concerns; do not reimplement the routing fix.
+
+Reviewed current committed implementation and existing issue evidence. Fresh
+focused validation: 239 gameplay/ownership/source/runner/standings checks and
+417 parser/reconciliation/generation/source-bundle checks pass, without skips
+or warnings. These focused checks are not full regression or new season runs.
+See [high-priority audit](../../high-priority-issue-audit-2026-11-08.md).
