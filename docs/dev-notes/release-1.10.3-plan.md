@@ -1489,3 +1489,23 @@ logs and the complete production identity. No further adapter expansion is neede
 for this implementation scope. Clean tracked-source focused validation and the
 source commit/receipt precede frozen protocol and historical pilot review.
 
+The eighth candidate is committed locally as
+`e58d1238191942ee8ca00df2eaf2d9d4ab22527c` (`v1.10.3: Separate strategic mix
+from matchup call selection`). Root reviews the bounded 20-file change and
+accurate experimental-policy documentation; all 64 production hashes still match
+the independent compiler/phase review.
+
+A tracked-files-only archive of that commit passes all 2,193 selected focused
+regressions in 33.25 seconds, with no errors or skips. Root verifies all 1,068
+tracked paths are present, all 64 production hashes match, no external symlinks
+exist, and fresh-process core and fixture imports resolve inside the archive.
+Ignored `root-full-matchup-clean-archive-source-review-r2.json` binds the archive
+source review and terminal log. This is the declared pre-freeze focused check,
+not a claim that the entire pre-push full-regression checklist has run.
+
+The implementation is ready for frozen protocol/identity review. The agent is
+preparing the eighth experiment's versioned protocol and baseline compatibility
+bridge; root must verify original seeds, metric/scoring/pace/correctness gates
+and cost limits before authorizing a bounded first-seed historical pilot. No
+historical outcome from this candidate has yet been generated or inspected.
+
