@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-197 issues: 114 open, 31 resolved, 52 closed.
+198 issues: 115 open, 31 resolved, 52 closed.
 
-## Open (114)
+## Open (115)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -120,6 +120,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-003](issues/DATA/DATA-003.md) | Low | Add a PDF import backend for Paydirt charts | created 2026-10-30 | — |
 | [DATA-015](issues/DATA/DATA-015.md) | Low | Assess whether sparse symbolic passing touchdowns improve calibrated generated charts | created 2026-11-02 | DATA-011 |
 | [DATA-039](issues/DATA/DATA-039.md) | Low | Primary chart dispersion scores BLACK only and leaves other reducible result clusters | created 2026-11-06 | DATA-040, DATA-041 |
+| [DATA-044](issues/DATA/DATA-044.md) | Low | 1983 Buccaneers commentary roster incorrectly includes Doug Williams | created 2026-11-08 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-017](issues/FLOW/FLOW-017.md) | Low | Scoreboard omits the opponent timeout budget and leaves the displayed count ambiguous | created 2026-11-06 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
