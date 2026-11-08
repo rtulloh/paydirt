@@ -429,3 +429,80 @@ distance band rather than exact target. Ignored
 `v4-revealed-reconstruction-proof.json` and `candidate-v4-rejection.json`
 retain identities, receipt hashes and the cost-receipt process exception.
 AI-026 remains open, including early-down and defensive chart response.
+
+## Defensive diagnostics after rejected offense experiments
+
+Diagnostics restart from released `10d7130`, preserving its offense. A public
+synthetic case confirms C is still selected when C changes from preventing
+every conversion to allowing every conversion, while five alternatives prevent
+them under all nine incoming calls. This establishes a chart-response blind
+spot without knowing the pending offensive call.
+
+Conservative per-call interval dominance yields no eligible replacement across
+all 788 calendar chart pairings, six formations and fixed third-down distances
+1, 3, 6, 7, 10 and 15. Even neutral point dominance is absent through distance
+10 and rare at 15. Real call tradeoffs, beyond unresolved-interval overlap,
+prevent a meaningful incremental correction. No near-no-op is implemented.
+
+Past-only nine-call forecasts retain negative results. Uniform Brier score on
+released ordinary third downs is .888889. Untuned game-global Laplace one per
+call scores .896677 in 1983 (worse), .883780 in 2024 (better). The reviewed
+same-down diagnostic tests early-down confounding with the same estimator:
+.904959 and .895340, both worse. These are forecast diagnostics, not candidate
+historical outcomes. No observation schema or production forecast is added;
+no further window/pseudocount search is justified. Compact bands cannot
+reconstruct the existing exact tendency key at the 6/7 boundary.
+
+Ignored `defensive-dominance-diagnostic.json.gz`,
+`defense-call-forecast-diagnostic.json` and
+`defense-same-down-call-forecast-diagnostic.json` retain identities, per-team
+results and contrary evidence. Root reviewed a static minimax-regret diagnostic
+next, without call probabilities or current-call access. This is an upper bound
+under declared coaching utility intervals, not exact football regret, expected
+points or guaranteed improvement. Production remains unapproved. Better
+modeled stops can worsen existing efficiency deficits; all original historical
+gates and AI-026's remaining capabilities remain required.
+
+The regret diagnostic is not ready for production. Its endogenous reference
+`min_g L(g, p)` can worsen competitors' regret when one formation gains unknown
+mass, thereby improving that opaque formation's selection. An exact synthetic
+counterexample replaces 10% known fumble mass with unknown: the original
+formation's worst regret stays 1.12 while its competitor rises 1.10 to 1.15.
+Retain this negative control; do not disguise it with fitted blending or relax
+unknown-substitution requirements.
+
+Root reviewed a distinct static worst-case objective next: `W(f) = max_p H(f,p)`,
+minimized across formations, preserving the released recommendation on exact
+ties and then using fixed enum order. No endogenous competitor benchmark or
+call probabilities enter. Replacing adverse mass with unknown raises only its
+own upper bound, so its maximum cannot decrease while competitors and fixed
+tie rules remain unchanged. Six thousand exact synthetic substitutions across
+six baseline tie contexts confirm this monotonicity. These are objective
+controls, not an actual selector or historical acceptance. Ignored
+`defense-objective-unknown-controls.json` preserves both the rejected-regret
+counterexample and worst-case proof. A full static effect diagnostic precedes
+any production proposal.
+
+The worst-case static audit is nontrivial: conditional on released C at
+third-and-10, it changes 75.22%/100% of calendar-weighted chart pairings
+(1983/2024), reducing the declared bound .04102/.12139 on average. Conditional
+on D, changes are 31.70%/84.74%, reduction .00841/.08260. Per-team reports
+cover all 28/32 defenders. This is not actual branch exposure or a season
+outcome, and large modern changes strengthen the need for outcome validation.
+
+An independent actual released-resolver synthetic diagnostic covers both
+physical sides and all nine primary calls. Six own-defense/opponent-strength
+contrasts reduce true worst conversion utility 1 to 0; two retained-choice
+controls stay 0. State and engine RNG remain unchanged. The external diagnostic
+selector is not production implementation. Ignored
+`defensive-minimax-upper-diagnostic.json.gz`,
+`defensive-minimax-upper-team-summary.json.gz` and
+`defense-upper-resolver-proof.json` preserve the exact mass and identities.
+
+A concrete defense-only production proposal is awaiting review: start from
+released source; scope ordinary third downs outside red zone, conversion and
+existing late/special branches; preserve released offense and model/RNG update
+order. Use pure content-cached chart analysis and exact ties, with no learned
+observations, save schema or UI change. Require a fresh test-first baseline,
+source/protocol freeze and unchanged paired historical gates before promotion.
+No production work is authorized by the diagnostic alone.
