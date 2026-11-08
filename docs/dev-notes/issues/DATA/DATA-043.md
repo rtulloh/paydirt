@@ -111,3 +111,21 @@ all 49 allocation/policy cases in 13.40s. A clean tracked-only snapshot
 also passes all 444 allocation/policy/documentation/tracker cases in 14.34s. This corrects the validation caller,
 without changing generated charts or gameplay; the running hosted coverage job
 is retained until completion before the corrective push.
+
+--- 2026-11-07 18:08 ---
+The preserved hosted baseline completes with 10,875 passes and five failures:
+four allocation-audit callers missing the new profile argument, plus one old
+layout fixture injecting INT5/INT12 into every aggregate passing baseline.
+The latter violates the new contract and is correctly rejected; production does
+not emit that combination. Its intended mixed-token layout case now enters via
+explicit synthetic empirical call attribution and real quantization. A boundary
+spy captures pre-allocation cells; every existing exact full-token mass, protected
+auxiliary/BLACK and cost assertion remains unchanged, with an added assertion
+that both source variants reach every call. A new passing control proves the old
+undeclared aggregate injection remains rejected. Baseline reproduction: the old
+case fails as expected and the guard control passes; no invariant is relaxed.
+
+Corrected primary/allocation/policy/cache checks: 105 pass in 81.96s;
+documentation/tracker: 395 pass. Clean tracked-only failing-case/caller/cache/
+documentation coverage: 418 pass in 13.46s. Ruff passes. No existing assertion
+is weakened and no production change is needed for this source-fixture correction.

@@ -162,3 +162,15 @@ retaining failure logs and cleaning disposable passed-test fixtures resolves
 those environment failures without changing assertions. A clean tracked-only
 snapshot passes 544 focused integrity/engine/allocation/policy/documentation/
 tracker checks and ruff. Two runtime-identity type diagnostics match baseline.
+
+The preserved hosted baseline completes in 65m50s (pytest 3,932.11s): 10,875
+passes and five failures, with all eight other jobs green. Four are the already
+corrected allocation-audit caller. The fifth is an invalid old fixture injecting
+mixed INT5/INT12 into every aggregate passing baseline. That deliberate source
+case now uses the public empirical boundary and real quantization, retaining all
+existing mass/layout assertions and adding a control that undeclared aggregate
+pooling still fails. This fixture expectation change follows the new semantic
+contract; it does not weaken the generator guard or change generated charts.
+Slowest individual baseline cases include combined gate147.86s, mixed-QT
+allocation94.15s and empirical OOB generation88.85s. Corrected hosted total and
+remaining costs will be reported with the baseline’s five-failure limitation.

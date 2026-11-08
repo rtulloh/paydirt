@@ -29,13 +29,17 @@ def _longest(rows: list[int]) -> int:
     return best
 
 
-def _fixture(monkeypatch, tokens: tuple[str, str], seed: int = 8306):
-    stats = generator.TeamSeasonStats.from_dict({
+def _stats() -> generator.TeamSeasonStats:
+    return generator.TeamSeasonStats.from_dict({
         "season": 2026, "team_name": "Synthetic Allocation", "short_name": "ALL",
         "offense": {"rushing": {"attempts": 100, "yards": 400},
                     "passing": {"attempts": 200, "completions": 120, "yards": 1400,
                                 "interceptions": 4, "sacks": 10, "sack_yards": 60}},
     })
+
+
+def _fixture(monkeypatch, tokens: tuple[str, str], seed: int = 8306):
+    stats = _stats()
     offense = generator._generate_offense(stats, seed)
     column = generator._empirical_column((tokens[0],) * 18 + (tokens[1],) * 19
                                          + ("4",) * 179, seed)
@@ -79,8 +83,24 @@ def test_mixed_qt_allocation_unlocks_pooled_family_without_probability_change(
 def test_primary_allocation_handles_complete_tokens_and_other_families(
     monkeypatch, tmp_path, tokens: tuple[str, str],
 ) -> None:
-    stats, before = _fixture(monkeypatch, tokens)
-    generated = generator.generate_team_charts(stats, tmp_path / "Synthetic")
+    if tokens[0].startswith("INT"):
+        # Multiple depths must declare source call attribution. An aggregate
+        # baseline injecting these labels into every call is correctly invalid.
+        samples = (tokens[0],) * 18 + (tokens[1],) * 19 + ("4",) * 179
+        empirical = generator.EmpiricalChartData(offense={name: samples for name in PASSING})
+        before: dict[str, dict[int, str]] = {}
+        rebalance = generator.rebalance_primary_allocation
+
+        def measured(offense: dict[str, dict[int, str]]) -> tuple:
+            before.update(deepcopy(offense))
+            return rebalance(offense)
+
+        monkeypatch.setattr(generator, "rebalance_primary_allocation", measured)
+        generated = generator.generate_team_charts(_stats(), tmp_path / "Synthetic", empirical=empirical)
+        assert all(set(before[name].values()) == {*tokens, "4"} for name in PASSING)
+    else:
+        stats, before = _fixture(monkeypatch, tokens)
+        generated = generator.generate_team_charts(stats, tmp_path / "Synthetic")
     for name in chart_layout.PRIMARY_COLUMNS:
         assert _mass(generated.offense[name]) == _mass(before[name])
     # Existing BLACK optimization has the same freedom and the same result.
@@ -93,6 +113,12 @@ def test_primary_allocation_handles_complete_tokens_and_other_families(
     allocation = generated.primary_layout["allocation"]
     assert allocation["invariants_passed"] is True
     assert allocation["after_cost"] <= allocation["before_cost"]
+
+
+def test_generator_rejects_undeclared_pooled_interception_depths(monkeypatch, tmp_path) -> None:
+    stats, _before = _fixture(monkeypatch, ("INT 5", "INT 12"))
+    with pytest.raises(ValueError, match="Invalid interception spot support in offense/screen"):
+        generator.generate_team_charts(stats, tmp_path / "InvalidAggregate")
 
 
 def test_uniform_primary_and_protected_dependencies_are_passing_controls(monkeypatch, tmp_path) -> None:
