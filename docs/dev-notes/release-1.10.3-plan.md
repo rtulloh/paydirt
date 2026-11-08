@@ -1,6 +1,6 @@
 # Release 1.10.3: controlled simulation improvement
 
-Status: approved direction; first two offense candidates rejected in development.
+Status: approved direction; two rejected candidates, third continuation experiment under evaluation.
 Recorded November 7, 2026. Begin after release 1.10.2 is completed and verified.
 This is a developer plan, not a description of shipped behavior.
 
@@ -264,3 +264,68 @@ and `candidate-v2-rejection.json` retain identities and raw receipt hashes.
 Statistical/pace eligibility is explicitly separate from final promotion,
 which also requires resolver utility, coverage, new-team-bound review and
 complete release qualification.
+
+## Reviewed third experiment: continuation objective
+
+The reviewed v3 hypothesis changes ordinary third-down numeric utility to one
+for reaching the line to gain and zero otherwise. The prior fractional-gain
+utility can prefer a certain 14 yards on third-and-15 (.3733) to a 20% conversion
+and 80% incompletion alternative (.28). This is an explicit continuation
+objective, not expected points or optimal coaching: it omits punt field position
+and the value of a later fourth-down choice. It adds no clock/incompletion bonus.
+TD 1.8, INT -1.5, fumble -1, offensive penalty -.3, unknown range [-1.5, 1.8],
+uniform formation prior, physical mass, selection temperature/history, and all
+early-down/special/defensive policies remain fixed. Every outcome gate is fixed.
+
+Source `32e9218` and protocol v6 SHA256
+`02b09b332e2931ca1ae08af8ceadb292e6a38b5b04457a95a67f44cc81a48ab7`
+are frozen before candidate historical outcomes. Hashed v5 remains preserved;
+v6 only clarifies that original baseline-v3 receipts and new candidate-v6
+receipts retain separate identities. Metrics, samples, seeds and budgets match.
+
+Test first: 20 expected failures and 202 controls precede the objective change.
+The independent numerical oracle now uses binary continuation; physical-mass,
+priority, fallback, unknown-risk, special and early-down assertions remain.
+The third-and-6 variety fixture previously gave certain 8 versus certain 6;
+these now have equal continuation value. It now gives alternatives real
+nonconversion mass while retaining the exact original frequency, all-nine-call
+and repetition assertions. Dice-weighting winning gains now reach the requested
+distance. The v1/v2 numerical oracles remain in immutable source snapshots.
+After implementation, 698 focused regressions, 148 adapter/auto/docs checks and
+55 final phase checks pass; one existing backend deprecation warning remains.
+
+An external proof invokes the actual released and candidate selectors in separate
+frozen processes, with the same synthetic fixture and independent real-resolver
+physical mass. The analytic 1/5 example is supplemented by reachable 43/216
+(19.91%) chart mass. Weighted continuation utility rises .0183103 to .0324224
+on both physical sides. This establishes the intended synthetic capability,
+without qualifying historical source/scoring/pace outcomes. Proof is retained
+as `v3-released-weight-utility-proof.json` in the ignored preparation directory.
+The early-down and defensive AI-026 remainders remain open.
+### Third experiment outcome: continuation improves, pace still fails
+
+All eight v3 development seasons per cohort complete without game/accounting
+errors. Team-macro normalized source error improves in both cohorts: 1983
+-.06745 [-.10051, -.02832], 2024 -.06728 [-.09451, -.03920], equal-cohort
+mean -.06737 [-.08697, -.04629]. All individual metric and scoring guards pass.
+The synthetic real-resolver continuation proof also passes.
+
+The unchanged 1983 pace guard still fails. Plays per team-game fall 65.2316 to
+64.5756 against source 65.7879: absolute source-gap worsening is +.65597
+[.57115, .77094], above .50. The 2024 pace source gap improves .83387.
+Reject v3; held-out seeds remain unopened. The binary continuation change does
+not establish acceptable whole-season behavior, and its near-identical 1983
+pace effect to v2 warrants further mechanism diagnosis rather than a fitted
+clock bonus, blend, distance cutoff, changed budget or expanded sample.
+
+Eligible ordinary-third-down supported mass is 98.6355% in 1983 and 98.9783%
+in 2024; remaining defensive-penalty mass stays unresolved and receives the
+declared conservative ranking floor. Separate coverage artifacts identify the
+released baseline's counterfactual model coverage and candidate's actual model
+coverage. Source/chart/runtime/protocol hashes and all paired receipts remain
+in ignored `development-v3-analysis-08.json.gz`,
+`development-v3-coverage-08.json.gz` and `candidate-v3-rejection.json`.
+The next diagnostic compares the neutral uniform formation assumption with
+released Hard defense's observable-situation policy mixture; it must not read
+the selected defense or future dice. No fourth candidate is yet authorized or
+implemented. AI-026 remains open, including early-down and defensive response.
