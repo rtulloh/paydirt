@@ -101,6 +101,19 @@ simulation accuracy. Automated game completion alone does not establish a human
 win rate; do not claim one without evidence. Do not force human wins, handicaps
 or historical results to satisfy this requirement.
 
+## Cost and time limit for the current investigation
+
+On November 8 the user required a time constraint because token spend is limited.
+The current investigation has a hard deadline of **2026-11-08 22:03:53 UTC**
+(15 minutes from 21:48:53 UTC). Finish only the already-frozen opposing-defense
+public proof, persist the evidence and provide a concise go/no-go decision.
+Do not start another variant, design loop, static sweep or historical campaign.
+Stop additional investigation at the deadline, or earlier when this work finishes.
+
+This time limit does not relax any release criterion or make the objective
+complete. If historical improvement is still unproven, report AI-026 as not
+qualified for release and identify the remaining work without starting it.
+
 ## Handoff and reporting
 
 The existing release subagent owns preparation and implementation after 1.10.2.
