@@ -1,6 +1,12 @@
 # Release 1.10.3: targeted fixes and the 1977 season
 
 
+## Urgent installed-application repair supersedes prior season dependency
+
+The owner confirmed v1.10.2's packaged team API fails with unresolved Pydantic annotations and requested an immediate repair without waiting for full regression or 1977. The urgent v1.10.3 release therefore includes VAL-022 plus the reviewed STAT-004/VAL-009 fixes. The 1977 addition is explicitly deferred because compatible source inputs are unavailable; no 1977 data or qualification is claimed. AI-026 remains Low and excluded.
+
+The owner explicitly waived full regression for this hotfix. Require the test-first frozen-launcher regression, actual Codex review, an actual rebuilt packaged application smoke, narrow exact-commit urgent qualification and actual downloaded published-asset checks. The normal full-regression and full exact-CI path remains the default for future work. Record the cancelled coverage run and failed source-preparation gates; do not relabel them as passes.
+
 ## Current release scope — supersedes the AI experiment plan below
 
 The owner redirected this release to concrete ticket fixes and one additional

@@ -53,7 +53,7 @@ def start_web_server(port=8000, open_browser=True):
         from fastapi.responses import FileResponse
 
         # Create app
-        app = FastAPI(title="Paydirt Web API", version="1.10.2")
+        app = FastAPI(title="Paydirt Web API", version="1.10.3")
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -97,55 +97,25 @@ def start_web_server(port=8000, open_browser=True):
 
                 spec = importlib.util.spec_from_file_location("routes", actual_routes_file)
                 backend_routes = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(backend_routes)
-
-                # Include router from routes
-                if hasattr(backend_routes, "router"):
+                # Deferred annotations resolve through the owning module's namespace.
+                previous_routes = sys.modules.get("routes")
+                sys.modules["routes"] = backend_routes
+                try:
+                    spec.loader.exec_module(backend_routes)
+                    if not hasattr(backend_routes, "router"):
+                        raise RuntimeError("routes.py has no router")
                     app.include_router(backend_routes.router)
-                else:
-                    raise RuntimeError("routes.py has no router")
+                except Exception:
+                    if previous_routes is None:
+                        sys.modules.pop("routes", None)
+                    else:
+                        sys.modules["routes"] = previous_routes
+                    raise
             else:
                 raise FileNotFoundError(f"routes.py not found at {routes_file}")
         except Exception as e:
-            logging.getLogger(__name__).debug("Operation failed", exc_info=True)
-            print(f"ERROR loading routes.py: {e}", flush=True)
-            import traceback
-
-            traceback.print_exc()
-
-            # Fall back to basic endpoints
-            @app.get("/api/seasons")
-            async def list_seasons():
-                # Collect seasons from all paths (user seasons + built-in)
-                seasons_set = set()
-                for path in get_all_season_paths():
-                    if path.exists():
-                        for d in path.iterdir():
-                            # Only include directories with numeric names (valid season years)
-                            if d.is_dir() and d.name.isdigit():
-                                seasons_set.add(d.name)
-                return {"seasons": sorted(seasons_set, reverse=True)}
-
-        # Override /api/teams to return format frontend expects (season/team)
-        @app.get("/api/teams")
-        @app.get("/api/teams/{season}")
-        async def list_teams(season: str = "2026"):
-            teams = []
-            # Search all season paths for the requested season
-            for seasons_base in get_all_season_paths():
-                season_path = seasons_base / season
-                if season_path.exists():
-                    for d in sorted(season_path.iterdir()):
-                        if d.is_dir() and not d.name.startswith("."):
-                            teams.append(
-                                {
-                                    "id": f"{season}/{d.name}",  # season/team format
-                                    "name": d.name,
-                                    "season": season,
-                                }
-                            )
-                    break  # Found the season, stop searching
-            return {"teams": teams, "season": season}
+            logging.getLogger(__name__).exception("Could not load web API routes")
+            raise RuntimeError("Could not load web API routes") from e
 
         # Health check
         @app.get("/api/health")

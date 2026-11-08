@@ -513,6 +513,30 @@ Prefix every Git commit message with the applicable release or milestone tag,
 followed by a colon and a concise description. Use the target release or milestone
 for the work, for example: `v1.10.3: Improve third-down matchup selection`.
 
+### Required test of published release artifacts
+
+After publishing a release, download the actual assets from that release and
+verify the packaged applications, not a development checkout or development
+server. Do not declare the release healthy from CI success or asset presence
+alone. For each supported platform/architecture, record artifact name/hash,
+platform, launch result and the following smoke-check evidence:
+
+- Install or extract and launch the downloaded application using its normal
+  entry point in an environment without the source checkout on its import path.
+- Verify every bundled season exposes its expected team list in the UI and API;
+  an empty list, HTTP error, model-initialization error or startup fallback fails.
+- Select two bundled teams and start a game; confirm game state and charts load.
+- Inspect startup/request logs for errors, and verify normal shutdown.
+
+Exercise macOS first-launch security behavior on a freshly downloaded artifact;
+record signing/notarization or quarantine limitations rather than treating an
+already trusted local executable as proof of a clean install. If a target cannot
+be tested, disclose that verification gap and arrange a target-platform check.
+If published-asset verification fails, treat it as a release defect and prioritize
+a repair. Retain the failed artifact/tag as immutable history and use the next
+unused tag for the correction. This post-publication check supplements pre-push
+regression; it does not silently replace it.
+
 When creating releases:
 
 - **Always increment tag numbers** - Don't delete and recreate tags. If a build fails, fix the issue and create the next tag number (e.g., if `v1.0.0-beta.70` fails, push the fix and create `v1.0.0-beta.71`)

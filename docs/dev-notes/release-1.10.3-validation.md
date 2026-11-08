@@ -1,6 +1,8 @@
 # v1.10.3 targeted-fix validation
 
-Recorded November 8, 2026. This is a local candidate checkpoint, not a published release.
+Recorded November 8, 2026. This records the earlier candidate checks and the subsequent urgent repair waiver; publication is verified separately.
+
+## Earlier targeted-fix checkpoint before urgent override
 
 STAT-004 maps displayed stable week ordering to persisted record indices for edit/delete. Its first four synthetic regressions produced two expected wrong-record failures and two passing ordered controls. Eight selection cases and all 37 standings checks now pass. Independent temporary-directory commands listed, edited, relisted and deleted the displayed record while preserving the other result. Actual `codex review` found no actionable defect.
 
@@ -11,3 +13,12 @@ No existing test expectation changed. Player guides describe numbering after wee
 Other completed checks: Ruff; 403 documentation/tracker checks; 350 frontend tests; frontend production build; 14-game integration; full historical 1983 calendar (224 regular, nine postseason) plus sixteen historical reproductions. Build reports stale Browserslist data. Public AI audit: 32/32 games, 4,878 calls, no concentration warnings. Local AI audit: 448/448 games, 65,270 calls, three advisory legacy-balanced long-yardage concentrations; details and limitations are recorded in AI-008. Reports and private logs remain ignored.
 
 Both required 64-repetition chart-quality commands fail before simulation because current verified source-input/statistics/reproduction preparation is absent. No requirement, tolerance or failure is bypassed. The separate [1977 feasibility check](1977-season-feasibility.md) cannot obtain compatible inputs, so no new season is implemented. All 18 browser checks passed, including both full games (10–20 and 38–37), one halftime each, clean new-game state and six engine-confirmed defensive timeouts per game. Final integrated actual Codex review found no actionable defects, independently passed 440 focused core/documentation checks and all 449 backend checks, and independently reproduced both chart-preparation blockers. Root and tracked-only full unit runs remain in progress. The reviewed ticket fixes are committed locally as `7b027b4` (`v1.10.3: Fix standings record selection and confine API chart paths`). No push, version bump, immutable tag or published asset is claimed at this checkpoint.
+
+
+## Urgent packaged-launcher repair and owner waiver
+
+The final immutable tracked-only snapshot passed all 10,935 core tests without skips or warnings and 449 backend tests with 21 existing deprecation warnings. The earlier copy attempt passed 10,931 tests but failed two documentation checks because newly linked audit notes were omitted from that incomplete snapshot; rebuilding from `git archive HEAD` fixed the setup. Root coverage was cancelled at the owner's explicit urgent-repair override: 5,528 tests had passed in 1,665.40 seconds before KeyboardInterrupt. It is incomplete, not a full pass.
+
+The owner prioritized the confirmed installed v1.10.2 failure and explicitly waived full regression for the urgent v1.10.3 repair. 1977 is deferred rather than silently included. VAL-022's actual frozen-layout regression first failed HTTP 500, then passed team selection, all API model schemas and public new-game creation after registering the routes module before execution. All 23 focused launcher/confinement checks pass with one existing Starlette warning; changed-file Ruff passes. Actual Codex review found no defect and independently verified failure rollback. A rebuilt local macOS arm64 binary independently passes every available season team list and a public-2026 new game. This is not yet a downloaded published-asset verification.
+
+Version metadata now targets 1.10.3. The normal chart-source gates remain blocked and have not been bypassed or labeled passed; the owner's urgent waiver uses a separate exact-commit focused qualification. Published artifact checks remain required after publication.

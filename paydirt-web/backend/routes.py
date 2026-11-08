@@ -816,6 +816,7 @@ async def get_seasons():
 
 
 @router.get("/api/teams", response_model=TeamsResponse)
+@router.get("/api/teams/{season}", response_model=TeamsResponse)
 async def get_teams(season: str):
     season_dir = _find_season_dir(season)
     if season_dir is None:

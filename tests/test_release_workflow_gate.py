@@ -111,3 +111,38 @@ def test_publication_rejects_a_moved_tag(monkeypatch, tmp_path, tag_sha, annotat
     else:
         with pytest.raises(SystemExit, match="Existing tag no longer matches"):
             runpy.run_path(str(script), run_name="__main__")
+
+
+@pytest.mark.parametrize("event,run_event,head,accepted", [
+    ("workflow_dispatch", "workflow_dispatch", SHA, True),
+    ("push", "workflow_dispatch", SHA, False),
+    ("workflow_dispatch", "push", SHA, False),
+    ("workflow_dispatch", "workflow_dispatch", "b" * 40, False),
+])
+def test_manual_hotfix_qualification(monkeypatch, tmp_path, event, run_event, head, accepted):
+    data = workflow()
+    trigger = data.get("on", data.get(True))
+    option = trigger["workflow_dispatch"]["inputs"]["qualification_workflow"]
+    assert option["default"] == "test.yml"
+    assert option["options"] == ["test.yml", "hotfix.yml"]
+    code = data["jobs"]["verify-ci"]["steps"][0]["run"].split("python - <<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    script = tmp_path / "gate.py"
+    script.write_text(code)
+    output = tmp_path / "output"
+    for key, value in {"GH_REPO": "owner/repo", "GH_TOKEN": "synthetic", "GH_API_URL": "https://api.example", "RELEASE_TAG": "v1.10.3", "GITHUB_OUTPUT": str(output), "QUALIFICATION_WORKFLOW": "hotfix.yml", "RELEASE_EVENT_NAME": event}.items():
+        monkeypatch.setenv(key, value)
+    def request(req, timeout):
+        if "/git/ref/tags/" in req.full_url:
+            value = {"object": {"type": "commit", "sha": SHA}}
+        else:
+            assert "/actions/workflows/hotfix.yml/runs?head_sha=" + SHA in req.full_url
+            value = {"workflow_runs": [{"head_sha": head, "status": "completed", "conclusion": "success", "path": ".github/workflows/hotfix.yml", "event": run_event, "html_url": "https://example/run"}]}
+        return io.BytesIO(json.dumps(value).encode())
+    monkeypatch.setattr(urllib.request, "urlopen", request)
+    if accepted:
+        runpy.run_path(str(script), run_name="__main__")
+        assert output.read_text() == f"sha={SHA}\ntag=v1.10.3\n"
+    else:
+        with pytest.raises(SystemExit):
+            runpy.run_path(str(script), run_name="__main__")
+        assert not output.exists()

@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-199 issues: 72 open, 57 resolved, 70 closed.
+200 issues: 72 open, 58 resolved, 70 closed.
 
 ## Open (72)
 
@@ -89,7 +89,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (57)
+## Resolved (awaiting play-test confirmation) (58)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -134,6 +134,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [VAL-002](issues/VAL/VAL-002.md) | High | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [VAL-017](issues/VAL/VAL-017.md) | High | Engine audit disk fingerprints do not identify replaced loaded observers | created 2026-11-05, resolved 2026-11-07 | — |
 | [VAL-018](issues/VAL/VAL-018.md) | High | Engine report validation ignores policy and selected-call evidence | created 2026-11-05, resolved 2026-11-07 | DATA-031 |
+| [VAL-022](issues/VAL/VAL-022.md) | High | Frozen web launcher leaves API model annotations unresolved | created 2026-11-08, resolved 2026-11-08 | — |
 | [AI-004](issues/AI/AI-004.md) | Medium | Chart analysis treated rows as equally likely | created 2026-10-17, resolved 2026-10-17 | — |
 | [AI-005](issues/AI/AI-005.md) | Medium | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |

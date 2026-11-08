@@ -10,6 +10,14 @@ on:
         description: Existing immutable version tag to build
         required: true
         type: string
+      qualification_workflow:
+        description: Exact-commit qualification (hotfix only for an explicitly authorized urgent repair)
+        required: true
+        type: choice
+        default: test.yml
+        options:
+          - test.yml
+          - hotfix.yml
 
 permissions:
   contents: read
@@ -31,6 +39,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_API_URL: ${{ github.api_url }}
           RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          QUALIFICATION_WORKFLOW: ${{ inputs.qualification_workflow || 'test.yml' }}
+          RELEASE_EVENT_NAME: ${{ github.event_name }}
         run: |
           python - <<'PY'
           import json
@@ -59,13 +69,20 @@ jobs:
           sha = obj["sha"]
           if obj["type"] != "commit" or not re.fullmatch(r"[0-9a-f]{40}", sha):
               raise SystemExit("Tag does not resolve to a commit")
-          runs = get("/actions/workflows/test.yml/runs?head_sha=" + sha + "&status=completed&per_page=100")["workflow_runs"]
+          qualification = os.environ.get("QUALIFICATION_WORKFLOW", "test.yml")
+          if qualification not in {"test.yml", "hotfix.yml"}:
+              raise SystemExit("Unsupported qualification workflow")
+          hotfix = qualification == "hotfix.yml"
+          if hotfix and os.environ.get("RELEASE_EVENT_NAME") != "workflow_dispatch":
+              raise SystemExit("Hotfix qualification requires explicit manual release dispatch")
+          runs = get("/actions/workflows/" + qualification + "/runs?head_sha=" + sha + "&status=completed&per_page=100")["workflow_runs"]
           approved = [run for run in runs if run.get("head_sha") == sha
                       and run.get("status") == "completed"
                       and run.get("conclusion") == "success"
-                      and run.get("path") == ".github/workflows/test.yml"]
+                      and run.get("path") == ".github/workflows/" + qualification
+                      and (not hotfix or run.get("event") == "workflow_dispatch")]
           if not approved:
-              raise SystemExit("No successful completed Tests workflow for exact commit " + sha)
+              raise SystemExit("No successful completed qualification workflow for exact commit " + sha)
           print("Verified", tag, sha, approved[0]["html_url"])
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("sha=" + sha + "\ntag=" + tag + "\n")
