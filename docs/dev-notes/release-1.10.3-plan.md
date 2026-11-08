@@ -1146,6 +1146,14 @@ mass remains explicit: historical .013739→.013775 and modern .008950→.008915
 This census includes branches outside the candidate and does not infer actual
 defensive eligibility/exposure or per-snap utility from compact offense mode/bands.
 
+An independent root verifier, without importing the campaign harness or candidate,
+recounts all 32 raw reports and reproduces every selected call/formation count,
+special count, raw formation-enum count, exact rational coverage total and
+per-defending-team aggregate. The 1,219,215 REG callbacks split into 1,082,849
+primaries and 136,366 specials. Ignored
+`root-v7-coverage-independent-review.json` binds the input catalog/report hashes
+and verifier; this corroborates accounting, not actual candidate branch exposure.
+
 All newly crossed team bounds remain recorded with targets/tolerances, eight
 paired raw numerators/denominators/source errors and original intervals:
 106 historical and 90 modern team-metric pairs, including 11/13 newly exceeded
