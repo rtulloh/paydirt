@@ -1295,3 +1295,45 @@ and bounded content-aware caches require explicit tests. Production edits requir
 that review and meaningful RED evidence first. No historical sweep, eighth
 candidate campaign or held-out access is authorized by these capability controls;
 all original source-fit, correctness, scoring, pace and cost limits remain fixed.
+
+## Eighth test-first preparation
+
+The [concrete implementation proposal](ai026-full-matchup-production-proposal.md)
+is reviewed for isolated test authoring from released `10d7130`. It keeps the
+selected objective and existing special-branch ordering; parser-None B/QT tokens
+must use the core's uniform fallback, whereas parser-raised errors remain errors
+only when reached. A narrow pending-primary identity handle is separately within
+the test-first scope, without save/UI/history transport. Production edits still
+require review of the complete meaningful RED/control evidence.
+
+The first immutable public batch independently reproduces six expected actual
+factory assertion failures and 18 passing controls, with zero errors/skips.
+Across both physical sides and all three downs, released selection keeps
+Line Plunge/Short at .5/.5, while the declared matchup oracle requires Line
+Plunge/Screen at .5/.5. Reverse-favored Short and neutral B/QT controls pass.
+Root verifies all 63 production Python hashes remain released and the production
+diff is empty. Ignored `full-matchup-first-batch-red-receipt-r1.json` SHA
+`84e3c5628de513c82562c127be40d76e06c6ae03ee0461b85188232542560b50`
+and `root-full-matchup-first-red-independent-review.json` bind this evidence.
+This first batch does not prove the remaining generic compiler, cache, pending
+lifecycle, special-phase, adapter or source-fit requirements.
+
+A separate root hash-seed control refutes an initial review concern about the
+diagnostic's population order: its ordered raw mappings produce identical
+populations, probabilities and 100 sampled calls under all six tested hash seeds.
+The failed prediction is retained in
+`root-family-projection-hashseed-order-review.json`. Ordered production sums and
+populations remain a reproducibility convention, not a claimed diagnosed
+sampling defect or a new release blocker.
+
+Before production edits, root also freezes 4,866 actual released neutral-defense
+phase records: 654 ordinary and 4,212 special-phase calls across both sides,
+all three downs, Q2/Q4/overtime, exact clock/score/field boundaries, plus six
+legitimate first-quarter zero-clock untimed-down cases. Each retains the actual
+selected tuple, mode, choice vector and global/offense/defense RNG state hashes.
+The neutral reference means candidate identity should match every record, not
+only special branches. Ignored
+`root-full-matchup-released-phase-oracle.json.gz` SHA
+`42b6433cbe2fd67b4a953b5883c4c5edd6bd76300762919fe1542232f5781500`
+binds fixture, baseline context and source; this is a pre-change public oracle,
+not evidence that any unimplemented candidate already preserves those records.
