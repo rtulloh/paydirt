@@ -1455,3 +1455,18 @@ runtime freeze/pilot review remain required before a paired historical campaign.
 The seventh experiment remains rejected; the eighth is not yet historically
 qualified and no held-out outcomes have been opened.
 
+The broader 37-file existing regression run finishes with 2,135 passes and 54
+failures, all confined to two offense-only ranking/variety suites. Those fixtures
+replace own offense but retain nonneutral public sample defensive charts, so their
+old exact own-only selector expectations no longer express the intended premise.
+The approved repair supplies explicit complete neutral defenses on both physical
+sides in those two fixture locations. Root reviews the exact diff and AST-verifies
+all 61 assertions and all parametrization remain unchanged; no threshold or sample
+size is reduced. Both complete corrected files then pass all 167 cases in 13.97
+seconds. Initial failing output, original fixture sources and the independent
+`root-full-matchup-neutral-fixture-review-r2.json` remain local and ignored.
+Actual opposing-defense effects and adverse conditional utility are still covered
+by the separate full-matchup regressions. Production policy is unchanged by this
+fixture correction. Adapter and clean tracked-source validation remain pending
+before the frozen runtime/protocol and bounded historical pilot can be reviewed.
+
