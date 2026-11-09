@@ -21,6 +21,16 @@ from typing import Any
 EXPECTED_TEAMS = {"1983": 28, "2024": 32, "2026": 2}
 
 
+def season_profile(version: str, include_1977: bool = False) -> dict[str, int]:
+    """Require an explicit candidate opt-in without changing shipped profiles."""
+    profile = dict(EXPECTED_TEAMS)
+    if include_1977:
+        if version != "1.10.4":
+            raise ValueError("The optional reviewed 1977 profile is limited to 1.10.4")
+        profile["1977"] = 28
+    return profile
+
+
 def verify_asset(path: Path, metadata: dict[str, Any]) -> None:
     """Reject a download whose actual bytes differ from release metadata."""
     digest = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
@@ -37,15 +47,16 @@ def request_json(base: str, path: str, payload: dict | None = None) -> dict:
         return json.load(response)
 
 
-def check_api(base: str, version: str) -> dict:
+def check_api(base: str, version: str, include_1977: bool = False) -> dict:
     """Require the installed models, every bundled team list and chart books."""
+    expected = season_profile(version, include_1977)
     if request_json(base, "/openapi.json")["info"]["version"] != version:
         raise ValueError("Packaged API version differs from requested release")
-    if set(request_json(base, "/api/seasons")["seasons"]) != set(EXPECTED_TEAMS):
+    if set(request_json(base, "/api/seasons")["seasons"]) != set(expected):
         raise ValueError("Unexpected bundled seasons or non-isolated user data")
     counts = {year: len(request_json(base, f"/api/teams?season={year}")["teams"])
-              for year in EXPECTED_TEAMS}
-    if counts != EXPECTED_TEAMS:
+              for year in expected}
+    if counts != expected:
         raise ValueError(f"Incomplete team lists: {counts}")
     game = request_json(base, "/api/game/new", {
         "season": "2026", "player_team": "Ironclads", "opponent_team": "Thunderhawks",
@@ -68,7 +79,7 @@ def check_api(base: str, version: str) -> dict:
     return {"version": version, "team_counts": counts, "game_id": game_id, "charts": charts}
 
 
-def check_ui(base: str, output: Path) -> dict:
+def check_ui(base: str, output: Path, expected: dict[str, int]) -> dict:
     """Exercise the rendered bundled UI using a browser outside application code."""
     from playwright.sync_api import Error as BrowserError
     from playwright.sync_api import sync_playwright
@@ -84,9 +95,11 @@ def check_ui(base: str, output: Path) -> dict:
                     if response.url.startswith(base) and response.status >= 400 else None)
             page.goto(base)
             page.get_by_role("button", name="NEW GAME", exact=True).click()
-            for season, count in EXPECTED_TEAMS.items():
+            for season, count in expected.items():
                 page.get_by_role("button", name=season, exact=True).click()
                 page.wait_for_function("expected => document.querySelectorAll('div.grid > button').length === expected", arg=count)
+            page.get_by_role("button", name="2026", exact=True).click()
+            page.wait_for_function("expected => document.querySelectorAll('div.grid > button').length === expected", arg=expected["2026"])
             page.get_by_role("button").filter(has_text="Harbor Bay Ironclads").click()
             page.get_by_role("button").filter(has_text="Metro City Thunderhawks").click()
             page.get_by_role("button", name="START GAME", exact=True).click()
@@ -94,7 +107,7 @@ def check_ui(base: str, output: Path) -> dict:
             page.screenshot(path=str(output / "browser.png"), full_page=True)
             if errors:
                 raise RuntimeError(f"Packaged browser errors: {errors}")
-            return {"team_grids": EXPECTED_TEAMS, "new_game_screen": True, "errors": errors}
+            return {"team_grids": expected, "new_game_screen": True, "errors": errors}
         except BrowserError as error:
             raise RuntimeError(f"Packaged UI verification failed: {error}") from error
         finally:
@@ -292,6 +305,8 @@ def main() -> int:
     parser.add_argument("--kind", choices=["windows-installer", "windows-portable", "linux", "macos"], required=True)
     parser.add_argument("--tag", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--include-1977", action="store_true",
+                        help="Opt in only after reviewed 1977 is actually bundled in 1.10.4")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -302,6 +317,8 @@ def main() -> int:
     mount = None
     base = "http://127.0.0.1:8000"
     try:
+        expected = season_profile(args.tag[1:], args.include_1977)
+        receipt["expected_team_counts"] = expected
         release = json.loads(args.release_json.read_text())
         if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", args.tag) or release["tag_name"] != args.tag or release["draft"]:
             raise ValueError("A matching published stable version tag is required")
@@ -338,8 +355,8 @@ def main() -> int:
                     if time.monotonic() > deadline:
                         raise RuntimeError("Packaged application startup timed out")
                     time.sleep(.5)
-            receipt.update(check_api(base, args.tag[1:]))
-            receipt["browser"] = check_ui(base, output)
+            receipt.update(check_api(base, args.tag[1:], args.include_1977))
+            receipt["browser"] = check_ui(base, output, expected)
             # The normal entry point also completes its browser-opening startup delay.
             time.sleep(4)
             owned = capture_owned_processes(process.pid, executable)

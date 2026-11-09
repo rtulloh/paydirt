@@ -131,3 +131,35 @@ def test_shutdown_rejects_surviving_owned_application_process(remaining):
             smoke.verify_owned_processes_gone({42: 123.0}, inspector)
     else:
         assert smoke.verify_owned_processes_gone({42: 123.0}, inspector) == []
+
+
+@pytest.mark.parametrize("version, include_1977, count", [
+    ("1.10.3", False, 3), ("1.10.4", False, 3), ("1.10.4", True, 4),
+])
+def test_explicit_version_aware_season_profile(version, include_1977, count):
+    smoke = smoke_module()
+    profile = smoke.season_profile(version, include_1977)
+    assert len(profile) == count
+    assert profile["2026"] == 2
+    assert (profile.get("1977") == 28) == include_1977
+
+
+def test_candidate_1977_profile_cannot_change_immutable_103_acceptance():
+    smoke = smoke_module()
+    with pytest.raises(ValueError, match="1.10.4"):
+        smoke.season_profile("1.10.3", True)
+
+
+@pytest.mark.parametrize("candidate_count", [28, 27])
+def test_candidate_profile_checks_every_synthetic_1977_team(monkeypatch, candidate_count):
+    smoke = smoke_module()
+    responses = api_responses()
+    responses["/openapi.json"]["info"]["version"] = "1.10.4"
+    responses["/api/seasons"]["seasons"].append("1977")
+    responses["/api/teams?season=1977"] = {"teams": [{"id": str(i)} for i in range(candidate_count)]}
+    monkeypatch.setattr(smoke, "request_json", lambda base, path, payload=None: responses[path])
+    if candidate_count == 28:
+        assert smoke.check_api("http://synthetic", "1.10.4", True)["team_counts"]["1977"] == 28
+    else:
+        with pytest.raises(ValueError, match="Incomplete team"):
+            smoke.check_api("http://synthetic", "1.10.4", True)

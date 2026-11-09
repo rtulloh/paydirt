@@ -8,6 +8,11 @@ on:
         required: true
         type: string
         default: v1.10.3
+      include_1977:
+        description: Enable only if reviewed 1977 is actually bundled in v1.10.4
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -52,6 +57,7 @@ jobs:
       TARGET: ${{ matrix.target }}
       KIND: ${{ matrix.kind }}
       GH_TOKEN: ${{ github.token }}
+      INCLUDE_1977: ${{ inputs.include_1977 }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
@@ -85,7 +91,9 @@ jobs:
       - name: Launch installed or extracted published application and exercise its actual API
         shell: bash
         run: |
-          python scripts/smoke_published_app.py             --release-json "$RUNNER_TEMP/published-download/release.json"             --asset "$RUNNER_TEMP/published-download/$ASSET_NAME"             --kind "$KIND" --tag "$RELEASE_TAG" --output "$RUNNER_TEMP/native-smoke"
+          PROFILE_ARGS=()
+          if [ "$INCLUDE_1977" = true ]; then PROFILE_ARGS+=(--include-1977); fi
+          python scripts/smoke_published_app.py "${PROFILE_ARGS[@]}"             --release-json "$RUNNER_TEMP/published-download/release.json"             --asset "$RUNNER_TEMP/published-download/$ASSET_NAME"             --kind "$KIND" --tag "$RELEASE_TAG" --output "$RUNNER_TEMP/native-smoke"
       - name: Preserve failure and success receipts plus native application logs
         if: always()
         uses: actions/upload-artifact@v7.0.2
