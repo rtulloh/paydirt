@@ -27,15 +27,18 @@ def test_asset_identity_rejects_changed_bytes(tmp_path):
 
 
 def api_responses():
-    return {
+    responses = {
         "/openapi.json": {"info": {"version": "1.10.3"}},
         "/api/seasons": {"seasons": ["2026", "2024", "1983"]},
         **{f"/api/teams?season={year}": {"teams": [{"id": str(i)} for i in range(count)]}
            for year, count in [(1983, 28), (2024, 32), (2026, 2)]},
-        "/api/game/new": {"game_id": "game_public", "game_state": {"quarter": 1, "home_score": 0, "away_score": 0, "time_remaining": 900}},
+        "/api/game/new": {"game_id": "game_public", "game_state": {"quarter": 1, "home_score": 0, "away_score": 0, "time_remaining": 900, "season": "2026", "home_team": {"id": "Ironclads"}, "away_team": {"id": "Thunderhawks"}}},
         **{f"/api/game/charts/game_public?side={side}": {key: {"rows": [{}], "columns": [{}]} for key in ["offense", "defense", "special_teams"]}
            for side in ["home", "away"]},
     }
+    for side, team in [("home", "Ironclads"), ("away", "Thunderhawks")]:
+        responses[f"/api/game/charts/game_public?side={side}"].update(season="2026", team={"id": team})
+    return responses
 
 
 @pytest.mark.parametrize("failure", [None, "version", "teams", "game", "charts", "empty-charts"])
@@ -157,9 +160,56 @@ def test_candidate_profile_checks_every_synthetic_1977_team(monkeypatch, candida
     responses["/openapi.json"]["info"]["version"] = "1.10.4"
     responses["/api/seasons"]["seasons"].append("1977")
     responses["/api/teams?season=1977"] = {"teams": [{"id": str(i)} for i in range(candidate_count)]}
-    monkeypatch.setattr(smoke, "request_json", lambda base, path, payload=None: responses[path])
+    def request(base, path, payload=None):
+        if path == "/api/game/new" and payload["season"] == "1977":
+            return {"game_id": "game_candidate", "game_state": {"quarter": 1, "home_score": 0, "away_score": 0, "time_remaining": 900, "season": "1977", "home_team": {"id": "0"}, "away_team": {"id": "1"}}}
+        if path.startswith("/api/game/charts/game_candidate"):
+            side = path.split("=")[-1]
+            return {**{key: {"rows": [{}], "columns": [{}]} for key in ["offense", "defense", "special_teams"]}, "season": "1977", "team": {"id": "0" if side == "home" else "1"}}
+        return responses[path]
+    monkeypatch.setattr(smoke, "request_json", request)
     if candidate_count == 28:
         assert smoke.check_api("http://synthetic", "1.10.4", True)["team_counts"]["1977"] == 28
     else:
         with pytest.raises(ValueError, match="Incomplete team"):
             smoke.check_api("http://synthetic", "1.10.4", True)
+
+
+@pytest.mark.parametrize("failure", [None, "game", "home-chart", "away-chart", "reused-id", "wrong-season", "wrong-team", "wrong-chart-team"])
+def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failure):
+    smoke = smoke_module()
+    responses = api_responses()
+    responses["/openapi.json"]["info"]["version"] = "1.10.4"
+    responses["/api/seasons"]["seasons"].append("1977")
+    responses["/api/teams?season=1977"] = {"teams": [{"id": f"Synthetic{i}"} for i in range(28)]}
+    game_1977 = {"game_id": "game_synthetic_1977", "game_state": {"quarter": 1, "home_score": 0, "away_score": 0, "time_remaining": 900, "season": "1977", "home_team": {"id": "Synthetic0"}, "away_team": {"id": "Synthetic1"}}}
+    if failure == "game": game_1977["game_state"]["quarter"] = 2
+    if failure == "reused-id": game_1977["game_id"] = "game_public"
+    if failure == "wrong-season": game_1977["game_state"]["season"] = "2026"
+    if failure == "wrong-team": game_1977["game_state"]["home_team"]["id"] = "Ironclads"
+    for side in ["home", "away"]:
+        responses[f"/api/game/charts/game_synthetic_1977?side={side}"] = {key: {"rows": [{}], "columns": [{}]} for key in ["offense", "defense", "special_teams"]}
+        responses[f"/api/game/charts/game_synthetic_1977?side={side}"].update(season="1977", team={"id": "Synthetic0" if side == "home" else "Synthetic1"})
+    if failure == "wrong-chart-team": responses["/api/game/charts/game_synthetic_1977?side=away"]["team"]["id"] = "Ironclads"
+    if failure == "home-chart": responses["/api/game/charts/game_synthetic_1977?side=home"].pop("offense")
+    if failure == "away-chart": responses["/api/game/charts/game_synthetic_1977?side=away"]["defense"]["rows"] = []
+    calls = []
+    def request(base, path, payload=None):
+        calls.append((path, payload))
+        if path == "/api/game/new" and payload["season"] == "1977": return game_1977
+        if (failure == "reused-id" and path.startswith("/api/game/charts/game_public")
+                and any(body and body.get("season") == "1977" for _, body in calls)):
+            return responses[path.replace("game_public", "game_synthetic_1977")]
+        return responses[path]
+    monkeypatch.setattr(smoke, "request_json", request)
+    if failure:
+        with pytest.raises(ValueError): smoke.check_api("http://synthetic", "1.10.4", True)
+    else:
+        result = smoke.check_api("http://synthetic", "1.10.4", True)
+        assert result["season_games"]["1977"]["game_id"] == "game_synthetic_1977"
+        assert result["season_games"]["2026"]["game_id"] == "game_public"
+        created = [payload for path, payload in calls if path == "/api/game/new"]
+        assert [(item["season"], item["player_team"], item["opponent_team"]) for item in created] == [
+            ("2026", "Ironclads", "Thunderhawks"), ("1977", "Synthetic0", "Synthetic1")]
+        assert calls[-2][0].endswith("game_synthetic_1977?side=home")
+        assert calls[-1][0].endswith("game_synthetic_1977?side=away")

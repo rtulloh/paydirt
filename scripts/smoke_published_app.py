@@ -54,29 +54,52 @@ def check_api(base: str, version: str, include_1977: bool = False) -> dict:
         raise ValueError("Packaged API version differs from requested release")
     if set(request_json(base, "/api/seasons")["seasons"]) != set(expected):
         raise ValueError("Unexpected bundled seasons or non-isolated user data")
-    counts = {year: len(request_json(base, f"/api/teams?season={year}")["teams"])
-              for year in expected}
+    teams = {year: request_json(base, f"/api/teams?season={year}")["teams"]
+             for year in expected}
+    counts = {year: len(items) for year, items in teams.items()}
     if counts != expected:
         raise ValueError(f"Incomplete team lists: {counts}")
+    games = {"2026": check_season_game(base, "2026", "Ironclads", "Thunderhawks")}
+    if include_1977:
+        selected = [team["id"] for team in teams["1977"][:2]]
+        if len(selected) != 2 or len(set(selected)) != 2:
+            raise ValueError("1977 game requires two distinct bundled team identifiers")
+        games["1977"] = check_season_game(base, "1977", *selected)
+        if games["1977"]["game_id"] == games["2026"]["game_id"]:
+            raise ValueError("1977 acceptance reused the public game identifier")
+    return {"version": version, "team_counts": counts,
+            "game_id": games["2026"]["game_id"], "charts": games["2026"]["charts"],
+            "season_games": games}
+
+
+def check_season_game(base: str, season: str, player: str, opponent: str) -> dict:
+    """Create an actual game and load populated charts for both selected teams."""
     game = request_json(base, "/api/game/new", {
-        "season": "2026", "player_team": "Ironclads", "opponent_team": "Thunderhawks",
+        "season": season, "player_team": player, "opponent_team": opponent,
         "difficulty": "hard", "play_as_home": True,
     })
     state = game["game_state"]
     if any(state.get(key) != value for key, value in {
             "quarter": 1, "home_score": 0, "away_score": 0, "time_remaining": 900}.items()):
         raise ValueError("New packaged game has invalid initial state")
+    if (state.get("season") != season or state.get("home_team", {}).get("id") != player
+            or state.get("away_team", {}).get("id") != opponent):
+        raise ValueError("New packaged game returned the wrong season or teams")
     game_id = game["game_id"]
     if not isinstance(game_id, str) or not game_id:
         raise ValueError("New game has no identifier")
     charts = {}
     for side in ["home", "away"]:
         book = request_json(base, f"/api/game/charts/{game_id}?side={side}")
+        expected_team = player if side == "home" else opponent
+        if book.get("season") != season or book.get("team", {}).get("id") != expected_team:
+            raise ValueError(f"Wrong {side} chart book season or team")
         if any(not book.get(key, {}).get("rows") or not book.get(key, {}).get("columns")
                for key in ["offense", "defense", "special_teams"]):
             raise ValueError(f"Incomplete {side} chart book")
         charts[side] = True
-    return {"version": version, "team_counts": counts, "game_id": game_id, "charts": charts}
+    return {"game_id": game_id, "charts": charts, "season": state["season"],
+            "player_team": state["home_team"]["id"], "opponent_team": state["away_team"]["id"]}
 
 
 def check_ui(base: str, output: Path, expected: dict[str, int]) -> dict:
