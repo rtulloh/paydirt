@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from paydirt.chart_release_gate import (
+    PUBLIC_SEASON_DIRECTORIES,
     _strict_json_object,
     audit_readiness_freeze,
     audit_regression_evidence,
@@ -65,8 +66,8 @@ def main(argv: list[str] | None = None) -> int:
         if not before["passed"]:
             raise ValueError("Regression freeze preflight failed: " + "; ".join(before["errors"]))
         for name, entry in freeze["cohorts"].items():
-            if chart_fingerprint(ROOT / "seasons" / name) != entry["chart_fingerprint"]:
-                raise ValueError(f"Canonical seasons/{name} does not match the frozen candidate")
+            if chart_fingerprint(ROOT / "seasons" / PUBLIC_SEASON_DIRECTORIES[name]) != entry["chart_fingerprint"]:
+                raise ValueError(f"Canonical seasons/{PUBLIC_SEASON_DIRECTORIES[name]} does not match the frozen candidate")
         from paydirt.chart_source_bundle import prepared_source_options
         source_receipts = {}
         for name, entry in freeze["cohorts"].items():
@@ -75,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
             contract_path = (ROOT / entry["contract"]["path"]).resolve()
             if (ROOT / f"config/chart-validation/{year}.json").read_bytes() != contract_path.read_bytes():
                 raise ValueError(f"Canonical contract {year} differs from the frozen source contract")
-            prepared_source_options(receipt, ROOT / "seasons" / name, contract_path)
+            prepared_source_options(receipt, ROOT / "seasons" / PUBLIC_SEASON_DIRECTORIES[name], contract_path)
             source_receipts[year] = {"path": str(receipt), "sha256": hashlib.sha256(receipt.read_bytes()).hexdigest()}
         ai_inputs = regression_ai_input_fingerprints(ROOT)
         ports = occupied_review_ports()

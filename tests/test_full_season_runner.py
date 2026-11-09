@@ -108,7 +108,9 @@ def test_historical_runner_keeps_all_reproductions_local(
     monkeypatch.setattr(runner, "run_seeded_cli_game", simulate)
     assert runner.run_historical_reproductions() == int(problem is not None)
     assert len(calls) == 16
-    assert all(away.startswith("1983/") and home.startswith("1983/") for away, home, _ in calls)
+    assert all(away.startswith(str(runner.SEASON_DIR) + "/")
+               and home.startswith(str(runner.SEASON_DIR) + "/")
+               for away, home, _ in calls)
     output = capsys.readouterr()
     assert ("16/16" if problem is None else "15/16" if problem == "exception" else "14/16") in output.out
     if problem == "exception":

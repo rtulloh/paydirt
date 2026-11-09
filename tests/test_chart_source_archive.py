@@ -144,6 +144,6 @@ def test_quality_workflows_validate_public_charts_without_private_hosting(workfl
     assert "--expected-teams ${{ matrix.teams }}" in run["run"]
     assert job["strategy"]["matrix"]["include"] == [
         {"directory": "1977", "season": 1977, "teams": 28},
-        {"directory": "1983-generated", "season": 1983, "teams": 28},
+        {"directory": "1983", "season": 1983, "teams": 28},
         {"directory": "2024", "season": 2024, "teams": 32},
     ]

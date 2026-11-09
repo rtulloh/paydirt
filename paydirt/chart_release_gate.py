@@ -37,6 +37,9 @@ from .chart_tactics_audit import (
 )
 from .generated_source_audit import audit_generated_source
 
+# Stable audit cohort IDs map to the public numeric season directories.
+PUBLIC_SEASON_DIRECTORIES = {"1983-generated": "1983", "2024": "2024"}
+
 
 def readiness_file_inventory(root: Path) -> dict[str, str]:
     """Discover implementation/validation bytes without scanning local season data.
@@ -257,7 +260,7 @@ def required_regression_commands(*, released_charts: bool = False) -> dict[str, 
         if name == "local_ai":
             command += ["--csv", ".ai-audits/local-season.csv"]
         commands[name] = (".", command)
-    for season, directory in (("1983", "1983-generated"), ("2024", "2024")):
+    for season, directory in (("1983", "1983"), ("2024", "2024")):
         if released_charts:
             commands[f"chart_{season}"] = (".", [
                 python, "-m", "paydirt.released_chart_regression_audit", "--season", season,
@@ -460,7 +463,7 @@ def audit_regression_outputs(root: Path, freeze: Mapping[str, Any], evidence: Ma
                     year = "1983" if label == "chart_1983_json" else "2024"
                     name = "1983-generated" if year == "1983" else "2024"
                     entry = freeze["cohorts"][name]
-                    candidate = root / "seasons" / name
+                    candidate = root / "seasons" / year
                     if chart_fingerprint(candidate) != entry["chart_fingerprint"]:
                         raise ValueError("Canonical candidate differs from the frozen charts")
                     contract_path = (root / entry["contract"]["path"]).resolve()
@@ -534,7 +537,7 @@ def public_source_file_inventory(root: Path) -> dict[str, str]:
         relative = Path(name)
         if relative.is_absolute() or ".." in relative.parts or "\\" in name or relative.as_posix() != name:
             raise ValueError("Public inventory requires canonical repository-relative paths")
-        if len(relative.parts) > 2 and relative.parts[0] == "seasons" and relative.parts[1] not in {"1983-generated", "2024", "2026"}:
+        if len(relative.parts) > 2 and relative.parts[0] == "seasons" and relative.parts[1] not in {"1983", "2024", "2026"}:
             raise ValueError("Public inventory contains an undeclared historical season")
         path = root / relative
         if path.is_symlink():
@@ -570,7 +573,7 @@ def public_snapshot_file_inventory(directory: Path) -> dict[str, str]:
             relative = path.relative_to(directory)
             if path.is_symlink():
                 raise ValueError("Public snapshot source cannot contain symlinks")
-            if relative.parts[0] == "seasons" and len(relative.parts) >= 2 and relative.parts[1] not in {"1983-generated", "2024", "2026"}:
+            if relative.parts[0] == "seasons" and len(relative.parts) >= 2 and relative.parts[1] not in {"1983", "2024", "2026"}:
                 raise ValueError("Public snapshot contains a nonpublic season directory")
             if name in {"__pycache__", ".pytest_cache", ".ruff_cache", "node_modules"}:
                 directories.remove(name)
@@ -613,7 +616,7 @@ def audit_public_snapshot(root: Path, freeze: Mapping[str, Any], evidence: Mappi
         if readiness_file_inventory(snapshot) != freeze["files"]:
             errors.append("Public snapshot implementation differs from the frozen code")
         for name, entry in freeze["cohorts"].items():
-            if chart_fingerprint(snapshot / "seasons" / name) != entry["chart_fingerprint"]:
+            if chart_fingerprint(snapshot / "seasons" / PUBLIC_SEASON_DIRECTORIES[name]) != entry["chart_fingerprint"]:
                 errors.append(f"{name}: public snapshot uses a different chart candidate")
         required = {name: value for name, value in required_regression_commands().items() if name in {"core", "backend", "frontend"}}
         required["setup"] = ("paydirt-web/frontend", ["npm", "ci"])

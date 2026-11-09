@@ -26,7 +26,15 @@ def install_output_fixtures(root: Path, freeze: dict, monkeypatch: pytest.Monkey
     """Only substitute the already-tested source/component evaluators."""
     contents = {}
     for name, entry in freeze["cohorts"].items():
-        canonical = root / "seasons" / name
+        if name == "1983-generated":
+            # The public charts and local AI audit now share the numeric directory.
+            for index in range(28):
+                team = root / entry["season_dir"] / f"Synthetic{index:02d}"
+                team.mkdir(parents=True, exist_ok=True)
+                (team / "team.yaml").write_text("Synthetic team\n")
+                (team / "offense.csv").write_text("Synthetic chart\n")
+            entry["chart_fingerprint"] = gate.chart_fingerprint(root / entry["season_dir"])
+        canonical = root / "seasons" / ("1983" if name == "1983-generated" else name)
         if not canonical.exists():
             import shutil
             shutil.copytree(root / entry["season_dir"], canonical)
@@ -62,15 +70,15 @@ def install_output_fixtures(root: Path, freeze: dict, monkeypatch: pytest.Monkey
         })
 
     def prepared(receipt: Path, candidate: Path, contract: Path) -> dict:
-        year = 1983 if candidate.name == "1983-generated" else 2024
+        year = 1983 if candidate.name == "1983" else 2024
         assert receipt == root / f".ai-audits/chart-sources/{year}/source.json"
-        assert contract == (root / freeze["cohorts"][candidate.name]["contract"]["path"]).resolve()
+        assert contract == (root / freeze["cohorts"]["1983-generated" if year == 1983 else "2024"]["contract"]["path"]).resolve()
         return {"stats_dir": receipt.parent / "stats", "reproduced_dir": receipt.parent / "reproduced",
                 "input_files": {"synthetic": receipt}}
 
     def components(candidate: Path, contract: dict, report: dict, **options: object) -> dict:
         assert set(options) == {"stats_dir", "reproduced_dir", "input_files"}
-        year = 1983 if candidate.name == "1983-generated" else 2024
+        year = 1983 if candidate.name == "1983" else 2024
         assert contract["season"] == year
         result = json.loads(contents[f"chart_{year}_json"])
         if report != result["engine_evidence"]:

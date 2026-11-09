@@ -201,3 +201,27 @@ def test_api_metadata_allowance_does_not_hide_other_behavior(baseline, name):
     root, _ = baseline
     (root / name).write_text("app = FastAPI(title='Changed', version='1.10.4')\n")
     assert not gate.audit_released_season(root, season=2026)["passed"]
+
+
+@pytest.mark.parametrize("change", [None, "chart", "extra", "symlink"])
+def test_relocated_release_requires_exact_baseline_bytes(baseline, monkeypatch, change):
+    root, _ = baseline
+    original = root / "seasons/2026"
+    relocated = root / "seasons/2026-public"
+    original.rename(relocated)
+    monkeypatch.setattr(gate, "CURRENT_SEASON_PATHS", {2026: "seasons/2026-public"}, raising=False)
+    chart = next(relocated.glob("*/offense.csv"))
+    if change == "chart":
+        chart.write_bytes(chart.read_bytes() + b"\n")
+    elif change == "extra":
+        (relocated / "extra.txt").write_text("unexpected")
+    elif change == "symlink":
+        external = root / "external.csv"
+        chart.rename(external)
+        chart.symlink_to(external)
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"] is (change is None), report["errors"]
+    if change is None:
+        assert report["gameplay_implementation_unchanged"] is True
+        assert report["baseline_season_path"] == "seasons/2026"
+        assert report["current_season_path"] == "seasons/2026-public"

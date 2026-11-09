@@ -255,9 +255,9 @@ A season is ready for manual playtesting after all of these checks complete:
 8. The selected year directory is copied into its final published location while preserving
    `ATTRIBUTION.md` and the season rules file.
 
-Use `seasons/1983-generated` as the tracked source for the published 1983 set; packaging exposes it
-as `seasons/1983`. Use `seasons/2024` directly for 2024. Never promote an intermediate candidate or
-raw source artifact.
+Use numeric season directories in both source and packaged builds: `seasons/1983`
+and `seasons/2024`. Keep private comparison charts in ignored local audit storage
+outside `seasons/`. Never promote an intermediate candidate or raw source artifact.
 
 After promotion, start with a few manual games that exercise strong and weak offenses, turnovers,
 long runs, pass depth, field goals, punts, and overtime. Record any chart or engine findings in the
@@ -285,7 +285,7 @@ reports retain both policies rather than treating the Hard distribution as a sec
 The promoted charts passed the result-symbol validator and direct rushing gains remained capped at
 18 yards. A focused historical-schedule sanity run completed 224 regular-season and nine postseason
 games for 1983, plus 272 regular-season and 13 postseason games for 2024. The reviewed outputs are
-`seasons/1983-generated` and `seasons/2024`; they are ready for manual playtesting.
+`seasons/1983` and `seasons/2024`; they are ready for manual playtesting.
 
 ## 2026-11-02 DATA-012 Validation
 

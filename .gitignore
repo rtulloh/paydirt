@@ -65,7 +65,6 @@ node_modules/
 
 # Private source charts and intermediate generated seasons
 seasons/1972/
-seasons/1983/
 seasons/1983-gen/
 seasons/1983-gen-current/
 seasons/1983-pbp/

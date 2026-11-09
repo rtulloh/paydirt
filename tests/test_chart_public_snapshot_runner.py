@@ -50,7 +50,7 @@ def test_clean_collector_copies_public_bytes_and_retains_every_actual_execution(
     snapshot_files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str,
 ) -> None:
     module, root, _freeze, freeze_path, calls = runner(snapshot_files, monkeypatch, mode)
-    private = root / "seasons/1983/Synthetic/offense.csv"
+    private = root / "seasons/1972/Synthetic/offense.csv"
     private.parent.mkdir(parents=True); private.write_text("Ignored synthetic stand-in; never copy\n")
     output = root / ".ai-audits/clean-01"
     assert module.main(["--freeze", str(freeze_path), "--output", str(output)]) == (0 if mode == "normal" else 1)
@@ -58,7 +58,7 @@ def test_clean_collector_copies_public_bytes_and_retains_every_actual_execution(
     evidence = json.loads((output / "evidence.json").read_text())
     result = json.loads((output / "result.json").read_text())
     assert result["passed"] is (mode == "normal") and result["release_certified"] is False
-    assert not (snapshot / "seasons/1983").exists()
+    assert not (snapshot / "seasons/1972").exists()
     assert not (snapshot / ".git").exists()
     assert (snapshot / "AGENTS.md").read_text() == "Synthetic changed tracked public file\n"
     assert (snapshot / "README.md").is_file()

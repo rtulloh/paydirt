@@ -6,7 +6,7 @@ nine historical playoff fixtures) and 2024 (32 teams, 272 regular games and
 thirteen historical playoff fixtures).
 
 ```bash
-python3 tests/run_full_season.py 1983 --charts seasons/1983-generated
+python3 tests/run_full_season.py 1983 --charts seasons/1983
 python3 tests/run_full_season.py 2024 --charts seasons/2024
 ```
 
@@ -77,7 +77,8 @@ Browser qualification, source support, fixed chart-fit bounds, repeated-season
 uncertainty and independent review remain separate requirements.
 
 All sixteen existing 1983 private-chart game reproductions run additionally when
-their original local charts are present, retaining both mandatory untimed-down
+their original local charts are present at
+`.ai-audits/escrow/1983-private-charts/`, retaining both mandatory untimed-down
 scenarios. Their absence is reported as `not_applicable`, rather than blocking
 the source-only audit. Keep their logs local. The previous rotating-calendar
 regression remains available only as the explicit additional

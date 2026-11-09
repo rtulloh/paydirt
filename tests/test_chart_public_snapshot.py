@@ -29,10 +29,10 @@ def public_inventory(root: Path) -> dict[str, str]:
 @pytest.fixture
 def snapshot_files(freeze_files: tuple) -> tuple[Path, dict, dict]:
     root, freeze = freeze_files
-    (root / ".gitignore").write_text(".ai-audits/\ncandidates/\ninputs/\nseasons/1983/\nnode_modules/\n__pycache__/\n.pytest_cache/\n.coverage*\n")
+    (root / ".gitignore").write_text(".ai-audits/\ncandidates/\ninputs/\nseasons/1972/\nnode_modules/\n__pycache__/\n.pytest_cache/\n.coverage*\n")
     (root / "README.md").write_text("Synthetic public documentation\n")
     for name, entry in freeze["cohorts"].items():
-        shutil.copytree(root / entry["season_dir"], root / "seasons" / name)
+        shutil.copytree(root / entry["season_dir"], root / "seasons" / ("1983" if name == "1983-generated" else name))
     subprocess.run(["git", "init", "--quiet", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "add", "AGENTS.md"], check=True)
     (root / "AGENTS.md").write_text("Synthetic changed tracked public file\n")
@@ -101,7 +101,7 @@ def test_stale_incomplete_or_contaminated_snapshot_cannot_validate(
         path = (root if mutation == "source-symlink" else snapshot) / "README.md"
         path.unlink(); path.symlink_to(root / "AGENTS.md")
     elif mutation in {"private-season", "private-empty-directory"}:
-        directory = snapshot / "seasons/1983/Synthetic"
+        directory = snapshot / "seasons/1972/Synthetic"
         directory.mkdir(parents=True)
         if mutation == "private-season": (directory / "offense.csv").write_text("Synthetic forbidden stand-in\n")
     elif mutation == "substituted-candidate":

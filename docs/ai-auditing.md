@@ -51,7 +51,17 @@ balanced comparison repeats the whole schedule, doubling those totals.
 `--difficulty balanced` matches legacy auto AI; `medium` additionally enables the
 production Medium team-strength adjustment, so the two are not synonymous.
 
-For a private local season, substitute its year. Never add private charts to tests
+The 1983 command uses the public generated set at `seasons/1983`, matching the
+packaged season. Original private comparison charts remain escrowed outside
+season discovery and are exercised by the separate integration/reproduction runners.
+To retain the original private comparison audit after escrowing the old charts,
+use its absolute directory as `--season`:
+
+```bash
+python3 tests/run_ai_audit.py --season "$PWD/.ai-audits/escrow/1983-private-charts" --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/private-season.json --csv .ai-audits/private-season.csv
+```
+
+For another locally installed season, substitute its year. Never add private charts to tests
 or commit the resulting local reports. `.ai-audits/` is ignored. Reports omit
 chart cells, roster names, absolute chart paths, dice details, and narrative logs.
 Aggregate diagnostics derived from private data still belong locally.

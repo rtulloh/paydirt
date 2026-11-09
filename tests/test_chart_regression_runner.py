@@ -4,7 +4,6 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -21,8 +20,6 @@ def runner(files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str = "normal") 
     assert importlib.util.find_spec("scripts.run_chart_regression") is not None, "Readiness needs a maintained actual regression collector"
     module = importlib.import_module("scripts.run_chart_regression")
     root, freeze = files
-    for name, entry in freeze["cohorts"].items():
-        shutil.copytree(root / entry["season_dir"], root / "seasons" / name)
     contents = install_output_fixtures(root, freeze, monkeypatch)
     freeze_path = root / ".ai-audits/freeze.json"
     freeze_path.parent.mkdir(parents=True, exist_ok=True)

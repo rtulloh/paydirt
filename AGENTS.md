@@ -105,9 +105,16 @@ complete. At the end of every play-test and audit review, inspect the per-issue
 tracker for resolved tickets with newly confirmed evidence; add timestamped
 comments and close tickets when the audit demonstrates that the issue no longer
 occurs. Do not close a ticket from unit tests alone when play-test confirmation
-is required. The 1983 audit requires the same private local data as the integration
-runners; keep its reports in ignored `.ai-audits/`, never commit/export private
-charts or narrative logs. The generated audit schedule is regular-season only;
+is required. The 1983 AI audit uses public generated charts in `seasons/1983`.
+The separate private integration/reproduction runners explicitly use
+`.ai-audits/escrow/1983-private-charts/`. Preserve the private AI comparison too:
+
+```bash
+python3 tests/run_ai_audit.py --season "$PWD/.ai-audits/escrow/1983-private-charts" --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/private-season.json --csv .ai-audits/private-season.csv
+```
+
+Keep reports in ignored `.ai-audits/`; never commit/export private charts or
+narrative logs. The generated audit schedule is regular-season only;
 it supplements, never replaces, the existing nine-playoff-game regression. See
 [AI audit harness](docs/ai-auditing.md) for commands and interpretation.
 

@@ -9,7 +9,7 @@ and decoder coverage, and preserves its JSON report. It requires no private
 source host, repository URL/SHA variables, network fetch or source archive.
 
 ```sh
-python3 scripts/audit_public_charts.py --season-dir seasons/1983-generated \
+python3 scripts/audit_public_charts.py --season-dir seasons/1983 \
   --expected-teams 28 --output .ai-audits/public-chart-quality-1983.json
 python3 scripts/audit_public_charts.py --season-dir seasons/2024 \
   --expected-teams 32 --output .ai-audits/public-chart-quality-2024.json
@@ -78,7 +78,7 @@ numeric punt distance fails the gate. These extend the existing engine component
 From the repository root, with Python and PyYAML installed:
 
 ```sh
-python3 scripts/audit_generated_charts.py --season-dir seasons/1983-generated --contract config/chart-validation/1983.json --output .ai-audits/chart-quality-1983.json --repetitions 64 --workers 4 \
+python3 scripts/audit_generated_charts.py --season-dir seasons/1983 --contract config/chart-validation/1983.json --output .ai-audits/chart-quality-1983.json --repetitions 64 --workers 4 \
   --source-inputs /path/to/1983/source-inputs.json --source-stats-dir /path/to/1983/stats --reproduced-dir /path/to/1983/reproduced
 python3 scripts/audit_generated_charts.py --season-dir seasons/2024 --contract config/chart-validation/2024.json --output .ai-audits/chart-quality-2024.json --repetitions 64 --workers 4 \
   --source-inputs /path/to/2024/source-inputs.json --source-stats-dir /path/to/2024/stats --reproduced-dir /path/to/2024/reproduced
@@ -287,7 +287,7 @@ python3 scripts/run_chart_regression.py --freeze .ai-audits/chart-confidence/fre
 ```
 
 The destination must be new and under ignored `.ai-audits/`. Preflight verifies
-the freeze, canonical `seasons/1983-generated`/`seasons/2024` fingerprints and
+the freeze, canonical `seasons/1983`/`seasons/2024` fingerprints and
 contracts, both current source-preparation receipts, and public/local AI inputs.
 It refuses occupied review ports 8000/5173; follow the charter's parent-notification
 and service-restoration procedure before the isolated browser run. It does not
@@ -514,7 +514,7 @@ A successful CLI result sets only `paired_validated=true` and its corpus consist
 
 ## Corrected public release outputs
 
-The maintained `seasons/1983-generated` and `seasons/2024` directories contain the
+The maintained `seasons/1983` and `seasons/2024` directories contain the
 corrected reviewed CSV output. Their public release manifests bind every chart
 hash, the original private generation-manifest hash and local reproduction-proof
 hash. They are deliberately sanitized summaries, not portable raw-source manifests.

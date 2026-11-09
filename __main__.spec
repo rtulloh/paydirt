@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('seasons/1977', 'seasons/1977'),
-    ('seasons/1983-generated', 'seasons/1983'),
+    ('seasons/1983', 'seasons/1983'),
            ('seasons/2024', 'seasons/2024'),
            ('seasons/2026', 'seasons/2026'),
            ('CHART_ATTRIBUTION.md', '.'), ('LICENSE', '.'), ('README.md', '.'),

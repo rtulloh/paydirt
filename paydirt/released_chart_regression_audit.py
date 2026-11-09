@@ -21,6 +21,9 @@ TRUSTED_RELEASES = {
         "seasons": {1983: ("seasons/1983-generated", 28), 2024: ("seasons/2024", 32)},
     },
 }
+# Current locations may change; immutable baseline paths and bytes never do.
+CURRENT_SEASON_PATHS = {1983: "seasons/1983"}
+
 # These tools generate or validate candidates; none is used to resolve a game.
 GENERATION_VALIDATION_ONLY = frozenset({
     "paydirt/chart_generator.py", "paydirt/chart_source_bundle.py",
@@ -75,17 +78,19 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
         return report
     tag, entry = selected[0]
     commit = entry["commit"]
-    season_path, expected_teams = entry["seasons"][season]
+    baseline_path, expected_teams = entry["seasons"][season]
+    season_path = CURRENT_SEASON_PATHS.get(season, baseline_path)
+    report.update(baseline_season_path=baseline_path, current_season_path=season_path)
     report.update({"baseline_tag": tag, "baseline_commit": commit})
     try:
         if _git(root, "rev-parse", f"refs/tags/{tag}^{{commit}}").decode().strip() != commit:
             raise ValueError("Release tag does not resolve to the pinned trusted commit")
         names = _git(root, "ls-tree", "-r", "--name-only", commit).decode().splitlines()
-        season_names = {name for name in names if name.startswith(season_path + "/")}
+        season_names = {name for name in names if name.startswith(baseline_path + "/")}
         contract = f"config/chart-validation/{season}.json"
         if not season_names or contract not in names:
             raise ValueError("Trusted release lacks season or validation contract")
-        actual = {str(path.relative_to(root)) for path in (root / season_path).rglob("*") if path.is_file() or path.is_symlink()}
+        actual = {baseline_path + "/" + str(path.relative_to(root / season_path)) for path in (root / season_path).rglob("*") if path.is_file() or path.is_symlink()}
         if actual != season_names:
             report["errors"].append("Season file inventory differs from trusted release")
         runtime = {name for name in names if _runtime_path(name)}
@@ -100,7 +105,8 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
         runtime_ok = current_runtime == runtime
         for name in sorted(season_names | {contract} | runtime):
             expected = _git(root, "show", f"{commit}:{name}")
-            path = root / name
+            path = (root / season_path / Path(name).relative_to(baseline_path)
+                    if name in season_names else root / name)
             actual_bytes = path.read_bytes() if path.is_file() and not _has_symlink(root, path) else None
             equal = actual_bytes == expected
             if name in {"paydirt/__init__.py", "paydirt/__main__.py", "paydirt-web/backend/main.py"} and actual_bytes is not None and not equal:

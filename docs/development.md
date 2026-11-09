@@ -41,7 +41,7 @@ The CLI and web frontend display engine decisions rather than reconstructing out
 | `paydirt/save_game.py`, `standings.py` | CLI persistence and results |
 | `paydirt-web/backend/` | FastAPI adapter around the core engine |
 | `paydirt-web/frontend/` | React browser UI |
-| `seasons/1983-generated/` | Public generated 1983 charts; packaged as `seasons/1983/` |
+| `seasons/1983/` | Public generated 1983 charts |
 | `seasons/2024/` | Public generated 2024 charts |
 | `seasons/2026/` | Public fictional sample data |
 | `extract_charts.py` | [Excel-to-CSV chart generator](chart-generator.md) |
@@ -67,7 +67,9 @@ Do not treat the quick unit-test command above as full release validation.
 
 The historical calendar audit works with generated charts and does not require developer charts.
 The separate local integration games and optional sixteen 1983 reproductions need private data;
-keep their logs local. Default 1983 validation requires all 224 actual regular fixtures and nine
+keep their logs local. The original 1983 comparison charts are escrowed at
+`.ai-audits/escrow/1983-private-charts/`; the local integration runners explicitly use
+that directory so public charts cannot silently replace private reproductions. Default 1983 validation requires all 224 actual regular fixtures and nine
 postseason games; selected 2024 validation requires 272 and thirteen. Regular-season ties are
 allowed by source-year rules; tied playoff finals fail. Official NFL tiebreak qualification remains
 unverified. The old rotating calendar is an explicit additional regression only.
@@ -93,9 +95,8 @@ Build on the target platform. The workflow does not currently implement the cert
 previously shown in the README; do not assume a build is signed.
 
 The specs bundle generated 1983 and 2024 charts, the public 2026 sample, the chart attribution,
-Markdown guides, and documentation images. The generated source directory
-`seasons/1983-generated` is mapped to the numeric release path `seasons/1983`; release builds
-therefore expose `1983`, `2024`, and `2026` consistently.
+Markdown guides, and documentation images. Source and release builds use the same
+numeric season directories: `1977`, `1983`, `2024`, and `2026`.
 The backend assembles the offline User Guide from the canonical player files in `docs/`.
 Relative links between those player guides become in-app anchors; contributor-only documents link to GitHub.
 No separately maintained copy of the player manual is needed.

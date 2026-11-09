@@ -15,7 +15,7 @@ def test_pyinstaller_specs_bundle_public_seasons_and_chart_attribution() -> None
     """Every supported PyInstaller entry point includes the same public chart data."""
     for relative_path in SPEC_FILES:
         text = (ROOT / relative_path).read_text()
-        assert "('seasons/1983-generated', 'seasons/1983')" in text, relative_path
+        assert "('seasons/1983', 'seasons/1983')" in text, relative_path
         assert "('seasons/2024', 'seasons/2024')" in text, relative_path
         assert "('seasons/2026', 'seasons/2026')" in text, relative_path
         assert "CHART_ATTRIBUTION.md" in text, relative_path
@@ -38,7 +38,7 @@ def test_public_generated_seasons_are_not_ignored() -> None:
     ignore_text = (ROOT / ".gitignore").read_text()
     assert "seasons/1983-generated/" not in ignore_text
     assert "seasons/2024/" not in ignore_text
-    assert "seasons/1983/" in ignore_text
+    assert "seasons/1983/" not in ignore_text
     assert "seasons/1983-pbp-joint-final/" in ignore_text
 
 

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from paydirt.chart_release_gate import (
+    PUBLIC_SEASON_DIRECTORIES,
     _strict_json_object,
     audit_public_snapshot,
     audit_readiness_freeze,
@@ -53,8 +54,8 @@ def main(argv: list[str] | None = None) -> int:
         if not before["passed"]:
             raise ValueError("Public unit freeze preflight failed: " + "; ".join(before["errors"]))
         for name, entry in freeze["cohorts"].items():
-            if chart_fingerprint(ROOT / "seasons" / name) != entry["chart_fingerprint"]:
-                raise ValueError(f"Canonical seasons/{name} does not match the frozen candidate")
+            if chart_fingerprint(ROOT / "seasons" / PUBLIC_SEASON_DIRECTORIES[name]) != entry["chart_fingerprint"]:
+                raise ValueError(f"Canonical seasons/{PUBLIC_SEASON_DIRECTORIES[name]} does not match the frozen candidate")
         files = public_source_file_inventory(ROOT)
         snapshot = output / "source"
         snapshot.mkdir(parents=True)

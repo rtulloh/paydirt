@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Run all 28 teams in 14 matchups and verify results."""
-import subprocess
 import re
+import subprocess
+import sys
+from pathlib import Path
+
+SEASON_DIR = Path(__file__).resolve().parents[1] / ".ai-audits/escrow/1983-private-charts"
 
 matchups = [
     ('Packers', '49ers'),
@@ -123,7 +127,7 @@ for away, home in matchups:
     print(f"{'='*70}")
     
     result = subprocess.run(
-        ['python3', '-m', 'paydirt', '--auto', f'1983/{away}', f'1983/{home}'],
+        [sys.executable, '-m', 'paydirt', '--auto', str(SEASON_DIR / away), str(SEASON_DIR / home)],
         capture_output=True,
         text=True,
         timeout=120

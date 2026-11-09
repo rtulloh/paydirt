@@ -22,7 +22,7 @@ def main() -> int:
     parser.add_argument("--reproduced-dir", type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    season_dir = ROOT / "seasons" / ("1983-generated" if args.season == 1983 else "2024")
+    season_dir = ROOT / "seasons" / str(args.season)
     contract = json.loads(
         (ROOT / "config" / "chart-validation" / f"{args.season}.json").read_text()
     )

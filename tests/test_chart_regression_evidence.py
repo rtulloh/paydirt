@@ -37,7 +37,7 @@ def commands() -> dict[str, tuple[str, list[str]]]:
         "full_season": (".", [python, "tests/run_full_season.py"]),
         "public_ai": (".", [python, "tests/run_ai_audit.py", "--season", "2026", "--weeks", "16", "--seed", "8306", "--compare-balanced", "--output", ".ai-audits/public-season.json"]),
         "local_ai": (".", [python, "tests/run_ai_audit.py", "--season", "1983", "--weeks", "16", "--seed", "8306", "--compare-balanced", "--output", ".ai-audits/local-season.json", "--csv", ".ai-audits/local-season.csv"]),
-        "chart_1983": (".", [python, "scripts/audit_generated_charts.py", "--season-dir", "seasons/1983-generated", "--contract", "config/chart-validation/1983.json", "--output", ".ai-audits/chart-quality-1983.json", "--repetitions", "64", "--workers", "4"]),
+        "chart_1983": (".", [python, "scripts/audit_generated_charts.py", "--season-dir", "seasons/1983", "--contract", "config/chart-validation/1983.json", "--output", ".ai-audits/chart-quality-1983.json", "--repetitions", "64", "--workers", "4"]),
         "chart_2024": (".", [python, "scripts/audit_generated_charts.py", "--season-dir", "seasons/2024", "--contract", "config/chart-validation/2024.json", "--output", ".ai-audits/chart-quality-2024.json", "--repetitions", "64", "--workers", "4"]),
     }
 

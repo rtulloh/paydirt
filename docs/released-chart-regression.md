@@ -9,12 +9,19 @@ qualification. These checks answer different questions.
 `python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/released-2024.json`
 
 The only built-in baseline is tag `v1.10.3`, pinned to commit
-`1467b11e151fe9981177890e2a7a6b805402b3f0`, for 1983-generated (28 teams) and
+`1467b11e151fe9981177890e2a7a6b805402b3f0`, for 1983 (28 teams) and
 2024 (32 teams). The tag must still resolve to that commit. The tool reads trusted
 Git objects, compares the complete season file inventory and validation contract,
 and rejects changed or missing bytes, symlinks, extra files and self-declared
 replacement provenance. Public sanitized manifests are compared as published;
 raw private source inventories are neither needed nor emitted.
+
+The current public 1983 directory is `seasons/1983`. The auditor explicitly maps
+that location to `seasons/1983-generated` in the immutable baseline tree. Only
+the directory prefix changes: complete relative inventories and every file byte,
+including sanitized provenance and the validation contract, must still match.
+Historical audit cohort IDs and contract source-path bindings retain their original
+`1983-generated` identity; they are not player-visible season directory names.
 
 The public structure and actual chart decoders must pass. All gameplay Python
 modules in the core package, backend and packaged launcher must match the trusted

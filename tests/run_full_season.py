@@ -32,7 +32,7 @@ from paydirt.play_resolver import PlayType
 from paydirt.standings import Season
 from tests.test_untimed_down_flow import run_seeded_cli_game
 
-SEASON_DIR = Path(__file__).resolve().parents[1] / "seasons" / "1983"
+SEASON_DIR = Path(__file__).resolve().parents[1] / ".ai-audits" / "escrow" / "1983-private-charts"
 load_historical_schedule = historical.load_historical_schedule
 audit_historical_season = historical.audit_historical_season
 
@@ -101,7 +101,7 @@ def run_full_season(teams: list[str]) -> int:
             output = io.StringIO()
             try:
                 with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
-                    engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
+                    engine = run_seeded_cli_game(monkeypatch, str(SEASON_DIR / away), str(SEASON_DIR / home), seed)
                 validate_game(engine, output.getvalue())
                 season.add_game(home, engine.state.home_score, away, engine.state.away_score, week)
                 overtime += engine.state.ot_period > 0
@@ -176,7 +176,7 @@ def run_playoffs(season: Season) -> int:
         try:
             with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output):
                 engine = run_seeded_cli_game(
-                    monkeypatch, f"1983/{away}", f"1983/{home}", seed, is_playoff=True,
+                    monkeypatch, str(SEASON_DIR / away), str(SEASON_DIR / home), seed, is_playoff=True,
                 )
             overtime += engine.state.ot_period > 0
             ties += engine.state.home_score == engine.state.away_score
@@ -304,7 +304,7 @@ def run_historical_reproductions() -> int:
         output = io.StringIO()
         try:
             with pytest.MonkeyPatch.context() as monkeypatch, contextlib.redirect_stdout(output), patch.object(ComputerAI, 'select_offense_with_clock_management', play_on):
-                engine = run_seeded_cli_game(monkeypatch, f"1983/{away}", f"1983/{home}", seed)
+                engine = run_seeded_cli_game(monkeypatch, str(SEASON_DIR / away), str(SEASON_DIR / home), seed)
             validate_game(engine, output.getvalue())
             if needs_untimed and "UNTIMED DOWN" not in output.getvalue():
                 raise ValueError("Expected untimed-down reproduction was not exercised")

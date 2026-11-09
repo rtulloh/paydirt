@@ -50,7 +50,7 @@ Verified against manifests and contracts at **v1.10.3**, commit
 
 Authoritative records:
 
-- **1983:** [generation manifest](../seasons/1983-generated/generation-manifest.json),
+- **1983:** [generation manifest](../seasons/1983/generation-manifest.json),
   [validation contract](../config/chart-validation/1983.json).
 - **2024:** [generation manifest](../seasons/2024/generation-manifest.json),
   [validation contract](../config/chart-validation/2024.json).

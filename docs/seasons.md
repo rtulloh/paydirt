@@ -30,8 +30,8 @@ biases. Historical winners and playoff qualifiers are never forced.
 
 For a source checkout, put data under the repository's `seasons/` directory. Release builds
 contain numeric `seasons/1977`, `seasons/1983`, `seasons/2024`, and `seasons/2026` directories. The tracked
-1983 generator output uses `seasons/1983-generated` in the source tree so it cannot collide
-with ignored private comparison charts; packaging maps it to `seasons/1983`. The separate
+1983 charts use `seasons/1983` in both the source tree and packaged application.
+Private comparison charts belong outside `seasons/`, in ignored local audit storage. The separate
 user-data directory is used by bundled applications, not ordinary source runs.
 
 | Bundled platform | Custom seasons directory |

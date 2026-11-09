@@ -143,7 +143,7 @@ jobs:
           - directory: '1977'
             season: 1977
             teams: 28
-          - directory: 1983-generated
+          - directory: '1983'
             season: 1983
             teams: 28
           - directory: '2024'
