@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { backendURL, guardLocalRoute } from './ports.js'
+import { test, expect } from './fixtures.js'
 
 // Read-only inspection: actions below are exclusively clicks in the rendered UI.
 const snapshot = page => page.evaluate(async () => {
@@ -69,7 +70,7 @@ async function completeGame(page, request, gameId) {
     const penaltyVisible = await page.getByText('PENALTY ON THE PLAY!', { exact: true }).isVisible()
     if (state.gameOver && !state.pendingPat && !penaltyVisible) {
       await expect(page.getByTestId('game-over'), 'Engine final state must reach the final-score screen').toBeVisible()
-      const res = await request.get('http://localhost:8000/api/game/state/' + gameId)
+      const res = await request.get(backendURL + '/api/game/state/' + gameId)
       expect(res.ok()).toBeTruthy()
       const final = await res.json()
       expect(final.game_over).toBe(true)
@@ -259,7 +260,7 @@ test('two complete real-engine games in one browser session, home then away', as
       releaseDecision()
     }
   })
-  await page.route('**/api/game/cpu-4th-down-decision/**', async route => {
+  await page.route('**/api/game/cpu-4th-down-decision/**', guardLocalRoute(async route => {
     const delay = delayNextDecision
     delayNextDecision = false
     if (delay) decisionHeld = true
@@ -270,7 +271,7 @@ test('two complete real-engine games in one browser session, home then away', as
       decisionHeld = false
     }
     await route.fulfill({ response })
-  })
+  }))
   const errors = []
   page.on('pageerror', error => errors.push(String(error)))
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()) })
@@ -317,6 +318,6 @@ test('two complete real-engine games in one browser session, home then away', as
     expect(lateDecisionExercised).toBe(true)
   } finally {
     releaseDecision()
-    for (const id of ids) await request.delete('http://localhost:8000/api/game/' + id)
+    for (const id of ids) await request.delete(backendURL + '/api/game/' + id)
   }
 })

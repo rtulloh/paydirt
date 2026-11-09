@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { backendURL } from './ports.js'
+import { test, expect } from './fixtures.js'
 
 test('original-style chart sheets display real loaded teams without advancing play', async ({ page, request }, testInfo) => {
   const errors = []
@@ -16,7 +17,7 @@ test('original-style chart sheets display real loaded teams without advancing pl
     await page.getByTestId('choose-heads').click()
     await page.getByTestId('choose-receive').click()
     await expect(page.getByRole('button', { name: 'KICK OFF', exact: true })).toBeVisible()
-    const state = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
+    const state = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
 
     const trigger = page.getByRole('button', { name: 'CHARTS', exact: true })
     await trigger.click()
@@ -61,7 +62,7 @@ test('original-style chart sheets display real loaded teams without advancing pl
     await page.keyboard.press('1')
     await page.keyboard.press('t')
     await page.keyboard.press('n')
-    const after = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
+    const after = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
     expect(after).toEqual(state)
     await page.keyboard.press('Escape')
     await expect(dialog).not.toBeVisible()
@@ -73,7 +74,7 @@ test('original-style chart sheets display real loaded teams without advancing pl
     await expect(trigger).toBeFocused()
     expect(errors).toEqual([])
   } finally {
-    await request.delete(`http://localhost:8000/api/game/${gameId}`)
+    await request.delete(`${backendURL}/api/game/${gameId}`)
   }
 })
 
@@ -117,8 +118,8 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 1280, height: 90
     await page.setViewportSize(viewport)
     const gameId = await startChartGame(page)
     try {
-      const before = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
-      const reference = await (await request.get(`http://localhost:8000/api/game/charts/${gameId}?side=home`)).json()
+      const before = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
+      const reference = await (await request.get(`${backendURL}/api/game/charts/${gameId}?side=home`)).json()
       await page.getByRole('button', { name: 'CHARTS', exact: true }).click()
       const dialog = page.getByRole('dialog')
       for (const section of ['Offense', 'Defense', 'Special Teams']) {
@@ -151,10 +152,10 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 1280, height: 90
         expect(layout.scrollHeight).toBeLessThanOrEqual(layout.height)
         await page.screenshot({ path: testInfo.outputPath(`${section.toLowerCase().replaceAll(' ', '-')}-fit.png`) })
       }
-      const after = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
+      const after = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
       expect(after).toEqual(before)
     } finally {
-      await request.delete(`http://localhost:8000/api/game/${gameId}`)
+      await request.delete(`${backendURL}/api/game/${gameId}`)
     }
   })
 }
@@ -164,7 +165,7 @@ for (const launcher of ['Open in new tab', 'Open in separate window']) {
     const gameId = await startChartGame(page)
     let child
     try {
-      const before = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
+      const before = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
       const posts = []
       context.on('request', sent => { if (sent.method() === 'POST') posts.push(sent.url()) })
       await page.getByRole('button', { name: 'CHARTS', exact: true }).click()
@@ -197,7 +198,7 @@ for (const launcher of ['Open in new tab', 'Open in separate window']) {
       await expect(page.getByRole('table', { name: `Defense · ${before.home_team.name}` })).toBeVisible()
       await page.getByRole('button', { name: 'Close charts', exact: true }).click()
       expect(posts).toEqual([])
-      expect(await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()).toEqual(before)
+      expect(await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()).toEqual(before)
       // Advance the actual game to prove the separate chart page leaves play usable.
       const kickoff = page.waitForResponse(response => response.url().endsWith('/api/game/kickoff'))
       await page.getByRole('button', { name: 'KICK OFF', exact: true }).click()
@@ -205,7 +206,7 @@ for (const launcher of ['Open in new tab', 'Open in separate window']) {
       await expect(child.getByRole('table', { name: /^Special Teams/ })).toBeVisible()
     } finally {
       await child?.close()
-      await request.delete(`http://localhost:8000/api/game/${gameId}`)
+      await request.delete(`${backendURL}/api/game/${gameId}`)
     }
   })
 }
@@ -223,7 +224,7 @@ test('an expired standalone chart link offers retry without mounting game setup'
 test('an older Special Plays link opens combined Offense with the selected team', async ({ page, request }) => {
   const gameId = await startChartGame(page)
   try {
-    const before = await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()
+    const before = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
     await page.goto(`/?charts=${gameId}&side=away&view=special_plays`)
     await expect(page.getByRole('table', { name: `Offense · ${before.away_team.name}` })).toBeVisible()
     await expect(page.getByRole('table', { name: `Special Plays · ${before.away_team.name}` })).toBeVisible()
@@ -231,8 +232,8 @@ test('an older Special Plays link opens combined Offense with the selected team'
     await expect(page.getByRole('button', { name: 'Offense', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByLabel('Chart team')).toHaveValue('away')
     await expect(page.getByRole('link', { name: 'Open in new tab' })).toHaveAttribute('href', /view=offense$/)
-    expect(await (await request.get(`http://localhost:8000/api/game/state/${gameId}`)).json()).toEqual(before)
+    expect(await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()).toEqual(before)
   } finally {
-    await request.delete(`http://localhost:8000/api/game/${gameId}`)
+    await request.delete(`${backendURL}/api/game/${gameId}`)
   }
 })

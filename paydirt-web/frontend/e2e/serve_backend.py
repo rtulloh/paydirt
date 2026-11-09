@@ -1,5 +1,6 @@
 """Isolated real API for browser tests; never run this as a production server."""
 
+import argparse
 import random
 import shutil
 import sys
@@ -33,10 +34,13 @@ async def seed_new_game(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
     with TemporaryDirectory(prefix="paydirt-browser-") as directory:
         seasons = Path(directory) / "seasons"
         shutil.copytree(ROOT / "seasons" / "2026", seasons / "2026")
         # Exclude both ignored historical data and user-installed seasons.
         routes.get_all_season_paths = lambda: [seasons]
         routes.SEASONS_DIR = seasons
-        uvicorn.run(app, host="localhost", port=8000, log_level="warning")
+        uvicorn.run(app, host="localhost", port=args.port, log_level="warning")

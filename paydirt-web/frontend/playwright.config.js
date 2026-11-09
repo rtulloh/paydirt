@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { backendPort, backendURL, frontendPort, frontendURL } from './e2e/ports.js'
 
 export default defineConfig({
   testDir: './e2e',
@@ -9,7 +10,7 @@ export default defineConfig({
   timeout: 180_000,
   expect: { timeout: 5_000 },
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: frontendURL,
     browserName: 'chromium',
     viewport: { width: 1440, height: 1100 },
     trace: 'retain-on-failure',
@@ -17,14 +18,15 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'python3 e2e/serve_backend.py',
-      url: 'http://localhost:8000/api/health',
+      command: `python3 e2e/serve_backend.py --port ${backendPort}`,
+      url: `${backendURL}/api/health`,
       reuseExistingServer: false,
       timeout: 30_000,
     },
     {
-      command: 'npm run dev -- --host localhost --port 5173 --strictPort',
-      url: 'http://localhost:5173',
+      command: `npm run dev -- --host localhost --port ${frontendPort} --strictPort`,
+      url: frontendURL,
+      env: { VITE_API_BASE: frontendURL },
       reuseExistingServer: false,
       timeout: 30_000,
     },

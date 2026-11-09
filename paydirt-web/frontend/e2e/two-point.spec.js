@@ -1,11 +1,12 @@
-import { test, expect } from '@playwright/test'
+import { backendURL } from './ports.js'
+import { test, expect } from './fixtures.js'
 
 // Public charts and a synthetic saved pending touchdown establish the situation.
 // The visible buttons call the real conversion and kickoff APIs without mocks.
 for (const home of [true, false]) {
   for (const good of [true, false]) {
     test(`real engine two-point ${good ? 'success' : 'failure'}, human ${home ? 'home' : 'away'}`, async ({ page, request }) => {
-      const created = await request.post('http://localhost:8000/api/game/new', {
+      const created = await request.post(backendURL + '/api/game/new', {
         data: { player_team: 'Ironclads', opponent_team: 'Thunderhawks', season: '2026', play_as_home: home },
       })
       const initial = await created.json()
@@ -24,7 +25,7 @@ for (const home of [true, false]) {
       await page.getByRole('button', { name: /LOAD SAVED GAME|LOAD GAME|RESUME/i }).click()
       const loaded = await (await loading).json()
       const id = loaded.game_id
-      const fixture = await request.post('http://localhost:8000/api/test/two-point-fixture', {
+      const fixture = await request.post(backendURL + '/api/test/two-point-fixture', {
         data: { game_id: id, cell: good ? '2' : '0' },
       })
       expect(fixture.ok()).toBeTruthy()
@@ -44,7 +45,7 @@ for (const home of [true, false]) {
         possession: home ? 'home' : 'away', home_timeouts: 1, away_timeouts: 2,
       })
       await expect(page.getByText(good ? 'GOOD!' : 'NO GOOD!', { exact: true })).toBeVisible()
-      const accounting = await (await request.get('http://localhost:8000/api/test/two-point-accounting/' + id)).json()
+      const accounting = await (await request.get(backendURL + '/api/test/two-point-accounting/' + id)).json()
       expect(accounting.home).toEqual(before.accounting.home)
       expect(accounting.away).toEqual(before.accounting.away)
       expect(accounting.play_log_count).toBe(before.accounting.play_log_count)
@@ -56,21 +57,21 @@ for (const home of [true, false]) {
       await page.getByRole('button', { name: 'KICK OFF', exact: true }).click()
       const kicked = await (await kicking).json()
       expect(kicked.game_state.possession).toBe(home ? 'away' : 'home')
-      await request.delete('http://localhost:8000/api/game/' + id)
-      await request.delete('http://localhost:8000/api/game/' + initial.game_id)
+      await request.delete(backendURL + '/api/game/' + id)
+      await request.delete(backendURL + '/api/game/' + initial.game_id)
     })
   }
 }
 
 test('season prohibition clears an already eligible choice', async ({ page, request }) => {
   await page.goto('/')
-  const created = await (await request.post('http://localhost:8000/api/game/new', {
+  const created = await (await request.post(backendURL + '/api/game/new', {
     data: { player_team: 'Ironclads', season: '2026', play_as_home: true },
   })).json()
   // This case sets only a synthetic pending phase, then reads engine eligibility.
   const replay = { game_state: { ...created.game_state, pending_pat: true, possession: 'home', player_offense: true, ball_position: 98 }, season: '2026', play_history: [] }
-  const loaded = await (await request.post('http://localhost:8000/api/game/load-replay', { data: { replay_data: replay } })).json()
-  const configure = async eligible => (await request.post('http://localhost:8000/api/test/two-point-fixture', {
+  const loaded = await (await request.post(backendURL + '/api/game/load-replay', { data: { replay_data: replay } })).json()
+  const configure = async eligible => (await request.post(backendURL + '/api/test/two-point-fixture', {
     data: { game_id: loaded.game_id, eligible },
   })).json()
   const show = async data => page.evaluate(async data => {
@@ -83,6 +84,6 @@ test('season prohibition clears an already eligible choice', async ({ page, requ
   await show(await configure(false))
   await expect(page.getByRole('button', { name: 'KICK XP (1 PT)', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'GO FOR 2!', exact: true })).toHaveCount(0)
-  await request.delete('http://localhost:8000/api/game/' + loaded.game_id)
-  await request.delete('http://localhost:8000/api/game/' + created.game_id)
+  await request.delete(backendURL + '/api/game/' + loaded.game_id)
+  await request.delete(backendURL + '/api/game/' + created.game_id)
 })

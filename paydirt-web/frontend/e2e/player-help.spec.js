@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures.js'
 
 for (const offense of [true, false]) {
   test(`clock labels, modifier help and visible save confirmation on ${offense ? 'offense' : 'defense'}`, async ({ page, request }, testInfo) => {

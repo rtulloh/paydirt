@@ -10,8 +10,20 @@ npm run test:e2e
 ```
 
 On Linux, use `npx playwright install --with-deps chromium`.
-Stop development servers on ports **8000** and **5173** first. Playwright starts
-and stops its own backend and Vite server; it refuses to reuse running services.
+The defaults are backend **8000** and frontend **5173**. If either is occupied,
+choose free isolated ports instead of stopping an installed application:
+
+```sh
+PAYDIRT_E2E_BACKEND_PORT=18000 PAYDIRT_E2E_FRONTEND_PORT=15173 npm run test:e2e
+```
+
+Both overrides must be distinct integer ports from 1 to 65535. They consistently
+configure the test backend listener, Vite HTTP/WebSocket proxies, browser URL and
+direct test API requests. Playwright starts and stops only its own services and
+refuses to reuse an occupied chosen port (`--strictPort` remains enabled). The
+public-2026 isolation, full-length games, timeouts and gameplay assertions are
+unchanged. Browser fixtures also block requests to unrelated loopback ports, so a
+missed URL cannot fall back to a separately installed local app.
 The GitHub Actions `browser-games` job runs this suite on pushes and PRs.
 
 ## What it tests

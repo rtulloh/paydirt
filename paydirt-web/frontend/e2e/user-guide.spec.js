@@ -1,12 +1,13 @@
-import { test, expect } from '@playwright/test'
+import { guardLocalRoute } from './ports.js'
+import { test, expect } from './fixtures.js'
 
 test('canonical player guides, links, and images work without external network access', async ({ page }) => {
   const errors = []
   page.on('pageerror', error => errors.push(String(error)))
-  await page.route('**/*', route => {
+  await page.route('**/*', guardLocalRoute(route => {
     const host = new URL(route.request().url()).hostname
     return ['localhost', '127.0.0.1'].includes(host) ? route.continue() : route.abort()
-  })
+  }))
   await page.goto('/')
   await page.getByRole('button', { name: 'GUIDE', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Paydirt User Guide' }).first()).toBeVisible()
