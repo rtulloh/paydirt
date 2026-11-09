@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Paydirt football</title>
+  <g transform="rotate(-35 32 32)">
+    <ellipse cx="32" cy="32" rx="28" ry="17" fill="#8b4513" stroke="#41210c" stroke-width="2"/>
+    <path d="M14 20c5 7 5 17 0 24M50 20c-5 7-5 17 0 24" fill="none" stroke="#fff8e7" stroke-width="3"/>
+    <path d="M23 32h18M26 28v8M32 28v8M38 28v8" fill="none" stroke="#fff8e7" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>
