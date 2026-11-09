@@ -217,3 +217,62 @@ frontend build retains the stale Browserslist-data advisory. Core reports no
 skips or warnings. VAL-024 is closed for this specific verified local policy fix;
 VAL-020 remains open. This checkpoint does not claim upstream/native success or
 1977 release acceptance. The selected 1977 charts are still staged locally only.
+
+### Final canonical characterization (2026-11-09 05:15)
+
+Ordinary regeneration and independent reproduction on final 1.10.4 metadata
+match every one of 84 CSVs and the full canonical manifest. Charts remain byte
+identical to nominated candidate-05; no individual-team edits were made. Source
+identity, reviewed modeled scope, decoder and reproduction checks pass, while
+historical source completeness remains false. The current-runtime predeclared
+72-repetition sample (seed 20261110) completes 14,112 games / 1,008 per team. All
+nonstatistical and five league fit gates pass; four team fit failures remain
+explicit in the season notes and exact release policy. DATA-046 stays open.
+
+Two incomplete-version-metadata canonical runs and their first same-seed sample
+are retained as superseded evidence: existing release-metadata tests exposed API
+and platform version literals after the first sample began. All package/API
+versions now match 1.10.4; the final sample reruns the same predeclared seed,
+without coefficient changes, seed shopping, old-report patches or relaxed bounds.
+
+The actual medium review of metadata, API-version-only AST allowance, all four
+packaging specifications, both public-chart matrices and hash-provenance control
+is clean. Final frontend 362 tests, build and 18 real-engine E2E tests pass;
+backend 450 tests (21 deprecation warnings), all 14 local integration games,
+1983 actual 224 regular/nine playoff games plus 16 private reproductions, both
+AI audits (32/448 games) and both unchanged released-chart gates pass. Core
+coverage and clean tracked-only full tests remain in progress/pending. Exact
+1977 policy review/pin, final integration push, upstream CI, immutable tag and
+actual published 1.10.4 package checks remain required. Corrected native 1.10.3
+proof is green on all five package forms; VAL-023 is closed for that harness-only
+repair, not used as proof of future 1.10.4 binaries.
+
+### Final local regression passed (2026-11-09 05:57)
+
+Frozen source tree `da98ea96c3b420fa2a438449c4265a5710033e72` passes all required
+local checks: 11,124 core tests with 86% coverage (37m49s), clean tracked-only
+11,124 tests (10m27s), backend 450 tests, frontend 362 tests/build, all 18
+real-engine E2E tests, Ruff, 14 private integration games, 1983 actual 224 regular
+plus nine playoff games and 16 private reproductions, both AI audits (32/448
+games), both unchanged released-chart gates, and the exact 1977 exception gate.
+The 1977 public calendar also passes all 196 regular/seven postseason games.
+Core and tracked-only runs report no skips/warnings. Backend retains 20 Pydantic
+deprecations plus a Starlette/httpx deprecation; frontend retains existing
+Browserslist/color warnings. The same three legacy balanced AI advisories were
+reviewed; AI-008 stays resolved and DATA-046 stays open.
+
+The 1977 policy is pinned to immutable commit
+`5281b4fb6cdc3585be6aeb270ace7a1b2a5c1dc7` and reviewed SHA-256
+`cf38dad7ae2b33b33c270076dee02834ad655109e74a0cef07859e919d4f9e36`.
+Actual CLI acceptance passes with strict fit false, four retained exceptions and
+release certification false. Medium code/data/pin reviews are clean. Large local
+engine reports are losslessly compressed with verified raw SHA identities; no
+private data enter the commit. The earlier stopped 21% coverage run is retained
+as superseded, never counted as a pass.
+
+First integration upstream run42603386420 is fully green. The final release
+integration still needs its own upstream exact-SHA Tests result. Push main after
+this complete regression, repeat the required unchanged-state pre-tag checklist
+while CI runs, then publish the next unused immutable tag and validate the actual
+downloaded 1.10.4 assets on all five package forms. No release-health or
+announcement-ready claim precedes those published-asset checks.

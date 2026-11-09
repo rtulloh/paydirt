@@ -49,8 +49,8 @@ python3 tests/run_all_games.py
 python3 tests/run_full_season.py
 python3 tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/public-season.json
 python3 tests/run_ai_audit.py --season 1983 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/local-season.json --csv .ai-audits/local-season.csv
-python3 -m paydirt.released_chart_regression --season 1983 --output .ai-audits/chart-quality-1983.json
-python3 -m paydirt.released_chart_regression --season 2024 --output .ai-audits/chart-quality-2024.json
+python3 -m paydirt.released_chart_regression_audit --season 1983 --output .ai-audits/chart-quality-1983.json
+python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/chart-quality-2024.json
 ```
 
 **Released charts and new charts have distinct gates.** The two commands above
@@ -80,6 +80,18 @@ and downloaded native-install checks remain mandatory. This is specific to the
 [1977 release goal](docs/dev-notes/1977-calibration-release-goal.md), not a generic
 new-season bypass.
 
+
+When the 1977 set is included, also run the separately reviewed
+`scripts/audit_1977_release.py` command documented in
+[released chart regression](docs/released-chart-regression.md#exact-1977-statistical-acceptance),
+using the immutable pinned policy and its exact canonical, independent
+reproduction, source-contract and minimum-72-repetition execution evidence.
+Retain a fresh ignored acceptance receipt for each regression. A missing policy,
+changed chart/source/runtime, incomplete public season or nonstatistical failure
+blocks pushing. Its passing release-policy receipt does not relabel strict fit
+misses as passes or replace any command above. The owner-authorized statistical
+exceptions and all actual failed bounds must remain visible in the public season
+notes and manifest. Raw private source paths and inventories stay local.
 
 **Play-selection and play-balance audit is part of full regression**, not merely
 a final-score check. The audit commands exercise Hard-vs-Hard and legacy balanced

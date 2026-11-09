@@ -26,7 +26,7 @@ GENERATION_VALIDATION_ONLY = frozenset({
     "paydirt/chart_generator.py", "paydirt/chart_source_bundle.py",
     "paydirt/generated_source_audit.py", "paydirt/historical_season.py",
     "paydirt/pfr_play_by_play.py", "paydirt/pfr_source_scope.py",
-    "paydirt/released_chart_regression.py", "paydirt/chart_release_gate.py",
+    "paydirt/released_chart_regression_audit.py", "paydirt/chart_release_gate.py",
 })
 
 
@@ -42,11 +42,18 @@ def _has_symlink(root: Path, path: Path) -> bool:
     return any(part.is_symlink() for part in (path, *path.parents) if part != root and part.is_relative_to(root))
 
 
-def _version_only(data: bytes) -> str:
+def _version_only(data: bytes, *, api_metadata: bool = False) -> str:
     tree = ast.parse(data)
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) and node.targets[0].id == "__version__" and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             node.value = ast.Constant(value="<release-version>")
+    if api_metadata:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "FastAPI":
+                for keyword in node.keywords:
+                    if (keyword.arg == "version" and isinstance(keyword.value, ast.Constant)
+                            and isinstance(keyword.value.value, str)):
+                        keyword.value = ast.Constant(value="<release-version>")
     return ast.dump(tree, include_attributes=False)
 
 
@@ -96,8 +103,9 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
             path = root / name
             actual_bytes = path.read_bytes() if path.is_file() and not _has_symlink(root, path) else None
             equal = actual_bytes == expected
-            if name == "paydirt/__init__.py" and actual_bytes is not None and not equal:
-                equal = _version_only(actual_bytes) == _version_only(expected)
+            if name in {"paydirt/__init__.py", "paydirt/__main__.py", "paydirt-web/backend/main.py"} and actual_bytes is not None and not equal:
+                api_metadata = name != "paydirt/__init__.py"
+                equal = _version_only(actual_bytes, api_metadata=api_metadata) == _version_only(expected, api_metadata=api_metadata)
             if not equal:
                 report["errors"].append(f"Trusted release content mismatch: {name}")
                 if name in runtime:

@@ -1,8 +1,17 @@
 # Generated Chart Attribution
 
-Paydirt includes independent statistical reconstructions for the 1983 and 2024
+Paydirt includes independent statistical reconstructions for the 1977, 1983 and 2024
 football seasons. The chart files were produced by this repository's chart
 generator and are distributed under the game's MIT License.
+
+## 1977
+
+The 1977 charts were generated from reviewed archived Pro Football Reference
+play-by-play and normalized season totals, recovered through the Internet
+Archive. Missing or conflicting historical details use documented modeled
+assumptions and fitting exclusions; these are not newly established source
+facts. The season notes disclose retained statistical accuracy exceptions.
+No original Paydirt charts, raw archived pages or private ledgers are included.
 
 ## 1983
 
@@ -23,7 +32,7 @@ Avalon Hill, or the original game designers. Team names and other trademarks bel
 to their respective owners.
 
 Historical-calendar validation also includes normalized fixture/result facts under
-`config/season-schedules/`, with per-source hashes and attribution. The 1983 facts
+`config/season-schedules/`, with per-source hashes and attribution. The 1977 and 1983 facts
 come from archived Pro Football Reference and the 2024 facts from nflverse nfldata;
 see [fixture provenance](docs/historical-seasons.md#fixture-provenance). These facts
 are distinct from raw play-by-play and from the generated chart model. No developer

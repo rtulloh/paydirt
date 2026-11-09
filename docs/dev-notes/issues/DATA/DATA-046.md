@@ -94,3 +94,17 @@ full table/uncertainty is in the
 [canonical record](../../1977-season-feasibility.md#independent-seed-robustness-check-no-individual-chart-edit).
 Underlying accuracy work remains open despite authorized disclosed release
 acceptance. No individual correction is justified just to flip a test.
+
+--- 2026-11-09 05:15 ---
+Final current-runtime canonical regeneration and independent reproduction match
+all 84 CSVs and the full manifest, with unchanged candidate-05 chart bytes. The
+predeclared seed 20261110 / 72 repetitions completed 14,112 games (1,008 per team).
+All source, reproduction, mechanics, allocation, observer and nonstatistical
+requirements pass; all five league fit metrics pass. Strict fit retains four
+misses: Tampa Bay completion 43.9668% versus 40.8100% ±3pp; Tampa Bay INT 8.2150%
+versus 9.3458% ±1pp; Dallas INT 3.7742% versus 2.6882% ±1pp; Washington INT 5.2661%
+versus 4.1775% ±1pp. Scoring remains elevated at 20.1034 versus 17.1760 historical
+points per team game. The earlier 144/independent reports remain preserved, not
+replaced or pooled. No chart correction or further tuning was applied. The
+owner-authorized exact release exception is being reviewed; this ticket remains
+open because releasing with disclosed limits does not resolve accuracy.

@@ -4,7 +4,7 @@
 
 ## Available Seasons
 
-Published builds include **1983** and **2024** chart sets generated from season statistics and
+Version 1.10.4 includes **1977**, **1983**, and **2024** chart sets generated from season statistics and
 play-by-play, plus the fictional **2026** Thunderhawks and Ironclads sample. The generated
 historical charts are independent reconstructions; source and license details are in the
 [chart attribution](../CHART_ATTRIBUTION.md). The supplied rule model is not a claim that every
@@ -12,7 +12,7 @@ professional-league rule for those seasons is implemented.
 
 ### Included Chart Attribution
 
-The 1983 charts are independent statistical reconstructions generated from historical
+The 1977 and 1983 charts are independent statistical reconstructions generated from historical
 play-by-play and aggregate season data, including archived Pro Football Reference records.
 The 2024 charts are independent reconstructions generated from nflverse play-by-play and
 aggregate season data; nflverse play-by-play is provided under CC BY 4.0. The generated chart
@@ -20,10 +20,16 @@ files are distributed under Paydirt's MIT License. No raw source data or origina
 charts are included. These unofficial charts are not endorsed by Sports Reference, nflverse,
 the NFL, Avalon Hill, or the original game designers.
 
+The 1977 set contains all 28 teams and uses a modeled historical source scope.
+It ships with explicitly disclosed accuracy limitations, rather than a claim
+that every statistical tolerance passed. Consult the bundled season
+`NOTES.md` for source gaps, final measurements and known interception/scoring
+biases. Historical winners and playoff qualifiers are never forced.
+
 ## Season Data Locations
 
 For a source checkout, put data under the repository's `seasons/` directory. Release builds
-contain numeric `seasons/1983`, `seasons/2024`, and `seasons/2026` directories. The tracked
+contain numeric `seasons/1977`, `seasons/1983`, `seasons/2024`, and `seasons/2026` directories. The tracked
 1983 generator output uses `seasons/1983-generated` in the source tree so it cannot collide
 with ignored private comparison charts; packaging maps it to `seasons/1983`. The separate
 user-data directory is used by bundled applications, not ordinary source runs.
@@ -73,7 +79,7 @@ appear alongside installed seasons.
 ## Chart File Formats
 
 Use the small public sample files under `seasons/2026/` as concrete format references. The
-generated 1983 and 2024 sets use the same file format but are not unit-test fixtures.
+generated historical sets use the same file format but are not unit-test fixtures.
 
 | File | Structure |
 |------|-----------|

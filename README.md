@@ -51,7 +51,7 @@ see [web development setup](paydirt-web/README.md).
 
 ## Teams and Seasons
 
-Published builds include generated **1983** and **2024** season charts plus the fictional
+Version 1.10.4 includes generated **1977**, **1983**, and **2024** season charts plus the fictional
 **2026 Thunderhawks and Ironclads** sample. The historical chart sets are independent
 statistical reconstructions produced by this project; see the
 [chart attribution](CHART_ATTRIBUTION.md) for sources and licensing.

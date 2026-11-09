@@ -260,7 +260,7 @@ def required_regression_commands(*, released_charts: bool = False) -> dict[str, 
     for season, directory in (("1983", "1983-generated"), ("2024", "2024")):
         if released_charts:
             commands[f"chart_{season}"] = (".", [
-                python, "-m", "paydirt.released_chart_regression", "--season", season,
+                python, "-m", "paydirt.released_chart_regression_audit", "--season", season,
                 "--output", f".ai-audits/chart-quality-{season}.json",
             ])
         else:
@@ -759,6 +759,248 @@ def audit_release(
             "scope": "Component gate: source consistency, exact tactical controls, event allocation and "
                      "current-engine source-schedule calibration; historical tactical "
                      "accuracy and the full charter readiness bundle are not established by these controls."}
+
+
+STATISTICAL_RELEASE_POLICY: dict[str, str] | None = {
+    "commit": "5281b4fb6cdc3585be6aeb270ace7a1b2a5c1dc7",
+    "path": "config/chart-validation/1977-release-exception.json",
+    "sha256": "cf38dad7ae2b33b33c270076dee02834ad655109e74a0cef07859e919d4f9e36",
+}
+
+STATISTICAL_RELEASE_AUTHORIZATION = {
+    "season": 1977,
+    "commit": "e0b6bb6cd92344dbe490b103206809c26a8de632",
+    "path": "docs/dev-notes/1977-calibration-release-goal.md",
+    "sha256": "82289652789e82e07e23817e3a6f9c0e81b9bf53a6fdf5208bb1067b4e7df1ab",
+}
+
+
+def _exception_inventory(folder: Path) -> dict[str, str]:
+    """Bind complete candidate bytes; reject redirected inputs."""
+    if folder.is_symlink() or not folder.is_dir():
+        raise ValueError("Exception inputs require an actual directory")
+    result = {}
+    for path in sorted(folder.rglob("*")):
+        if path.is_symlink():
+            raise ValueError("Exception inputs cannot contain symlinks")
+        if path.is_file():
+            result[path.relative_to(folder).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return result
+
+
+def _exception_file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _statistical_failures(engine: dict) -> tuple[list[dict], list[str]]:
+    """Extract only computed finite metric misses, preserving their exact bounds."""
+    failures, messages = [], []
+    groups = [("team", team, metrics) for team, metrics in engine["team_metrics"].items()]
+    groups.append(("league", None, engine["metrics"]))
+    for scope, team, metrics in groups:
+        for name, metric in metrics.items():
+            if metric["passed"] is True:
+                continue
+            observed, target, tolerance = (metric[key] for key in ("observed", "target", "tolerance"))
+            if (not all(type(value) in (float, int) and math.isfinite(value)
+                        for value in (observed, target, tolerance)) or tolerance <= 0):
+                raise ValueError("Nonfinite or invalid fit metrics cannot receive an exception")
+            failure = {"scope": scope, "metric": name, "observed": observed,
+                       "target": target, "tolerance": tolerance}
+            if team is not None:
+                failure["team"] = team
+            failures.append(failure)
+            prefix = f"{team} {name}" if team is not None else name
+            messages.append(f"{prefix}: {observed:.6f} differs from {target:.6f} by more than {tolerance}")
+    return sorted(failures, key=lambda item: (item["scope"], item.get("team", ""), item["metric"])), messages
+
+
+def audit_statistical_release_exception(
+    root: Path, season_dir: Path, contract_path: Path, engine_report_path: Path,
+    policy_path: Path, *, public_dir: Path, stats_dir: Path,
+    reproduced_dir: Path, input_files: Mapping[str, Path],
+) -> dict[str, Any]:
+    """Accept only the owner's exact, committed 1977 statistical release exception.
+
+    Source, reproduction, mechanics, allocation, observer conformance, runtime,
+    accounting and minimum samples are independently checked. Failed statistical
+    bounds stay failed; this component never certifies a complete release.
+    """
+    import gzip
+
+    errors: list[str] = []
+    result: dict[str, Any] = {
+        "passed": False, "strict_fit_passed": False, "release_certified": False,
+        "release_accepted_with_statistical_exceptions": False,
+        "accepted_failures": [], "errors": errors,
+        "scope": "Exact owner-authorized statistical acceptance; no source, gameplay or native-install waiver",
+    }
+    root = Path(root).resolve()
+    try:
+        authority = STATISTICAL_RELEASE_AUTHORIZATION
+        policy_bytes = Path(policy_path).read_bytes()
+        relative = Path(policy_path).resolve().relative_to(root).as_posix()
+        def git_object(reference: str) -> bytes:
+            return subprocess.check_output(
+                ["git", "--no-replace-objects", "-C", str(root), "show", reference],
+                stderr=subprocess.PIPE,
+            )
+        trusted_policy = STATISTICAL_RELEASE_POLICY
+        if (not trusted_policy or relative != trusted_policy["path"]
+                or hashlib.sha256(policy_bytes).hexdigest() != trusted_policy["sha256"]
+                or git_object(f"{trusted_policy['commit']}:{trusted_policy['path']}") != policy_bytes):
+            raise ValueError("Statistical exception policy must match the immutable reviewed policy pin")
+        authorization = git_object(f"{authority['commit']}:{authority['path']}")
+        if hashlib.sha256(authorization).hexdigest() != authority["sha256"]:
+            raise ValueError("Immutable owner authorization differs from the trusted record")
+        policy = _strict_json_object(policy_bytes)
+        if (type(policy.get("schema_version")) is not int or policy["schema_version"] != 1
+                or type(policy.get("season")) is not int or policy["season"] != authority["season"]
+                or policy.get("authorization_commit") != authority["commit"]
+                or policy.get("authorization_sha256") != authority["sha256"]
+                or not isinstance(policy.get("reason"), str) or not policy["reason"].strip()):
+            raise ValueError("Policy does not match the specific owner-authorized season and reason")
+        contract_bytes = Path(contract_path).read_bytes()
+        report_file_digest = _exception_file_digest(Path(engine_report_path))
+        raw_report = (gzip.decompress(Path(engine_report_path).read_bytes())
+                      if Path(engine_report_path).suffix == ".gz" else Path(engine_report_path).read_bytes())
+        if (hashlib.sha256(contract_bytes).hexdigest() != policy["contract_sha256"]
+                or hashlib.sha256(raw_report).hexdigest() != policy["engine_report_sha256"]):
+            raise ValueError("Contract or raw execution report differs from the accepted identity")
+        contract, report = _strict_json_object(contract_bytes), _strict_json_object(raw_report)
+        del raw_report
+        if contract.get("season") != authority["season"] or report["metadata"].get("policy") != "chart-focused":
+            raise ValueError("Exception requires the exact source season and chart-focused measurement")
+        before_stats = _exception_inventory(Path(stats_dir))
+        before_reproduced = _exception_inventory(Path(reproduced_dir))
+        before_inputs = {name: _exception_file_digest(Path(path)) for name, path in input_files.items()}
+        before_canonical = _exception_inventory(Path(season_dir))
+        before_public = _exception_inventory(Path(public_dir))
+        if before_canonical != policy["canonical_files"] or before_public != policy["public_files"]:
+            raise ValueError("Canonical or published inventory differs from the accepted bytes")
+        canonical_manifest = Path(season_dir) / "generation-manifest.json"
+        published = _strict_json_object((Path(public_dir) / "generation-manifest.json").read_bytes())
+        manifest = _strict_json_object(canonical_manifest.read_bytes())
+        public_keys = {
+            "accuracy_bounds_passed", "calibration_profile", "chart_hashes", "empirical_outcomes",
+            "field_goal_attempts", "fumble_fitting_summary", "fumble_gain_policy", "fumbles", "games",
+            "gain_normalization_summary", "historical_source_complete", "known_accuracy_exceptions",
+            "diagnostic_limitations", "local_source_reproduction", "modeled_fumble_assumptions",
+            "opponent_adjustment", "original_generation_manifest_sha256", "post_generation_transforms",
+            "public_manifest_schema_version", "reviewed_source_summary", "scope", "season", "seed",
+            "source", "source_feature_coverage", "source_rows", "teams",
+        }
+        if set(published) - public_keys:
+            raise ValueError("Public manifest contains unapproved/private provenance fields")
+        public_team_keys = {
+            "empirical_outcomes", "fallback_columns", "field_goal_attempts", "fumbles",
+            "generated_empirical_outcomes", "opponent_adjusted_outcomes", "pfr_team",
+            "source_event_counts",
+        }
+        public_teams = published.get("teams", {})
+        if not isinstance(public_teams, dict):
+            raise TypeError("Public team inventory must be an object")
+        canonical_teams = manifest.get("teams", {})
+        if not isinstance(canonical_teams, dict) or any(not isinstance(team, dict) for team in canonical_teams.values()):
+            raise TypeError("Canonical team inventory must contain objects")
+        canonical_public_teams = {
+            name: {key: value for key, value in team.items() if key in public_team_keys}
+            for name, team in canonical_teams.items()
+        }
+        if public_teams != canonical_public_teams:
+            raise ValueError("Public team source counts differ from the canonical manifest")
+        for key in ("empirical_outcomes", "field_goal_attempts", "fumble_gain_policy", "fumbles",
+                    "games", "modeled_fumble_assumptions", "opponent_adjustment", "seed", "source",
+                    "source_feature_coverage", "source_rows"):
+            if published.get(key) != manifest.get(key):
+                raise ValueError(f"Public source summary differs from canonical generation: {key}")
+        for team in public_teams.values():
+            if not isinstance(team, dict) or set(team) - public_team_keys:
+                raise ValueError("Public team metadata contains unapproved/private provenance fields")
+            for key, value in team.items():
+                if key == "pfr_team":
+                    if not isinstance(value, str) or not value.isalpha() or len(value) > 4:
+                        raise ValueError("Public source team identifier is invalid")
+                elif key == "source_event_counts":
+                    if (not isinstance(value, dict)
+                            or set(value) - {"field_goal_attempts", "interceptions", "sacks"}
+                            or any(type(count) is not int or count < 0 for count in value.values())):
+                        raise ValueError("Public source event counts are invalid")
+                elif type(value) is not int or value < 0:
+                    raise ValueError("Public team aggregate must be a nonnegative integer")
+        if (published.get("original_generation_manifest_sha256") != hashlib.sha256(canonical_manifest.read_bytes()).hexdigest()
+                or published.get("calibration_profile") != manifest.get("calibration_profile")
+                or published.get("season") != authority["season"]
+                or published.get("public_manifest_schema_version") != 1):
+            raise ValueError("Sanitized public provenance does not bind the exact canonical manifest/profile")
+        actual_chart_hashes = {name: digest for name, digest in before_public.items()
+                               if len(Path(name).parts) == 2 and name.endswith(".csv")}
+        if published.get("chart_hashes") != actual_chart_hashes:
+            raise ValueError("Public chart hash provenance differs from actual published CSV bytes")
+        required_public = set(before_canonical) - {"generation-manifest.json", "NOTES.md", "chart-audit.json"}
+        if not required_public <= set(before_public):
+            raise ValueError("Published season omits canonical gameplay files")
+        for name, digest in before_public.items():
+            if name in ("generation-manifest.json", "NOTES.md"):
+                continue
+            parts = Path(name).parts
+            allowed = name in (f"{authority['season']}.yaml", "ai_behavior.yaml") or (
+                len(parts) == 2 and parts[1] in {"offense.csv", "defense.csv", "special.csv", "team.yaml", "roster.json"}
+            )
+            if not allowed:
+                raise ValueError(f"Unexpected published source artifact: {name}")
+            if before_canonical.get(name) != digest:
+                raise ValueError(f"Published chart or metadata differs from canonical generation: {name}")
+        component = audit_release(Path(season_dir), contract, report, stats_dir=stats_dir,
+                                  reproduced_dir=reproduced_dir, input_files=input_files)["components"]
+        for name in ("source", "tactics", "allocation"):
+            if component[name].get("passed") is not True or component[name].get("errors"):
+                errors.append(f"Nonstatistical {name} requirement failed")
+        for check in ("raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder"):
+            if component["source"].get("checks", {}).get(check) is not True:
+                errors.append(f"Source {check} is not independently verified")
+        nonfit = validate_engine_report(report, contract, Path(season_dir), minimum_team_games=1000,
+                                        minimum_repetitions=72, require_fit=False)
+        if nonfit.get("passed") is not True or nonfit.get("errors"):
+            errors.extend(nonfit.get("errors") or ["Nonstatistical engine validation failed"])
+        engine = component["engine"]
+        measurement = engine.get("measurement", {})
+        if measurement.get("passed") is not True or measurement.get("errors"):
+            errors.append("Observer conformance failed")
+        failures, expected_errors = _statistical_failures(engine)
+        if engine.get("passed") is not (not expected_errors):
+            errors.append("Strict engine summary contradicts its measured failures")
+        if sorted(engine["errors"]) != sorted(expected_errors):
+            errors.append("Strict engine errors include unaccepted nonstatistical failures")
+        accepted = sorted(policy["accepted_failures"], key=lambda item: (item["scope"], item.get("team", ""), item["metric"]))
+        if failures != accepted:
+            errors.append("Accepted statistical misses do not exactly match independently measured failures")
+        if (published.get("accuracy_bounds_passed") is not engine["passed"]
+                or published.get("known_accuracy_exceptions") != failures):
+            errors.append("Published accuracy disclosure contradicts independently measured failures")
+        if (_exception_inventory(Path(stats_dir)) != before_stats
+                or _exception_inventory(Path(reproduced_dir)) != before_reproduced
+                or {name: _exception_file_digest(Path(path)) for name, path in input_files.items()} != before_inputs
+                or _exception_inventory(Path(season_dir)) != before_canonical
+                or _exception_inventory(Path(public_dir)) != before_public
+                or Path(policy_path).read_bytes() != policy_bytes
+                or Path(contract_path).read_bytes() != contract_bytes
+                or _exception_file_digest(Path(engine_report_path)) != report_file_digest):
+            errors.append("Bound inputs changed during acceptance")
+        result.update(strict_fit_passed=engine["passed"], accepted_failures=failures,
+                      statistical_validation={key: engine[key] for key in ("errors", "metrics", "team_metrics")},
+                      authorization_commit=authority["commit"], policy_sha256=hashlib.sha256(policy_bytes).hexdigest(),
+                      components={name: {"passed": component[name]["passed"], "errors": component[name]["errors"]}
+                                  for name in ("source", "tactics", "allocation")})
+        result["passed"] = not errors
+        result["release_accepted_with_statistical_exceptions"] = not errors and bool(failures)
+    except (ValueError, TypeError, KeyError, OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        errors.append(str(exc))
+    return result
 
 
 def audit_campaign_bundle(cohorts: Mapping[str, Any]) -> dict[str, Any]:

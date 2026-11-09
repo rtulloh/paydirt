@@ -6,7 +6,7 @@ qualification. These checks answer different questions.
 
 ## Immutable baseline
 
-`python3 -m paydirt.released_chart_regression --season 2024 --output .ai-audits/released-2024.json`
+`python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/released-2024.json`
 
 The only built-in baseline is tag `v1.10.3`, pinned to commit
 `1467b11e151fe9981177890e2a7a6b805402b3f0`, for 1983-generated (28 teams) and
@@ -18,7 +18,9 @@ raw private source inventories are neither needed nor emitted.
 
 The public structure and actual chart decoders must pass. All gameplay Python
 modules in the core package, backend and packaged launcher must match the trusted
-release. Only the version literal in the package initializer may change. Explicit
+release. Only the package version literal and the `FastAPI(version=...)` metadata literals
+in the two existing API entry points may change. Their other AST behavior must
+remain identical; this allowance cannot hide changes to rules or API behavior. Explicit
 candidate-generation/source-validation tools are excluded because they do not
 resolve player games; adding exclusions requires review. A gameplay change fails
 closed pending reviewed paired baseline regression evidence. This initial gate
@@ -74,3 +76,35 @@ still require private source receipts and engine evidence. It is not the
 unchanged-public-release collector. `required_regression_commands(released_charts=True)`
 exposes the explicit AGENTS inventory; the default remains strict for existing
 candidate tooling. Run and retain every AGENTS result for the released route.
+
+## Exact 1977 statistical acceptance
+
+`scripts/audit_1977_release.py` invokes a separate, fail-closed acceptance gate.
+It requires a reviewed policy pinned to an immutable Git commit and SHA-256;
+a candidate cannot authorize its own replacement policy. The policy binds the
+complete canonical and sanitized public inventories, source contract and raw
+execution-report hash. The gate independently repeats source, reproduction,
+decoder, mechanics, allocation, observer, runtime and accounting checks and
+requires at least 72 repetitions and 1,000 games per team.
+
+The public season must contain every canonical gameplay file. Its chart hashes,
+accuracy flag and exact exception list must match independently measured results.
+Private input inventories remain local. Strict failed bounds stay failed in the
+receipt; `passed` describes only the exact reviewed release policy, and
+`release_certified` remains false. Full regression and published native acceptance
+remain separate requirements. A missing or unpinned policy never falls back to
+this route automatically.
+
+```sh
+python3 scripts/audit_1977_release.py --root . \
+  --season-dir CANONICAL --contract CONTRACT --engine-report REPORT.json.gz \
+  --policy POLICY --public-season-dir seasons/1977 --stats-dir STATS \
+  --reproduced-dir REPRODUCED --input-files SOURCE_MAP.json \
+  --output .ai-audits/1977-release-acceptance.json
+```
+
+Uppercase paths refer to the reviewed local source bundle and canonical evidence,
+not distributed raw source files. The source map contains logical source keys and
+paths, with relative paths resolved against `--root`. The output must be new and
+outside all input directories. Exit zero requires the independently computed
+acceptance result to be exactly true.

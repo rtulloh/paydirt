@@ -1,5 +1,14 @@
 # Paydirt Release Notes
 
+## v1.10.4
+
+- Add all 28 teams from 1977, generated from reviewed historical records, with era rules and the actual 14-game calendar/eight-team postseason validation.
+- Publish explicit source-modeling and accuracy limitations for the new season. The final 72-repetition sample completes all 14,112 games; four team fit misses and elevated scoring remain disclosed in the [1977 season notes](seasons/1977/NOTES.md). Historical winners are never forced.
+- Preserve the released 1983/2024 chart bytes and their existing documented exceptions; distinguish unchanged-chart regression from new-chart qualification.
+- Strengthen downloaded-package checks for teams, new games, chart identities and normal process shutdown across all five package forms. Restore the missing browser football icon.
+
+The 1977 statistical release exception does not waive source reproduction, chart mechanics, Screen interception constraints, gameplay regression or published-install checks. DATA-046 remains open for historical accuracy work.
+
 ## v1.10.2
 
 - Improve late multi-score fourth-down urgency using scoring possessions, clock, field position and remaining timeouts.

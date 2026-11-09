@@ -140,6 +140,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - directory: '1977'
+            season: 1977
+            teams: 28
           - directory: 1983-generated
             season: 1983
             teams: 28

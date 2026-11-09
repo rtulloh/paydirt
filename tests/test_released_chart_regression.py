@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from paydirt import released_chart_regression as gate
+from paydirt import released_chart_regression_audit as gate
 
 
 @pytest.fixture
@@ -18,6 +18,10 @@ def baseline(tmp_path, monkeypatch):
         target = root / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
+    for name in ("paydirt/__main__.py", "paydirt-web/backend/main.py"):
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("app = FastAPI(title='Synthetic', version='1.10.3')\n")
     def git(*args):
         return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
     git("init", "-q")
@@ -103,7 +107,7 @@ def test_required_release_checklist_uses_explicit_released_gate():
     from paydirt.chart_release_gate import required_regression_commands
     for season in ("1983", "2024"):
         _, command = required_regression_commands(released_charts=True)[f"chart_{season}"]
-        assert command[1:3] == ["-m", "paydirt.released_chart_regression"]
+        assert command[1:3] == ["-m", "paydirt.released_chart_regression_audit"]
         assert command[command.index("--season") + 1] == season
 
 
@@ -122,7 +126,7 @@ def test_cli_cannot_overwrite_protected_launcher(baseline, monkeypatch):
     root, _ = baseline
     launcher = root / "paydirt_runner.py"
     launcher.write_text("original launcher\n")
-    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression.py"))
+    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression_audit.py"))
     monkeypatch.setattr(gate, "audit_released_season", lambda *args, **kwargs: {"passed": True})
     with pytest.raises(SystemExit) as error:
         gate.main(["--season", "2026", "--output", str(launcher)])
@@ -142,7 +146,7 @@ def test_symlinked_season_directory_rejected(baseline, tmp_path):
 def test_cli_ignored_directory_cannot_redirect_into_inputs(baseline, monkeypatch):
     root, _ = baseline
     (root / ".ai-audits").symlink_to(root / "paydirt", target_is_directory=True)
-    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression.py"))
+    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression_audit.py"))
     monkeypatch.setattr(gate, "audit_released_season", lambda *args, **kwargs: {"passed": True})
     original = (root / "paydirt/game_engine.py").read_bytes()
     with pytest.raises(SystemExit):
@@ -158,8 +162,42 @@ def test_hardlinked_receipt_cannot_overwrite_launcher(baseline, monkeypatch):
     destination = root / ".ai-audits/report.json"
     destination.parent.mkdir()
     os.link(launcher, destination)
-    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression.py"))
+    monkeypatch.setattr(gate, "__file__", str(root / "paydirt/released_chart_regression_audit.py"))
     monkeypatch.setattr(gate, "audit_released_season", lambda *args, **kwargs: {"passed": True})
     with pytest.raises(SystemExit):
         gate.main(["--season", "2026", "--output", str(destination)])
     assert launcher.read_text() == "original launcher\n"
+
+
+def test_release_auditor_does_not_change_gameplay_source_identity(tmp_path, monkeypatch):
+    from paydirt import chart_engine_audit as engine
+    measurement = tmp_path / "chart_engine_audit.py"
+    measurement.write_text("MEASUREMENT = 1\n")
+    core = tmp_path / "game_engine.py"
+    core.write_text("CORE = 1\n")
+    monkeypatch.setattr(engine, "__file__", str(measurement))
+    before = engine.engine_fingerprint()
+    helper = tmp_path / Path(gate.__file__).name
+    helper.write_text("VALIDATOR = 1\n")
+    assert engine.engine_fingerprint() == before
+    helper.write_text("VALIDATOR = 2\n")
+    assert engine.engine_fingerprint() == before
+    core.write_text("CORE = 2\n")
+    assert engine.engine_fingerprint() != before
+    core.write_text("CORE = 1\n")
+    measurement.write_text("MEASUREMENT = 2\n")
+    assert engine.engine_fingerprint() != before
+
+
+@pytest.mark.parametrize("name", ["paydirt/__main__.py", "paydirt-web/backend/main.py"])
+def test_api_release_version_metadata_may_change_without_gameplay_change(baseline, name):
+    root, _ = baseline
+    (root / name).write_text("app = FastAPI(title='Synthetic', version='1.10.4')\n")
+    assert gate.audit_released_season(root, season=2026)["passed"]
+
+
+@pytest.mark.parametrize("name", ["paydirt/__main__.py", "paydirt-web/backend/main.py"])
+def test_api_metadata_allowance_does_not_hide_other_behavior(baseline, name):
+    root, _ = baseline
+    (root / name).write_text("app = FastAPI(title='Changed', version='1.10.4')\n")
+    assert not gate.audit_released_season(root, season=2026)["passed"]

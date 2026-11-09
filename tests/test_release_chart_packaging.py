@@ -127,3 +127,21 @@ def test_runtime_loaded_backend_core_dependencies_are_collected() -> None:
     required = set().union(*(imports(path) for path in backend_files))
     assert required, "The bundled backend must exercise its actual engine imports"
     assert required <= collected, f"Uncollected dynamic backend dependencies: {sorted(required - collected)}"
+
+
+def test_release_specs_include_new_season_without_replacing_existing_seasons() -> None:
+    """Configuration-only check; never opens historical team data."""
+    for relative_path in SPEC_FILES:
+        text = (ROOT / relative_path).read_text()
+        assert "('seasons/1977', 'seasons/1977')" in text, relative_path
+        assert "('seasons/2026', 'seasons/2026')" in text, relative_path
+
+
+def test_ci_and_release_public_chart_matrices_cover_new_season() -> None:
+    """Both publication stages must validate the added season's public structure."""
+    import yaml
+
+    for relative_path in (".github/workflows/test.yml", ".github/workflows/release.yml"):
+        workflow = yaml.safe_load((ROOT / relative_path).read_text())
+        matrix = workflow["jobs"]["chart-quality"]["strategy"]["matrix"]["include"]
+        assert {"directory": "1977", "season": 1977, "teams": 28} in matrix, relative_path

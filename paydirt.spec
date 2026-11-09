@@ -4,6 +4,7 @@ block_cipher = None
 
 # Include seasons, LICENSE, README, docs, and web static files
 datas = [
+    ('seasons/1977', 'seasons/1977'),
     ('seasons/1983-generated', 'seasons/1983'),
     ('seasons/2024', 'seasons/2024'),
     ('seasons/2026', 'seasons/2026'),
