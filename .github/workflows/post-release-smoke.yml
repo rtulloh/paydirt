@@ -59,8 +59,12 @@ jobs:
           python-version: '3.12'
       - name: Install isolated browser verification tools
         run: python -m pip install playwright
-      - name: Install browser
+      - name: Install browser and Linux system libraries
+        if: runner.os != 'Windows'
         run: python -m playwright install --with-deps chromium
+      - name: Install Windows browser without unrelated server media feature
+        if: runner.os == 'Windows'
+        run: python -m playwright install chromium
       - name: Download existing published asset and release digest metadata
         shell: bash
         run: |
