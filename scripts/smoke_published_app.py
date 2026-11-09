@@ -132,24 +132,102 @@ def prepare(asset: Path, kind: str, output: Path, assets: list[dict]) -> tuple[P
         raise
 
 
+def enable_windows_ctrl_c(kernel: Any = None) -> None:
+    """Avoid inheriting a CI parent's Ctrl-C-ignore flag into the application."""
+    if kernel is None:
+        import ctypes
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    if not kernel.SetConsoleCtrlHandler(None, False):
+        raise OSError("Could not enable inherited Windows Ctrl-C handling")
+
+
+def send_windows_ctrl_c(pid: int) -> None:
+    """Attach a separate sender to the owned console and record membership."""
+    helper = """import ctypes, json, sys, time
+kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+kernel.FreeConsole()
+if not kernel.AttachConsole(int(sys.argv[1])):
+    raise ctypes.WinError(ctypes.get_last_error())
+kernel.SetConsoleCtrlHandler(None, True)
+pids = (ctypes.c_ulong * 256)()
+count = kernel.GetConsoleProcessList(pids, len(pids))
+if not count or count > len(pids):
+    raise RuntimeError('Could not enumerate target console processes')
+print(json.dumps({'console_target': int(sys.argv[1]), 'console_processes': list(pids[:count])}), flush=True)
+if not kernel.GenerateConsoleCtrlEvent(0, 0):
+    raise ctypes.WinError(ctypes.get_last_error())
+time.sleep(1)
+kernel.FreeConsole()
+"""
+    subprocess.run([sys.executable, "-c", helper, str(pid)], check=True, timeout=10)
+
+
+def validate_console_controls(results: dict) -> None:
+    """Require the enabled console to receive Ctrl-C normally."""
+    if results["ignored"]["normal_exit"] or not results["ignored"]["required_cleanup"]:
+        raise RuntimeError(f"Ctrl-C differential inconclusive: ignored control did not survive: {results}")
+    if not results["enabled"]["normal_exit"]:
+        raise RuntimeError(f"Enabled minimal console failed: {results}")
+
+
+def probe_windows_console(output: Path) -> dict:
+    """Compare inherited-ignore and enabled controls before judging the bundle."""
+    import ctypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    control = output / "console-control.py"
+    control.write_text(
+        "import signal, time\n"
+        "print('READY', signal.getsignal(signal.SIGINT), flush=True)\n"
+        "try:\n while True: time.sleep(.1)\n"
+        "except KeyboardInterrupt:\n print('NORMAL-CONTROL-EXIT', flush=True)\n"
+    )
+    results = {}
+    for ignored in [True, False]:
+        if not kernel.SetConsoleCtrlHandler(None, ignored):
+            raise OSError("Could not configure console control experiment")
+        log_path = output / ("console-ignored.log" if ignored else "console-enabled.log")
+        with log_path.open("w") as log:
+            process = subprocess.Popen(
+                [sys.executable, str(control)], cwd=output, stdout=log,
+                stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NEW_CONSOLE,
+            )
+            try:
+                deadline = time.monotonic() + 10
+                while "READY" not in log_path.read_text(errors="replace"):
+                    if time.monotonic() > deadline or process.poll() is not None:
+                        raise RuntimeError("Minimal console control did not become ready")
+                    time.sleep(.1)
+                send_windows_ctrl_c(process.pid)
+                required_cleanup = False
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    required_cleanup = True
+                    # Deliberate negative-control cleanup, never a normal pass.
+                    process.kill()
+                    process.wait(timeout=5)
+                normal = process.returncode == 0 and "NORMAL-CONTROL-EXIT" in log_path.read_text(errors="replace")
+                results["ignored" if ignored else "enabled"] = {
+                    "normal_exit": normal, "exit_code": process.returncode,
+                    "required_cleanup": required_cleanup,
+                }
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=5)
+    enable_windows_ctrl_c(kernel)
+    validate_console_controls(results)
+    return results
+
+
 def stop(process: subprocess.Popen, base: str) -> str:
     """Stop only the owned process tree and require its server to disappear."""
     method = "SIGINT to owning application process"
     if process.poll() is None:
         if sys.platform == "win32":
             method = "CTRL_C to isolated application console"
-            helper = """import ctypes, sys, time
-kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-kernel.FreeConsole()
-if not kernel.AttachConsole(int(sys.argv[1])):
-    raise ctypes.WinError(ctypes.get_last_error())
-kernel.SetConsoleCtrlHandler(None, True)
-if not kernel.GenerateConsoleCtrlEvent(0, 0):
-    raise ctypes.WinError(ctypes.get_last_error())
-time.sleep(1)
-kernel.FreeConsole()
-"""
-            subprocess.run([sys.executable, "-c", helper, str(process.pid)], check=True, timeout=10)
+            send_windows_ctrl_c(process.pid)
         else:
             process.send_signal(signal.SIGINT)
         try:
@@ -162,6 +240,8 @@ kernel.FreeConsole()
                 os.killpg(process.pid, signal.SIGKILL)
             process.wait(timeout=10)
             raise RuntimeError("Application required forced termination")
+    if process.returncode != 0:
+        raise RuntimeError(f"Application abnormal exit status: {process.returncode}")
     for _ in range(20):
         try:
             request_json(base, "/api/health")
@@ -198,6 +278,8 @@ def main() -> int:
         receipt["digest"] = metadata["digest"]
         with socket.socket() as preflight:
             preflight.bind(("127.0.0.1", 8000))
+        if sys.platform == "win32":
+            receipt["console_control"] = probe_windows_console(output)
         executable, method, mount = prepare(args.asset.resolve(), args.kind, output, release["assets"])
         receipt["launch_method"] = method
         env = os.environ.copy()
@@ -209,6 +291,8 @@ def main() -> int:
             env["XDG_DATA_HOME"] = str(output / "user-data")
         options = {"creationflags": subprocess.CREATE_NEW_CONSOLE} if sys.platform == "win32" else {"start_new_session": True}
         with (output / "application.log").open("w") as log:
+            if sys.platform == "win32":
+                enable_windows_ctrl_c()
             process = subprocess.Popen([str(executable)], cwd=output, env=env,
                                        stdout=log, stderr=subprocess.STDOUT, **options)
             deadline = time.monotonic() + 90

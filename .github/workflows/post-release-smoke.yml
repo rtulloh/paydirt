@@ -95,5 +95,6 @@ jobs:
             ${{ runner.temp }}/native-smoke/receipt.json
             ${{ runner.temp }}/native-smoke/application.log
             ${{ runner.temp }}/native-smoke/browser.png
+            ${{ runner.temp }}/native-smoke/console-*.log
             ${{ runner.temp }}/published-download/release.json
           if-no-files-found: warn

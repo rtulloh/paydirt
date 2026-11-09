@@ -62,3 +62,5 @@ or historical game logs.
 - [November 8 open-issue reconciliation](open-issue-reconciliation-2026-11-08.md) — review of all 116 open tickets; 16 shipped fixes closed.
 
 - [Open High-priority issue audit — 2026-11-08](high-priority-issue-audit-2026-11-08.md): current implementation evidence, resolved fixes and remaining priorities.
+
+- [Release 1.10.4 plan](release-1.10.4-plan.md): assigned platform reliability work and season scope boundaries.

@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-200 issues: 72 open, 57 resolved, 71 closed.
+201 issues: 73 open, 57 resolved, 71 closed.
 
-## Open (72)
+## Open (73)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -66,6 +66,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-019](issues/VAL/VAL-019.md) | Medium | Historical season runner implemented; official qualification verification remains | created 2026-11-06 | DATA-018, AI-025, AI-026 |
 | [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
+| [VAL-023](issues/VAL/VAL-023.md) | Medium | Windows published-asset smoke cannot confirm normal console shutdown | created 2026-11-08 | VAL-022 |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AI-026](issues/AI/AI-026.md) | Low | Hard ordinary selection ignores own defensive and opponent chart strengths | created 2026-11-06 | AI-019, AI-025, VAL-019 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -190,7 +191,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [VAL-003](issues/VAL/VAL-003.md) | High | Standings_data.save/season_1983.json is untracked and not ignored and contains private-season results | created 2026-10-19, resolved 2026-10-27, closed 2026-10-27 | — |
 | [VAL-009](issues/VAL/VAL-009.md) | High | Review season lookup path confinement at API boundaries | created 2026-10-30, resolved 2026-11-08, closed 2026-11-08 | — |
 | [VAL-014](issues/VAL/VAL-014.md) | High | Two complete browser games share a single three-minute test budget in hosted CI | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
-| [VAL-022](issues/VAL/VAL-022.md) | High | Frozen web launcher leaves API model annotations unresolved | created 2026-11-08, resolved 2026-11-08, closed 2026-11-08 | — |
+| [VAL-022](issues/VAL/VAL-022.md) | High | Frozen web launcher leaves API model annotations unresolved | created 2026-11-08, resolved 2026-11-08, closed 2026-11-08 | VAL-023 |
 | [AI-001](issues/AI/AI-001.md) | Medium | CPU accepts a five-yard automatic-first-down penalty instead of an eleven-yard gain that also earns a first down | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-003, AI-018 |
 | [AI-009](issues/AI/AI-009.md) | Medium | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | AI-025 |
 | [AI-010](issues/AI/AI-010.md) | Medium | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |

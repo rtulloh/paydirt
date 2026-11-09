@@ -70,9 +70,48 @@ def test_shutdown_rejects_http_error_from_surviving_server(monkeypatch):
     smoke = smoke_module()
     process = Mock()
     process.poll.return_value = 0
+    process.returncode = 0
     def responding(*args):
         raise HTTPError("http://synthetic", 500, "still alive", {}, None)
     monkeypatch.setattr(smoke, "request_json", responding)
     monkeypatch.setattr(smoke.time, "sleep", lambda seconds: None)
     with pytest.raises(RuntimeError, match="remained"):
         smoke.stop(process, "http://synthetic")
+
+
+@pytest.mark.parametrize("succeeds", [True, False])
+def test_windows_launch_explicitly_enables_inherited_ctrl_c(succeeds):
+    from unittest.mock import Mock
+    smoke = smoke_module()
+    kernel = Mock()
+    kernel.SetConsoleCtrlHandler.return_value = succeeds
+    if succeeds:
+        smoke.enable_windows_ctrl_c(kernel)
+    else:
+        with pytest.raises(OSError, match="Ctrl-C"):
+            smoke.enable_windows_ctrl_c(kernel)
+    kernel.SetConsoleCtrlHandler.assert_called_once_with(None, False)
+
+
+def test_shutdown_rejects_abnormal_process_exit(monkeypatch):
+    from unittest.mock import Mock
+    smoke = smoke_module()
+    process = Mock()
+    process.poll.return_value = 1
+    process.returncode = 1
+    def disconnected(*args):
+        raise ConnectionRefusedError("closed")
+    monkeypatch.setattr(smoke, "request_json", disconnected)
+    with pytest.raises(RuntimeError, match="exit status"):
+        smoke.stop(process, "http://synthetic")
+
+
+@pytest.mark.parametrize("ignored_exited", [False, True])
+def test_console_differential_requires_ignored_negative_control(ignored_exited):
+    smoke = smoke_module()
+    results = {"enabled": {"normal_exit": True}, "ignored": {"normal_exit": ignored_exited, "required_cleanup": not ignored_exited}}
+    if ignored_exited:
+        with pytest.raises(RuntimeError, match="inconclusive"):
+            smoke.validate_console_controls(results)
+    else:
+        smoke.validate_console_controls(results)
