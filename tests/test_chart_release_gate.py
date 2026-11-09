@@ -184,7 +184,9 @@ def test_workflows_enforce_both_public_generated_cohorts(workflow: str) -> None:
     root = Path(__file__).resolve().parents[1]
     text = (root / ".github" / "workflows" / workflow).read_text()
     assert "scripts/audit_public_charts.py" in text
-    assert "1983-generated" in text and "2024" in text
+    matrix = yaml.safe_load(text)["jobs"]["chart-quality"]["strategy"]["matrix"]["include"]
+    assert {"directory": "1983", "season": 1983, "teams": 28} in matrix
+    assert {"directory": "2024", "season": 2024, "teams": 32} in matrix
     assert "--expected-teams" in text
     assert "continue-on-error" not in text[text.index("  chart-quality:"):].split("\n  build:")[0]
 
