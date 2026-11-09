@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-203 issues: 74 open, 57 resolved, 72 closed.
+203 issues: 73 open, 57 resolved, 73 closed.
 
-## Open (74)
+## Open (73)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -66,7 +66,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-019](issues/VAL/VAL-019.md) | Medium | Historical season runner implemented; official qualification verification remains | created 2026-11-06 | DATA-018, AI-025, AI-026 |
 | [VAL-020](issues/VAL/VAL-020.md) | Medium | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
-| [VAL-023](issues/VAL/VAL-023.md) | Medium | Windows published-asset smoke cannot confirm normal console shutdown | created 2026-11-08 | VAL-022 |
 | [AI-021](issues/AI/AI-021.md) | Low | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AI-026](issues/AI/AI-026.md) | Low | Hard ordinary selection ignores own defensive and opponent chart strengths | created 2026-11-06 | AI-019, AI-025, VAL-019 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -156,7 +155,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (72)
+## Closed (73)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -223,6 +222,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [VAL-015](issues/VAL/VAL-015.md) | Medium | Browser driver waits for execution when an early defense click needs a later CPU confirmation | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | FLOW-012 |
 | [VAL-016](issues/VAL/VAL-016.md) | Medium | Development API proxy cannot reach an IPv4-only backend when localhost resolves to IPv6 | created 2026-11-05, resolved 2026-11-07, closed 2026-11-08 | — |
 | [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
+| [VAL-023](issues/VAL/VAL-023.md) | Medium | Windows published-asset smoke cannot confirm normal console shutdown | created 2026-11-08, resolved 2026-11-09, closed 2026-11-09 | VAL-022 |
 | [VAL-024](issues/VAL/VAL-024.md) | Medium | Required local source chart gates reject current public release manifests | created 2026-11-08, resolved 2026-11-09, closed 2026-11-09 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |
