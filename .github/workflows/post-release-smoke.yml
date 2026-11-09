@@ -1,0 +1,95 @@
+name: Published application native runtime smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing published immutable release to verify (never rebuilt)
+        required: true
+        type: string
+        default: v1.10.3
+
+permissions:
+  contents: read
+
+jobs:
+  harness-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest
+      - name: Verify synthetic artifact identity and API failure controls
+        run: python -m pytest tests/test_published_app_smoke.py -q -o addopts= --tb=short
+
+  native:
+    needs: harness-check
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows-installer
+            kind: windows-installer
+          - os: windows-latest
+            target: windows-portable
+            kind: windows-portable
+          - os: ubuntu-24.04
+            target: linux-x86_64
+            kind: linux
+          - os: macos-26-intel
+            target: macos-x86_64
+            kind: macos
+          - os: macos-latest
+            target: macos-arm64
+            kind: macos
+    runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      TARGET: ${{ matrix.target }}
+      KIND: ${{ matrix.kind }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install isolated browser verification tools
+        run: python -m pip install playwright
+      - name: Install browser
+        run: python -m playwright install --with-deps chromium
+      - name: Download existing published asset and release digest metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/published-download" "$RUNNER_TEMP/native-smoke"
+          VERSION="${RELEASE_TAG#v}"
+          case "$TARGET" in
+            windows-installer) ASSET_NAME=PaydirtSetup.exe ;;
+            windows-portable) ASSET_NAME=paydirt.exe ;;
+            linux-x86_64) ASSET_NAME=Paydirt-x86_64.AppImage ;;
+            macos-x86_64) ASSET_NAME="Paydirt-$VERSION-x86_64.dmg" ;;
+            macos-arm64) ASSET_NAME="Paydirt-$VERSION-arm64.dmg" ;;
+            *) exit 1 ;;
+          esac
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/published-download/release.json"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$ASSET_NAME" --dir "$RUNNER_TEMP/published-download"
+          printf 'ASSET_NAME=%s\n' "$ASSET_NAME" >> "$GITHUB_ENV"
+      - name: Launch installed or extracted published application and exercise its actual API
+        shell: bash
+        run: |
+          python scripts/smoke_published_app.py             --release-json "$RUNNER_TEMP/published-download/release.json"             --asset "$RUNNER_TEMP/published-download/$ASSET_NAME"             --kind "$KIND" --tag "$RELEASE_TAG" --output "$RUNNER_TEMP/native-smoke"
+      - name: Preserve failure and success receipts plus native application logs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: published-smoke-${{ matrix.target }}
+          path: |
+            ${{ runner.temp }}/native-smoke/receipt.json
+            ${{ runner.temp }}/native-smoke/application.log
+            ${{ runner.temp }}/native-smoke/browser.png
+            ${{ runner.temp }}/published-download/release.json
+          if-no-files-found: warn

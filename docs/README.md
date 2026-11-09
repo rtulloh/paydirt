@@ -23,6 +23,7 @@ Published builds include generated 1983 and 2024 charts plus the fictional 2026 
 
 - [Development guide](development.md): architecture, testing, packaging, and release entry points.
 - [Web setup](../paydirt-web/README.md): frontend and backend development.
+- [Published application checks](release-testing.md): native runtime acceptance of actual release-page downloads.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two full real-engine games.
 - [AI audit harness](ai-auditing.md): reproducible game/season play-selection and play-balance testing.
 - [Historical season runner](historical-seasons.md): selected-year actual calendars/results, generated charts and distinct postseason modes.
