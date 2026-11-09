@@ -115,3 +115,19 @@ def test_console_differential_requires_ignored_negative_control(ignored_exited):
             smoke.validate_console_controls(results)
     else:
         smoke.validate_console_controls(results)
+
+
+@pytest.mark.parametrize("remaining", [False, True])
+def test_shutdown_rejects_surviving_owned_application_process(remaining):
+    from unittest.mock import Mock
+    smoke = smoke_module()
+    inspector = Mock()
+    inspector.NoSuchProcess = ProcessLookupError
+    child = Mock()
+    child.create_time.return_value = 123.0 if remaining else 456.0
+    inspector.Process.return_value = child
+    if remaining:
+        with pytest.raises(RuntimeError, match="surviving owned"):
+            smoke.verify_owned_processes_gone({42: 123.0}, inspector)
+    else:
+        assert smoke.verify_owned_processes_gone({42: 123.0}, inspector) == []

@@ -253,6 +253,38 @@ def stop(process: subprocess.Popen, base: str) -> str:
     raise RuntimeError("Owned packaged server remained after shutdown")
 
 
+def capture_owned_processes(pid: int, executable: Path) -> dict[int, float]:
+    """Bind packaged application processes to PID plus creation time."""
+    import psutil
+
+    root = psutil.Process(pid)
+    owned = {pid: root.create_time()}
+    for child in root.children(recursive=True):
+        try:
+            # A launched default browser is independent of the packaged server.
+            if Path(child.exe()).resolve() == executable.resolve():
+                owned[child.pid] = child.create_time()
+        except psutil.NoSuchProcess:
+            continue
+    return owned
+
+
+def verify_owned_processes_gone(owned: dict[int, float], inspector: Any = None) -> list:
+    """Reject surviving packaged processes without mistaking reused PIDs."""
+    if inspector is None:
+        import psutil as inspector
+    survivors = []
+    for pid, created in owned.items():
+        try:
+            if inspector.Process(pid).create_time() == created:
+                survivors.append(pid)
+        except inspector.NoSuchProcess:
+            continue
+    if survivors:
+        raise RuntimeError(f"Shutdown left surviving owned application processes: {survivors}")
+    return survivors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-json", type=Path, required=True)
@@ -310,7 +342,10 @@ def main() -> int:
             receipt["browser"] = check_ui(base, output)
             # The normal entry point also completes its browser-opening startup delay.
             time.sleep(4)
+            owned = capture_owned_processes(process.pid, executable)
+            receipt["owned_application_pids"] = list(owned)
             receipt["shutdown"] = stop(process, base)
+            receipt["surviving_owned_application_pids"] = verify_owned_processes_gone(owned)
             process = None
         text = (output / "application.log").read_text(errors="replace")
         if "Shutting down..." not in text:
