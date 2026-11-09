@@ -13,8 +13,10 @@
 ## Teams and Data
 
 - [Seasons and rules](seasons.md): data locations, CSV layout, team metadata, rosters, and season YAML.
+- [Historical source coverage](dev-notes/source-season-coverage.md): PFR/nflverse season ranges, known gaps, and what we have actually acquired.
 - [Chart generation and Excel import](chart-generator.md): estimate charts from season data or convert existing Excel charts.
 - [Two-phase chart generation workflow](chart-generation-workflow.md): generate, train, validate, promote, and prepare a season for playtesting.
+- [Calibration process and reference profiles](chart-calibration.md): controls, paired experiments, sample sizes, and verified released starting values.
 
 Published builds include generated 1983 and 2024 charts plus the fictional 2026 sample. See the
 [chart attribution](../CHART_ATTRIBUTION.md); keep original charts, source workbooks, raw data, and historical logs local.
@@ -27,6 +29,7 @@ Published builds include generated 1983 and 2024 charts plus the fictional 2026 
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two full real-engine games.
 - [AI audit harness](ai-auditing.md): reproducible game/season play-selection and play-balance testing.
 - [Historical season runner](historical-seasons.md): selected-year actual calendars/results, generated charts and distinct postseason modes.
+- [Unchanged released-chart regression](released-chart-regression.md): immutable published inputs, retained limitations and distinct new-chart qualification.
 - [Generated chart release gate](chart-validation.md): source consistency, weighted tactics, event allocation and current-engine accuracy checks.
 - [AGENTS.md](../AGENTS.md): authoritative agent workflow and mandatory pre-push checks.
 

@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-201 issues: 73 open, 57 resolved, 71 closed.
+203 issues: 74 open, 57 resolved, 72 closed.
 
-## Open (73)
+## Open (74)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -41,12 +41,12 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-040](issues/DATA/DATA-040.md) | Medium | Generated defenses repeat interception stripes and fixed depth patterns across formations and teams | created 2026-11-06 | DATA-022, DATA-039 |
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
+| [DATA-046](issues/DATA/DATA-046.md) | Medium | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
-| [FLOW-022](issues/FLOW/FLOW-022.md) | Medium | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -82,6 +82,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-045](issues/DATA/DATA-045.md) | Low | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
+| [FLOW-022](issues/FLOW/FLOW-022.md) | Low | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 | [STAT-006](issues/STAT/STAT-006.md) | Low | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |
@@ -155,7 +156,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-011](issues/AUD/AUD-011.md) | Low | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
 
 
-## Closed (71)
+## Closed (72)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -222,6 +223,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [VAL-015](issues/VAL/VAL-015.md) | Medium | Browser driver waits for execution when an early defense click needs a later CPU confirmation | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | FLOW-012 |
 | [VAL-016](issues/VAL/VAL-016.md) | Medium | Development API proxy cannot reach an IPv4-only backend when localhost resolves to IPv6 | created 2026-11-05, resolved 2026-11-07, closed 2026-11-08 | — |
 | [VAL-021](issues/VAL/VAL-021.md) | Medium | Release workflow token cannot publish despite successful platform builds | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
+| [VAL-024](issues/VAL/VAL-024.md) | Medium | Required local source chart gates reject current public release manifests | created 2026-11-08, resolved 2026-11-09, closed 2026-11-09 | — |
 | [AI-007](issues/AI/AI-007.md) | Low | Base incomplete-pass durations appear long in some logs | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | TRACE-009 |
 | [AUD-002](issues/AUD/AUD-002.md) | Low | Non-touchdown breakaway commentary claims nobody will catch the runner | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |
 | [AUD-003](issues/AUD/AUD-003.md) | Low | QB-kneel commentary credits a running back and describes an ordinary tackled loss | created 2026-10-18, resolved 2026-10-19, closed 2026-11-02 | — |

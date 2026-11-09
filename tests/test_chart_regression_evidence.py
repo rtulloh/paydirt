@@ -75,7 +75,7 @@ def test_regression_command_inventory_matches_agents_without_omitting_required_r
     section = (root / "AGENTS.md").read_text().split("### Required Full Regression Before Any Push", 1)[1]
     checklist = section.split("```bash\n", 1)[1].split("```", 1)[0].strip().splitlines()
     actual = []
-    for cwd, argv in gate.required_regression_commands().values():
+    for cwd, argv in gate.required_regression_commands(released_charts=True).values():
         command = " ".join(["python3" if part == sys.executable else part for part in argv])
         actual.append(command if cwd == "." else f"(cd {cwd} && {command})")
     assert actual == checklist

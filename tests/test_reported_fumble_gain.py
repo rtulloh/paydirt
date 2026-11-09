@@ -136,11 +136,30 @@ def test_pfr_ambiguous_primary_or_recovery_support_remains_rejected(detail: str)
 
 
 def test_reported_actor_team_is_checked_without_qb_position_inference() -> None:
-    game = game_with("Lee Runner left end for 7 yards. Lee Runner fumbles, recovered by Sam Defender")
-    changed = replace(game, player_teams={**game.player_teams, "lee": "OWL"})
+    game = game_with(
+        "Pat Passer pass complete to Lee Runner for 7 yards. "
+        "Lee Runner fumbles, recovered by Sam Defender"
+    )
+    changed = replace(
+        game, player_teams={**game.player_teams, "lee": "OWL"}, player_positions={},
+    )
     result = classify_pfr_game(changed, fumble_gain_policy=REPORTED)
     assert not result.fumble_gain_projections
     assert result.unsupported_fields
+
+
+def test_reported_receiver_team_control_needs_no_player_positions() -> None:
+    game = game_with(
+        "Pat Passer pass complete to Lee Runner for 7 yards. "
+        "Lee Runner fumbles, recovered by Sam Defender"
+    )
+    result = classify_pfr_game(replace(game, player_positions={}), fumble_gain_policy=REPORTED)
+    projection, = result.fumble_gain_projections
+    assert projection.originating_kind == "receiving"
+    assert projection.modeled_initial_yards == 7
+    assert projection.source_facts.reported_actor == "lee"
+    assert projection.source_facts.reported_team == "FOX"
+    assert not result.unsupported_fields
 
 
 def test_known_correction_wins_and_reported_disagreement_stays_visible(tmp_path: Path) -> None:

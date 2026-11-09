@@ -51,3 +51,13 @@ References:
 --- 2026-11-08 16:10 ---
 Deferred at the owner's request. Prioritize a newer season with available
 play-by-play to reduce generation cost. No chart changes or simulations run.
+
+--- 2026-11-08 18:28 ---
+At the owner's request, rechecked whether 1972 could reuse the PFR route. PFR's
+current coverage documentation starts full PBP in 1977; an accessible October
+2026 archive of a sampled 1972 box score has no PBP table. The exact 1983 archive
+method still works and parses 163 plays in its control, whereas the sampled 1977
+capture predates PBP publication and has no table either. 1977 therefore has an
+access/vintage problem; 1972 additionally lacks the advertised full-PBP coverage.
+See [bounded PFR feasibility follow-up](../../1977-season-feasibility.md#follow-up-exact-1983-acquisition-path-and-1972-comparison).
+No aggregate-modeled charts or new reconstruction campaign authorized or started.

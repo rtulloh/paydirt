@@ -41,6 +41,11 @@ from paydirt.pfr_play_by_play import (
     parse_pfr_boxscore,
 )
 from paydirt.pfr_reconciliation_replay import ReconciliationReplay, reconciliation_input_hashes
+from paydirt.pfr_source_scope import (
+    ReviewedSourceScope,
+    load_source_scope,
+    validate_source_scope_disclosure,
+)
 
 
 def _source_date(path: Path) -> int | None:
@@ -66,6 +71,7 @@ def _classify_directory(
     event_reconciliations: EventReconciliations | None = None,
     fumble_gain_policy: str | None = None,
     fumble_exclusion_policy: str | None = None,
+    source_scope: ReviewedSourceScope | None = None,
 ) -> tuple[
     list[EmpiricalPlay],
     list[FieldGoalAttempt],
@@ -89,10 +95,13 @@ def _classify_directory(
         if through_date is not None and source_date is not None and source_date > through_date:
             continue
         raw_hash = hashlib.sha256(path.read_bytes()).hexdigest()
-        game = parse_pfr_boxscore(path.read_text(encoding="utf-8"), path.stem)
+        raw_html = path.read_text(encoding="utf-8")
+        game = parse_pfr_boxscore(raw_html, path.stem)
         facts = event_reconciliations.for_game(game, raw_hash) if event_reconciliations else {}
         classified = classify_pfr_game(game, seed=seed, event_facts=facts,
                                        fumble_gain_policy=fumble_gain_policy)
+        fitting_classified = (source_scope.review_game(game, classified, raw_sha256=raw_hash, raw_html=raw_html)
+                              if source_scope else classified)
         fitted_fumbles = classified.fumbles
         game_exclusions = []
         full_fumbles.extend(classified.fumbles)
@@ -105,7 +114,7 @@ def _classify_directory(
 
             if fumble_exclusion_policy != FITTING_POLICY or fumble_gain_policy != POLICY_V2:
                 raise ValueError("Fitting exclusions require explicit version two historical policy")
-            fitted_fumbles, game_exclusions = fitting_population(game, classified, raw_sha256=raw_hash)
+            fitted_fumbles, game_exclusions = fitting_population(game, fitting_classified, raw_sha256=raw_hash)
             exclusions.extend(game_exclusions)
         elif classified.unsupported_fields:
             diagnostics["active_unsupported_required_fields"] += len(classified.unsupported_fields)
@@ -140,6 +149,8 @@ def _classify_directory(
         raise ValueError(f"No PFR boxscore HTML files found in {html_dir}")
     if event_reconciliations:
         event_reconciliations.assert_all_applied()
+    if source_scope:
+        source_scope.assert_all_applied()
     if ledger_path is not None:
         from paydirt.historical_fumble_proxy import fitting_metadata, policy_metadata
 
@@ -148,6 +159,7 @@ def _classify_directory(
             "classification_seed": seed, "games": ledger,
             "fumble_gain_policy": fumble_gain_policy,
             "fumble_fitting_policy": fitting_metadata(fumble_exclusion_policy, full_fumbles, fumbles, exclusions),
+            **({"reviewed_source_scope": source_scope.disclosure()} if source_scope else {}),
             **policy_metadata(fumble_gain_policy, diagnostics),
             "interpretation": "Raw source hashes and event-to-chart representations; "
                               "multiple representations may condition one primary event. "
@@ -302,6 +314,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--fumble-exclusion-policy", choices=["historical_isolated_fumble_exclusions_v1"],
                         help="Retain unresolved historical events but exclude them uniformly from fitting")
+    parser.add_argument("--source-scope", type=Path,
+                        help="Hash-bound reviewed modeled scope; strict diagnostics remain in the ledger")
     args = parser.parse_args(argv)
     profile = apply_profile_overrides(
         load_calibration_profile(args.calibration_profile),
@@ -323,13 +337,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     source_events: dict[str, Counter[str]] = {}
     reconciliations = (load_event_reconciliations(args.event_reconciliations)
                        if args.event_reconciliations else None)
+    source_scope = load_source_scope(args.source_scope) if args.source_scope else None
+    if source_scope and (args.fumble_gain_policy != "historical_fumble_class_proxy_v2"
+                         or args.fumble_exclusion_policy != "historical_isolated_fumble_exclusions_v1"):
+        raise ValueError("Reviewed source scope requires explicit historical version-two fitting policy")
     plays, field_goals, fumbles, diagnostics, games, source_rows = _classify_directory(
         html_dir, args.through_date, args.seed, audit_dir / "source-ledger.json", source_events,
         reconciliations, fumble_gain_policy=args.fumble_gain_policy,
         fumble_exclusion_policy=args.fumble_exclusion_policy,
+        source_scope=source_scope,
     )
 
-    if diagnostics.get("unreconciled_fumble_box", 0):
+    scope_disclosure = source_scope.disclosure() if source_scope else None
+    scope_allowances = validate_source_scope_disclosure(scope_disclosure) if source_scope else {}
+    if diagnostics.get("unreconciled_fumble_box", 0) != scope_allowances.get("unreconciled_fumble_box", 0):
         raise ValueError("Unsupported source fields: inconsistent fumble box; see source-ledger.json")
     if any(event.lost is None for event in fumbles):
         raise ValueError("Unsupported source fields: unknown fumble recovery; see source-ledger.json")
@@ -372,6 +393,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         season = stats.season if season is None else season
         if stats.season != season:
             raise ValueError("All input statistics must belong to the same season")
+        if source_scope and stats.season != source_scope.season:
+            raise ValueError("Reviewed source scope season differs from normalized statistics")
         calibrated = calibrate_stats_from_pbp(
             stats,
             team=abbreviation,
@@ -411,6 +434,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             missing_source_features=coverage["modeled_missing_features"],
             calibrate_empirical_pass_events=True,
             empirical_pass_calibration=pass_calibration,
+            fallback_run_yard_multiplier=profile.run_yard_multiplier,
             neutral_pressure=neutral_pressure,
             **({"gain_multipliers": tuple(
                 normalization["derivation"]["metrics"][metric]["teams"][team_name]["multiplier"]
@@ -441,6 +465,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "neutral_pressure_model": neutral_pressure.evidence,
         "fumble_fitting_policy": fitting_disclosure,
         "fumble_gain_policy": args.fumble_gain_policy,
+        **({"reviewed_source_scope": scope_disclosure} if source_scope else {}),
         "input_hashes": generation_input_hashes({
             "normalized_stats": sorted(stats_dir.glob("*.json")),
             "play_by_play": [path for path in html_dir.glob("*.htm*")
@@ -449,6 +474,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "team_map": [Path(args.team_map)],
             "profile": [args.calibration_profile] if args.calibration_profile else [],
             "normalization_contract": [args.gain_normalization_contract] if args.gain_normalization_contract else [],
+            "source_scope": [args.source_scope] if args.source_scope else [],
         }) | (reconciliation_input_hashes(reconciliations) if reconciliations else {}),
         "season": season,
         "seed": args.seed,

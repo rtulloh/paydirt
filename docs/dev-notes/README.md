@@ -64,3 +64,5 @@ or historical game logs.
 - [Open High-priority issue audit — 2026-11-08](high-priority-issue-audit-2026-11-08.md): current implementation evidence, resolved fixes and remaining priorities.
 
 - [Release 1.10.4 plan](release-1.10.4-plan.md): assigned platform reliability work and season scope boundaries.
+
+- [Historical season source coverage](source-season-coverage.md): provider ranges versus acquired/validated season inputs.

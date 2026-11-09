@@ -176,6 +176,7 @@ class _PfrBoxscoreParser(HTMLParser):
         self.player_teams: dict[str, str] = {}
         self.player_positions: dict[str, str] = {}
         self.player_names: dict[str, str] = {}
+        self.ambiguous_player_names: set[str] = set()
         self.starter_sides: dict[str, set[str]] = {}
         self.plays: list[PfrPlay] = []
         self.field_goal_box: dict[str, tuple[str, int, int]] = {}
@@ -272,7 +273,13 @@ class _PfrBoxscoreParser(HTMLParser):
                 self.player_positions[player_id] = position
             player_name = str(row.get("_player_name", "")).strip()
             if player_name:
-                self.player_names[player_name.casefold()] = player_id
+                name = player_name.casefold()
+                previous = self.player_names.get(name)
+                if previous is not None and previous != player_id:
+                    self.ambiguous_player_names.add(name)
+                    self.player_names.pop(name)
+                elif name not in self.ambiguous_player_names:
+                    self.player_names[name] = player_id
             return
         if self.current_table != "pbp":
             return
@@ -463,7 +470,16 @@ def _opponent(game: PfrGame, team: str) -> str:
 
 
 def _first_actor_team(game: PfrGame, play: PfrPlay, current_team: str | None) -> str | None:
-    """Infer the acting team from linked players, falling back to possession state."""
+    """Infer the primary actor's team, falling back to links and possession state."""
+    # PFR sometimes leaves the ball carrier unlinked while linking a tackler.
+    # Resolve an explicit leading name before considering those later actors.
+    detail = play.detail.casefold()
+    names = [name for name in game.player_names if detail.startswith(name + " ")]
+    if names:
+        player_id = game.player_names[max(names, key=len)]
+        team = game.player_teams.get(player_id)
+        if team:
+            return team
     for player_id in play.player_ids:
         team = game.player_teams.get(player_id)
         if team:
@@ -1303,6 +1319,11 @@ def classify_pfr_game(
                                                "team": offense, "unit": "passing", "field": "initial_gain"})
                 continue
             outcomes.append(_empirical_play(offense, "offense", chart, result, play, opponent))
+            continue
+
+        # A quarterback can also kick; his position does not make a PAT a rush.
+        if "kicks extra point" in lower:
+            diagnostics["ignored_markers"] += 1
             continue
 
         run_chart = _run_chart(game, play, diagnostics)

@@ -22,7 +22,7 @@ from .game_engine import PaydirtGameEngine
 from .season_rules import load_season_rules
 from .standings import Season
 
-FORMATS = {"ten_team": (3, 2, 9), "fourteen_team": (4, 3, 13)}
+FORMATS = {"eight_team": (3, 1, 7), "ten_team": (3, 2, 9), "fourteen_team": (4, 3, 13)}
 TIEBREAK = "win_pct_point_diff_points_for_name"
 
 
@@ -98,8 +98,9 @@ def validate_historical_schedule(data: dict, year: int) -> dict:
         phases[phase] += 1
     if counts != Counter({team: data["games_per_team"] for team in teams}):
         raise ValueError("Incomplete historical regular-season team/game inventory")
-    expected = {"REG": len(teams) * data["games_per_team"] // 2,
-                "WC": 2 if format_name == "ten_team" else 6, "DIV": 4, "CON": 2, "SB": 1}
+    expected = {"REG": len(teams) * data["games_per_team"] // 2, "DIV": 4, "CON": 2, "SB": 1}
+    if format_name != "eight_team":
+        expected["WC"] = 2 if format_name == "ten_team" else 6
     if dict(phases) != expected:
         raise ValueError("Incomplete historical game/round inventory")
     # Historical winners, rather than simulated replay winners, bind this source bracket.
@@ -320,12 +321,15 @@ def audit_historical_season(
                     for fraction, names in tied.items() if len(names) > 1)
             report["postseason"]["seeds"] = seeds
             modern = spec["postseason_format"] == "fourteen_team"
+            eight_team = spec["postseason_format"] == "eight_team"
+            phase_offsets = ({"DIV": 1, "CON": 2, "SB": 3} if eight_team else
+                             {"WC": 1, "DIV": 2, "CON": 3, "SB": 4})
             champions = []
             for conference, order in seeds.items():
                 def playoff(away: str, home: str, phase: str, conference: str = conference) -> str | None:
                     index = sum(r["phase"] == phase for r in report["game_receipts"])
                     return play(away, home, phase, f"simulated-{conference}-{phase}-{index}",
-                                spec["regular_weeks"] + {"WC": 1, "DIV": 2, "CON": 3, "SB": 4}[phase])
+                                spec["regular_weeks"] + phase_offsets[phase])
 
                 if modern:
                     wild = [playoff(order[a], order[h], "WC") for a, h in ((6, 1), (5, 2), (4, 3))]
@@ -335,7 +339,7 @@ def audit_historical_season(
                     alive = sorted([order[0], *wild], key=order.index)
                     pairs = ((alive[3], alive[0]), (alive[2], alive[1]))
                 else:
-                    wild = playoff(order[4], order[3], "WC")
+                    wild = order[3] if eight_team else playoff(order[4], order[3], "WC")
                     if wild is None:
                         champions.append(None)
                         continue
@@ -351,7 +355,7 @@ def audit_historical_season(
             if all(champions):
                 report["postseason"]["champion"] = play(
                     champions[0], champions[1], "SB", "simulated-SB",
-                    spec["regular_weeks"] + 4)
+                    spec["regular_weeks"] + phase_offsets["SB"])
     observed = sum(r["phase"] != "REG" for r in report["game_receipts"])
     report["postseason"]["not_played"] = expected - observed
     if observed != expected:

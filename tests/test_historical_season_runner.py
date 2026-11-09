@@ -372,3 +372,72 @@ def test_chart_identity_binds_optional_roster(
     after = runner.historical.validate_chart_inputs(spec, tmp_path)
     assert before != after
     assert "A00/roster.json" in before
+
+
+def eight_team_spec() -> dict:
+    """Use fictional source fixtures for the three-winner/one-wildcard era."""
+    data = synthetic_spec()
+    data["postseason_format"] = "eight_team"
+    data["games"] = [row for row in data["games"] if row["phase"] != "WC"]
+    for row in data["games"]:
+        if row["phase"] != "REG":
+            row["week"] -= 1
+            row["date"] = f"2026-09-{row['week']:02d}"
+    return data
+
+
+def test_eight_team_calendar_has_seven_postseason_games_without_wildcard_round(source_file) -> None:
+    spec = runner.load_historical_schedule(source_file(eight_team_spec()), 2026)
+    assert Counter(row["phase"] for row in spec["games"]) == {
+        "REG": 14, "DIV": 4, "CON": 2, "SB": 1}
+    invalid = eight_team_spec()
+    invalid["games"].append(next(row for row in synthetic_spec()["games"] if row["phase"] == "WC"))
+    with pytest.raises(ValueError):
+        runner.load_historical_schedule(source_file(invalid), 2026)
+
+
+@pytest.mark.parametrize("failure", [None, "tie", "exception"])
+@pytest.mark.parametrize("wildcard_same_division", [False, True])
+def test_eight_team_simulated_bracket_uses_one_wildcard_and_never_advances_failed_games(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, failure: str | None, wildcard_same_division: bool,
+) -> None:
+    failed = []
+    def simulate(directory, away, home, seed, *, is_playoff, policy):
+        receipt = game_receipt(away, home, seed, is_playoff, upset=True)
+        if not is_playoff:
+            winning_scores = {"00": 30, "06": 27, "10": 24,
+                              "02" if wildcard_same_division else "08": 21}
+            receipt["away_score"] = winning_scores.get(away[1:], 3)
+        if is_playoff and failure and not failed:
+            failed.extend([away, home])
+            if failure == "exception":
+                raise RuntimeError("injected")
+            receipt["away_score"] = receipt["home_score"]
+        return receipt
+    monkeypatch.setattr(runner.historical, "simulate_historical_game", simulate)
+    report = runner.audit_historical_season(eight_team_spec(), tmp_path)
+    assert report["passed"] is (failure is None), report["errors"]
+    assert report["postseason"]["expected_games"] == 7
+    assert all(len(order) == 4 for order in report["postseason"]["seeds"].values())
+    assert all(row["phase"] != "WC" for row in report["game_receipts"])
+    if failure:
+        assert report["postseason"]["not_played"] > 0
+        assert report["postseason"]["champion"] is None
+        assert all(not set(failed).intersection((r["away"], r["home"]))
+                   for r in report["game_receipts"] if r["phase"] in {"CON", "SB"})
+    else:
+        assert Counter(r["phase"] for r in report["game_receipts"]) == {
+            "REG": 14, "DIV": 4, "CON": 2, "SB": 1}
+        assert {r["phase"]: r["week"] for r in report["game_receipts"]} == {
+            "REG": 1, "DIV": 2, "CON": 3, "SB": 4}
+        for conference, order in report["postseason"]["seeds"].items():
+            divisions = eight_team_spec()["divisions"][conference]
+            division = {t: d for d, members in divisions.items() for t in members}
+            games = [r for r in report["game_receipts"] if r["phase"] == "DIV"
+                     and r["home"] in order]
+            assert {r["home"] for r in games} == set(order[:2])
+            assert {r["away"] for r in games} == set(order[2:])
+            assert all(division[r["away"]] != division[r["home"]] for r in games)
+            assert (division[order[3]] == division[order[0]]) is wildcard_same_division
+            wildcard_game = next(r for r in games if r["away"] == order[3])
+            assert wildcard_game["home"] == order[1 if wildcard_same_division else 0]

@@ -156,7 +156,7 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
             groups.setdefault(relative.parts[0], []).append("inputs/" + name)
         common_groups = {"normalized_stats", "play_by_play", "team_map"}
         allowed_groups = common_groups | {"profile", "normalization_contract"} | (
-            {"event_reconciliations"} if pfr else MODERN_GROUPS)
+            {"event_reconciliations", "source_scope"} if pfr else MODERN_GROUPS)
         if not common_groups <= set(groups) or set(groups) - allowed_groups or len(groups["team_map"]) != 1:
             raise ValueError("Incomplete or unsupported source input groups")
         if (not isinstance(contract.get("teams"), dict)
@@ -228,6 +228,22 @@ def prepare_chart_sources(bundle_dir: Path, candidate_dir: Path, reproduced_dir:
                 if (policy != POLICY_V2 or source_record_hash(disclosure) != source_record_hash(bound_disclosure)):
                     raise ValueError("Historical fitting policy must be bound identically to version two")
                 expected["--fumble-exclusion-policy"] = validate_fitting_metadata(disclosure)
+            scope = manifest.get("reviewed_source_scope")
+            bound_scope = contract.get("reviewed_source_scope")
+            if scope is not None or bound_scope is not None or "source_scope" in groups:
+                from .fumble_source import source_record_hash
+                from .historical_fumble_proxy import POLICY_V2
+                from .pfr_source_scope import validate_source_scope_disclosure
+
+                validate_source_scope_disclosure(scope)
+                if (policy != POLICY_V2 or disclosure is None or scope["season"] != season
+                        or len(groups.get("source_scope", [])) != 1
+                        or source_record_hash(scope) != source_record_hash(bound_scope)):
+                    raise ValueError("Reviewed source scope requires exact input/contract and fitting-policy binding")
+                scope_path = groups["source_scope"][0]
+                if source_record_hash(_strict_json_object((bundle / scope_path).read_bytes())) != source_record_hash(scope):
+                    raise ValueError("Reviewed source scope bytes differ from manifest disclosure")
+                expected["--source-scope"] = scope_path
         if policy is not None:
             expected["--fumble-gain-policy"] = policy
         if not pfr:

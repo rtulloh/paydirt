@@ -138,6 +138,22 @@ def _audit_contract(
             errors.append("contract: generation profile differs from selected profile")
         if set(contract["teams"]) != set(manifest["teams"]):
             errors.append("contract: team inventory differs from manifest")
+        from .pfr_source_scope import reviewed_sack_deltas
+
+        scope = manifest.get("reviewed_source_scope")
+        sack_deltas = reviewed_sack_deltas(scope) if scope is not None else {}
+        source_names = {team.get("pfr_team", name): name for name, team in manifest["teams"].items()}
+        reviewed_boxes: Counter[str] = Counter()
+        reviewed_pbp: Counter[str] = Counter()
+        for record in (scope or {}).get("reviewed_sack_counts", []):
+            if record["team"] not in source_names:
+                raise ValueError("Reviewed sack scope team absent from manifest")
+            reviewed_boxes[record["team"]] += record["box_sacks"]
+            reviewed_pbp[record["team"]] += record["pbp_sacks"]
+        for source_name, name in source_names.items():
+            if (reviewed_boxes[source_name] > contract["teams"][name]["counts"]["sacks"]
+                    or reviewed_pbp[source_name] > manifest["teams"][name]["source_event_counts"]["sacks"]):
+                raise ValueError("Reviewed sack subset exceeds full source sack inventory")
         appearances: Counter[str] = Counter()
         schedule = contract["schedule"]
         if len(schedule) != contract["games"]:
@@ -166,7 +182,13 @@ def _audit_contract(
                     errors.append(f"contract {name}: {metric} does not reconcile source counts")
             for metric in ("interceptions", "sacks", "field_goal_attempts"):
                 observed = manifest["teams"][name].get("source_event_counts", {}).get(metric)
-                if not _is_count(observed) or observed != counts[metric]:
+                source_name = manifest["teams"][name].get("pfr_team", name)
+                discrepancy = sack_deltas.get(source_name, 0) if metric == "sacks" else 0
+                if (_is_count(observed) and discrepancy and observed - counts[metric] == discrepancy):
+                    findings.append({"code": "reviewed-sack-count-discrepancy", "team": name,
+                                     "classified_pbp": observed, "credited_box": counts[metric],
+                                     "difference": discrepancy, "severity": "warning"})
+                elif not _is_count(observed) or observed != counts[metric] + discrepancy:
                     errors.append(f"contract source {name}: classified {metric} differs from official")
                     findings.append({"code": "classified-source-count-mismatch", "team": name,
                                      "metric": metric, "classified": observed,
@@ -215,7 +237,13 @@ def _audit_contract(
         }
         classified["field_goal_attempts"] = manifest["field_goal_attempts"]
         for key, observed in classified.items():
-            if observed == official[key]:
+            expected_difference = sum(sack_deltas.values()) if key == "sacks" else 0
+            if observed == official[key] and expected_difference == 0:
+                continue
+            if key == "sacks" and observed - official[key] == expected_difference:
+                findings.append({"code": "reviewed-sack-count-discrepancy", "metric": "sacks",
+                                 "classified_pbp": observed, "credited_box": official[key],
+                                 "difference": sum(sack_deltas.values()), "severity": "warning"})
                 continue
             finding = {
                 "code": "classified-source-count-mismatch",
@@ -363,6 +391,37 @@ def audit_generated_source(
             errors.append(f"modeled fitting eligibility: {error}")
         checks["modeled_fitting_scope"] = len(errors) == before
         checks["historical_source_complete"] = False
+    reviewed_scope = manifest.get("reviewed_source_scope")
+    if reviewed_scope is not None:
+        before = len(errors)
+        try:
+            from .fumble_source import source_record_hash
+            from .pfr_source_scope import validate_source_scope_disclosure
+
+            scope_allowances = validate_source_scope_disclosure(reviewed_scope)
+            if (validation_contract is None
+                    or source_record_hash(validation_contract.get("reviewed_source_scope"))
+                    != source_record_hash(reviewed_scope)
+                    or reviewed_scope["season"] != manifest.get("season")
+                    or checks.get("modeled_fitting_scope") is not True
+                    or len([key for key in manifest.get("input_hashes", {})
+                            if key.startswith("source_scope/")]) != 1):
+                raise ValueError("Reviewed source scope requires exact contract, input and fitting-policy binding")
+            if input_files is not None:
+                scope_key = next(key for key in manifest["input_hashes"] if key.startswith("source_scope/"))
+                if scope_key not in input_files:
+                    raise ValueError("Reviewed source scope input is missing")
+                supplied_scope = _read_object(Path(input_files[scope_key]), errors)
+                if source_record_hash(supplied_scope) != source_record_hash(reviewed_scope):
+                    raise ValueError("Reviewed source scope input contents differ from disclosure")
+            for diagnostic, count in scope_allowances.items():
+                modeled_allowances[diagnostic] = modeled_allowances.get(diagnostic, 0) + count
+        except (ValueError, TypeError, KeyError) as error:
+            errors.append(f"reviewed source scope eligibility: {error}")
+        checks["reviewed_source_scope"] = len(errors) == before
+        checks["historical_source_complete"] = False
+    elif validation_contract is not None and validation_contract.get("reviewed_source_scope") is not None:
+        errors.append("reviewed source scope eligibility: contract scope missing from manifest")
     for diagnostic in ("unverified_field_goal_box", "unreconciled_field_goal_box",
                        "missing_required_gains", "unknown_fumble_recoveries", "unreconciled_fumble_box"):
         count = manifest.get("diagnostics", {}).get(diagnostic, 0)

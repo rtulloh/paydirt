@@ -1,6 +1,6 @@
 # Two-Phase Chart Generation Workflow
 
-[Documentation index](README.md) · [Chart generator reference](chart-generator.md)
+[Documentation index](README.md) · [Chart generator reference](chart-generator.md) · [Calibration process and reference profiles](chart-calibration.md)
 
 Use this workflow for every generated historical season. It keeps source conversion separate from
 engine calibration and leaves an audit trail that another developer can reproduce.
@@ -262,6 +262,10 @@ raw source artifact.
 After promotion, start with a few manual games that exercise strong and weak offenses, turnovers,
 long runs, pass depth, field goals, punts, and overtime. Record any chart or engine findings in the
 developer issue tracker before changing the profile again.
+
+The dated reference runs below describe earlier generator/runtime versions. Their selected
+coefficients are historical experiment records; use the [verified released-profile table](chart-calibration.md#released-starting-profiles)
+when choosing a current starting point, and revalidate it for the new season.
 
 ## 2026-11-01 Reference Run
 

@@ -32,6 +32,16 @@ conference and divisional reseeding. Higher seeds host conference rounds. A fail
 game never advances either participant; dependent games remain unplayed and the
 command fails.
 
+The runner also accepts an explicit `eight_team` source schedule for the 1977
+format: three division winners and one wildcard per conference, four divisional
+games, two conference games and one championship, with no wildcard round.
+The top two division winners host; the wildcard visits the highest-ranked
+winner outside its division. The remaining division winners meet in the other
+game. A surviving division winner hosts the conference final. This structure
+is documented in the [1977 Cardinals media guide](https://library.sfo2.cdn.digitaloceanspaces.com/publications/football/yearbooks/FARICMG-1977-arizona-cardinals-media-guide.pdf),
+printed page 116 (PDF page 119). Eight-team support does not supply a reviewed
+1977 fixture set or qualify candidate charts; those are separate inputs/checks.
+
 Qualification currently uses declared **regression tiebreaks**: winning fraction
 (ties count as half a win), point differential, points scored, then team name.
 Reports list equal-record groups. These are not the complete official NFL

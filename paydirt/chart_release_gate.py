@@ -233,8 +233,12 @@ def audit_readiness_freeze(root: Path, freeze: Mapping[str, Any]) -> dict[str, A
     }
 
 
-def required_regression_commands() -> dict[str, tuple[str, list[str]]]:
-    """Return the complete AGENTS regression checklist with explicit working directories."""
+def required_regression_commands(*, released_charts: bool = False) -> dict[str, tuple[str, list[str]]]:
+    """Return strict candidate commands, or the explicit unchanged-release checklist.
+
+    Frozen candidate collection/output validation deliberately remains strict.
+    released_charts=True is the AGENTS route for immutable published inputs only.
+    """
     python = sys.executable
     commands = {
         "core": (".", [python, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short", "-rs", "--cov=paydirt", "--cov-report=term"]),
@@ -254,11 +258,17 @@ def required_regression_commands() -> dict[str, tuple[str, list[str]]]:
             command += ["--csv", ".ai-audits/local-season.csv"]
         commands[name] = (".", command)
     for season, directory in (("1983", "1983-generated"), ("2024", "2024")):
-        commands[f"chart_{season}"] = (".", [
-            python, "scripts/audit_generated_charts.py", "--season-dir", f"seasons/{directory}",
-            "--contract", f"config/chart-validation/{season}.json", "--output", f".ai-audits/chart-quality-{season}.json",
-            "--repetitions", "64", "--workers", "4",
-        ])
+        if released_charts:
+            commands[f"chart_{season}"] = (".", [
+                python, "-m", "paydirt.released_chart_regression", "--season", season,
+                "--output", f".ai-audits/chart-quality-{season}.json",
+            ])
+        else:
+            commands[f"chart_{season}"] = (".", [
+                python, "scripts/audit_generated_charts.py", "--season-dir", f"seasons/{directory}",
+                "--contract", f"config/chart-validation/{season}.json", "--output", f".ai-audits/chart-quality-{season}.json",
+                "--repetitions", "64", "--workers", "4",
+            ])
     return commands
 
 

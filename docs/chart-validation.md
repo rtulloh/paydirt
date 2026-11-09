@@ -265,9 +265,13 @@ the other acceptance components remain required; this API always retains
 The separate `audit_regression_evidence(root, freeze, evidence)` API checks
 structured execution logs against that same unchanged freeze. Schema 1 contains
 `schema_version`, `freeze_sha256` (SHA-256 of canonical sorted compact freeze JSON)
-and `commands`. The command map requires all twelve AGENTS checklist identities;
+and `commands`. The command map requires all twelve strict candidate regression identities;
 `required_regression_commands()` supplies their exact argument lists and working
-directories, using the current Python interpreter. Each entry binds a log by
+directories, using the current Python interpreter. This default retains strict
+source/fit chart commands for frozen new candidates. The explicit
+`required_regression_commands(released_charts=True)` inventory instead matches
+the manual unchanged-release AGENTS checklist; its receipts are not substituted
+into this strict candidate output validator. Each entry binds a log by
 `{path, sha256}`. A log must retain actual `argv`, absolute `cwd`, integer
 `returncode`, `stdout` and `stderr`. Wrong/partial commands, nonzero or invalid
 statuses, absent/changed logs and changed implementation/source/candidate bytes
@@ -576,3 +580,13 @@ migration receipt. A complete corrected-source replay was reviewed locally but
 its unrelated resampling/quantization drift was not adopted; future full source
 generation can differ. Previous full-season and source-fit observations retain
 their original chart identity and are not new qualification of the migrated set.
+
+## Unchanged published charts
+
+This strict candidate gate remains mandatory for new or regenerated charts. Exact previously published charts can use the separately reviewed [released-chart regression](released-chart-regression.md) route in AGENTS.md; it does not label existing fit exceptions as passes or certify fresh source reproduction. Changed inputs or gameplay fail closed.
+
+The owner-authorized [1977 finite-search goal](dev-notes/1977-calibration-release-goal.md)
+separately permits a narrow, hash-bound statistical release exception for the
+selected canonical charts. Preserve actual strict-fit failures and unchanged
+bounds; all source/reproduction and nonstatistical checks remain mandatory.
+This is not an automatic fallback or a generic new-season exemption.

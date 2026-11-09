@@ -11,6 +11,8 @@ Paydirt has two separate chart tools:
 Both write the same game CSV format. Generate into a staging directory because existing
 files are overwritten.
 
+Before choosing a historical season, consult the [source coverage reference](dev-notes/source-season-coverage.md) for provider ranges, access limits and known gaps.
+
 ## Generate a Statistical Chart
 
 The statistical generator uses the real chart dice distribution: rows 10 through 39
@@ -207,6 +209,17 @@ averages is insufficient. Sparse literal `TD` cells, when required after numeric
 calibrated, belong to this second stage. Record the effective profile in
 `generation-manifest.json`. See the [two-phase operator workflow](chart-generation-workflow.md) and the
 [chart generator tuning tool](dev-notes/chart-generator-tuning-tool.md).
+
+The PFR and nflverse adapters apply `run_yard_multiplier` once to each primary
+run family. Empirical observations are scaled before allocation; a family with
+insufficient empirical support instead has its aggregate fallback numeric and
+fumble gains scaled before final probability allocation/layout, with existing
+flags and direct-run caps preserved. Neutral multiplier 1 is byte-identical.
+Already calibrated empirical columns are not scaled again. Shared breakaways
+are not independently scaled a second time. QB Time remains separate: its
+negative sacks and positive scrambles are coupled pressure outcomes, so the
+ordinary run control does not alter them. Calibration must measure the complete
+engine rushing mixture rather than assuming a proportional response.
 
 ### Generate from Pro Football Reference Play by Play
 
@@ -771,3 +784,42 @@ and special snap fumbles. Documented modeling defaults preserve those engine mec
 whole season contains no corresponding observations. These estimates are distinct from source
 evidence and still need sensitivity and historical validation. The full findings and repeatable
 comparison command are in the [completeness audit](dev-notes/generated-chart-completeness-audit.md).
+
+Explicit PFR descriptions of kicked extra points are excluded from rushing
+classification even when the kicker is also listed as a quarterback.
+Known leading PFR player names can identify an unlinked ball carrier before
+linked defenders. Duplicate display names are excluded from name lookup, preserving
+explicit player links instead of selecting an arbitrary namesake.
+
+### Reviewed historical source scope
+
+`generate_pfr_charts.py --source-scope /path/to/reviewed-source-scope.json`
+provides an explicit, hash-bound fitting scope for reviewed historical source
+limitations. It requires `historical_fumble_class_proxy_v2` and
+`historical_isolated_fumble_exclusions_v1`; the default remains strict.
+The versioned sidecar identifies exact source games and events, records reasons,
+and declares `historical_source_complete: false`. Supported scope is limited to
+an unresolved aborted-snap rushing gain, reviewed fumble-box conflicts, and
+field-goal actor conflicts whose complete team attempt/make totals reconcile.
+It also inventories known partial games. Optional `reviewed_sack_counts`
+records bind exact PBP mechanism counts and independently parsed team-box sack
+credits to each raw game hash. Each reviewed difference is exactly one occurrence;
+the original descriptions, credited totals and missing information remain separate.
+Generation checks both accounts against the source. Source audits retain explicit
+findings and require the precise team and league differences; new discrepancies
+still fail. No missing sack play, yardage, player identity, recovery or possession
+is manufactured.
+
+The raw classified ledger retains unsupported fields and diagnostic counts.
+Only a fitting copy excludes the individually identified aborted snap; the
+existing uniform fumble-exclusion policy remains separate. Every sidecar entry
+must match its source hash and apply exactly once. Generation records the
+sidecar input hash and complete disclosure. Source audits require identical
+contract opt-in and exact diagnostic counts, and portable source bundles bind
+both the supplied sidecar contents and reproduction command. New or changed
+source problems fail rather than inheriting a general waiver.
+
+A passing scoped audit establishes consistency with this disclosed fitting
+population. It does not establish complete historical coverage, unbiased
+fumble selection, or historical outcome accuracy. Retain per-team excluded
+counts and validate generated charts and season outcomes separately.

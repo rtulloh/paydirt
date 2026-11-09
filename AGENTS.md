@@ -49,9 +49,37 @@ python3 tests/run_all_games.py
 python3 tests/run_full_season.py
 python3 tests/run_ai_audit.py --season 2026 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/public-season.json
 python3 tests/run_ai_audit.py --season 1983 --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/local-season.json --csv .ai-audits/local-season.csv
-python3 scripts/audit_generated_charts.py --season-dir seasons/1983-generated --contract config/chart-validation/1983.json --output .ai-audits/chart-quality-1983.json --repetitions 64 --workers 4
-python3 scripts/audit_generated_charts.py --season-dir seasons/2024 --contract config/chart-validation/2024.json --output .ai-audits/chart-quality-2024.json --repetitions 64 --workers 4
+python3 -m paydirt.released_chart_regression --season 1983 --output .ai-audits/chart-quality-1983.json
+python3 -m paydirt.released_chart_regression --season 2024 --output .ai-audits/chart-quality-2024.json
 ```
+
+**Released charts and new charts have distinct gates.** The two commands above
+apply only to unchanged public 1983/2024 charts from the immutable v1.10.3 commit
+`1467b11e151fe9981177890e2a7a6b805402b3f0`. They verify exact chart, metadata,
+sanitized provenance and contract bytes, public mechanics and unchanged core/backend
+gameplay implementation. Frontend changes require actual review and the full real-engine
+browser regression; this chart gate does not verify frontend implementation identity. Existing historical-fit exceptions remain exceptions, not strict
+passes. Full gameplay and AI regression remains mandatory. This route does not
+claim fresh source reproduction or historical-fit qualification.
+
+Any new or regenerated season must instead pass strict source/reproduction and
+applicable minimum-sample fit qualification with `scripts/audit_generated_charts.py`
+and its reviewed source-bound contract. It cannot declare itself previously
+released. Changed gameplay fails the released gate and requires reviewed paired
+regression evidence against the immutable baseline before this route can be
+extended; do not silently add exclusions or fall back to a weaker check. See
+[released chart regression](docs/released-chart-regression.md). Private source
+inventories and historical logs remain in ignored local audit storage.
+
+The owner's explicit 1977 finite-search authorization permits a narrow, reviewed,
+hash-bound statistical release exception for the best canonically generated and
+characterized candidate. Record the actual missed bounds and owner authorization;
+never relabel failed strict fit as passing or alter tolerances. Source identity,
+reproduction, sample requirements, mechanics, screen-INT, gameplay, full regression
+and downloaded native-install checks remain mandatory. This is specific to the
+[1977 release goal](docs/dev-notes/1977-calibration-release-goal.md), not a generic
+new-season bypass.
+
 
 **Play-selection and play-balance audit is part of full regression**, not merely
 a final-score check. The audit commands exercise Hard-vs-Hard and legacy balanced
@@ -76,9 +104,11 @@ check. It must complete both real-engine browser games (human home/receiving,
 then away/kicking), including halftime, final-score screens, and clean new-game
 state. Install Chromium once with `npx playwright install chromium` from
 `paydirt-web/frontend` (on Linux, use `--with-deps`). The backend dependencies
-must also be installed. Stop development servers on ports 8000 and 5173 first;
-Playwright starts and stops its own isolated services using public 2026 teams
-only. Missing browsers/services or reaching the action limit are failures, not
+must also be installed. Playwright defaults to ports 8000 and 5173. If either is occupied, use free
+isolated ports, for example `PAYDIRT_E2E_BACKEND_PORT=18000
+PAYDIRT_E2E_FRONTEND_PORT=15173 npm run test:e2e`, rather than stopping an
+installed app or potential saved-game session. Playwright starts and stops only
+its own isolated services using public 2026 teams. Missing browsers/services or reaching the action limit are failures, not
 reasons to skip this check. See `paydirt-web/frontend/e2e/README.md` for details.
 
 `tests/run_full_season.py [YEAR]` runs the selected year's actual regular-season

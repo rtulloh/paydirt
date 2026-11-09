@@ -860,3 +860,67 @@ def test_duplicate_source_event_identity_cannot_support_box_inference() -> None:
     assert [f.lost for f in result.fumbles] == [None, None]
     assert result.diagnostics["unreconciled_fumble_box"] == 1
     assert not result.fumble_reconciliations
+
+
+@pytest.mark.parametrize("result", ["good", "no good", "blocked"])
+def test_quarterback_kicked_extra_point_is_not_a_rushing_attempt(result: str) -> None:
+    detail = (
+        '<a href="/players/P/PassPh00.htm">Quinn Caller</a> '
+        f'kicks extra point {result}'
+    )
+    game = parse_pfr_boxscore(_game_html(_row(1, "", "", "", detail)), "qb-pat")
+    classified = classify_pfr_game(game, fumble_gain_policy="historical_fumble_class_proxy_v2")
+    assert not classified.plays
+    assert not classified.unsupported_fields
+    assert classified.diagnostics["ignored_markers"] == 1
+    assert classified.diagnostics.get("heuristic_quarterback_run_family", 0) == 0
+
+
+@pytest.mark.parametrize("detail", [
+    '<a href="/players/P/PassPh00.htm">Quinn Caller</a> right end for 2 yards',
+    '<a href="/players/P/PassPh00.htm">Quinn Caller</a> pass complete to Ron Runner for 2 yards',
+])
+def test_quarterback_scrimmage_controls_still_classify(detail: str) -> None:
+    game = parse_pfr_boxscore(_game_html(_row(1, "1", "10", "PHI 30", detail)), "qb-scrimmage")
+    classified = classify_pfr_game(game)
+    assert len(classified.plays) == 1
+    assert classified.plays[0].result == "2"
+    assert not classified.unsupported_fields
+
+
+@pytest.mark.parametrize("runner", [
+    "Ron Runner",
+    '<a href="/players/R/RushRo00.htm">Ron Runner</a>',
+])
+def test_known_primary_actor_team_wins_over_linked_defender(runner: str) -> None:
+    detail = (
+        f'{runner} right guard for 5 yards '
+        '(tackle by <a href="/players/D/DefeDa00.htm">Dan Defender</a>)'
+    )
+    classified = classify_pfr_game(parse_pfr_boxscore(
+        _game_html(_row(1, "1", "10", "PHI 30", detail)), "actor-team"))
+    assert [(p.team, p.opponent, p.result) for p in classified.plays] == [("PHI", "SFO", "5")]
+
+
+def test_unlinked_primary_fumbler_is_not_credited_to_linked_recoverer() -> None:
+    detail = (
+        'Ron Runner right guard for 5 yards. Ron Runner fumbles, recovered by '
+        '<a href="/players/D/DefeDa00.htm">Dan Defender</a> at PHI35'
+    )
+    classified = classify_pfr_game(parse_pfr_boxscore(
+        _game_html(_row(1, "1", "10", "PHI 30", detail)), "actor-fumble"))
+    assert len(classified.fumbles) == 1
+    assert classified.fumbles[0].team == "PHI"
+    assert classified.fumbles[0].lost is True
+
+
+def test_duplicate_display_names_preserve_linked_primary_actor_identity() -> None:
+    detail = (
+        '<a href="/players/R/RushRo00.htm">Ron Runner</a> right guard for 5 yards '
+        '(tackle by <a href="/players/D/DefeDa00.htm">Ron Runner</a>)'
+    )
+    html = _game_html(_row(1, "1", "10", "PHI 30", detail)).replace("Dan Defender", "Ron Runner")
+    game = parse_pfr_boxscore(html, "duplicate-names")
+    classified = classify_pfr_game(game)
+    assert [(p.team, p.opponent, p.result) for p in classified.plays] == [("PHI", "SFO", "5")]
+    assert "ron runner" not in game.player_names  # Ambiguous names cannot supply identity.

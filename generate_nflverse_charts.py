@@ -456,6 +456,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             missing_source_features=coverage["modeled_missing_features"],
             calibrate_empirical_pass_events=True,
             empirical_pass_calibration=pass_calibration,
+            fallback_run_yard_multiplier=profile.run_yard_multiplier,
             neutral_pressure=neutral_pressure,
             fumble_range_override=(frozen_ranges.get(abbreviation)
                                    if range_policy == "measured_diagnostic_v1" else None),

@@ -1990,6 +1990,7 @@ def generate_team_charts(
     neutral_pressure: NeutralPressureModel | None = None,
     fumble_range_override: tuple[tuple[int, int], tuple[int, int]] | None = None,
     gain_multipliers: tuple[float, float] | None = None,
+    fallback_run_yard_multiplier: float = 1.0,
 ) -> GeneratedCharts:
     """Generate and write offense, defense, and special-teams charts.
 
@@ -2009,10 +2010,18 @@ def generate_team_charts(
             that holds loss risk fixed while source counts are repaired.
         gain_multipliers: Optional derived passing/rushing factors applied once
             after probability allocation and before final layout.
+        fallback_run_yard_multiplier: Global primary-run calibration for aggregate
+            columns absent from empirical input. Empirical paths are already
+            calibrated by the source adapter. Shared B and QB Time stay separate.
 
     Returns:
         The generated chart cells.
     """
+    if (isinstance(fallback_run_yard_multiplier, bool)
+            or not isinstance(fallback_run_yard_multiplier, (int, float))):
+        raise TypeError("Fallback run multiplier must be numeric")
+    if not math.isfinite(fallback_run_yard_multiplier) or fallback_run_yard_multiplier <= 0:
+        raise ValueError("Fallback run multiplier must be finite and positive")
     if fumble_range_override is not None:
         valid_shape = (isinstance(fumble_range_override, tuple)
                        and len(fumble_range_override) == 2
@@ -2096,6 +2105,17 @@ def generate_team_charts(
             empirical_allocations[f"special_teams/{name}"] = _empirical_allocation_evidence(
                 calibrated_outcomes, special[name],
             )
+    # The adapter scales empirical run observations before generation. Match
+    # that response for absent aggregate columns once, without touching shared
+    # breakaways, QB pressure/scrambles, event tokens or their allocated mass.
+    if fallback_run_yard_multiplier != 1.0:
+        for name in ("line_plunge", "off_tackle", "end_run", "draw"):
+            if name not in empirical_offense:
+                offense[name] = {
+                    roll: _scale_empirical_resolved_yards(cell, fallback_run_yard_multiplier)
+                    for roll, cell in offense[name].items()
+                }
+                _cap_direct_run_yards(offense[name])
     if "offense_oob" in missing_source_features:
         for name, rate in _MISSING_OOB_RATES.items():
             if not any(cell.endswith(("*", "†")) for cell in offense[name].values()
