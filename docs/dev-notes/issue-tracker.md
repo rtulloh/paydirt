@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-203 issues: 73 open, 57 resolved, 73 closed.
+204 issues: 74 open, 57 resolved, 73 closed.
 
-## Open (73)
+## Open (74)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -79,6 +79,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-039](issues/DATA/DATA-039.md) | Low | Primary chart dispersion scores BLACK only and leaves other reducible result clusters | created 2026-11-06 | DATA-040, DATA-041 |
 | [DATA-044](issues/DATA/DATA-044.md) | Low | 1983 Buccaneers commentary roster incorrectly includes Doug Williams | created 2026-11-08 | — |
 | [DATA-045](issues/DATA/DATA-045.md) | Low | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
+| [DATA-047](issues/DATA/DATA-047.md) | Low | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
