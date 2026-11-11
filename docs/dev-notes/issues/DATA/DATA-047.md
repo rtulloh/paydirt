@@ -11,6 +11,7 @@ tags:
   - reproduced
 links:
 commits:
+  - d893c42
 ---
 
 ## Description
@@ -45,3 +46,13 @@ released-chart gates pass; the 1983 receipt lists the accepted DATA-047 correcti
 and their original/corrected hashes. Automatic post-publication native checks now
 require the corrected labels for v1.10.5. Full pre-push regression and actual
 downloaded-app/browser confirmation remain separate requirements.
+
+--- 2026-11-10 21:31 ---
+Fix committed as d893c42 for v1.10.5. Final regression passes: 11,195 core tests
+with 86% branch-inclusive coverage, clean tracked-only tests, 450 backend tests,
+362 frontend tests, build/lint, all historical games and reviewed public/private
+AI audits. The owner's 18-case browser run passes. The fresh 1977 receipt accepts
+only the approved exact version-string equivalence and retains its four disclosed
+statistical misses. Both released-chart gates and the 90-team identity audit pass.
+The browser run uses public 2026 teams; correction-specific downloaded-native
+label checks remain required before closing this issue.
