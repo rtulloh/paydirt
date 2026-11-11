@@ -17,9 +17,24 @@ replacement provenance. Public sanitized manifests are compared as published;
 raw private source inventories are neither needed nor emitted.
 
 The current public 1983 directory is `seasons/1983`. The auditor explicitly maps
-that location to `seasons/1983-generated` in the immutable baseline tree. Only
-the directory prefix changes: complete relative inventories and every file byte,
-including sanitized provenance and the validation contract, must still match.
+that location to `seasons/1983-generated` in the immutable baseline tree. Complete
+relative inventories and every file byte, including sanitized provenance and the
+validation contract, must match except for the owner-reviewed DATA-047 corrections:
+
+| 1983 metadata | Original short_name | Accepted short_name |
+| --- | --- | --- |
+| Chargers/team.yaml | LAC '83 | SD '83 |
+| Cardinals/team.yaml | ARI '83 | STL '83 |
+| Raiders/team.yaml | OAK '83 | LA '83 |
+
+This allowance requires the exact pinned baseline commit and complete original
+and corrected file bytes. It does not normalize YAML or ignore metadata fields.
+Extra fields, whitespace changes, different labels, symlinks, changed charts,
+contracts and gameplay still fail. The receipt records each accepted correction,
+its issue ID and both SHA-256 hashes; trusted baseline hashes remain unchanged.
+The owner approved this narrow route on November 10, 2026; see the
+[DATA-047 audit](dev-notes/data-047-team-name-audit.md).
+
 Historical audit cohort IDs and contract source-path bindings retain their original
 `1983-generated` identity; they are not player-visible season directory names.
 
@@ -32,6 +47,14 @@ candidate-generation/source-validation tools are excluded because they do not
 resolve player games; adding exclusions requires review. A gameplay change fails
 closed pending reviewed paired baseline regression evidence. This initial gate
 does not implement a statistical comparison for changed core/backend gameplay.
+
+The exact `paydirt-web/backend/tests/` subtree is excluded from gameplay source
+identity after independent review on November 10, 2026: packaging lists only the
+backend production modules, and the launcher imports routes directly. Tests are
+neither packaged nor imported during player games. Similarly named production
+paths remain checked. This classification correction permits the launcher test
+repair without waiving production identity. Backend tests remain in readiness
+inventories and the mandatory full regression.
 
 Frontend implementation identity is explicitly not checked by this chart gate.
 The current release boundary is accepted only after the frontend diff is
@@ -115,3 +138,20 @@ not distributed raw source files. The source map contains logical source keys an
 paths, with relative paths resolved against `--root`. The output must be new and
 outside all input directories. Exit zero requires the independently computed
 acceptance result to be exactly true.
+
+The owner-approved v1.10.5 correction permits one exact version-metadata
+equivalence against v1.10.4 commit `a35153c26c8efbd07cd87d012e812520082e21e1`.
+All 55 fingerprinted source files are compared: 53 must be byte-identical, while
+the complete old/new hashes of `paydirt/__init__.py` and `paydirt/__main__.py`
+permit only their reviewed 1.10.4-to-1.10.5 version literals. Complete engine
+fingerprints and identical loaded/worker identities are also required. Run the
+acceptance command with Python 3.12, matching the original execution evidence.
+No version-pattern normalization or general runtime exemption is applied.
+
+After verifying the immutable raw-report hash and complete source proof, the gate
+uses an explicitly disclosed validation view with only `metadata.engine_fingerprint`
+derived from the verified current source. The raw report and pinned policy remain
+unchanged. `runtime_version_equivalence` records the baseline commit, both engine
+identities, loaded runtime, file counts and accepted full-file hashes. The source
+proof is repeated after validation. Statistical misses stay failed; all source,
+sample, mechanics, accounting and other nonstatistical checks remain mandatory.

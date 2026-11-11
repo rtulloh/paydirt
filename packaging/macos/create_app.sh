@@ -5,7 +5,7 @@ set -e
 APP_NAME="Paydirt"
 APP_BUNDLE="${APP_NAME}.app"
 EXECUTABLE="paydirt"
-VERSION="${GITHUB_REF_NAME:-1.10.4}"
+VERSION="${GITHUB_REF_NAME:-1.10.5}"
 VERSION="${VERSION#v}"
 
 # Create .app bundle structure

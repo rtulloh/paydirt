@@ -1,5 +1,16 @@
 # Paydirt Release Notes
 
+## v1.10.5
+
+- Correct 1983 geographic labels: San Diego Chargers (`SD`), St. Louis Cardinals (`STL`), and Los Angeles Raiders (`LA`).
+- Qualify only those three exact metadata corrections against the immutable v1.10.3 baseline; retain chart, gameplay, source and statistical acceptance requirements.
+- Automatically verify downloaded release applications after publication across Windows installer/portable, Linux, and both Mac architectures, including the corrected packaged 1983 labels.
+- Add optional `--target-release` issue scheduling and a target-release column in the developer tracker.
+
+Existing historical accuracy limitations remain disclosed in the season notes.
+Publication and successful builds alone do not establish native-install acceptance;
+review the retained verification receipts and first-launch security limitations.
+
 ## v1.10.4
 
 - Add all 28 teams from 1977, generated from reviewed historical records, with era rules and the actual 14-game calendar/eight-team postseason validation.

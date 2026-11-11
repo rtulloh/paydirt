@@ -46,6 +46,7 @@ def create_issue(
     *,
     priority: str = "Medium",
     tags: list[str] | None = None,
+    target_release: str | None = None,
 ) -> Path:
     """Validate and exclusively create the next ticket; never discard on index failure."""
     if not re.fullmatch(r"[A-Z]{2,12}", prefix):
@@ -60,6 +61,7 @@ def create_issue(
         "title": title,
         "status": "open",
         "priority": priority,
+        "target-release": target_release,
         "created-at": date.today(),
         "resolved-at": None,
         "closed-at": None,
@@ -78,6 +80,8 @@ def create_issue(
         + "Created with scripts/create_issue.py. Keep evidence public-safe.\n"
     )
     index._validate(fields, body, folder / (prefix + "-001.md"))
+    if fields["target-release"] == "":
+        fields["target-release"] = None
     existing = [int(p.stem.split("-")[-1]) for p in folder.glob(prefix + "-[0-9][0-9][0-9].md")]
     registry = index.ISSUES / "retired-ids.yaml"
     if registry.exists():
@@ -129,6 +133,7 @@ def main() -> None:
     parser.add_argument("--acceptance", action="append", required=True)
     parser.add_argument("--priority", choices=index.PRIORITIES, default="Medium")
     parser.add_argument("--tag", action="append", default=[])
+    parser.add_argument("--target-release", help="Optional release target, for example v1.10.5")
     args = parser.parse_args()
     try:
         path = create_issue(
@@ -138,6 +143,7 @@ def main() -> None:
             args.acceptance,
             priority=args.priority,
             tags=args.tag,
+            target_release=args.target_release,
         )
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"{error}\n")

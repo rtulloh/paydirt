@@ -111,6 +111,11 @@ founded: 2026
 history: "A fictional team for local chart experiments."
 ```
 
+Historical display abbreviations must describe the franchise in the selected season.
+Run `python3 scripts/audit_team_names.py` from the repository root to check all 90
+bundled metadata files, including era-specific franchise locations and nicknames.
+The core chart loader and backend read `short_name` from `team.yaml`.
+
 Example `roster.json` (position lists supply commentary names):
 
 ```json

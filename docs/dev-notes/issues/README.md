@@ -14,6 +14,7 @@ id: RULE-013                 # must equal the file name
 title: One line, <= 120 characters
 status: open                 # open | resolved | closed
 priority: High               # High | Medium | Low
+target-release: v1.10.5      # optional release plan; empty means unscheduled
 created-at: 2026-10-19       # the day the issue was first recorded
 resolved-at:                 # the day a tested fix was committed
 closed-at:                   # the day a play-test audit confirmed it
@@ -38,6 +39,23 @@ The plan while open; the fix, tests, and every changed prior expectation once re
 --- 2026-10-20 12:00 ---
 Newest material goes at the end under a timestamped separator.
 ```
+
+Create a ticket with an explicit release target when the work is scheduled:
+
+```bash
+python3 scripts/create_issue.py --prefix DATA --title "Synthetic display issue" \
+  --description "Describe the observed problem." \
+  --acceptance "Verify the corrected display." --target-release v1.10.5
+```
+
+The optional `--target-release` flag records `target-release` in front matter.
+Use a v-prefixed semantic version such as `v1.10.5` or `v1.11.0-beta.1`;
+build metadata is accepted too. Malformed versions and arbitrary milestone names
+are rejected before a ticket is written. Omit the flag to leave the ticket
+unscheduled; the tool never infers a release from the package version.
+Existing tickets may omit the field or leave it empty. The generated index shows
+the target release, or an em dash for unscheduled work. A target is a scheduling
+intention, not proof that a fix shipped.
 
 `tests/test_issue_tracker.py` enforces the format, the date rules, mutual links, and that
 the committed index matches the files. Regenerate the index after any change:

@@ -213,3 +213,51 @@ def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failu
             ("2026", "Ironclads", "Thunderhawks"), ("1977", "Synthetic0", "Synthetic1")]
         assert calls[-2][0].endswith("game_synthetic_1977?side=home")
         assert calls[-1][0].endswith("game_synthetic_1977?side=away")
+
+
+def test_next_reviewed_release_preserves_1977_and_immutable_profiles() -> None:
+    smoke = smoke_module()
+    assert smoke.season_profile("1.10.5", True) == {
+        "1983": 28, "2024": 32, "2026": 2, "1977": 28,
+    }
+    with pytest.raises(ValueError, match="reviewed"):
+        smoke.season_profile("1.10.6", True)
+    assert smoke.season_profile("1.10.3") == {"1983": 28, "2024": 32, "2026": 2}
+
+
+@pytest.mark.parametrize("failure", [None, "Chargers", "Cardinals", "Raiders", "missing", "duplicate"])
+def test_corrective_release_checks_packaged_1983_identity_labels(
+    monkeypatch: pytest.MonkeyPatch, failure: str | None,
+) -> None:
+    smoke = smoke_module()
+    responses = api_responses()
+    responses["/openapi.json"]["info"]["version"] = "1.10.5"
+    teams = responses["/api/teams?season=1983"]["teams"]
+    corrected = {"Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83"}
+    teams[:3] = [{"id": team, "short_name": label} for team, label in corrected.items()]
+    if failure in corrected:
+        old_labels = {"Chargers": "LAC '83", "Cardinals": "ARI '83", "Raiders": "OAK '83"}
+        next(team for team in teams if team["id"] == failure)["short_name"] = old_labels[failure]
+    if failure == "missing":
+        teams[0] = {"id": "Other", "short_name": "SD '83"}
+    if failure == "duplicate":
+        teams[3] = {"id": "Chargers", "short_name": "SD '83"}
+    monkeypatch.setattr(smoke, "request_json", lambda base, path, payload=None: responses[path])
+    if failure:
+        with pytest.raises(ValueError, match="1983.*identity"):
+            smoke.check_api("http://synthetic", "1.10.5")
+    else:
+        result = smoke.check_api("http://synthetic", "1.10.5")
+        assert result["verified_1983_labels"] == corrected
+
+
+def test_release_automatically_calls_published_install_verification() -> None:
+    root = Path(__file__).resolve().parents[1]
+    release = (root / ".github/workflows/release.yml").read_text()
+    smoke = (root / ".github/workflows/post-release-smoke.yml").read_text()
+    assert "  workflow_call:" in smoke
+    post_release = release.split("  verify-published-install:", 1)[1]
+    assert "needs: [verify-ci, release]" in post_release
+    assert "uses: ./.github/workflows/post-release-smoke.yml" in post_release
+    assert "release_tag: ${{ needs.verify-ci.outputs.tag }}" in post_release
+    assert "include_1977: true" in post_release

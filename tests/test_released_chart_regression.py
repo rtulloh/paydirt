@@ -1,4 +1,5 @@
 """Trusted released-data regression uses synthetic repositories only."""
+import hashlib
 import json
 import shutil
 import subprocess
@@ -225,3 +226,112 @@ def test_relocated_release_requires_exact_baseline_bytes(baseline, monkeypatch, 
         assert report["gameplay_implementation_unchanged"] is True
         assert report["baseline_season_path"] == "seasons/2026"
         assert report["current_season_path"] == "seasons/2026-public"
+
+
+@pytest.fixture
+def metadata_baseline(baseline, monkeypatch):
+    """Build synthetic historical labels around public sample chart bytes only."""
+    root, git = baseline
+    season = root / "seasons/1983"
+    originals = {"Chargers": "LAC", "Cardinals": "ARI", "Raiders": "OAK"}
+    for team, abbreviation in originals.items():
+        target = season / team
+        shutil.copytree(root / "seasons/2026/Ironclads", target)
+        (target / "team.yaml").write_text(
+            f'team_name: "{team}"\nshort_name: "{abbreviation} \'83"\nnickname: "{team}"\n'
+        )
+    (root / "config/chart-validation/1983.json").write_text("{}")
+    git("add", ".")
+    git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+        "commit", "-qm", "synthetic metadata baseline")
+    commit = git("rev-parse", "HEAD")
+    git("tag", "-f", "v1.10.3")
+    monkeypatch.setattr(gate, "TRUSTED_RELEASES", {
+        "v1.10.3": {"commit": commit, "seasons": {1983: ("seasons/1983", 3)}},
+    })
+    monkeypatch.setattr(gate, "REVIEWED_METADATA_BASELINE_COMMIT", commit, raising=False)
+    monkeypatch.setattr(gate, "audit_public_season", lambda *args, **kwargs: {"errors": []})
+    return root
+
+
+def apply_reviewed_labels(root: Path) -> None:
+    for team, before, after in (
+        ("Chargers", "LAC", "SD"), ("Cardinals", "ARI", "STL"), ("Raiders", "OAK", "LA"),
+    ):
+        path = root / "seasons/1983" / team / "team.yaml"
+        path.write_bytes(path.read_bytes().replace(
+            f'short_name: "{before} \'83"'.encode(),
+            f'short_name: "{after} \'83"'.encode(),
+        ))
+
+
+def test_exact_reviewed_metadata_corrections_pass_and_are_receipted(metadata_baseline):
+    root = metadata_baseline
+    apply_reviewed_labels(root)
+    report = gate.audit_released_season(root, season=1983)
+    assert report["passed"], report["errors"]
+    assert report["gameplay_implementation_unchanged"]
+    corrections = report["accepted_metadata_corrections"]
+    assert len(corrections) == 3
+    assert {item["path"] for item in corrections} == {
+        f"seasons/1983/{team}/team.yaml" for team in ("Chargers", "Cardinals", "Raiders")
+    }
+    assert all(item["issue"] == "DATA-047" for item in corrections)
+    for item in corrections:
+        current = root / item["path"]
+        original = subprocess.check_output([
+            "git", "-C", str(root), "show", f"v1.10.3:{item['path']}",
+        ])
+        assert item["baseline_sha256"] == hashlib.sha256(original).hexdigest()
+        assert item["accepted_sha256"] == hashlib.sha256(current.read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize("mutation", [
+    "extra-field", "wrong-label", "whitespace", "chart", "contract", "runtime", "symlink",
+])
+def test_metadata_allowance_rejects_every_other_change(metadata_baseline, mutation):
+    root = metadata_baseline
+    apply_reviewed_labels(root)
+    path = root / "seasons/1983/Chargers/team.yaml"
+    if mutation == "extra-field":
+        path.write_bytes(path.read_bytes() + b"city: Wrong City\n")
+    elif mutation == "wrong-label":
+        path.write_bytes(path.read_bytes().replace(b"SD '83", b"LV '83"))
+    elif mutation == "whitespace":
+        path.write_bytes(path.read_bytes() + b"\n")
+    elif mutation == "symlink":
+        external = root / "external.yaml"
+        path.rename(external)
+        path.symlink_to(external)
+    else:
+        path = {
+            "chart": root / "seasons/1983/Chargers/offense.csv",
+            "contract": root / "config/chart-validation/1983.json",
+            "runtime": root / "paydirt/game_engine.py",
+        }[mutation]
+        path.write_bytes(path.read_bytes() + b"\n")
+    assert not gate.audit_released_season(root, season=1983)["passed"]
+
+
+def test_metadata_allowance_requires_reviewed_baseline_identity(metadata_baseline, monkeypatch):
+    apply_reviewed_labels(metadata_baseline)
+    monkeypatch.setattr(gate, "REVIEWED_METADATA_BASELINE_COMMIT", "0" * 40, raising=False)
+    assert not gate.audit_released_season(metadata_baseline, season=1983)["passed"]
+
+
+@pytest.mark.parametrize("path", [
+    "paydirt-web/backend/routes.py", "paydirt-web/backend/test_rule.py",
+    "paydirt/game_engine.py", "paydirt_runner.py",
+    "paydirt-web/backend/tests_helpers.py", "paydirt-web/backend/tests_runtime/rules.py",
+])
+def test_gameplay_identity_still_covers_runtime_paths(path):
+    assert gate._runtime_path(path)
+
+
+def test_backend_tests_are_validated_as_tests_not_gameplay_identity(baseline):
+    root, _ = baseline
+    test = root / "paydirt-web/backend/tests/test_synthetic.py"
+    test.parent.mkdir(parents=True)
+    test.write_text("def test_control():\n    assert True\n")
+    assert not gate._runtime_path(str(test.relative_to(root)))
+    assert gate.audit_released_season(root, season=2026)["passed"]

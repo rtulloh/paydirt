@@ -28,6 +28,7 @@ from .chart_engine_audit import (
 )
 from .chart_generator import EmpiricalPassCalibration
 from .chart_loader import parse_defense_csv
+from .chart_runtime_identity import loaded_runtime_identity
 from .chart_tactics_audit import (
     audit_defense_tactics,
     audit_engine_controls,
@@ -822,6 +823,94 @@ def _statistical_failures(engine: dict) -> tuple[list[dict], list[str]]:
     return sorted(failures, key=lambda item: (item["scope"], item.get("team", ""), item["metric"])), messages
 
 
+VERSION_ONLY_1977_RUNTIME = {
+    "season": 1977,
+    "commit": "a35153c26c8efbd07cd87d012e812520082e21e1",
+    "report_fingerprint": "eb769742173e7a78a8ddfbff9218a178dd8943c15e6d76fd57ecd12e8ca4968f",
+    "actual_fingerprint": "da5c7599f7c164a4697b6edabb57f14b3369021ac83383844a2236ed5ed7a7f3",
+    "files": {
+        "__init__.py": (
+            "555dd9d5b9767366c0e7788c55a3abc0582dc6b74e869e246718caa9c5ec530f",
+            "bbdbfd9d96853dfe7cdd44ae610ea5891db93ae9030dfc7cd1905de6aa2f3ffd",
+        ),
+        "__main__.py": (
+            "c665cd4153432b45ec87102592c349cbe3582c1d5f43e292036be79cc632be40",
+            "4e1d640bf22e5e0b4c666089c461e036682daacf413fd86bd0a440c041ca7f5e",
+        ),
+    },
+}
+
+
+def _version_only_1977_validation_view(
+    root: Path, report: dict, season: int,
+) -> tuple[dict, dict | None]:
+    """Derive an explicit validation view after the caller pins raw report bytes.
+
+    Only the reviewed 1.10.4 -> 1.10.5 metadata bytes may differ. This does not
+    alter the original report, generic engine identity or any gameplay check.
+    """
+    actual = engine_fingerprint()
+    metadata = report["metadata"]
+    original = metadata.get("engine_fingerprint")
+    if original == actual or original is None:
+        return report, None  # Ordinary validation still rejects missing identity.
+    pin = VERSION_ONLY_1977_RUNTIME
+    if (season != pin["season"] or root != Path(__file__).resolve().parents[1]
+            or original != pin["report_fingerprint"] or actual != pin["actual_fingerprint"]):
+        raise ValueError("Runtime differs from exact reviewed 1977 version-only identities")
+    runtime = loaded_runtime_identity()
+    if (metadata.get("runtime_identity") != runtime
+            or metadata.get("worker_runtime_identities") != [runtime] * metadata.get("repetitions", 0)):
+        raise ValueError("Version-only allowance requires identical loaded runtime and workers")
+    def git(*args: str) -> bytes:
+        try:
+            return subprocess.check_output(
+                ["git", "--no-replace-objects", "-C", str(root), *args], stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise ValueError("Missing immutable version-only runtime baseline") from exc
+    def included(name: str) -> bool:
+        path = Path(name)
+        return path.suffix == ".py" and (
+            not any(word in path.stem for word in ("audit", "gate")) or name == "chart_engine_audit.py"
+        )
+    names = {Path(name).name for name in git("ls-tree", "--name-only", pin["commit"] + ":paydirt").decode().splitlines()
+             if included(name)}
+    package = root / "paydirt"
+    current = {path.name for path in package.glob("*.py") if included(path.name)}
+    if current != names:
+        raise ValueError("Version-only runtime source inventory differs")
+    baseline_digest, actual_digest = hashlib.sha256(), hashlib.sha256()
+    accepted = []
+    for name in sorted(names):
+        path = package / name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Version-only runtime source must be a regular file")
+        old = git("show", f"{pin['commit']}:paydirt/{name}")
+        new = path.read_bytes()
+        old_hash, new_hash = hashlib.sha256(old).hexdigest(), hashlib.sha256(new).hexdigest()
+        for digest, data in ((baseline_digest, old), (actual_digest, new)):
+            digest.update(name.encode() + b"\0" + data + b"\0")
+        if name in pin["files"]:
+            if (old_hash, new_hash) != pin["files"][name]:
+                raise ValueError("Version-only metadata bytes differ from reviewed full-file hashes")
+            accepted.append({"path": "paydirt/" + name, "baseline_sha256": old_hash, "actual_sha256": new_hash})
+        elif old != new:
+            raise ValueError("Unreviewed engine source change outside version metadata")
+    if (baseline_digest.hexdigest() != original or actual_digest.hexdigest() != actual
+            or set(pin["files"]) != {item["path"].split("/")[-1] for item in accepted}):
+        raise ValueError("Version-only source proof contradicts complete engine fingerprints")
+    receipt = {
+        "scope": "Owner-approved exact 1.10.4 to 1.10.5 version metadata only; no gameplay waiver",
+        "baseline_commit": pin["commit"], "report_engine_fingerprint": original,
+        "actual_engine_fingerprint": actual, "loaded_runtime_identity": runtime,
+        "source_files_verified": len(names), "unchanged_source_files": len(names) - len(accepted),
+        "accepted_version_files": accepted,
+        "validation_view": "Only metadata.engine_fingerprint derives from the verified actual source; raw report remains unchanged",
+    }
+    return {**report, "metadata": {**metadata, "engine_fingerprint": actual}}, receipt
+
+
 def audit_statistical_release_exception(
     root: Path, season_dir: Path, contract_path: Path, engine_report_path: Path,
     policy_path: Path, *, public_dir: Path, stats_dir: Path,
@@ -875,6 +964,9 @@ def audit_statistical_release_exception(
                 or hashlib.sha256(raw_report).hexdigest() != policy["engine_report_sha256"]):
             raise ValueError("Contract or raw execution report differs from the accepted identity")
         contract, report = _strict_json_object(contract_bytes), _strict_json_object(raw_report)
+        validation_report, version_receipt = _version_only_1977_validation_view(root, report, contract.get("season"))
+        if version_receipt is not None:
+            result["runtime_version_equivalence"] = version_receipt
         del raw_report
         if contract.get("season") != authority["season"] or report["metadata"].get("policy") != "chart-focused":
             raise ValueError("Exception requires the exact source season and chart-focused measurement")
@@ -958,7 +1050,7 @@ def audit_statistical_release_exception(
                 raise ValueError(f"Unexpected published source artifact: {name}")
             if before_canonical.get(name) != digest:
                 raise ValueError(f"Published chart or metadata differs from canonical generation: {name}")
-        component = audit_release(Path(season_dir), contract, report, stats_dir=stats_dir,
+        component = audit_release(Path(season_dir), contract, validation_report, stats_dir=stats_dir,
                                   reproduced_dir=reproduced_dir, input_files=input_files)["components"]
         for name in ("source", "tactics", "allocation"):
             if component[name].get("passed") is not True or component[name].get("errors"):
@@ -966,7 +1058,7 @@ def audit_statistical_release_exception(
         for check in ("raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder"):
             if component["source"].get("checks", {}).get(check) is not True:
                 errors.append(f"Source {check} is not independently verified")
-        nonfit = validate_engine_report(report, contract, Path(season_dir), minimum_team_games=1000,
+        nonfit = validate_engine_report(validation_report, contract, Path(season_dir), minimum_team_games=1000,
                                         minimum_repetitions=72, require_fit=False)
         if nonfit.get("passed") is not True or nonfit.get("errors"):
             errors.extend(nonfit.get("errors") or ["Nonstatistical engine validation failed"])
@@ -994,6 +1086,10 @@ def audit_statistical_release_exception(
                 or Path(contract_path).read_bytes() != contract_bytes
                 or _exception_file_digest(Path(engine_report_path)) != report_file_digest):
             errors.append("Bound inputs changed during acceptance")
+        if version_receipt is not None:
+            _, final_version_receipt = _version_only_1977_validation_view(root, report, contract.get("season"))
+            if final_version_receipt != version_receipt:
+                errors.append("Version-only source proof changed during acceptance")
         result.update(strict_fit_passed=engine["passed"], accepted_failures=failures,
                       statistical_validation={key: engine[key] for key in ("errors", "metrics", "team_metrics")},
                       authorization_commit=authority["commit"], policy_sha256=hashlib.sha256(policy_bytes).hexdigest(),

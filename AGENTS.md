@@ -54,10 +54,14 @@ python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-au
 ```
 
 **Released charts and new charts have distinct gates.** The two commands above
-apply only to unchanged public 1983/2024 charts from the immutable v1.10.3 commit
+apply to public 1983/2024 charts from the immutable v1.10.3 commit
 `1467b11e151fe9981177890e2a7a6b805402b3f0`. They verify exact chart, metadata,
 sanitized provenance and contract bytes, public mechanics and unchanged core/backend
-gameplay implementation. Frontend changes require actual review and the full real-engine
+gameplay implementation. The owner-reviewed DATA-047 allowance accepts only the exact
+1983 short_name corrections LAC → SD (Chargers), ARI → STL (Cardinals) and
+OAK → LA (Raiders), bound to that baseline and the complete original/corrected
+team.yaml bytes. Receipts list accepted corrections and both hashes; all other
+metadata edits still fail. Frontend changes require actual review and the full real-engine
 browser regression; this chart gate does not verify frontend implementation identity. Existing historical-fit exceptions remain exceptions, not strict
 passes. Full gameplay and AI regression remains mandatory. This route does not
 claim fresh source reproduction or historical-fit qualification.
@@ -92,6 +96,17 @@ blocks pushing. Its passing release-policy receipt does not relabel strict fit
 misses as passes or replace any command above. The owner-authorized statistical
 exceptions and all actual failed bounds must remain visible in the public season
 notes and manifest. Raw private source paths and inventories stay local.
+
+For corrective v1.10.5 only, the owner-approved 1977 version-metadata equivalence
+retains the immutable policy and original execution report. The gate verifies all
+55 fingerprinted source files against v1.10.4 commit
+`a35153c26c8efbd07cd87d012e812520082e21e1`: 53 remain byte-identical; only the
+exact full-file hashes for `paydirt/__init__.py` and `paydirt/__main__.py` may
+change their 1.10.4 version literals to 1.10.5. Complete original/actual engine
+fingerprints and identical Python 3.12 loaded/worker identities remain required.
+The receipt discloses the derived validation view and both identities; raw report
+bytes and statistical failures remain unchanged. Every other source/runtime edit
+still blocks, and this does not waive any nonstatistical or full-regression gate.
 
 **Play-selection and play-balance audit is part of full regression**, not merely
 a final-score check. The audit commands exercise Hard-vs-Hard and legacy balanced

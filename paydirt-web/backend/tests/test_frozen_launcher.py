@@ -3,6 +3,7 @@ import shutil
 import sys
 from pathlib import Path
 
+import uvicorn
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
@@ -43,7 +44,7 @@ def test_frozen_launcher_resolves_models_and_starts_game(tmp_path, monkeypatch):
     real_thread = launcher.threading.Thread
     monkeypatch.setattr(launcher.threading, "Thread", ImmediateThread)
     monkeypatch.setattr(launcher.time, "sleep", lambda _: None)
-    monkeypatch.setattr(launcher.uvicorn, "Server", Server)
+    monkeypatch.setattr(uvicorn, "Server", Server)
     launcher.start_web_server(open_browser=False)
     monkeypatch.setattr(launcher.threading, "Thread", real_thread)
     client = TestClient(captured["app"], raise_server_exceptions=False)

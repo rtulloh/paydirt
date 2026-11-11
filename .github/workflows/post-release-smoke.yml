@@ -1,6 +1,16 @@
 name: Published application native runtime smoke
 
 on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Existing published immutable release to verify (never rebuilt)
+        required: true
+        type: string
+      include_1977:
+        description: Require the reviewed bundled 1977 season
+        required: true
+        type: boolean
   workflow_dispatch:
     inputs:
       release_tag:
@@ -9,7 +19,7 @@ on:
         type: string
         default: v1.10.3
       include_1977:
-        description: Enable only if reviewed 1977 is actually bundled in v1.10.4
+        description: Enable only if reviewed 1977 is bundled in v1.10.4 or v1.10.5
         required: true
         type: boolean
         default: false

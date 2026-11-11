@@ -78,6 +78,29 @@ def test_exact_exception_accepts_without_relabeling_strict_fit(case):
     assert result["release_certified"] is False
 
 
+def test_derived_view_is_disclosed_and_used_by_both_validations(case, monkeypatch):
+    calls = []
+    view = {"metadata": {"policy": "chart-focused", "engine_fingerprint": "derived"}}
+    receipt = {"report_engine_fingerprint": "original", "actual_engine_fingerprint": "derived"}
+    def derive(root, report, season):
+        assert "engine_fingerprint" not in report["metadata"]
+        return view, receipt
+    def strict(*args, **kwargs):
+        calls.append(args[2])
+        return {"components": deepcopy(case[2])}
+    def nonfit(*args, **kwargs):
+        calls.append(args[0])
+        return deepcopy(case[3])
+    monkeypatch.setattr(gate, "_version_only_1977_validation_view", derive, raising=False)
+    monkeypatch.setattr(gate, "audit_release", strict)
+    monkeypatch.setattr(gate, "validate_engine_report", nonfit)
+    result = audit(case)
+    assert result["passed"]
+    assert calls == [view, view]
+    assert result["runtime_version_equivalence"] == receipt
+    assert "engine_fingerprint" not in json.loads((case[0] / "engine.json").read_text())["metadata"]
+
+
 @pytest.mark.parametrize("component", ["source", "tactics", "allocation"])
 def test_other_component_failure_is_never_excepted(case, component):
     case[2][component].update(passed=False, errors=["Nonstatistical defect"])

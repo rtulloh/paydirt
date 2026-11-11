@@ -25,8 +25,8 @@ def season_profile(version: str, include_1977: bool = False) -> dict[str, int]:
     """Require an explicit candidate opt-in without changing shipped profiles."""
     profile = dict(EXPECTED_TEAMS)
     if include_1977:
-        if version != "1.10.4":
-            raise ValueError("The optional reviewed 1977 profile is limited to 1.10.4")
+        if version not in {"1.10.4", "1.10.5"}:
+            raise ValueError("1977 requires a reviewed profile: 1.10.4 or 1.10.5")
         profile["1977"] = 28
     return profile
 
@@ -59,6 +59,17 @@ def check_api(base: str, version: str, include_1977: bool = False) -> dict:
     counts = {year: len(items) for year, items in teams.items()}
     if counts != expected:
         raise ValueError(f"Incomplete team lists: {counts}")
+    verified_labels = {}
+    if version == "1.10.5":
+        corrected = {"Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83"}
+        identifiers = [team.get("id") for team in teams["1983"]]
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("1983 team identity contains duplicate identifiers")
+        by_id = {team.get("id"): team for team in teams["1983"]}
+        for team, label in corrected.items():
+            if by_id.get(team, {}).get("short_name") != label:
+                raise ValueError(f"1983 team identity mismatch for {team}: expected {label}")
+        verified_labels = corrected
     games = {"2026": check_season_game(base, "2026", "Ironclads", "Thunderhawks")}
     if include_1977:
         selected = [team["id"] for team in teams["1977"][:2]]
@@ -69,7 +80,7 @@ def check_api(base: str, version: str, include_1977: bool = False) -> dict:
             raise ValueError("1977 acceptance reused the public game identifier")
     return {"version": version, "team_counts": counts,
             "game_id": games["2026"]["game_id"], "charts": games["2026"]["charts"],
-            "season_games": games}
+            "season_games": games, "verified_1983_labels": verified_labels}
 
 
 def check_season_game(base: str, season: str, player: str, opponent: str) -> dict:
@@ -329,7 +340,7 @@ def main() -> int:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--include-1977", action="store_true",
-                        help="Opt in only after reviewed 1977 is actually bundled in 1.10.4")
+                        help="Opt in only after reviewed 1977 is bundled in 1.10.4 or 1.10.5")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)

@@ -1,10 +1,11 @@
 ---
 id: DATA-047
 title: 1983 Chargers are presented as Los Angeles instead of correct San Diego naming
-status: open
+status: resolved
 priority: Low
+target-release: v1.10.5
 created-at: 2026-11-09
-resolved-at:
+resolved-at: 2026-11-10
 closed-at:
 tags:
   - reproduced
@@ -26,3 +27,21 @@ The 1983 Chargers were the San Diego Chargers; the franchise did not move to Los
 
 --- 2026-11-09 00:00 ---
 Created with scripts/create_issue.py. Keep evidence public-safe.
+
+--- 2026-11-10 00:00 ---
+Corrected Chargers to SD '83. The bundled 90-team audit also identified and
+corrected Cardinals ARI → STL and Raiders OAK → LA in 1983; all other
+metadata associations passed. The standalone audit failed on exactly these
+three labels before the edits and passes afterward. Synthetic/public-2026
+loader controls pass; 459 focused tests pass with Python 3.11.
+See [audit evidence](../../data-047-team-name-audit.md).
+Browser play-test confirmation remains pending, so this issue is not closed.
+The immutable released-chart gate fails on these three metadata files;
+no policy exclusions were added and no push/release was performed.
+
+--- 2026-11-10 00:01 ---
+Owner approved the exact three-label gate allowance. The updated 1983 and 2024
+released-chart gates pass; the 1983 receipt lists the accepted DATA-047 corrections
+and their original/corrected hashes. Automatic post-publication native checks now
+require the corrected labels for v1.10.5. Full pre-push regression and actual
+downloaded-app/browser confirmation remain separate requirements.

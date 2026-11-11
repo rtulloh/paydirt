@@ -358,3 +358,11 @@ jobs:
             - Option 1: Right-click the app → Open → Click "Open" in the dialog
             - Option 2: Run in Terminal: `xattr -cr "/Applications/Paydirt.app"`
           token: ${{ secrets.GITHUB_TOKEN }}
+  verify-published-install:
+    needs: [verify-ci, release]
+    uses: ./.github/workflows/post-release-smoke.yml
+    permissions:
+      contents: read
+    with:
+      release_tag: ${{ needs.verify-ci.outputs.tag }}
+      include_1977: true

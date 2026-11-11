@@ -22,6 +22,27 @@ PRIORITY_ORDER = {"High": 0, "Medium": 1, "Low": 2}
 PRIORITIES = ("High", "Medium", "Low")
 STATUSES = ("open", "resolved", "closed")
 
+TARGET_RELEASE_PATTERN = re.compile(
+    r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    r"(?:-(?P<prerelease>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+)
+
+
+def validate_target_release(value: object) -> None:
+    """Accept an empty target or a v-prefixed semantic release version."""
+    if value is None or value == "":
+        return
+    match = TARGET_RELEASE_PATTERN.fullmatch(value) if isinstance(value, str) else None
+    if match is not None:
+        prerelease = match.group("prerelease")
+        if not prerelease or all(
+            not (part.isdigit() and len(part) > 1 and part.startswith("0"))
+            for part in prerelease.split(".")
+        ):
+            return
+    raise ValueError("target-release must be empty or a v-prefixed semantic version, e.g. v1.10.5")
+
 
 def _day(value: object) -> date | None:
     """Parse an ISO yyyy-mm-dd date; empty and None mean 'not reached yet'."""
@@ -54,6 +75,7 @@ def _validate(fields: dict[str, Any], text: str, path: Path) -> None:
     title = fields.get("title")
     if not isinstance(title, str) or not 1 <= len(title) <= 120 or "\n" in title:
         raise ValueError(f"{path}: title must be one line of 1..120 characters")
+    validate_target_release(fields.get("target-release"))
     status = fields.get("status")
     if status not in STATUSES or fields.get("priority") not in PRIORITIES:
         raise ValueError(f"{path}: invalid status or priority")
@@ -110,6 +132,7 @@ def read_front_matter(path: Path) -> dict:
         key, _, value = line.partition(":")
         key = key.strip()
         fields[key] = value.strip()
+    validate_target_release(fields.get("target-release"))
     return fields
 
 
@@ -153,8 +176,8 @@ def render_index(issues_dir: Path) -> str:
             lines += ["None.", ""]
             continue
         lines += [
-            "| ID | Priority | Title | Dates | Links |",
-            "|----|----------|-------|-------|-------|",
+            "| ID | Priority | Target release | Title | Dates | Links |",
+            "|----|----------|----------------|-------|-------|-------|",
         ]
         for issue in group:
             dates = f"created {issue.get('created-at') or '—'}"
@@ -164,7 +187,8 @@ def render_index(issues_dir: Path) -> str:
                 dates += f", closed {issue['closed-at']}"
             links = ", ".join(str(link).split(":", 1)[0].strip() for link in issue.get("links", []))
             lines.append(
-                f"| [{issue['id']}]({issue['path']}) | {issue.get('priority')} | {issue.get('title')} "
+                f"| [{issue['id']}]({issue['path']}) | {issue.get('priority')} "
+                f"| {issue.get('target-release') or '—'} | {issue.get('title')} "
                 f"| {dates} | {links or '—'} |"
             )
         lines.append("")

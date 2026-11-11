@@ -1,4 +1,4 @@
-"""Fail-closed regression for byte-identical, previously published chart seasons.
+"""Regression for published charts with exact, reviewed metadata corrections.
 
 This is not new-chart source or historical-fit qualification. The trusted Git
 objects bind the public sanitized provenance, charts, contracts and gameplay.
@@ -22,6 +22,13 @@ TRUSTED_RELEASES = {
     },
 }
 # Current locations may change; immutable baseline paths and bytes never do.
+# Owner-approved DATA-047 corrections are bound to this baseline and exact bytes.
+REVIEWED_METADATA_BASELINE_COMMIT = "1467b11e151fe9981177890e2a7a6b805402b3f0"
+REVIEWED_1983_LABELS = {
+    "Chargers": ("LAC", "SD"),
+    "Cardinals": ("ARI", "STL"),
+    "Raiders": ("OAK", "LA"),
+}
 CURRENT_SEASON_PATHS = {1983: "seasons/1983"}
 
 # These tools generate or validate candidates; none is used to resolve a game.
@@ -38,7 +45,13 @@ def _git(root: Path, *args: str) -> bytes:
 
 
 def _runtime_path(name: str) -> bool:
-    return name.endswith(".py") and (name.startswith(("paydirt/", "paydirt-web/backend/")) or name == "paydirt_runner.py") and name not in GENERATION_VALIDATION_ONLY
+    # Reviewed pytest-only subtree: not packaged or imported by player runtime.
+    return (
+        name.endswith(".py")
+        and (name.startswith(("paydirt/", "paydirt-web/backend/")) or name == "paydirt_runner.py")
+        and not name.startswith("paydirt-web/backend/tests/")
+        and name not in GENERATION_VALIDATION_ONLY
+    )
 
 
 def _has_symlink(root: Path, path: Path) -> bool:
@@ -60,17 +73,43 @@ def _version_only(data: bytes, *, api_metadata: bool = False) -> str:
     return ast.dump(tree, include_attributes=False)
 
 
+def _reviewed_metadata_correction(
+    commit: str, season: int, relative: Path, expected: bytes, actual: bytes | None,
+) -> dict[str, str] | None:
+    """Accept only the three exact DATA-047 byte replacements."""
+    if commit != REVIEWED_METADATA_BASELINE_COMMIT or season != 1983:
+        return None
+    for team, (before, after) in REVIEWED_1983_LABELS.items():
+        if relative != Path(team) / "team.yaml":
+            continue
+        original = (
+            f'team_name: "{team}"\nshort_name: "{before} \'83"\nnickname: "{team}"\n'
+        ).encode()
+        corrected = original.replace(
+            f'short_name: "{before} \'83"'.encode(),
+            f'short_name: "{after} \'83"'.encode(),
+        )
+        if expected == original and actual == corrected:
+            return {
+                "issue": "DATA-047", "before": f"{before} '83", "after": f"{after} '83",
+                "baseline_sha256": hashlib.sha256(original).hexdigest(),
+                "accepted_sha256": hashlib.sha256(corrected).hexdigest(),
+            }
+    return None
+
+
 def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
-    """Check exact published inputs and unchanged gameplay, without private data."""
+    """Check published inputs and exact reviewed corrections, without private data."""
     root = Path(root).resolve()
     report: dict[str, Any] = {
         "passed": False, "season": season, "errors": [],
         "strict_fit_passed": False, "source_reproduction_checked": False,
         "historical_accuracy_checked": False, "gameplay_implementation_unchanged": False,
         "known_accuracy_exceptions": [],
+        "accepted_metadata_corrections": [],
         "frontend_implementation_identity_checked": False,
         "release_certified": False,
-        "scope": "Unchanged published chart and authoritative engine/backend regression; frontend review and full browser/gameplay/AI regression additionally required",
+        "scope": "Published chart regression with exact reviewed metadata corrections and unchanged engine/backend; full browser/gameplay/AI regression additionally required",
     }
     selected = [(tag, entry) for tag, entry in TRUSTED_RELEASES.items() if season in entry["seasons"]]
     if len(selected) != 1:
@@ -109,6 +148,15 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
                     if name in season_names else root / name)
             actual_bytes = path.read_bytes() if path.is_file() and not _has_symlink(root, path) else None
             equal = actual_bytes == expected
+            if not equal and name in season_names:
+                correction = _reviewed_metadata_correction(
+                    commit, season, Path(name).relative_to(baseline_path), expected, actual_bytes,
+                )
+                if correction is not None:
+                    equal = True
+                    report["accepted_metadata_corrections"].append({
+                        "path": str(path.relative_to(root)), **correction,
+                    })
             if name in {"paydirt/__init__.py", "paydirt/__main__.py", "paydirt-web/backend/main.py"} and actual_bytes is not None and not equal:
                 api_metadata = name != "paydirt/__init__.py"
                 equal = _version_only(actual_bytes, api_metadata=api_metadata) == _version_only(expected, api_metadata=api_metadata)
