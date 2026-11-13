@@ -6,6 +6,20 @@ This file provides guidelines for AI agents working on the Paydirt codebase.
 
 Paydirt is a Python simulation of the classic Paydirt football board game. It uses only the Python standard library - no external dependencies required (except pytest for testing).
 
+## Machine Reset Deadline
+
+The owner will reset this machine to factory defaults on **December 4, 2026**.
+Before that date, preserve important work in GitHub or in a folder in the owner's
+[Google Drive](https://drive.google.com/drive/u/1/my-drive). A local copy alone
+does not satisfy this requirement. Verify remote copies before considering work
+preserved, and follow the required regression gates before any Git push.
+
+Include uncommitted work and important ignored/local-only data in preservation
+planning, especially `.ai-audits/` evidence, private chart/source material, saved
+games and standings. Keep private charts, raw sources and historical logs out of
+GitHub; preserve them in a private Drive folder. Record the actual destination and
+verification status; do not claim backups are complete until verified.
+
 ## Build/Lint/Test Commands
 
 ### Running Tests

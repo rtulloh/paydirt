@@ -1,8 +1,9 @@
 ---
 id: FLOW-007
-title: Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages
+title: Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge
 status: open
 priority: Medium
+target-release: v1.10.6
 created-at: 2026-10-19
 resolved-at: 
 closed-at:
@@ -29,3 +30,6 @@ for new and resumed CLI games. The resumed loop no longer discards the S
 flag; real-engine synthetic/public regressions cover both control sides.
 Keep FLOW-007 open for skipped-modifier messages and the remaining loop
 divergences/shared-per-down refactor; this does not claim they are fixed.
+
+--- 2026-11-11 12:00 ---
+1.10.6 scope review corrects the obsolete title: both loops pass call_spike, call_timeout and defensive timeout requests to the engine. SPIKE-002 already fixed the lost-spike request. The resumed loop still prints only timeout-used output after display_play_result; the new-game loop separately prints spike-used and skipped timeout/spike messages. The duplicated loops remain and hard-coded quarter clock assignments are still present. Narrow remaining work to presentation/parity and justified shared-loop cleanup, not reimplementing spike execution. Combined focused penalty/spike suites: 188 passed; no new full CLI presentation play-test or production change.

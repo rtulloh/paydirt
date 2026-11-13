@@ -24,3 +24,6 @@ Add a required season-YAML field (e.g. `final_try: always | only_if_outcome_affe
 
 --- 2026-10-19 00:00 ---
 Migrated from the single-file tracker (status at migration: Open (decided: season configuration)).
+
+--- 2026-11-11 12:00 ---
+1.10.6 scope review: can_attempt_conversion_after_touchdown still excludes only a completed overtime game. It does not consult a season-specific final-try rule or expired-regulation score margin. Remains open based on current code inspection; no behavior change or new play-test confirmation.

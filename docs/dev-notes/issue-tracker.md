@@ -7,15 +7,15 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-204 issues: 73 open, 58 resolved, 73 closed.
+208 issues: 77 open, 58 resolved, 73 closed.
 
-## Open (73)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [AI-002](issues/AI/AI-002.md) | Medium | — | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
+| [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
@@ -25,7 +25,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-019](issues/AI/AI-019.md) | Medium | — | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-025, AI-026, AI-023, DATA-012 |
 | [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
 | [AI-023](issues/AI/AI-023.md) | Medium | — | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
-| [AI-024](issues/AI/AI-024.md) | Medium | — | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
+| [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
 | [AI-029](issues/AI/AI-029.md) | Medium | — | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | — | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
@@ -42,11 +42,14 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | — | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | — | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
+| [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.6 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
+| [DATA-049](issues/DATA/DATA-049.md) | Medium | v1.10.6 | Bundle verified player rosters for 1977 and 2024 commentary | created 2026-11-11 | — |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | — | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
-| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | — | Resume_game never passes the human/CPU spike modifier and prints no skipped-modifier messages | created 2026-10-19 | — |
+| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
+| [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | — |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -79,6 +82,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-039](issues/DATA/DATA-039.md) | Low | — | Primary chart dispersion scores BLACK only and leaves other reducible result clusters | created 2026-11-06 | DATA-040, DATA-041 |
 | [DATA-044](issues/DATA/DATA-044.md) | Low | — | 1983 Buccaneers commentary roster incorrectly includes Doug Williams | created 2026-11-08 | — |
 | [DATA-045](issues/DATA/DATA-045.md) | Low | — | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
+| [DATA-050](issues/DATA/DATA-050.md) | Low | — | Use season-aware player availability and roles in roster commentary | created 2026-11-11 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
