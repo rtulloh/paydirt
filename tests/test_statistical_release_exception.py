@@ -1,4 +1,5 @@
 """Synthetic statistical acceptance cannot hide source or runtime failures."""
+
 import hashlib
 import json
 import shutil
@@ -24,41 +25,138 @@ def case(tmp_path, monkeypatch):
     (root / "stats").mkdir()
     (root / "stats/Sample.json").write_text("{}")
     (root / "raw.html").write_text("Synthetic raw source")
-    for name, value in {"AUTH.md": "Synthetic owner authorization", "contract.json": json.dumps({"season": 2026}), "engine.json": json.dumps({"metadata": {"policy": "chart-focused"}})}.items():
+    for name, value in {
+        "AUTH.md": "Synthetic owner authorization",
+        "contract.json": json.dumps({"season": 2026}),
+        "engine.json": json.dumps({"metadata": {"policy": "chart-focused"}}),
+    }.items():
         (root / name).write_text(value)
     manifest = root / "canonical/generation-manifest.json"
-    manifest.write_text(json.dumps({"season": 2026, "calibration_profile": {"pass_interception_adjustment": .004}}))
-    (root / "public/generation-manifest.json").write_text(json.dumps({"season": 2026, "public_manifest_schema_version": 1, "original_generation_manifest_sha256": digest(manifest), "calibration_profile": {"pass_interception_adjustment": .004}}))
+    manifest.write_text(
+        json.dumps({"season": 2026, "calibration_profile": {"pass_interception_adjustment": 0.004}})
+    )
+    (root / "public/generation-manifest.json").write_text(
+        json.dumps(
+            {
+                "season": 2026,
+                "public_manifest_schema_version": 1,
+                "original_generation_manifest_sha256": digest(manifest),
+                "calibration_profile": {"pass_interception_adjustment": 0.004},
+            }
+        )
+    )
+
     def git(*args):
         return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
+
     def commit():
         git("add", ".")
-        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-qm", "reviewed synthetic evidence")
-    git("init", "-q"); commit()
-    authority = {"season": 2026, "commit": git("rev-parse", "HEAD"), "path": "AUTH.md", "sha256": digest(root / "AUTH.md")}
+        git(
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "--allow-empty",
+            "-qm",
+            "reviewed synthetic evidence",
+        )
+
+    git("init", "-q")
+    commit()
+    authority = {
+        "season": 2026,
+        "commit": git("rev-parse", "HEAD"),
+        "path": "AUTH.md",
+        "sha256": digest(root / "AUTH.md"),
+    }
     monkeypatch.setattr(gate, "STATISTICAL_RELEASE_AUTHORIZATION", authority, raising=False)
-    failure = {"scope": "team", "team": "Sample", "metric": "interception_rate", "observed": .055, "target": .04, "tolerance": .01}
-    engine = {"passed": False, "errors": ["Sample interception_rate: 0.055000 differs from 0.040000 by more than 0.01"], "metrics": {}, "team_metrics": {"Sample": {"interception_rate": {**{k: failure[k] for k in ("observed", "target", "tolerance")}, "passed": False}}}, "measurement": {"passed": True, "errors": []}}
-    components = {name: {"passed": True, "errors": []} for name in ("source", "tactics", "allocation")}
-    components["source"]["checks"] = {name: True for name in ("raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder")}
+    failure = {
+        "scope": "team",
+        "team": "Sample",
+        "metric": "interception_rate",
+        "observed": 0.055,
+        "target": 0.04,
+        "tolerance": 0.01,
+    }
+    engine = {
+        "passed": False,
+        "errors": ["Sample interception_rate: 0.055000 differs from 0.040000 by more than 0.01"],
+        "metrics": {},
+        "team_metrics": {
+            "Sample": {
+                "interception_rate": {
+                    **{k: failure[k] for k in ("observed", "target", "tolerance")},
+                    "passed": False,
+                }
+            }
+        },
+        "measurement": {"passed": True, "errors": []},
+    }
+    components = {
+        name: {"passed": True, "errors": []} for name in ("source", "tactics", "allocation")
+    }
+    components["source"]["checks"] = {
+        name: True
+        for name in ("raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder")
+    }
     components["engine"] = engine
-    monkeypatch.setattr(gate, "audit_release", lambda *args, **kwargs: {"components": deepcopy(components)})
+    monkeypatch.setattr(
+        gate, "audit_release", lambda *args, **kwargs: {"components": deepcopy(components)}
+    )
     nonfit = {"passed": True, "errors": []}
+
     def validate(*args, **kwargs):
-        assert kwargs == {"minimum_team_games": 1000, "minimum_repetitions": 72, "require_fit": False}
+        assert kwargs == {
+            "minimum_team_games": 1000,
+            "minimum_repetitions": 72,
+            "require_fit": False,
+        }
         return deepcopy(nonfit)
+
     monkeypatch.setattr(gate, "validate_engine_report", validate)
-    inventory = lambda folder: {str(p.relative_to(folder)): digest(p) for p in folder.rglob("*") if p.is_file()}
-    policy = {"schema_version": 1, "season": 2026, "authorization_commit": authority["commit"], "authorization_sha256": authority["sha256"], "contract_sha256": digest(root / "contract.json"), "engine_report_sha256": digest(root / "engine.json"), "canonical_files": inventory(root / "canonical"), "public_files": inventory(root / "public"), "accepted_failures": [failure], "reason": "Synthetic disclosed exception only"}
+    def inventory(folder):
+        return {str(p.relative_to(folder)): digest(p) for p in folder.rglob("*") if p.is_file()}
+    policy = {
+        "schema_version": 1,
+        "season": 2026,
+        "authorization_commit": authority["commit"],
+        "authorization_sha256": authority["sha256"],
+        "contract_sha256": digest(root / "contract.json"),
+        "engine_report_sha256": digest(root / "engine.json"),
+        "canonical_files": inventory(root / "canonical"),
+        "public_files": inventory(root / "public"),
+        "accepted_failures": [failure],
+        "reason": "Synthetic disclosed exception only",
+    }
     public_manifest = root / "public/generation-manifest.json"
     public_data = json.loads(public_manifest.read_text())
-    public_data.update(accuracy_bounds_passed=False, known_accuracy_exceptions=[failure], chart_hashes={str(p.relative_to(root / "public")): digest(p) for p in (root / "public").glob("*/*.csv")})
+    public_data.update(
+        accuracy_bounds_passed=False,
+        known_accuracy_exceptions=[failure],
+        chart_hashes={
+            str(p.relative_to(root / "public")): digest(p)
+            for p in (root / "public").glob("*/*.csv")
+        },
+    )
     public_manifest.write_text(json.dumps(public_data))
     policy["public_files"] = inventory(root / "public")
+
     def save(repin=True):
-        (root / "policy.json").write_text(json.dumps(policy)); commit()
+        (root / "policy.json").write_text(json.dumps(policy))
+        commit()
         if repin:
-            monkeypatch.setattr(gate, "STATISTICAL_RELEASE_POLICY", {"commit": git("rev-parse", "HEAD"), "path": "policy.json", "sha256": digest(root / "policy.json")}, raising=False)
+            monkeypatch.setattr(
+                gate,
+                "STATISTICAL_RELEASE_POLICY",
+                {
+                    "commit": git("rev-parse", "HEAD"),
+                    "path": "policy.json",
+                    "sha256": digest(root / "policy.json"),
+                },
+                raising=False,
+            )
+
     save()
     return root, policy, components, nonfit, save
 
@@ -67,7 +165,17 @@ def audit(case):
     root = case[0]
     function = getattr(gate, "audit_statistical_release_exception", None)
     assert callable(function), "Explicit hash-bound statistical acceptance is not implemented"
-    return function(root, root / "canonical", root / "contract.json", root / "engine.json", root / "policy.json", public_dir=root / "public", stats_dir=root / "stats", reproduced_dir=root / "reproduced", input_files={"raw": root / "raw.html"})
+    return function(
+        root,
+        root / "canonical",
+        root / "contract.json",
+        root / "engine.json",
+        root / "policy.json",
+        public_dir=root / "public",
+        stats_dir=root / "stats",
+        reproduced_dir=root / "reproduced",
+        input_files={"raw": root / "raw.html"},
+    )
 
 
 def test_exact_exception_accepts_without_relabeling_strict_fit(case):
@@ -82,15 +190,19 @@ def test_derived_view_is_disclosed_and_used_by_both_validations(case, monkeypatc
     calls = []
     view = {"metadata": {"policy": "chart-focused", "engine_fingerprint": "derived"}}
     receipt = {"report_engine_fingerprint": "original", "actual_engine_fingerprint": "derived"}
+
     def derive(root, report, season):
         assert "engine_fingerprint" not in report["metadata"]
         return view, receipt
+
     def strict(*args, **kwargs):
         calls.append(args[2])
         return {"components": deepcopy(case[2])}
+
     def nonfit(*args, **kwargs):
         calls.append(args[0])
         return deepcopy(case[3])
+
     monkeypatch.setattr(gate, "_version_only_1977_validation_view", derive, raising=False)
     monkeypatch.setattr(gate, "audit_release", strict)
     monkeypatch.setattr(gate, "validate_engine_report", nonfit)
@@ -107,7 +219,9 @@ def test_other_component_failure_is_never_excepted(case, component):
     assert not audit(case)["passed"]
 
 
-@pytest.mark.parametrize("check", ["raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder"])
+@pytest.mark.parametrize(
+    "check", ["raw_inputs", "normalized_stats", "source_hashes", "reproduction", "decoder"]
+)
 def test_source_summary_cannot_hide_unverified_check(case, check):
     case[2]["source"]["checks"][check] = False
     assert not audit(case)["passed"]
@@ -123,18 +237,40 @@ def test_observer_failure_is_not_excepted(case):
     assert not audit(case)["passed"]
 
 
-@pytest.mark.parametrize("mutation", ["omitted", "target", "other_error", "canonical", "public", "engine", "season", "uncommitted", "authority"])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "omitted",
+        "target",
+        "other_error",
+        "canonical",
+        "public",
+        "engine",
+        "season",
+        "uncommitted",
+        "authority",
+    ],
+)
 def test_binding_and_exception_list_are_exact(case, mutation):
     root, policy, components, _, save = case
-    if mutation == "omitted": policy["accepted_failures"] = []
-    elif mutation == "target": policy["accepted_failures"][0]["target"] = .05
-    elif mutation == "other_error": components["engine"]["errors"].append("Other nonstatistical failure")
-    elif mutation in ("canonical", "public"): next((root / mutation).glob("*/offense.csv")).write_text("changed")
-    elif mutation == "engine": (root / "engine.json").write_text("{}")
-    elif mutation == "season": policy["season"] = 1977
-    elif mutation == "authority": policy["authorization_commit"] = "0" * 40
-    if mutation == "uncommitted": (root / "policy.json").write_text(json.dumps({**policy, "reason": "Unreviewed"}))
-    else: save()
+    if mutation == "omitted":
+        policy["accepted_failures"] = []
+    elif mutation == "target":
+        policy["accepted_failures"][0]["target"] = 0.05
+    elif mutation == "other_error":
+        components["engine"]["errors"].append("Other nonstatistical failure")
+    elif mutation in ("canonical", "public"):
+        next((root / mutation).glob("*/offense.csv")).write_text("changed")
+    elif mutation == "engine":
+        (root / "engine.json").write_text("{}")
+    elif mutation == "season":
+        policy["season"] = 1977
+    elif mutation == "authority":
+        policy["authorization_commit"] = "0" * 40
+    if mutation == "uncommitted":
+        (root / "policy.json").write_text(json.dumps({**policy, "reason": "Unreviewed"}))
+    else:
+        save()
     assert not audit(case)["passed"]
 
 
@@ -153,6 +289,7 @@ def test_execution_report_cannot_change_during_acceptance(case, monkeypatch):
     def changed(*args, **kwargs):
         (case[0] / "engine.json").write_text("{}")
         return {"components": deepcopy(case[2])}
+
     monkeypatch.setattr(gate, "audit_release", changed)
     assert not audit(case)["passed"]
 
@@ -187,17 +324,25 @@ def test_public_team_metadata_cannot_export_private_inventory(case):
 def test_public_season_must_retain_all_gameplay_files(case, missing):
     root, policy, _, _, save = case
     next((root / "public").rglob(missing)).unlink()
-    policy["public_files"] = {str(p.relative_to(root / "public")): digest(p) for p in (root / "public").rglob("*") if p.is_file()}
+    policy["public_files"] = {
+        str(p.relative_to(root / "public")): digest(p)
+        for p in (root / "public").rglob("*")
+        if p.is_file()
+    }
     save()
     assert not audit(case)["passed"]
 
 
-@pytest.mark.parametrize("field,value", [("accuracy_bounds_passed", True), ("known_accuracy_exceptions", [])])
+@pytest.mark.parametrize(
+    "field,value", [("accuracy_bounds_passed", True), ("known_accuracy_exceptions", [])]
+)
 def test_public_accuracy_disclosure_must_match_computed_failures(case, field, value):
     root, policy, _, _, save = case
     path = root / "public/generation-manifest.json"
-    manifest = json.loads(path.read_text()); manifest[field] = value
-    path.write_text(json.dumps(manifest)); policy["public_files"]["generation-manifest.json"] = digest(path)
+    manifest = json.loads(path.read_text())
+    manifest[field] = value
+    path.write_text(json.dumps(manifest))
+    policy["public_files"]["generation-manifest.json"] = digest(path)
     save()
     assert not audit(case)["passed"]
 
@@ -207,6 +352,7 @@ def test_source_evidence_cannot_change_during_acceptance(case, monkeypatch, chan
     def mutate(*args, **kwargs):
         (case[0] / changed).write_text("changed after source validation")
         return {"components": deepcopy(case[2])}
+
     monkeypatch.setattr(gate, "audit_release", mutate)
     assert not audit(case)["passed"]
 
@@ -225,7 +371,8 @@ def test_public_chart_hash_provenance_matches_actual_csv_bytes(case):
     path = root / "public/generation-manifest.json"
     manifest = json.loads(path.read_text())
     manifest["chart_hashes"][next(iter(manifest["chart_hashes"]))] = "0" * 64
-    path.write_text(json.dumps(manifest)); policy["public_files"]["generation-manifest.json"] = digest(path)
+    path.write_text(json.dumps(manifest))
+    policy["public_files"]["generation-manifest.json"] = digest(path)
     save()
     assert not audit(case)["passed"]
 
@@ -234,10 +381,17 @@ def test_public_chart_hash_provenance_matches_actual_csv_bytes(case):
 def test_public_team_source_counts_match_canonical_manifest(case, public_count, expected):
     root, policy, _, _, save = case
     canonical = root / "canonical/generation-manifest.json"
-    data = json.loads(canonical.read_text()); data["teams"] = {"Sample": {"fumbles": 1}}
-    canonical.write_text(json.dumps(data)); policy["canonical_files"]["generation-manifest.json"] = digest(canonical)
+    data = json.loads(canonical.read_text())
+    data["teams"] = {"Sample": {"fumbles": 1}}
+    canonical.write_text(json.dumps(data))
+    policy["canonical_files"]["generation-manifest.json"] = digest(canonical)
     public = root / "public/generation-manifest.json"
-    data = json.loads(public.read_text()); data.update(teams={"Sample": {"fumbles": public_count}}, original_generation_manifest_sha256=digest(canonical))
-    public.write_text(json.dumps(data)); policy["public_files"]["generation-manifest.json"] = digest(public)
+    data = json.loads(public.read_text())
+    data.update(
+        teams={"Sample": {"fumbles": public_count}},
+        original_generation_manifest_sha256=digest(canonical),
+    )
+    public.write_text(json.dumps(data))
+    policy["public_files"]["generation-manifest.json"] = digest(public)
     save()
     assert audit(case)["passed"] is expected

@@ -78,6 +78,14 @@ def test_invalid_cli_target_fails_before_any_write(
     assert list(issue_store.iterdir()) == []
 
 
+def test_empty_lists_serialize_as_bare_keys(issue_store: Path) -> None:
+    path = create_ticket()
+    text = path.read_text()
+    assert "!!seq" not in text
+    for field in ("tags", "links", "commits"):
+        assert f"\n{field}:\n" in text
+
+
 def test_omitted_target_and_legacy_ticket_keep_working(issue_store: Path) -> None:
     path = create_ticket()
     assert not index.read_front_matter(path).get("target-release")

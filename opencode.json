@@ -73,12 +73,22 @@
     },
     {
       "action": "shell",
+      "resource": "python3 -m pytest",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
       "resource": "python3 -m pip install *",
       "effect": "allow"
     },
     {
       "action": "shell",
       "resource": "ruff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 -m ruff *",
       "effect": "allow"
     },
     {
@@ -138,6 +148,11 @@
     },
     {
       "action": "shell",
+      "resource": "python3 scripts/run_full_regression.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
       "resource": "npm ci *",
       "effect": "allow"
     },
@@ -169,6 +184,16 @@
     {
       "action": "shell",
       "resource": "npx vitest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx test",
       "effect": "allow"
     },
     {

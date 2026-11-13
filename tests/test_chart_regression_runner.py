@@ -1,4 +1,5 @@
 """The maintained collector executes actual commands and retains failures."""
+
 from __future__ import annotations
 
 import importlib
@@ -17,7 +18,9 @@ freeze_files = freeze_support.freeze_files
 
 
 def runner(files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str = "normal") -> tuple:
-    assert importlib.util.find_spec("scripts.run_chart_regression") is not None, "Readiness needs a maintained actual regression collector"
+    assert importlib.util.find_spec("scripts.run_chart_regression") is not None, (
+        "Readiness needs a maintained actual regression collector"
+    )
     module = importlib.import_module("scripts.run_chart_regression")
     root, freeze = files
     contents = install_output_fixtures(root, freeze, monkeypatch)
@@ -27,6 +30,7 @@ def runner(files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str = "normal") 
     monkeypatch.setattr(module, "ROOT", root)
     monkeypatch.setattr(module, "occupied_review_ports", lambda: [8000] if mode == "ports" else [])
     calls = []
+
     def execute(argv: list[str], **options: object) -> subprocess.CompletedProcess:
         calls.append((argv, options))
         if mode == "missing-tool" and len(calls) == 1:
@@ -36,18 +40,34 @@ def runner(files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str = "normal") 
                 if flag in argv:
                     path = root / argv[argv.index(flag) + 1]
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    name = next(name for name, (_cwd, command) in commands().items() if command == argv)
+                    name = next(
+                        name for name, (_cwd, command) in commands().items() if command == argv
+                    )
                     label = name + ("_json" if flag == "--output" else "_csv")
-                    path.write_text("{}\n" if mode == "corrupt-artifact" and name == "public_ai" else contents[label])
-        return subprocess.CompletedProcess(argv, 1 if mode == "failed" and len(calls) == 1 else 0,
-                                           stdout="Synthetic completed command\n", stderr="WARNING: synthetic retained warning\n")
+                    path.write_text(
+                        "{}\n"
+                        if mode == "corrupt-artifact" and name == "public_ai"
+                        else contents[label]
+                    )
+        return subprocess.CompletedProcess(
+            argv,
+            1 if mode == "failed" and len(calls) == 1 else 0,
+            stdout="Synthetic completed command\n",
+            stderr="WARNING: synthetic retained warning\n",
+        )
+
     monkeypatch.setattr(module.subprocess, "run", execute)
     return module, root, freeze, freeze_path, calls
 
 
-@pytest.mark.parametrize("mode", ["normal", "failed", "missing-artifact", "stale-artifact", "missing-tool", "corrupt-artifact"])
+@pytest.mark.parametrize(
+    "mode",
+    ["normal", "failed", "missing-artifact", "stale-artifact", "missing-tool", "corrupt-artifact"],
+)
 def test_collector_runs_every_command_and_preserves_real_status_logs_and_artifacts(
-    freeze_files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str,
+    freeze_files: tuple,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
 ) -> None:
     module, root, _freeze, freeze_path, calls = runner(freeze_files, monkeypatch, mode)
     if mode == "stale-artifact":
@@ -58,7 +78,9 @@ def test_collector_runs_every_command_and_preserves_real_status_logs_and_artifac
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text("Old synthetic evidence\n")
     output = root / ".ai-audits/regression-01"
-    assert module.main(["--freeze", str(freeze_path), "--output", str(output)]) == (0 if mode == "normal" else 1)
+    assert module.main(["--freeze", str(freeze_path), "--output", str(output)]) == (
+        0 if mode == "normal" else 1
+    )
     assert len(calls) == 12
     evidence = json.loads((output / "evidence.json").read_text())
     result = json.loads((output / "result.json").read_text())
@@ -83,18 +105,38 @@ def test_collector_runs_every_command_and_preserves_real_status_logs_and_artifac
     assert freeze_path.exists()
 
 
-@pytest.mark.parametrize("mode", ["ports", "stale-freeze", "wrong-promoted", "existing-output", "inside-candidate", "inside-source", "inside-code"])
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "ports",
+        "stale-freeze",
+        "wrong-promoted",
+        "existing-output",
+        "inside-candidate",
+        "inside-source",
+        "inside-code",
+    ],
+)
 def test_collector_rejects_preflight_failures_without_running_or_overwriting_inputs(
-    freeze_files: tuple, monkeypatch: pytest.MonkeyPatch, mode: str,
+    freeze_files: tuple,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
 ) -> None:
     module, root, freeze, freeze_path, calls = runner(freeze_files, monkeypatch, mode)
     output = root / ".ai-audits/regression-01"
-    if mode == "stale-freeze": (root / "paydirt/game_engine.py").write_text("Changed\n")
-    elif mode == "wrong-promoted": (root / "seasons/2024/offense.csv").write_text("Different candidate\n")
-    elif mode == "existing-output": output.mkdir(); (output / "keep.txt").write_text("Preserve\n")
-    elif mode == "inside-candidate": output = root / freeze["cohorts"]["2024"]["season_dir"] / "new-output"
-    elif mode == "inside-source": output = root / "inputs/2024/normalized_stats/new-output"
-    elif mode == "inside-code": output = root / "paydirt/new-output"
+    if mode == "stale-freeze":
+        (root / "paydirt/game_engine.py").write_text("Changed\n")
+    elif mode == "wrong-promoted":
+        (root / "seasons/2024/offense.csv").write_text("Different candidate\n")
+    elif mode == "existing-output":
+        output.mkdir()
+        (output / "keep.txt").write_text("Preserve\n")
+    elif mode == "inside-candidate":
+        output = root / freeze["cohorts"]["2024"]["season_dir"] / "new-output"
+    elif mode == "inside-source":
+        output = root / "inputs/2024/normalized_stats/new-output"
+    elif mode == "inside-code":
+        output = root / "paydirt/new-output"
     before = {path: path.read_bytes() for path in root.rglob("*") if path.is_file()}
     assert module.main(["--freeze", str(freeze_path), "--output", str(output)]) == 1
     assert not calls

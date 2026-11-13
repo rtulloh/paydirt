@@ -31,7 +31,9 @@ _FrontMatterDumper.add_representer(type(None), _represent_empty_none)
 def _represent_sequence(dumper: yaml.SafeDumper, data: list):
     """Dump empty lists as a bare 'key:' to match the tracker's line-based parser."""
     if not data:
-        return dumper.represent_scalar("tag:yaml.org,2002:seq", "")
+        # A scalar with the sequence tag renders as "!!seq ''" on some PyYAML
+        # versions, which the tracker parser reads as a one-character link.
+        return dumper.represent_scalar("tag:yaml.org,2002:null", "")
     return dumper.represent_sequence("tag:yaml.org,2002:seq", data)
 
 

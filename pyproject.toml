@@ -52,6 +52,12 @@ per-file-target-version = {"paydirt-web/backend/routes.py" = "py39", "paydirt-we
 [tool.ruff.lint]
 ignore = ["E402", "F401"]
 
+[tool.ruff.lint.per-file-ignores]
+# Reviewed released-baseline file: the released-chart and 1977 gates require
+# byte-identical runtime sources, so this E731 cannot be rewritten without a
+# separately qualified gameplay change. See docs/dev-notes/issues/LINT/LINT-001.md.
+"paydirt/game_engine.py" = ["E731"]
+
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 

@@ -27,10 +27,18 @@ def test_existing_released_strategy_control():
 
 
 def test_success_failure_and_unknown_keep_full_mass():
-    root = node({"pass": F(1)}, {"pass": {"standard": (
-        branch(F(4, 5), success=True), branch(F(1, 10), success=False),
-        branch(F(1, 10)),
-    )}})
+    root = node(
+        {"pass": F(1)},
+        {
+            "pass": {
+                "standard": (
+                    branch(F(4, 5), success=True),
+                    branch(F(1, 10), success=False),
+                    branch(F(1, 10)),
+                )
+            }
+        },
+    )
     result = api().evaluate_series("root", lambda _: root)
     assert result.baseline == api().ProbabilityInterval(F(4, 5), F(9, 10))
     assert result.action_bounds["pass"] == result.baseline
@@ -39,15 +47,22 @@ def test_success_failure_and_unknown_keep_full_mass():
 
 def test_remaining_down_values_use_baseline_future_not_best_future():
     nodes = {
-        "root": node({"safe": F(1), "gamble": F(1)}, {
-            "safe": {"standard": (branch(successor="second"),)},
-            "gamble": {"standard": (branch(F(1, 2), success=True),
-                                      branch(F(1, 2), success=False))},
-        }),
-        "second": node({"good": F(1), "bad": F(3)}, {
-            "good": {"standard": (branch(success=True),)},
-            "bad": {"standard": (branch(success=False),)},
-        }),
+        "root": node(
+            {"safe": F(1), "gamble": F(1)},
+            {
+                "safe": {"standard": (branch(successor="second"),)},
+                "gamble": {
+                    "standard": (branch(F(1, 2), success=True), branch(F(1, 2), success=False))
+                },
+            },
+        ),
+        "second": node(
+            {"good": F(1), "bad": F(3)},
+            {
+                "good": {"standard": (branch(success=True),)},
+                "bad": {"standard": (branch(success=False),)},
+            },
+        ),
     }
     result = api().evaluate_series("root", nodes.__getitem__)
     assert result.action_bounds["safe"] == api().ProbabilityInterval(F(1, 4), F(1, 4))
@@ -56,9 +71,15 @@ def test_remaining_down_values_use_baseline_future_not_best_future():
 
 
 def test_all_formations_are_bounded_without_a_hidden_selected_formation():
-    root = node({"pass": F(1)}, {"pass": {
-        "run": (branch(success=True),), "pass": (branch(success=False),),
-    }})
+    root = node(
+        {"pass": F(1)},
+        {
+            "pass": {
+                "run": (branch(success=True),),
+                "pass": (branch(success=False),),
+            }
+        },
+    )
     result = api().evaluate_series("root", lambda _: root)
     assert result.baseline == api().ProbabilityInterval(F(0), F(1))
 
@@ -68,29 +89,44 @@ def test_full_state_identity_keeps_histories_and_phases_distinct():
     first = (2, 40, ("screen",), "ordinary")
     second = (2, 40, ("long_pass",), "ordinary")
     third = (2, 40, ("screen",), "pending_penalty")
-    nodes = {"root": node({"pass": F(1)}, {"pass": {"standard": (
-        branch(F(1, 3), successor=first), branch(F(1, 3), successor=second),
-        branch(F(1, 3), successor=third),
-    )}})}
+    nodes = {
+        "root": node(
+            {"pass": F(1)},
+            {
+                "pass": {
+                    "standard": (
+                        branch(F(1, 3), successor=first),
+                        branch(F(1, 3), successor=second),
+                        branch(F(1, 3), successor=third),
+                    )
+                }
+            },
+        )
+    }
     for state, success in [(first, True), (second, False), (third, None)]:
-        nodes[state] = node({"pass": F(1)}, {"pass": {"standard": (
-            branch(success=success),
-        )}})
+        nodes[state] = node({"pass": F(1)}, {"pass": {"standard": (branch(success=success),)}})
     result = api().evaluate_series("root", nodes.__getitem__)
     assert result.baseline == api().ProbabilityInterval(F(1, 3), F(2, 3))
     assert result.expanded_nodes == 4
 
 
 def test_cycles_and_node_or_depth_limits_remain_unknown():
-    root = node({"pass": F(1)}, {"pass": {"standard": (
-        branch(F(1, 2), success=True), branch(F(1, 2), successor="root"),
-    )}})
+    root = node(
+        {"pass": F(1)},
+        {
+            "pass": {
+                "standard": (
+                    branch(F(1, 2), success=True),
+                    branch(F(1, 2), successor="root"),
+                )
+            }
+        },
+    )
     result = api().evaluate_series("root", lambda _: root)
     assert result.baseline == api().ProbabilityInterval(F(1, 2), F(1))
     assert result.unknown_reasons == {"cycle": 1}
-    chain = lambda state: node({"pass": F(1)}, {"pass": {"standard": (
-        branch(successor=state + 1),
-    )}})
+    def chain(state):
+        return node({"pass": F(1)}, {"pass": {"standard": (branch(successor=state + 1),)}})
     limited = api().evaluate_series(0, chain, max_nodes=2)
     assert limited.expanded_nodes == 2
     assert limited.baseline == api().ProbabilityInterval(F(0), F(1))
@@ -102,9 +138,9 @@ def test_cycles_and_node_or_depth_limits_remain_unknown():
 
 @pytest.mark.parametrize("masses", [(F(1, 2),), (F(3, 4), F(3, 4)), (F(-1), F(2))])
 def test_invalid_physical_mass_is_rejected_instead_of_renormalized(masses):
-    root = node({"pass": F(1)}, {"pass": {"standard": tuple(
-        branch(mass, success=True) for mass in masses
-    )}})
+    root = node(
+        {"pass": F(1)}, {"pass": {"standard": tuple(branch(mass, success=True) for mass in masses)}}
+    )
     with pytest.raises(ValueError, match="probability|mass"):
         api().evaluate_series("root", lambda _: root)
 
@@ -117,34 +153,43 @@ def test_invalid_prior_rejected(prior):
 
 
 def test_missing_action_or_formation_coverage_is_rejected():
-    root = node({"pass": F(1), "run": F(1)}, {
-        "pass": {"standard": (branch(success=True),)},
-        "run": {"blitz": (branch(success=True),)},
-    })
+    root = node(
+        {"pass": F(1), "run": F(1)},
+        {
+            "pass": {"standard": (branch(success=True),)},
+            "run": {"blitz": (branch(success=True),)},
+        },
+    )
     with pytest.raises(ValueError, match="formation"):
         api().evaluate_series("root", lambda _: root)
-    missing = node({"pass": F(1), "run": F(1)}, {
-        "pass": {"standard": (branch(success=True),)},
-    })
+    missing = node(
+        {"pass": F(1), "run": F(1)},
+        {
+            "pass": {"standard": (branch(success=True),)},
+        },
+    )
     with pytest.raises(ValueError, match="action"):
         api().evaluate_series("root", lambda _: missing)
 
 
 def test_ambiguous_terminal_and_successor_is_rejected():
-    root = node({"pass": F(1)}, {"pass": {"standard": (
-        branch(success=True, successor="another"),
-    )}})
+    root = node(
+        {"pass": F(1)}, {"pass": {"standard": (branch(success=True, successor="another"),)}}
+    )
     with pytest.raises(ValueError, match="terminal|successor"):
         api().evaluate_series("root", lambda _: root)
 
 
 def test_exact_certificate_accepts_supported_improvement_and_preserves_support():
-    bounds = {"safe": api().ProbabilityInterval(F(4, 5), F(4, 5)),
-              "bad": api().ProbabilityInterval(F(1, 5), F(1, 5)),
-              "excluded": api().ProbabilityInterval(F(1), F(1))}
+    bounds = {
+        "safe": api().ProbabilityInterval(F(4, 5), F(4, 5)),
+        "bad": api().ProbabilityInterval(F(1, 5), F(1, 5)),
+        "excluded": api().ProbabilityInterval(F(1), F(1)),
+    }
     result = api().certify_proposal(
         {"safe": F(1), "bad": F(1), "excluded": F(0)},
-        {"safe": F(3), "bad": F(1), "excluded": F(0)}, bounds,
+        {"safe": F(3), "bad": F(1), "excluded": F(0)},
+        bounds,
     )
     assert result.accepted
     assert result.proposal_lower_advantage == F(3, 20)
@@ -153,15 +198,19 @@ def test_exact_certificate_accepts_supported_improvement_and_preserves_support()
     with pytest.raises(ValueError, match="support"):
         api().certify_proposal(
             {"safe": F(1), "bad": F(1), "excluded": F(0)},
-            {"safe": F(1), "bad": F(1), "excluded": F(1)}, bounds,
+            {"safe": F(1), "bad": F(1), "excluded": F(1)},
+            bounds,
         )
 
 
 def test_uncertainty_cannot_masquerade_as_safe_improvement():
-    bounds = {"known": api().ProbabilityInterval(F(3, 4), F(3, 4)),
-              "unknown": api().ProbabilityInterval(F(0), F(1))}
-    result = api().certify_proposal({"known": F(1), "unknown": F(1)},
-                                    {"known": F(1), "unknown": F(3)}, bounds)
+    bounds = {
+        "known": api().ProbabilityInterval(F(3, 4), F(3, 4)),
+        "unknown": api().ProbabilityInterval(F(0), F(1)),
+    }
+    result = api().certify_proposal(
+        {"known": F(1), "unknown": F(1)}, {"known": F(1), "unknown": F(3)}, bounds
+    )
     assert not result.accepted
     assert result.proposal_lower_advantage == F(-3, 16)
     assert result.returned_weights == {"known": F(1, 2), "unknown": F(1, 2)}
@@ -183,18 +232,25 @@ def test_results_are_immutable_and_input_maps_are_not_modified():
 def test_invalid_limits_fail_before_model_is_read(limits):
     def fail(_):
         raise AssertionError("invalid limit must not inspect model")
+
     with pytest.raises(ValueError, match="limit|depth|nodes"):
         api().evaluate_series("root", fail, **limits)
 
 
 @pytest.mark.parametrize("home", [False, True])
-@pytest.mark.parametrize("changed_call,modifier,expected", [
-    (None, "0", .7981686716503044),
-    ("short_pass", "-4", .7707350774),
-    ("long_pass", "-10", .04111004676),
-])
+@pytest.mark.parametrize(
+    "changed_call,modifier,expected",
+    [
+        (None, "0", 0.7981686716503044),
+        ("short_pass", "-4", 0.7707350774),
+        ("long_pass", "-10", 0.04111004676),
+    ],
+)
 def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
-    home, changed_call, modifier, expected,
+    home,
+    changed_call,
+    modifier,
+    expected,
 ):
     """A test-only adapter, not a generic football transition implementation.
 
@@ -219,21 +275,26 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
     game.state.yards_to_go = 10
     game.state.ball_position = 40
     game.state.quarter = 1
-    game.state.time_remaining = 10.
+    game.state.time_remaining = 10.0
     for chart in (game.state.home_chart, game.state.away_chart):
         for play in resolver.CHART_PLAY_TYPES:
-            rows = {row: ("4" if play.value == "short_pass" else
-                          "10" if row >= 30 else "0")
-                    if play.value in ("short_pass", "long_pass") else "-20"
-                    for row in resolver.chart_roll_weights()}
-            setattr(chart.offense, play.value, rows)
-        chart.defense = DefenseChart({
-            (formation.value, row): {
-                column: modifier if play.value == changed_call else "0"
-                for column, play in enumerate(resolver.CHART_PLAY_TYPES, 1)
+            rows = {
+                row: ("4" if play.value == "short_pass" else "10" if row >= 30 else "0")
+                if play.value in ("short_pass", "long_pass")
+                else "-20"
+                for row in resolver.chart_roll_weights()
             }
-            for formation in resolver.DefenseType for row in range(1, 6)
-        })
+            setattr(chart.offense, play.value, rows)
+        chart.defense = DefenseChart(
+            {
+                (formation.value, row): {
+                    column: modifier if play.value == changed_call else "0"
+                    for column, play in enumerate(resolver.CHART_PLAY_TYPES, 1)
+                }
+                for formation in resolver.DefenseType
+                for row in range(1, 6)
+            }
+        )
     initial_bytes = pickle.dumps((game.state, game.offensive_call_history))
     global_before = random.getstate()
 
@@ -252,8 +313,7 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
     # Source matrix is independent of the solver. No selected formation input.
     own = game.state.home_chart if home else game.state.away_chart
     opponent = game.state.away_chart if home else game.state.home_chart
-    physical_subrows = {1: (1, 0, 1), 2: (2, 0, 2), 3: (3, 0, 3),
-                        4: (2, 2, 4), 5: (3, 2, 5)}
+    physical_subrows = {1: (1, 0, 1), 2: (2, 0, 2), 3: (3, 0, 3), 4: (2, 2, 4), 5: (3, 2, 5)}
     physical = {}
     # Later long-yardage states can admit calls excluded at the initial root.
     # Compile all nine, never truncate the future policy to initial support.
@@ -264,8 +324,12 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
             representatives = {}
             for row, row_mass in resolver.chart_roll_weights().items():
                 for subrow, subrow_mass in resolver.defense_subrow_weights().items():
-                    with patch.object(resolver, "roll_chart_dice", return_value=(row, "test")), \
-                         patch.object(resolver, "roll_defense_dice", return_value=physical_subrows[subrow]):
+                    with (
+                        patch.object(resolver, "roll_chart_dice", return_value=(row, "test")),
+                        patch.object(
+                            resolver, "roll_defense_dice", return_value=physical_subrows[subrow]
+                        ),
+                    ):
                         result = resolver.resolve_play(own, opponent, play, formation)
                     assert result.result_type == resolver.ResultType.YARDS
                     key = (result.result_type, result.yards, result.turnover, result.touchdown)
@@ -302,9 +366,15 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
                         random.seed(8306)
                         clone._record_offensive_call(play)
                         outcome = clone._apply_play_result(
-                            play, formation, deepcopy(result), "test",
-                            before.down, before.ball_position, before.yards_to_go,
-                            False, False,
+                            play,
+                            formation,
+                            deepcopy(result),
+                            "test",
+                            before.down,
+                            before.ball_position,
+                            before.yards_to_go,
+                            False,
+                            False,
                         )
                     finally:
                         random.setstate(saved_random)
@@ -317,7 +387,9 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
                         event = branch(mass, successor=identity(clone))
                     branches.append(event)
                 outcomes[play.value][formation.value] = tuple(branches)
-        return node({play.value: F.from_float(weight) for play, weight in weights.items()}, outcomes)
+        return node(
+            {play.value: F.from_float(weight) for play, weight in weights.items()}, outcomes
+        )
 
     preview = api().evaluate_series(identity(game), model, max_nodes=256)
     assert preview.baseline.lower == preview.baseline.upper
@@ -330,8 +402,13 @@ def test_public_numeric_witness_matches_actual_resolver_core_and_factory(
     proposal[best] *= 2  # Test proposal only; no production sampling rule added.
     certificate = api().certify_proposal(prior, proposal, preview.action_bounds)
     assert certificate.accepted and certificate.proposal_lower_advantage > 0
-    returned_value = sum((weight * preview.action_bounds[play].lower
-                          for play, weight in certificate.returned_weights.items()), F())
+    returned_value = sum(
+        (
+            weight * preview.action_bounds[play].lower
+            for play, weight in certificate.returned_weights.items()
+        ),
+        F(),
+    )
     assert returned_value - preview.baseline.lower == certificate.proposal_lower_advantage
     assert pickle.dumps((game.state, game.offensive_call_history)) == initial_bytes
     assert random.getstate() == global_before
