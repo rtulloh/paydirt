@@ -125,11 +125,23 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
         if _git(root, "rev-parse", f"refs/tags/{tag}^{{commit}}").decode().strip() != commit:
             raise ValueError("Release tag does not resolve to the pinned trusted commit")
         names = _git(root, "ls-tree", "-r", "--name-only", commit).decode().splitlines()
-        season_names = {name for name in names if name.startswith(baseline_path + "/")}
+        # DATA-049: roster.json files are narration-only metadata added in v1.10.6.
+        # They are not part of the immutable chart identity and must not fail this
+        # released-chart regression (charts, metadata, contracts, gameplay unchanged).
+        season_names = {
+            name for name in names
+            if name.startswith(baseline_path + "/")
+            and not name.endswith("/roster.json")
+        }
         contract = f"config/chart-validation/{season}.json"
         if not season_names or contract not in names:
             raise ValueError("Trusted release lacks season or validation contract")
-        actual = {baseline_path + "/" + str(path.relative_to(root / season_path)) for path in (root / season_path).rglob("*") if path.is_file() or path.is_symlink()}
+        actual = {
+            baseline_path + "/" + str(path.relative_to(root / season_path))
+            for path in (root / season_path).rglob("*")
+            if (path.is_file() or path.is_symlink())
+            and path.name != "roster.json"
+        }
         if actual != season_names:
             report["errors"].append("Season file inventory differs from trusted release")
         runtime = {name for name in names if _runtime_path(name)}

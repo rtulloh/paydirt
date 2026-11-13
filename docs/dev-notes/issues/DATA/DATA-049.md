@@ -1,12 +1,12 @@
 ---
 id: DATA-049
 title: Bundle verified player rosters for 1977 and 2024 commentary
-status: open
+status: resolved
 priority: Medium
 target-release: v1.10.6
 created-at: 2026-11-11
-resolved-at:
-closed-at:
+resolved-at: 2026-11-13
+closed-at: 2026-11-13
 tags:
   - release-planning
 links:
@@ -28,3 +28,20 @@ Manual v1.10.5 UI testing found generic player references in the 1977 play log. 
 
 --- 2026-11-11 00:00 ---
 Created with scripts/create_issue.py. Keep evidence public-safe.
+
+--- 2026-11-13 00:00 ---
+Resolved: added roster.json for all 28 1977 teams and all 32 2024 teams, sourced
+from the nflverse roster dataset (CC BY 4.0). Position groups mapped from nflverse
+coarse positions (QB/RB/WR/TE/OL/DL/LB/DB/K/P); kr omitted (unused by commentary).
+Names sorted within each position. No gameplay, chart, probability or RNG changes.
+
+Released chart regression audit updated to treat roster.json as narration-only
+metadata (excluded from the immutable season file inventory and byte comparison)
+so the v1.10.3 baseline for 2024 (which has no rosters) still verifies. 1983
+and 2024 released audits both pass. Packaging already includes whole season dirs,
+so rosters ship in all builds.
+
+--- 2026-11-13 00:00 ---
+Closed: play-test confirmation received. 1977 commentary now shows season-correct
+names (e.g., John Cappelletti) instead of generic position labels. 2024 covered
+by the same roster files.
