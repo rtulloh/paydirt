@@ -7,15 +7,14 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-209 issues: 78 open, 58 resolved, 73 closed.
+209 issues: 77 open, 59 resolved, 73 closed.
 
-## Open (78)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [LINT-001](issues/LINT/LINT-001.md) | High | v1.10.6 | Ruff gate fails on 756 default-rule violations across 29 files | created 2026-11-13 | — |
 | [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
@@ -95,7 +94,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (58)
+## Resolved (awaiting play-test confirmation) (59)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -125,6 +124,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-010](issues/FLOW/FLOW-010.md) | High | — | Random-opponent API assigns the opponent as the player in away games | created 2026-10-30, resolved 2026-10-30 | — |
 | [FLOW-011](issues/FLOW/FLOW-011.md) | High | — | Web conversion endpoints execute without a pending touchdown try | created 2026-10-30, resolved 2026-10-30 | — |
 | [FLOW-016](issues/FLOW/FLOW-016.md) | High | — | Penalty dialog invents midfield and incorrect enforcement previews | created 2026-11-06, resolved 2026-11-07 | — |
+| [LINT-001](issues/LINT/LINT-001.md) | High | v1.10.6 | Ruff gate fails on 756 default-rule violations across 29 files | created 2026-11-13, resolved 2026-11-13 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | — | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
 | [RULE-014](issues/RULE/RULE-014.md) | High | — | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010, RULE-018, RULE-019 |
 | [RULE-015](issues/RULE/RULE-015.md) | High | — | Recovery roll 39 on an ordinary fumble was an automatic defensive touchdown (R:39→"lost" | Ret:35→97 in the… | created 2026-10-20, resolved 2026-10-20 | — |
