@@ -67,6 +67,18 @@ python3 -m paydirt.released_chart_regression_audit --season 1983 --output .ai-au
 python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/chart-quality-2024.json
 ```
 
+### One-command runner
+
+`python3 scripts/run_full_regression.py` runs every command above in order,
+streams per-step logs, and prints a compact pass/fail summary. `--list` shows the
+plan without running; `--only`/`--skip` narrow it; `--clean-checkout` adds the
+tracked-files-only unit run. Logs and `summary.json`/`summary.md` are written to
+ignored `.ai-audits/full-regression/`. Prefer asking the owner to run this script
+and share the summary instead of running the suite step by step in an agent
+session; it covers the twelve commands above plus the private 1983 AI audit when
+escrow charts exist. It does not replace the separate manual gates below (1977
+release-policy audit, per-issue tracker review, published-artifact verification).
+
 **Released charts and new charts have distinct gates.** The two commands above
 apply to public 1983/2024 charts from the immutable v1.10.3 commit
 `1467b11e151fe9981177890e2a7a6b805402b3f0`. They verify exact chart, metadata,
