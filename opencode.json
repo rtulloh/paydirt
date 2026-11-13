@@ -208,6 +208,51 @@
     },
     {
       "action": "shell",
+      "resource": ".venv/bin/python* -m pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/python* -m pytest",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "pytest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/python* scripts/run_full_regression.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": ".venv/bin/python* tests/run_*.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "python3 e2e/serve_backend.py *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "PAYDIRT_E2E_BACKEND_PORT=* PAYDIRT_E2E_FRONTEND_PORT=* npm run test:e2e *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "PAYDIRT_E2E_BACKEND_PORT=* PAYDIRT_E2E_FRONTEND_PORT=* npm run test:e2e",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
       "resource": "pwd",
       "effect": "allow"
     },

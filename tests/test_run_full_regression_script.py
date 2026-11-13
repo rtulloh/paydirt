@@ -6,11 +6,13 @@ private chart material and never touch the ignored local audit storage.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from paydirt.chart_release_gate import required_regression_commands
 from scripts.run_full_regression import (
     StepResult,
+    browser_environment,
     choose_ports,
     conditional_skip_reason,
     main,
@@ -64,6 +66,26 @@ def test_occupied_default_ports_get_isolated_replacements() -> None:
     assert env["PAYDIRT_E2E_BACKEND_PORT"] != "8000"
     assert env["PAYDIRT_E2E_FRONTEND_PORT"] != "5173"
     assert env["PAYDIRT_E2E_BACKEND_PORT"] != env["PAYDIRT_E2E_FRONTEND_PORT"]
+
+
+def test_browser_step_pins_the_regression_interpreter_on_path() -> None:
+    env = browser_environment(
+        {"PATH": f"/usr/bin{os.pathsep}/bin"}, "/project/.venv/bin/python3"
+    )
+    entries = env["PATH"].split(os.pathsep)
+    assert entries[0] == "/project/.venv/bin"
+    assert entries[1:] == ["/usr/bin", "/bin"]
+
+
+def test_browser_environment_does_not_mutate_its_input() -> None:
+    base = {"PATH": "/usr/bin"}
+    browser_environment(base, "/project/.venv/bin/python3")
+    assert base == {"PATH": "/usr/bin"}
+
+
+def test_browser_environment_tolerates_a_missing_path() -> None:
+    env = browser_environment({}, "/project/.venv/bin/python3")
+    assert env["PATH"] == "/project/.venv/bin"
 
 
 def test_summarize_reports_failure_and_nonzero_exit() -> None:

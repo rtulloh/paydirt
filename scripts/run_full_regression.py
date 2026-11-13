@@ -210,6 +210,21 @@ def _print_plan(steps: Sequence[Step], root: Path) -> None:
             print(f"  {'':12}  note: {step.note}")
 
 
+def browser_environment(base: dict[str, str], python: str) -> dict[str, str]:
+    """Return ``base`` with the regression interpreter's directory first on ``PATH``.
+
+    ``playwright.config.js`` starts the isolated E2E API with ``python3`` from
+    ``PATH``. That must be the same interpreter running the rest of the regression;
+    an unrelated system ``python3`` can carry different dependency versions and make
+    the real API fail with misleading chart or conversion errors.
+    """
+    env = dict(base)
+    bindir = str(Path(python).parent)
+    current = env.get("PATH", "")
+    env["PATH"] = bindir + (os.pathsep + current if current else "")
+    return env
+
+
 def _stream_step(step: Step, root: Path, log_path: Path, env: dict[str, str],
                  timeout: float) -> StepResult:
     started = time.monotonic()
@@ -374,6 +389,7 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
         env = dict(os.environ)
         if step.name == "browser":
             env.update(port_env)
+            env = browser_environment(env, sys.executable)
         result = _stream_step(step, base_root, log_root / f"{step.name}.log", env, args.timeout)
         results.append(result)
         print(f"{result.status.upper():4} {step.name} ({result.seconds:.1f}s)", flush=True)

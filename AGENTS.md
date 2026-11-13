@@ -78,6 +78,11 @@ and share the summary instead of running the suite step by step in an agent
 session; it covers the twelve commands above plus the private 1983 AI audit when
 escrow charts exist. It does not replace the separate manual gates below (1977
 release-policy audit, per-issue tracker review, published-artifact verification).
+The browser step puts the regression interpreter's directory first on `PATH`, so
+the isolated E2E API always runs on the same Python environment as the rest of the
+run. Install that environment's backend and test dependencies, including the
+test-only `httpx<0.28`, and install Chromium once
+(`cd paydirt-web/frontend && npx playwright install chromium`).
 
 **Released charts and new charts have distinct gates.** The two commands above
 apply to public 1983/2024 charts from the immutable v1.10.3 commit
