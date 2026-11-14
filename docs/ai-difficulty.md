@@ -119,8 +119,20 @@ interference spots, without applying state or consuming dice.
 This comparison does not override the existing end-of-half policy within
 the last 45 seconds of the second, fourth, or overtime periods: a retained gain may
 expire the period while a defensive penalty can preserve time or an untimed
-down. It is not a general redesign of defensive penalty choices, kick/return
-choices, clock management, or play-plus-spike decisions.
+down.
+
+When the defense is offended by an offensive foul, CPU coaching compares the
+retained play with each engine-projected enforcement rather than testing only
+whether the play gained yardage. It ranks the resulting situations by yards the
+offense still must cover to reach the defense's goal, then by the down, then by
+the distance to convert, so an incomplete first-down pass becomes first-and-25
+instead of second-and-10 at the same spot, and a half-distance foul that moves
+the ball only a short way is priced at its real spot. The play is kept unless
+enforcement is strictly better; a retained loss that exceeds the foul, a
+retained score or safety, a fourth-down stop, a turnover, a fumble, or a
+requested spike keeps its existing policy. This is a coaching ordering, not an
+expected-points estimate, and it does not redesign kick/return penalty
+choices, general clock management, or play-plus-spike decisions.
 
 ## Two-Point Tries
 

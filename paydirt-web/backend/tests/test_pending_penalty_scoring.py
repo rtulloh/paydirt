@@ -174,21 +174,25 @@ def test_cpu_decision_is_applied_before_any_scoring_setup(human_is_home: bool, c
 def test_finalized_non_scoring_outcome_at_goal_line_is_not_relabeled() -> None:
     """The backend must not infer a touchdown from the spot after a decision."""
     with TestClient(app) as client:
-        game_id, game = _start(client, human_is_home=True, human_offense=True)
+        # The human is the defender: the CPU offense fouls, so the human's own
+        # decision is what the endpoint applies. An earlier setup flagged the
+        # human as defense while the live possession was the human's, so the
+        # route let the CPU auto-decide and the expectation below only restated
+        # the old "decline any zero-yard play" defensive policy.
+        game_id, game = _start(client, human_is_home=True, human_offense=False)
         engine = game["engine"]
         try:
             engine.state.ball_position, engine.state.yards_to_go = 99, 1
             engine.state.possession_team.offense.line_plunge.update({26: "OFF 10", 27: "0"})
-            game["human_plays_offense"] = False  # Defense (human side flag) decides.
             with patch("paydirt.play_resolver.roll_chart_dice", side_effect=[(26, "Roll26"), (27, "Roll27")]):
                 executed = client.post("/api/game/execute", json={
-                    "game_id": game_id, "player_play": "1", "cpu_play": "A",
+                    "game_id": game_id, "player_play": "A", "cpu_play": "1",
                 })
             assert executed.status_code == 200
-            with patch("routes.cpu_should_accept_penalty", return_value=(True, 0)):
-                decided = client.post("/api/game/penalty-decision", json={
-                    "game_id": game_id, "accept_penalty": False, "penalty_index": 0,
-                })
+            assert executed.json()["result"]["pending_penalty_decision"] is True
+            decided = client.post("/api/game/penalty-decision", json={
+                "game_id": game_id, "accept_penalty": False, "penalty_index": 0,
+            })
             assert decided.status_code == 200
             result = decided.json()["result"]
             assert result["touchdown"] is False

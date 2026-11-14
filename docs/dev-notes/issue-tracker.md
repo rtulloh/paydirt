@@ -7,27 +7,31 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-211 issues: 77 open, 59 resolved, 75 closed.
+218 issues: 83 open, 60 resolved, 75 closed.
 
-## Open (77)
+## Open (83)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18 | AI-003, AI-018 |
+| [FLOW-026](issues/FLOW/FLOW-026.md) | High | v1.10.6 | A new play can execute while an own-end-zone interception return decision is pending | created 2026-11-13 | FLOW-023 |
+| [FLOW-027](issues/FLOW/FLOW-027.md) | High | v1.10.6 | Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick | created 2026-11-13 | FLOW-023, FLOW-007 |
+| [RULE-031](issues/RULE/RULE-031.md) | High | v1.10.6 | Deferred end-zone interception reapplies the in-bounds/out-of-bounds modifier and lands at the wrong spot | created 2026-11-13 | FLOW-023 |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
 | [AI-016](issues/AI/AI-016.md) | Medium | — | CPU never acts on kickoff-chart penalties | created 2026-10-19 | AUD-020, RULE-013 |
 | [AI-017](issues/AI/AI-017.md) | Medium | — | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19 | — |
-| [AI-018](issues/AI/AI-018.md) | Medium | — | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002 |
+| [AI-018](issues/AI/AI-018.md) | Medium | — | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002, AI-031, AI-032 |
 | [AI-019](issues/AI/AI-019.md) | Medium | — | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-025, AI-026, AI-023, DATA-012 |
 | [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
 | [AI-023](issues/AI/AI-023.md) | Medium | — | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
 | [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
 | [AI-029](issues/AI/AI-029.md) | Medium | — | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | — | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
+| [AI-031](issues/AI/AI-031.md) | Medium | — | Defensive foul comparison ignores clock, score and timeouts and can hand the offense a kneel-out | created 2026-11-13 | AI-002, AI-018 |
+| [AI-032](issues/AI/AI-032.md) | Medium | — | Fourth-down stop with a positive short gain still accepts an offensive foul instead of taking the ball | created 2026-11-13 | AI-002, AI-018 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | — | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | — | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
@@ -44,12 +48,13 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
 | [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.6 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | — | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
-| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | — |
+| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | FLOW-027 |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
-| [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | — |
+| [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.6 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
+| [FLOW-028](issues/FLOW/FLOW-028.md) | Medium | v1.10.6 | Hail Mary and direct run_play interceptions bypass the end-zone return choice | created 2026-11-13 | FLOW-023 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -69,6 +74,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | — | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-019](issues/VAL/VAL-019.md) | Medium | — | Historical season runner implemented; official qualification verification remains | created 2026-11-06 | DATA-018, AI-025, AI-026 |
 | [VAL-020](issues/VAL/VAL-020.md) | Medium | — | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
+| [VAL-025](issues/VAL/VAL-025.md) | Medium | v1.10.6 | Full-regression clean checkout exports HEAD, so it can validate stale code instead of the candidate | created 2026-11-13 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | — | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AI-026](issues/AI/AI-026.md) | Low | — | Hard ordinary selection ignores own defensive and opponent chart strengths | created 2026-11-06 | AI-019, AI-025, VAL-019 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | — | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -94,7 +100,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (59)
+## Resolved (awaiting play-test confirmation) (60)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -140,6 +146,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [VAL-002](issues/VAL/VAL-002.md) | High | — | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [VAL-017](issues/VAL/VAL-017.md) | High | — | Engine audit disk fingerprints do not identify replaced loaded observers | created 2026-11-05, resolved 2026-11-07 | — |
 | [VAL-018](issues/VAL/VAL-018.md) | High | — | Engine report validation ignores policy and selected-call evidence | created 2026-11-05, resolved 2026-11-07 | DATA-031 |
+| [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18, resolved 2026-11-13 | AI-003, AI-018, AI-031, AI-032 |
 | [AI-004](issues/AI/AI-004.md) | Medium | — | Chart analysis treated rows as equally likely | created 2026-10-17, resolved 2026-10-17 | — |
 | [AI-005](issues/AI/AI-005.md) | Medium | — | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | — | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |

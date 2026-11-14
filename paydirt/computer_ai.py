@@ -19,9 +19,22 @@ from typing import Optional
 from .ai_analysis import OffenseAnalyzer, OpponentModel, TeamAnalyzer
 from .chart_loader import OffenseChart
 from .game_engine import PaydirtGameEngine
+from .game_state import PenaltySituation
 from .offense_strategy import OffensiveStrategy
 from .play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType, ResultType, is_passing_play
 from .season_rules import AIBehavior
+
+
+def _defensive_situation_rank(situation: PenaltySituation) -> tuple[int, int, int]:
+    """Rank an offense situation as the defense values it; higher is better.
+
+    Field position comes first: an offense farther from the defense's goal is
+    the defense's clearest gain, including a half-distance enforcement that
+    only moves the ball a few yards. Remaining attempts then break near ties,
+    and a longer distance to convert ranks last. This is a coaching ordering,
+    not an expected-points estimate.
+    """
+    return (100 - situation.ball_position, situation.down, situation.yards_to_go)
 
 
 class ComputerAI:
@@ -1389,7 +1402,24 @@ class ComputerAI:
                 accept_play = False
                 best_penalty_idx = penalty_choice.penalty_options.index(best_penalty)
         else:
-            if play_yards > 0:
+            retained = outcome.retained_play_situation
+            situations = outcome.penalty_situations
+            if isinstance(retained, PenaltySituation) and isinstance(situations, dict):
+                # An offensive foul replays the down from the previous spot.
+                # Keep the play unless enforcement is strictly better for the
+                # defense; never discard a play for an equivalent situation.
+                best_index = None
+                best_rank = _defensive_situation_rank(retained)
+                for index, situation in situations.items():
+                    if not isinstance(situation, PenaltySituation):
+                        continue
+                    rank = _defensive_situation_rank(situation)
+                    if rank > best_rank:
+                        best_rank, best_index = rank, index
+                accept_play = best_index is None
+                if best_index is not None:
+                    best_penalty_idx = best_index
+            elif play_yards > 0:
                 accept_play = False
 
         return (accept_play, best_penalty_idx)

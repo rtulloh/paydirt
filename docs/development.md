@@ -125,6 +125,17 @@ accepting the play would score, for CPU decisions and audits only. UI layers mus
 not place the ball for a try or kickoff, change `pending_pat`, or infer a score
 until `apply_*_penalty_decision` returns a finalized outcome.
 
+`PlayOutcome.retained_play_situation` and `PlayOutcome.penalty_situations` are
+engine-projected coaching observations: the situation accepting the play would
+produce and the situation each eligible enforcement would produce. They are
+computed on a shallow state copy with the same `advance_ball`, `next_down`,
+`resolve_penalty` and `resolve_pass_interference` routines the applied decision
+uses, without changing live state, statistics, call logs or dice. Ordinary
+retained first downs are projected for the offense, and ordinary scrimmage
+retained plays with an offensive foul are projected for the defense; scores,
+safeties, turnovers, fumbles, return chains and requested spikes are not
+projected. Consumers treat them as optional hints, never as applied game state.
+
 ## Period and try queries after a score
 
 The engine records the period in which each scoring-capable action began

@@ -127,8 +127,17 @@ def test_pending_penalties_are_finalized_through_existing_policy(token: str) -> 
     assert result["penalty_decisions"] > 0
     assert result["counts"]["pending_penalties"] == 0
     assert result["selected_calls"] == 4
-    assert result["official"]["offensive_plays"] == (4 if token == "OFF 5" else 0)
+    # Every cell is a foul, so the offended team finalizes each one and the
+    # erased play is not recorded as an attempt. The earlier OFF 5 expectation
+    # of four offensive plays came from the old defensive policy that declined
+    # a foul against an incompletion; enforcement now replays the down.
+    assert result["official"]["offensive_plays"] == 0
     assert result["home_stats"]["total_yards"] == 0
+    if token == "OFF 5":
+        assert result["home_stats"]["penalties"] == 4
+        assert result["home_stats"]["penalty_yards"] == 20
+        assert result["final"]["ball_position"] == 20
+        assert result["final"]["yards_to_go"] == 30
 
 
 def test_trial_preserves_inputs_and_caller_rng_even_on_core_exception(

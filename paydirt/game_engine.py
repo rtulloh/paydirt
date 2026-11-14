@@ -2527,6 +2527,7 @@ class PaydirtGameEngine:
                 defensive_timeout_context=defensive_timeout_context,
             )
             self._set_first_down_penalty_situations(outcome)
+            self._set_defensive_penalty_situations(outcome)
             return outcome
 
         elif penalty_choice.offsetting:
@@ -2765,6 +2766,62 @@ class PaydirtGameEngine:
                 continue
             outcome.penalty_situations[index] = PenaltySituation(
                 position, down, distance, first_down,
+            )
+
+    def _set_defensive_penalty_situations(self, outcome: PlayOutcome) -> None:
+        """Preview an offensive foul against the retained play for the defense.
+
+        An offensive foul replays the down from the previous spot, so the
+        offended defense can compare that enforced situation with the play it
+        would otherwise keep. Only ordinary scrimmage results are projected;
+        scores, safeties, turnovers, fumbles and requested spikes keep their
+        existing policy. No state, statistic, call log or dice are changed.
+        """
+        choice = outcome.penalty_choice
+        if (choice is None or choice.offended_team != "defense"
+                or outcome.play_type not in CHART_PLAY_TYPES
+                or outcome.turnover or outcome.projected_touchdown
+                or outcome.spike_context is not None):
+            return
+        result = choice.play_result
+        if result.result_type not in (
+                ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE,
+                ResultType.SACK, ResultType.INCOMPLETE):
+            return
+        # Match apply_penalty_decision: a DEF priority result may store penalty
+        # yardage rather than the original offensive gain in result.yards.
+        yards = (result.offense_yards if (result.defense_modifier or "").startswith("DEF")
+                 else result.yards)
+        preview = replace(self.state)
+        if result.result_type == ResultType.INCOMPLETE:
+            first_down = False
+            turnover_on_downs = preview.next_down()
+        else:
+            first_down = preview.advance_ball(yards)
+            turnover_on_downs = False
+            if preview.ball_position >= 100 or preview.ball_position <= 0:
+                # A retained score or safety is not an ordinary spot comparison.
+                return
+            if not first_down:
+                turnover_on_downs = preview.next_down()
+        if turnover_on_downs:
+            # The retained play itself ends the drive; that is not equivalent
+            # to replaying the down and stays on the existing policy.
+            return
+        outcome.retained_play_situation = PenaltySituation(
+            preview.ball_position, preview.down, preview.yards_to_go, first_down,
+        )
+        for index, option in enumerate(choice.penalty_options):
+            if option.penalty_type != "OFF":
+                continue
+            _, position, down, distance, enforced_first_down = resolve_penalty(
+                option.raw_result, self.state.ball_position,
+                yards_gained=0, is_return=False,
+                yards_to_go=self.state.yards_to_go, down=self.state.down,
+                chart_yards=option.yards, auto_first_down=option.auto_first_down,
+            )
+            outcome.penalty_situations[index] = PenaltySituation(
+                position, down, distance, enforced_first_down,
             )
 
     def apply_penalty_decision(

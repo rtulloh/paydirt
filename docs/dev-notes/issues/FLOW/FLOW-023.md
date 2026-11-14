@@ -9,6 +9,10 @@ resolved-at:
 closed-at:
 tags:
 links:
+  - FLOW-026
+  - FLOW-027
+  - FLOW-028
+  - RULE-031
 commits:
 ---
 
@@ -109,3 +113,15 @@ ATTEMPT RETURN after the engine reports catch depth, score and clock, before any
 return dice. Engine/audit callers may still declare explicit policies for
 controlled runs and legacy compatibility; those settings are not exposed in the
 game UI.
+
+--- 2026-11-13 22:40 ---
+Code review of `cedf6117..HEAD` found four defects in this shipped feature, each
+recorded separately rather than reopening this ticket's design: [FLOW-026](../FLOW/FLOW-026.md)
+(a new play can execute while the end-zone choice is pending, so a CPU
+fourth-down interception can be followed by another snap), [FLOW-027](../FLOW/FLOW-027.md)
+(`resume_game` prints the resolved return but skips its try/kickoff or safety
+free kick), [RULE-031](../RULE/RULE-031.md) (the in-bounds/out-of-bounds
+designation is applied twice, changing the final return spot from the depth
+shown), and [FLOW-028](../FLOW/FLOW-028.md) (Hail Mary and direct `run_play`
+interceptions bypass the choice). No production change or play test here; this
+ticket stays open for its own remaining acceptance items.
