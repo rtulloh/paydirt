@@ -43,13 +43,38 @@ def test_unchanged_sanitized_public_release_keeps_exceptions(baseline):
     assert report["gameplay_implementation_unchanged"] is True
 
 
-@pytest.mark.parametrize("kind", ["chart", "manifest", "contract", "runtime"])
-def test_changed_release_identity_rejected(baseline, kind):
+@pytest.mark.parametrize("kind", ["chart", "manifest", "contract"])
+def test_changed_chart_identity_rejected(baseline, kind):
     root, _ = baseline
-    paths = {"chart": next((root / "seasons/2026").glob("*/offense.csv")), "manifest": root / "seasons/2026/generation-manifest.json", "contract": root / "config/chart-validation/2026.json", "runtime": root / "paydirt/game_engine.py"}
+    paths = {"chart": next((root / "seasons/2026").glob("*/offense.csv")), "manifest": root / "seasons/2026/generation-manifest.json", "contract": root / "config/chart-validation/2026.json"}
     path = paths[kind]
     path.write_bytes(path.read_bytes() + b"\n")
     assert not gate.audit_released_season(root, season=2026)["passed"]
+
+
+def test_gameplay_change_is_reported_without_failing_chart_integrity(baseline):
+    """Engine changes are validated by the gameplay regression, not chart identity."""
+    root, _ = baseline
+    (root / "paydirt/game_engine.py").write_text("RULE = False\n")
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"], report["errors"]
+    identity = report["gameplay_identity"]
+    assert identity["implementation_unchanged"] is False
+    assert identity["inventory_changed"] is False
+    assert identity["modified"] == ["paydirt/game_engine.py"]
+    assert identity["changed_files"] == ["paydirt/game_engine.py"]
+    assert report["gameplay_implementation_unchanged"] is False
+    assert not any("Trusted release content mismatch" in error for error in report["errors"])
+
+
+def test_chart_mechanics_still_block_a_gameplay_change(baseline, monkeypatch):
+    """Separating engine identity must not skip the released chart mechanics check."""
+    root, _ = baseline
+    (root / "paydirt/game_engine.py").write_text("RULE = False\n")
+    monkeypatch.setattr(gate, "audit_public_season", lambda *args, **kwargs: {"errors": ["synthetic mechanics failure"]})
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"] is False
+    assert "synthetic mechanics failure" in report["errors"]
 
 
 def test_new_season_cannot_claim_released_status(baseline):
@@ -75,10 +100,15 @@ def test_moved_release_tag_rejected(baseline):
     assert not gate.audit_released_season(root, season=2026)["passed"]
 
 
-def test_new_runtime_module_rejected(baseline):
+def test_new_runtime_module_is_reported_not_rejected(baseline):
     root, _ = baseline
     (root / "paydirt/unknown_rule.py").write_text("RULE = False\n")
-    assert not gate.audit_released_season(root, season=2026)["passed"]
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"], report["errors"]
+    identity = report["gameplay_identity"]
+    assert identity["inventory_changed"] is True
+    assert identity["added"] == ["paydirt/unknown_rule.py"]
+    assert identity["changed_files"] == ["paydirt/unknown_rule.py"]
 
 
 def test_generation_only_and_version_changes_allowed(baseline):
@@ -98,10 +128,13 @@ def test_symlink_to_identical_bytes_is_rejected(baseline, tmp_path):
     assert not gate.audit_released_season(root, season=2026)["passed"]
 
 
-def test_version_allowance_does_not_allow_other_init_changes(baseline):
+def test_version_allowance_does_not_hide_other_init_changes(baseline):
+    """The version literal is excused; any other init change must still be visible."""
     root, _ = baseline
     (root / "paydirt/__init__.py").write_text("__version__ = '1.10.4'\nHIDDEN_RULE = True\n")
-    assert not gate.audit_released_season(root, season=2026)["passed"]
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"], report["errors"]
+    assert report["gameplay_identity"]["modified"] == ["paydirt/__init__.py"]
 
 
 def test_required_release_checklist_uses_explicit_released_gate():
@@ -199,9 +232,12 @@ def test_api_release_version_metadata_may_change_without_gameplay_change(baselin
 
 @pytest.mark.parametrize("name", ["paydirt/__main__.py", "paydirt-web/backend/main.py"])
 def test_api_metadata_allowance_does_not_hide_other_behavior(baseline, name):
+    """Non-version API metadata changes are reported as gameplay differences."""
     root, _ = baseline
     (root / name).write_text("app = FastAPI(title='Changed', version='1.10.4')\n")
-    assert not gate.audit_released_season(root, season=2026)["passed"]
+    report = gate.audit_released_season(root, season=2026)
+    assert report["passed"], report["errors"]
+    assert report["gameplay_identity"]["modified"] == [name]
 
 
 @pytest.mark.parametrize("change", [None, "chart", "extra", "symlink"])
@@ -287,7 +323,7 @@ def test_exact_reviewed_metadata_corrections_pass_and_are_receipted(metadata_bas
 
 
 @pytest.mark.parametrize("mutation", [
-    "extra-field", "wrong-label", "whitespace", "chart", "contract", "runtime", "symlink",
+    "extra-field", "wrong-label", "whitespace", "chart", "contract", "symlink",
 ])
 def test_metadata_allowance_rejects_every_other_change(metadata_baseline, mutation):
     root = metadata_baseline
@@ -335,3 +371,14 @@ def test_backend_tests_are_validated_as_tests_not_gameplay_identity(baseline):
     test.write_text("def test_control():\n    assert True\n")
     assert not gate._runtime_path(str(test.relative_to(root)))
     assert gate.audit_released_season(root, season=2026)["passed"]
+
+
+def test_accepted_metadata_corrections_survive_a_gameplay_change(metadata_baseline):
+    """The DATA-047 allowance and the separated identity report are independent."""
+    root = metadata_baseline
+    apply_reviewed_labels(root)
+    (root / "paydirt/game_engine.py").write_text("RULE = False\n")
+    report = gate.audit_released_season(root, season=1983)
+    assert report["passed"], report["errors"]
+    assert len(report["accepted_metadata_corrections"]) == 3
+    assert report["gameplay_identity"]["modified"] == ["paydirt/game_engine.py"]

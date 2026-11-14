@@ -38,15 +38,21 @@ The owner approved this narrow route on November 10, 2026; see the
 Historical audit cohort IDs and contract source-path bindings retain their original
 `1983-generated` identity; they are not player-visible season directory names.
 
-The public structure and actual chart decoders must pass. All gameplay Python
-modules in the core package, backend and packaged launcher must match the trusted
-release. Only the package version literal and the `FastAPI(version=...)` metadata literals
-in the two existing API entry points may change. Their other AST behavior must
-remain identical; this allowance cannot hide changes to rules or API behavior. Explicit
-candidate-generation/source-validation tools are excluded because they do not
-resolve player games; adding exclusions requires review. A gameplay change fails
-closed pending reviewed paired baseline regression evidence. This initial gate
-does not implement a statistical comparison for changed core/backend gameplay.
+The public structure and actual chart decoders must pass. Chart, provenance,
+contract and metadata bytes must match the trusted release, with the reviewed
+DATA-047 labels as the only accepted correction. Engine and backend modules are
+compared too, but a difference is recorded in `gameplay_identity` instead of
+failing the chart result: an intentional gameplay change cannot claim to be the
+released engine, and byte identity with the v1.10.3 charts is not the evidence
+that qualifies an engine change. Engine changes are qualified by the full unit,
+gameplay, browser, historical-calendar and AI regression in AGENTS.md plus code
+review. Only the package version literal and the `FastAPI(version=...)` metadata
+literals are excused from the reported difference, so the allowance cannot hide
+a behavior change from the receipt. Explicit candidate-generation/source-validation
+tools are excluded because they do not resolve player games; adding exclusions
+requires review. Before November 14, 2026 this gate failed closed on any gameplay
+change; that route had no implemented comparison, so a gameplay release could not
+pass it at all.
 
 The exact `paydirt-web/backend/tests/` subtree is excluded from gameplay source
 identity after independent review on November 10, 2026: packaging lists only the

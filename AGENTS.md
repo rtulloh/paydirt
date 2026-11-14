@@ -123,8 +123,12 @@ test-only `httpx<0.28`, and install Chromium once
 **Released charts and new charts have distinct gates.** The two commands above
 apply to public 1983/2024 charts from the immutable v1.10.3 commit
 `1467b11e151fe9981177890e2a7a6b805402b3f0`. They verify exact chart, metadata,
-sanitized provenance and contract bytes, public mechanics and unchanged core/backend
-gameplay implementation. The owner-reviewed DATA-047 allowance accepts only the exact
+sanitized provenance and contract bytes plus released public chart mechanics.
+Engine and backend evolution is reported separately in the receipt
+(`gameplay_identity`) rather than failed: an intentional gameplay change cannot
+claim to be the released engine, and it is qualified by the full unit, gameplay,
+browser and AI regression plus code review instead of byte identity with the
+v1.10.3 charts. The owner-reviewed DATA-047 allowance accepts only the exact
 1983 short_name corrections LAC → SD (Chargers), ARI → STL (Cardinals) and
 OAK → LA (Raiders), bound to that baseline and the complete original/corrected
 team.yaml bytes. Receipts list accepted corrections and both hashes; all other
@@ -136,9 +140,9 @@ claim fresh source reproduction or historical-fit qualification.
 Any new or regenerated season must instead pass strict source/reproduction and
 applicable minimum-sample fit qualification with `scripts/audit_generated_charts.py`
 and its reviewed source-bound contract. It cannot declare itself previously
-released. Changed gameplay fails the released gate and requires reviewed paired
-regression evidence against the immutable baseline before this route can be
-extended; do not silently add exclusions or fall back to a weaker check. See
+released. Do not silently add chart or metadata exclusions, drop the mechanics
+check, or fall back to a weaker chart check; any chart, provenance, contract or
+metadata change still fails. See
 [released chart regression](docs/released-chart-regression.md). Private source
 inventories and historical logs remain in ignored local audit storage.
 

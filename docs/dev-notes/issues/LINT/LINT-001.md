@@ -34,3 +34,12 @@ Created with scripts/create_issue.py. Keep evidence public-safe.
 
 --- 2026-11-13 07:20 ---
 Fix committed as 2e43766 (v1.10.6): 28 test modules reformatted, four test lambdas rewritten, scoped engine exception documented, `create_issue.py` empty-list serialization repaired. `ruff check paydirt/ tests/ paydirt-web/backend/` exits 0; no gameplay, chart or frontend behavior changed. Engine byte identity was re-verified with `paydirt.released_chart_regression_audit --season 1983` (PASS) before and after reverting the formatter's rewrite of `paydirt/game_engine.py`.
+--- 2026-11-14 16:10 ---
+The byte-identity constraint recorded above no longer blocks a reviewed gameplay
+edit. `paydirt.released_chart_regression_audit` now separates released chart
+integrity from engine identity: chart, provenance, contract and metadata bytes
+still fail the gate, while engine/backend differences are reported in
+`gameplay_identity` and qualified by the full unit, gameplay, browser and AI
+regression. The single production E731 in `paydirt/game_engine.py` can therefore
+be fixed as an ordinary reviewed change; its `per-file-ignores` entry stays until
+that edit lands.

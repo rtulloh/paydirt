@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-220 issues: 83 open, 61 resolved, 76 closed.
+221 issues: 83 open, 62 resolved, 76 closed.
 
 ## Open (83)
 
@@ -100,7 +100,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (61)
+## Resolved (awaiting play-test confirmation) (62)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -163,6 +163,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | — | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | — | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
 | [VAL-026](issues/VAL/VAL-026.md) | Medium | — | Local pre-push coverage should measure changed modules, not the whole package | created 2026-11-14, resolved 2026-11-14 | VAL-020 |
+| [VAL-027](issues/VAL/VAL-027.md) | Medium | v1.10.6 | Released chart gate should fail only on chart integrity, not on engine evolution | created 2026-11-14, resolved 2026-11-14 | — |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | — | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | — | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19, resolved 2026-11-07 | AUD-025 |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | — | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |

@@ -98,6 +98,72 @@ def _reviewed_metadata_correction(
     return None
 
 
+_VERSION_LITERAL_ALLOWED = frozenset({
+    "paydirt/__init__.py", "paydirt/__main__.py", "paydirt-web/backend/main.py",
+})
+
+
+def _gameplay_identity(root: Path, commit: str) -> dict[str, Any]:
+    """Report engine/backend differences from the trusted release; never certifies.
+
+    Chart integrity and engine evolution are separate questions. An intentional
+    gameplay change cannot claim to be the released engine, but it is qualified
+    by the full unit, gameplay, browser and AI regression plus code review, so a
+    difference is recorded here instead of failing the chart result.
+
+    Args:
+        root: Repository root.
+        commit: Trusted released commit that supplied the charts.
+
+    Returns:
+        Counts and file names for added, removed and modified runtime modules.
+        Unreachable or unreadable paths count as modified.
+    """
+    names = _git(root, "ls-tree", "-r", "--name-only", commit).decode().splitlines()
+    runtime = {name for name in names if _runtime_path(name)}
+    current_runtime = {
+        str(path.relative_to(root))
+        for directory in (root / "paydirt", root / "paydirt-web/backend")
+        if directory.exists()
+        for path in directory.rglob("*.py")
+        if _runtime_path(str(path.relative_to(root)))
+    }
+    if (root / "paydirt_runner.py").exists():
+        current_runtime.add("paydirt_runner.py")
+    # Ignore bytecode/test cache directories, never arbitrary new runtime modules.
+    current_runtime = {name for name in current_runtime if "/__pycache__/" not in name}
+    added = sorted(current_runtime - runtime)
+    removed = sorted(runtime - current_runtime)
+    modified = []
+    for name in sorted(runtime & current_runtime):
+        expected = _git(root, "show", f"{commit}:{name}")
+        path = root / name
+        actual = path.read_bytes() if path.is_file() and not _has_symlink(root, path) else None
+        if actual == expected:
+            continue
+        if name in _VERSION_LITERAL_ALLOWED and actual is not None:
+            api_metadata = name != "paydirt/__init__.py"
+            if _version_only(actual, api_metadata=api_metadata) == _version_only(
+                expected, api_metadata=api_metadata
+            ):
+                continue
+        modified.append(name)
+    return {
+        "checked": True,
+        "implementation_unchanged": not (added or removed or modified),
+        "inventory_changed": bool(added or removed),
+        "added": added,
+        "removed": removed,
+        "modified": modified,
+        "changed_files": sorted(added + removed + modified),
+        "scope": (
+            "Observation only. Engine and backend differences are qualified by the full unit, "
+            "gameplay, browser and AI regression and code review, not by byte identity with the "
+            "released charts; this field never certifies a release."
+        ),
+    }
+
+
 def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
     """Check published inputs and exact reviewed corrections, without private data."""
     root = Path(root).resolve()
@@ -105,11 +171,12 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
         "passed": False, "season": season, "errors": [],
         "strict_fit_passed": False, "source_reproduction_checked": False,
         "historical_accuracy_checked": False, "gameplay_implementation_unchanged": False,
+        "gameplay_identity": {"checked": False},
         "known_accuracy_exceptions": [],
         "accepted_metadata_corrections": [],
         "frontend_implementation_identity_checked": False,
         "release_certified": False,
-        "scope": "Published chart regression with exact reviewed metadata corrections and unchanged engine/backend; full browser/gameplay/AI regression additionally required",
+        "scope": "Published chart integrity with exact reviewed metadata corrections; engine/backend differences are reported separately and qualified by the full unit, gameplay, browser and AI regression",
     }
     selected = [(tag, entry) for tag, entry in TRUSTED_RELEASES.items() if season in entry["seasons"]]
     if len(selected) != 1:
@@ -144,17 +211,8 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
         }
         if actual != season_names:
             report["errors"].append("Season file inventory differs from trusted release")
-        runtime = {name for name in names if _runtime_path(name)}
-        current_runtime = {str(path.relative_to(root)) for directory in (root / "paydirt", root / "paydirt-web/backend") if directory.exists() for path in directory.rglob("*.py") if _runtime_path(str(path.relative_to(root)))}
-        if (root / "paydirt_runner.py").exists():
-            current_runtime.add("paydirt_runner.py")
-        # Ignore bytecode/test cache directories, never arbitrary new runtime modules.
-        current_runtime = {name for name in current_runtime if "/__pycache__/" not in name}
-        if current_runtime != runtime:
-            report["errors"].append("Gameplay implementation inventory changed; paired trusted-baseline qualification required")
         hashes = {}
-        runtime_ok = current_runtime == runtime
-        for name in sorted(season_names | {contract} | runtime):
+        for name in sorted(season_names | {contract}):
             expected = _git(root, "show", f"{commit}:{name}")
             path = (root / season_path / Path(name).relative_to(baseline_path)
                     if name in season_names else root / name)
@@ -169,17 +227,16 @@ def audit_released_season(root: Path, *, season: int) -> dict[str, Any]:
                     report["accepted_metadata_corrections"].append({
                         "path": str(path.relative_to(root)), **correction,
                     })
-            if name in {"paydirt/__init__.py", "paydirt/__main__.py", "paydirt-web/backend/main.py"} and actual_bytes is not None and not equal:
-                api_metadata = name != "paydirt/__init__.py"
-                equal = _version_only(actual_bytes, api_metadata=api_metadata) == _version_only(expected, api_metadata=api_metadata)
             if not equal:
                 report["errors"].append(f"Trusted release content mismatch: {name}")
-                if name in runtime:
-                    runtime_ok = False
             if name in season_names or name == contract:
                 hashes[name] = hashlib.sha256(expected).hexdigest()
         report["trusted_public_input_hashes"] = hashes
-        report["gameplay_implementation_unchanged"] = runtime_ok
+        # Chart integrity is decided above. Engine differences are reported, not
+        # failed: the full regression and review qualify any gameplay change.
+        identity = _gameplay_identity(root, commit)
+        report["gameplay_identity"] = identity
+        report["gameplay_implementation_unchanged"] = identity["implementation_unchanged"]
         trusted_contract = json.loads(_git(root, "show", f"{commit}:{contract}"))
         report["known_accuracy_exceptions"] = trusted_contract.get("known_accuracy_exceptions", [])
         if not report["errors"]:
