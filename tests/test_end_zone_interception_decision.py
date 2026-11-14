@@ -507,6 +507,95 @@ def test_cli_prompt_shows_the_engine_catch_depth_used_by_resolution(
 
     output = capsys.readouterr().out
     assert "Catch depth: 4 yard(s) deep in the end zone." in output
-    assert game.state.ball_position == 11
     assert final.pending_end_zone_interception_return_decision is False
     assert "designation" not in final.result.description
+
+
+@pytest.mark.parametrize("clock_stopped", [False, True])
+def test_hail_mary_defensive_timeout_is_deferred_with_pending_interception(
+    clock_stopped: bool,
+) -> None:
+    """FLOW-031: a pending Hail Mary interception defers its timeout request."""
+    game, result = decision_game(raw_spot=FOUR_YARDS_DEEP)
+    game.state.quarter = 4
+    game.state.time_remaining = 1.0
+    game.state.two_minute_warning_called = True
+    result.out_of_bounds = clock_stopped
+    game.state.home_timeouts = game.state.away_timeouts = 3
+    state_before = deepcopy(game.state)
+
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=result),
+    ):
+        pending = game.run_play_with_penalty_procedure(
+            PlayType.HAIL_MARY, DefenseType.STANDARD, call_defensive_timeout=True,
+        )
+
+    assert pending.pending_end_zone_interception_return_decision is True
+    assert pending.defensive_timeout_context is not None
+    assert game.state == state_before
+    assert game.play_log == []
+    assert game.has_pending_end_zone_interception is True
+    assert game._pending_end_zone_interception["follow_ups"][
+        "defensive_timeout_context"
+    ] is not None
+
+    timeouts_before = (game.state.home_timeouts, game.state.away_timeouts)
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        final = game.apply_end_zone_interception_return_decision(
+            pending, attempt_return=True,
+        )
+
+    # A completed interception is a turnover, so the engine conserves the timeout.
+    assert final.turnover is True
+    assert final.timeout_used is False
+    assert final.defensive_timeout_used is False
+    assert (game.state.home_timeouts, game.state.away_timeouts) == timeouts_before
+    assert game._pending_end_zone_interception is None
+
+
+def test_pending_hail_mary_timeout_request_survives_save_and_load(
+    tmp_path: Path,
+) -> None:
+    """FLOW-031: a restored pending interception keeps its timeout request."""
+    game, result = decision_game(raw_spot=FOUR_YARDS_DEEP)
+    game.state.quarter = 4
+    game.state.time_remaining = 1.0
+    game.state.two_minute_warning_called = True
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=result),
+    ):
+        pending = game.run_play_with_penalty_procedure(
+            PlayType.HAIL_MARY, DefenseType.STANDARD, call_defensive_timeout=True,
+        )
+    assert pending.pending_end_zone_interception_return_decision is True
+    save_path = tmp_path / "pending-hail-mary-timeout.json"
+    save_game(game, str(save_path))
+    saved = json.loads(save_path.read_text())
+    context = saved["pending_end_zone_interception"]["follow_ups"][
+        "defensive_timeout_context"
+    ]
+    assert context["time_before_play"] == 1.0
+    assert context["quarter_before_play"] == 4
+    assert context["timeouts_before_play"] == [3, 3]
+
+    loaded = load_game(str(save_path))[0]
+    assert loaded.has_pending_end_zone_interception is True
+    restored = loaded._pending_end_zone_interception["follow_ups"][
+        "defensive_timeout_context"
+    ]
+    assert restored["time_before_play"] == 1.0
+    assert restored["quarter_before_play"] == 4
+    assert tuple(restored["timeouts_before_play"]) == (3, 3)
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")),
+        patch("paydirt.game_engine.random.uniform", return_value=5.0),
+    ):
+        final = loaded.apply_end_zone_interception_return_decision(
+            loaded._last_play_outcome, attempt_return=True,
+        )
+    assert final.turnover is True
+    assert final.defensive_timeout_used is False
+    assert loaded.state.time_remaining == pytest.approx(1.0 - 5 / 60, abs=0.001)

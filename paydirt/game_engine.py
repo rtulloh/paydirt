@@ -2528,8 +2528,15 @@ class PaydirtGameEngine:
             if defensive_timeout_context is not None:
                 if outcome.pending_penalty_decision:
                     outcome.defensive_timeout_context = defensive_timeout_context
+                elif outcome.pending_end_zone_interception_return_decision:
+                    outcome.defensive_timeout_context = defensive_timeout_context
+                    self.record_pending_end_zone_interception_follow_ups(
+                        defensive_timeout_context=defensive_timeout_context
+                    )
                 else:
-                    self._apply_defensive_timeout_before_spike(outcome, defensive_timeout_context, False)
+                    self._apply_defensive_timeout_before_spike(
+                        outcome, defensive_timeout_context, False
+                    )
             return outcome
         # The engine, not its callers, owns the lifetime of an untimed down.
         if self.state.time_remaining <= 0 and self.has_untimed_down():
