@@ -32,6 +32,14 @@ def test_steps_cover_every_release_gate_command() -> None:
         assert steps[name].argv == argv
 
 
+def test_local_core_step_runs_the_whole_suite_without_coverage() -> None:
+    """Dropping coverage must not quietly narrow the complete local run."""
+    step = {entry.name: entry for entry in regression_steps(ROOT)}["core"]
+    assert step.cwd == "."
+    assert "tests/" in step.argv
+    assert not any(part.startswith("--cov") for part in step.argv)
+
+
 def test_released_chart_steps_use_released_audit() -> None:
     steps = {step.name: step for step in regression_steps(ROOT)}
     argv = steps["chart_1983"].argv

@@ -179,6 +179,32 @@ def test_regression_command_inventory_matches_agents_without_omitting_required_r
     assert actual == checklist
 
 
+def test_pre_push_core_route_runs_the_complete_suite_without_coverage() -> None:
+    """Full coverage for the published commit belongs to CI, not local pre-push."""
+    cwd, argv = gate.required_regression_commands(released_charts=True)["core"]
+    assert cwd == "."
+    assert "tests/" in argv
+    assert "-rs" in argv
+    assert "--tb=short" in argv
+    assert not any(part.startswith("--cov") for part in argv)
+
+
+def test_strict_candidate_route_keeps_module_coverage() -> None:
+    """Frozen candidate receipts still require a measured coverage run."""
+    _, argv = gate.required_regression_commands()["core"]
+    assert "--cov=paydirt" in argv
+    assert "--cov-report=term" in argv
+
+
+def test_agents_require_targeted_coverage_while_fixing() -> None:
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "AGENTS.md").read_text()
+    assert "measure coverage" in text
+    assert "--cov=paydirt." in text
+    section = text.split("### Required Full Regression Before Any Push", 1)[1].split("###", 1)[0]
+    assert "upstream" in section.lower()
+
+
 @pytest.mark.parametrize(
     "mutation",
     [

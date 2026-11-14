@@ -240,12 +240,18 @@ def audit_readiness_freeze(root: Path, freeze: Mapping[str, Any]) -> dict[str, A
 def required_regression_commands(*, released_charts: bool = False) -> dict[str, tuple[str, list[str]]]:
     """Return strict candidate commands, or the explicit unchanged-release checklist.
 
-    Frozen candidate collection/output validation deliberately remains strict.
-    released_charts=True is the AGENTS route for immutable published inputs only.
+    Frozen candidate collection/output validation deliberately remains strict and
+    keeps the measured coverage run. released_charts=True is the AGENTS pre-push
+    route for immutable published inputs only: it still runs the complete core
+    suite, but without coverage, because fixes measure coverage for the modules
+    they change and CI publishes coverage for the pushed commit.
     """
     python = sys.executable
+    core = [python, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short", "-rs"]
+    if not released_charts:
+        core += ["--cov=paydirt", "--cov-report=term"]
     commands = {
-        "core": (".", [python, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short", "-rs", "--cov=paydirt", "--cov-report=term"]),
+        "core": (".", core),
         "backend": ("paydirt-web/backend", [python, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short"]),
         "frontend": ("paydirt-web/frontend", ["npm", "test", "--", "--run"]),
         "build": ("paydirt-web/frontend", ["npm", "run", "build"]),

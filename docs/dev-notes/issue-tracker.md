@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-218 issues: 83 open, 60 resolved, 75 closed.
+220 issues: 84 open, 61 resolved, 75 closed.
 
-## Open (83)
+## Open (84)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -17,6 +17,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 |----|----------|----------------|-------|-------|-------|
 | [FLOW-026](issues/FLOW/FLOW-026.md) | High | v1.10.6 | A new play can execute while an own-end-zone interception return decision is pending | created 2026-11-13 | FLOW-023 |
 | [FLOW-027](issues/FLOW/FLOW-027.md) | High | v1.10.6 | Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick | created 2026-11-13 | FLOW-023, FLOW-007 |
+| [FLOW-029](issues/FLOW/FLOW-029.md) | High | v1.10.6 | Browser regression assumes a defensive timeout is used by the request that asked for it | created 2026-11-14 | AI-002 |
 | [RULE-031](issues/RULE/RULE-031.md) | High | v1.10.6 | Deferred end-zone interception reapplies the in-bounds/out-of-bounds modifier and lands at the wrong spot | created 2026-11-13 | FLOW-023 |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
@@ -73,7 +74,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-005](issues/VAL/VAL-005.md) | Medium | — | Corrupt offensive_call_history in a save aborts --load with a traceback instead of the "Failed to load" message | created 2026-10-19 | VAL-008 |
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | — | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-019](issues/VAL/VAL-019.md) | Medium | — | Historical season runner implemented; official qualification verification remains | created 2026-11-06 | DATA-018, AI-025, AI-026 |
-| [VAL-020](issues/VAL/VAL-020.md) | Medium | — | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | — |
+| [VAL-020](issues/VAL/VAL-020.md) | Medium | — | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | VAL-026 |
 | [VAL-025](issues/VAL/VAL-025.md) | Medium | v1.10.6 | Full-regression clean checkout exports HEAD, so it can validate stale code instead of the candidate | created 2026-11-13 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | — | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AI-026](issues/AI/AI-026.md) | Low | — | Hard ordinary selection ignores own defensive and opponent chart strengths | created 2026-11-06 | AI-019, AI-025, VAL-019 |
@@ -100,7 +101,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (60)
+## Resolved (awaiting play-test confirmation) (61)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -146,7 +147,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [VAL-002](issues/VAL/VAL-002.md) | High | — | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [VAL-017](issues/VAL/VAL-017.md) | High | — | Engine audit disk fingerprints do not identify replaced loaded observers | created 2026-11-05, resolved 2026-11-07 | — |
 | [VAL-018](issues/VAL/VAL-018.md) | High | — | Engine report validation ignores policy and selected-call evidence | created 2026-11-05, resolved 2026-11-07 | DATA-031 |
-| [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18, resolved 2026-11-13 | AI-003, AI-018, AI-031, AI-032 |
+| [AI-002](issues/AI/AI-002.md) | Medium | v1.10.6 | On an incomplete first-down pass, CPU declines a 15-yard offensive penalty | created 2026-10-18, resolved 2026-11-13 | AI-003, AI-018, AI-031, AI-032, FLOW-029 |
 | [AI-004](issues/AI/AI-004.md) | Medium | — | Chart analysis treated rows as equally likely | created 2026-10-17, resolved 2026-10-17 | — |
 | [AI-005](issues/AI/AI-005.md) | Medium | — | Difficulty/coaching differentiation and timeout budget handling needed improvement | created 2026-10-17, resolved 2026-10-17 | SPIKE-002 |
 | [AI-006](issues/AI/AI-006.md) | Medium | — | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |
@@ -162,6 +163,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-015](issues/FLOW/FLOW-015.md) | Medium | — | Browser play log shows raw seconds and attributes half-ending plays to the next period | created 2026-11-06, resolved 2026-11-07 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | — | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | — | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
+| [VAL-026](issues/VAL/VAL-026.md) | Medium | — | Local pre-push coverage should measure changed modules, not the whole package | created 2026-11-14, resolved 2026-11-14 | VAL-020 |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | — | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | — | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19, resolved 2026-11-07 | AUD-025 |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | — | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |

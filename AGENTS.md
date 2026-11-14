@@ -37,12 +37,37 @@ pytest tests/test_game.py::TestPaydirtGame::test_kickoff
 # Run tests matching a pattern
 pytest -k "test_kickoff"
 
-# Run with coverage
+# Run with coverage for the whole package (slow; prefer the per-module form below)
 pytest --cov=paydirt --cov-report=term-missing
+
+# Measure coverage for the modules a fix touches, with the tests that cover them
+pytest tests/test_computer_ai.py --cov=paydirt.computer_ai --cov=paydirt.game_engine \
+  --cov-report=term-missing --cov-fail-under=0
 
 # Run with verbose output (configured in pyproject.toml)
 pytest -v --tb=short
 ```
+
+### Coverage While Fixing
+
+During a bug fix or behavior change, measure coverage for the modules you edit,
+not the whole package on every run. Run the focused tests with
+`--cov=paydirt.<module>` for each changed module (repeat the flag; see the
+per-module example above), read the missing lines and branches, and either add
+tests that exercise the changed paths or record why a gap is intentional
+(unreachable, platform-specific, or covered only by an integration runner).
+
+```bash
+# Example: a fix in the CPU coach, with its focused suites
+pytest tests/test_computer_ai.py tests/test_ai_penalty_defense.py \
+  --cov=paydirt.computer_ai --cov-report=term-missing
+```
+
+Backend modules use the same form from `paydirt-web/backend`, for example
+`python3 -m pytest tests/ --cov=routes --cov-report=term-missing`. State the
+measured modules, the percentage, and any deliberate gaps in the change summary.
+Do not replace a required test with a coverage measurement, and never add skips
+or exclusions to raise the number.
 
 ### Required Full Regression Before Any Push
 
@@ -53,7 +78,7 @@ below; pytest alone is not sufficient. Do not push if any command fails; investi
 and fix failures first. Disclose existing skips and warnings rather than hiding them.
 
 ```bash
-python3 -m pytest tests/ -q -o addopts= --tb=short -rs --cov=paydirt --cov-report=term
+python3 -m pytest tests/ -q -o addopts= --tb=short -rs
 (cd paydirt-web/backend && python3 -m pytest tests/ -q -o addopts= --tb=short)
 (cd paydirt-web/frontend && npm test -- --run)
 (cd paydirt-web/frontend && npm run build)
@@ -66,6 +91,17 @@ python3 tests/run_ai_audit.py --season 1983 --weeks 16 --seed 8306 --compare-bal
 python3 -m paydirt.released_chart_regression_audit --season 1983 --output .ai-audits/chart-quality-1983.json
 python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/chart-quality-2024.json
 ```
+
+The pre-push core run executes the complete suite but does not measure package
+coverage locally: that run is several times slower with branch coverage and it
+measures code nobody changed. Coverage is instead measured per changed module
+while fixing (see [Coverage While Fixing](#coverage-while-fixing)). The upstream
+`test.yml` job runs the full suite with coverage on Python 3.10 for every push;
+that result is the authoritative coverage evidence for the pushed commit. A
+push is qualified only when it is green, and coverage gaps it reports must be
+addressed in a follow-up commit before a tag or release is cut. Strict
+candidate/charted-release tooling keeps its own required coverage run; this
+change affects the local pre-push route only.
 
 ### One-command runner
 
