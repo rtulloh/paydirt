@@ -56,7 +56,10 @@ Both games request defensive timeouts through the modifier panel and must
 record at least one engine-confirmed timeout for the human team. The suite
 checks the returned timeout budget and description, exhausted controls,
 the absence of offense-only modifiers on defense, and cleared selections
-after submissions, including pending penalty choices.
+after submissions, including pending penalty choices. A response may also report
+a defensive timeout the request never asked for: the API forwards the CPU
+defence's own timeout decision, so an unrequested timeout must belong to the
+CPU side and leave the human budget unchanged (FLOW-029).
 Both games also execute every defensive formation A–F and check that each
 ordinary request carries the exact selected key. CPU punt/field-goal confirmations
 use the existing A placeholder. Each game verifies SAVE GAME's visible success

@@ -57,6 +57,7 @@ async function completeGame(page, request, gameId) {
   let kickoffCount = 0
   let lateCpuConfirmations = 0
   let defensiveTimeouts = 0
+  let humanDefensiveTimeouts = 0
   let timeoutKeyboardExercised = false
   let previousLogLength = 0
   let defenseSelectionCount = 0
@@ -89,6 +90,7 @@ async function completeGame(page, request, gameId) {
       expect(actions).toContain('penalty-decision')
       expect(actions).toContain('extra-point')
       expect(defensiveTimeouts, 'Use a defensive timeout through the rendered controls').toBeGreaterThan(0)
+      expect(humanDefensiveTimeouts, 'The rendered T control must request one timeout').toBeGreaterThan(0)
       expect(timeoutKeyboardExercised).toBe(true)
       expect([...defensiveCalls].sort()).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
       expect(saveVerified).toBe(true)
@@ -206,10 +208,20 @@ async function completeGame(page, request, gameId) {
     if (data.result?.defensive_timeout_used) {
       defensiveTimeouts++
       const sent = response.request().postDataJSON()
-      expect(sent.call_defensive_timeout).toBe(true)
-      expect(sent.player_play).toBe(['P', 'F'].includes(sent.cpu_play) ? 'A' : lastDefenseCall)
       const remaining = data.game_state.human_is_home ? data.game_state.home_timeouts : data.game_state.away_timeouts
-      expect(remaining).toBe(state.humanTimeouts - 1)
+      if (sent.call_defensive_timeout) {
+        // FLOW-029: the request flag only reports a human request. The route also
+        // forwards the CPU defence's own timeout decision, so an unflagged body
+        // can still return defensive_timeout_used.
+        humanDefensiveTimeouts++
+        expect(state.playerOffense).toBe(false)
+        expect(sent.player_play).toBe(['P', 'F'].includes(sent.cpu_play) ? 'A' : lastDefenseCall)
+        expect(remaining).toBe(state.humanTimeouts - 1)
+      } else {
+        expect(state.playerOffense, 'Unrequested defensive timeout must be the CPU defence').toBe(true)
+        expect(sent.cpu_play).toMatch(/^[A-F]$/)
+        expect(remaining).toBe(state.humanTimeouts)
+      }
       expect(data.result.description).toContain('Defensive timeout: clock stopped.')
     }
     if (endpoint === 'execute') {
