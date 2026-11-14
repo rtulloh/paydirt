@@ -10,9 +10,11 @@ closed-at: 2026-11-13
 tags:
   - reproduced
   - play-tested
+  - release-1.10.6
 links:
   - FLOW-025
 commits:
+  - 566a17c
 ---
 
 ## Description
@@ -61,3 +63,6 @@ choice; after the choice the receiving team (DET) took possession and the game
 continued to completion. FLOW-025 separately records the duplicate/contradictory
 menu labels; they did not change the choice or possession outcome. This closes
 the issue-specific play-test confirmation.
+
+--- 2026-11-13 21:30 ---
+Marked closed and included in v1.10.6. Fix commit: 566a17c.

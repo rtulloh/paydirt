@@ -10,6 +10,10 @@ Planning record, 2026-11-11. This is a proposed scope, not a claim that changes 
 - [FLOW-007](issues/FLOW/FLOW-007.md): share engine-driven modifier messages between new and resumed CLI games; test applied/skipped spikes and timeouts. Reproduce other reported loop differences before fixing them; a wholesale loop merge is not required.
 - [AI-002](issues/AI/AI-002.md): compare engine-projected penalty outcomes from the defense's perspective, including actual enforcement, down/distance, score, clock and timeout context. Test the first-and-25 versus second-and-10 case and situational exceptions; preserve AI-001's first-down comparisons. This covers the defensive subset of AI-018, not its entire remaining scope.
 
+## Fixed during 1.10.6
+
+- [FLOW-024](issues/FLOW/FLOW-024.md): a safety free kick now resolves a pending kickoff penalty before the next snap, so the receiving team takes possession. Closed and play-tested. Commit `566a17c`.
+
 ## Recommended additional fixes
 
 - [AI-029](issues/AI/AI-029.md): account for remaining scoring distance and time on last-possession fourth downs.
