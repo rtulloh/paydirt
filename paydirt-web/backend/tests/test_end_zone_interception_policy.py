@@ -56,6 +56,68 @@ def test_new_game_maps_team_preferences_and_replay_round_trip(player_home: bool,
                 games.pop(loaded_id, None)
 
 
+def test_new_game_policy_pauses_end_zone_interception_until_decision() -> None:
+    from paydirt.play_resolver import PenaltyChoice, PlayResult, ResultType
+
+    with TestClient(app) as client:
+        created = client.post("/api/game/new", json={
+            "player_team": "Thunderhawks", "opponent_team": "Ironclads", "season": "2026",
+            "play_as_home": True,
+            "player_end_zone_interception_policy": "ask",
+            "opponent_end_zone_interception_policy": "auto",
+        })
+        assert created.status_code == 200
+        game_id = created.json()["game_id"]
+        try:
+            state = created.json()["game_state"]
+            assert state["human_is_home"] is True
+            assert state["home_end_zone_interception_policy"] == "ask"
+            assert state["away_end_zone_interception_policy"] == "auto"
+
+            engine = games[game_id]["engine"]
+            assert engine.state.is_home_possession is False  # Away offense, human home defense.
+            engine.state.ball_position = 90
+            result = PlayResult(
+                result_type=ResultType.INTERCEPTION, yards=14, turnover=True,
+                raw_result="INT 14",
+            )
+            with patch(
+                "paydirt.game_engine.resolve_play_with_penalties",
+                return_value=PenaltyChoice(play_result=result),
+            ):
+                response = client.post("/api/game/execute", json={
+                    "game_id": game_id, "player_play": "A", "cpu_play": "6",
+                })
+            assert response.status_code == 200
+            pending = response.json()["result"]
+            assert pending["pending_end_zone_interception_return_decision"] is True
+            assert pending["int_catch_depth"] == 4
+            assert pending["int_catch_field_position"] == "own 4-yard line"
+            assert "Q" in pending["interception_return_situation"]
+            # Nothing scored, no possession change and no return dice yet.
+            assert pending["turnover"] is False
+            assert engine.state.is_home_possession is False
+            assert engine.state.ball_position == 90
+
+            decided = client.post("/api/game/end-zone-interception-decision", json={
+                "game_id": game_id, "attempt_return": False,
+            })
+            assert decided.status_code == 200
+            final = decided.json()
+            assert final["result"]["pending_end_zone_interception_return_decision"] is False
+            assert final["result"]["turnover"] is True
+            assert final["game_state"]["ball_position"] == 20
+            assert final["game_state"]["possession"] == "home"
+            # Resolving again must not duplicate the turnover.
+            again = client.post("/api/game/end-zone-interception-decision", json={
+                "game_id": game_id, "attempt_return": False,
+            })
+            assert again.status_code == 400
+            assert engine.state.away_stats.interceptions_thrown == 1
+        finally:
+            games.pop(game_id, None)
+
+
 def test_legacy_web_save_defaults_each_team_to_automatic_touchback() -> None:
     with TestClient(app) as client:
         created = client.post("/api/game/new", json={"player_team": "Ironclads", "season": "2026"}).json()

@@ -33,13 +33,18 @@ A spot within the offense's own end zone gives the defense a touchdown. On or
 beyond the offense's own end line (ten yards behind its goal line), the ball is
 out of play: a safety results and no interception return is rolled. The offense
 keeps possession temporarily for its free kick from the 20. When the defense
-intercepts in its own end zone, its pre-game coaching preference selects an
-automatic touchback (the default) or a return attempt. A catch on or beyond that
-team's end line is marked nine yards deep before applying this choice. An
-attempt counts the end-zone depth; failing to cross the goal line gives a
-touchback. Return fumbles and fouls use the normal return procedure. A fumble
-on or behind the returner's own end line is out of play before any recovery
-roll. See [browser setup](web-interface.md#starting-a-browser-game).
+intercepts in its own end zone, the engine stops after the catch location is
+known. A human controller chooses between an automatic touchback and a return
+attempt with the engine-provided catch depth, score and clock visible; no return
+dice are rolled until that choice is resolved. A CPU controller uses the shared
+situation policy (depth, score and clock) and returns the same engine decision.
+This is a game-time decision only; the browser game has no pre-game return
+setting. A catch on or beyond that team's end line is marked nine yards deep
+before applying this choice. An attempt counts the end-zone depth; failing to
+cross the goal line gives a touchback. Return fumbles and fouls use the normal
+return procedure. A fumble on or behind the returner's own end line is out of
+play before any recovery roll. See
+[browser setup](web-interface.md#starting-a-browser-game).
 
 ## Combining Offense and Defense
 

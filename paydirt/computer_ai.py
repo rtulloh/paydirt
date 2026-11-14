@@ -1500,3 +1500,34 @@ def cpu_should_accept_penalty(
     if ai is None:
         ai = ComputerAI(aggression=0.5)
     return ai.should_accept_penalty(outcome, is_human_offense, human_is_home)
+
+
+def cpu_should_attempt_end_zone_return(game, outcome, return_team_is_home: bool) -> bool:
+    """Decide an own-end-zone interception return from catch depth and situation.
+
+    Args:
+        game: The game engine (supplies score, clock and period).
+        outcome: Pending outcome carrying the engine-reported catch depth.
+        return_team_is_home: Whether the intercepting team is home.
+
+    Returns:
+        True to attempt the return, False to take the touchback. The decision
+        never inspects the pending return dice.
+    """
+    from .interception_policy import should_attempt_end_zone_return
+
+    depth = getattr(outcome, "int_catch_depth", None)
+    if depth is None:
+        return False
+    score_diff = (
+        game.state.home_score - game.state.away_score
+        if return_team_is_home
+        else game.state.away_score - game.state.home_score
+    )
+    return should_attempt_end_zone_return(
+        catch_depth=depth,
+        score_differential=score_diff,
+        quarter=game.state.quarter,
+        time_remaining=game.state.time_remaining,
+        is_overtime=game.state.is_overtime,
+    )

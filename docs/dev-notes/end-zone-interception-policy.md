@@ -6,11 +6,19 @@ coach's own-end-zone choice. Both the implementation worker and owner reviewed
 the complete saved page independently. The source PDF and scan identities
 remain in ignored release-readiness evidence.
 
-The engine defaults both teams to automatic touchback. A predeclared preference
-can opt either team into the existing shared return chain. The browser exposes
-separate human and CPU preferences; the API maps those roles to physical home
-and away teams. Core saves and browser replays retain them, with absent legacy
-keys defaulting to false. There is no pending decision phase or UI rule logic.
+The engine defaults argument-free callers to automatic touchback. The browser
+game always asks the human at game time and has no pre-game return setting; the
+CPU decides at the same point with the situation policy. Engine/audit callers may
+still declare `return` or `touchback` for controlled runs, and legacy boolean
+preferences keep that meaning. Core saves retain any unresolved pending decision.
+Absent legacy save keys still default to false/automatic touchback.
+
+For the human, the engine records the catch geometry and score/clock, then returns
+`pending_end_zone_interception_return_decision` without changing possession,
+stats or the clock and without rolling return dice. `apply_end_zone_interception_return_decision`
+resolves it exactly once. Requested spikes and defensive timeouts survive the
+pause. The CPU uses the same depth/score/clock policy as CLI and web; it never
+inspects return dice.
 
 An interception at or beyond the defender's end line is first marked nine
 yards deep under E-i. A return counts all depth; failing to cross the goal
@@ -24,7 +32,10 @@ Synthetic/public-2026 tests cover both possession sides, normal and retained
 play paths, default controls, goal/end-line geometry, failed escapes,
 touchdowns, kept/lost live end-zone fumbles, out-of-play fumbles, fouls,
 offsetting replay, cached returns, API role mapping and legacy save defaults.
-No historical data is used in collected tests. The new behavior changes runtime
+FLOW-023 adds goal-line, one-yard-deep and deep pending decisions, leading and
+trailing auto-policy cases, unaffected field interceptions, single-resolution
+accounting, preserved spike requests and pending save/RNG round trips. No
+historical data is used in collected tests. The new behavior changes runtime
 identity, so prior campaign receipts cannot qualify the changed runtime.
 
 This restores representability, not empirical source acceptance. Observed
@@ -42,11 +53,14 @@ the complete play. Numeric-only cached results remain compatible, including
 zero yards with populated return dice. Tests restore the pre-play state twice
 and reapply the same chain without mutating it or accumulating counters.
 
-Existing core and browser save formats serialize visible game state rather
-than unresolved penalty choices. This change preserves preferences and checks
-completed retained-play round trips; it does not add pending-choice resume.
-The live pending API response and save response remain JSON serializable, and
-the original pending choice retains its typed chain for live resolution.
+Existing core saves now serialize an unresolved interception decision as the
+play data plus the dice RNG state captured at deferral. Loading restores both, so
+the return roll matches the uninterrupted game; resolving it does not duplicate
+dice, turnovers, clock changes or statistics. Browser replays still serialize
+visible game state rather than unresolved choices and the UI disables replay
+saves while a decision is pending. The live pending API response and save
+response remain JSON serializable, and the original pending choice retains its
+typed chain for live resolution.
 
 Five existing blocked-kick/snap safety parameter cases formerly supplied a
 recovery roll after `F -100` crossed the own end line. Their dice lists now

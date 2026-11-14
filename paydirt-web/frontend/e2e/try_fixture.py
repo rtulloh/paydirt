@@ -41,8 +41,12 @@ def install_try_fixture(app: FastAPI) -> None:
                 team=state.possession_team.peripheral.short_name,
                 is_home_team=state.is_home_possession, play_type="TD", description="Synthetic setup touchdown", points=6,
             ))
+        state_model = routes.game_state_to_response(game)
         return {
-            "game_state": routes.game_state_to_response(game).model_dump(),
+            "game_state": (
+                state_model.model_dump() if hasattr(state_model, "model_dump")
+                else state_model.dict()
+            ),
             "accounting": deepcopy({
                 "home": asdict(state.home_stats), "away": asdict(state.away_stats),
                 "play_log_count": len(engine.play_log), "call_history": engine.offensive_call_history,

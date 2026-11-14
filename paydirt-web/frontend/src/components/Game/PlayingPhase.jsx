@@ -5,6 +5,7 @@ import DiceDisplay from '../Dice/DiceDisplay';
 import OffensePlays from '../Plays/OffensePlays';
 import DefensePlays from '../Plays/DefensePlays';
 import PenaltyDecisionPanel from './PenaltyDecisionPanel';
+import EndZoneInterceptionPanel from './EndZoneInterceptionPanel';
 import PATChoicePanel from './PATChoicePanel';
 import CpuDecisionPanel from './CpuDecisionPanel';
 import PuntOptionsPanel from './PuntOptionsPanel';
@@ -91,6 +92,8 @@ const PlayingPhase = () => {
   const [scoringTeamIsPlayer, setScoringTeamIsPlayer] = useState(false);
   const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(false);
   const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(null);
+  const [localShowEndZoneChoice, setLocalShowEndZoneChoice] = useState(false);
+  const [localPendingEndZoneData, setLocalPendingEndZoneData] = useState(null);
   const [homeScoreFlash, setHomeScoreFlash] = useState(false);
   const [awayScoreFlash, setAwayScoreFlash] = useState(false);
   const prevScoresRef = useRef({ homeScore: undefined, awayScore: undefined });
@@ -108,10 +111,10 @@ const PlayingPhase = () => {
   // Every API path publishes the engine's final flag through the store.
   // Keep an outstanding PAT/decision on screen until it has been resolved.
   useEffect(() => {
-    if (gameOver && !pendingPat && !localExecuting && !localShowPenaltyChoice) {
+    if (gameOver && !pendingPat && !localExecuting && !localShowPenaltyChoice && !localShowEndZoneChoice) {
       setGamePhase('gameOver');
     }
-  }, [gameOver, pendingPat, localExecuting, localShowPenaltyChoice, setGamePhase]);
+  }, [gameOver, pendingPat, localExecuting, localShowPenaltyChoice, localShowEndZoneChoice, setGamePhase]);
   // Halftime is an engine fact (first half over, second-half kickoff still owed).
   // Show it once per transition, after any outstanding try or penalty decision.
   useEffect(() => {
@@ -119,11 +122,11 @@ const PlayingPhase = () => {
       halftimeShownRef.current = false;
       return;
     }
-    if (!halftimeShownRef.current && !pendingPat && !localShowPenaltyChoice && !localExecuting) {
+    if (!halftimeShownRef.current && !pendingPat && !localShowPenaltyChoice && !localShowEndZoneChoice && !localExecuting) {
       halftimeShownRef.current = true;
       setShowHalftime(true);
     }
-  }, [halftimePending, pendingPat, localShowPenaltyChoice, localExecuting]);
+  }, [halftimePending, pendingPat, localShowPenaltyChoice, localShowEndZoneChoice, localExecuting]);
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
   useEffect(() => {
@@ -141,7 +144,7 @@ const PlayingPhase = () => {
 
   // Auto-clear result banner for non-special plays after 2 seconds
   useEffect(() => {
-    if (localLastResult && !localExecuting && !localShowPatChoice && !localShowPenaltyChoice) {
+    if (localLastResult && !localExecuting && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice) {
       const isSpecial = localLastResult?.turnover || localLastResult?.touchdown || 
                         localLastResult?.safety || localLastResult?.pending_penalty_decision;
       
@@ -154,7 +157,7 @@ const PlayingPhase = () => {
         return () => clearTimeout(timer);
       }
     }
-  }, [localLastResult, localExecuting, localShowPatChoice, localShowPenaltyChoice]);
+  }, [localLastResult, localExecuting, localShowPatChoice, localShowPenaltyChoice, localShowEndZoneChoice]);
 
   // Check for 4th down CPU decision when player is on defense
   useEffect(() => {
@@ -681,6 +684,15 @@ const PlayingPhase = () => {
           setLocalExecuting(false);
           return;
         }
+
+        if (data.result?.pending_end_zone_interception_return_decision) {
+          // The engine has located the catch; no return dice have been rolled.
+          setLocalPendingEndZoneData(data.result);
+          setLocalShowEndZoneChoice(true);
+          setLocalIsRolling(false);
+          setLocalExecuting(false);
+          return;
+        }
         
         setLocalLastResult(data.result);
         updateGameState(data.game_state);
@@ -905,6 +917,12 @@ const PlayingPhase = () => {
       if (res.ok) {
         const data = await res.json();
         updateGameState(data.game_state);
+
+        if (data.result?.pending_end_zone_interception_return_decision) {
+          setLocalPendingEndZoneData(data.result);
+          setLocalShowEndZoneChoice(true);
+          return;
+        }
         
         // Log the penalty decision play
         const offenseTeam = playerOffense 
@@ -948,9 +966,76 @@ const PlayingPhase = () => {
     }
   };
 
+  const handleEndZoneInterceptionDecision = async (attemptReturn) => {
+    if (!gameId || localExecuting) return;
+
+    const prePlay = {
+      quarter,
+      timeRemaining,
+      down,
+      yardsToGo,
+      ballPosition,
+      fieldPosition,
+      playerOffense,
+    };
+    setLocalExecuting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/game/end-zone-interception-decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId, attempt_return: Boolean(attemptReturn) }),
+      });
+      if (!res.ok) {
+        const error = await res.text();
+        console.error('End-zone interception decision failed:', res.status, error);
+        return;
+      }
+      const data = await res.json();
+      setLocalShowEndZoneChoice(false);
+      setLocalPendingEndZoneData(null);
+      updateGameState(data.game_state);
+      setLocalLastResult(data.result);
+      setLocalDiceResult(null);
+
+      const offenseTeam = prePlay.playerOffense
+        ? (homeTeam?.short_name || 'HOME')
+        : (awayTeam?.short_name || 'AWAY');
+      const defenseTeam = prePlay.playerOffense
+        ? (awayTeam?.short_name || 'AWAY')
+        : (homeTeam?.short_name || 'HOME');
+      addToPlayLog({
+        quarter: prePlay.quarter,
+        timeRemaining: prePlay.timeRemaining,
+        down: prePlay.down,
+        yardsToGo: prePlay.yardsToGo,
+        ballPosition: prePlay.ballPosition,
+        lineOfScrimmage: prePlay.ballPosition,
+        fieldPosition: prePlay.fieldPosition,
+        offenseTeam,
+        defenseTeam,
+        homeTeamAbbrev: homeTeam?.short_name || 'HOME',
+        awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
+        playerTeam: prePlay.playerOffense ? offenseTeam : defenseTeam,
+        offensePlay: 'INT',
+        defensePlay: 'RET',
+        description: data.result.description,
+        ruleExplanation: data.result.rule_explanation,
+        yards: data.result.yards || 0,
+        newPosition: data.game_state.ball_position,
+        newFieldPosition: data.game_state.field_position,
+        turnover: data.result.turnover,
+        humanIsHome,
+        possession: data.game_state.possession,
+      });
+    } catch (err) {
+      console.error('Failed to handle end-zone interception decision:', err);
+    } finally {
+      setLocalExecuting(false);
+    }
+  };
+
   const handleCallTimeout = async () => {
     if (!gameId || localExecuting) return;
-    
     // Check if human has timeouts
     const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts;
     if (humanTimeouts <= 0) return;
@@ -1012,7 +1097,7 @@ const PlayingPhase = () => {
         awayTimeouts={awayTimeouts}
         humanIsHome={humanIsHome}
         onCallTimeout={handleCallTimeout}
-        canCallTimeout={!localExecuting && !localShowPatChoice && !localShowPenaltyChoice}
+        canCallTimeout={!localExecuting && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice}
         isOvertime={isOvertime || false}
         otPeriod={otPeriod || 0}
         homeScoreFlash={homeScoreFlash}
@@ -1189,6 +1274,17 @@ const PlayingPhase = () => {
             />
           </div>
         )}
+
+        {/* End-Zone Interception Return Panel */}
+        {localShowEndZoneChoice && localPendingEndZoneData && (
+          <div className="px-4 pb-2">
+            <EndZoneInterceptionPanel
+              endZoneData={localPendingEndZoneData}
+              onDecision={handleEndZoneInterceptionDecision}
+              disabled={localExecuting}
+            />
+          </div>
+        )}
       </div>
 
       {/* Play Selector - fixed position, stays in same place */}
@@ -1200,7 +1296,7 @@ const PlayingPhase = () => {
               selectedPlay={humanPlaySelected}
               onSelectPlay={handleOffensePlay}
               isHumanTurn={true}
-              disabled={localExecuting}
+              disabled={localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
             />
           ) : (
             <div>
@@ -1213,7 +1309,7 @@ const PlayingPhase = () => {
                 selectedPlay={humanPlaySelected}
                 onSelectPlay={handleDefensePlay}
                 isHumanTurn={true}
-                disabled={localExecuting}
+                disabled={localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
               />
             </div>
           )}
@@ -1223,7 +1319,7 @@ const PlayingPhase = () => {
             <PlayModifiers
               selectedPlay={humanPlaySelected}
               disabled={!gameId || localExecuting || isKickoff || pendingPat || gameOver ||
-                halftimePending || showHalftime || localShowPatChoice || localShowPenaltyChoice}
+                halftimePending || showHalftime || localShowPatChoice || localShowPenaltyChoice || localShowEndZoneChoice}
             />
             <PlayLogDisplay plays={playLog} onPlayClick={() => {}} />
           </div>
@@ -1231,7 +1327,7 @@ const PlayingPhase = () => {
       </div>
 
       {/* Play Result - Show CONTINUE button for special plays only */}
-      {localLastResult && !localExecuting && !localIsRolling && !localShowPatChoice && !localShowPenaltyChoice && (
+      {localLastResult && !localExecuting && !localIsRolling && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice && (
         (() => {
           const result = localLastResult;
           const isSpecial = result?.turnover || result?.touchdown || result?.safety || result?.pending_penalty_decision;
@@ -1275,14 +1371,14 @@ const PlayingPhase = () => {
           />
           <button
             onClick={handleSaveReplay}
-            disabled={isKickoff || pendingPat || pendingPenaltyData}
+            disabled={isKickoff || pendingPat || pendingPenaltyData || localShowEndZoneChoice}
             className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SAVE REPLAY
           </button>
           <button
             onClick={handleSaveGame}
-            disabled={isKickoff || pendingPat || pendingPenaltyData}
+            disabled={isKickoff || pendingPat || pendingPenaltyData || localShowEndZoneChoice}
             className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SAVE GAME

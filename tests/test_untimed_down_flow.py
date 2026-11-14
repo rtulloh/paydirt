@@ -181,6 +181,10 @@ def run_seeded_cli_game(
         nonlocal prompts
         prompts += 1
         assert prompts < 1500, f"Repeated prompt: {prompt}"
+        if "Your choice (T/R)" in prompt:
+            # FLOW-023: accept the safe touchback so seeded clock tests remain
+            # deterministic and do not gain return-yard variance.
+            return "T"
         return "1" if "1 for play" in prompt or "penalty number" in prompt else ""
 
     try:

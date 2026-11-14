@@ -81,6 +81,12 @@ coaching value rather than invented yardage or extra random rolls. These scores 
 conservative heuristics, **not full-engine conversion probabilities or expected points**;
 they do not simulate the current defense or complete secondary procedures.
 
+When the CPU intercepts in its own end zone, it applies one shared depth/score/clock
+policy instead of a pre-game preference. Shallow catches return unless a late multi-score
+lead argues for avoiding return risk; catches five or more yards deep take the touchback.
+The policy cannot see return dice, and the same function serves CLI, web and engine `auto`
+mode. A human can still choose after seeing the engine-reported catch depth, score and clock.
+
 Recent executed calls in similar down/distance situations modestly reduce a play's weight.
 The adjustment fades as the team makes other calls and never bans a play or forces a
 predictable rotation. A clearly superior call can still dominate when alternatives are poor.

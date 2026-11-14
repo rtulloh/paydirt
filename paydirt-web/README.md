@@ -84,14 +84,28 @@ Useful endpoints include `GET /api/health`, `GET /api/seasons`, `GET /api/teams?
 The running backend's **http://localhost:8000/docs** provides its API schema.
 
 `POST /api/game/new` accepts
-`player_attempt_end_zone_interception_returns` and
-`opponent_attempt_end_zone_interception_returns` (booleans, default `false`).
-They follow the human/CPU roles regardless of `play_as_home`. The engine stores
-the mapped choices as `home_end_zone_interception_return` and
-`away_end_zone_interception_return`; game-state responses and saved replays
-include those keys. Missing keys in older saves restore automatic touchbacks.
-Direct engine callers can set each team's preference before play with
-`engine.set_end_zone_interception_return(home=True, attempt_return=True)`.
+`player_end_zone_interception_policy` and
+`opponent_end_zone_interception_policy` with `ask`, `auto`, `return` or
+`touchback`. The browser always sends `ask` for the human and `auto` for the CPU;
+the pre-game UI has no return option because this is a decision made during play.
+The legacy `player_attempt_end_zone_interception_returns` and
+`opponent_attempt_end_zone_interception_returns` booleans remain accepted when no
+policy is supplied for older clients and chart/audit callers. Policies follow the
+human/CPU roles regardless of `play_as_home`. The engine stores the mapped
+choices as `home_end_zone_interception_policy`/`away_...` (plus the legacy
+booleans); game-state responses and saved replays include both. Missing keys in
+older saves restore automatic touchbacks.
+
+A human `ask` interception pauses before return dice. `POST /api/game/execute`
+or `/api/game/penalty-decision` returns
+`result.pending_end_zone_interception_return_decision` with engine-provided
+`int_catch_depth`, `int_catch_field_position`,
+`interception_return_situation` (score and clock) and `int_return_team`. Resolve
+it once with `POST /api/game/end-zone-interception-decision` and
+`{"game_id": "...", "attempt_return": true|false}`. A resolved or CPU-controlled
+decision cannot be submitted again. Direct engine callers can use
+`engine.set_end_zone_interception_policy(...)` and
+`engine.apply_end_zone_interception_return_decision(outcome, attempt_return)`.
 The core resolves the return and all subsequent fumbles, fouls and scores.
 Completed blocked kicks use the engine result class `blocked_kick`, including a
 retained blocked punt completed after a declined kick foul. Display the core

@@ -1,7 +1,7 @@
 ---
 id: DATA-049
 title: Bundle verified player rosters for 1977 and 2024 commentary
-status: resolved
+status: closed
 priority: Medium
 target-release: v1.10.6
 created-at: 2026-11-11

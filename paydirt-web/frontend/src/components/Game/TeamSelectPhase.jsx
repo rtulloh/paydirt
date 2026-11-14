@@ -10,8 +10,6 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const [opponentTeam, setOpponentTeam] = useState(null);
   const [playerIsHome, setPlayerIsHome] = useState(true);
   const [difficulty, setDifficulty] = useState('medium');
-  const [playerAttemptEndZoneReturns, setPlayerAttemptEndZoneReturns] = useState(false);
-  const [opponentAttemptEndZoneReturns, setOpponentAttemptEndZoneReturns] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const { setGameId, updateGameState, setIsKickoff, setCurrentSeason } = useGameStore.getState();
@@ -67,8 +65,12 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
         play_as_home: playerIsHome,
         opponent_team: opponentTeam.id,
         difficulty: difficulty,
-        player_attempt_end_zone_interception_returns: playerAttemptEndZoneReturns,
-        opponent_attempt_end_zone_interception_returns: opponentAttemptEndZoneReturns,
+        // End-zone interception returns are always decided in play: the human
+        // is asked after the catch, and the CPU uses its situation policy.
+        player_end_zone_interception_policy: 'ask',
+        opponent_end_zone_interception_policy: 'auto',
+        // Retained for older backends; the policy above is authoritative.
+        player_attempt_end_zone_interception_returns: false,
       })
     })
       .then(res => res.json())
@@ -218,33 +220,6 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
                   ))}
                 </div>
               </div>
-              <fieldset className="w-full max-w-xl border-t border-gray-700 pt-4">
-                <legend className="font-bold text-gray-300 px-2">END-ZONE INTERCEPTIONS</legend>
-                <div className="grid gap-3 sm:grid-cols-2 text-left">
-                  <label className="text-sm text-gray-300">
-                    Your team: end-zone interceptions
-                    <select
-                      value={playerAttemptEndZoneReturns ? 'return' : 'touchback'}
-                      onChange={(event) => setPlayerAttemptEndZoneReturns(event.target.value === 'return')}
-                      className="mt-1 w-full rounded bg-gray-700 px-3 py-2 text-white"
-                    >
-                      <option value="touchback">Automatic touchback</option>
-                      <option value="return">Attempt return</option>
-                    </select>
-                  </label>
-                  <label className="text-sm text-gray-300">
-                    Opponent: end-zone interceptions
-                    <select
-                      value={opponentAttemptEndZoneReturns ? 'return' : 'touchback'}
-                      onChange={(event) => setOpponentAttemptEndZoneReturns(event.target.value === 'return')}
-                      className="mt-1 w-full rounded bg-gray-700 px-3 py-2 text-white"
-                    >
-                      <option value="touchback">Automatic touchback</option>
-                      <option value="return">Attempt return</option>
-                    </select>
-                  </label>
-                </div>
-              </fieldset>
             </div>
           </div>
         )}

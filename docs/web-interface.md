@@ -17,12 +17,13 @@ Links to GitHub, releases, and contributor documentation still need an internet 
 Select a season, home and away teams, which team you control, and CPU difficulty.
 Published builds include generated 1983 and 2024 teams plus the fictional 2026 Thunderhawks and Ironclads. Additional teams require locally installed charts.
 
-Choose an **End-zone interception returns** preference separately for your team
-and the CPU. **Automatic touchback** is the default; **Attempt return** applies
-whenever that team intercepts in its own end zone. The choice is made before
-play, counts the catch's end-zone depth, and requires crossing the goal line to
-avoid a touchback. It does not add an in-play prompt. Saved games retain both
-preferences; older saves use automatic touchbacks.
+End-zone interception returns are a game-time decision only. There is no pre-game
+return setting. When your team intercepts in its own end zone, the engine pauses
+after locating the catch and shows the engine-provided catch depth, score and
+clock before any return dice are rolled. Choose **Take touchback** or **Attempt
+return**; the return counts the catch's end-zone depth, and the returner must
+cross the goal line to avoid a touchback. The CPU decides at the same point from
+catch depth, score and clock. Saved games retain the engine's in-play state.
 
 ![Team Selection](images/team-select.png)
 

@@ -38,7 +38,11 @@ SEASONS_DIR = get_builtin_seasons_path()
 from chart_viewer import ChartBookResponse, build_chart_book
 
 from paydirt.chart_loader import load_team_chart
-from paydirt.computer_ai import cpu_should_accept_penalty, create_computer_ai
+from paydirt.computer_ai import (
+    cpu_should_accept_penalty,
+    cpu_should_attempt_end_zone_return,
+    create_computer_ai,
+)
 from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType, PlayType, is_passing_play
 from paydirt.season_rules import load_season_rules
@@ -337,6 +341,13 @@ class PlayResult(BaseModel):
     defensive_timeout_used: bool = False
     conversion_success: Optional[bool] = None
     defense_points: int = 0
+    # Engine-owned own-end-zone interception choice: catch location, score and
+    # clock are known, but no return dice have been rolled and nothing applied.
+    pending_end_zone_interception_return_decision: bool = False
+    int_catch_depth: int = 0
+    int_catch_field_position: str = ""
+    interception_return_situation: str = ""
+    int_return_team: str = ""
 
     headline: Optional[str] = None
     commentary: Optional[str] = None
@@ -383,8 +394,12 @@ class NewGameRequest(BaseModel):
     play_as_home: bool = True
     opponent_team: Optional[str] = None
     difficulty: str = "medium"
+    # Legacy predeclared choices remain supported. Policies add "ask" (human
+    # decision after the catch) and "auto" (CPU situation policy).
     player_attempt_end_zone_interception_returns: bool = False
     opponent_attempt_end_zone_interception_returns: bool = False
+    player_end_zone_interception_policy: Optional[str] = None
+    opponent_end_zone_interception_policy: Optional[str] = None
 
 
 class GameStateResponse(BaseModel):
@@ -420,6 +435,8 @@ class GameStateResponse(BaseModel):
     halftime_pending: bool = False
     home_end_zone_interception_return: bool = False
     away_end_zone_interception_return: bool = False
+    home_end_zone_interception_policy: str = "touchback"
+    away_end_zone_interception_policy: str = "touchback"
 
 
 class NewGameResponse(BaseModel):
@@ -584,7 +601,7 @@ def _arm_follow_up_state(game: dict[str, Any], engine, outcome) -> tuple:
     Returns:
         (scoring, is_pending_pat, pre_kickoff_ball_position)
     """
-    if outcome.pending_penalty_decision:
+    if outcome.pending_penalty_decision or outcome.pending_end_zone_interception_return_decision:
         game["pending_pat"] = False
         return False, False, None
     scoring = outcome.touchdown or outcome.field_goal_made or outcome.safety
@@ -676,6 +693,8 @@ def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = No
         player_offense=player_offense,
         home_end_zone_interception_return=game["engine"].home_end_zone_interception_return,
         away_end_zone_interception_return=game["engine"].away_end_zone_interception_return,
+        home_end_zone_interception_policy=game["engine"].get_end_zone_interception_policy(True),
+        away_end_zone_interception_policy=game["engine"].get_end_zone_interception_policy(False),
         human_team_id=game.get("player_team_id"),
         cpu_team_id=game.get("cpu_team_id"),
         human_is_home=human_is_home,
@@ -924,10 +943,23 @@ async def new_game(request: NewGameRequest):
     game_id = f"game_{uuid.uuid4().hex[:8]}"
 
     engine = PaydirtGameEngine(home_chart, away_chart)
-    engine.set_end_zone_interception_return(
-        player_is_home, request.player_attempt_end_zone_interception_returns)
-    engine.set_end_zone_interception_return(
-        not player_is_home, request.opponent_attempt_end_zone_interception_returns)
+    try:
+        if request.player_end_zone_interception_policy:
+            engine.set_end_zone_interception_policy(
+                player_is_home, request.player_end_zone_interception_policy
+            )
+        else:
+            engine.set_end_zone_interception_return(
+                player_is_home, request.player_attempt_end_zone_interception_returns)
+        if request.opponent_end_zone_interception_policy:
+            engine.set_end_zone_interception_policy(
+                not player_is_home, request.opponent_end_zone_interception_policy
+            )
+        else:
+            engine.set_end_zone_interception_return(
+                not player_is_home, request.opponent_attempt_end_zone_interception_returns)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     difficulty = request.difficulty.lower() if request.difficulty else "medium"
 
@@ -970,7 +1002,10 @@ async def get_game_charts(game_id: str, side: Literal["home", "away"] = "home") 
         raise HTTPException(status_code=404, detail="Game not found")
     game = games[game_id]
     chart = getattr(game["engine"].state, f"{side}_chart")
-    return build_chart_book(chart, game[f"{side}_team"].model_dump(), game["season"])
+    team = game[f"{side}_team"]
+    # Pydantic v2 uses model_dump; v1 compatibility keeps local/CI runtimes working.
+    team_info = team.model_dump() if hasattr(team, "model_dump") else team.dict()
+    return build_chart_book(chart, team_info, game["season"])
 
 
 class CoinTossRequest(BaseModel):
@@ -1345,6 +1380,28 @@ async def execute_play(request: PlayRequest):
         # CPU decided, so no pending decision for human
         pending_penalty = False
 
+    # An interception caught in the intercepting team's own end zone pauses
+    # after the catch location is known. The human chooses; a CPU controller
+    # resolves with the shared core situation policy before any return dice roll.
+    pending_interception = False
+    if result.pending_end_zone_interception_return_decision:
+        human_is_home = game["home_team"].id == game.get("player_team_id")
+        return_team_is_home = not engine.state.is_home_possession
+        if return_team_is_home != human_is_home:
+            attempt_return = cpu_should_attempt_end_zone_return(
+                engine, result, return_team_is_home
+            )
+            result = engine.apply_end_zone_interception_return_decision(
+                result, attempt_return
+            )
+            scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(
+                game, engine, result
+            )
+        else:
+            engine._last_play_outcome = result
+            pending_interception = True
+            scoring, is_pending_pat, pre_kickoff_ball_position = False, False, None
+
     response_game_state = game_state_to_response(game, is_kickoff=scoring and not is_pending_pat)
 
     # Parse dice from description for frontend display
@@ -1401,6 +1458,11 @@ async def execute_play(request: PlayRequest):
             half_changed=quarter_before == 2 and engine.state.quarter == 3,
             pending_penalty_decision=pending_penalty and result.pending_penalty_decision,
             penalty_choice=penalty_choice_model,
+            pending_end_zone_interception_return_decision=pending_interception,
+            int_catch_depth=result.int_catch_depth,
+            int_catch_field_position=result.int_catch_field_position,
+            interception_return_situation=result.interception_return_situation,
+            int_return_team=result.int_return_team,
             play_type=result.play_type.value
             if hasattr(result.play_type, "value")
             else str(result.play_type),
@@ -1838,6 +1900,19 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
     )
 
     # The engine alone decides touchdowns; never infer one from the spot here.
+    pending_interception = False
+    if new_outcome.pending_end_zone_interception_return_decision:
+        return_team_is_home = not engine.state.is_home_possession
+        if return_team_is_home != human_is_home:
+            attempt_return = cpu_should_attempt_end_zone_return(
+                engine, new_outcome, return_team_is_home
+            )
+            new_outcome = engine.apply_end_zone_interception_return_decision(
+                new_outcome, attempt_return
+            )
+        else:
+            engine._last_play_outcome = new_outcome
+            pending_interception = True
     scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(game, engine, new_outcome)
 
     penalty_choice_model = None
@@ -1867,6 +1942,11 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         half_changed=engine.halftime_pending(),
         pending_penalty_decision=False,
         penalty_choice=penalty_choice_model,
+        pending_end_zone_interception_return_decision=pending_interception,
+        int_catch_depth=new_outcome.int_catch_depth,
+        int_catch_field_position=new_outcome.int_catch_field_position,
+        interception_return_situation=new_outcome.interception_return_situation,
+        int_return_team=new_outcome.int_return_team,
         play_type=new_outcome.play_type.value
         if hasattr(new_outcome.play_type, "value")
         else str(new_outcome.play_type),
@@ -1878,6 +1958,80 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         dice_roll_offense=0,
         dice_roll_defense=0,
         result=play_result,
+        game_state=game_state_to_response(game, is_kickoff=scoring and not is_pending_pat),
+    )
+
+
+class EndZoneInterceptionDecisionRequest(BaseModel):
+    game_id: str
+    attempt_return: bool
+
+
+@router.post("/api/game/end-zone-interception-decision", response_model=ExecutePlayResponse)
+async def apply_end_zone_interception_decision(request: EndZoneInterceptionDecisionRequest):
+    """Resolve the engine's pending own-end-zone interception return choice."""
+    if request.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game = games[request.game_id]
+    engine = game["engine"]
+    outcome = getattr(engine, "_last_play_outcome", None)
+    if (
+        not outcome
+        or not outcome.pending_end_zone_interception_return_decision
+        or not engine.has_pending_end_zone_interception
+    ):
+        raise HTTPException(
+            status_code=400, detail="No pending end-zone interception decision"
+        )
+
+    human_is_home = game["home_team"].id == game.get("player_team_id")
+    return_team_is_home = not engine.state.is_home_possession
+    if return_team_is_home == human_is_home:
+        attempt_return = request.attempt_return
+    else:
+        attempt_return = cpu_should_attempt_end_zone_return(
+            engine, outcome, return_team_is_home
+        )
+
+    new_outcome = engine.apply_end_zone_interception_return_decision(
+        outcome, attempt_return
+    )
+    scoring, is_pending_pat, pre_kickoff_ball_position = _arm_follow_up_state(
+        game, engine, new_outcome
+    )
+
+    return ExecutePlayResponse(
+        player_play="INT RETURN",
+        cpu_play="CPU",
+        dice_roll_offense=0,
+        dice_roll_defense=0,
+        result=PlayResult(
+            result=new_outcome.result.result_type.value
+            if hasattr(new_outcome.result, "result_type")
+            else str(new_outcome.result),
+            yards=new_outcome.yards_gained,
+            description=new_outcome.description,
+            defensive_timeout_used=new_outcome.defensive_timeout_used,
+            turnover=new_outcome.turnover,
+            scoring=scoring,
+            touchdown=new_outcome.touchdown,
+            new_ball_position=pre_kickoff_ball_position
+            if pre_kickoff_ball_position is not None
+            else engine.state.ball_position,
+            new_down=engine.state.down,
+            new_yards_to_go=engine.state.yards_to_go,
+            new_score_home=engine.state.home_score,
+            new_score_away=engine.state.away_score,
+            possession_changed=new_outcome.turnover or scoring,
+            game_over=engine.state.game_over,
+            quarter_changed=False,
+            half_changed=engine.halftime_pending(),
+            pending_end_zone_interception_return_decision=False,
+            play_type=new_outcome.play_type.value
+            if hasattr(new_outcome.play_type, "value")
+            else str(new_outcome.play_type),
+        ),
         game_state=game_state_to_response(game, is_kickoff=scoring and not is_pending_pat),
     )
 
@@ -1990,6 +2144,11 @@ async def load_replay(request: LoadReplayRequest):
     try:
         engine.set_end_zone_interception_return(True, game_state.get("home_end_zone_interception_return", False))
         engine.set_end_zone_interception_return(False, game_state.get("away_end_zone_interception_return", False))
+        for home, key in ((True, "home_end_zone_interception_policy"),
+                          (False, "away_end_zone_interception_policy")):
+            policy = game_state.get(key)
+            if policy:
+                engine.set_end_zone_interception_policy(home, policy)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

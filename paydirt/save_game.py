@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
@@ -92,7 +93,29 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         "offensive_call_history": engine.offensive_call_history,
         "home_end_zone_interception_return": engine.home_end_zone_interception_return,
         "away_end_zone_interception_return": engine.away_end_zone_interception_return,
+        "home_end_zone_interception_policy": engine.home_end_zone_interception_policy,
+        "away_end_zone_interception_policy": engine.away_end_zone_interception_policy,
     }
+
+    pending_interception = engine._end_zone_interception_state_for_save()
+    if pending_interception is not None:
+        save_data["pending_end_zone_interception"] = pending_interception
+        # Preserve the dice stream captured when the choice was deferred, so a
+        # resumed game rolls the same return rather than replaying earlier dice.
+        # Reset to the state captured when the choice was deferred, so reloading
+        # cannot reroll the interception or earlier dice. A pending decision
+        # restored from disk has no capture of its own; current state is then
+        # the best available deterministic continuation.
+        random_state = (
+            engine._pending_end_zone_interception.get("random_state")
+            or random.getstate()
+        )
+        whole, inner, gauss_next = random_state
+        save_data["dice_random_state"] = {
+            "version": whole,
+            "internal": list(inner),
+            "gauss_next": gauss_next,
+        }
 
     # Version-1 readers ignore this optional metadata. Without it, a later load
     # would mistake defaulted component counters for a complete legacy history.
@@ -155,8 +178,13 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
     engine = PaydirtGameEngine(home_chart, away_chart)
     state = engine.state
     engine.restore_offensive_call_history(save_data.get("offensive_call_history", []))
-    engine.set_end_zone_interception_return(True, save_data.get("home_end_zone_interception_return", False))
-    engine.set_end_zone_interception_return(False, save_data.get("away_end_zone_interception_return", False))
+    engine.home_end_zone_interception_return = save_data.get("home_end_zone_interception_return", False)
+    engine.away_end_zone_interception_return = save_data.get("away_end_zone_interception_return", False)
+    for home, key in ((True, "home_end_zone_interception_policy"),
+                      (False, "away_end_zone_interception_policy")):
+        policy = save_data.get(key)
+        if policy:
+            engine.set_end_zone_interception_policy(home, policy)
     
     # Restore core game state
     state.home_score = save_data["home_score"]
@@ -215,6 +243,13 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
         )
         for sp in save_data.get("scoring_plays", [])
     ]
+
+    pending_interception = save_data.get("pending_end_zone_interception")
+    if pending_interception:
+        engine.restore_pending_end_zone_interception(
+            pending_interception,
+            random_state=save_data.get("dice_random_state"),
+        )
 
     # Check for invalid ball positions that indicate unsaved scores
     # ball_position >= 100 means a touchdown that wasn't processed

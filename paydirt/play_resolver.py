@@ -112,6 +112,9 @@ class PlayResult:
     int_return_yards: int = 0
     int_return_dice: int = 0
     int_spot: int = 0
+    # Explicit own-end-zone return decision made after the catch location is
+    # known. None means the engine has not resolved a pending choice yet.
+    end_zone_return_choice: bool | None = None
     # Preserve recovery, possession and accepted fouls when retaining a resolved play.
     int_return_chain: ReturnChain | None = field(default=None, repr=False, compare=False)
     # Fumble recovery details (set by game engine)

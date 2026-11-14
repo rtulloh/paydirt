@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-209 issues: 77 open, 59 resolved, 73 closed.
+209 issues: 76 open, 59 resolved, 74 closed.
 
-## Open (77)
+## Open (76)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -43,8 +43,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | — | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
 | [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.6 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
-</rfl:parameter><|end|><|start|>edit to=assistant<|channel|>analysis<|message|>Edited docs/dev-notes/issue-tracker.md (1 replacement)<|end|><|start|> assistant<|channel|>analysis<|message|>Oops, I replaced with empty string, leaving a blank line. That's fine but maybe better to remove the line entirely. The edit replaced the whole line with empty. Let me check.<|end|><|start|><|start|>assistant to=shell<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="command">
-cd /Users/rtulloh/Downloads/paydirt && grep -n "DATA-049" docs/dev-notes/issue-tracker.md
 | [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | — | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | — |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
@@ -162,7 +160,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (73)
+## Closed (74)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -212,6 +210,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [DATA-010](issues/DATA/DATA-010.md) | Medium | — | Generated breakaway triggers and B yardage are not reconstructed from play by play | created 2026-11-01, resolved 2026-11-02, closed 2026-11-02 | DATA-006, DATA-009, DATA-011 |
 | [DATA-033](issues/DATA/DATA-033.md) | Medium | — | Return-penalty modifiers lack an explicit consumer interpretation | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | RULE-027 |
 | [DATA-043](issues/DATA/DATA-043.md) | Medium | — | Prevent cross-play interception spot allocation in generated passing charts | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
+| [DATA-049](issues/DATA/DATA-049.md) | Medium | v1.10.6 | Bundle verified player rosters for 1977 and 2024 commentary | created 2026-11-11, resolved 2026-11-13, closed 2026-11-13 | — |
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | — | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [FLOW-014](issues/FLOW/FLOW-014.md) | Medium | — | Save game gives no visible success or failure feedback | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | — |
 | [FLOW-018](issues/FLOW/FLOW-018.md) | Medium | — | Browser omits the season-enabled two-point conversion choice after a touchdown | created 2026-11-06, resolved 2026-11-07, closed 2026-11-08 | RULE-001, STAT-003 |

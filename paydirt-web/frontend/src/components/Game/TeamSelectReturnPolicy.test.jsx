@@ -59,37 +59,25 @@ describe('Team selection interception return preferences', () => {
     })
   })
 
-  it('defaults both teams to automatic touchbacks and sends that preference', async () => {
+  it('does not expose a pre-game end-zone choice and always asks in play', async () => {
     await selectTeams()
-    expect(screen.getByLabelText('Your team: end-zone interceptions')).toHaveValue('touchback')
-    expect(screen.getByLabelText('Opponent: end-zone interceptions')).toHaveValue('touchback')
+    expect(screen.queryByLabelText('Your team: end-zone interceptions')).not.toBeInTheDocument()
+    expect(screen.queryByText('END-ZONE INTERCEPTIONS')).not.toBeInTheDocument()
     expect(await submittedRequest()).toMatchObject({
+      player_end_zone_interception_policy: 'ask',
+      opponent_end_zone_interception_policy: 'auto',
       player_attempt_end_zone_interception_returns: false,
-      opponent_attempt_end_zone_interception_returns: false,
     })
   })
 
-  it.each([true, false])('keeps team preferences independent when play_as_home is %s', async (isHome) => {
+  it.each([true, false])('uses the in-play decision regardless of play_as_home is %s', async (isHome) => {
     await selectTeams()
     if (!isHome) fireEvent.click(screen.getByRole('button', { name: 'AWAY' }))
-    fireEvent.change(screen.getByLabelText('Your team: end-zone interceptions'), {
-      target: { value: 'return' },
-    })
     expect(await submittedRequest()).toMatchObject({
       play_as_home: isHome,
-      player_attempt_end_zone_interception_returns: true,
-      opponent_attempt_end_zone_interception_returns: false,
-    })
-  })
-
-  it('allows the opponent to attempt returns while the player elects touchbacks', async () => {
-    await selectTeams()
-    fireEvent.change(screen.getByLabelText('Opponent: end-zone interceptions'), {
-      target: { value: 'return' },
-    })
-    expect(await submittedRequest()).toMatchObject({
+      player_end_zone_interception_policy: 'ask',
+      opponent_end_zone_interception_policy: 'auto',
       player_attempt_end_zone_interception_returns: false,
-      opponent_attempt_end_zone_interception_returns: true,
     })
   })
 })

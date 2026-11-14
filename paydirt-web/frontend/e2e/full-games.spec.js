@@ -115,6 +115,10 @@ async function completeGame(page, request, gameId) {
     } else if (await page.getByRole('button', { name: /^\[1\]/ }).isVisible()) {
       button = page.getByRole('button', { name: /^\[1\]/ })
       endpoint = 'penalty-decision'
+    } else if (await page.getByRole('button', { name: 'TAKE TOUCHBACK', exact: true }).isVisible()) {
+      // FLOW-023: the engine paused after locating an own-end-zone interception.
+      button = page.getByRole('button', { name: 'TAKE TOUCHBACK', exact: true })
+      endpoint = 'end-zone-interception-decision'
     } else if (await page.getByRole('button', { name: 'CONTINUE', exact: true }).isVisible()) {
       // Offsetting penalties use CONTINUE too.
       const penalty = await page.getByText('OFFSETTING PENALTIES', { exact: true }).isVisible()
@@ -224,6 +228,9 @@ async function completeGame(page, request, gameId) {
     // Pending decisions do not add a log entry until resolved; PATs update state.
     if (data.result?.pending_penalty_decision) {
       await expect(page.getByText('PENALTY ON THE PLAY!', { exact: true })).toBeVisible()
+    } else if (data.result?.pending_end_zone_interception_return_decision) {
+      await expect(page.getByText('END-ZONE INTERCEPTION!', { exact: true })).toBeVisible()
+      await expect(page.getByText(data.result.interception_return_situation, { exact: true })).toBeVisible()
     } else if (endpoint === 'extra-point') {
       await expect.poll(async () => (await snapshot(page)).pendingPat).toBe(false)
     } else {

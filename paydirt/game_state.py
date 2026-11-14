@@ -268,3 +268,11 @@ class PlayOutcome:
     penalty_situations: dict[int, PenaltySituation] = field(default_factory=dict)
     clock_trace: ClockTrace | None = None
     clock_stopped_for_penalty: bool = False
+    # Own-end-zone interception caught before return dice. The intercepting team
+    # chooses touchback or a return after the engine reports catch depth, score
+    # and clock. Nothing is applied until the decision is resolved.
+    pending_end_zone_interception_return_decision: bool = False
+    int_catch_depth: int = 0
+    int_catch_field_position: str = ""
+    interception_return_situation: str = ""
+    int_return_team: str = ""

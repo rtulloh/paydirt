@@ -12,6 +12,7 @@ from typing import Optional
 from .chart_loader import TeamChart, load_team_chart
 from .commentary import get_roster
 from .game_state import ClockTrace, GameState, PenaltySituation, PlayOutcome, ScoringPlay, TeamStats
+from .interception_policy import should_attempt_end_zone_return
 from .overtime_rules import OvertimeFormat, OvertimeRules
 from .packaging import get_seasons_path
 from .penalty_handler import resolve_pass_interference, resolve_penalty
@@ -201,9 +202,14 @@ class PaydirtGameEngine:
         self._last_play_start_quarter: int = self.state.quarter
         self._conversion_in_progress = False
         self.offensive_call_history: list[dict] = []
-        # VI-12-F-i: each coach declares the own-end-zone INT choice before play.
+        # VI-12-F-i: the own-end-zone INT choice may be declared before play or,
+        # for a human controller, asked after the catch location is known.
         self.home_end_zone_interception_return = False
         self.away_end_zone_interception_return = False
+        # None keeps legacy boolean behavior; explicit values add ask/auto.
+        self.home_end_zone_interception_policy: str | None = None
+        self.away_end_zone_interception_policy: str | None = None
+        self._pending_end_zone_interception: dict | None = None
 
     def set_end_zone_interception_return(self, home: bool, attempt_return: bool) -> None:
         """Set a team's predeclared own-end-zone interception return preference.
@@ -214,10 +220,75 @@ class PaydirtGameEngine:
         """
         if not isinstance(home, bool) or not isinstance(attempt_return, bool):
             raise ValueError("End-zone interception return preferences must be boolean")  # noqa: TRY004 - invalid argument value
+        self.set_end_zone_interception_policy(home, "return" if attempt_return else "touchback")
+
+    def set_end_zone_interception_policy(self, home: bool, policy: str) -> None:
+        """Set a team's own-end-zone interception policy.
+
+        Args:
+            home: True selects the home team; False selects the away team.
+            policy: "ask" (human choice after the catch), "auto" (CPU situation
+                policy), "return" or "touchback" (predeclared convenience).
+        """
+        if not isinstance(home, bool) or not isinstance(policy, str):
+            raise ValueError("End-zone interception policies require a boolean team and text policy")  # noqa: TRY004 - invalid argument value
+        normalized = policy.strip().lower()
+        if normalized not in {"ask", "auto", "return", "touchback"}:
+            raise ValueError(f"Unsupported end-zone interception policy: {policy!r}")
         if home:
-            self.home_end_zone_interception_return = attempt_return
+            self.home_end_zone_interception_policy = normalized
+            if normalized in {"return", "touchback"}:
+                self.home_end_zone_interception_return = normalized == "return"
         else:
-            self.away_end_zone_interception_return = attempt_return
+            self.away_end_zone_interception_policy = normalized
+            if normalized in {"return", "touchback"}:
+                self.away_end_zone_interception_return = normalized == "return"
+
+    def get_end_zone_interception_policy(self, home: bool) -> str:
+        """Return the effective own-end-zone interception policy.
+
+        Args:
+            home: True selects the home team; False selects the away team.
+
+        Returns:
+            "ask", "auto", "return" or "touchback". Legacy saves without a
+            policy derive the predeclared choice from the boolean preference.
+        """
+        policy = (
+            self.home_end_zone_interception_policy if home
+            else self.away_end_zone_interception_policy
+        )
+        if policy:
+            return policy
+        legacy = (
+            self.home_end_zone_interception_return if home
+            else self.away_end_zone_interception_return
+        )
+        return "return" if legacy else "touchback"
+
+    @property
+    def has_pending_end_zone_interception(self) -> bool:
+        """True while an own-end-zone interception return choice is unresolved."""
+        return self._pending_end_zone_interception is not None
+
+    def _should_attempt_end_zone_return(self, home_defense: bool, catch_depth: int) -> bool:
+        """Apply the controller policy for a catch already located in the end zone."""
+        policy = self.get_end_zone_interception_policy(home_defense)
+        if policy == "return":
+            return True
+        if policy == "touchback":
+            return False
+        score_differential = (
+            self.state.home_score - self.state.away_score if home_defense
+            else self.state.away_score - self.state.home_score
+        )
+        return should_attempt_end_zone_return(
+            catch_depth=catch_depth,
+            score_differential=score_differential,
+            quarter=self.state.quarter,
+            time_remaining=self.state.time_remaining,
+            is_overtime=self.state.is_overtime,
+        )
 
     def _record_offensive_call(self, play_type: PlayType) -> None:
         """Remember an executed primary call before its result changes possession.
@@ -1343,10 +1414,14 @@ class PaydirtGameEngine:
         # Handle end zone interception rules
         # <= 0 = offense's end zone, >= 100 = defense's end zone, 1-99 = field of play
         if raw_int_spot >= 100:
-            attempt_return = (
-                self.away_end_zone_interception_return if self.state.is_home_possession
-                else self.home_end_zone_interception_return
-            )
+            if result.end_zone_return_choice is None:
+                attempt_return = self._should_attempt_end_zone_return(
+                    not self.state.is_home_possession,
+                    min(raw_int_spot - 100, 9),
+                )
+            else:
+                attempt_return = result.end_zone_return_choice
+            result.end_zone_return_choice = attempt_return
             if not attempt_return:
                 self._record_turnover(interception=True)
                 self.state.switch_possession()
@@ -1504,6 +1579,22 @@ class PaydirtGameEngine:
             result.description = (
                 "INTERCEPTION! Momentum carries defender into end zone - TOUCHBACK at the 20"
             )
+
+        # Give the play log an engine-owned summary of the actual return. The
+        # chart cell alone does not tell the reader where the return ended.
+        result.description = result.description or "INTERCEPTION!"
+        if turnover and not result.replay_down:
+            if touchdown:
+                return_summary = "Returned for a TOUCHDOWN"
+            elif not chain.touchback:
+                return_summary = (
+                    f"Return: {return_yards} yards to {self.state.field_position_str()}"
+                )
+            else:
+                return_summary = ""
+            if return_summary and return_summary not in result.description:
+                result.description = f"{result.description} | {return_summary}"
+
         plain_cell = chain.first_cell.strip().lstrip("-").isdigit() or "TD" in chain.first_cell.upper()
         if chain.notes or len(chain.trace) > 1 or "reroll" in return_trace or not plain_cell:
             extra = ("; ".join(chain.notes) + " " if chain.notes else "") + f"({return_trace})"
@@ -2467,7 +2558,7 @@ class PaydirtGameEngine:
             # No penalties - process normally using existing run_play logic
             # Restore state and call run_play (which will re-roll, but that's acceptable)
             # Actually, we should use the result we already have
-            outcome = self._apply_play_result(
+            final = self._apply_play_result(
                 play_type,
                 defense_type,
                 penalty_choice.play_result,
@@ -2479,6 +2570,30 @@ class PaydirtGameEngine:
                 in_bounds_designation,
                 no_huddle=no_huddle,
             )
+
+            if final.pending_end_zone_interception_return_decision:
+                if defensive_timeout_context is not None:
+                    self.record_pending_end_zone_interception_follow_ups(
+                        defensive_timeout_context=defensive_timeout_context,
+                    )
+                if call_timeout:
+                    self.record_pending_end_zone_interception_follow_ups(
+                        timeout_context={
+                            "timeout_is_home": offense_was_home,
+                            "time_before_play": time_before_play,
+                            "quarter_before_play": quarter_before_play,
+                            "offense_was_home": offense_was_home,
+                            "two_minute_warning_before": two_minute_warning_before,
+                            "timeouts_before_play": timeouts_before_play,
+                        },
+                    )
+                elif spike_context is not None:
+                    self.record_pending_end_zone_interception_follow_ups(
+                        spike_context=spike_context,
+                    )
+                return final
+
+            outcome = final
 
             if defensive_timeout_context is not None:
                 self._apply_defensive_timeout_before_spike(outcome, defensive_timeout_context, call_spike)
@@ -2718,6 +2833,16 @@ class PaydirtGameEngine:
                 no_huddle=outcome.no_huddle,
                 penalty_clock_stopped=True,
             )
+            if final_outcome.pending_end_zone_interception_return_decision:
+                if defensive_context is not None:
+                    self.record_pending_end_zone_interception_follow_ups(
+                        defensive_timeout_context=defensive_context,
+                    )
+                if spike_context is not None:
+                    self.record_pending_end_zone_interception_follow_ups(
+                        spike_context=spike_context,
+                    )
+                return final_outcome
             if defensive_context is not None:
                 self._apply_defensive_timeout_before_spike(
                     final_outcome, defensive_context, spike_context is not None,
@@ -2918,6 +3043,35 @@ class PaydirtGameEngine:
 
         yards = self._credited_scrimmage_yards(result, yards, ball_pos_before)
 
+        # An own-end-zone interception asks its controller after the catch spot
+        # is known. Defer every state change, statistic and clock charge so the
+        # return dice cannot be rolled before the choice is resolved.
+        raw_int_spot = ball_pos_before + yards
+        if (
+            result.result_type == ResultType.INTERCEPTION
+            and raw_int_spot >= 100
+            and result.end_zone_return_choice is None
+            and result.int_return_chain is None
+            and not (result.int_return_dice or result.int_return_yards)
+            and self.get_end_zone_interception_policy(
+                not self.state.is_home_possession
+            ) == "ask"
+        ):
+            return self._defer_end_zone_interception_decision(
+                play_type=play_type,
+                defense_type=defense_type,
+                result=result,
+                field_pos_before=field_pos_before,
+                down_before=down_before,
+                ball_pos_before=ball_pos_before,
+                ytg_before=ytg_before,
+                out_of_bounds_designation=out_of_bounds_designation,
+                in_bounds_designation=in_bounds_designation,
+                no_huddle=no_huddle,
+                penalty_clock_stopped=penalty_clock_stopped,
+                catch_depth=min(raw_int_spot - 100, 9),
+            )
+
         # Build transaction for this play
         txn = PlayTransaction()
         off_team = self.state.possession_team.peripheral.short_name
@@ -3077,6 +3231,293 @@ class PaydirtGameEngine:
         outcome.clock_trace = self.last_clock_trace
 
         return outcome
+
+    def _end_zone_catch_field_position(self, depth: int) -> str:
+        """Describe a catch measured from the intercepting team's own goal line."""
+        return "own goal line" if depth == 0 else f"own {depth}-yard line"
+
+    def _game_clock_situation(self) -> str:
+        """Format the engine clock for a pending decision prompt."""
+        minutes = max(0.0, self.state.time_remaining)
+        whole = int(minutes)
+        seconds = int(round((minutes - whole) * 60))
+        if seconds >= 60:
+            whole += 1
+            seconds = 0
+        period = f"OT{self.state.ot_period}" if self.state.is_overtime else f"Q{self.state.quarter}"
+        return f"{period} {whole}:{seconds:02d}"
+
+    def _defer_end_zone_interception_decision(
+        self,
+        *,
+        play_type: PlayType,
+        defense_type: DefenseType,
+        result: PlayResult,
+        field_pos_before: str,
+        down_before: int,
+        ball_pos_before: int,
+        ytg_before: int,
+        out_of_bounds_designation: bool,
+        in_bounds_designation: bool,
+        no_huddle: bool,
+        penalty_clock_stopped: bool,
+        catch_depth: int,
+    ) -> PlayOutcome:
+        """Return a pending own-end-zone interception outcome without applying it."""
+        defense_home = not self.state.is_home_possession
+        return_team = self.state.defense_team.peripheral.short_name
+        catch_position = self._end_zone_catch_field_position(catch_depth)
+        score = (
+            f"{self.state.home_chart.peripheral.short_name} {self.state.home_score} - "
+            f"{self.state.away_chart.peripheral.short_name} {self.state.away_score}"
+        )
+        clock = self._game_clock_situation()
+        situation = f"{return_team} caught it at the {catch_position} | {score} | {clock}"
+        self._pending_end_zone_interception = {
+            "play_type": play_type,
+            "defense_type": defense_type,
+            "result": result,
+            "field_pos_before": field_pos_before,
+            "down_before": down_before,
+            "ball_pos_before": ball_pos_before,
+            "ytg_before": ytg_before,
+            "out_of_bounds_designation": out_of_bounds_designation,
+            "in_bounds_designation": in_bounds_designation,
+            "no_huddle": no_huddle,
+            "penalty_clock_stopped": penalty_clock_stopped,
+            "catch_depth": catch_depth,
+            "return_team": return_team,
+            "return_team_is_home": defense_home,
+            "situation": situation,
+            "follow_ups": {
+                "spike_context": None,
+                "timeout_context": None,
+                "defensive_timeout_context": None,
+            },
+            "random_state": random.getstate(),
+        }
+        outcome = PlayOutcome(
+            play_type=play_type,
+            defense_type=defense_type,
+            result=result,
+            yards_gained=0,
+            turnover=False,
+            touchdown=False,
+            safety=False,
+            first_down=False,
+            field_position_before=field_pos_before,
+            field_position_after=field_pos_before,
+            down_before=down_before,
+            down_after=down_before,
+            description=(
+                f"INTERCEPTION in the end zone at the {catch_position} - "
+                "choose touchback or attempt return"
+            ),
+            pending_end_zone_interception_return_decision=True,
+            int_catch_depth=catch_depth,
+            int_catch_field_position=catch_position,
+            interception_return_situation=situation,
+            int_return_team=return_team,
+        )
+        self._last_play_outcome = outcome
+        return outcome
+
+    def record_pending_end_zone_interception_follow_ups(
+        self,
+        *,
+        spike_context: dict | None = None,
+        timeout_context: dict | None = None,
+        defensive_timeout_context: dict | None = None,
+    ) -> None:
+        """Keep requested modifiers until the pending interception is resolved."""
+        if self._pending_end_zone_interception is None:
+            return
+        follow_ups = self._pending_end_zone_interception["follow_ups"]
+        if spike_context is not None:
+            follow_ups["spike_context"] = spike_context
+        if timeout_context is not None:
+            follow_ups["timeout_context"] = timeout_context
+        if defensive_timeout_context is not None:
+            follow_ups["defensive_timeout_context"] = defensive_timeout_context
+
+    def _end_zone_interception_state_for_save(self) -> dict | None:
+        """Serialize a pending interception decision for a game save.
+
+        Returns:
+            A JSON-safe dictionary, or None when no decision is pending.
+        """
+        state = self._pending_end_zone_interception
+        if state is None:
+            return None
+        result = state["result"]
+        result_data = {
+            "result_type": result.result_type.value,
+            "yards": result.yards,
+            "description": result.description,
+            "turnover": result.turnover,
+            "int_return_yards": result.int_return_yards,
+            "int_return_dice": result.int_return_dice,
+            "int_spot": result.int_spot,
+            "end_zone_return_choice": result.end_zone_return_choice,
+            "raw_result": result.raw_result,
+            "dice_roll": result.dice_roll,
+            "defense_modifier": result.defense_modifier,
+            "defense_dice": result.defense_dice,
+            "out_of_bounds": result.out_of_bounds,
+            "offense_yards": result.offense_yards,
+            "touchdown": result.touchdown,
+            "first_down": result.first_down,
+        }
+        return {
+            "play_type": state["play_type"].value,
+            "defense_type": state["defense_type"].value,
+            "result": result_data,
+            "field_position_before": state["field_pos_before"],
+            "down_before": state["down_before"],
+            "ball_position_before": state["ball_pos_before"],
+            "yards_to_go_before": state["ytg_before"],
+            "out_of_bounds_designation": state["out_of_bounds_designation"],
+            "in_bounds_designation": state["in_bounds_designation"],
+            "no_huddle": state["no_huddle"],
+            "penalty_clock_stopped": state["penalty_clock_stopped"],
+            "catch_depth": state["catch_depth"],
+            "return_team": state["return_team"],
+            "return_team_is_home": state["return_team_is_home"],
+            "situation": state["situation"],
+            "follow_ups": state["follow_ups"],
+        }
+
+    def restore_pending_end_zone_interception(
+        self, data: dict, *, random_state: dict | None = None
+    ) -> PlayOutcome:
+        """Restore a saved, unresolved own-end-zone interception decision.
+
+        Args:
+            data: The JSON dictionary written by the save helper.
+            random_state: Serialized global dice RNG state captured when the
+                decision was deferred, so return dice are not rerolled.
+
+        Returns:
+            The pending outcome, also stored on ``_last_play_outcome``.
+        """
+        result_data = dict(data["result"])
+        result_data["result_type"] = ResultType(result_data["result_type"])
+        result = PlayResult(**result_data)
+        play_type = PlayType(data["play_type"])
+        defense_type = DefenseType(data["defense_type"])
+        state = {
+            "play_type": play_type,
+            "defense_type": defense_type,
+            "result": result,
+            "field_pos_before": data["field_position_before"],
+            "down_before": data["down_before"],
+            "ball_pos_before": data["ball_position_before"],
+            "ytg_before": data["yards_to_go_before"],
+            "out_of_bounds_designation": data["out_of_bounds_designation"],
+            "in_bounds_designation": data["in_bounds_designation"],
+            "no_huddle": data["no_huddle"],
+            "penalty_clock_stopped": data["penalty_clock_stopped"],
+            "catch_depth": data["catch_depth"],
+            "return_team": data["return_team"],
+            "return_team_is_home": data["return_team_is_home"],
+            "situation": data["situation"],
+            "follow_ups": data.get("follow_ups") or {
+                "spike_context": None,
+                "timeout_context": None,
+                "defensive_timeout_context": None,
+            },
+            "random_state": None,
+        }
+        self._pending_end_zone_interception = state
+        catch_position = self._end_zone_catch_field_position(data["catch_depth"])
+        outcome = PlayOutcome(
+            play_type=play_type,
+            defense_type=defense_type,
+            result=result,
+            yards_gained=0,
+            turnover=False,
+            touchdown=False,
+            safety=False,
+            first_down=False,
+            field_position_before=data["field_position_before"],
+            field_position_after=data["field_position_before"],
+            down_before=data["down_before"],
+            down_after=data["down_before"],
+            description=(
+                f"INTERCEPTION in the end zone at the {catch_position} - "
+                "choose touchback or attempt return"
+            ),
+            pending_end_zone_interception_return_decision=True,
+            int_catch_depth=data["catch_depth"],
+            int_catch_field_position=catch_position,
+            interception_return_situation=data["situation"],
+            int_return_team=data["return_team"],
+        )
+        self._last_play_outcome = outcome
+        if random_state is not None:
+            random.setstate((
+                random_state["version"],
+                tuple(random_state["internal"]),
+                random_state["gauss_next"],
+            ))
+        state["random_state"] = random.getstate()
+        return outcome
+
+    def apply_end_zone_interception_return_decision(
+        self, outcome: PlayOutcome, attempt_return: bool
+    ) -> PlayOutcome:
+        """Resolve a pending own-end-zone interception return choice exactly once.
+
+        Args:
+            outcome: The PlayOutcome returned with
+                ``pending_end_zone_interception_return_decision=True``.
+            attempt_return: True to attempt a return, False for the touchback.
+
+        Returns:
+            The finalized play outcome, with return dice rolled only when a
+            return was chosen and all clock/statistic changes applied once.
+        """
+        if not isinstance(attempt_return, bool):
+            raise ValueError("End-zone interception return decision must be boolean")  # noqa: TRY004 - invalid argument value
+        if (
+            not outcome.pending_end_zone_interception_return_decision
+            or self._pending_end_zone_interception is None
+        ):
+            raise ValueError("No pending end-zone interception return decision")
+        state = self._pending_end_zone_interception
+        self._pending_end_zone_interception = None
+        result = state["result"]
+        result.end_zone_return_choice = attempt_return
+        final_outcome = self._apply_play_result(
+            state["play_type"],
+            state["defense_type"],
+            result,
+            state["field_pos_before"],
+            state["down_before"],
+            state["ball_pos_before"],
+            state["ytg_before"],
+            out_of_bounds_designation=state["out_of_bounds_designation"],
+            in_bounds_designation=state["in_bounds_designation"],
+            no_huddle=state["no_huddle"],
+            penalty_clock_stopped=state["penalty_clock_stopped"],
+        )
+        follow_ups = state["follow_ups"]
+        defensive_context = follow_ups["defensive_timeout_context"]
+        if defensive_context is not None:
+            self._apply_defensive_timeout_before_spike(
+                final_outcome,
+                defensive_context,
+                follow_ups["spike_context"] is not None,
+            )
+        if (
+            follow_ups["timeout_context"] is not None
+            and not final_outcome.touchdown
+            and not final_outcome.turnover
+        ):
+            self._apply_requested_timeout(final_outcome, **follow_ups["timeout_context"])
+        elif follow_ups["spike_context"] is not None:
+            self._apply_requested_spike(final_outcome, follow_ups["spike_context"])
+        return final_outcome
 
     def _flagged_scrimmage_seconds(
         self, play_type: PlayType, result: PlayResult, ball_position: int, *, retained: bool,

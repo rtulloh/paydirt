@@ -2677,6 +2677,53 @@ def handle_penalty_decision(
                 )
 
 
+def handle_end_zone_interception_decision(
+    game: PaydirtGameEngine, outcome, human_is_home: bool
+):
+    """Resolve an engine-pending own-end-zone interception return choice.
+
+    The engine has already located the catch but has not rolled return dice or
+    applied possession, clock or statistics. The human sees engine-provided
+    catch depth, score and clock; the CPU uses the same core policy.
+
+    Args:
+        game: The game engine.
+        outcome: Pending PlayOutcome from the engine.
+        human_is_home: Whether the human controls the home team.
+
+    Returns:
+        The finalized PlayOutcome.
+    """
+    if not outcome.pending_end_zone_interception_return_decision:
+        return outcome
+    return_team_is_home = not game.state.is_home_possession
+    return_team = outcome.int_return_team
+    print("\n" + "=" * 70)
+    print("  *** INTERCEPTION IN THE END ZONE ***")
+    print("=" * 70)
+    print(f"  {outcome.interception_return_situation}")
+    if return_team_is_home != human_is_home:
+        attempt_return = game._should_attempt_end_zone_return(
+            return_team_is_home, outcome.int_catch_depth
+        )
+        choice = "attempt a return" if attempt_return else "take the touchback"
+        print(f"\n  >> {return_team} (CPU) elects to {choice}")
+    else:
+        print(f"\n  Catch depth: {outcome.int_catch_depth} yard(s) deep in the end zone.")
+        print("  [T] Take the automatic touchback")
+        print("  [R] Attempt the return (end-zone depth counts against it)")
+        while True:
+            choice = input("  Your choice (T/R): ").strip().upper()
+            if choice in {"T", "TOUCHBACK"}:
+                attempt_return = False
+                break
+            if choice in {"R", "RETURN"}:
+                attempt_return = True
+                break
+            print("  Enter T for touchback or R for return.")
+    return game.apply_end_zone_interception_return_decision(outcome, attempt_return)
+
+
 def get_human_defense_for_conversion(game: PaydirtGameEngine) -> DefenseType:
     """Collect a formation for the engine-provided untimed try situation."""
     legal = game.get_two_point_situation()["legal_defenses"]
@@ -3057,6 +3104,11 @@ def resume_game(
     # The engine records the opening kicker (persisted in saves); legacy saves
     # fall back to its documented approximation.
 
+    if game.has_pending_end_zone_interception:
+        outcome = game._last_play_outcome
+        outcome = handle_end_zone_interception_decision(game, outcome, human_is_home)
+        print(f"  {outcome.description}")
+
     while not game.state.game_over:
         play_num += 1
 
@@ -3296,6 +3348,8 @@ def resume_game(
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+        if outcome.pending_end_zone_interception_return_decision:
+            outcome = handle_end_zone_interception_decision(game, outcome, human_is_home)
 
         defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
         defense_timeout_used = outcome.defensive_timeout_used or (defensive_timeout_requested and game.apply_defensive_timeout(
@@ -3785,6 +3839,11 @@ def run_interactive_game(
 
     cpu_ai = create_computer_ai(difficulty, game, cpu_is_home=not human_is_home)
 
+    # Human-facing default: choose own-end-zone interception returns after the
+    # catch depth, score and clock are known. The CPU uses its situation policy.
+    game.set_end_zone_interception_policy(human_is_home, "ask")
+    game.set_end_zone_interception_policy(not human_is_home, "auto")
+
     # Create easy mode helper if in easy mode
     if difficulty == "easy":
         easy_mode_helper = create_easy_mode_helper(human_chart)
@@ -4119,6 +4178,8 @@ def run_interactive_game(
 
         if outcome.pending_penalty_decision and outcome.penalty_choice:
             outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+        if outcome.pending_end_zone_interception_return_decision:
+            outcome = handle_end_zone_interception_decision(game, outcome, human_is_home)
 
         defensive_timeout_requested = cpu_defensive_timeout or (call_timeout and not is_human_offense)
         defense_timeout_used = outcome.defensive_timeout_used or (defensive_timeout_requested and game.apply_defensive_timeout(

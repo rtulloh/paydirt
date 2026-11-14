@@ -176,6 +176,14 @@ The one decision on a return: when the reroll after a returning-team foul is a f
 other team recovers, that team keeps the recovery or takes the penalty (which gives the ball
 back to the returning team, backed up). Kickoffs prompt for it; the CPU keeps the recovery.
 
+An interception caught in the intercepting team's own end zone is a separate in-play
+coaching decision. The engine first reports the catch depth, score and clock, and rolls
+no return dice. A human chooses `T` for the automatic touchback or `R` to attempt the
+return; the CPU uses the same depth/score/clock policy. There is no pre-game return
+setting. A catch on or beyond the end line is recorded as nine yards deep, and the
+attempt must cross the goal line or the play is a touchback. After resolution the play
+log reports the return yardage and ending spot, or the touchback/touchdown result.
+
 Kick-chart fouls remain re-kick decisions. On a kickoff, `OFF` identifies the
 receiving team and `DEF` the kicking team in both chart phases. If that same
 team fouls on the kick and return, the other team can take the kick-chart
