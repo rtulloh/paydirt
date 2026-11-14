@@ -1,11 +1,11 @@
 ---
 id: FLOW-027
 title: Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick
-status: open
+status: resolved
 priority: High
 target-release: v1.10.6
 created-at: 2026-11-13
-resolved-at:
+resolved-at: 2026-11-14
 closed-at:
 tags:
 links:
@@ -28,3 +28,16 @@ Found in the 2026-11-13 review of cedf6117..HEAD. `resume_game` resolves a resto
 
 --- 2026-11-13 00:00 ---
 Created with scripts/create_issue.py. Keep evidence public-safe.
+
+--- 2026-11-14 15:40 ---
+Fixed the resumed end-zone interception branch in `resume_game`. After the
+choice is resolved, a return touchdown now uses `_complete_touchdown_sequence`
+and a return safety uses `handle_safety_free_kick`, matching the live loop
+instead of printing the return and entering the snap loop.
+
+Tests first: the new `tests/test_resume_pending_end_zone_flow.py` saved a real
+pending decision on public 2026 charts, loaded it, and restored synthetic return
+cells. Both tests failed against the unchanged implementation because the
+resumed branch skipped the try and kickoff after a return touchdown and skipped
+the free kick after a return safety. Both pass with the shared follow-up path.
+No existing expectation was weakened. Focused adjacent suites passed: 221 tests.

@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-222 issues: 82 open, 64 resolved, 76 closed.
+225 issues: 82 open, 67 resolved, 76 closed.
 
 ## Open (82)
 
@@ -15,8 +15,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [FLOW-027](issues/FLOW/FLOW-027.md) | High | v1.10.6 | Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick | created 2026-11-13 | FLOW-023, FLOW-007 |
-| [RULE-031](issues/RULE/RULE-031.md) | High | v1.10.6 | Deferred end-zone interception reapplies the in-bounds/out-of-bounds modifier and lands at the wrong spot | created 2026-11-13 | FLOW-023 |
+| [FLOW-031](issues/FLOW/FLOW-031.md) | High | v1.10.6 | Hail Mary defensive timeout request raises while end-zone interception choice is pending | created 2026-11-14 | — |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
@@ -53,7 +52,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.6 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
-| [FLOW-028](issues/FLOW/FLOW-028.md) | Medium | v1.10.6 | Hail Mary and direct run_play interceptions bypass the end-zone return choice | created 2026-11-13 | FLOW-023 |
+| [FLOW-032](issues/FLOW/FLOW-032.md) | Medium | v1.10.6 | Hail Mary end-zone interception deferral uses ordinary scrimmage timing | created 2026-11-14 | — |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -91,6 +90,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
+| [FLOW-033](issues/FLOW/FLOW-033.md) | Low | — | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | — | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | — | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 | [STAT-006](issues/STAT/STAT-006.md) | Low | — | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |
@@ -99,7 +99,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (64)
+## Resolved (awaiting play-test confirmation) (67)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -130,6 +130,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-011](issues/FLOW/FLOW-011.md) | High | — | Web conversion endpoints execute without a pending touchdown try | created 2026-10-30, resolved 2026-10-30 | — |
 | [FLOW-016](issues/FLOW/FLOW-016.md) | High | — | Penalty dialog invents midfield and incorrect enforcement previews | created 2026-11-06, resolved 2026-11-07 | — |
 | [FLOW-026](issues/FLOW/FLOW-026.md) | High | v1.10.6 | A new play can execute while an own-end-zone interception return decision is pending | created 2026-11-13, resolved 2026-11-14 | FLOW-023, FLOW-030 |
+| [FLOW-027](issues/FLOW/FLOW-027.md) | High | v1.10.6 | Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick | created 2026-11-13, resolved 2026-11-14 | FLOW-023, FLOW-007 |
 | [FLOW-030](issues/FLOW/FLOW-030.md) | High | v1.10.6 | Guard every game-changing action while an end-zone interception choice is pending | created 2026-11-14, resolved 2026-11-14 | FLOW-026 |
 | [LINT-001](issues/LINT/LINT-001.md) | High | v1.10.6 | Ruff gate fails on 756 default-rule violations across 29 files | created 2026-11-13, resolved 2026-11-13 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | — | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
@@ -143,6 +144,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [RULE-026](issues/RULE/RULE-026.md) | High | — | Selected offensive fumble priority is misclassified as defensive interception | created 2026-11-05, resolved 2026-11-07 | — |
 | [RULE-029](issues/RULE/RULE-029.md) | High | — | Interception chart spots on or beyond the offense end line score touchdowns instead of safeties | created 2026-11-06, resolved 2026-11-07 | — |
 | [RULE-030](issues/RULE/RULE-030.md) | High | — | Own-end-zone interceptions lack the permitted coaching return choice | created 2026-11-06, resolved 2026-11-07 | — |
+| [RULE-031](issues/RULE/RULE-031.md) | High | v1.10.6 | Deferred end-zone interception reapplies the in-bounds/out-of-bounds modifier and lands at the wrong spot | created 2026-11-13, resolved 2026-11-14 | FLOW-023 |
 | [SPIKE-003](issues/SPIKE/SPIKE-003.md) | High | — | A completion could leave time, then its spike reduce the clock to zero without processing period/game expiration | created 2026-10-18, resolved 2026-10-18 | SPIKE-001 |
 | [VAL-002](issues/VAL/VAL-002.md) | High | — | CI never runs the backend pytest suite, Ruff is continue-on-error and omits the backend path, and the public AI… | created 2026-10-19, resolved 2026-10-27 | — |
 | [VAL-017](issues/VAL/VAL-017.md) | High | — | Engine audit disk fingerprints do not identify replaced loaded observers | created 2026-11-05, resolved 2026-11-07 | — |
@@ -161,6 +163,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | — | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
 | [DATA-037](issues/DATA/DATA-037.md) | Medium | — | Reference decoder accepts signed defensive fumbles absent from priority table | created 2026-11-06, resolved 2026-11-07 | — |
 | [FLOW-015](issues/FLOW/FLOW-015.md) | Medium | — | Browser play log shows raw seconds and attributes half-ending plays to the next period | created 2026-11-06, resolved 2026-11-07 | — |
+| [FLOW-028](issues/FLOW/FLOW-028.md) | Medium | v1.10.6 | Hail Mary and direct run_play interceptions bypass the end-zone return choice | created 2026-11-13, resolved 2026-11-14 | FLOW-023 |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | — | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | — | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
 | [VAL-026](issues/VAL/VAL-026.md) | Medium | — | Local pre-push coverage should measure changed modules, not the whole package | created 2026-11-14, resolved 2026-11-14 | VAL-020 |

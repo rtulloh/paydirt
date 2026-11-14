@@ -310,6 +310,22 @@ class PaydirtGameEngine:
             is_overtime=self.state.is_overtime,
         )
 
+    def _should_defer_end_zone_interception(
+        self, result: PlayResult, ball_pos_before: int, yards: int,
+    ) -> bool:
+        """Whether this interception must wait for its controller's return choice."""
+        raw_int_spot = ball_pos_before + yards
+        return (
+            result.result_type == ResultType.INTERCEPTION
+            and raw_int_spot >= 100
+            and result.end_zone_return_choice is None
+            and result.int_return_chain is None
+            and not (result.int_return_dice or result.int_return_yards)
+            and self.get_end_zone_interception_policy(
+                not self.state.is_home_possession
+            ) == "ask"
+        )
+
     def _record_offensive_call(self, play_type: PlayType) -> None:
         """Remember an executed primary call before its result changes possession.
 
@@ -2139,6 +2155,7 @@ class PaydirtGameEngine:
                 ]
                 or result.touchdown
                 or result.out_of_bounds  # Already out of bounds anyway
+                or result.result_type == ResultType.INTERCEPTION  # Defensive catch geometry is fixed.
             )
             if not skip_oob_penalty and yards > 0:
                 yards -= 5
@@ -2160,6 +2177,7 @@ class PaydirtGameEngine:
                 ]
                 or result.touchdown
                 or not result.out_of_bounds  # Already in bounds anyway
+                or result.result_type == ResultType.INTERCEPTION  # Defensive catch geometry is fixed.
             )
             if not skip_ib_penalty and yards > 0:
                 yards -= 5
@@ -2170,6 +2188,23 @@ class PaydirtGameEngine:
 
         # Handle different result types
         if result.result_type == ResultType.INTERCEPTION:
+            if self._should_defer_end_zone_interception(
+                result, ball_pos_before, result.yards,
+            ):
+                return self._defer_end_zone_interception_decision(
+                    play_type=play_type,
+                    defense_type=defense_type,
+                    result=result,
+                    field_pos_before=field_pos_before,
+                    down_before=down_before,
+                    ball_pos_before=ball_pos_before,
+                    ytg_before=self.state.yards_to_go,
+                    out_of_bounds_designation=out_of_bounds_designation,
+                    in_bounds_designation=in_bounds_designation,
+                    no_huddle=no_huddle,
+                    penalty_clock_stopped=False,
+                    catch_depth=min(ball_pos_before + result.yards - 100, 9),
+                )
             # Use centralized interception handler
             turnover, touchdown, safety = self._handle_interception(
                 result, self.state.ball_position, yards
@@ -3099,6 +3134,7 @@ class PaydirtGameEngine:
                 ]
                 or result.touchdown
                 or result.out_of_bounds
+                or result.result_type == ResultType.INTERCEPTION  # Defensive catch geometry is fixed.
             )
             if not skip_oob_penalty and yards > 0:
                 yards = max(0, yards - 5)
@@ -3117,6 +3153,7 @@ class PaydirtGameEngine:
                 ]
                 or result.touchdown
                 or not result.out_of_bounds
+                or result.result_type == ResultType.INTERCEPTION  # Defensive catch geometry is fixed.
             )
             if not skip_ib_penalty and yards > 0:
                 yards = max(0, yards - 5)
@@ -3129,16 +3166,7 @@ class PaydirtGameEngine:
         # is known. Defer every state change, statistic and clock charge so the
         # return dice cannot be rolled before the choice is resolved.
         raw_int_spot = ball_pos_before + yards
-        if (
-            result.result_type == ResultType.INTERCEPTION
-            and raw_int_spot >= 100
-            and result.end_zone_return_choice is None
-            and result.int_return_chain is None
-            and not (result.int_return_dice or result.int_return_yards)
-            and self.get_end_zone_interception_policy(
-                not self.state.is_home_possession
-            ) == "ask"
-        ):
+        if self._should_defer_end_zone_interception(result, ball_pos_before, yards):
             return self._defer_end_zone_interception_decision(
                 play_type=play_type,
                 defense_type=defense_type,
@@ -4066,6 +4094,23 @@ class PaydirtGameEngine:
             self.state.ball_position = 97
 
         elif result.result_type == ResultType.INTERCEPTION:
+            if self._should_defer_end_zone_interception(
+                result, ball_pos_before, result.yards,
+            ):
+                return self._defer_end_zone_interception_decision(
+                    play_type=PlayType.HAIL_MARY,
+                    defense_type=DefenseType.STANDARD,
+                    result=result,
+                    field_pos_before=field_pos_before,
+                    down_before=down_before,
+                    ball_pos_before=ball_pos_before,
+                    ytg_before=self.state.yards_to_go,
+                    out_of_bounds_designation=False,
+                    in_bounds_designation=False,
+                    no_huddle=False,
+                    penalty_clock_stopped=False,
+                    catch_depth=min(ball_pos_before + result.yards - 100, 9),
+                )
             # Use centralized interception handler for consistent end zone handling
             turnover, touchdown, safety = self._handle_interception(
                 result, self.state.ball_position, yards

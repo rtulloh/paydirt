@@ -398,3 +398,115 @@ def test_pending_choice_blocks_two_point_before_conversion_setup() -> None:
             game.attempt_two_point(PlayType.SHORT_PASS, DefenseType.STANDARD)
     assert game.state == state_before
     assert game.has_pending_end_zone_interception
+
+
+@pytest.mark.parametrize("path", ["hail-mary", "run-play"])
+def test_direct_interception_paths_defer_own_end_zone_ask(path: str) -> None:
+    """FLOW-028: Hail Mary and direct run_play honor the same ask policy."""
+    game = make_sample_game()
+    game.state.is_home_possession = True
+    game.state.ball_position = 90
+    game.set_end_zone_interception_policy(False, "ask")
+    game.state.defense_team.special_teams.interception_return = {26: "15"}
+    result = interception_result(104)
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=result),
+        patch("paydirt.game_engine.resolve_play", return_value=result),
+    ):
+        if path == "hail-mary":
+            outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        else:
+            outcome = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    assert outcome.pending_end_zone_interception_return_decision is True
+    assert outcome.int_catch_depth == 4
+    assert game.has_pending_end_zone_interception is True
+    assert game.state.is_home_possession is True
+    assert game.state.ball_position == 90
+    assert game.state.home_score == game.state.away_score == 0
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        final = game.apply_end_zone_interception_return_decision(
+            outcome, attempt_return=True
+        )
+    assert final.pending_end_zone_interception_return_decision is False
+
+@pytest.mark.parametrize(
+    "path,designation",
+    [
+        ("penalty-procedure", "none"),
+        ("penalty-procedure", "out-of-bounds"),
+        ("penalty-procedure", "in-bounds"),
+        ("run-play", "none"),
+        ("run-play", "out-of-bounds"),
+        ("run-play", "in-bounds"),
+    ],
+)
+def test_end_zone_deferral_uses_raw_catch_depth_and_applies_designation_once(
+    path: str, designation: str,
+) -> None:
+    """RULE-031: catch depth is fixed before the choice, whatever the designation."""
+    game, result = decision_game(raw_spot=FOUR_YARDS_DEEP)
+    if designation == "in-bounds":
+        result.out_of_bounds = True
+    designations = {
+        "out-of-bounds": {"out_of_bounds_designation": True},
+        "in-bounds": {"in_bounds_designation": True},
+    }.get(designation, {})
+
+    if path == "penalty-procedure":
+        choice = PenaltyChoice(play_result=result)
+        with patch("paydirt.game_engine.resolve_play_with_penalties", return_value=choice):
+            pending = game.run_play_with_penalty_procedure(
+                PlayType.SHORT_PASS, DefenseType.STANDARD, **designations,
+            )
+    else:
+        with patch("paydirt.game_engine.resolve_play", return_value=result):
+            pending = game.run_play(
+                PlayType.SHORT_PASS, DefenseType.STANDARD, **designations,
+            )
+
+    assert pending.pending_end_zone_interception_return_decision is True
+    assert pending.int_catch_depth == 4
+    assert pending.description == (
+        "INTERCEPTION in the end zone at the own 4-yard line - "
+        "choose touchback or attempt return"
+    )
+    assert result.description == ""
+    assert result.yards == FOUR_YARDS_DEEP - 90
+    assert result.out_of_bounds is (designation == "in-bounds")
+
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        final = game.apply_end_zone_interception_return_decision(
+            pending, attempt_return=True,
+        )
+
+    assert final.pending_end_zone_interception_return_decision is False
+    assert final.turnover is True
+    assert game.state.is_home_possession is False
+    assert game.state.ball_position == 11
+    assert "designation: -5 yards" not in final.result.description
+
+
+def test_cli_prompt_shows_the_engine_catch_depth_used_by_resolution(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """RULE-031: the CLI prompt and final spot use the same engine depth."""
+    from paydirt.interactive_game import handle_end_zone_interception_decision
+
+    game, result = decision_game(raw_spot=FOUR_YARDS_DEEP)
+    with patch(
+        "paydirt.game_engine.resolve_play_with_penalties",
+        return_value=PenaltyChoice(play_result=result),
+    ):
+        pending = game.run_play_with_penalty_procedure(
+            PlayType.SHORT_PASS, DefenseType.STANDARD, out_of_bounds_designation=True,
+        )
+    monkeypatch.setattr("builtins.input", lambda prompt: "R")
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        final = handle_end_zone_interception_decision(game, pending, human_is_home=False)
+
+    output = capsys.readouterr().out
+    assert "Catch depth: 4 yard(s) deep in the end zone." in output
+    assert game.state.ball_position == 11
+    assert final.pending_end_zone_interception_return_decision is False
+    assert "designation" not in final.result.description

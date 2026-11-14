@@ -3141,6 +3141,19 @@ def resume_game(
         outcome = game._last_play_outcome
         outcome = handle_end_zone_interception_decision(game, outcome, human_is_home)
         print(f"  {outcome.description}")
+        # Use the same scoring follow-up as the live loop. A deferred return can
+        # finish as a touchdown with a try/kickoff or as a safety with a free
+        # kick; printing the description alone would resume at a stale snap.
+        if outcome.safety:
+            print(f"  Score: {game.get_score_str()}")
+            if game.should_kickoff_after_score():
+                outcome = handle_safety_free_kick(
+                    game, game.state.is_home_possession, human_is_home, cpu_ai
+                )
+        elif outcome.touchdown:
+            outcome = _complete_touchdown_sequence(
+                game, outcome, human_is_home, cpu_ai
+            )
 
     while not game.state.game_over:
         play_num += 1
