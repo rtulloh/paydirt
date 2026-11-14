@@ -161,6 +161,9 @@ const PlayingPhase = () => {
 
   // Check for 4th down CPU decision when player is on defense
   useEffect(() => {
+    // FLOW-026: the engine waits for the end-zone return choice and would reject
+    // a new snap, so no coaching query or kick panel may start while it is open.
+    if (localShowEndZoneChoice) return;
     if (!gameId || localExecuting || isKickoff || gameOver || pendingPat || halftimePending || showHalftime) return;
     if (playerOffense) return;  // Player is on offense, no special handling needed
     if (down !== 4) return;  // Not 4th down
@@ -203,7 +206,7 @@ const PlayingPhase = () => {
       cpuDecisionPendingRef.current = false;
     };
   }, [gameId, localExecuting, isKickoff, gameOver, pendingPat, halftimePending, showHalftime,
-      playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
+      localShowEndZoneChoice, playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
       homeScore, awayScore, homeTimeouts, awayTimeouts, cpuGoingForIt, cpuDecisionRetry,
       pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
 
@@ -251,6 +254,7 @@ const PlayingPhase = () => {
   }, [homeScore, awayScore]);
 
   const handleKickoff = async () => {
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     setLocalExecuting(true);
     setLocalLastResult(null);
     setLocalDiceResult(null);
@@ -376,6 +380,7 @@ const PlayingPhase = () => {
   };
 
   const handlePatKick = async () => {
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     setLocalExecuting(true);
     try {
       const res = await fetch(`${API_BASE}/api/game/extra-point`, {
@@ -408,6 +413,7 @@ const PlayingPhase = () => {
   };
 
   const handlePatTwoPoint = async () => {
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     setLocalExecuting(true);
     try {
       const res = await fetch(`${API_BASE}/api/game/two-point`, {
@@ -450,6 +456,7 @@ const PlayingPhase = () => {
 
   const handleCpuPatAuto = async (gid) => {
     // CPU scored — auto-attempt extra point, show result then kickoff
+    if (!gid || localShowEndZoneChoice) return;
     try {
       const res = await fetch(`${API_BASE}/api/game/extra-point`, {
         method: 'POST',
@@ -535,6 +542,7 @@ const PlayingPhase = () => {
   };
 
   const handleSaveGame = () => {
+    if (localShowEndZoneChoice) return;
     const { saveGame } = useGameStore.getState();
     const state = useGameStore.getState();
     const saved = saveGame({
@@ -564,6 +572,7 @@ const PlayingPhase = () => {
   };
 
   const handleSaveReplay = async () => {
+    if (localShowEndZoneChoice) return;
     if (!gameId) {
       console.error('No game ID for saving replay');
       return;
@@ -580,7 +589,8 @@ const PlayingPhase = () => {
   };
 
   const executePlay = async (play, cpuPlayOverride = null, puntOptions = null) => {
-    if (!gameId || localExecuting) return;
+    // FLOW-026: the engine owns the guard; the UI must not offer the snap either.
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     
     // Store state BEFORE the play for the log
     const prePlayQuarter = quarter;
@@ -794,6 +804,7 @@ const PlayingPhase = () => {
   };
 
   const handleOffensePlay = (play) => {
+    if (localShowEndZoneChoice) return;
     // Check if it's a punt - show punt options panel
     if (play === 'P' && playerOffense) {
       setPendingPuntPlay(play);
@@ -804,13 +815,14 @@ const PlayingPhase = () => {
   };
 
   const handlePuntOptions = (puntOptions) => {
+    if (localShowEndZoneChoice) return;
     setShowPuntOptions(false);
     setPendingPuntPlay(null);
     executePlay('P', null, puntOptions);
   };
 
   const handleCpuDecisionExecute = () => {
-    if (!cpuFourthDownDecision || !pendingDefensePlay) return;
+    if (!cpuFourthDownDecision || !pendingDefensePlay || localShowEndZoneChoice) return;
     
     // Execute the CPU's chosen play (punt or FG) with user's defense
     const cpuPlay = cpuFourthDownDecision.play;
@@ -824,7 +836,7 @@ const PlayingPhase = () => {
   };
 
   const handleCpuFourthDownExecute = () => {
-    if (!pendingCpuFourthDown) return;
+    if (!pendingCpuFourthDown || localShowEndZoneChoice) return;
     
     const decision = pendingCpuFourthDown;
     const cpuPlay = decision.play;  // 'F' or 'P'
@@ -872,7 +884,7 @@ const PlayingPhase = () => {
   };
 
   const handleDefensePlay = (play) => {
-    if (!gameId || localExecuting) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     
     // If CPU already decided to punt/FG on 4th down, don't let player pick defense
     if (pendingCpuFourthDown) return;
@@ -888,6 +900,7 @@ const PlayingPhase = () => {
   };
 
   const handlePenaltyDecision = async (acceptPenalty, penaltyIndex = 0) => {
+    if (gameId && localShowEndZoneChoice) return;
     // Always dismiss the modal first
     setLocalShowPenaltyChoice(false);
     setLocalPendingPenaltyData(null);
@@ -1035,7 +1048,7 @@ const PlayingPhase = () => {
   };
 
   const handleCallTimeout = async () => {
-    if (!gameId || localExecuting) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice) return;
     // Check if human has timeouts
     const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts;
     if (humanTimeouts <= 0) return;
@@ -1135,7 +1148,7 @@ const PlayingPhase = () => {
         )}
 
         {/* Inline Kickoff Banner - More Prominent */}
-        {isKickoff && !localExecuting && !localLastResult && !showHalftime && (
+        {isKickoff && !localExecuting && !localLastResult && !showHalftime && !localShowEndZoneChoice && (
           <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
             <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
             <div className="text-lg text-blue-100 mb-4">
@@ -1195,7 +1208,7 @@ const PlayingPhase = () => {
         )}
 
         {/* CPU Decision Panel */}
-        {showCpuDecision && cpuFourthDownDecision && (
+        {showCpuDecision && cpuFourthDownDecision && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
             <CpuDecisionPanel 
               decision={cpuFourthDownDecision} 
@@ -1208,7 +1221,7 @@ const PlayingPhase = () => {
           </div>
         )}
 
-        {pendingCpuFourthDown && !showCpuDecision && (
+        {pendingCpuFourthDown && !showCpuDecision && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
             <CpuDecisionPanel 
               decision={pendingCpuFourthDown} 
@@ -1221,7 +1234,7 @@ const PlayingPhase = () => {
         )}
 
         {/* Punt Options Panel */}
-        {showPuntOptions && (
+        {showPuntOptions && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
             <PuntOptionsPanel 
               ballPosition={ballPosition}
@@ -1235,7 +1248,7 @@ const PlayingPhase = () => {
         )}
 
         {/* PAT Choice Panel */}
-        {localShowPatChoice && (
+        {localShowPatChoice && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
             <PATChoicePanel 
               canGoForTwo={canGoForTwo}
@@ -1265,7 +1278,7 @@ const PlayingPhase = () => {
         )}
 
         {/* Penalty Decision Panel */}
-        {localShowPenaltyChoice && localPendingPenaltyData && (
+        {localShowPenaltyChoice && localPendingPenaltyData && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
             <PenaltyDecisionPanel 
               penaltyData={localPendingPenaltyData} 

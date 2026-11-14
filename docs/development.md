@@ -136,6 +136,15 @@ retained plays with an offensive foul are projected for the defense; scores,
 safeties, turnovers, fumbles, return chains and requested spikes are not
 projected. Consumers treat them as optional hints, never as applied game state.
 
+While an own-end-zone interception choice is pending, every public engine action
+that would start or resolve another play—snaps, kickoffs, onside and safety free
+kicks, tries, defensive timeouts, penalty decisions and overtime setup—raises
+`ValueError`. The matching web action routes answer 409 before changing game
+bookkeeping: the deferred play has not changed possession, statistics or the
+clock, so any action started first would be recorded out of order. Resolve the
+choice before the next action; the engine guard is the authority and the UI only
+withdraws its controls.
+
 ## Period and try queries after a score
 
 The engine records the period in which each scoring-capable action began

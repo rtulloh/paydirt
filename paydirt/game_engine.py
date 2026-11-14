@@ -271,6 +271,26 @@ class PaydirtGameEngine:
         """True while an own-end-zone interception return choice is unresolved."""
         return self._pending_end_zone_interception is not None
 
+    def _reject_pending_end_zone_snap(self) -> None:
+        """Refuse to start a game action while the return choice is unresolved.
+
+        The deferred interception has not changed possession, statistics or the
+        clock. Starting another snap first would record it out of order and let
+        the later resolution change possession from a stale spot, so the engine
+        owns the guard instead of relying on every UI to hide its controls. The
+        guard covers every public action that resolves or changes game state,
+        not just a scrimmage snap; resolution of the deferred play itself is the
+        one exception and clears the flag before applying follow-ups.
+
+        Raises:
+            ValueError: When an own-end-zone interception choice is pending.
+        """
+        if self.has_pending_end_zone_interception:
+            raise ValueError(
+                "An end-zone interception return decision is pending; "
+                "resolve it before the next action"
+            )
+
     def _should_attempt_end_zone_return(self, home_defense: bool, catch_depth: int) -> bool:
         """Apply the controller policy for a catch already located in the end zone."""
         policy = self.get_end_zone_interception_policy(home_defense)
@@ -470,6 +490,7 @@ class PaydirtGameEngine:
             kicking_home: True if home team is kicking
             kickoff_spot: Yard line to kick from (default 35, use 20 for safety free kick)
         """
+        self._reject_pending_end_zone_snap()
         self._record_play_start()
         self._record_opening_kicker(kicking_home)
         kicking_chart = self.state.home_chart if kicking_home else self.state.away_chart
@@ -1326,6 +1347,7 @@ class PaydirtGameEngine:
         Returns:
             PlayOutcome with recovery result
         """
+        self._reject_pending_end_zone_snap()
         self._record_play_start()
         self._record_opening_kicker(kicking_home)
         # Roll offensive dice
@@ -2052,6 +2074,7 @@ class PaydirtGameEngine:
         """
         if self.state.game_over and not self._conversion_in_progress:
             raise ValueError("Game is over")
+        self._reject_pending_end_zone_snap()
         if not self._conversion_in_progress:
             self._record_play_start()
 
@@ -2435,6 +2458,7 @@ class PaydirtGameEngine:
         """
         if self.state.game_over:
             raise ValueError("Game is over")
+        self._reject_pending_end_zone_snap()
         self._record_play_start()
 
         time_before_play = self.state.time_remaining
@@ -2838,6 +2862,7 @@ class PaydirtGameEngine:
         Returns:
             Updated PlayOutcome with game state applied
         """
+        self._reject_pending_end_zone_snap()
         if not outcome.pending_penalty_decision or not outcome.penalty_choice:
             return outcome
 
@@ -3743,6 +3768,7 @@ class PaydirtGameEngine:
         Returns:
             True if a timeout was charged and the play's clock adjusted.
         """
+        self._reject_pending_end_zone_snap()
         used = self._apply_requested_timeout(
             outcome, timeout_is_home=not offense_was_home,
             time_before_play=time_before_play, quarter_before_play=quarter_before_play,
@@ -5436,6 +5462,7 @@ class PaydirtGameEngine:
         Returns:
             Updated PlayOutcome with game state applied
         """
+        self._reject_pending_end_zone_snap()
         if not outcome.pending_penalty_decision or not hasattr(self, "_pending_punt_state"):
             return outcome
 
@@ -5663,6 +5690,7 @@ class PaydirtGameEngine:
         Returns:
             Updated PlayOutcome with game state applied
         """
+        self._reject_pending_end_zone_snap()
         if not hasattr(self, "_pending_kickoff_penalty_state"):
             return outcome
 
@@ -5831,6 +5859,7 @@ class PaydirtGameEngine:
         Returns:
             Updated PlayOutcome with the decision applied
         """
+        self._reject_pending_end_zone_snap()
         if not outcome.pending_penalty_decision:
             return outcome
 
@@ -6431,6 +6460,7 @@ class PaydirtGameEngine:
 
         Returns: (success, description)
         """
+        self._reject_pending_end_zone_snap()
         dice_roll, _dice_desc = roll_chart_dice()
 
         # Check if this roll is in the "no good" range (RED boxes)
@@ -6490,6 +6520,7 @@ class PaydirtGameEngine:
 
         Returns: (success, points_for_defense, description)
         """
+        self._reject_pending_end_zone_snap()
         # Resolve the complete chart/return chain on an isolated conversion state.
         # Only the final two-point score is applied to the live game. Ordinary
         # yardage, turnovers, period transitions and history belong to scrimmage.
@@ -6779,6 +6810,7 @@ class PaydirtGameEngine:
         Returns:
             PlayOutcome with the result of the free kick
         """
+        self._reject_pending_end_zone_snap()
         self._record_play_start()
         kicking_home = self.state.is_home_possession
 
@@ -7063,6 +7095,7 @@ class PaydirtGameEngine:
         Returns:
             Description of the overtime start
         """
+        self._reject_pending_end_zone_snap()
         # Get overtime rules for this season
         rules = self.get_overtime_rules()
 

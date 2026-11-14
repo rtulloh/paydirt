@@ -620,6 +620,15 @@ def _arm_follow_up_state(game: dict[str, Any], engine, outcome) -> tuple:
     return scoring, is_pending_pat, pre_kickoff_ball_position
 
 
+def _reject_pending_end_zone_action(engine) -> None:
+    """Refuse a new game action until the end-zone return choice is resolved."""
+    if engine.has_pending_end_zone_interception:
+        raise HTTPException(
+            status_code=409,
+            detail="An end-zone interception return decision is pending; resolve it before the next action",
+        )
+
+
 def _arm_kickoff(game: dict[str, Any], engine, *, from_safety: bool = False) -> None:
     """Place the ball for the next kick the engine says is owed.
 
@@ -1168,6 +1177,7 @@ async def execute_play(request: PlayRequest):
 
     if engine.state.game_over:
         raise HTTPException(status_code=400, detail="Game is over")
+    _reject_pending_end_zone_action(engine)
 
     # Check if kickoff is needed - use the is_kickoff flag, not engine state
     # (ball at 35 with 1st-and-10 can happen during normal play after returns/turnovers)
@@ -1496,6 +1506,7 @@ async def call_timeout(request: GameIdRequest):
 
     game = games[request.game_id]
     engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
     human_is_home = game["home_team"].id == game.get("player_team_id")
 
     # Determine which team is calling the timeout
@@ -1550,6 +1561,7 @@ async def start_overtime(request: GameIdRequest):
 
     game = games[request.game_id]
     engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
 
     # Check if game is actually tied
     if engine.state.home_score != engine.state.away_score:
@@ -1614,10 +1626,10 @@ async def attempt_extra_point(request: GameIdRequest):
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[request.game_id]
+    engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
     if not game.get("pending_pat", False):
         raise HTTPException(status_code=400, detail="No touchdown try is pending")
-
-    engine = game["engine"]
 
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
@@ -1659,6 +1671,7 @@ async def perform_kickoff(request: KickoffRequest):
 
     game = games[request.game_id]
     engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
 
     # A safety free kick is flagged when the previous score was a safety. The
     # browser sends its normal kickoff spot, so use the kick's own 20 here.
@@ -1786,6 +1799,7 @@ async def attempt_two_point(request: TwoPointRequest):
 
     game = games[request.game_id]
     engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
 
     home_abbrev = game["home_team"].short_name or game["home_team"].id or "HOME"
     away_abbrev = game["away_team"].short_name or game["away_team"].id or "AWAY"
@@ -1855,6 +1869,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
 
     game = games[request.game_id]
     engine = game["engine"]
+    _reject_pending_end_zone_action(engine)
 
     outcome = getattr(engine, "_last_play_outcome", None)
     if not outcome or not outcome.pending_penalty_decision:

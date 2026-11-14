@@ -7,15 +7,14 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-221 issues: 83 open, 62 resolved, 76 closed.
+222 issues: 82 open, 64 resolved, 76 closed.
 
-## Open (83)
+## Open (82)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [FLOW-026](issues/FLOW/FLOW-026.md) | High | v1.10.6 | A new play can execute while an own-end-zone interception return decision is pending | created 2026-11-13 | FLOW-023 |
 | [FLOW-027](issues/FLOW/FLOW-027.md) | High | v1.10.6 | Resumed saved end-zone interception prints its return but skips the try/kickoff or safety free kick | created 2026-11-13 | FLOW-023, FLOW-007 |
 | [RULE-031](issues/RULE/RULE-031.md) | High | v1.10.6 | Deferred end-zone interception reapplies the in-bounds/out-of-bounds modifier and lands at the wrong spot | created 2026-11-13 | FLOW-023 |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
@@ -100,7 +99,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (62)
+## Resolved (awaiting play-test confirmation) (64)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -130,6 +129,8 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-010](issues/FLOW/FLOW-010.md) | High | — | Random-opponent API assigns the opponent as the player in away games | created 2026-10-30, resolved 2026-10-30 | — |
 | [FLOW-011](issues/FLOW/FLOW-011.md) | High | — | Web conversion endpoints execute without a pending touchdown try | created 2026-10-30, resolved 2026-10-30 | — |
 | [FLOW-016](issues/FLOW/FLOW-016.md) | High | — | Penalty dialog invents midfield and incorrect enforcement previews | created 2026-11-06, resolved 2026-11-07 | — |
+| [FLOW-026](issues/FLOW/FLOW-026.md) | High | v1.10.6 | A new play can execute while an own-end-zone interception return decision is pending | created 2026-11-13, resolved 2026-11-14 | FLOW-023, FLOW-030 |
+| [FLOW-030](issues/FLOW/FLOW-030.md) | High | v1.10.6 | Guard every game-changing action while an end-zone interception choice is pending | created 2026-11-14, resolved 2026-11-14 | FLOW-026 |
 | [LINT-001](issues/LINT/LINT-001.md) | High | v1.10.6 | Ruff gate fails on 756 default-rule violations across 29 files | created 2026-11-13, resolved 2026-11-13 | — |
 | [RULE-002](issues/RULE/RULE-002.md) | High | — | A TD at 0:00 of regulation that left the scores unequal set game_over before the try | created 2026-10-19, resolved 2026-10-19 | FLOW-001, RULE-001, FLOW-005, RULE-012 |
 | [RULE-014](issues/RULE/RULE-014.md) | High | — | A fumble cell on the kickoff return was never resolved | created 2026-10-19, resolved 2026-10-20 | FLOW-009, RULE-010, RULE-018, RULE-019 |

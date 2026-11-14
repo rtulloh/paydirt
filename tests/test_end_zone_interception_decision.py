@@ -6,6 +6,7 @@ the public sample teams under ``seasons/2026`` with explicit synthetic cells.
 """
 import json
 import random
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -293,3 +294,107 @@ def test_pending_decision_preserves_requested_spike_until_resolution() -> None:
         )
     assert final.result.int_return_dice == 26
     assert game.state.ball_position == 11
+
+
+def test_pending_choice_blocks_a_new_snap_until_it_is_resolved() -> None:
+    """FLOW-026: a snap cannot run while the return choice is unresolved."""
+    game, result = decision_game()
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        pending = throw_interception(game, result)
+    assert pending.pending_end_zone_interception_return_decision is True
+    state_before = deepcopy(game.state)
+    with pytest.raises(ValueError, match="end-zone interception"):
+        game.run_play_with_penalty_procedure(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    with pytest.raises(ValueError, match="end-zone interception"):
+        game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    assert game.state == state_before
+    assert not game.play_log
+    assert game.has_pending_end_zone_interception
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")):
+        final = game.apply_end_zone_interception_return_decision(pending, attempt_return=False)
+    assert not game.has_pending_end_zone_interception
+    assert final.turnover is True
+    assert game.state.ball_position == 20
+    # The guard only covers the unresolved choice.
+    game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        lambda game, pending: game.kickoff(),
+        lambda game, pending: game.onside_kick(),
+        lambda game, pending: game.safety_free_kick(),
+        lambda game, pending: game.attempt_extra_point(),
+        lambda game, pending: game.apply_defensive_timeout(
+            pending,
+            time_before_play=1.0,
+            quarter_before_play=4,
+            offense_was_home=True,
+            two_minute_warning_before=True,
+        ),
+        lambda game, pending: game.apply_penalty_decision(
+            pending, accept_play=True
+        ),
+        lambda game, pending: game.apply_punt_penalty_decision(
+            pending, accept_penalty=True
+        ),
+        lambda game, pending: game.apply_kickoff_penalty_decision(
+            pending, accept_penalty=True
+        ),
+        lambda game, pending: game.apply_fg_penalty_decision(
+            pending, accept_play=True
+        ),
+        lambda game, pending: game.start_overtime(
+            coin_toss_winner_is_home=True
+        ),
+    ],
+    ids=[
+        "kickoff",
+        "onside-kick",
+        "safety-free-kick",
+        "extra-point",
+        "defensive-timeout",
+        "scrimmage-penalty",
+        "punt-penalty",
+        "kickoff-penalty",
+        "field-goal-penalty",
+        "overtime-start",
+    ],
+)
+def test_pending_choice_blocks_other_game_changing_entry_points(action) -> None:
+    """FLOW-026: every public game-changing action honors the pending choice."""
+    game, result = decision_game()
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(7, "10")):
+        pending = throw_interception(game, result)
+    assert pending.pending_end_zone_interception_return_decision is True
+    state_before = deepcopy(game.state)
+    log_before = list(game.play_log)
+    history_before = list(game.offensive_call_history)
+    start_quarter_before = game._last_play_start_quarter
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(7, "10")):
+        with pytest.raises(ValueError, match="end-zone interception"):
+            action(game, pending)
+    assert game.state == state_before
+    assert game.play_log == log_before
+    assert game.offensive_call_history == history_before
+    assert game._last_play_start_quarter == start_quarter_before
+    assert game.has_pending_end_zone_interception
+
+
+def test_pending_choice_blocks_two_point_before_conversion_setup() -> None:
+    """FLOW-026: a try cannot enter its isolated conversion setup."""
+    game, result = decision_game()
+    with patch("paydirt.game_engine.roll_chart_dice", return_value=(7, "10")):
+        pending = throw_interception(game, result)
+    assert pending.pending_end_zone_interception_return_decision is True
+    state_before = deepcopy(game.state)
+    with patch.object(
+        game,
+        "get_two_point_situation",
+        side_effect=AssertionError("two-point conversion setup started"),
+    ):
+        with pytest.raises(ValueError, match="end-zone interception"):
+            game.attempt_two_point(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    assert game.state == state_before
+    assert game.has_pending_end_zone_interception

@@ -190,3 +190,164 @@ def test_pending_cached_return_serializes_and_live_retention_survives_replay_sav
             games.pop(game_id, None)
             if loaded_id:
                 games.pop(loaded_id, None)
+
+
+def test_execute_while_return_choice_is_pending_is_rejected() -> None:
+    """FLOW-026: the API refuses a new snap before the pending choice is resolved."""
+    from copy import deepcopy
+
+    from paydirt.play_resolver import PenaltyChoice, PlayResult, ResultType
+
+    with TestClient(app) as client:
+        created = client.post("/api/game/new", json={
+            "player_team": "Thunderhawks", "opponent_team": "Ironclads", "season": "2026",
+            "play_as_home": True,
+            "player_end_zone_interception_policy": "ask",
+            "opponent_end_zone_interception_policy": "auto",
+        })
+        assert created.status_code == 200
+        game_id = created.json()["game_id"]
+        try:
+            engine = games[game_id]["engine"]
+            engine.state.ball_position = 90
+            result = PlayResult(
+                result_type=ResultType.INTERCEPTION, yards=14, turnover=True, raw_result="INT 14",
+            )
+            with patch(
+                "paydirt.game_engine.resolve_play_with_penalties",
+                return_value=PenaltyChoice(play_result=result),
+            ):
+                pending = client.post("/api/game/execute", json={
+                    "game_id": game_id, "player_play": "A", "cpu_play": "6",
+                })
+            assert pending.status_code == 200
+            assert pending.json()["result"]["pending_end_zone_interception_return_decision"] is True
+
+            state_before = deepcopy(engine.state)
+            log_before = len(engine.play_log)
+            blocked = client.post("/api/game/execute", json={
+                "game_id": game_id, "player_play": "A", "cpu_play": "6",
+            })
+            assert blocked.status_code == 409
+            assert "end-zone interception" in blocked.json()["detail"]
+            assert engine.state == state_before
+            assert len(engine.play_log) == log_before
+
+            decided = client.post("/api/game/end-zone-interception-decision", json={
+                "game_id": game_id, "attempt_return": False,
+            })
+            assert decided.status_code == 200
+            assert engine.has_pending_end_zone_interception is False
+        finally:
+            games.pop(game_id, None)
+
+
+def _pending_end_zone_game(client: TestClient) -> str:
+    """Create a web game paused on an ask-policy end-zone interception."""
+    from paydirt.play_resolver import PenaltyChoice, PlayResult, ResultType
+
+    created = client.post("/api/game/new", json={
+        "player_team": "Thunderhawks", "opponent_team": "Ironclads", "season": "2026",
+        "play_as_home": True,
+        "player_end_zone_interception_policy": "ask",
+        "opponent_end_zone_interception_policy": "auto",
+    })
+    assert created.status_code == 200
+    game_id = created.json()["game_id"]
+    engine = games[game_id]["engine"]
+    engine.state.ball_position = 90
+    result = PlayResult(
+        result_type=ResultType.INTERCEPTION, yards=14, turnover=True, raw_result="INT 14",
+    )
+    with patch(
+        "paydirt.game_engine.resolve_play_with_penalties",
+        return_value=PenaltyChoice(play_result=result),
+    ):
+        pending = client.post("/api/game/execute", json={
+            "game_id": game_id, "player_play": "A", "cpu_play": "6",
+        })
+    assert pending.status_code == 200
+    assert pending.json()["result"]["pending_end_zone_interception_return_decision"] is True
+    assert engine.has_pending_end_zone_interception is True
+    return game_id
+
+
+def _set_tied_game(state) -> None:
+    """Make the overtime precondition reachable without touching prior flags."""
+    state.home_score = state.away_score = 0
+
+
+@pytest.mark.parametrize(
+    ("path", "payload", "prepare"),
+    [
+        ("/api/game/kickoff", {"kickoff_spot": 35}, None),
+        (
+            "/api/game/kickoff",
+            {"kickoff_spot": 35},
+            lambda game: game.__setitem__("safety_free_kick", True),
+        ),
+        (
+            "/api/game/extra-point",
+            {"player_play": "XP"},
+            lambda game: game.__setitem__("pending_pat", True),
+        ),
+        (
+            "/api/game/two-point",
+            {"offense_play": "1", "defense_play": "A"},
+            lambda game: game.__setitem__("pending_pat", True),
+        ),
+        ("/api/game/timeout", {}, None),
+        (
+            "/api/game/penalty-decision",
+            {"penalty_index": 0, "accept_penalty": False},
+            None,
+        ),
+        (
+            "/api/game/overtime/start",
+            {},
+            lambda game: _set_tied_game(game["engine"].state),
+        ),
+    ],
+    ids=[
+        "kickoff",
+        "safety-free-kick",
+        "extra-point",
+        "two-point",
+        "timeout",
+        "penalty-decision",
+        "overtime-start",
+    ],
+)
+def test_other_game_actions_are_rejected_while_return_choice_is_pending(
+    path: str, payload: dict, prepare
+) -> None:
+    """FLOW-026: every state-changing route honors the pending choice."""
+    from copy import deepcopy
+
+    with TestClient(app) as client:
+        game_id = _pending_end_zone_game(client)
+        try:
+            game = games[game_id]
+            if prepare is not None:
+                prepare(game)
+            engine = game["engine"]
+            state_before = deepcopy(engine.state)
+            log_before = list(engine.play_log)
+            flags_before = {
+                key: deepcopy(value)
+                for key, value in game.items()
+                if key not in {"engine", "ai", "home_team", "away_team"}
+            }
+            blocked = client.post(path, json={"game_id": game_id, **payload})
+            assert blocked.status_code == 409, blocked.text
+            assert "end-zone interception" in blocked.json()["detail"]
+            assert engine.state == state_before
+            assert engine.play_log == log_before
+            assert engine.has_pending_end_zone_interception
+            assert {
+                key: value
+                for key, value in game.items()
+                if key not in {"engine", "ai", "home_team", "away_team"}
+            } == flags_before
+        finally:
+            games.pop(game_id, None)
