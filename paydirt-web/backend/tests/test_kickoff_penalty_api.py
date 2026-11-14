@@ -38,6 +38,29 @@ def rolls(*values):
     return [(value, f"Roll{value}") for value in values]
 
 
+def test_safety_free_kick_uses_the_own_20_not_the_request_default() -> None:
+    with TestClient(app) as client:
+        created = client.post("/api/game/new", json={
+            "player_team": "Ironclads", "season": "2026", "play_as_home": True,
+        }).json()
+        game_id = created["game_id"]
+        game = games[game_id]
+        engine = game["engine"]
+        try:
+            game["is_kickoff"] = True
+            game["safety_free_kick"] = True
+            engine.state.ball_position = 20  # setup_for_kickoff(from_safety=True)
+            engine.state.is_home_possession = True
+            with patch.object(engine, "kickoff", wraps=engine.kickoff) as kick:
+                response = client.post(
+                    "/api/game/kickoff", json={"game_id": game_id, "kickoff_spot": 35}
+                )
+            assert response.status_code == 200
+            assert kick.call_args.kwargs["kickoff_spot"] == 20
+        finally:
+            client.delete(f"/api/game/{game_id}")
+
+
 @pytest.mark.parametrize("human_is_home", [True, False])
 @pytest.mark.parametrize("human_kicks", [True, False])
 def test_return_penalty_is_assessed_without_a_prompt(human_is_home: bool, human_kicks: bool) -> None:

@@ -629,13 +629,16 @@ def _arm_kickoff(game: dict[str, Any], engine, *, from_safety: bool = False) -> 
     if engine.state.game_over:
         # A final try ends the game; nothing is kicked afterwards.
         game["is_kickoff"] = False
+        game["safety_free_kick"] = False
         engine.setup_for_kickoff()  # Neutral spot for the final-state display.
         return
     if engine.halftime_pending():
         engine.prepare_second_half_kickoff()
+        game["safety_free_kick"] = False
     else:
         # Scoring team keeps possession to kick off; safety free kick is from the 20.
         engine.setup_for_kickoff(from_safety=from_safety)
+        game["safety_free_kick"] = bool(from_safety)
     game["is_kickoff"] = True
 
 def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = None) -> GameStateResponse:
@@ -1657,6 +1660,10 @@ async def perform_kickoff(request: KickoffRequest):
     game = games[request.game_id]
     engine = game["engine"]
 
+    # A safety free kick is flagged when the previous score was a safety. The
+    # browser sends its normal kickoff spot, so use the kick's own 20 here.
+    safety_free_kick = bool(game.pop("safety_free_kick", False))
+
     # Clear the kickoff flag - we're performing the kickoff now
     game["is_kickoff"] = False
 
@@ -1668,7 +1675,10 @@ async def perform_kickoff(request: KickoffRequest):
     halftime = engine.halftime_pending()
     kicking_home = engine.second_half_kicking_home() if halftime else engine.state.is_home_possession
     kicking_abbrev = home_abbrev if kicking_home else away_abbrev
-    result = engine.kickoff(kicking_home=kicking_home, kickoff_spot=request.kickoff_spot)
+    result = engine.kickoff(
+        kicking_home=kicking_home,
+        kickoff_spot=20 if safety_free_kick else request.kickoff_spot,
+    )
 
     # A penalty on the kick or return is the offended team's choice. Kickoff
     # decisions use the receiving team as "offense" (engine convention).

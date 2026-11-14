@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-209 issues: 76 open, 59 resolved, 74 closed.
+211 issues: 77 open, 59 resolved, 75 closed.
 
-## Open (76)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -49,6 +49,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | — |
+| [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.6 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -160,7 +161,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (74)
+## Closed (75)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -214,6 +215,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [FLOW-005](issues/FLOW/FLOW-005.md) | Medium | — | Second-half kicker was guessed from current possession in resume_game ("Approximate") and in the web kickoff… | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | RULE-002, RULE-010 |
 | [FLOW-014](issues/FLOW/FLOW-014.md) | Medium | — | Save game gives no visible success or failure feedback | created 2026-11-06, resolved 2026-11-06, closed 2026-11-06 | — |
 | [FLOW-018](issues/FLOW/FLOW-018.md) | Medium | — | Browser omits the season-enabled two-point conversion choice after a touchdown | created 2026-11-06, resolved 2026-11-07, closed 2026-11-08 | RULE-001, STAT-003 |
+| [FLOW-024](issues/FLOW/FLOW-024.md) | Medium | v1.10.6 | Safety free-kick kickoff penalty strands the conceding team on offense | created 2026-11-13, resolved 2026-11-13, closed 2026-11-13 | FLOW-025 |
 | [RULE-001](issues/RULE/RULE-001.md) | Medium | — | Two-point tries run through run_play | created 2026-10-19, resolved 2026-11-07, closed 2026-11-08 | RULE-002, RULE-007, STAT-003, AI-022, FLOW-018 |
 | [RULE-007](issues/RULE/RULE-007.md) | Medium | — | Uncommitted _log_score try attribution relies on scoring_plays[-1] being the TD | created 2026-10-19, resolved 2026-11-07, closed 2026-11-08 | RULE-001 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | — | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |

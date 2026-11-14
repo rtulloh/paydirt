@@ -2724,6 +2724,39 @@ def handle_end_zone_interception_decision(
     return game.apply_end_zone_interception_return_decision(outcome, attempt_return)
 
 
+def handle_safety_free_kick(
+    game: PaydirtGameEngine, kicking_home: bool, human_is_home: bool, cpu_ai
+):
+    """Run the safety free kick and resolve any kickoff penalty first.
+
+    The team that conceded the safety keeps possession only long enough to
+    free-kick. A pending kickoff penalty must be decided before the loop asks
+    for the next snap, otherwise the kicking team remains on the field.
+
+    Args:
+        game: The game engine.
+        kicking_home: Whether the team that conceded the safety is home.
+        human_is_home: Whether the human controls the home team.
+        cpu_ai: Optional CPU coach.
+
+    Returns:
+        The finalized free-kick outcome.
+    """
+    kicking_team = (
+        game.state.home_chart.peripheral.short_name if kicking_home
+        else game.state.away_chart.peripheral.short_name
+    )
+    print(f"\n  {kicking_team} free kick after safety...")
+    outcome = game.safety_free_kick(use_punt=False)
+    print(f"  {outcome.description}")
+    if outcome.pending_penalty_decision and outcome.penalty_choice:
+        # Kickoff penalties use the receiving team as "offense" (engine convention).
+        is_human_offense = (not kicking_home) == human_is_home
+        outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
+        print(f"  {outcome.description}")
+    return _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+
+
 def get_human_defense_for_conversion(game: PaydirtGameEngine) -> DefenseType:
     """Collect a formation for the engine-provided untimed try situation."""
     legal = game.get_two_point_situation()["legal_defenses"]
@@ -3429,16 +3462,10 @@ def resume_game(
                 continue  # Half-ending safety: the scheduled second-half kickoff follows.
 
             kicking_home = game.state.is_home_possession
-            kicking_team = (
-                home_chart.peripheral.short_name
-                if kicking_home
-                else away_chart.peripheral.short_name
-            )
 
-            print(f"\n  {kicking_team} free kick after safety...")
-            outcome = game.safety_free_kick(use_punt=False)
-            print(f"  {outcome.description}")
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = handle_safety_free_kick(
+                game, kicking_home, human_is_home, cpu_ai
+            )
             continue
 
         if outcome.touchdown:
@@ -4288,16 +4315,10 @@ def run_interactive_game(
 
             # Free kick after safety
             kicking_home = game.state.is_home_possession
-            kicking_team = (
-                home_chart.peripheral.short_name
-                if kicking_home
-                else away_chart.peripheral.short_name
-            )
 
-            print(f"\n  {kicking_team} free kick after safety...")
-            outcome = game.safety_free_kick(use_punt=False)
-            print(f"  {outcome.description}")
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = handle_safety_free_kick(
+                game, kicking_home, human_is_home, cpu_ai
+            )
             continue
 
         if outcome.touchdown:
