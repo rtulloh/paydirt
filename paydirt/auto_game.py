@@ -98,7 +98,7 @@ def _resolve_auto_penalties(
         ai = home_ai if offended_home else away_ai
         accept_play, penalty_index = ai.should_accept_penalty(
             outcome, is_human_offense=offense_home != offended_home,
-            human_is_home=not offended_home,
+            human_is_home=not offended_home, game=game,
         )
         penalty_index = 0 if penalty_index is None else penalty_index
         if outcome.play_type == PlayType.FIELD_GOAL:

@@ -134,6 +134,22 @@ requested spike keeps its existing policy. This is a coaching ordering, not an
 expected-points estimate, and it does not redesign kick/return penalty
 choices, general clock management, or play-plus-spike decisions.
 
+When the live game state is available, a trailing defense in the fourth quarter
+adds one late-game check before enforcing an offensive foul. The engine projects
+both resolutions, including the spot, down, distance, resulting clock, period,
+game-over and untimed-down state, without applying statistics, the play log or
+dice. Deferred timeout or spike requests are evaluated under the same
+clock-stopped rule; a resolved flagged foul cannot use them to save more time.
+If enforcement would leave the leading offense on first through third down
+with enough clock to kneel out the game, while declining would preserve the
+down and prevent that kneel-out, the defense keeps the play.
+The check evaluates the engine's own `can_kneel_out_game` rule
+on those post-decision projections; it does not model later play calls,
+two-minute strategy or score attempts. A defense that already leads, overtime and
+earlier periods keep the position/down ordering unchanged. CLI auto games, the
+web backend and live-engine callers pass the game context; callers without it
+retain the AI-002 heuristic.
+
 ## Two-Point Tries
 
 CLI two-point play selection uses a separate, untimed conversion situation from

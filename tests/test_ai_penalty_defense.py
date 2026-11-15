@@ -245,3 +245,192 @@ def test_real_priority_chart_foul_projects_the_enforced_situation(
     assert (accept_play, index) == (False, 0)
     game.apply_penalty_decision(outcome, accept_play, index)
     assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == (35, 1, 25)
+
+
+def late_game(
+    down: int, *, defense_timeouts: int, defense_trailing: bool = True,
+    seconds: int = 35,
+) -> PaydirtGameEngine:
+    """Q4, 35 seconds left, offense leading by seven at midfield."""
+    game = make_sample_game()
+    game.state.is_home_possession = True
+    game.state.ball_position = 50
+    game.state.down = down
+    game.state.yards_to_go = 10
+    game.state.quarter = 4
+    game.state.time_remaining = seconds / 60
+    game.state.home_score = 7 if defense_trailing else 0
+    game.state.away_score = 0 if defense_trailing else 7
+    game.state.home_timeouts = 3
+    game.state.away_timeouts = defense_timeouts
+    return game
+
+
+def timed_decision(game: PaydirtGameEngine, outcome) -> tuple[bool, int]:
+    """Decide with the live engine so clock, score and timeouts are visible."""
+    accept_play, index = ComputerAI().should_accept_penalty(
+        outcome, True, not game.state.is_home_possession, game=game,
+    )
+    return accept_play, index or 0
+
+
+def applied(game: PaydirtGameEngine, outcome, accept_play: bool, index: int = 0):
+    clone = deepcopy(game)
+    return clone, clone.apply_penalty_decision(deepcopy(outcome), accept_play, index)
+
+
+def _first_down(game: PaydirtGameEngine) -> bool:
+    """Whether the most recently applied play earned a first down."""
+    return bool(game.play_log and game.play_log[-1].first_down)
+
+
+@pytest.mark.parametrize(
+    "down,defense_timeouts",
+    [(2, 1), (3, 0)],
+    ids=["second-down-one-timeout", "third-down-no-timeouts"],
+)
+def test_trailing_defense_declines_a_foul_that_lets_the_offense_kneel_out(
+    down: int, defense_timeouts: int,
+) -> None:
+    """AI-031: enforcement can create a kneel-out that the decline prevents."""
+    game = late_game(down, defense_timeouts=defense_timeouts)
+    outcome = pending(game, incomplete(), [foul(5)])
+    accepted, index = timed_decision(game, outcome)
+
+    enforced_game, enforced = applied(game, outcome, False, index)
+    declined_game, declined = applied(game, outcome, True, index)
+
+    assert enforced.penalty_applied is True
+    assert enforced_game.can_kneel_out_game() is True, "fixture must reproduce the bug"
+    assert declined_game.can_kneel_out_game() is False, "declining must preserve a chance"
+    assert (accepted, index) == (True, 0)
+
+
+def test_trailing_defense_enforces_when_both_choices_allow_a_kneel_out() -> None:
+    """AI-031: with no clock gain available, keep the better field position."""
+    game = late_game(2, defense_timeouts=0)
+    outcome = pending(game, incomplete(), [foul(5)])
+    accepted, index = timed_decision(game, outcome)
+
+    enforced_game, _ = applied(game, outcome, False, index)
+    declined_game, _ = applied(game, outcome, True, 0)
+    assert enforced_game.can_kneel_out_game() is True
+    assert declined_game.can_kneel_out_game() is True
+    assert (accepted, index) == (False, 0)
+
+
+def test_trailing_defense_enforces_when_neither_choice_allows_a_kneel_out() -> None:
+    """AI-031 control: the guard only applies when it changes the outcome."""
+    game = late_game(3, defense_timeouts=1)
+    outcome = pending(game, incomplete(), [foul(5)])
+    accepted, index = timed_decision(game, outcome)
+
+    enforced_game, _ = applied(game, outcome, False, index)
+    declined_game, _ = applied(game, outcome, True, 0)
+    assert enforced_game.can_kneel_out_game() is False
+    assert declined_game.can_kneel_out_game() is False
+    assert (accepted, index) == (False, 0)
+
+
+def test_leading_defense_keeps_the_strict_position_comparison() -> None:
+    """AI-031: urgency applies only to a defense that must get the ball back."""
+    game = late_game(3, defense_timeouts=0, defense_trailing=False)
+    outcome = pending(game, incomplete(), [foul(5)])
+    accepted, index = timed_decision(game, outcome)
+
+    enforced_game, _ = applied(game, outcome, False, index)
+    assert enforced_game.state.home_score < enforced_game.state.away_score
+    assert enforced_game.can_kneel_out_game() is False
+    assert (accepted, index) == (False, 0)
+
+
+def test_decision_without_game_context_keeps_the_position_heuristic() -> None:
+    """AI-031: callers that pass no game keep the AI-002 ordering."""
+    game = late_game(2, defense_timeouts=1)
+    outcome = pending(game, incomplete(), [foul(5)])
+    assert ComputerAI().should_accept_penalty(outcome, True, False) == (False, 0)
+
+
+def test_declining_after_the_late_game_check_does_not_return_a_stale_index() -> None:
+    """AI-031: a decline must not carry the enforcement it chose not to take."""
+    game = late_game(2, defense_timeouts=1)
+    outcome = pending(game, incomplete(), [foul(5), foul(10)])
+    assert outcome.penalty_situations[1].ball_position < outcome.penalty_situations[0].ball_position
+
+    accepted, index = ComputerAI().should_accept_penalty(
+        outcome, True, not game.state.is_home_possession, game=game,
+    )
+
+    decided_game, decided = applied(game, outcome, accepted, index or 0)
+    assert (accepted, index) == (True, None)
+    assert decided.penalty_applied is False
+    assert decided_game.state.down == 3
+
+@pytest.mark.parametrize(
+    "seconds,enforced_kneels_out",
+    [(40, True), (45, True), (46, False)],
+    ids=["forty-seconds", "forty-five-seconds", "forty-six-seconds"],
+)
+def test_late_game_guard_uses_the_post_decision_clock(
+    seconds: int, enforced_kneels_out: bool,
+) -> None:
+    """AI-033: enforcement charges five seconds before the offense kneels."""
+    game = late_game(3, defense_timeouts=0, seconds=seconds)
+    outcome = pending(game, incomplete(), [foul(5)])
+
+    accepted, index = timed_decision(game, outcome)
+    enforced_game, _ = applied(game, outcome, False, 0)
+    declined_game, _ = applied(game, outcome, True, 0)
+
+    assert enforced_game.state.time_remaining == pytest.approx((seconds - 5) / 60)
+    assert declined_game.state.time_remaining == pytest.approx((seconds - 5) / 60)
+    assert enforced_game.can_kneel_out_game() is enforced_kneels_out
+    assert declined_game.can_kneel_out_game() is False
+    assert (accepted, index) == (True, 0) if enforced_kneels_out else (False, 0)
+
+
+@pytest.mark.parametrize(
+    "accept_play", [True, False], ids=["retained-play", "enforced-foul"],
+)
+def test_projected_situation_matches_the_applied_decision_clock(
+    accept_play: bool,
+) -> None:
+    """AI-033: coaching must see the clock the decision actually produces."""
+    game = late_game(3, defense_timeouts=0, seconds=45)
+    outcome = pending(
+        game,
+        PlayResult(ResultType.YARDS, 9, description="Nine-yard completion"),
+        [foul(5)],
+    )
+    projected = (
+        outcome.retained_play_situation if accept_play
+        else outcome.penalty_situations[0]
+    )
+    clone, _ = applied(game, outcome, accept_play, 0)
+
+    assert (projected.ball_position, projected.down, projected.yards_to_go,
+            projected.first_down) == (
+        clone.state.ball_position, clone.state.down,
+        clone.state.yards_to_go, _first_down(clone),
+    )
+    assert projected.time_remaining == pytest.approx(clone.state.time_remaining)
+
+
+def test_projection_preserves_a_deferred_timeout_as_an_ineligible_request() -> None:
+    """AI-033: a retained foul stops the clock, so the timeout saves no time."""
+    game = late_game(3, defense_timeouts=1, seconds=45)
+    game.state.ball_position = 30
+    outcome = pending(
+        game,
+        PlayResult(ResultType.YARDS, 60, description="Sixty-yard completion"),
+        [foul(5)],
+        call_defensive_timeout=True,
+    )
+    projected = outcome.retained_play_situation
+    clone, final = applied(game, outcome, True, 0)
+
+    assert outcome.defensive_timeout_context is not None
+    assert final.timeout_used is False
+    assert clone.state.away_timeouts == 1
+    assert clone.state.time_remaining == pytest.approx(34 / 60)
+    assert projected.time_remaining == pytest.approx(clone.state.time_remaining)

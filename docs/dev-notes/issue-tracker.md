@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-225 issues: 80 open, 69 resolved, 76 closed.
+226 issues: 79 open, 71 resolved, 76 closed.
 
-## Open (80)
+## Open (79)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -27,7 +27,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011 |
 | [AI-029](issues/AI/AI-029.md) | Medium | — | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | — | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
-| [AI-031](issues/AI/AI-031.md) | Medium | — | Defensive foul comparison ignores clock, score and timeouts and can hand the offense a kneel-out | created 2026-11-13 | AI-002, AI-018 |
 | [AI-032](issues/AI/AI-032.md) | Medium | — | Fourth-down stop with a positive short gain still accepts an offensive foul instead of taking the ball | created 2026-11-13 | AI-002, AI-018 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | — | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
@@ -97,12 +96,13 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (69)
+## Resolved (awaiting play-test confirmation) (71)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
+| [AI-033](issues/AI/AI-033.md) | High | v1.10.6 | Late-game penalty guard must use the projected post-decision state | created 2026-11-14, resolved 2026-11-14 | — |
 | [AUD-001](issues/AUD/AUD-001.md) | High | — | Fourth-down offsetting penalties incorrectly announce turnover on downs despite replaying the down and retaining… | created 2026-10-18, resolved 2026-10-18 | VAL-001, AUD-011 |
 | [AUD-025](issues/AUD/AUD-025.md) | High | — | Punt fumble commentary mixes initial return yards with the final chain spot and guesses who recovered | created 2026-11-02, resolved 2026-11-02 | RULE-019, AUD-006 |
 | [AUD-030](issues/AUD/AUD-030.md) | High | — | Engine report validator trusts unverified derived score pace and special rates | created 2026-11-06, resolved 2026-11-07 | — |
@@ -155,6 +155,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-008](issues/AI/AI-008.md) | Medium | — | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-015](issues/AI/AI-015.md) | Medium | — | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19, resolved 2026-11-07 | AUD-020, TRACE-004 |
 | [AI-022](issues/AI/AI-022.md) | Medium | — | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
+| [AI-031](issues/AI/AI-031.md) | Medium | v1.10.6 | Defensive foul comparison ignores clock, score and timeouts and can hand the offense a kneel-out | created 2026-11-13, resolved 2026-11-14 | AI-002, AI-018 |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | — | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-008](issues/AUD/AUD-008.md) | Medium | — | Full interception-TD output can name the original offense as scorer because the engine omits result scoring-team… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-028](issues/AUD/AUD-028.md) | Medium | — | Generated primary BLACK cells form unnecessary contiguous runs and blocks | created 2026-11-05, resolved 2026-11-07 | — |

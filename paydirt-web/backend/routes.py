@@ -1358,7 +1358,8 @@ async def execute_play(request: PlayRequest):
         # CPU decides - apply penalty decision automatically
         human_is_home = game.get("human_is_home", False)
         accept_play, penalty_index = cpu_should_accept_penalty(
-            result, is_human_offense=human_is_on_offense, human_is_home=human_is_home
+            result, is_human_offense=human_is_on_offense, human_is_home=human_is_home,
+            game=engine,
         )
         accept_penalty = not accept_play
 
@@ -1705,7 +1706,8 @@ async def perform_kickoff(request: KickoffRequest):
             penalty_choice_model = _penalty_choice_model(engine.get_penalty_choice_preview(result))
         else:
             accept_play, _ = cpu_should_accept_penalty(
-                result, is_human_offense=human_receives, human_is_home=human_is_home
+                result, is_human_offense=human_receives, human_is_home=human_is_home,
+                game=engine,
             )
             result = engine.apply_kickoff_penalty_decision(result, accept_penalty=not accept_play)
             print(
@@ -1896,7 +1898,8 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
         penalty_index = request.penalty_index
     else:
         accept_play, penalty_index = cpu_should_accept_penalty(
-            outcome, is_human_offense=player_offense, human_is_home=human_is_home
+            outcome, is_human_offense=player_offense, human_is_home=human_is_home,
+            game=engine,
         )
         accept_penalty = not accept_play
 

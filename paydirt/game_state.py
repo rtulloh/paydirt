@@ -184,12 +184,21 @@ class GameState:
 
 @dataclass(frozen=True)
 class PenaltySituation:
-    """Engine-projected ordinary scrimmage situation; no state is applied."""
+    """Engine-projected situation after resolving either pending choice."""
 
     ball_position: int
     down: int
     yards_to_go: int
     first_down: bool
+    # Clock left when this projected situation would next be snapped. A pending
+    # foul is not free: accepting the play or enforcing the foul consumes time.
+    # These are coaching metadata, so equality still means the same spot/down.
+    quarter: int = field(default=0, compare=False)
+    time_remaining: float = field(default=0.0, compare=False)
+    touchdown: bool = field(default=False, compare=False)
+    turnover: bool = field(default=False, compare=False)
+    game_over: bool = field(default=False, compare=False)
+    untimed_down: bool = field(default=False, compare=False)
 
 
 @dataclass(frozen=True)

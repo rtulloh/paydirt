@@ -37,6 +37,50 @@ def _defensive_situation_rank(situation: PenaltySituation) -> tuple[int, int, in
     return (100 - situation.ball_position, situation.down, situation.yards_to_go)
 
 
+def _foul_hands_offense_a_kneel_out(
+    game: PaydirtGameEngine, outcome, best_index: int | None,
+) -> bool:
+    """Whether enforcing an offensive foul lets the offense kneel out the game.
+
+    The position comparison in :meth:`ComputerAI.should_accept_penalty` ranks
+    field position, down and distance only. Late in regulation a trailing
+    defense must regain possession, and replaying the down can leave the offense
+    on second or third down with enough clock to kneel. Declining keeps the play
+    result and its down, which in that shape prevents the kneel-out. The engine
+    projects each choice, including the clock it charges, and supplies the
+    kneel-out rule; the AI reads those projections without copying or mutating
+    the live state.
+
+    Args:
+        game: Live engine; only read.
+        outcome: Pending penalty outcome.
+        best_index: Penalty option the position comparison chose, if any.
+
+    Returns:
+        True only when the defense trails, enforcement allows a kneel-out and
+        declining the play does not.
+    """
+    if best_index is None:
+        return False
+    state = game.state
+    offense_leads = (
+        state.home_score > state.away_score if state.is_home_possession
+        else state.away_score > state.home_score
+    )
+    if not offense_leads or state.is_overtime or state.quarter != 4:
+        return False
+    enforced = game._project_scrimmage_penalty_situation(outcome, False, best_index)
+    retained = game._project_scrimmage_penalty_situation(outcome, True)
+    if enforced is None or retained is None or not 1 <= enforced.down <= 3:
+        return False
+    if enforced.touchdown or enforced.turnover or enforced.game_over or enforced.untimed_down:
+        return False
+    return (
+        game.can_kneel_out_penalty_situation(enforced)
+        and not game.can_kneel_out_penalty_situation(retained)
+    )
+
+
 class ComputerAI:
     """
     Intelligent computer opponent for Paydirt.
@@ -1284,7 +1328,11 @@ class ComputerAI:
         return False
 
     def should_accept_penalty(
-        self, outcome, is_human_offense: bool, human_is_home: bool
+        self,
+        outcome,
+        is_human_offense: bool,
+        human_is_home: bool,
+        game: PaydirtGameEngine | None = None,
     ) -> tuple[bool, int | None]:
         """
         Decide if CPU should accept the play result or the penalty.
@@ -1419,6 +1467,13 @@ class ComputerAI:
                 accept_play = best_index is None
                 if best_index is not None:
                     best_penalty_idx = best_index
+                if game is not None and _foul_hands_offense_a_kneel_out(
+                    game, outcome, best_index,
+                ):
+                    # Late, a defense that must get the ball back should not
+                    # enforce a foul that lets the offense kneel the game out
+                    # when declining the play preserves a real possession.
+                    return (True, None)
             elif play_yards > 0:
                 accept_play = False
 
@@ -1513,7 +1568,12 @@ def cpu_should_onside_kick(game: PaydirtGameEngine, ai: ComputerAI | None = None
 
 
 def cpu_should_accept_penalty(
-    outcome, is_human_offense: bool, human_is_home: bool, ai: ComputerAI | None = None
+    outcome,
+    is_human_offense: bool,
+    human_is_home: bool,
+    ai: ComputerAI | None = None,
+    *,
+    game: PaydirtGameEngine | None = None,
 ) -> tuple[bool, int | None]:
     """
     Decide if CPU should accept the play result or the penalty.
@@ -1523,13 +1583,16 @@ def cpu_should_accept_penalty(
         is_human_offense: Whether the human is on offense
         human_is_home: Whether the human is the home team
         ai: Optional ComputerAI instance (creates default if not provided)
+        game: Optional live engine; enables clock/score/timeout-aware choices
 
     Returns:
         Tuple of (accept_play: bool, penalty_index: Optional[int])
     """
     if ai is None:
         ai = ComputerAI(aggression=0.5)
-    return ai.should_accept_penalty(outcome, is_human_offense, human_is_home)
+    return ai.should_accept_penalty(
+        outcome, is_human_offense, human_is_home, game=game,
+    )
 
 
 def cpu_should_attempt_end_zone_return(game, outcome, return_team_is_home: bool) -> bool:

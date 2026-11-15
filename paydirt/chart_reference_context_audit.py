@@ -45,9 +45,12 @@ class _PenaltyAI(ComputerAI):
 
     def should_accept_penalty(
         self, outcome: PlayOutcome, is_human_offense: bool = True, human_is_home: bool = False,
+        game: PaydirtGameEngine | None = None,
     ) -> tuple[bool, int | None]:
         self.decisions += 1
-        return super().should_accept_penalty(outcome, is_human_offense=is_human_offense, human_is_home=human_is_home)
+        return super().should_accept_penalty(
+            outcome, is_human_offense=is_human_offense, human_is_home=human_is_home, game=game,
+        )
 
 
 def run_context_trial(

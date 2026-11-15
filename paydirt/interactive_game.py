@@ -2634,7 +2634,7 @@ def handle_penalty_decision(
     else:
         # CPU makes the decision - use centralized AI logic
         accept_play, best_penalty_idx = cpu_should_accept_penalty(
-            outcome, is_human_offense, human_is_home
+            outcome, is_human_offense, human_is_home, game=game,
         )
 
         # Get CPU team name for display. At a kickoff the ball is still with the

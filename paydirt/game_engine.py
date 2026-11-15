@@ -2903,41 +2903,128 @@ class PaydirtGameEngine:
                 ResultType.YARDS, ResultType.BREAKAWAY, ResultType.QB_SCRAMBLE,
                 ResultType.SACK, ResultType.INCOMPLETE):
             return
-        # Match apply_penalty_decision: a DEF priority result may store penalty
-        # yardage rather than the original offensive gain in result.yards.
-        yards = (result.offense_yards if (result.defense_modifier or "").startswith("DEF")
-                 else result.yards)
-        preview = replace(self.state)
-        if result.result_type == ResultType.INCOMPLETE:
-            first_down = False
-            turnover_on_downs = preview.next_down()
-        else:
-            first_down = preview.advance_ball(yards)
-            turnover_on_downs = False
-            if preview.ball_position >= 100 or preview.ball_position <= 0:
-                # A retained score or safety is not an ordinary spot comparison.
-                return
-            if not first_down:
-                turnover_on_downs = preview.next_down()
-        if turnover_on_downs:
-            # The retained play itself ends the drive; that is not equivalent
-            # to replaying the down and stays on the existing policy.
+        retained = self._project_scrimmage_penalty_situation(outcome, True)
+        if retained is None or retained.turnover:
             return
-        outcome.retained_play_situation = PenaltySituation(
-            preview.ball_position, preview.down, preview.yards_to_go, first_down,
-        )
+        outcome.retained_play_situation = retained
         for index, option in enumerate(choice.penalty_options):
             if option.penalty_type != "OFF":
                 continue
-            _, position, down, distance, enforced_first_down = resolve_penalty(
+            projected = self._project_scrimmage_penalty_situation(outcome, False, index)
+            if projected is not None:
+                outcome.penalty_situations[index] = projected
+    def _project_scrimmage_penalty_situation(
+        self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0,
+    ) -> PenaltySituation | None:
+        """Project a scrimmage penalty choice's spot, down and resulting clock.
+
+        The projection resolves a throwaway copy of the state with the same
+        enforcement and timing rules as ``apply_penalty_decision``. It never
+        changes live state, statistics, the play log or dice. Flagged-play
+        timing is exact and also covers the play-specific Hail Mary range.
+        Retained incomplete passes and enforced fouls are exact. A retained
+        ordinary scrimmage result is resolved without dice, so it uses the
+        documented 25-45 second range's lower bound to avoid understating the
+        clock available to the offense. A resolved scrimmage foul marks the
+        clock stopped, so deferred timeout or spike requests cannot save extra
+        time.
+
+        Args:
+            outcome: Pending scrimmage penalty outcome.
+            accept_play: True for the retained play, False for enforcement.
+            penalty_index: Enforcement option to project.
+
+        Returns:
+            Engine-projected situation, or None for unsupported choices.
+        """
+        choice = outcome.penalty_choice
+        if choice is None:
+            return None
+        result = choice.play_result
+        if outcome.play_type not in CHART_PLAY_TYPES or result.turnover:
+            return None
+
+        probe = copy(self)
+        probe.state = deepcopy(self.state)
+        if not accept_play:
+            if penalty_index >= len(choice.penalty_options):
+                penalty_index = 0
+            option = choice.penalty_options[penalty_index]
+            if option.penalty_type != "OFF":
+                return None
+            _, position, down, distance, first_down = resolve_penalty(
                 option.raw_result, self.state.ball_position,
                 yards_gained=0, is_return=False,
                 yards_to_go=self.state.yards_to_go, down=self.state.down,
                 chart_yards=option.yards, auto_first_down=option.auto_first_down,
             )
-            outcome.penalty_situations[index] = PenaltySituation(
-                position, down, distance, enforced_first_down,
+            probe.state.ball_position = position
+            probe.state.down = down
+            probe.state.yards_to_go = distance
+            seconds = self._flagged_scrimmage_seconds(
+                outcome.play_type, result, self.state.ball_position, retained=False,
             )
+        else:
+            kind = result.result_type
+            yards = (result.offense_yards
+                     if (result.defense_modifier or "").startswith("DEF")
+                     else result.yards)
+            if kind == ResultType.INCOMPLETE:
+                first_down = False
+                if probe.state.next_down():
+                    return replace(
+                        PenaltySituation(
+                            probe.state.ball_position, probe.state.down,
+                            probe.state.yards_to_go, first_down,
+                        ),
+                        turnover=True,
+                    )
+                seconds = 5.0
+            else:
+                first_down = probe.state.advance_ball(yards)
+                if probe.state.ball_position >= 100 or probe.state.ball_position <= 0:
+                    # A retained score or safety is outside the spot comparison.
+                    return None
+                if not first_down and probe.state.next_down():
+                    return replace(
+                        PenaltySituation(
+                            probe.state.ball_position, probe.state.down,
+                            probe.state.yards_to_go, first_down,
+                        ),
+                        turnover=True,
+                    )
+                if getattr(result, "replay_down", False):
+                    seconds = 10.0
+                else:
+                    seconds = self._flagged_scrimmage_seconds(
+                        outcome.play_type, result, self.state.ball_position, retained=True,
+                    )
+
+        probe._use_time(seconds)
+        return PenaltySituation(
+            probe.state.ball_position, probe.state.down, probe.state.yards_to_go, first_down,
+            quarter=probe.state.quarter,
+            time_remaining=probe.state.time_remaining,
+            touchdown=False,
+            turnover=False,
+            game_over=probe.state.game_over,
+            untimed_down=probe.state.untimed_down_pending,
+        )
+
+    def can_kneel_out_penalty_situation(self, situation: PenaltySituation) -> bool:
+        """Evaluate the engine's kneel-out rule for a projected penalty state."""
+        probe = copy(self)
+        probe.state = replace(
+            self.state,
+            ball_position=situation.ball_position,
+            down=situation.down,
+            yards_to_go=situation.yards_to_go,
+            quarter=situation.quarter,
+            time_remaining=situation.time_remaining,
+            game_over=situation.game_over,
+            untimed_down_pending=situation.untimed_down,
+        )
+        return probe.can_kneel_out_game()
 
     def apply_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0

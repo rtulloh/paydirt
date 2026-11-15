@@ -2285,3 +2285,76 @@ def test_cpu_two_point_choice_with_pending_try_at_zero() -> None:
         assert client.get(f"/api/game/pat-choice/{game_id}").json()["cpu_should_go_for_two"] is False
     finally:
         games.pop(game_id)
+
+
+def test_cpu_penalty_routes_pass_live_engine_context(monkeypatch):
+    """AI-031: every CPU penalty call site must see clock, score and timeouts."""
+    from unittest.mock import patch
+
+    from paydirt.game_state import PlayOutcome
+    from paydirt.play_resolver import (
+        DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+    )
+
+    response = client.post(
+        "/api/game/new",
+        json={"player_team": "Ironclads", "season": "2026", "play_as_home": True},
+    )
+    game_id = response.json()["game_id"]
+    record = games[game_id]
+    engine = record["engine"]
+    engine.state.is_home_possession = True  # The human is on offense.
+
+    result = PlayResult(ResultType.INCOMPLETE)
+    outcome = PlayOutcome(
+        play_type=PlayType.SHORT_PASS,
+        defense_type=DefenseType.STANDARD,
+        result=result,
+        description="Synthetic offensive foul",
+        pending_penalty_decision=True,
+        penalty_choice=PenaltyChoice(
+            result,
+            penalty_options=[PenaltyOption("OFF", "OFF 5", 5, "Synthetic offensive foul")],
+            offended_team="defense",
+        ),
+    )
+    monkeypatch.setattr("paydirt.game_engine.resolve_play_with_penalties", lambda *args: outcome.penalty_choice)
+    monkeypatch.setattr(engine, "apply_penalty_decision", lambda *args, **kwargs: outcome)
+    monkeypatch.setattr(engine, "apply_kickoff_penalty_decision", lambda *args, **kwargs: outcome)
+
+    with patch("routes.cpu_should_accept_penalty", return_value=(True, 0)) as decision:
+        executed = client.post(
+            "/api/game/execute",
+            json={"game_id": game_id, "player_play": "6", "cpu_play": "A"},
+        )
+        assert executed.status_code == 200
+        assert decision.call_args.kwargs["game"] is engine
+
+        decision.reset_mock()
+        engine._last_play_outcome = outcome
+        decided = client.post(
+            "/api/game/penalty-decision",
+            json={"game_id": game_id, "penalty_index": 0, "accept_penalty": False},
+        )
+        assert decided.status_code == 200
+        assert decision.call_args.kwargs["game"] is engine
+
+        decision.reset_mock()
+        kickoff = PlayOutcome(
+            play_type=PlayType.KICKOFF,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            description="Synthetic kickoff foul",
+            pending_penalty_decision=True,
+            penalty_choice=PenaltyChoice(
+                result,
+                penalty_options=[PenaltyOption("OFF", "OFF 5", 5, "Synthetic kickoff foul")],
+                offended_team="offense",
+            ),
+        )
+        monkeypatch.setattr(engine, "kickoff", lambda *args, **kwargs: kickoff)
+        kicked = client.post("/api/game/kickoff", json={"game_id": game_id, "kickoff_spot": 35})
+        assert kicked.status_code == 200
+        assert decision.call_args.kwargs["game"] is engine
+
+    games.pop(game_id, None)
