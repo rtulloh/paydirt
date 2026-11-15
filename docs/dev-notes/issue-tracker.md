@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-226 issues: 78 open, 72 resolved, 76 closed.
+226 issues: 77 open, 73 resolved, 76 closed.
 
-## Open (78)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -19,7 +19,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
 | [AI-016](issues/AI/AI-016.md) | Medium | — | CPU never acts on kickoff-chart penalties | created 2026-10-19 | AUD-020, RULE-013 |
-| [AI-017](issues/AI/AI-017.md) | Medium | — | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19 | — |
 | [AI-018](issues/AI/AI-018.md) | Medium | — | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002, AI-031, AI-032 |
 | [AI-019](issues/AI/AI-019.md) | Medium | — | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-025, AI-026, AI-023, DATA-012 |
 | [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
@@ -95,7 +94,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (72)
+## Resolved (awaiting play-test confirmation) (73)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -153,6 +152,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-006](issues/AI/AI-006.md) | Medium | — | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |
 | [AI-008](issues/AI/AI-008.md) | Medium | — | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-015](issues/AI/AI-015.md) | Medium | — | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19, resolved 2026-11-07 | AUD-020, TRACE-004 |
+| [AI-017](issues/AI/AI-017.md) | Medium | v1.10.6 | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19, resolved 2026-11-14 | — |
 | [AI-022](issues/AI/AI-022.md) | Medium | — | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
 | [AI-031](issues/AI/AI-031.md) | Medium | v1.10.6 | Defensive foul comparison ignores clock, score and timeouts and can hand the offense a kneel-out | created 2026-11-13, resolved 2026-11-14 | AI-002, AI-018 |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | — | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |

@@ -12,7 +12,15 @@ from typing import Optional
 
 from .chart_loader import TeamChart, load_team_chart
 from .commentary import get_roster
-from .game_state import ClockTrace, GameState, PenaltySituation, PlayOutcome, ScoringPlay, TeamStats
+from .game_state import (
+    ClockTrace,
+    FieldGoalPenaltyProjection,
+    GameState,
+    PenaltySituation,
+    PlayOutcome,
+    ScoringPlay,
+    TeamStats,
+)
 from .interception_policy import should_attempt_end_zone_return
 from .overtime_rules import OvertimeFormat, OvertimeRules
 from .packaging import get_seasons_path
@@ -3009,6 +3017,76 @@ class PaydirtGameEngine:
             turnover=False,
             game_over=probe.state.game_over,
             untimed_down=probe.state.untimed_down_pending,
+        )
+
+    def project_field_goal_penalty_choice(
+        self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0,
+    ) -> FieldGoalPenaltyProjection | None:
+        """Project a pending field-goal foul choice without changing the game.
+
+        The projection runs the real ``apply_fg_penalty_decision`` on a throwaway
+        engine copy whose clock charge is pinned to the low end of the documented
+        kick range, so coaching reads the engine's own scoring, enforcement,
+        half-extension and game-over rules instead of assuming that erasing
+        points always helps. Rejected options, missing choices and any rule error
+        yield ``None`` rather than a guess.
+
+        Args:
+            outcome: Pending field-goal penalty outcome.
+            accept_play: True for the made or missed kick, False for enforcement.
+            penalty_index: Enforcement option to project.
+
+        Returns:
+            Engine-projected result, or None when ``outcome`` is not a pending
+            field-goal penalty choice.
+        """
+        choice = outcome.penalty_choice
+        if (
+            choice is None
+            or not outcome.pending_penalty_decision
+            or outcome.play_type != PlayType.FIELD_GOAL
+        ):
+            return None
+
+        index = penalty_index
+        if not accept_play:
+            enforceable = [
+                position for position, option in enumerate(choice.penalty_options)
+                if option.penalty_type == "OFF"
+            ]
+            if not enforceable:
+                return None
+            if index not in enforceable:
+                index = enforceable[0]
+
+        probe = copy(self)
+        probe.state = deepcopy(self.state)
+        probe.play_log = []
+        probe._pending_end_zone_interception = None
+        # Pin the documented clock ranges to their low end: a projection must be
+        # deterministic and must never overstate the time a choice leaves.
+        probe._field_goal_decision_seconds = lambda keep: 5.0 if keep else 25.0
+        # Blocked or fumbled kicks roll recovery dice while replaying the rules.
+        # The live dice stream must be identical after any projection.
+        rng_state = random.getstate()
+        try:
+            final = probe.apply_fg_penalty_decision(deepcopy(outcome), accept_play, index)
+        except Exception:
+            # A projection must never turn a coaching question into a crash.
+            return None
+        finally:
+            random.setstate(rng_state)
+        return FieldGoalPenaltyProjection(
+            home_score=probe.state.home_score,
+            away_score=probe.state.away_score,
+            ball_position=probe.state.ball_position,
+            down=probe.state.down,
+            yards_to_go=probe.state.yards_to_go,
+            quarter=probe.state.quarter,
+            time_remaining=probe.state.time_remaining,
+            game_over=probe.state.game_over,
+            untimed_down=probe.state.untimed_down_pending,
+            field_goal_made=final.field_goal_made,
         )
 
     def can_kneel_out_penalty_situation(self, situation: PenaltySituation) -> bool:
@@ -6051,6 +6129,14 @@ class PaydirtGameEngine:
             description=description,
         )
 
+    def _field_goal_decision_seconds(self, accept_play: bool) -> float:
+        """Clock charge for a resolved field-goal foul choice.
+
+        Keeping the kick uses the normal kick time; enforcing a foul replays the
+        down and consumes a full scrimmage interval.
+        """
+        return random.uniform(5, 10) if accept_play else random.uniform(25, 45)
+
     def apply_fg_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0
     ) -> PlayOutcome:
@@ -6203,8 +6289,7 @@ class PaydirtGameEngine:
         # Only advance time if there's no untimed down pending
         # (if untimed_down_pending is True, the half extends and clock stays at 0)
         if not self.state.untimed_down_pending:
-            seconds = random.uniform(5, 10) if accept_play else random.uniform(25, 45)
-            self._use_time(seconds)
+            self._use_time(self._field_goal_decision_seconds(accept_play))
 
         return outcome
 

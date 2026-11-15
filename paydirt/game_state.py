@@ -202,6 +202,35 @@ class PenaltySituation:
 
 
 @dataclass(frozen=True)
+class FieldGoalPenaltyProjection:
+    """Engine-projected state after resolving a pending field-goal foul.
+
+    Coaching metadata produced by a throwaway engine copy: nothing is recorded
+    on the live game. It lets coaching compare the score, clock, possession and
+    period effects of keeping a made kick against enforcing the foul.
+    """
+
+    home_score: int
+    away_score: int
+    ball_position: int
+    down: int
+    yards_to_go: int
+    quarter: int
+    time_remaining: float
+    game_over: bool
+    untimed_down: bool
+    field_goal_made: bool
+
+    def points_for(self, is_home: bool) -> int:
+        """Score of the team the projection is evaluated for."""
+        return self.home_score if is_home else self.away_score
+
+    def points_against(self, is_home: bool) -> int:
+        """Score of the projection's opponent."""
+        return self.away_score if is_home else self.home_score
+
+
+@dataclass(frozen=True)
 class ClockTrace:
     """Observed engine clock charge, independent of a later play or period reset."""
 

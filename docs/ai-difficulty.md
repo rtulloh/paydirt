@@ -134,6 +134,21 @@ requested spike keeps its existing policy. This is a coaching ordering, not an
 expected-points estimate, and it does not redesign kick/return penalty
 choices, general clock management, or play-plus-spike decisions.
 
+On a field-goal attempt the same principle applies to the score itself. A made
+kick with an offensive foul no longer stands automatically: the offended defense
+enforces the longest available foul and forces a longer re-kick instead of
+conceding three points. A missed kick still keeps its existing policy, and the
+kicking team keeps a made kick when it is the offended side.
+
+A terminal made kick is not worth trading for a live down, so one engine-checked
+guard overrides enforcement. The engine projects both choices on a throwaway
+copy, including the resulting score, clock, period, game-over and untimed-down
+state, without touching live state, statistics, the play log or dice. If keeping
+the kick ends the game with the defense ahead and enforcing the foul leaves the
+game unfinished, the defense keeps the kick. This only restores a won game; with
+time remaining the defense still prefers denying the three points, and a tied or
+trailing kick is unaffected.
+
 When the live game state is available, a trailing defense in the fourth quarter
 adds one late-game check before enforcing an offensive foul. The engine projects
 both resolutions, including the spot, down, distance, resulting clock, period,

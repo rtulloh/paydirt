@@ -81,6 +81,48 @@ def _foul_hands_offense_a_kneel_out(
     )
 
 
+def _field_goal_foul_costs_a_won_game(
+    game: PaydirtGameEngine, outcome, penalty_index: int,
+) -> bool:
+    """Whether enforcing a field-goal foul trades a won game for a live down.
+
+    A made kick can end the game with the defense ahead. Enforcing the foul
+    instead replays the down, and the offense is free to attempt a
+    game-winning touchdown rather than re-kick. The engine projects both
+    resolutions, including their scores, clock, period and game-over state; this
+    guard only asks whether the retained kick wins and the enforced foul does
+    not. It never changes live state.
+
+    Args:
+        game: Live engine; only read.
+        outcome: Pending field-goal penalty outcome.
+        penalty_index: Enforcement option the position logic chose.
+
+    Returns:
+        True only when keeping the kick ends the game with the defense ahead and
+        enforcement leaves the game unfinished.
+    """
+    if game is None:
+        return False
+    state = game.state
+    defense_is_home = not state.is_home_possession
+    retained = game.project_field_goal_penalty_choice(outcome, True)
+    enforced = game.project_field_goal_penalty_choice(outcome, False, penalty_index)
+    if retained is None or enforced is None:
+        return False
+    retained_wins = (
+        retained.game_over
+        and not retained.untimed_down
+        and retained.points_for(defense_is_home) > retained.points_against(defense_is_home)
+    )
+    enforced_wins = (
+        enforced.game_over
+        and not enforced.untimed_down
+        and enforced.points_for(defense_is_home) > enforced.points_against(defense_is_home)
+    )
+    return retained_wins and not enforced_wins
+
+
 class ComputerAI:
     """
     Intelligent computer opponent for Paydirt.
@@ -1402,14 +1444,26 @@ class ComputerAI:
                 if option.raw_result.startswith("KEEP+"):
                     return (False, penalty_choice.penalty_options.index(option))
         if is_fg_penalty:
+            best_penalty = filtered_penalties[0] if filtered_penalties else None
             if outcome.field_goal_made:
-                accept_play = True
-            else:
-                best_penalty = filtered_penalties[0] if filtered_penalties else None
-                if best_penalty and offended_is_offense:
+                # A made kick still offers the offended defense the foul: enforce
+                # the longest one and make the offense re-kick from farther back
+                # instead of scoring. More enforced yards never help the kicker,
+                # including a half-distance enforcement.
+                if best_penalty is not None and not offended_is_offense:
+                    accepted = max(filtered_penalties, key=lambda option: option.yards)
+                    accepted_index = penalty_choice.penalty_options.index(accepted)
+                    if _field_goal_foul_costs_a_won_game(game, outcome, accepted_index):
+                        # The made kick is a won game; replaying the down is not.
+                        return (True, None)
                     accept_play = False
+                    best_penalty_idx = accepted_index
                 else:
                     accept_play = True
+            elif best_penalty and offended_is_offense:
+                accept_play = False
+            else:
+                accept_play = True
         elif is_punt_penalty or is_kickoff_penalty:
             best_penalty = filtered_penalties[0] if filtered_penalties else None
             if best_penalty:
