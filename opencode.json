@@ -198,6 +198,81 @@
     },
     {
       "action": "shell",
+      "resource": "npx --yes test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx -y test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --no-install test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --yes vitest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx -y vitest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --no-install vitest *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx test@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx vitest@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --yes test@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx -y test@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --no-install test@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --yes vitest@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx -y vitest@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx --no-install vitest@*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "npx playwright test *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
       "resource": "npx vite build *",
       "effect": "allow"
     },

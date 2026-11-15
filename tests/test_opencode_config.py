@@ -34,6 +34,16 @@ import pytest
     ("npm run test:e2e", "allow"),
     ("npx test -- --run", "allow"),
     ("npx test", "allow"),
+    ("npx --yes test -- --run", "allow"),
+    ("npx -y test -- --run", "allow"),
+    ("npx --no-install test -- --run", "allow"),
+    ("npx --yes vitest run", "allow"),
+    ("npx -y vitest run", "allow"),
+    ("npx --no-install vitest run", "allow"),
+    ("npx playwright test e2e/play-log-labels.spec.js", "allow"),
+    ("npx test@latest -- --run", "allow"),
+    ("npx vitest@1.6.1 run", "allow"),
+    ("npx --yes vitest@1.6.1 run", "allow"),
     ("npm run build", "allow"),
     ("git status --short", "allow"),
     ("git ls-remote", "allow"),
@@ -58,6 +68,8 @@ import pytest
     ("git reset --hard", "deny"),
     ("git checkout -- paydirt/game_engine.py", "deny"),
     ("rm -rf seasons", "deny"),
+    ("npx test-helper --install", "ask"),
+    ("npx vitest-runner install", "ask"),
 ])
 def test_project_shell_permissions(command: str, expected: str) -> None:
     config_path = Path(__file__).resolve().parents[1] / "opencode.json"
