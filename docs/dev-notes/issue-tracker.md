@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-227 issues: 78 open, 73 resolved, 76 closed.
+227 issues: 76 open, 75 resolved, 76 closed.
 
-## Open (78)
+## Open (76)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -23,11 +23,9 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-019](issues/AI/AI-019.md) | Medium | — | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-025, AI-026, AI-023, DATA-012 |
 | [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
 | [AI-023](issues/AI/AI-023.md) | Medium | — | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
-| [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01 | DATA-011, AI-034 |
 | [AI-029](issues/AI/AI-029.md) | Medium | — | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | — | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
 | [AI-032](issues/AI/AI-032.md) | Medium | — | Fourth-down stop with a positive short gain still accepts an offensive foul instead of taking the ball | created 2026-11-13 | AI-002, AI-018 |
-| [AI-034](issues/AI/AI-034.md) | Medium | v1.10.6 | Easy and Medium coaching is as precise as Hard on marginal decisions | created 2026-11-15 | AI-005, AI-021, AI-024 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | — | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | — | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
@@ -95,7 +93,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (73)
+## Resolved (awaiting play-test confirmation) (75)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -155,7 +153,9 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-015](issues/AI/AI-015.md) | Medium | — | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19, resolved 2026-11-07 | AUD-020, TRACE-004 |
 | [AI-017](issues/AI/AI-017.md) | Medium | v1.10.6 | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19, resolved 2026-11-14 | — |
 | [AI-022](issues/AI/AI-022.md) | Medium | — | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
+| [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01, resolved 2026-11-15 | DATA-011, AI-034 |
 | [AI-031](issues/AI/AI-031.md) | Medium | v1.10.6 | Defensive foul comparison ignores clock, score and timeouts and can hand the offense a kneel-out | created 2026-11-13, resolved 2026-11-14 | AI-002, AI-018 |
+| [AI-034](issues/AI/AI-034.md) | Medium | v1.10.6 | Easy and Medium coaching is as precise as Hard on marginal decisions | created 2026-11-15, resolved 2026-11-15 | AI-005, AI-021, AI-024 |
 | [AUD-007](issues/AUD/AUD-007.md) | Medium | — | Rendering colorful commentary advances the same global random stream as dice/coaching | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-008](issues/AUD/AUD-008.md) | Medium | — | Full interception-TD output can name the original offense as scorer because the engine omits result scoring-team… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-028](issues/AUD/AUD-028.md) | Medium | — | Generated primary BLACK cells form unnecessary contiguous runs and blocks | created 2026-11-05, resolved 2026-11-07 | — |
