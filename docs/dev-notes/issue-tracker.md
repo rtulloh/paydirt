@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-225 issues: 81 open, 68 resolved, 76 closed.
+225 issues: 80 open, 69 resolved, 76 closed.
 
-## Open (81)
+## Open (80)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -51,7 +51,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.6 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
-| [FLOW-032](issues/FLOW/FLOW-032.md) | Medium | v1.10.6 | Hail Mary end-zone interception deferral uses ordinary scrimmage timing | created 2026-11-14 | — |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -98,7 +97,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (68)
+## Resolved (awaiting play-test confirmation) (69)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -164,6 +163,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-037](issues/DATA/DATA-037.md) | Medium | — | Reference decoder accepts signed defensive fumbles absent from priority table | created 2026-11-06, resolved 2026-11-07 | — |
 | [FLOW-015](issues/FLOW/FLOW-015.md) | Medium | — | Browser play log shows raw seconds and attributes half-ending plays to the next period | created 2026-11-06, resolved 2026-11-07 | — |
 | [FLOW-028](issues/FLOW/FLOW-028.md) | Medium | v1.10.6 | Hail Mary and direct run_play interceptions bypass the end-zone return choice | created 2026-11-13, resolved 2026-11-14 | FLOW-023 |
+| [FLOW-032](issues/FLOW/FLOW-032.md) | Medium | v1.10.6 | Hail Mary end-zone interception deferral uses ordinary scrimmage timing | created 2026-11-14, resolved 2026-11-14 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | — | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | — | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
 | [VAL-026](issues/VAL/VAL-026.md) | Medium | — | Local pre-push coverage should measure changed modules, not the whole package | created 2026-11-14, resolved 2026-11-14 | VAL-020 |

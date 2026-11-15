@@ -3,6 +3,7 @@ Game engine that uses actual Paydirt team charts.
 """
 from __future__ import annotations
 
+import math
 import random
 import re
 from copy import copy, deepcopy
@@ -53,8 +54,56 @@ from .utils import (
     ordinal,
 )
 
+# Clock ranges for an applied result. A deferred own-end-zone interception keeps
+# its originating play's range so resolution charges the same time as the play
+# would have without a pending choice. Legacy saves without a stored range derive
+# the default from the saved play type instead of duplicating the rule here.
+PLAY_SECONDS_BY_TYPE: dict[PlayType, tuple[float, float]] = {
+    PlayType.HAIL_MARY: (5.0, 15.0),
+}
+ORDINARY_PLAY_SECONDS: tuple[float, float] = (25.0, 45.0)
+# A single play can never consume more than a full period of assumed board play.
+MAX_PLAY_SECONDS = 15 * 60.0
+
 # Re-export for backward compatibility
 __all__ = ["GameState", "PaydirtGameEngine", "PlayOutcome", "ScoringPlay", "TeamStats"]
+
+
+def _restored_play_seconds_range(value: object) -> tuple[float, float] | None:
+    """Validate a saved deferred-play clock range; legacy saves have none.
+
+    Saved JSON may hold non-finite bounds (``1e309`` parses to infinity, ``NaN``
+    is accepted by Python's JSON reader) or integers too large to convert. None
+    of these are valid clock inputs, and all become ``ValueError`` so a bad save
+    cannot inject ``NaN`` into the game clock.
+    """
+    if value is None:
+        return None
+    invalid = ValueError(
+        "Invalid pending interception play_seconds_range: "
+        f"{value!r} (each bound must be a finite number of seconds in 0..{MAX_PLAY_SECONDS:g})"
+    )
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise invalid
+    bounds: list[float] = []
+    for bound in value:
+        if type(bound) not in (int, float):
+            raise invalid
+        try:
+            number = float(bound)
+        except (OverflowError, ValueError) as exc:
+            raise invalid from exc
+        if not math.isfinite(number) or not 0 <= number <= MAX_PLAY_SECONDS:
+            raise invalid
+        bounds.append(number)
+    if bounds[0] > bounds[1]:
+        raise invalid
+    return (bounds[0], bounds[1])
+
+
+def _default_play_seconds_range(play_type: PlayType) -> tuple[float, float]:
+    """Clock range a play uses when no deferred override was saved."""
+    return PLAY_SECONDS_BY_TYPE.get(play_type, ORDINARY_PLAY_SECONDS)
 
 
 @dataclass
@@ -3111,6 +3160,7 @@ class PaydirtGameEngine:
         in_bounds_designation: bool,
         no_huddle: bool = False,
         penalty_clock_stopped: bool = False,
+        play_seconds_range: tuple[float, float] | None = None,
     ) -> PlayOutcome:
         """
         Apply a play result to the game state.
@@ -3342,7 +3392,8 @@ class PaydirtGameEngine:
         elif no_huddle:
             play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(25, 45)
+            low, high = play_seconds_range or ORDINARY_PLAY_SECONDS
+            play_seconds = random.uniform(low, high)
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds and not penalty_clock_stopped)
         outcome.clock_trace = self.last_clock_trace
@@ -3379,8 +3430,15 @@ class PaydirtGameEngine:
         no_huddle: bool,
         penalty_clock_stopped: bool,
         catch_depth: int,
+        play_seconds_range: tuple[float, float] | None = None,
     ) -> PlayOutcome:
-        """Return a pending own-end-zone interception outcome without applying it."""
+        """Return a pending own-end-zone interception outcome without applying it.
+
+        Args:
+            play_seconds_range: Clock range of the originating play. It is
+                retained so resolution cannot substitute ordinary scrimmage
+                timing for a deferred play such as a Hail Mary.
+        """
         defense_home = not self.state.is_home_possession
         return_team = self.state.defense_team.peripheral.short_name
         catch_position = self._end_zone_catch_field_position(catch_depth)
@@ -3406,6 +3464,7 @@ class PaydirtGameEngine:
             "return_team": return_team,
             "return_team_is_home": defense_home,
             "situation": situation,
+            "play_seconds_range": play_seconds_range,
             "follow_ups": {
                 "spike_context": None,
                 "timeout_context": None,
@@ -3501,6 +3560,7 @@ class PaydirtGameEngine:
             "return_team": state["return_team"],
             "return_team_is_home": state["return_team_is_home"],
             "situation": state["situation"],
+            "play_seconds_range": state.get("play_seconds_range"),
             "follow_ups": state["follow_ups"],
         }
 
@@ -3538,6 +3598,10 @@ class PaydirtGameEngine:
             "return_team": data["return_team"],
             "return_team_is_home": data["return_team_is_home"],
             "situation": data["situation"],
+            "play_seconds_range": (
+                _restored_play_seconds_range(data.get("play_seconds_range"))
+                or _default_play_seconds_range(play_type)
+            ),
             "follow_ups": data.get("follow_ups") or {
                 "spike_context": None,
                 "timeout_context": None,
@@ -3617,6 +3681,7 @@ class PaydirtGameEngine:
             in_bounds_designation=state["in_bounds_designation"],
             no_huddle=state["no_huddle"],
             penalty_clock_stopped=state["penalty_clock_stopped"],
+            play_seconds_range=state["play_seconds_range"],
         )
         follow_ups = state["follow_ups"]
         defensive_context = follow_ups["defensive_timeout_context"]
@@ -4117,6 +4182,7 @@ class PaydirtGameEngine:
                     no_huddle=False,
                     penalty_clock_stopped=False,
                     catch_depth=min(ball_pos_before + result.yards - 100, 9),
+                    play_seconds_range=_default_play_seconds_range(PlayType.HAIL_MARY),
                 )
             # Use centralized interception handler for consistent end zone handling
             turnover, touchdown, safety = self._handle_interception(
@@ -4181,7 +4247,8 @@ class PaydirtGameEngine:
             self._flagged_scrimmage_seconds(
                 PlayType.HAIL_MARY, result, ball_pos_before, retained=False,
             ) if outcome.clock_stopped_for_penalty else (
-                5.0 if result.result_type == ResultType.INCOMPLETE else random.uniform(5, 15)
+                5.0 if result.result_type == ResultType.INCOMPLETE
+                else random.uniform(*_default_play_seconds_range(PlayType.HAIL_MARY))
             ),
             defensive_penalty=result.result_type == ResultType.PASS_INTERFERENCE,
         )

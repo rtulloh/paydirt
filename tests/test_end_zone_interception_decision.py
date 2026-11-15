@@ -599,3 +599,332 @@ def test_pending_hail_mary_timeout_request_survives_save_and_load(
     assert final.turnover is True
     assert final.defensive_timeout_used is False
     assert loaded.state.time_remaining == pytest.approx(1.0 - 5 / 60, abs=0.001)
+
+HAIL_MARY_SECONDS = (5.0, 15.0)
+SCRIMMAGE_SECONDS = (25.0, 45.0)
+
+
+def hail_mary_game(policy: str, offense_home: bool = True) -> PaydirtGameEngine:
+    """First-half Hail Mary from the offense's own 10 with the defense's policy."""
+    game = make_sample_game()
+    game.state.is_home_possession = offense_home
+    game.state.ball_position = 90
+    game.state.quarter = 2
+    game.state.time_remaining = 5.0
+    game.state.down = 2
+    game.state.yards_to_go = 10
+    game.set_end_zone_interception_policy(not offense_home, policy)
+    game.state.defense_team.special_teams.interception_return = {26: "15"}
+    return game
+
+
+def hail_mary_interception() -> PlayResult:
+    """Synthetic Hail Mary interception 26 yards downfield, nine deep in the end zone."""
+    return PlayResult(
+        result_type=ResultType.INTERCEPTION,
+        yards=26,
+        turnover=True,
+        description="Hail Mary INTERCEPTED! 26 yards downfield",
+        raw_result="Hail Mary INT 20",
+        dice_roll=20,
+    )
+
+
+def _capture_uniform(calls: list) -> object:
+    def fake_uniform(low: float, high: float) -> float:
+        calls.append((low, high))
+        return (low + high) / 2
+    return fake_uniform
+
+
+def play_hail_mary(
+    game: PaydirtGameEngine, resolution: bool | None = None,
+) -> tuple[object, list]:
+    """Run one Hail Mary, resolving a pending ask with ``resolution``."""
+    calls: list = []
+    return_rolls = [(26, "15")] if resolution else []
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", side_effect=[(20, "Hail Mary INT"), *return_rolls]),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=hail_mary_interception()),
+        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+    ):
+        outcome = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        if outcome.pending_end_zone_interception_return_decision:
+            outcome = game.apply_end_zone_interception_return_decision(
+                outcome, attempt_return=bool(resolution),
+            )
+    return outcome, calls
+
+
+def _stats(game: PaydirtGameEngine, home: bool) -> tuple:
+    stats = game.state.home_stats if home else game.state.away_stats
+    return (
+        stats.interceptions_thrown,
+        stats.fumbles_lost,
+        stats.turnovers,
+        stats.total_yards,
+        stats.passing_yards,
+        stats.first_downs,
+    )
+
+
+def _applied_state(game: PaydirtGameEngine, outcome) -> tuple:
+    """Everything resolution must apply exactly once, per team.
+
+    After a turnover ``offense_stats`` belongs to the receiving team, so both
+    teams are read explicitly to avoid missing a wrong-side interception or
+    turnover count.
+    """
+    return (
+        game.state.time_remaining,
+        game.state.home_score,
+        game.state.away_score,
+        game.state.ball_position,
+        game.state.is_home_possession,
+        game.state.down,
+        game.state.yards_to_go,
+        _stats(game, home=True),
+        _stats(game, home=False),
+        len(game.play_log),
+        outcome.turnover,
+        outcome.result.int_return_yards,
+        outcome.description,
+    )
+
+
+@pytest.mark.parametrize("offense_home", [True, False])
+def test_hail_mary_touchback_choice_keeps_immediate_hail_mary_timing(
+    offense_home: bool,
+) -> None:
+    """FLOW-032: asking, then choosing touchback, must not charge scrimmage time."""
+    immediate = hail_mary_game("touchback", offense_home)
+    immediate_outcome, immediate_calls = play_hail_mary(immediate)
+
+    deferred = hail_mary_game("ask", offense_home)
+    deferred_outcome, deferred_calls = play_hail_mary(deferred, resolution=False)
+
+    assert immediate_calls == [HAIL_MARY_SECONDS]
+    assert deferred_calls == [HAIL_MARY_SECONDS]
+    assert _applied_state(immediate, immediate_outcome) == _applied_state(
+        deferred, deferred_outcome
+    )
+    assert deferred.state.time_remaining == pytest.approx(5.0 - 10 / 60)
+    assert deferred_outcome.clock_trace.requested_seconds == pytest.approx(10.0)
+
+
+@pytest.mark.parametrize("offense_home", [True, False])
+def test_hail_mary_return_choice_keeps_immediate_hail_mary_timing(
+    offense_home: bool,
+) -> None:
+    """FLOW-032: an attempted Hail Mary return also keeps 5-15 second timing."""
+    immediate = hail_mary_game("return", offense_home)
+    immediate_outcome, immediate_calls = play_hail_mary(immediate, resolution=True)
+
+    deferred = hail_mary_game("ask", offense_home)
+    deferred_outcome, deferred_calls = play_hail_mary(deferred, resolution=True)
+
+    assert immediate_calls == [HAIL_MARY_SECONDS]
+    assert deferred_calls == [HAIL_MARY_SECONDS]
+    assert _applied_state(immediate, immediate_outcome) == _applied_state(
+        deferred, deferred_outcome
+    )
+    assert deferred.state.ball_position == immediate.state.ball_position
+    assert deferred.state.time_remaining == pytest.approx(5.0 - 10 / 60)
+
+
+def test_direct_scrimmage_deferral_keeps_scrimmage_timing() -> None:
+    """FLOW-032 control: ordinary own-end-zone deferrals still use 25-45 seconds."""
+    game, result = decision_game()
+    calls: list = []
+    with (
+        patch("paydirt.game_engine.resolve_play", return_value=result),
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")),
+        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+    ):
+        pending = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+        assert pending.pending_end_zone_interception_return_decision is True
+        final = game.apply_end_zone_interception_return_decision(
+            pending, attempt_return=True,
+        )
+    assert calls == [SCRIMMAGE_SECONDS]
+    assert final.turnover is True
+
+
+def test_pending_hail_mary_timing_context_survives_save_and_load(
+    tmp_path: Path,
+) -> None:
+    """FLOW-032: a resumed Hail Mary keeps Hail Mary timing, not scrimmage timing."""
+    game = hail_mary_game("ask")
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=hail_mary_interception()),
+    ):
+        pending = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+    assert pending.pending_end_zone_interception_return_decision is True
+
+    save_path = tmp_path / "pending-hail-mary-timing.json"
+    save_game(game, str(save_path))
+    saved = json.loads(save_path.read_text())
+    assert saved["pending_end_zone_interception"]["play_seconds_range"] == [5.0, 15.0]
+
+    loaded = load_game(str(save_path))[0]
+    assert loaded.has_pending_end_zone_interception is True
+    calls: list = []
+    with patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)):
+        final = loaded.apply_end_zone_interception_return_decision(
+            loaded._last_play_outcome, attempt_return=False,
+        )
+    assert calls == [HAIL_MARY_SECONDS]
+    assert final.turnover is True
+    assert loaded.state.ball_position == 20
+    assert loaded.state.time_remaining == pytest.approx(5.0 - 10 / 60)
+
+    # Legacy saves lack the field; they derive Hail Mary timing from play_type
+    # rather than replaying the old scrimmage-range defect.
+    legacy = deepcopy(saved)
+    del legacy["pending_end_zone_interception"]["play_seconds_range"]
+    legacy_path = tmp_path / "legacy-pending-hail-mary-timing.json"
+    legacy_path.write_text(json.dumps(legacy))
+    legacy_game = load_game(str(legacy_path))[0]
+    assert legacy_game._pending_end_zone_interception["play_seconds_range"] == HAIL_MARY_SECONDS
+    legacy_calls: list = []
+    with patch(
+        "paydirt.game_engine.random.uniform", side_effect=_capture_uniform(legacy_calls)
+    ):
+        legacy_game.apply_end_zone_interception_return_decision(
+            legacy_game._last_play_outcome, attempt_return=False,
+        )
+    assert legacy_calls == [HAIL_MARY_SECONDS]
+
+
+def test_deferred_hail_mary_applies_clock_possession_and_stats_once() -> None:
+    """FLOW-032: deferred Hail Mary resolution is a single applied play."""
+    game = hail_mary_game("ask")
+    calls: list = []
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=hail_mary_interception()),
+        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+    ):
+        pending = game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+        assert calls == []
+        final = game.apply_end_zone_interception_return_decision(
+            pending, attempt_return=False,
+        )
+    assert calls == [HAIL_MARY_SECONDS]
+    assert len(game.play_log) == 1
+    assert final.turnover is True
+    assert game.state.is_home_possession is False
+    assert game.state.ball_position == 20
+    assert game.state.home_stats.interceptions_thrown == 1
+    assert game.state.home_stats.turnovers == 1
+    assert game.state.away_stats.turnovers == 0
+    assert game.state.time_remaining == pytest.approx(5.0 - 10 / 60)
+    with pytest.raises(ValueError, match="end-zone interception"):
+        game.apply_end_zone_interception_return_decision(
+            pending, attempt_return=False,
+        )
+    assert len(game.play_log) == 1
+
+
+
+@pytest.mark.parametrize(
+    "value",
+    [["hi", 15.0], [15.0], [40.0, 5.0], {"low": 5.0, "high": 15.0}, "5-15"],
+)
+def test_restored_play_seconds_range_rejects_malformed_saves(
+    tmp_path: Path, value: object,
+) -> None:
+    """FLOW-032: a malformed saved clock range is rejected, not silently reused."""
+    game = hail_mary_game("ask")
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=hail_mary_interception()),
+    ):
+        game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+    save_path = tmp_path / "bad-range.json"
+    save_game(game, str(save_path))
+    saved = json.loads(save_path.read_text())
+    saved["pending_end_zone_interception"]["play_seconds_range"] = value
+    save_path.write_text(json.dumps(saved))
+    with pytest.raises(ValueError, match="play_seconds_range"):
+        load_game(str(save_path))
+
+def _pending_hail_mary_save(tmp_path: Path, name: str = "range.json") -> Path:
+    """Save an unresolved Hail Mary ask so the pending payload can be edited."""
+    game = hail_mary_game("ask")
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Hail Mary INT")),
+        patch("paydirt.game_engine.resolve_hail_mary", return_value=hail_mary_interception()),
+    ):
+        game.run_play(PlayType.HAIL_MARY, DefenseType.STANDARD)
+    save_path = tmp_path / name
+    save_game(game, str(save_path))
+    return save_path
+
+
+@pytest.mark.parametrize(
+    "bounds_json,reason",
+    [
+        ("[1e309, 1e309]", "finite"),   # Infinity
+        ("[5, 1e309]", "finite"),       # Infinite upper bound
+        ("[-1e309, 15]", "finite"),     # Negative infinity
+        ("[NaN, 15]", "finite"),        # Not a number
+        ("[1e999999999999999999999, 15]", "finite"),  # Unconvertible float
+        (f"[1{'0' * 400}, 15]", "finite"),  # Integer too large to convert
+    ],
+)
+def test_non_finite_saved_clock_ranges_are_rejected(
+    tmp_path: Path, bounds_json: str, reason: str,
+) -> None:
+    """FLOW-032 review: a non-finite range must never reach the game clock."""
+    save_path = _pending_hail_mary_save(tmp_path)
+    text = save_path.read_text()
+    marker = '"play_seconds_range": [\n      5.0,\n      15.0\n    ]'
+    assert marker in text, "saved range layout changed; update this fixture"
+    save_path.write_text(text.replace(marker, f'"play_seconds_range": {bounds_json}'))
+    with pytest.raises(ValueError, match=f"play_seconds_range.*{reason}"):
+        load_game(str(save_path))
+
+
+def test_legacy_save_derives_hail_mary_timing_from_play_type(tmp_path: Path) -> None:
+    """FLOW-032: a legacy Hail Mary save gets Hail Mary timing, not scrimmage."""
+    save_path = _pending_hail_mary_save(tmp_path, "legacy-hail-mary.json")
+    saved = json.loads(save_path.read_text())
+    del saved["pending_end_zone_interception"]["play_seconds_range"]
+    assert saved["pending_end_zone_interception"]["play_type"] == "hail_mary"
+    save_path.write_text(json.dumps(saved))
+
+    loaded = load_game(str(save_path))[0]
+    assert loaded._pending_end_zone_interception["play_seconds_range"] == HAIL_MARY_SECONDS
+    calls: list = []
+    with patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)):
+        loaded.apply_end_zone_interception_return_decision(
+            loaded._last_play_outcome, attempt_return=False,
+        )
+    assert calls == [HAIL_MARY_SECONDS]
+    assert loaded.state.time_remaining == pytest.approx(5.0 - 10 / 60)
+
+
+def test_legacy_save_keeps_scrimmage_timing_for_direct_play(tmp_path: Path) -> None:
+    """FLOW-032: legacy scrimmage saves still resolve with scrimmage timing."""
+    game, result = decision_game()
+    with patch("paydirt.game_engine.resolve_play", return_value=result):
+        game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    save_path = tmp_path / "legacy-direct.json"
+    save_game(game, str(save_path))
+    saved = json.loads(save_path.read_text())
+    del saved["pending_end_zone_interception"]["play_seconds_range"]
+    save_path.write_text(json.dumps(saved))
+
+    loaded = load_game(str(save_path))[0]
+    assert loaded._pending_end_zone_interception["play_seconds_range"] == SCRIMMAGE_SECONDS
+    calls: list = []
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")),
+        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+    ):
+        loaded.apply_end_zone_interception_return_decision(
+            loaded._last_play_outcome, attempt_return=True,
+        )
+    assert calls == [SCRIMMAGE_SECONDS]
