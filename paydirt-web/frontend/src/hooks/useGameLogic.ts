@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { API_BASE } from '../../config';
+import { derivePlayLogTeams } from '../utils/gameFlowLogic';
 
 const BLACK_DIE = [1, 1, 2, 2, 3, 3];
 const WHITE_DIE = [0, 1, 2, 3, 4, 5];
@@ -55,6 +56,8 @@ export function useGameLogic(
     yardsToGo,
     ballPosition,
     playerOffense,
+    possession,
+    humanIsHome,
     updateGameState,
     addToPlayLog,
     setIsKickoff,
@@ -111,6 +114,12 @@ export function useGameLogic(
         
         const offDice = localDiceResult?.offenseRoll;
         const defDice = localDiceResult?.defenseRoll;
+        const logTeams = derivePlayLogTeams({
+          possession: data.game_state.possession,
+          homeTeam,
+          awayTeam,
+          humanIsHome: data.game_state.human_is_home ?? humanIsHome,
+        });
         
         addToPlayLog({
           quarter: data.game_state.quarter,
@@ -123,7 +132,8 @@ export function useGameLogic(
           defenseTeam: receivingTeam,
           homeTeamAbbrev: homeTeam?.short_name || 'HOME',
           awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
-          playerTeam: playerOffense ? kickingTeam : receivingTeam,
+          playerTeam: logTeams.playerTeam,
+          humanIsHome: data.game_state.human_is_home ?? humanIsHome,
           offensePlay: 'KO',
           defensePlay: 'KR',
           offenseDice: offDice ? {
@@ -152,7 +162,7 @@ export function useGameLogic(
     } finally {
       setLocalExecuting(false);
     }
-  }, [gameId, homeTeam, awayTeam, playerOffense, addToPlayLog, localDiceResult, setIsKickoff, setGamePhase, setLocalDiceResult, setLocalExecuting, setLocalIsRolling, setLocalLastResult, updateGameState]);
+  }, [gameId, homeTeam, awayTeam, humanIsHome, addToPlayLog, localDiceResult, setIsKickoff, setGamePhase, setLocalDiceResult, setLocalExecuting, setLocalIsRolling, setLocalLastResult, updateGameState]);
 
   const handlePenaltyDecision = useCallback(async (acceptPenalty: boolean, penaltyIndex: number = 0) => {
     setLocalShowPenaltyChoice(false);
@@ -277,14 +287,7 @@ export function useGameLogic(
           total: defDice.red + defDice.green
         } : null;
         
-        const offenseTeam = playerOffense 
-          ? (homeTeam?.short_name || 'HOME') 
-          : (awayTeam?.short_name || 'AWAY');
-        const defenseTeam = playerOffense 
-          ? (awayTeam?.short_name || 'AWAY') 
-          : (homeTeam?.short_name || 'HOME');
-        const homeAbbrev = homeTeam?.short_name || 'HOME';
-        const awayAbbrev = awayTeam?.short_name || 'AWAY';
+        const logTeams = derivePlayLogTeams({ possession, homeTeam, awayTeam, humanIsHome });
         const scoreChange = data.result.touchdown || data.result.safety
           ? `SCORE! ${data.game_state.home_score}-${data.game_state.away_score}`
           : null;
@@ -296,11 +299,14 @@ export function useGameLogic(
           yardsToGo: prePlayYardsToGo,
           ballPosition: prePlayBallPosition,
           lineOfScrimmage: prePlayBallPosition,
-          offenseTeam,
-          defenseTeam,
-          homeTeamAbbrev: homeAbbrev,
-          awayTeamAbbrev: awayAbbrev,
-          playerTeam: playerOffense ? offenseTeam : defenseTeam,
+          offenseTeam: logTeams.offenseTeam,
+          defenseTeam: logTeams.defenseTeam,
+          homeTeamAbbrev: logTeams.homeTeamAbbrev,
+          awayTeamAbbrev: logTeams.awayTeamAbbrev,
+          playerTeam: logTeams.playerTeam,
+          humanIsHome,
+          possession: logTeams.possession,
+          possessionSemantics: logTeams.possessionSemantics,
           offensePlay: play,
           defensePlay: cpuPlayValue,
           offenseDice,
@@ -320,7 +326,7 @@ export function useGameLogic(
     } finally {
       setLocalExecuting(false);
     }
-  }, [gameId, down, yardsToGo, ballPosition, homeTeam, awayTeam, playerOffense, addToPlayLog, localDiceResult, setLocalDiceResult, setLocalExecuting, setLocalIsRolling, setLocalLastResult, setLocalPendingPenaltyData, setLocalShowPenaltyChoice, updateGameState]);
+  }, [gameId, down, yardsToGo, ballPosition, homeTeam, awayTeam, possession, humanIsHome, addToPlayLog, localDiceResult, setLocalDiceResult, setLocalExecuting, setLocalIsRolling, setLocalLastResult, setLocalPendingPenaltyData, setLocalShowPenaltyChoice, updateGameState]);
 
   return {
     executePlay,

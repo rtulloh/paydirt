@@ -39,6 +39,54 @@ export function deriveKickoffTeams(possessionAfterKickoff, homeTeam, awayTeam) {
 }
 
 /**
+ * Derive play-log team labels from the engine-owned possession flag.
+ *
+ * ``playerOffense`` only says whether the human has the ball on this snap. It
+ * cannot identify the teams: an away human on offense must still be labelled
+ * AWAY, not HOME. Possession is the common fact in every game state.
+ */
+export function derivePlayLogTeams({ possession, homeTeam, awayTeam, humanIsHome }) {
+  const homeAbbrev = homeTeam?.short_name || 'HOME';
+  const awayAbbrev = awayTeam?.short_name || 'AWAY';
+  const homeHasBall = possession === 'home';
+
+  return {
+    offenseTeam: homeHasBall ? homeAbbrev : awayAbbrev,
+    defenseTeam: homeHasBall ? awayAbbrev : homeAbbrev,
+    playerTeam: humanIsHome ? homeAbbrev : awayAbbrev,
+    homeTeamAbbrev: homeAbbrev,
+    awayTeamAbbrev: awayAbbrev,
+    possession: homeHasBall ? 'home' : 'away',
+    // Marks the possession field as pre-play. Older entries recorded post-play
+    // possession, so the renderer must not reinterpret them.
+    possessionSemantics: 'preplay',
+  };
+}
+
+/**
+ * Resolve the display teams for an existing play-log entry.
+ *
+ * Only entries explicitly written with pre-play possession carry enough
+ * information to re-derive identity. Older entries stored post-play possession,
+ * so re-deriving them would reverse interceptions, lost fumbles and turnovers
+ * on downs; those keep their recorded teams. Returns null for legacy entries.
+ */
+export function derivePlayLogDisplayTeams(entry) {
+  if (entry?.possessionSemantics !== 'preplay') return null;
+  const homeAbbrev = entry.homeTeamAbbrev || 'HOME';
+  const awayAbbrev = entry.awayTeamAbbrev || 'AWAY';
+  const homeHasBall = entry.possession === 'home';
+  const playerTeam = entry.humanIsHome === undefined
+    ? entry.playerTeam
+    : (entry.humanIsHome ? homeAbbrev : awayAbbrev);
+  return {
+    offenseTeam: homeHasBall ? homeAbbrev : awayAbbrev,
+    defenseTeam: homeHasBall ? awayAbbrev : homeAbbrev,
+    playerTeam: playerTeam || entry.playerTeam || '',
+  };
+}
+
+/**
  * Verify that after a scoring play, the game state is correct.
  * Returns an array of issues found.
  */

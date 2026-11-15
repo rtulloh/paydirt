@@ -46,6 +46,11 @@ minutes and seconds: **Q2 0:41** means 41 seconds remaining in the second quarte
 New scrimmage-play entries show the clock at the start of the play, alongside
 the starting down and field position. Older saved entries retain their recorded
 clock values; their display also uses minutes and seconds.
+Team names come from possession, so the home/away labels are correct whether you
+play at home or away; your team always keeps the same play-log color. Entries
+written by 1.10.6 and later record the pre-play possession explicitly. Older
+saved games keep their recorded teams and colors unchanged, so an interception
+or lost fumble from an older save still shows the team that ran the play.
 
 ![Kickoff and Scoreboard](images/kickoff-and-scoreboard.png)
 

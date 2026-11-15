@@ -163,6 +163,20 @@ describe('Replay Functionality', () => {
     expect(state.playerOffense).toBe(false)
   })
 
+  it('keeps a legacy play-log entry byte-for-byte through save and load', async () => {
+    const legacyEntry = {
+      quarter: 3, timeRemaining: 480, down: 2, yardsToGo: 7,
+      offenseTeam: 'MCT', defenseTeam: 'HBI', homeTeamAbbrev: 'MCT', awayTeamAbbrev: 'HBI',
+      playerTeam: 'HBI', humanIsHome: true, possession: 'away',
+      offensePlay: '5', defensePlay: 'A', description: 'Intercepted.',
+    }
+    useGameStore.setState({ playLog: [legacyEntry] })
+    await useGameStore.getState().saveReplay()
+    const saved = JSON.parse(global.localStorage.getItem('paydirt_replay'))
+    expect(saved.replay_data.play_history).toEqual([legacyEntry])
+    expect(saved.replay_data.play_history[0].possessionSemantics).toBeUndefined()
+  })
+
   it('should clear replay', () => {
     const store = useGameStore.getState()
     store.clearReplay()

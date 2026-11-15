@@ -15,7 +15,7 @@ import GameControls from './GameControls.tsx';
 import Halftime from './Halftime';
 import ChartViewer from './ChartViewer';
 import { useGameStore } from '../../store/gameStore';
-import { checkPendingPat, deriveKickoffTeams } from '../../utils/gameFlowLogic';
+import { checkPendingPat, deriveKickoffTeams, derivePlayLogTeams } from '../../utils/gameFlowLogic';
 import { API_BASE } from '../../config';
 
 const BLACK_DIE = [1, 1, 2, 2, 3, 3];
@@ -334,6 +334,12 @@ const PlayingPhase = () => {
         const { kickingTeam, receivingTeam } = deriveKickoffTeams(
           data.game_state.possession, homeTeam, awayTeam
         );
+        const logTeams = derivePlayLogTeams({
+          possession: data.game_state.possession,
+          homeTeam,
+          awayTeam,
+          humanIsHome: data.game_state.human_is_home ?? humanIsHome,
+        });
         
         addToPlayLog({
           quarter: data.game_state.quarter,
@@ -345,9 +351,10 @@ const PlayingPhase = () => {
           fieldPosition: '35 yard line', // Kickoff spot
           offenseTeam: kickingTeam,
           defenseTeam: receivingTeam,
-          homeTeamAbbrev: homeTeam?.short_name || 'HOME',
-          awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
-          playerTeam: playerOffense ? kickingTeam : receivingTeam,
+          homeTeamAbbrev: logTeams.homeTeamAbbrev,
+          awayTeamAbbrev: logTeams.awayTeamAbbrev,
+          playerTeam: logTeams.playerTeam,
+          humanIsHome: data.game_state.human_is_home ?? humanIsHome,
           offensePlay: 'KO',
           defensePlay: 'KR',
           offenseDice: offDice ? {
@@ -474,7 +481,13 @@ const PlayingPhase = () => {
           description: data.description,
         });
 
-        // Add PAT to play log
+        // Add PAT to play log. The try belongs to the scoring team; the POST
+        // response has already armed the kickoff (and may flip possession at
+        // halftime), so capture the try's sides from the pre-try control state.
+        const homeAbbrev = homeTeam?.short_name || 'HOME';
+        const awayAbbrev = awayTeam?.short_name || 'AWAY';
+        const scoringIsHome = playerOffense ? humanIsHome : !humanIsHome;
+        const scoringTeam = scoringIsHome ? homeAbbrev : awayAbbrev;
         addToPlayLog({
           quarter: data.game_state.quarter,
           timeRemaining: data.game_state.time_remaining,
@@ -483,17 +496,12 @@ const PlayingPhase = () => {
           ballPosition: null,
           lineOfScrimmage: null,
           fieldPosition: null,
-          offenseTeam: playerOffense
-            ? (homeTeam?.short_name || 'HOME')
-            : (awayTeam?.short_name || 'AWAY'),
-          defenseTeam: playerOffense
-            ? (awayTeam?.short_name || 'AWAY')
-            : (homeTeam?.short_name || 'HOME'),
-          homeTeamAbbrev: homeTeam?.short_name || 'HOME',
-          awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
-          playerTeam: playerOffense
-            ? (homeTeam?.short_name || 'HOME')
-            : (awayTeam?.short_name || 'AWAY'),
+          offenseTeam: scoringTeam,
+          defenseTeam: scoringIsHome ? awayAbbrev : homeAbbrev,
+          homeTeamAbbrev: homeAbbrev,
+          awayTeamAbbrev: awayAbbrev,
+          playerTeam: humanIsHome ? homeAbbrev : awayAbbrev,
+          humanIsHome,
           offensePlay: 'XP',
           defensePlay: '-',
           description: data.description,
@@ -733,14 +741,7 @@ const PlayingPhase = () => {
         }
         
         // Log the play with BEFORE state for down/distance, AFTER state for position
-        const offenseTeam = playerOffense 
-          ? (homeTeam?.short_name || 'HOME') 
-          : (awayTeam?.short_name || 'AWAY');
-        const defenseTeam = playerOffense 
-          ? (awayTeam?.short_name || 'AWAY') 
-          : (homeTeam?.short_name || 'HOME');
-        const homeAbbrev = homeTeam?.short_name || 'HOME';
-        const awayAbbrev = awayTeam?.short_name || 'AWAY';
+        const logTeams = derivePlayLogTeams({ possession, homeTeam, awayTeam, humanIsHome });
         const scoreChange = data.result.touchdown || data.result.safety
           ? `SCORE! ${data.game_state.home_score}-${data.game_state.away_score}`
           : null;
@@ -754,11 +755,11 @@ const PlayingPhase = () => {
           ballPosition: prePlayBallPosition,
           lineOfScrimmage: prePlayBallPosition,
           fieldPosition: prePlayFieldPosition, // Pre-calculated by backend
-          offenseTeam,
-          defenseTeam,
-          homeTeamAbbrev: homeAbbrev,
-          awayTeamAbbrev: awayAbbrev,
-          playerTeam: playerOffense ? offenseTeam : defenseTeam,
+          offenseTeam: logTeams.offenseTeam,
+          defenseTeam: logTeams.defenseTeam,
+          homeTeamAbbrev: logTeams.homeTeamAbbrev,
+          awayTeamAbbrev: logTeams.awayTeamAbbrev,
+          playerTeam: logTeams.playerTeam,
           offensePlay: playerOffense ? play : cpuPlayValue,
           defensePlay: playerOffense ? cpuPlayValue : play,
           offenseDice,
@@ -773,7 +774,8 @@ const PlayingPhase = () => {
           turnover: data.result.turnover,
           bigPlayFactor: data.result.big_play_factor,
           humanIsHome,
-          possession: data.game_state.possession,
+          possession: logTeams.possession,
+          possessionSemantics: logTeams.possessionSemantics,
         });
         
         // After a touchdown, show PAT choice instead of transitioning to kickoff
@@ -850,12 +852,7 @@ const PlayingPhase = () => {
     const cpuPlayOverride = cpuPlay;  // 'F' or 'P'
     
     // Log the CPU's decision
-    const offenseTeam = playerOffense 
-      ? (homeTeam?.short_name || 'HOME') 
-      : (awayTeam?.short_name || 'AWAY');
-    const defenseTeam = playerOffense 
-      ? (awayTeam?.short_name || 'AWAY') 
-      : (homeTeam?.short_name || 'HOME');
+    const logTeams = derivePlayLogTeams({ possession, homeTeam, awayTeam, humanIsHome });
     
     addToPlayLog({
       quarter,
@@ -864,11 +861,14 @@ const PlayingPhase = () => {
       yardsToGo: yardsToGo,
       ballPosition,
       fieldPosition,
-      offenseTeam,
-      defenseTeam,
-      homeTeamAbbrev: homeTeam?.short_name || 'HOME',
-      awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
-      playerTeam: playerOffense ? offenseTeam : defenseTeam,
+      offenseTeam: logTeams.offenseTeam,
+      defenseTeam: logTeams.defenseTeam,
+      homeTeamAbbrev: logTeams.homeTeamAbbrev,
+      awayTeamAbbrev: logTeams.awayTeamAbbrev,
+      playerTeam: logTeams.playerTeam,
+      humanIsHome,
+      possession: logTeams.possession,
+      possessionSemantics: logTeams.possessionSemantics,
       offensePlay: cpuPlay,
       defensePlay: 'A',  // Default, doesn't matter for punt/FG
       description: `4th & ${yardsToGo} - CPU ${decision.decision === 'punt' ? 'punts' : 'kicks FG'}`,
@@ -937,15 +937,20 @@ const PlayingPhase = () => {
           return;
         }
         
-        // Log the penalty decision play
-        const offenseTeam = playerOffense 
-          ? (homeTeam?.short_name || 'HOME') 
-          : (awayTeam?.short_name || 'AWAY');
-        const defenseTeam = playerOffense 
-          ? (awayTeam?.short_name || 'AWAY') 
-          : (homeTeam?.short_name || 'HOME');
-        const homeAbbrev = homeTeam?.short_name || 'HOME';
-        const awayAbbrev = awayTeam?.short_name || 'AWAY';
+        // Log the penalty decision play. On a scrimmage snap the entry belongs
+        // to the team that snapped, so use the still-pre-snap store possession
+        // (a pending decision does not call updateGameState). A kickoff-return
+        // penalty instead treats the receiving team as the offense, which is
+        // the engine's post-kick possession. Label from possession rather than
+        // from who called the play.
+        const penaltyIsKickoff = data.result?.play_type === 'kickoff';
+        const penaltyPossession = penaltyIsKickoff ? data.game_state.possession : possession;
+        const logTeams = derivePlayLogTeams({
+          possession: penaltyPossession,
+          homeTeam,
+          awayTeam,
+          humanIsHome,
+        });
         
         addToPlayLog({
           quarter: data.game_state.quarter,
@@ -956,17 +961,19 @@ const PlayingPhase = () => {
           lineOfScrimmage: data.game_state.ball_position,
           fieldPosition: data.game_state.field_position,
           newFieldPosition: data.game_state.field_position,
-          offenseTeam,
-          defenseTeam,
-          homeTeamAbbrev: homeAbbrev,
-          awayTeamAbbrev: awayAbbrev,
-          playerTeam: playerOffense ? offenseTeam : defenseTeam,
+          offenseTeam: logTeams.offenseTeam,
+          defenseTeam: logTeams.defenseTeam,
+          homeTeamAbbrev: logTeams.homeTeamAbbrev,
+          awayTeamAbbrev: logTeams.awayTeamAbbrev,
+          playerTeam: logTeams.playerTeam,
+          humanIsHome,
+          possession: logTeams.possession,
+          possessionSemantics: logTeams.possessionSemantics,
           offensePlay: 'PENALTY',
           defensePlay: 'CPU',
           description: data.result.description || 'Penalty decision',
           yards: data.result.yards || 0,
           newPosition: data.game_state.ball_position,
-          possession: data.game_state.possession,
         });
       } else {
         const error = await res.text();
@@ -990,6 +997,7 @@ const PlayingPhase = () => {
       ballPosition,
       fieldPosition,
       playerOffense,
+      possession,
     };
     setLocalExecuting(true);
     try {
@@ -1010,12 +1018,12 @@ const PlayingPhase = () => {
       setLocalLastResult(data.result);
       setLocalDiceResult(null);
 
-      const offenseTeam = prePlay.playerOffense
-        ? (homeTeam?.short_name || 'HOME')
-        : (awayTeam?.short_name || 'AWAY');
-      const defenseTeam = prePlay.playerOffense
-        ? (awayTeam?.short_name || 'AWAY')
-        : (homeTeam?.short_name || 'HOME');
+      const logTeams = derivePlayLogTeams({
+        possession: prePlay.possession,
+        homeTeam,
+        awayTeam,
+        humanIsHome,
+      });
       addToPlayLog({
         quarter: prePlay.quarter,
         timeRemaining: prePlay.timeRemaining,
@@ -1024,11 +1032,11 @@ const PlayingPhase = () => {
         ballPosition: prePlay.ballPosition,
         lineOfScrimmage: prePlay.ballPosition,
         fieldPosition: prePlay.fieldPosition,
-        offenseTeam,
-        defenseTeam,
-        homeTeamAbbrev: homeTeam?.short_name || 'HOME',
-        awayTeamAbbrev: awayTeam?.short_name || 'AWAY',
-        playerTeam: prePlay.playerOffense ? offenseTeam : defenseTeam,
+        offenseTeam: logTeams.offenseTeam,
+        defenseTeam: logTeams.defenseTeam,
+        homeTeamAbbrev: logTeams.homeTeamAbbrev,
+        awayTeamAbbrev: logTeams.awayTeamAbbrev,
+        playerTeam: logTeams.playerTeam,
         offensePlay: 'INT',
         defensePlay: 'RET',
         description: data.result.description,
@@ -1038,7 +1046,8 @@ const PlayingPhase = () => {
         newFieldPosition: data.game_state.field_position,
         turnover: data.result.turnover,
         humanIsHome,
-        possession: data.game_state.possession,
+        possession: logTeams.possession,
+        possessionSemantics: logTeams.possessionSemantics,
       });
     } catch (err) {
       console.error('Failed to handle end-zone interception decision:', err);

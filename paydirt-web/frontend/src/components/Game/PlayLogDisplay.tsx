@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { derivePlayLogDisplayTeams } from '../../utils/gameFlowLogic';
 
 interface DiceRoll {
   black?: number;
@@ -35,6 +36,9 @@ interface PlayLogEntry {
   scoreChange?: string;
   humanIsHome?: boolean;
   possession?: 'home' | 'away';
+  // 'preplay' marks entries written by the possession-aware format. Older
+  // entries can hold post-play possession, so they must not be reinterpreted.
+  possessionSemantics?: 'preplay';
 }
 
 function formatFieldPosition(pos: number | undefined, possession: 'home' | 'away' | undefined, homeAbbrev: string, awayAbbrev: string, humanIsHome: boolean | undefined): string {
@@ -104,7 +108,13 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
     <div className="w-full">
       <div className="text-white font-bold mb-2">PLAY LOG</div>
       <div ref={scrollRef} className="h-64 overflow-y-auto border rounded p-2 space-y-1">
-        {plays && plays.length > 0 ? plays.map((play, index) => (
+        {plays && plays.length > 0 ? plays.map((play, index) => {
+          const teams = derivePlayLogDisplayTeams(play) as
+            { offenseTeam: string; defenseTeam: string; playerTeam: string } | null;
+          const offenseTeam = teams?.offenseTeam ?? play.offenseTeam;
+          const defenseTeam = teams?.defenseTeam ?? play.defenseTeam;
+          const playerTeam = teams?.playerTeam ?? play.playerTeam;
+          return (
           <div
             key={index}
             onClick={() => onPlayClick?.(play)}
@@ -116,7 +126,7 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
                 {formatClock(play.timeRemaining)}
               </div>
               <div className="text-xs text-gray-400">
-                {play.offenseTeam} vs {play.defenseTeam}
+                {offenseTeam} vs {defenseTeam}
               </div>
             </div>
             
@@ -128,10 +138,10 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
             </div>
             
             <div className="flex gap-2 text-xs text-gray-300 mb-1">
-              <span className={play.playerTeam === play.offenseTeam ? "text-green-400" : "text-red-400"}>
+              <span className={playerTeam === offenseTeam ? "text-green-400" : "text-red-400"}>
                 OFF: {play.offensePlay}
               </span>
-              <span className={play.playerTeam === play.offenseTeam ? "text-red-400" : "text-green-400"}>
+              <span className={playerTeam === offenseTeam ? "text-red-400" : "text-green-400"}>
                 DEF: {play.defensePlay}
               </span>
             </div>
@@ -168,7 +178,8 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
               </div>
             )}
           </div>
-        )) : (
+          );
+        }) : (
           <div className="text-gray-400 text-sm">No plays yet</div>
         )}
       </div>

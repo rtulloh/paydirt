@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { KickoffPlay } from '../components/Game/KickoffPlay'
 import { useGameStore } from '../store/gameStore.js'
-import { deriveKickoffTeams } from '../utils/gameFlowLogic.js'
+import { deriveKickoffTeams, derivePlayLogTeams } from '../utils/gameFlowLogic.js'
 
 global.fetch = vi.fn()
 
@@ -507,6 +507,26 @@ describe('Kickoff handler team label derivation', () => {
     expect(kickingTeam).toBe("SF '83");
   })
 })
+
+describe('Play-log team label derivation', () => {
+  const homeTeam = { short_name: "SF '83" };
+  const awayTeam = { short_name: "DEN '83" };
+
+  it.each([
+    ['home', true, "SF '83", "DEN '83", "SF '83"],
+    ['home', false, "SF '83", "DEN '83", "DEN '83"],
+    ['away', false, "DEN '83", "SF '83", "DEN '83"],
+    ['away', true, "DEN '83", "SF '83", "SF '83"],
+  ])('possession=%s humanIsHome=%s labels the actual teams', (possession, humanIsHome, offense, defense, player) => {
+    expect(derivePlayLogTeams({ possession, homeTeam, awayTeam, humanIsHome })).toMatchObject({
+      offenseTeam: offense,
+      defenseTeam: defense,
+      playerTeam: player,
+      possession,
+      possessionSemantics: 'preplay',
+    });
+  });
+});
 
 describe('FG → kickoff full flow (with mocked API)', () => {
   beforeEach(() => {
