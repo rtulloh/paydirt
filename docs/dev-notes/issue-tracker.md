@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-228 issues: 76 open, 76 resolved, 76 closed.
+228 issues: 75 open, 76 resolved, 77 closed.
 
-## Open (76)
+## Open (75)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -28,7 +28,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-035](issues/AI/AI-035.md) | Medium | v1.10.6 | Q4 two-score timeout spends a timeout without starting hurry-up or a sideline plan | created 2026-11-15 | AI-020 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | — | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
-| [AUD-016](issues/AUD/AUD-016.md) | Medium | — | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
 | [AUD-017](issues/AUD/AUD-017.md) | Medium | — | Duplicate FIRST DOWN on offensive fumble recoveries | created 2026-10-19 | — |
 | [AUD-018](issues/AUD/AUD-018.md) | Medium | — | CLI display parses description strings to decide output (first-down marker check, reroll-dice and touchback… | created 2026-10-19 | TRACE-007 |
 | [AUD-020](issues/AUD/AUD-020.md) | Medium | — | Punt-penalty choice menu for the kicking team lists two decline options | created 2026-10-19 | AI-015, AI-016, TRACE-004 |
@@ -177,7 +176,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (76)
+## Closed (77)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -221,6 +220,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-011](issues/AI/AI-011.md) | Medium | — | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18, closed 2026-11-02 | — |
 | [AI-028](issues/AI/AI-028.md) | Medium | — | Fourth-down urgency falls through to conservative punting in own territory when multiple scores are needed | created 2026-11-06, resolved 2026-11-07, closed 2026-11-07 | AI-003, AI-006 |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | — | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19, closed 2026-11-02 | — |
+| [AUD-016](issues/AUD/AUD-016.md) | Medium | v1.10.6 | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19, resolved 2026-11-15, closed 2026-11-15 | — |
 | [AUD-026](issues/AUD/AUD-026.md) | Medium | — | Kickoff penalty preview invents a touchdown by applying kick-penalty yards to the prior scoring spot | created 2026-11-02, resolved 2026-11-02, closed 2026-11-02 | — |
 | [DATA-004](issues/DATA/DATA-004.md) | Medium | — | Aggregate chart generation compresses distinct teams into coarse defensive templates | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
 | [DATA-005](issues/DATA/DATA-005.md) | Medium | — | Empirical chart generation discards numeric out-of-bounds markers | created 2026-11-01, resolved 2026-11-01, closed 2026-11-01 | — |
