@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -120,7 +121,7 @@ def regression_steps(
                 name="clean_core",
                 cwd=".",
                 argv=[python, "scripts/run_full_regression.py", "--internal-clean-core"],
-                note="Tracked-files-only checkout unit run (ignored data cannot mask CI failures).",
+                note="Candidate work-tree checkout unit run; tracked files only, so ignored data cannot mask CI failures.",
             )
         )
     return steps
@@ -298,32 +299,93 @@ def _preflight(root: Path) -> list[str]:
     return problems
 
 
-def _clean_core_checkout(root: Path) -> int:
-    """Run core unit tests from a tracked-files-only export of HEAD."""
-    import tarfile
+def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Run a read-only git command in ``root`` and fail loudly on error."""
+    return subprocess.run(["git", *args], cwd=root, capture_output=True, check=False)
+
+
+def export_candidate_tree(root: Path, target: Path) -> None:
+    """Copy the candidate work tree to ``target``: tracked files only.
+
+    The export is the code under review, so it includes uncommitted work: staged
+    and unstaged edits to tracked files, tracked deletions, and new
+    untracked-but-not-ignored files such as a just-written test. Ignored files
+    are excluded, so local chart material and saved games cannot mask a CI
+    failure, and submodules are skipped because their contents are not tracked
+    by this repository's tree.
+
+    Args:
+        root: Git work tree to export.
+        target: Empty directory to receive the tracked files.
+
+    Raises:
+        RuntimeError: ``root`` is not the top of a Git work tree.
+    """
+    top = _git(root, "rev-parse", "--show-toplevel")
+    if top.returncode != 0:
+        raise RuntimeError(
+            f"clean checkout requires a git work tree: {root} "
+            f"({top.stderr.decode(errors='replace').strip()})"
+        )
+    if Path(top.stdout.decode().strip()).resolve() != root.resolve():
+        raise RuntimeError(f"{root} is not the top of a git work tree")
+
+    listed = _git(root, "ls-files", "-z", "--stage")
+    if listed.returncode != 0:
+        raise RuntimeError(listed.stderr.decode(errors="replace").strip())
+    paths: list[Path] = []
+    for entry in listed.stdout.split(b"\0"):
+        if not entry:
+            continue
+        metadata, _, raw_path = entry.partition(b"\t")
+        mode = metadata.split(b" ")[0].decode()
+        if mode == "160000":  # submodule commit, not a file in this tree
+            continue
+        paths.append(Path(raw_path.decode()))
+
+    # New work is part of the candidate too, but ignored local data is not.
+    untracked = _git(root, "ls-files", "-z", "--others", "--exclude-standard")
+    if untracked.returncode != 0:
+        raise RuntimeError(untracked.stderr.decode(errors="replace").strip())
+    paths.extend(Path(raw.decode()) for raw in untracked.stdout.split(b"\0") if raw)
+
+    target.mkdir(parents=True, exist_ok=True)
+    for relative in paths:
+        source = root / relative
+        if not source.exists() and not source.is_symlink():
+            continue  # staged or tracked file deleted in the candidate work tree
+        destination = target / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_symlink():
+            destination.symlink_to(os.readlink(source))
+        else:
+            shutil.copy2(source, destination)
+
+
+def clean_core_checkout(root: Path) -> int:
+    """Run core unit tests from a tracked-files-only export of the candidate.
+
+    The export comes from the work tree, not ``HEAD``, so running the script
+    before committing still validates the changes under review. The caller is
+    told when the export contains uncommitted tracked changes.
+    """
     import tempfile
 
     with tempfile.TemporaryDirectory(prefix="paydirt-clean-") as tmp:
-        target = Path(tmp)
-        archive = subprocess.run(
-            ["git", "archive", "--format=tar", "HEAD"],
-            cwd=root,
-            capture_output=True,
-            check=False,
+        checkout = Path(tmp) / "checkout"
+        export_candidate_tree(root, checkout)
+        dirty = _git(root, "status", "--porcelain", "--untracked-files=no")
+        if dirty.returncode != 0:
+            print(dirty.stderr.decode(errors="replace"), file=sys.stderr)
+            return dirty.returncode
+        summary = dirty.stdout.decode().strip()
+        print(
+            "clean checkout: exporting the candidate work tree"
+            + (f" with uncommitted tracked changes:\n{summary}" if summary else " at HEAD")
         )
-        if archive.returncode != 0:
-            print(archive.stderr.decode(errors="replace"), file=sys.stderr)
-            return archive.returncode
-        tar_path = target / "head.tar"
-        tar_path.write_bytes(archive.stdout)
-        with tarfile.open(tar_path) as bundle:
-            if hasattr(tarfile, "data_filter"):
-                bundle.extractall(target / "checkout", filter="data")
-            else:  # Python 3.10 lacks extraction filters.
-                bundle.extractall(target / "checkout")
         return subprocess.run(
             [sys.executable, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short"],
-            cwd=target / "checkout",
+            cwd=checkout,
             check=False,
         ).returncode
 
@@ -336,7 +398,7 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
     parser.add_argument("--skip", help="Comma-separated step names to skip.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failing step.")
     parser.add_argument("--clean-checkout", action="store_true",
-                        help="Also run core unit tests from a tracked-files-only HEAD export.")
+                        help="Also run core unit tests from a tracked-files-only export of the candidate work tree.")
     parser.add_argument("--timeout", type=float, default=0,
                         help="Per-step timeout in seconds (0 disables; disables live streaming when set).")
     parser.add_argument("--log-dir", type=Path, help="Override the ignored .ai-audits/full-regression log root.")
@@ -345,7 +407,7 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
 
     base_root = (root or ROOT).resolve()
     if args.internal_clean_core:
-        return _clean_core_checkout(base_root)
+        return clean_core_checkout(base_root)
 
     steps = regression_steps(base_root, include_clean_checkout=args.clean_checkout)
     by_name = {step.name: step for step in steps}

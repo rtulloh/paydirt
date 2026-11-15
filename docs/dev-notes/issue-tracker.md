@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-226 issues: 79 open, 71 resolved, 76 closed.
+226 issues: 78 open, 72 resolved, 76 closed.
 
-## Open (79)
+## Open (78)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -69,7 +69,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-013](issues/VAL/VAL-013.md) | Medium | — | Web tests exercise duplicate or unmounted paths instead of live behavior | created 2026-10-30 | — |
 | [VAL-019](issues/VAL/VAL-019.md) | Medium | — | Historical season runner implemented; official qualification verification remains | created 2026-11-06 | DATA-018, AI-025, AI-026 |
 | [VAL-020](issues/VAL/VAL-020.md) | Medium | — | Core coverage suite takes nearly an hour after chart regression expansion | created 2026-11-07 | VAL-026 |
-| [VAL-025](issues/VAL/VAL-025.md) | Medium | v1.10.6 | Full-regression clean checkout exports HEAD, so it can validate stale code instead of the candidate | created 2026-11-13 | — |
 | [AI-021](issues/AI/AI-021.md) | Low | — | Mixed RNG sources (Medium early-down tilt, fourth-down OOB, coffin corner use global dice RNG) | created 2026-10-19 | AUD-021 |
 | [AI-026](issues/AI/AI-026.md) | Low | — | Hard ordinary selection ignores own defensive and opponent chart strengths | created 2026-11-06 | AI-019, AI-025, VAL-019 |
 | [AUD-019](issues/AUD/AUD-019.md) | Low | — | Defense-recovery fumble text prints raw internal positions | created 2026-10-19 | — |
@@ -96,7 +95,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (71)
+## Resolved (awaiting play-test confirmation) (72)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -167,6 +166,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [FLOW-032](issues/FLOW/FLOW-032.md) | Medium | v1.10.6 | Hail Mary end-zone interception deferral uses ordinary scrimmage timing | created 2026-11-14, resolved 2026-11-14 | — |
 | [TRACE-006](issues/TRACE/TRACE-006.md) | Medium | — | Compact punt-return penalty output lacked its reroll and enforcement details | created 2026-10-17, resolved 2026-10-17 | TRACE-004 |
 | [VAL-012](issues/VAL/VAL-012.md) | Medium | — | Invalid API play calls silently execute a different play | created 2026-10-30, resolved 2026-10-30 | — |
+| [VAL-025](issues/VAL/VAL-025.md) | Medium | v1.10.6 | Full-regression clean checkout exports HEAD, so it can validate stale code instead of the candidate | created 2026-11-13, resolved 2026-11-14 | — |
 | [VAL-026](issues/VAL/VAL-026.md) | Medium | — | Local pre-push coverage should measure changed modules, not the whole package | created 2026-11-14, resolved 2026-11-14 | VAL-020 |
 | [VAL-027](issues/VAL/VAL-027.md) | Medium | v1.10.6 | Released chart gate should fail only on chart integrity, not on engine evolution | created 2026-11-14, resolved 2026-11-14 | — |
 | [AUD-005](issues/AUD/AUD-005.md) | Low | — | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |

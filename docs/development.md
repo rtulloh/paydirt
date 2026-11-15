@@ -63,7 +63,7 @@ Do not treat the quick unit-test command above as full release validation.
 - `tests/run_all_games.py`: standalone game integration checks.
 - [Historical season runner](historical-seasons.md): selected-year actual calendar, simulated or historical-replay postseason, generated-chart support and optional local reproductions.
 - `tests/run_ai_audit.py`: full generated Hard-vs-Hard seasons and legacy balanced comparisons; review [play-selection/balance evidence](ai-auditing.md), not just final scores.
-- Clean tracked-files-only unit tests, so ignored local data cannot mask CI failures.
+- Clean tracked-files-only unit tests from the candidate work tree, so ignored local data cannot mask CI failures: `python3 scripts/run_full_regression.py --clean-checkout` exports the files on disk, including uncommitted tracked edits and new non-ignored files, and refuses to run outside a Git work tree.
 
 The historical calendar audit works with generated charts and does not require developer charts.
 The separate local integration games and optional sixteen 1983 reproductions need private data;

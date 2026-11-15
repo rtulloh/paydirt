@@ -7,14 +7,19 @@ private chart material and never touch the ignored local audit storage.
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
+
+import pytest
 
 from paydirt.chart_release_gate import required_regression_commands
 from scripts.run_full_regression import (
     StepResult,
     browser_environment,
     choose_ports,
+    clean_core_checkout,
     conditional_skip_reason,
+    export_candidate_tree,
     main,
     regression_steps,
     summarize,
@@ -166,3 +171,86 @@ def test_only_and_skip_filter_steps(tmp_path: Path, capsys) -> None:
 def test_unknown_step_name_is_a_usage_error(tmp_path: Path, capsys) -> None:
     assert main(["--dry-run", "--only", "not_a_step"], root=tmp_path) == 2
     assert "not_a_step" in capsys.readouterr().err
+
+def _make_candidate_repo(tmp_path: Path) -> Path:
+    """Create a scratch repository with one committed tracked file."""
+    repo = tmp_path / "repo"
+    (repo / "pkg").mkdir(parents=True)
+    (repo / "pkg" / "__init__.py").write_text("VALUE = 'head'\n")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_value.py").write_text(
+        "from pkg import VALUE\n\n\ndef test_value() -> None:\n    assert VALUE == 'head'\n"
+    )
+    git = ["git", "-c", "user.email=test@example.com", "-c", "user.name=Test"]
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run([*git, "add", "-A"], cwd=repo, check=True)
+    subprocess.run([*git, "commit", "-qm", "initial"], cwd=repo, check=True)
+    return repo
+
+
+def test_candidate_export_includes_uncommitted_tracked_change(tmp_path: Path) -> None:
+    """The clean checkout must validate the candidate, not the last commit."""
+    repo = _make_candidate_repo(tmp_path)
+    (repo / "pkg" / "__init__.py").write_text("VALUE = 'candidate'\n")
+    target = tmp_path / "export"
+
+    export_candidate_tree(repo, target)
+
+    assert (target / "pkg" / "__init__.py").read_text() == "VALUE = 'candidate'\n"
+
+
+def test_candidate_export_includes_staged_change(tmp_path: Path) -> None:
+    repo = _make_candidate_repo(tmp_path)
+    (repo / "pkg" / "__init__.py").write_text("VALUE = 'staged'\n")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    (repo / "pkg" / "__init__.py").write_text("VALUE = 'staged and edited'\n")
+    target = tmp_path / "export"
+
+    export_candidate_tree(repo, target)
+
+    assert (target / "pkg" / "__init__.py").read_text() == "VALUE = 'staged and edited'\n"
+
+
+def test_candidate_export_includes_new_untracked_file_but_excludes_ignored(tmp_path: Path) -> None:
+    repo = _make_candidate_repo(tmp_path)
+    (repo / ".gitignore").write_text("ignored.txt\n")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-qm", "ignore"],
+        cwd=repo, check=True,
+    )
+    (repo / "new_test.py").write_text("VALUE = 'new work'\n")
+    (repo / "ignored.txt").write_text("local only\n")
+    target = tmp_path / "export"
+
+    export_candidate_tree(repo, target)
+
+    assert (target / "new_test.py").read_text() == "VALUE = 'new work'\n"
+    assert not (target / "ignored.txt").exists()
+
+
+def test_candidate_export_omits_a_tracked_file_deleted_in_the_worktree(tmp_path: Path) -> None:
+    repo = _make_candidate_repo(tmp_path)
+    (repo / "tests" / "test_value.py").unlink()
+    target = tmp_path / "export"
+
+    export_candidate_tree(repo, target)
+
+    assert not (target / "tests" / "test_value.py").exists()
+
+
+def test_candidate_export_refuses_a_directory_outside_git(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError):
+        export_candidate_tree(tmp_path, tmp_path / "export")
+
+
+def test_clean_core_checkout_runs_the_candidate_test_suite(tmp_path: Path) -> None:
+    """An uncommitted fix must flip the clean unit run from red to green."""
+    repo = _make_candidate_repo(tmp_path)
+    (repo / "tests" / "test_value.py").write_text(
+        "from pkg import VALUE\n\n\ndef test_value() -> None:\n    assert VALUE == 'candidate'\n"
+    )
+    assert clean_core_checkout(repo) == 1
+
+    (repo / "pkg" / "__init__.py").write_text("VALUE = 'candidate'\n")
+    assert clean_core_checkout(repo) == 0

@@ -108,7 +108,11 @@ change affects the local pre-push route only.
 `python3 scripts/run_full_regression.py` runs every command above in order,
 streams per-step logs, and prints a compact pass/fail summary. `--list` shows the
 plan without running; `--only`/`--skip` narrow it; `--clean-checkout` adds the
-tracked-files-only unit run. Logs and `summary.json`/`summary.md` are written to
+unit run from a tracked-files-only export of the candidate work tree. The export
+is taken from the files on disk, so uncommitted tracked edits and new
+untracked-but-not-ignored files are tested, while ignored local data is excluded;
+the step prints the uncommitted files it exported. Logs and
+`summary.json`/`summary.md` are written to
 ignored `.ai-audits/full-regression/`. Prefer asking the owner to run this script
 and share the summary instead of running the suite step by step in an agent
 session; it covers the twelve commands above plus the private 1983 AI audit when
@@ -249,7 +253,8 @@ or skip guards that rely on private/historical seasons (including 1972 or 1983).
 Do not skip unit regressions to hide missing private data. Keep private-chart
 integration checks in standalone local scripts outside unit-test collection.
 Before pushing, also verify unit tests in a clean, tracked-files-only checkout
-so ignored local data cannot mask CI failures.
+so ignored local data cannot mask CI failures. `scripts/run_full_regression.py
+--clean-checkout` does this from the candidate work tree, not from `HEAD`.
 All 224 regular-season games and all nine playoff games must pass before pushing;
 a partial run is not sufficient, and no playoff game may finish tied.
 
