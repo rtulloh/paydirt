@@ -51,6 +51,40 @@ the non-penalty continuation: if the kick draws a foul, the engine still offers
 the offended team its normal choice among the kick result and the penalty, and
 that later choice is not folded back into the pre-kick probability.
 
+## Last-Possession Fourth Downs
+
+When the CPU trails in the fourth quarter with at most two minutes left, an
+ordinary fourth-down decision that cannot take a tying or winning field goal is
+reviewed again against the clock. Inside 30 seconds, the shared policy selects a
+clock-stopping conversion plan rather than the ordinary short-yardage mixture.
+That window is the engine's longest no-huddle snap (25 seconds) plus a quick
+next snap (5 seconds), not a claim that every 31-second situation is safe.
+
+The plan still begins only after victory formation, end-of-half field goals,
+Hail Mary attempts, and makeable tie/win kicks have had priority. It uses the
+remaining score deficit, season two-point rules, field position, and distance to
+convert:
+
+- Outside the goal line, short and medium distances favor Short Pass, Screen,
+  T/E Short/Long and Medium Pass. Long yardage favors Medium Pass, Long Pass
+  and T/E Short/Long, because a short completion plus the sideline cost is
+  unlikely to convert.
+- Near the goal line, a short run remains available only when a touchdown ties
+  or wins. If another score is still required, the plan prefers a pass that can
+  stop the clock.
+- No-huddle is always requested in this branch, and every pass receives the
+  sideline designation. The plan does not assume a following offensive timeout:
+  the auto-game caller does not request one, so the designation's five-yard cost
+  is the clock safeguard that all callers actually honor. A caller that also
+  requests a timeout (the web backend) still pays the five yards, while the
+  engine correctly skips the now-redundant timeout. A designation cannot save a
+  sack or a fumble; those results can still end the period.
+
+This is a bounded coaching rule, not a win-probability model. It does not
+change dice odds, resolve a hypothetical defense, or guarantee a successful
+conversion. The audit mode is `Last-Possession 4th Down`, distinct from an
+ordinary `4th Down` call.
+
 ## Decision Precision
 
 Difficulty is not only aggression. Easy and Medium may misjudge a marginal

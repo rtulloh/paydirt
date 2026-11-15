@@ -118,6 +118,14 @@ and punt options. Its offensive and defensive timeout policies request the same
 engine procedure used by human controls. The engine applies a request only when
 the resolved play needs it; a naturally stopped clock does not spend a timeout.
 
+In a fourth-quarter last-possession situation, the shared AI reviews a trailing
+fourth-down conversion against the clock after the existing end-of-half,
+Hail Mary, and makeable tie/win kick priorities. Inside 30 seconds it requests
+no-huddle and a sideline designation on the selected pass. It does not rely on a
+following offensive timeout because the auto-game caller never requests one.
+The designation stops a completion or an incomplete pass, but not a sack or a
+fumble; those results can still exhaust the period.
+
 A timeout is charged only when the core engine applies it. Requests with no timeouts remaining must not
 shorten a play for free. Incomplete passes, existing clock stops, possession changes, penalties,
 and completed spike procedures can make a requested timeout unnecessary or inapplicable.

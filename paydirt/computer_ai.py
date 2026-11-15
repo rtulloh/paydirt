@@ -31,6 +31,8 @@ FG_EASY_PROBABILITY = 0.70
 FG_KICK_PROBABILITY = 0.35
 FG_LONG_PROBABILITY = 0.15
 FG_LAST_SECONDS_PROBABILITY = 0.10
+FOURTH_DOWN_NO_HUDDLE_SECONDS = 25.0
+FOURTH_DOWN_NEXT_SNAP_SECONDS = 5.0
 
 
 @dataclass(frozen=True)
@@ -359,6 +361,19 @@ class ComputerAI:
             play, punt_short_drop, punt_coffin_corner_yards = self._fourth_down_decision(
                 game, ytg, field_pos, time_left, quarter, score_diff
             )
+            last_possession_plan = None
+            if (quarter == 4 and score_diff < 0 and time_left <= 2.0
+                    and play not in (PlayType.PUNT, PlayType.FIELD_GOAL)):
+                last_possession_plan = self._last_possession_fourth_down_plan(
+                    game, ytg, field_pos, time_left, score_diff
+                )
+            if last_possession_plan is not None:
+                play, use_oob, use_no_huddle = last_possession_plan
+                self.last_mode = "Last-Possession 4th Down"
+                return (
+                    play, use_oob, use_no_huddle, punt_short_drop,
+                    punt_coffin_corner_yards, False,
+                )
             if self._needs_hurry_up(time_left, quarter, score_diff):
                 use_no_huddle = True
                 if play in [
@@ -742,6 +757,100 @@ class ComputerAI:
                 False,
                 0,
             )
+
+    def _last_possession_fourth_down_plan(
+        self,
+        game: PaydirtGameEngine,
+        ytg: int,
+        field_pos: int,
+        time_left: float,
+        score_diff: int,
+    ) -> tuple[PlayType, bool, bool] | None:
+        """Choose a clock-aware conversion when little time remains.
+
+        A no-huddle run can consume 15-25 seconds, so a trailing offense with
+        roughly half a minute left must stop the clock on a conversion attempt.
+        This is a bounded coaching rule, not a win-probability model. It applies
+        only when the ordinary fourth-down decision already chose to go for it,
+        preserving the existing end-of-half, Hail Mary and kick priorities.
+
+        Args:
+            game: Engine supplying the possession team's state and rules.
+            ytg: Yards needed for a first down or touchdown.
+            field_pos: Ball position, where 100 is the opponent's goal line.
+            time_left: Minutes remaining in the quarter.
+            score_diff: Possession team's score minus its opponent's score.
+
+        Returns:
+            ``(play, out_of_bounds, no_huddle)`` for a clock-critical attempt,
+            or ``None`` when ordinary fourth-down selection should continue.
+        """
+        if score_diff >= 0 or time_left > 2.0:
+            return None
+        deficit = -score_diff
+        points_per_score = 8 if game.season_rules.two_point_conversion else 7
+        scores_needed = max(1, ceil(deficit / points_per_score))
+        seconds_left = time_left * 60
+        # Reserve the engine's longest no-huddle play plus a quick next snap.
+        # Above this window, ordinary hurry-up selection remains varied.
+        if seconds_left > FOURTH_DOWN_NO_HUDDLE_SECONDS + FOURTH_DOWN_NEXT_SNAP_SECONDS:
+            return None
+
+        if field_pos >= 95:
+            # A short touchdown can win the game outright. Otherwise only a
+            # pass stops the clock here: the auto-game caller does not request
+            # an offensive timeout, so a banked timeout cannot save a run.
+            touchdown_is_enough = deficit <= points_per_score
+            if touchdown_is_enough:
+                candidates = [
+                    PlayType.LINE_PLUNGE,
+                    PlayType.OFF_TACKLE,
+                    PlayType.SHORT_PASS,
+                    PlayType.TE_SHORT_LONG,
+                    PlayType.SCREEN,
+                ]
+            else:
+                candidates = [
+                    PlayType.SHORT_PASS,
+                    PlayType.SHORT_PASS,
+                    PlayType.TE_SHORT_LONG,
+                    PlayType.SCREEN,
+                    PlayType.MEDIUM_PASS,
+                ]
+        elif ytg <= 3:
+            candidates = [
+                PlayType.SHORT_PASS,
+                PlayType.SHORT_PASS,
+                PlayType.SCREEN,
+                PlayType.TE_SHORT_LONG,
+                PlayType.MEDIUM_PASS,
+            ]
+        elif ytg <= 10:
+            candidates = [
+                PlayType.SHORT_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.TE_SHORT_LONG,
+                PlayType.SCREEN,
+            ]
+        else:
+            candidates = [
+                PlayType.MEDIUM_PASS,
+                PlayType.MEDIUM_PASS,
+                PlayType.LONG_PASS,
+                PlayType.LONG_PASS,
+                PlayType.TE_SHORT_LONG,
+            ]
+        if scores_needed > 1 and field_pos < 95:
+            candidates.extend([PlayType.MEDIUM_PASS, PlayType.LONG_PASS])
+
+        play = random.choice(candidates)
+        use_no_huddle = True
+        # This path cannot assume a timeout follows the play, so a pass always
+        # needs the sideline designation; its five-yard cost is the only way to
+        # preserve a later snap for a completion in this window.
+        use_oob = is_passing_play(play)
+        return play, use_oob, use_no_huddle
 
     def _goal_line_offense(self, ytg) -> PlayType:
         """Play calling inside the 5 yard line."""

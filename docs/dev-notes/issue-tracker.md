@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-227 issues: 76 open, 75 resolved, 76 closed.
+228 issues: 77 open, 75 resolved, 76 closed.
 
-## Open (76)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -21,11 +21,12 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [AI-016](issues/AI/AI-016.md) | Medium | — | CPU never acts on kickoff-chart penalties | created 2026-10-19 | AUD-020, RULE-013 |
 | [AI-018](issues/AI/AI-018.md) | Medium | — | Penalty valuation compares nominal yards and ignores half-the-distance and first-down equivalence (AI-001 family) | created 2026-10-19 | AI-001, AI-002, AI-031, AI-032 |
 | [AI-019](issues/AI/AI-019.md) | Medium | — | Hard defense bypasses situational policies and can repeat one model formation on every late down | created 2026-10-19 | AI-025, AI-026, AI-023, DATA-012 |
-| [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | — |
+| [AI-020](issues/AI/AI-020.md) | Medium | — | Ordinary-down selection never sets no-huddle even when _needs_hurry_up is true (the special-situation branches do) | created 2026-10-19 | AI-035 |
 | [AI-023](issues/AI/AI-023.md) | Medium | — | select_defense uses the raw quarter so overtime never triggers prevent or two-minute defense | created 2026-10-27 | AI-019 |
-| [AI-029](issues/AI/AI-029.md) | Medium | — | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
+| [AI-029](issues/AI/AI-029.md) | Medium | v1.10.6 | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06 | AI-003, AI-006 |
 | [AI-030](issues/AI/AI-030.md) | Medium | — | Isolate chart calibration policy effects from Hard season outcomes | created 2026-11-07 | DATA-018, DATA-042 |
 | [AI-032](issues/AI/AI-032.md) | Medium | — | Fourth-down stop with a positive short gain still accepts an offensive foul instead of taking the ball | created 2026-11-13 | AI-002, AI-018 |
+| [AI-035](issues/AI/AI-035.md) | Medium | v1.10.6 | Q4 two-score timeout spends a timeout without starting hurry-up or a sideline plan | created 2026-11-15 | AI-020 |
 | [AUD-014](issues/AUD/AUD-014.md) | Medium | — | Penalty-choice preview was reported to show penalty yardage instead of the retained play when the defense chart… | created 2026-10-19 | RULE-003 |
 | [AUD-015](issues/AUD/AUD-015.md) | Medium | — | Web double FIRST DOWN (result_formatter still passes is_first_down while the frontend renders its own banner) | created 2026-10-19 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | — | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19 | — |
