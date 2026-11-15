@@ -318,7 +318,11 @@ def run_historical_reproductions() -> int:
 
 
 def run_generated_regression() -> int:
-    """Run local integration using private, untracked 1983 data."""
+    """Run the explicit legacy private-chart integration regression.
+
+    Routine public-season validation uses ``run_full_season.py YEAR`` instead;
+    this opt-in path exists only for local private escrow data kept outside Git.
+    """
     try:
         teams = [path.name for path in SEASON_DIR.iterdir() if path.is_dir() and (path / "team.yaml").is_file()]
         build_schedule(teams)  # Validate availability before running any games.
@@ -378,15 +382,6 @@ def main(argv: list[str] | None = None) -> int:
         if not unchanged:
             report["errors"].append("Historical source or selected charts changed during execution")
             report["passed"] = False
-        # Preserve all private-chart regressions when their original local data exists.
-        # Missing optional developer charts never blocks the source-only season audit.
-        required = {"Raiders", "Eagles", "Chiefs", "Giants", "Rams", "49ers", "Browns", "Buccaneers"}
-        if args.year == 1983 and all((SEASON_DIR / team / "offense.csv").is_file() for team in required):
-            status = run_historical_reproductions()
-            report["developer_reproductions"] = "passed" if status == 0 else "failed"
-            if status:
-                report["passed"] = False
-                report["errors"].append("Local historical reproduction regression failed")
         output.parent.mkdir(parents=True, exist_ok=True)
         with output.open("x") as stream:
             json.dump(report, stream, indent=2, sort_keys=True, allow_nan=False)

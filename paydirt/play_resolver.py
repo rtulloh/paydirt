@@ -8,6 +8,7 @@ from __future__ import annotations
 import random
 import re
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import product
@@ -1269,6 +1270,54 @@ class FieldGoalResult:
     offsetting: bool = False
     offended_team: str = ""  # "offense" or "defense"
     reroll_log: list[str] = field(default_factory=list)
+
+
+def field_goal_make_probability(
+    special_teams_chart, distance_to_goal: int
+) -> float | None:
+    """
+    Return the dice-weighted chance a chart converts this kick.
+
+    Mirrors ``resolve_field_goal_with_penalties``: rows are weighted by the
+    chart dice distribution (216 face combinations, not one vote per row),
+    penalty rows force a reroll and are renormalized away, and blocks, snap
+    fumbles, no-good and empty cells count as misses. The chart compares its
+    yardage with the distance from the line of scrimmage to the goal line, not
+    the statistical kick length.
+
+    Args:
+        special_teams_chart: The kicking team's special teams chart.
+        distance_to_goal: Yards from the line of scrimmage to the goal line.
+
+    Returns:
+        Probability in [0, 1], or None when the chart carries no resolvable
+        field-goal rows (mock or incomplete charts). Never rolls dice.
+    """
+    field_goal = getattr(special_teams_chart, "field_goal", None)
+    if not isinstance(field_goal, Mapping):
+        return None
+
+    usable_weight = 0
+    made_weight = 0
+    for roll, weight in chart_roll_weights().items():
+        if not weight:
+            continue
+        cell = (field_goal.get(roll) or "").strip()
+        if cell and _is_penalty_result(cell)[0]:
+            continue
+        usable_weight += weight
+        if not cell:
+            continue
+        try:
+            chart_yards = int(cell)
+        except ValueError:
+            continue
+        if chart_yards >= distance_to_goal:
+            made_weight += weight
+
+    if not usable_weight:
+        return None
+    return made_weight / usable_weight
 
 
 def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:

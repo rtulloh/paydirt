@@ -3,9 +3,9 @@
 
 The command list is not duplicated here: the canonical steps come from
 ``paydirt.chart_release_gate.required_regression_commands(released_charts=True)``,
-which is the same list the release gate audits. This script adds the local-only
-Private 1983 AI comparison, isolated E2E ports, streamed per-step logs and a
-one-screen pass/fail summary suitable for pasting into a session.
+which is the same list the release gate audits. This script adds isolated E2E
+ports, streamed per-step logs and a one-screen pass/fail summary suitable for
+pasting into a session. Routine steps use public 1983/2024/2026 data only.
 
 Typical use::
 
@@ -50,7 +50,6 @@ DEFAULT_FRONTEND_PORT = 5173
 ISOLATED_BACKEND_BASE = 18000
 ISOLATED_FRONTEND_BASE = 15173
 TAIL_LINES = 15
-ESCROW_PRIVATE_CHARTS = Path(".ai-audits/escrow/1983-private-charts")
 
 
 @dataclass(frozen=True)
@@ -92,29 +91,6 @@ def regression_steps(
                  note=step.note)
             for step in steps
         ]
-    escrow = (root / ESCROW_PRIVATE_CHARTS).resolve()
-    steps.append(
-        Step(
-            name="private_ai",
-            cwd=".",
-            argv=[
-                python,
-                "tests/run_ai_audit.py",
-                "--season",
-                str(escrow),
-                "--weeks",
-                "16",
-                "--seed",
-                "8306",
-                "--compare-balanced",
-                "--output",
-                str((root / ".ai-audits/private-season.json").resolve()),
-                "--csv",
-                str((root / ".ai-audits/private-season.csv").resolve()),
-            ],
-            note="Private 1983 charts; skipped when the escrow directory is absent.",
-        )
-    )
     if include_clean_checkout:
         steps.append(
             Step(
@@ -129,10 +105,6 @@ def regression_steps(
 
 def conditional_skip_reason(step: Step, root: Path) -> str | None:
     """Return why ``step`` cannot run here, or ``None`` when it is applicable."""
-    if step.name == "private_ai":
-        escrow = (root / ESCROW_PRIVATE_CHARTS).resolve()
-        if not escrow.is_dir():
-            return f"private charts absent ({escrow}); not applicable to generated-chart audits"
     return None
 
 

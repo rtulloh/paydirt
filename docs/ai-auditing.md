@@ -52,16 +52,10 @@ balanced comparison repeats the whole schedule, doubling those totals.
 production Medium team-strength adjustment, so the two are not synonymous.
 
 The 1983 command uses the public generated set at `seasons/1983`, matching the
-packaged season. Original private comparison charts remain escrowed outside
-season discovery and are exercised by the separate integration/reproduction runners.
-To retain the original private comparison audit after escrowing the old charts,
-use its absolute directory as `--season`:
-
-```bash
-python3 tests/run_ai_audit.py --season "$PWD/.ai-audits/escrow/1983-private-charts" --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/private-season.json --csv .ai-audits/private-season.csv
-```
-
-For another locally installed season, substitute its year. Never add private charts to tests
+packaged season. The equivalent 2024 command uses the public set at
+`seasons/2024`. Routine regression does not use private escrow charts; the
+public seasons and the 2026 sample teams are sufficient. For another locally
+installed public season, substitute its year. Never add private charts to tests
 or commit the resulting local reports. `.ai-audits/` is ignored. Reports omit
 chart cells, roster names, absolute chart paths, dice details, and narrative logs.
 Aggregate diagnostics derived from private data still belong locally.
@@ -152,7 +146,8 @@ A failed game does not stop later independent games. Inspect the matchup/seed
 locally to diagnose errors; do not publish private chart logs.
 
 The [mandatory full-regression checklist](../AGENTS.md#required-full-regression-before-any-push)
-includes public and local full-season play-selection/balance audits **and human
-review of the evidence**, in addition to unit/browser and existing postseason
-checks. Unit regressions use only synthetic/public fixtures and assert policy
-contracts; real-season concentration remains observational.
+includes the 2026 and 1983 public-season play-selection/balance audits **and
+human review of the evidence**, in addition to unit/browser and existing
+postseason checks. Routine regression does not run private escrow charts. Unit
+regressions use only synthetic/public fixtures and assert policy contracts;
+real-season concentration remains observational.

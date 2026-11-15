@@ -52,21 +52,10 @@ def test_released_chart_steps_use_released_audit() -> None:
     assert "audit_generated_charts.py" not in " ".join(argv)
 
 
-def test_private_ai_step_targets_escrow_charts(tmp_path: Path) -> None:
+def test_routine_regression_uses_only_public_charts(tmp_path: Path) -> None:
     steps = {step.name: step for step in regression_steps(tmp_path)}
-    argv = steps["private_ai"].argv
-    assert argv[argv.index("--season") + 1] == str(
-        tmp_path / ".ai-audits" / "escrow" / "1983-private-charts"
-    )
-    assert str(tmp_path / ".ai-audits" / "private-season.json") in argv
-
-
-def test_private_ai_skips_without_escrow_charts(tmp_path: Path) -> None:
-    steps = {step.name: step for step in regression_steps(tmp_path)}
-    assert conditional_skip_reason(steps["private_ai"], tmp_path) is not None
-    escrow = tmp_path / ".ai-audits" / "escrow" / "1983-private-charts"
-    escrow.mkdir(parents=True)
-    assert conditional_skip_reason(steps["private_ai"], tmp_path) is None
+    assert "private_ai" not in steps
+    assert all("1983-private-charts" not in " ".join(step.argv) for step in steps.values())
     assert conditional_skip_reason(steps["core"], tmp_path) is None
 
 
@@ -123,12 +112,12 @@ def test_summarize_reports_failure_and_nonzero_exit() -> None:
 def test_summarize_all_skipped_is_success() -> None:
     results = [
         StepResult(name="core", status="pass", seconds=0.1, returncode=0),
-        StepResult(name="private_ai", status="skip", seconds=0.0, reason="charts absent"),
+        StepResult(name="browser", status="skip", seconds=0.0, reason="browser absent"),
     ]
     text, code = summarize(results)
     assert code == 0
     assert "SKIP" in text
-    assert "charts absent" in text
+    assert "browser absent" in text
 
 
 def test_dry_run_plans_without_executing(tmp_path: Path, capsys) -> None:
@@ -145,7 +134,7 @@ def test_list_mode_names_every_step(tmp_path: Path, capsys) -> None:
     output = capsys.readouterr().out
     for name in required_regression_commands(released_charts=True):
         assert name in output
-    assert "private_ai" in output
+    assert "private_ai" not in output
 
 
 def test_clean_checkout_step_is_opt_in() -> None:

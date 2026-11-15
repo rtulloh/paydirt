@@ -110,7 +110,10 @@ def test_victory_plan_finishes_through_real_engine(endgame: Callable[..., tuple]
     (2, False, -7, 80, 10.1, False),
     (4, False, 0, 80, 6, True), (4, False, -1, 80, 6, True),
     (4, False, -2, 80, 6, True), (4, False, -3, 70, 6, True),
-    (4, False, -3, 69, 6, False),
+    # AI-024: the boundary is the kicking chart, not a fixed 47-yard rule.
+    # These public charts reach 31 yards to goal with the same mass as 30, so
+    # one yard no longer flips a tying kick into a conversion attempt.
+    (4, False, -3, 69, 6, True),
     (4, False, -4, 80, 6, False), (4, False, -7, 80, 6, False),
     (5, True, 0, 80, 6, True), (5, True, -3, 80, 6, True),
     (5, True, -7, 80, 6, False),

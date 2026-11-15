@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import random
+from dataclasses import dataclass
 from math import ceil, exp
 from typing import Optional
 
@@ -23,6 +24,51 @@ from .game_state import PenaltySituation
 from .offense_strategy import OffensiveStrategy
 from .play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType, ResultType, is_passing_play
 from .season_rules import AIBehavior
+
+# Field-goal coaching bands. The make probability itself always comes from the
+# kicking team's chart (engine-owned); these are decision thresholds, not odds.
+FG_EASY_PROBABILITY = 0.70
+FG_KICK_PROBABILITY = 0.35
+FG_LONG_PROBABILITY = 0.15
+FG_LAST_SECONDS_PROBABILITY = 0.10
+
+
+@dataclass(frozen=True)
+class CoachingPrecision:
+    """Bounded decision imprecision for lower coaching difficulties.
+
+    Difficulty is not only aggression: Easy and Medium should also be less
+    reliable on marginal calls. ``fg_optimism`` is a systematic misjudgement of
+    the kicking chart, and ``band_confusion`` is a chance to misread a call
+    that sits within ``band_margin`` of a decision threshold. Neither changes
+    dice odds, play legality, or an endgame rule.
+    """
+
+    name: str = "precise"
+    fg_optimism: float = 0.0
+    band_confusion: float = 0.0
+    band_margin: float = 0.06
+
+
+HARD_PRECISION = CoachingPrecision(name="hard")
+MEDIUM_PRECISION = CoachingPrecision(name="medium", fg_optimism=0.02, band_confusion=0.12)
+EASY_PRECISION = CoachingPrecision(name="easy", fg_optimism=0.05, band_confusion=0.30)
+FG_BAND_EDGES = (FG_LONG_PROBABILITY, FG_KICK_PROBABILITY, FG_EASY_PROBABILITY)
+
+
+def _uncharted_field_goal_probability(statistical_distance: int) -> float:
+    """Legacy-shaped estimate for charts that carry no field-goal data.
+
+    Mock or partial charts cannot be evaluated by the engine. Real charts never
+    reach this fallback, so a coaching call always reflects an actual attempt.
+    """
+    if statistical_distance <= 35:
+        return 0.85
+    if statistical_distance <= 47:
+        return 0.60
+    if statistical_distance <= 55:
+        return 0.35
+    return 0.05
 
 
 def _defensive_situation_rank(situation: PenaltySituation) -> tuple[int, int, int]:
@@ -140,6 +186,7 @@ class ComputerAI:
         aggression: float = 0.5,
         use_analysis: bool = False,
         ai_behavior: AIBehavior | None = None,
+        precision: CoachingPrecision | None = None,
     ):
         """
         Initialize AI with aggression level.
@@ -149,10 +196,13 @@ class ComputerAI:
             use_analysis: If True, use chart analysis and opponent modeling
             ai_behavior: Era-specific AI behavior settings (pace-of-play, strategic
                 decisions). Defaults to conservative era settings if not provided.
+            precision: Difficulty imprecision profile. None (the balanced auto
+                baseline and direct constructions) keeps every call exact.
         """
         self.aggression = aggression
         self.use_analysis = use_analysis
         self.ai_behavior = ai_behavior if ai_behavior is not None else AIBehavior()
+        self.precision = precision
         self.last_mode = None  # Track current mode for logging
 
         # For opponent modeling (shared across offense and defense)
@@ -160,6 +210,7 @@ class ComputerAI:
         self.team_analyzer = None  # Set when we know our team
         self._defense_rng: random.Random | None = None  # Lazy, separate from engine dice.
         self._offense_rng: random.Random | None = None
+        self._decision_rng: random.Random | None = None  # Coaching noise, never dice.
         self.offense_strategy: OffensiveStrategy | None = None
         self.use_team_strength = False  # Explicit Medium capability, enabled by the factory.
         self._run_bias = 0.0
@@ -285,13 +336,13 @@ class ComputerAI:
             self.last_mode = "Victory Formation"
             return (PlayType.QB_KNEEL, False, False, False, 0, False)
 
-        # End-of-half FG: kick on any down when time is about to expire
-        # and the ball is in easy/makeable FG range (inside opponent 30).
-        # Exception: in Q4, don't kick if trailing by more than 3 (need TD instead)
+        # End-of-half FG: kick on any down when time is about to expire and the
+        # kicking team's own chart makes the kick worthwhile. Exception: in Q4,
+        # don't kick if trailing by more than 3 (need TD instead).
         if quarter in [2, 4] and time_left <= 10 / 60:
-            fg_distance = 100 - field_pos + 17  # End zone + holder
             fg_helps = (quarter == 2) or (score_diff >= -3)  # Q2 always; Q4 only if FG ties/wins
-            if fg_distance <= 47 and fg_helps:  # Makeable range (~65%+ in 1983)
+            if (self._field_goal_probability(game, 100 - field_pos)
+                    >= FG_LAST_SECONDS_PROBABILITY and fg_helps):
                 self.last_mode = "End-of-Half FG"
                 use_no_huddle = True
                 return (PlayType.FIELD_GOAL, use_oob, use_no_huddle, False, 0, False)
@@ -428,48 +479,98 @@ class ComputerAI:
         scoring_seconds = current_drive_seconds + 80 * (scores_needed - 1)
         return minutes_left * 60 <= scoring_seconds + defensive_stop_seconds + 10
 
+    def _effective_aggression(self) -> float:
+        """Era fourth-down baseline shifted by difficulty, clamped to [0, 1]."""
+        era = getattr(getattr(self.ai_behavior, "strategic", None),
+                      "fourth_down_aggression", 0.5)
+        if not isinstance(era, (int, float)):
+            era = 0.5
+        return min(1.0, max(0.0, era + (self.aggression - 0.5)))
+
+    def _decision_random(self) -> random.Random:
+        """Coaching-noise stream, seeded lazily and never the gameplay dice."""
+        if self._decision_rng is None:
+            self._decision_rng = random.Random(f"paydirt-decision:{random.getstate()!r}")
+        return self._decision_rng
+
+    def _perceived_field_goal_probability(self, probability: float) -> float:
+        """Adjust the chart's make chance for the difficulty's imprecision.
+
+        Lower difficulties overrate their kicker and may misread a borderline
+        case. The adjustment is bounded: it can move a call at most one band
+        and never touches obvious kicks or punts.
+
+        Args:
+            probability: The engine's chart-weighted make probability.
+
+        Returns:
+            The probability this coach acts on, in [0, 1].
+        """
+        profile = self.precision
+        if profile is None:
+            return probability
+        seen = min(1.0, max(0.0, probability + profile.fg_optimism))
+        if profile.band_confusion <= 0:
+            return seen
+        near_edge = any(abs(seen - edge) <= profile.band_margin for edge in FG_BAND_EDGES)
+        rng = self._decision_random()
+        if near_edge and rng.random() < profile.band_confusion:
+            seen = min(1.0, max(
+                0.0, seen + rng.uniform(-profile.band_margin, profile.band_margin)))
+        return seen
+
+    def _field_goal_probability(self, game, distance_to_goal: int) -> float:
+        """Chart-weighted make chance, with an explicit uncharted fallback.
+
+        Args:
+            game: Engine supplying the possession team's chart, or None.
+            distance_to_goal: Yards from the line of scrimmage to the goal line.
+
+        Returns:
+            Probability in [0, 1]. Chartless callers get the documented legacy
+            curve rather than an implicit 1983 tier.
+        """
+        query = getattr(game, "field_goal_make_probability", None)
+        if callable(query):
+            probability = query(distance_to_goal)
+            if probability is not None:
+                return probability
+        return _uncharted_field_goal_probability(distance_to_goal + 17)
+
     def _fourth_down_decision(self, game, ytg, field_pos, time_left, quarter, score_diff) -> tuple:
         """
-        Decide what to do on 4th down using 1983 NFL decision patterns.
+        Decide what to do on fourth down from the kicking team's own chart.
 
-        Historical context (1983 NFL):
-        - Between opponent's 30-40: ~58% FG, ~30% punt, ~12% go for it
-        - FG accuracy: 40-49 yards ~65%, 50+ yards ~35%
-        - League average FG accuracy: ~71.5%
-        - Going for it was reserved for 4th-and-inches or desperation
-        - Coaches were significantly more conservative than modern era
+        The engine reports the dice-weighted chance that the possession team's
+        Field Goal column reaches the goal line from this spot, so a weak 1983
+        chart and a strong modern chart are not treated alike. The season
+        profile's ``fourth_down_aggression`` sets the era baseline and the
+        difficulty aggression shifts it.
 
         Returns: tuple of (PlayType, punt_short_drop: bool, punt_coffin_corner_yards: int)
         """
+        distance_to_goal = 100 - field_pos
+        p_make = self._field_goal_probability(game, distance_to_goal)
+        aggression = self._effective_aggression()
 
-        # Calculate field goal distance and range
-        # Ball on 30 = 47 yard FG, ball on 40 = 57 yard FG
-        fg_distance = 100 - field_pos + 17  # End zone + holder
+        # Bands are coaching preferences over the chart's actual make chance.
+        fg_easy = p_make >= FG_EASY_PROBABILITY       # routine kick
+        fg_makeable = p_make >= FG_KICK_PROBABILITY   # worth taking
+        fg_long = p_make >= FG_LONG_PROBABILITY       # aggressive attempt only
 
         # Determine punt options (default: normal punt)
         punt_short_drop = False
         punt_coffin_corner_yards = 0
 
         # Check for short-drop punt (inside own 5-yard line)
-        # Short-drop punt: small chance to use it
         # Conservative coaches more likely to use it
         if (field_pos <= 5) and (self.aggression < 0.3):
             punt_short_drop = True
 
-        # Check for coffin corner punt (in opponent's territory, late in half)
-        # Use coffin corner when: opponent has good field position, late in half/game
-        # Calculate opponent's starting field position if we punt normally
-        # (simplified - actual logic would use chart data)
-        # Late in half/game - use coffin corner to pin them deep
-        # More aggressive AI uses it more
-        # Subtract 15-20 yards to force out of bounds
-        if (field_pos >= 50) and ((quarter >= 2 and time_left < 5.0) and (self.aggression > 0.6 and random.random() < 0.3)):
+        # Coffin corner: pin a late opponent deep. More aggressive AI uses it more.
+        if (field_pos >= 50) and ((quarter >= 2 and time_left < 5.0)
+                                  and (self.aggression > 0.6 and random.random() < 0.3)):
             punt_coffin_corner_yards = random.choice([15, 18, 20])
-
-        # 1983-era field goal probability tiers
-        fg_easy = fg_distance <= 35  # ~80%+ make rate (chip shot)
-        fg_makeable = fg_distance <= 47  # ~65% make rate (inside 30)
-        fg_long = fg_distance <= 55  # ~35% make rate (30-40 yard line)
 
         # ============================================================
         # DESPERATION SITUATIONS (4th quarter, trailing, low time)
@@ -528,55 +629,47 @@ class ComputerAI:
                     )  # In opponent territory, be aggressive
 
         # ============================================================
-        # FIELD GOAL DECISIONS (1983 conservative approach)
+        # FIELD GOAL DECISIONS (season- and team-aware)
         # ============================================================
 
-        # Easy field goal (inside 20) - almost always kick
+        # Difficulty imprecision applies to ordinary judgement only. Endgame
+        # rules above (last-second kicks, urgent multi-score drives) stay sharp.
+        p_make = self._perceived_field_goal_probability(p_make)
+        fg_easy = p_make >= FG_EASY_PROBABILITY
+        fg_makeable = p_make >= FG_KICK_PROBABILITY
+        fg_long = p_make >= FG_LONG_PROBABILITY
+
+        # Routine kick - almost always take the points.
         if fg_easy:
             # Only go for it on 4th and inches inside the 5 with high aggression
-            if ytg <= 1 and self.aggression > 0.8 and field_pos >= 95:
+            if ytg <= 1 and aggression > 0.8 and field_pos >= 95:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
 
-        # Makeable field goal (inside 30, 47 yards or less)
-        # 1983: ~65% success rate, almost always kick
+        # Worth taking - kick unless a short conversion is attractive.
         if fg_makeable:
-            # 4th and 1 - moderately aggressive coaches go for it
-            if ytg <= 1 and self.aggression >= 0.5:
+            if ytg <= 1 and aggression >= 0.5:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
 
-        # Long field goal range (30-40 yard line, 47-57 yard kick)
-        # 1983 pattern: ~58% FG, ~30% punt, ~12% go for it
+        # Long but plausible - short yardage and aggressive coaches try it.
         if fg_long:
-            # 4th and 1 - go for it with moderate aggression
-            if ytg <= 1 and self.aggression >= 0.5:
+            if ytg <= 1 and aggression >= 0.5:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
-            # 4th and 2 - rare to go for it in 1983
-            if ytg <= 2 and self.aggression > 0.8:
+            if ytg <= 2 and aggression > 0.8:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
 
-            # Decision between FG and punt based on distance and aggression
-            # Closer to 30 (shorter FG) = more likely to kick
-            # Closer to 40 (longer FG) = more likely to punt if conservative
-            if fg_distance <= 50:
-                # 47-50 yard range - mostly kick FG
+            if aggression >= 0.7:
                 return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
-            else:
-                # 50-57 yard range - split between FG and punt
-                # Aggressive coaches try the long FG, conservative punt
-                if self.aggression >= 0.5:
-                    return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
-                else:
-                    return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
+            return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
         # ============================================================
-        # OUTSIDE FG RANGE (beyond opponent's 40)
+        # OUTSIDE PLAUSIBLE FG RANGE
         # ============================================================
 
         # Just outside FG range (around 40-45 yard line)
@@ -586,7 +679,7 @@ class ComputerAI:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with aggression
-            if ytg <= 2 and self.aggression > 0.6:
+            if ytg <= 2 and aggression > 0.6:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt - too far for FG, don't want to give up field position
@@ -599,15 +692,14 @@ class ComputerAI:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # 4th and 2 with high aggression only
-            if ytg <= 2 and self.aggression > 0.7:
+            if ytg <= 2 and aggression > 0.7:
                 go_play, _, _ = self._go_for_it_play(ytg)
                 return (go_play, punt_short_drop, punt_coffin_corner_yards)
             # Otherwise punt from midfield
             return (PlayType.PUNT, punt_short_drop, punt_coffin_corner_yards)
 
         # In own territory (inside own 45) - almost always punt
-        # 1983 coaches were very conservative here
-        if ytg <= 1 and self.aggression > 0.9:
+        if ytg <= 1 and aggression > 0.9:
             # Only go for it on 4th and inches with extreme aggression
             go_play, _, _ = self._go_for_it_play(ytg)
             return (go_play, punt_short_drop, punt_coffin_corner_yards)
@@ -1551,10 +1643,14 @@ def create_computer_ai(
     if difficulty not in ("easy", "medium", "hard"):
         difficulty = "medium"
     aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.7}[difficulty]
+    precision = {
+        "easy": EASY_PRECISION, "medium": MEDIUM_PRECISION, "hard": HARD_PRECISION,
+    }[difficulty]
     ai = ComputerAI(
         aggression=aggression,
         use_analysis=difficulty == "hard",
         ai_behavior=game.season_rules.ai_behavior,
+        precision=precision,
     )
     ai.use_team_strength = difficulty == "medium"
     ai.set_team(game.state.home_chart if cpu_is_home else game.state.away_chart)

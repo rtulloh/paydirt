@@ -158,6 +158,42 @@ overtime:
 Formats supported here are `sudden_death` and `modified_sudden_death`. A maximum of zero periods means unlimited.
 Use CLI `--playoff-game` to select playoff rather than regular-season overtime limits.
 
+### CPU Behavior
+
+An optional `ai_behavior.yaml` in the season directory tunes CPU pace and
+strategic choices for that era. If it is absent, era defaults are used; partial
+files are merged with the defaults. The fields are:
+
+```yaml
+two_minute_drill:
+  q2_hurry_when_trailing_by: 7
+  q4_any_deficit_minutes: 2.0
+  q4_deficit_9_minutes: 3.0
+  q4_deficit_4_minutes: 2.0
+  q4_always_minutes: 2.0
+  skip_when_leading_by: 14
+
+hurry_up:
+  q4_deficit_9_minutes: 3.0
+  q4_deficit_4_minutes: 2.0
+  q4_any_minutes: 2.0
+
+clock_killing:
+  q4_any_lead_minutes: 3.0
+  q4_big_lead_minutes: 2.0
+  clock_run_on_any_lead: false
+
+strategic:
+  spike_ball_chance: 0.10
+  oob_designation_aggression: 0.2
+  fourth_down_aggression: 0.5
+```
+
+`fourth_down_aggression` is the era baseline for ordinary fourth-down
+conservatism. The selected difficulty shifts it by −0.2 (Easy), 0 (Medium) or
++0.2 (Hard), clamped to `[0, 1]`. Field-goal attempts additionally use the
+kicking team's chart make probability; see [AI difficulty](ai-difficulty.md).
+
 ### Scaffolding Rules
 
 From a source checkout:

@@ -7,15 +7,73 @@ Medium is the default. Difficulty changes decisions and coaching, **not dice odd
 
 ## Difficulty Levels
 
-| Mode | Aggression | Main distinction |
-|------|------------|------------------|
-| Easy | 0.3 | Conservative CPU and CLI player coaching |
-| Medium | 0.5 | Balanced CPU with a coarse early-down run/pass strength adjustment |
-| Hard | 0.7 | Aggressive CPU, weighted individual-play chart analysis, recent-call variety, and opponent-tendency tracking |
+| Mode | Aggression | Precision | Main distinction |
+|------|------------|-----------|------------------|
+| Easy | 0.3 | Bounded, fallible | Conservative CPU and CLI player coaching |
+| Medium | 0.5 | Slightly fallible | Balanced CPU with a coarse early-down run/pass strength adjustment |
+| Hard | 0.7 | Exact | Aggressive CPU, weighted individual-play chart analysis, recent-call variety, and opponent-tendency tracking |
 
 Aggression influences decisions such as going for it on fourth down and attempting longer field goals.
 Special situations still have their own policy. Hard is not an always-optimal opponent and does not
 always choose the highest chart average.
+
+## Fourth-Down Field Goals
+
+The CPU no longer uses fixed 1983 distance tiers for every season. It asks the
+core engine for the possession team's dice-weighted chance to convert the kick
+from the current line of scrimmage to the goal line. That probability comes from
+the kicking team's own Field Goal column: rows are weighted by the chart dice,
+penalty rows are rerolled and renormalized away, and blocked kicks, fumbled
+snaps, no-good cells and empty cells count as misses. The decision therefore
+differs between a weak historical chart and a stronger modern chart in the same
+down, distance, score and clock situation.
+
+Coaching bands turn that make probability into an ordinary fourth-down choice:
+
+| Make probability | Coaching band | Ordinary choice |
+|------------------|---------------|-----------------|
+| 0.70 or higher | Routine | Kick, except a fourth-and-inches exception deep in the red zone at extreme aggression |
+| 0.35 up to 0.70 | Worth taking | Kick unless a short conversion is attractive |
+| 0.15 up to 0.35 | Long but plausible | Short yardage and aggressive coaches may try it; otherwise punt |
+| Below 0.15 | Outside plausible range | Punt or go for it according to field position and distance |
+
+The season's `ai_behavior.strategic.fourth_down_aggression` sets the era
+baseline. Difficulty shifts that value by −0.2 for Easy, 0 for Medium and +0.2
+for Hard, clamped to `[0, 1]`. Late-game rules still override the bands: a kick
+that can tie or win in the final seconds, an end-of-half kick with little time
+left, a multi-score urgency decision, victory formation and last-chance Hail
+Mary retain their own policies.
+
+Charts without resolvable Field Goal rows (mock or partial charts in tests and
+legacy callers) use a documented distance-based fallback curve. Normal charted
+games do not take that path. The estimate never rolls gameplay dice. It models
+the non-penalty continuation: if the kick draws a foul, the engine still offers
+the offended team its normal choice among the kick result and the penalty, and
+that later choice is not folded back into the pre-kick probability.
+
+## Decision Precision
+
+Difficulty is not only aggression. Easy and Medium may misjudge a marginal
+fourth-down kick in two bounded ways:
+
+- **Optimism:** Easy adds 0.05 and Medium adds 0.02 to the chart probability,
+  modelling a coach who overrates a marginal kicker.
+- **Band confusion:** when the adjusted probability is within 0.06 of a decision
+  threshold, Easy has a 30% chance and Medium a 12% chance to misread it by up to
+  0.06. Hard never adjusts the probability.
+
+The adjustment applies only to the ordinary field-goal bands below. It does not
+touch last-second tie/win kicks, end-of-half kicks, urgent multi-score drives,
+victory formation, Hail Mary attempts, play legality, scores or an endgame rule.
+It can move a borderline call at most one band, so an obvious kick or punt stays
+obvious. The noise uses its own decision stream: it does not consume or change
+the gameplay dice, and a balanced auto game (the legacy `ComputerAI` baseline)
+has no precision profile.
+
+The values are coaching heuristics, not calibrated estimates of human error.
+They are deterministic under a controlled decision-stream seed and are intended
+to make Easy and Medium less precise than Hard on marginal calls without
+changing dice odds or the core engine's resolution.
 
 ## Easy Player Coaching
 

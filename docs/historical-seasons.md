@@ -76,13 +76,15 @@ Final scoring/box checks do not independently prove every play-by-play rule.
 Browser qualification, source support, fixed chart-fit bounds, repeated-season
 uncertainty and independent review remain separate requirements.
 
-All sixteen existing 1983 private-chart game reproductions run additionally when
-their original local charts are present at
-`.ai-audits/escrow/1983-private-charts/`, retaining both mandatory untimed-down
-scenarios. Their absence is reported as `not_applicable`, rather than blocking
-the source-only audit. Keep their logs local. The previous rotating-calendar
-regression remains available only as the explicit additional
-`--generated-regression` mode; it is not the historical calendar.
+The standard historical audit uses the public `seasons/1983` and
+`seasons/2024` charts. The sixteen archived private reproductions remain a
+separate, opt-in local check for preserved escrow data; they are not part of
+routine regression and their absence cannot block the public audit. Keep any
+local logs private. Run the preserved archival check explicitly with
+`python3 tests/run_full_season.py --generated-regression`; it requires the
+private escrow charts under `.ai-audits/escrow/1983-private-charts/`. The
+previous rotating-calendar regression remains available only as that explicit
+additional mode; it is not the historical calendar.
 
 ## Fixture provenance
 

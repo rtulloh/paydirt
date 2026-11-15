@@ -78,16 +78,21 @@ class TestFieldGoalDecisions:
         play = ai.select_offense(mock_game)
         assert play == PlayType.PUNT
     
-    def test_long_fg_kicks_with_aggressive_ai(self, mock_game):
-        """Aggressive AI should attempt long FGs."""
+    def test_long_fg_punts_when_the_chart_lacks_range(self, mock_game):
+        """An aggressive AI still punts when its own chart cannot convert.
+
+        AI-024: the old fixed 55-yard tier assumed a ~35% kick. The public
+        sample chart converts this 55-yard attempt only ~6% of the time, so
+        punting is the corrected call regardless of difficulty aggression.
+        """
         ai = ComputerAI(aggression=0.7)
-        
+
         # Ball at opponent's 38 = 55 yard FG (long)
         mock_game.state.ball_position = 62
         mock_game.state.yards_to_go = 5
-        
+
         play = ai.select_offense(mock_game)
-        assert play == PlayType.FIELD_GOAL
+        assert play == PlayType.PUNT
 
 
 class TestPuntDecisions:

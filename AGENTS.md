@@ -115,8 +115,7 @@ the step prints the uncommitted files it exported. Logs and
 `summary.json`/`summary.md` are written to
 ignored `.ai-audits/full-regression/`. Prefer asking the owner to run this script
 and share the summary instead of running the suite step by step in an agent
-session; it covers the twelve commands above plus the private 1983 AI audit when
-escrow charts exist. It does not replace the separate manual gates below (1977
+session; it covers the public-data commands above. It does not replace the separate manual gates below (1977
 release-policy audit, per-issue tracker review, published-artifact verification).
 The browser step puts the regression interpreter's directory first on `PATH`, so
 the isolated E2E API always runs on the same Python environment as the rest of the
@@ -195,16 +194,11 @@ complete. At the end of every play-test and audit review, inspect the per-issue
 tracker for resolved tickets with newly confirmed evidence; add timestamped
 comments and close tickets when the audit demonstrates that the issue no longer
 occurs. Do not close a ticket from unit tests alone when play-test confirmation
-is required. The 1983 AI audit uses public generated charts in `seasons/1983`.
-The separate private integration/reproduction runners explicitly use
-`.ai-audits/escrow/1983-private-charts/`. Preserve the private AI comparison too:
-
-```bash
-python3 tests/run_ai_audit.py --season "$PWD/.ai-audits/escrow/1983-private-charts" --weeks 16 --seed 8306 --compare-balanced --output .ai-audits/private-season.json --csv .ai-audits/private-season.csv
-```
-
-Keep reports in ignored `.ai-audits/`; never commit/export private charts or
-narrative logs. The generated audit schedule is regular-season only;
+is required. The 1983 and 2024 AI audits use the public generated charts in
+`seasons/1983` and `seasons/2024`. Do not use private escrow charts for routine
+regression; the public seasons and the 2026 sample teams are sufficient. Keep
+reports in ignored `.ai-audits/`; never commit or export private chart narrative
+logs. The generated audit schedule is regular-season only;
 it supplements, never replaces, the existing nine-playoff-game regression. See
 [AI audit harness](docs/ai-auditing.md) for commands and interpretation.
 
@@ -238,10 +232,9 @@ name: declared regression tiebreaks, not the full official NFL procedure. The
 scoring/box and termination checks remain mandatory; tied playoff finals fail.
 Failed games do not advance teams, missing dependent games fail, and regular-season
 failures prevent a simulated postseason. Reports bind source/chart/runtime identity,
-retain failures and stay in ignored `.ai-audits/`. All sixteen existing private
-1983 reproductions, including two mandatory untimed-down scenarios, run additionally
-when their original local charts exist. Their absence is explicitly not applicable
-for a generated-chart historical audit. The old rotating 1983 calendar is available
+retain failures and stay in ignored `.ai-audits/`. The historical gate uses the
+public `seasons/1983` and `seasons/2024` charts; private 1983 escrow
+reproductions are not part of routine regression. The old rotating 1983 calendar is available
 only with `--generated-regression` as an additional regression. Official tiebreak
 qualification, complete per-action proof and repeated-season probabilities remain
 unverified; this runner does not waive source-fit or the rest of full regression.

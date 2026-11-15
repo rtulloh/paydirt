@@ -44,6 +44,7 @@ from .play_resolver import (
     PlayType,
     ResultType,
     _create_penalty_option,
+    field_goal_make_probability,
     parse_result_string,
     resolve_field_goal_with_penalties,
     resolve_hail_mary,
@@ -6339,6 +6340,21 @@ class PaydirtGameEngine:
             first_down=first_down, field_goal_made=False,
             field_position_before=field_before, field_position_after=self.state.field_position_str(),
             down_before=down, down_after=self.state.down, description=description,
+        )
+
+    def field_goal_make_probability(self, distance_to_goal: int) -> float | None:
+        """
+        Return the possession team's chart-weighted chance for this kick.
+
+        Args:
+            distance_to_goal: Yards from the line of scrimmage to the goal line
+                (``100 - ball_position``), not the statistical kick length.
+
+        Returns:
+            Probability in [0, 1], or None when the chart cannot be evaluated.
+        """
+        return field_goal_make_probability(
+            self.state.possession_team.special_teams, distance_to_goal
         )
 
     def _handle_field_goal(self) -> PlayOutcome:
