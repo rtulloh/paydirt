@@ -298,7 +298,7 @@ def test_trailing_defense_declines_a_foul_that_lets_the_offense_kneel_out(
     accepted, index = timed_decision(game, outcome)
 
     enforced_game, enforced = applied(game, outcome, False, index)
-    declined_game, declined = applied(game, outcome, True, index)
+    declined_game, _declined = applied(game, outcome, True, index)
 
     assert enforced.penalty_applied is True
     assert enforced_game.can_kneel_out_game() is True, "fixture must reproduce the bug"

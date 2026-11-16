@@ -44,7 +44,7 @@ def pending_game() -> tuple[object, object]:
 def resume_with_return_cell(
     monkeypatch: pytest.MonkeyPatch, tmp_path, cell: str, rolls: list[tuple[int, str]],
 ) -> dict:
-    game, pending = pending_game()
+    game, _pending = pending_game()
     save_path = tmp_path / "pending-end-zone.json"
     save_game(game, str(save_path), human_is_away=False, human_is_home=True)
 

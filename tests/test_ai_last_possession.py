@@ -7,10 +7,14 @@ import pytest
 
 from paydirt.computer_ai import create_computer_ai
 from paydirt.play_resolver import (
-    DefenseType, PenaltyChoice, PlayResult, PlayType, ResultType, is_passing_play,
+    DefenseType,
+    PenaltyChoice,
+    PlayResult,
+    PlayType,
+    ResultType,
+    is_passing_play,
 )
 from tests.game_fixtures import make_sample_game
-
 
 PASS_CONVERSIONS = {
     PlayType.SCREEN,

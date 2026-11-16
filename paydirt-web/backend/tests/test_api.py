@@ -2293,7 +2293,12 @@ def test_cpu_penalty_routes_pass_live_engine_context(monkeypatch):
 
     from paydirt.game_state import PlayOutcome
     from paydirt.play_resolver import (
-        DefenseType, PenaltyChoice, PenaltyOption, PlayResult, PlayType, ResultType,
+        DefenseType,
+        PenaltyChoice,
+        PenaltyOption,
+        PlayResult,
+        PlayType,
+        ResultType,
     )
 
     response = client.post(

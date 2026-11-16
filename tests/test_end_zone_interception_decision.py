@@ -372,9 +372,11 @@ def test_pending_choice_blocks_other_game_changing_entry_points(action) -> None:
     log_before = list(game.play_log)
     history_before = list(game.offensive_call_history)
     start_quarter_before = game._last_play_start_quarter
-    with patch("paydirt.game_engine.roll_chart_dice", return_value=(7, "10")):
-        with pytest.raises(ValueError, match="end-zone interception"):
-            action(game, pending)
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", return_value=(7, "10")),
+        pytest.raises(ValueError, match="end-zone interception"),
+    ):
+        action(game, pending)
     assert game.state == state_before
     assert game.play_log == log_before
     assert game.offensive_call_history == history_before
@@ -393,9 +395,8 @@ def test_pending_choice_blocks_two_point_before_conversion_setup() -> None:
         game,
         "get_two_point_situation",
         side_effect=AssertionError("two-point conversion setup started"),
-    ):
-        with pytest.raises(ValueError, match="end-zone interception"):
-            game.attempt_two_point(PlayType.SHORT_PASS, DefenseType.STANDARD)
+    ), pytest.raises(ValueError, match="end-zone interception"):
+        game.attempt_two_point(PlayType.SHORT_PASS, DefenseType.STANDARD)
     assert game.state == state_before
     assert game.has_pending_end_zone_interception
 

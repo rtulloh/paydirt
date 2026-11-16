@@ -64,7 +64,7 @@ def resume_patches(monkeypatch, game, *, away: bool, home: bool, pending: str | 
 @pytest.mark.parametrize("home", [False, True], ids=["away-scorer", "home-scorer"])
 def test_real_touchdown_save_load_resume_does_not_double_score(tmp_path, monkeypatch, home):
     """The loader must preserve an already-scored real TD and resume only its try."""
-    game, outcome = scored_game(PlayResult(ResultType.YARDS, yards=9), home=home)
+    game, _outcome = scored_game(PlayResult(ResultType.YARDS, yards=9), home=home)
     score_before = (game.state.home_score, game.state.away_score)
     scoring_before = [(p.team, p.play_type, p.points) for p in game.state.scoring_plays]
     assert score_before[0 if home else 1] == 6
@@ -107,7 +107,7 @@ def test_missed_try_resumes_without_repeating_or_inventing_a_score(tmp_path, mon
     game.state.possession_team.special_teams.extra_point_no_good = [26]
     path = tmp_path / "missed-try.json"
     save_game(game, str(path), human_is_away=not home, human_is_home=home)
-    loaded, away, is_home, pending = load_game(str(path))
+    loaded, _away, _is_home, pending = load_game(str(path))
     assert pending == "try"
     score_before = (loaded.state.home_score, loaded.state.away_score)
     loaded.state.possession_team.special_teams.extra_point_no_good = [26]

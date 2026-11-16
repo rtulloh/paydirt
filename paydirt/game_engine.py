@@ -3077,7 +3077,7 @@ class PaydirtGameEngine:
         rng_state = random.getstate()
         try:
             final = probe.apply_fg_penalty_decision(deepcopy(outcome), accept_play, index)
-        except Exception:
+        except Exception:  # noqa: BLE001 - Best-effort projection must not abort coaching.
             # A projection must never turn a coaching question into a crash.
             return None
         finally:
@@ -3579,7 +3579,7 @@ class PaydirtGameEngine:
         """Format the engine clock for a pending decision prompt."""
         minutes = max(0.0, self.state.time_remaining)
         whole = int(minutes)
-        seconds = int(round((minutes - whole) * 60))
+        seconds = round((minutes - whole) * 60)
         if seconds >= 60:
             whole += 1
             seconds = 0
@@ -7392,10 +7392,13 @@ class PaydirtGameEngine:
         action = self._pending_post_score_action
         if action == "try":
             last_score = self.state.scoring_plays[-1] if self.state.scoring_plays else None
-            if last_score is not None and last_score.play_type == "TD":
-                if self.can_attempt_conversion_after_touchdown():
-                    self.setup_for_pat()
-                    return "try"
+            if (
+                last_score is not None
+                and last_score.play_type == "TD"
+                and self.can_attempt_conversion_after_touchdown()
+            ):
+                self.setup_for_pat()
+                return "try"
             action = "kickoff"
         if action == "safety_free_kick":
             if self.can_kickoff_after_play():
