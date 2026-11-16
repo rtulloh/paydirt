@@ -29,6 +29,12 @@ Do not use the old `--play --load` example: the entry point dispatches loading s
 Use the same local charts and compatible game version. Saving an unfinished CLI game is different from
 saving browser play history; see [browser replays](web-interface.md#play-history-and-replays).
 A resumed game is not a promise of bit-for-bit future RNG replay.
+If a save owes a point-after attempt or safety free kick, the engine records
+that follow-up explicitly. Resuming never adds touchdown or safety points a
+second time, and an end-zone field position alone is not a pending score.
+Preparing a kickoff or free kick does not discharge it; the marker persists
+until the kick itself executes, so saving between setup and the kick resumes
+correctly. A completed score with no owed action stays complete on reload.
 
 ## Recording Season Results
 

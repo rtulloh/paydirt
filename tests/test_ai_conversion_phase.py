@@ -187,7 +187,7 @@ def test_resumed_human_try_uses_conversion_defense() -> None:
     with (
         patch("builtins.input", side_effect=["", "2"]),
         patch("paydirt.interactive_game.get_save_info", return_value=info),
-        patch("paydirt.interactive_game.load_game", return_value=(game, False, True, "touchdown")),
+        patch("paydirt.interactive_game.load_game", return_value=(game, False, True, "try")),
         patch("paydirt.interactive_game.get_human_offense_play_for_conversion", return_value=PlayType.DRAW),
         patch.object(ComputerAI, "select_two_point_defense", return_value=DefenseType.BLITZ) as defense,
         patch.object(game, "attempt_two_point", side_effect=StopAtTry) as attempt,

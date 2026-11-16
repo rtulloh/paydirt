@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-228 issues: 75 open, 76 resolved, 77 closed.
+228 issues: 74 open, 77 resolved, 77 closed.
 
-## Open (75)
+## Open (74)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -40,7 +40,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | — | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
 | [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.6 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
-| [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | — | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | FLOW-027 |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
@@ -92,7 +91,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (76)
+## Resolved (awaiting play-test confirmation) (77)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -162,6 +161,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-029](issues/AUD/AUD-029.md) | Medium | — | Exact mechanics treats missing supplemental rows as zero instead of core fallback | created 2026-11-06, resolved 2026-11-07 | — |
 | [DATA-001](issues/DATA/DATA-001.md) | Medium | — | Seasons/1983/Cardinals/special.csv Int | created 2026-10-20, resolved 2026-10-20 | — |
 | [DATA-037](issues/DATA/DATA-037.md) | Medium | — | Reference decoder accepts signed defensive fumbles absent from priority table | created 2026-11-06, resolved 2026-11-07 | — |
+| [FLOW-006](issues/FLOW/FLOW-006.md) | Medium | — | Resume_game scores a "pending" TD/safety from the UI (+6/+2, generic "Touchdown" entry, CPU auto-kick) | created 2026-10-19, resolved 2026-11-15 | — |
 | [FLOW-015](issues/FLOW/FLOW-015.md) | Medium | — | Browser play log shows raw seconds and attributes half-ending plays to the next period | created 2026-11-06, resolved 2026-11-07 | — |
 | [FLOW-028](issues/FLOW/FLOW-028.md) | Medium | v1.10.6 | Hail Mary and direct run_play interceptions bypass the end-zone return choice | created 2026-11-13, resolved 2026-11-14 | FLOW-023 |
 | [FLOW-032](issues/FLOW/FLOW-032.md) | Medium | v1.10.6 | Hail Mary end-zone interception deferral uses ordinary scrimmage timing | created 2026-11-14, resolved 2026-11-14 | — |

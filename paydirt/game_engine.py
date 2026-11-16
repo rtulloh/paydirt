@@ -259,6 +259,10 @@ class PaydirtGameEngine:
         # only the engine can know this once _use_time has advanced the period.
         self._last_play_start_quarter: int = self.state.quarter
         self._conversion_in_progress = False
+        # The engine, not a save-file consumer, owns whether a score still owes
+        # a try or free kick. Persisting this prevents a resumed game from
+        # inferring a score from field position and adding its points again.
+        self._pending_post_score_action: str | None = None
         self.offensive_call_history: list[dict] = []
         # VI-12-F-i: the own-end-zone INT choice may be declared before play or,
         # for a human controller, asked after the catch location is known.
@@ -1423,6 +1427,7 @@ class PaydirtGameEngine:
         """
         self._reject_pending_end_zone_snap()
         self._record_play_start()
+        self._pending_post_score_action = None
         self._record_opening_kicker(kicking_home)
         # Roll offensive dice
         dice_roll, _dice_desc = roll_chart_dice()
@@ -6296,6 +6301,9 @@ class PaydirtGameEngine:
 
     def _record_play_start(self) -> None:
         """Remember the period a scoring-capable action starts in (engine-owned)."""
+        # A new action supersedes any earlier post-score follow-up. Scoring
+        # actions set this again after resolving the play.
+        self._pending_post_score_action = None
         self._last_play_start_quarter = self.state.quarter
 
     def should_kickoff_after_score(self, scoring_quarter: int | None = None) -> bool:
@@ -6790,6 +6798,9 @@ class PaydirtGameEngine:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
         self._recompute_game_over_after_try()
+        self._pending_post_score_action = (
+            "kickoff" if self.can_kickoff_after_play() else None
+        )
         trace = self._record_untimed_clock("untimed PAT")
         return success, f"{description}\n  {trace.description}"
 
@@ -6874,6 +6885,9 @@ class PaydirtGameEngine:
             description = f"Two-point conversion NO GOOD! ({play_type.value} for {yards} yards)"
 
         self._recompute_game_over_after_try()
+        self._pending_post_score_action = (
+            "kickoff" if self.can_kickoff_after_play() else None
+        )
         trace = self._record_untimed_clock("untimed two-point try")
         return success, defensive_points, f"{description}\n  {trace.description}"
 
@@ -6929,6 +6943,11 @@ class PaydirtGameEngine:
         # Check if this TD ends overtime (sudden death)
         if self.state.is_overtime:
             self.check_overtime_score(scored=True, was_touchdown=True, scoring_team_is_home=is_home)
+
+        self._pending_post_score_action = (
+            "try" if self.can_attempt_conversion_after_touchdown()
+            else ("kickoff" if self.should_kickoff_after_score() else None)
+        )
 
     def setup_for_pat(self):
         """
@@ -7065,6 +7084,9 @@ class PaydirtGameEngine:
             else f"{kicker} field goal is good"
         )
         self._log_score(team, is_home, "FG", desc, 3)
+        self._pending_post_score_action = (
+            "kickoff" if self.should_kickoff_after_score() else None
+        )
 
         # Check if this FG ends overtime (sudden death - any score wins)
         if self.state.is_overtime:
@@ -7091,6 +7113,7 @@ class PaydirtGameEngine:
             self.state.home_score += 2
             is_home = True
         self._log_score(team, is_home, "Safety", "Safety", 2)
+        self._pending_post_score_action = "safety_free_kick"
 
         # After safety, team that was scored on kicks from their 20
         # Note: possession does NOT switch here - the team that gave up the safety
@@ -7119,6 +7142,7 @@ class PaydirtGameEngine:
         """
         self._reject_pending_end_zone_snap()
         self._record_play_start()
+        self._pending_post_score_action = None
         kicking_home = self.state.is_home_possession
 
         if use_punt:
@@ -7356,6 +7380,59 @@ class PaydirtGameEngine:
     def can_attempt_conversion_after_touchdown(self) -> bool:
         """Allow the regulation try even after time expires, but not after OT wins."""
         return not (self.state.is_overtime and self.state.game_over)
+
+    def resume_pending_post_score_action(self) -> str | None:
+        """Reconcile a loaded post-score marker with the restored game state.
+
+        A save may have been written before a caller finished the sequence but
+        after `setup_for_pat()` or `setup_for_kickoff()` moved the ball. Use the
+        scoring record and current period to decide whether the procedure is
+        still owed. This never changes the score or the scoring log.
+        """
+        action = self._pending_post_score_action
+        if action == "try":
+            last_score = self.state.scoring_plays[-1] if self.state.scoring_plays else None
+            if last_score is not None and last_score.play_type == "TD":
+                if self.can_attempt_conversion_after_touchdown():
+                    self.setup_for_pat()
+                    return "try"
+            action = "kickoff"
+        if action == "safety_free_kick":
+            if self.can_kickoff_after_play():
+                self.setup_for_kickoff(from_safety=True)
+                return "safety_free_kick"
+            action = None
+        if action == "kickoff":
+            if not self.can_kickoff_after_play():
+                self._pending_post_score_action = None
+                return None
+            if self.halftime_pending():
+                self.prepare_second_half_kickoff()
+            else:
+                self.setup_for_kickoff()
+            self._pending_post_score_action = "kickoff"
+            return "kickoff"
+        self._pending_post_score_action = None
+        return None
+
+    def pending_post_score_action(self) -> str | None:
+        """Return the engine's owed follow-up after a score, if any.
+
+        ``"try"`` means the touchdown's PAT/two-point attempt is still owed.
+        ``"safety_free_kick"`` means the safety free kick is still owed. The
+        score and its scoring-log entry have already been applied either way;
+        callers must not add points when completing the action.
+        """
+        action = self._pending_post_score_action
+        if action == "try":
+            if self.can_attempt_conversion_after_touchdown():
+                return "try"
+            return "kickoff" if self.can_kickoff_after_play() else None
+        if action == "safety_free_kick":
+            return "safety_free_kick" if self.can_kickoff_after_play() else None
+        if action == "kickoff":
+            return "kickoff" if self.can_kickoff_after_play() else None
+        return None
 
     def can_kickoff_after_play(self, quarter_before: int | None = None) -> bool:
         """Whether a scoring play may be followed by a kick in the current period.

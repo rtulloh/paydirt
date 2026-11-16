@@ -33,7 +33,12 @@ Tests preceded production changes:
   fields; and expecting no kickoff after Q1/Q3 rather than only halftime/endgame.
   A post-try save control completes setup for kickoff before saving, matching
   the supported scoring-sequence lifecycle. This does not certify arbitrary
-  mid-try saves; a raw end-zone position still reconstructs a pending score.
+  mid-try saves. The engine records the owed try or free kick in the save;
+  a bare end-zone position is never treated as an unscored touchdown or safety.
+  A marker recorded as `None` means the score is complete; only saves that
+  predate the marker may derive a follow-up, and only when the engine still
+  allows that conversion. Setup for a kick leaves the owed marker intact until
+  the kick executes.
 
 ## Explicit changes to existing test expectations
 

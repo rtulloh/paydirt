@@ -1,5 +1,16 @@
 # Paydirt Release Notes
 
+## v1.10.6
+
+- Make saved-score resume engine-owned: a save records whether a try or free kick is still owed, and resuming never adds touchdown or safety points again. A completed score stays complete, and a kick is consumed only when it is actually taken (FLOW-006).
+- Use chart-weighted field-goal make probabilities on the actual kicking chart, combined with situation and season aggression, and keep precision noise out of gameplay dice (AI-024, AI-034).
+- Take clock-stopping last-possession fourth downs when trailing late, with overtime and compact-field handling (AI-029).
+- Compare offensive fouls against the retained play and enforce made-kick field-goal fouls correctly, with clock-aware penalty previews (AI-002, AI-017, AI-031, AI-033).
+- Choose end-zone interception returns during play after the catch location is known, and defer Hail Mary defensive timeouts with that choice (FLOW-023, FLOW-026, FLOW-030, FLOW-031, FLOW-032).
+- Resolve safety free-kick penalties before possession, attribute reported defensive timeouts correctly, and distinguish released chart integrity from engine evolution (FLOW-024, FLOW-029, VAL-027).
+
+No charts changed in this cycle. The reviewed 1977 season and its disclosed statistical exceptions remain unchanged, as do the 1983 and 2024 chart bytes. Existing historical accuracy limitations remain disclosed in the season notes.
+
 ## v1.10.5
 
 - Correct 1983 geographic labels: San Diego Chargers (`SD`), St. Louis Cardinals (`STL`), and Los Angeles Raiders (`LA`).

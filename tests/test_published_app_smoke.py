@@ -336,7 +336,13 @@ def test_next_reviewed_release_preserves_1977_and_immutable_profiles() -> None:
         "1977": 28,
     }
     with pytest.raises(ValueError, match="reviewed"):
-        smoke.season_profile("1.10.6", True)
+        smoke.season_profile("1.10.7", True)
+    assert smoke.season_profile("1.10.6", True) == {
+        "1983": 28,
+        "2024": 32,
+        "2026": 2,
+        "1977": 28,
+    }
     assert smoke.season_profile("1.10.3") == {"1983": 28, "2024": 32, "2026": 2}
 
 

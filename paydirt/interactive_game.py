@@ -2787,53 +2787,78 @@ def _complete_touchdown_sequence(
     while outcome.touchdown and game.can_attempt_conversion_after_touchdown():
         if outcome.clock_trace is not None:
             print(f"  {outcome.clock_trace.description}")
-        scoring_home = game.state.is_home_possession
-        human_scored = scoring_home == human_is_home
-        two_point_allowed = game.season_rules.two_point_conversion
-        go_for_two = False
-        if human_scored and two_point_allowed:
-            print("\n  *** POINT AFTER TOUCHDOWN ***")
-            print("    [K] Kick extra point (1 point) - DEFAULT")
-            print("    [2] Go for 2-point conversion")
-            choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
-            go_for_two = choice == "2"
-        elif not human_scored:
-            go_for_two = two_point_allowed and cpu_should_go_for_two(game, cpu_ai, try_pending=True)
-
-        if go_for_two:
-            if human_scored:
-                play_type = get_human_offense_play_for_conversion(game)
-                defense_type = (cpu_ai or ComputerAI()).select_two_point_defense(game)
-            else:
-                team = game.state.possession_team.peripheral.short_name
-                print(f"\n  {team} elects to go for 2-point conversion!")
-                play_type = (cpu_ai or ComputerAI()).select_two_point_offense(game)
-                defense_type = get_human_defense_for_conversion(game)
-            _, _, description = game.attempt_two_point(play_type, defense_type)
-        else:
-            _, description = game.attempt_extra_point()
-        print(f"\n  {description}")
-        print(f"  Score: {game.get_score_str()}")
-        if not game.can_kickoff_after_play():
+        next_outcome = _run_try_and_kickoff(game, human_is_home, cpu_ai)
+        if next_outcome is None:
             return outcome
+        outcome = next_outcome
+    return outcome
 
-        kicking_team = (
-            game.state.home_chart if scoring_home else game.state.away_chart
-        ).peripheral.short_name
-        onside = get_kickoff_choice(game, scoring_home == human_is_home, cpu_ai)
-        if onside:
-            print(f"\n  {kicking_team} attempts an ONSIDE KICK!")
-            outcome = game.onside_kick(kicking_home=scoring_home)
+
+def _run_try_and_kickoff(
+    game: PaydirtGameEngine, human_is_home: bool, cpu_ai: ComputerAI | None = None,
+) -> PlayOutcome | None:
+    """Run an owed conversion and any kickoff after the engine scored a TD.
+
+    The touchdown's points and scoring-log entry already exist. This owns only
+    the try choice and the kick that may follow; a game-ending or half-ending
+    try returns ``None`` because no kick is taken.
+    """
+    scoring_home = game.state.is_home_possession
+    human_scored = scoring_home == human_is_home
+    two_point_allowed = game.season_rules.two_point_conversion
+    go_for_two = False
+    if human_scored and two_point_allowed:
+        print("\n  *** POINT AFTER TOUCHDOWN ***")
+        print("    [K] Kick extra point (1 point) - DEFAULT")
+        print("    [2] Go for 2-point conversion")
+        choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
+        go_for_two = choice == "2"
+    elif not human_scored:
+        go_for_two = two_point_allowed and cpu_should_go_for_two(game, cpu_ai, try_pending=True)
+
+    if go_for_two:
+        if human_scored:
+            play_type = get_human_offense_play_for_conversion(game)
+            defense_type = (cpu_ai or ComputerAI()).select_two_point_defense(game)
         else:
-            print(f"\n  {kicking_team} kicks off...")
-            outcome = game.kickoff(kicking_home=scoring_home)
-        if outcome.pending_penalty_decision and outcome.penalty_choice:
-            outcome = handle_penalty_decision(
-                game, outcome, scoring_home != human_is_home, human_is_home
-            )
-        print(f"  {outcome.description}")
-        if not outcome.touchdown and outcome.clock_trace is not None:
-            print(f"  {outcome.clock_trace.description}")
+            team = game.state.possession_team.peripheral.short_name
+            print(f"\n  {team} elects to go for 2-point conversion!")
+            play_type = (cpu_ai or ComputerAI()).select_two_point_offense(game)
+            defense_type = get_human_defense_for_conversion(game)
+        _, _, description = game.attempt_two_point(play_type, defense_type)
+    else:
+        _, description = game.attempt_extra_point()
+    print(f"\n  {description}")
+    print(f"  Score: {game.get_score_str()}")
+    if not game.can_kickoff_after_play():
+        return None
+    return _run_kickoff_after_score(game, scoring_home, human_is_home, cpu_ai)
+
+
+def _run_kickoff_after_score(
+    game: PaydirtGameEngine,
+    kicking_home: bool,
+    human_is_home: bool,
+    cpu_ai: ComputerAI | None = None,
+) -> PlayOutcome:
+    """Take a kick the engine still owes after a score, including its fouls."""
+    kicking_team = (
+        game.state.home_chart if kicking_home else game.state.away_chart
+    ).peripheral.short_name
+    onside = get_kickoff_choice(game, kicking_home == human_is_home, cpu_ai)
+    if onside:
+        print(f"\n  {kicking_team} attempts an ONSIDE KICK!")
+        outcome = game.onside_kick(kicking_home=kicking_home)
+    else:
+        print(f"\n  {kicking_team} kicks off...")
+        outcome = game.kickoff(kicking_home=kicking_home)
+    if outcome.pending_penalty_decision and outcome.penalty_choice:
+        outcome = handle_penalty_decision(
+            game, outcome, kicking_home != human_is_home, human_is_home
+        )
+    print(f"  {outcome.description}")
+    if not outcome.touchdown and outcome.clock_trace is not None:
+        print(f"  {outcome.clock_trace.description}")
     return outcome
 
 
@@ -2955,172 +2980,52 @@ def resume_game(
     print("\n  Resuming game...")
     print(f"  You are: {human_chart.peripheral.short_name} ({'Home' if human_is_home else 'Away'})")
 
-    # Handle pending score from save file (ball_position >= 100 or <= 0)
-    # Need to process: add points, extra point, then kickoff
-    if pending_score == "touchdown":
-        print("\n  *** Pending touchdown detected! Processing score... ***")
-
-        # Determine which team scored (the team with possession when ball crossed goal line)
-        scoring_team_is_home = game.state.is_home_possession
-
-        # Add 6 points for touchdown AND log to scoring_plays
-        if scoring_team_is_home:
-            game.state.home_score += 6
-            scoring_team_name = game.state.home_chart.peripheral.short_name
-            # Log TD to scoring_plays so it appears in the summary
-            from paydirt.game_state import ScoringPlay
-
-            game.state.scoring_plays.append(
-                ScoringPlay(
-                    quarter=game.state.quarter,
-                    time_remaining=game.state.time_remaining,
-                    team=scoring_team_name,
-                    is_home_team=True,
-                    play_type="TD",
-                    description="Touchdown",
-                    points=6,
-                )
-            )
-        else:
-            game.state.away_score += 6
-            scoring_team_name = game.state.away_chart.peripheral.short_name
-            # Log TD to scoring_plays so it appears in the summary
-            from paydirt.game_state import ScoringPlay
-
-            game.state.scoring_plays.append(
-                ScoringPlay(
-                    quarter=game.state.quarter,
-                    time_remaining=game.state.time_remaining,
-                    team=scoring_team_name,
-                    is_home_team=False,
-                    play_type="TD",
-                    description="Touchdown",
-                    points=6,
-                )
-            )
-
-        print(f"  {scoring_team_name} scores TOUCHDOWN! (+6 points)")
-        print(f"  Score: {game.state.away_score} - {game.state.home_score}")
-
-        # Run extra point
-        # For simplicity, CPU teams auto-kick, humans get choice
-        two_point_allowed = game.season_rules.two_point_conversion
-
-        if scoring_team_is_home == human_is_home:
-            # Human's team scored - let them choose
-            print("\n  *** POINT AFTER TOUCHDOWN ***")
-            print("  " + "-" * 40)
-            print("    [K] Kick extra point (1 point) - DEFAULT")
-            if two_point_allowed:
-                print("    [2] Go for 2-point conversion")
-
-            choice = input("\n  Your choice (K or 2, Enter for kick): ").strip().upper()
-
-            if choice == "2" and two_point_allowed:
-                print("\n  Select play for 2-point conversion:")
-                play_type = get_human_offense_play_for_conversion(game)
-                defense_type = cpu_ai.select_two_point_defense(game)
-                _success, def_points, description = game.attempt_two_point(play_type, defense_type)
-                print(f"\n  {description}")
-                if def_points > 0:
-                    print(f"  Defense scores {def_points} points on the return!")
-            else:
-                _success, description = game.attempt_extra_point()
-                print(f"\n  {description}")
-        else:
-            # CPU scored - auto kick extra point
-            _success, description = game.attempt_extra_point()
-            print(f"\n  {scoring_team_name} kicks the extra point...")
-            print(f"  {description}")
-
+    # A save may preserve a score whose follow-up procedure was still owed.
+    # The engine already applied and logged the points; only the try or free
+    # kick may run here. Never infer or add a score from field position.
+    if pending_score in {"try", "touchdown"}:
+        scoring_team_name = game.state.possession_team.peripheral.short_name
+        print(f"\n  *** Recovery touchdown by {scoring_team_name} is already recorded ***")
         print(f"  Score: {game.get_score_str()}")
 
+        # The engine owns eligibility: a game-ending overtime touchdown owes
+        # no conversion even if an older caller passes a stale "try" marker.
+        if not game.can_attempt_conversion_after_touchdown():
+            pending_score = None
+        else:
+            # setup_for_pat is idempotent and places the ball at the 2. The try
+            # itself is the only remaining scoring action; no points are added.
+            game.setup_for_pat()
+            outcome = _run_try_and_kickoff(game, human_is_home, cpu_ai)
+            if outcome is not None:
+                # A kickoff return can score too; keep the same possession-aware
+                # follow-up the live loop uses instead of resuming at a stale snap.
+                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            pending_score = None
+
+    elif pending_score in {"safety_free_kick", "safety"}:
+        scoring_team_name = game.state.defense_team.peripheral.short_name
+        print(f"\n  *** Recovery safety by {scoring_team_name} is already recorded ***")
+        print(f"  Score: {game.get_score_str()}")
+
+        if not game.can_kickoff_after_play():
+            pending_score = None
+        else:
+            input("\n  Press Enter for free kick...")
+            # The conceding team keeps possession only for the free kick.
+            kicking_home = game.state.is_home_possession
+            outcome = handle_safety_free_kick(game, kicking_home, human_is_home, cpu_ai)
+            pending_score = None
+
+    elif pending_score == "kickoff":
+        print("\n  *** Kickoff is already due after the recorded score ***")
+        print(f"  Score: {game.get_score_str()}")
         input("\n  Press Enter for kickoff...")
-
-        # Kickoff - scoring team kicks off
-        kicking_home = scoring_team_is_home
-        is_human_kicking = kicking_home == human_is_home
-
-        onside = get_kickoff_choice(game, is_human_kicking, cpu_ai)
-
-        if onside:
-            print("\n  ONSIDE KICK ATTEMPT!")
-            print("  " + "-" * 40)
-            outcome = game.onside_kick(kicking_home=kicking_home)
-        else:
-            print("\n  KICKOFF")
-            print("  " + "-" * 40)
-            outcome = game.kickoff(kicking_home=kicking_home)
-
-        print(f"  {outcome.description}")
+        outcome = _run_kickoff_after_score(
+            game, game.state.is_home_possession, human_is_home, cpu_ai
+        )
         outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
-
-    elif pending_score == "safety":
-        print("\n  *** Pending safety detected! Processing score... ***")
-
-        # Safety: offense team gives up points, defense gets ball
-        # The team WITHOUT possession scores 2 points
-        if game.state.is_home_possession:
-            # Home team had offense, so away team scores
-            game.state.away_score += 2
-            scoring_team_name = game.state.away_chart.peripheral.short_name
-            # Log safety to scoring_plays
-            from paydirt.game_state import ScoringPlay
-
-            game.state.scoring_plays.append(
-                ScoringPlay(
-                    quarter=game.state.quarter,
-                    time_remaining=game.state.time_remaining,
-                    team=scoring_team_name,
-                    is_home_team=False,
-                    play_type="Safety",
-                    description="Safety",
-                    points=2,
-                )
-            )
-        else:
-            # Away team had offense, so home team scores
-            game.state.home_score += 2
-            scoring_team_name = game.state.home_chart.peripheral.short_name
-            # Log safety to scoring_plays
-            from paydirt.game_state import ScoringPlay
-
-            game.state.scoring_plays.append(
-                ScoringPlay(
-                    quarter=game.state.quarter,
-                    time_remaining=game.state.time_remaining,
-                    team=scoring_team_name,
-                    is_home_team=True,
-                    play_type="Safety",
-                    description="Safety",
-                    points=2,
-                )
-            )
-
-        print(f"  SAFETY! {scoring_team_name} scores! (+2 points)")
-        print(f"  Score: {game.get_score_str()}")
-
-        input("\n  Press Enter for free kick...")
-
-        # Free kick after safety - the team that gave up the safety kicks
-        kicking_home = game.state.is_home_possession
-        is_human_kicking = kicking_home == human_is_home
-
-        if is_human_kicking:
-            print("\n  *** FREE KICK AFTER SAFETY ***")
-            print("  " + "-" * 40)
-            print("    [K] Kickoff from own 20 - DEFAULT")
-            print("    [P] Punt from own 20")
-            choice = input("\n  Your choice (K or P, Enter for kickoff): ").strip().upper()
-            use_punt = choice == "P"
-        else:
-            use_punt = False
-
-        print("\n  FREE KICK")
-        print("  " + "-" * 40)
-        outcome = game.safety_free_kick(use_punt=use_punt)
-        print(f"  {outcome.description}")
-        outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+        pending_score = None
 
 
     # Create easy mode helper if in easy mode

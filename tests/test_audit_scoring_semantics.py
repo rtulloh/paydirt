@@ -171,7 +171,7 @@ def test_pending_conversion_survives_save_resume(tmp_path, home: bool, quarter: 
     path = str(tmp_path / "pending.json")
     save_game(game, filepath=path, human_is_away=not home, human_is_home=home)
     loaded, _, _, pending = load_game(path)
-    assert pending == "touchdown"
+    assert pending == "try"
     live = loaded.state.quarter, loaded.state.time_remaining
     loaded.state.possession_team.special_teams.extra_point_no_good = []
     with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "Try")):
@@ -179,9 +179,17 @@ def test_pending_conversion_survives_save_resume(tmp_path, home: bool, quarter: 
     assert (loaded.state.quarter, loaded.state.time_remaining) == live
     assert [score.quarter for score in loaded.state.scoring_plays] == [quarter, quarter]
     assert loaded.state.home_score + loaded.state.away_score == 7
-    # The CLI completes the scoring sequence before allowing another save.
+    # Preparing the kick does not discharge it; only executing the kick does.
+    # A half- or period-ending try owes no kick at all.
+    kick_owed = loaded.pending_post_score_action() == "kickoff"
     loaded.setup_for_kickoff()
     save_game(loaded, filepath=path, human_is_away=not home, human_is_home=home)
+    prepared, _, _, prepared_pending = load_game(path)
+    assert prepared_pending == ("kickoff" if kick_owed else None)
+    if kick_owed:
+        with patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "kick")):
+            prepared.kickoff(kicking_home=home)
+        save_game(prepared, filepath=path, human_is_away=not home, human_is_home=home)
     reloaded, _, _, pending = load_game(path)
     assert pending is None
     assert reloaded.state.home_score + reloaded.state.away_score == 7

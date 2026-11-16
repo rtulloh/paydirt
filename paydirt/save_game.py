@@ -91,6 +91,10 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
         ],
         # Optional game-local coaching context; absent in legacy version-1 saves.
         "offensive_call_history": engine.offensive_call_history,
+        # Engine-owned post-score procedure. Scores are already applied and
+        # logged; this only records whether a try or free kick is still owed.
+        "pending_post_score_action": engine.pending_post_score_action(),
+        "last_play_start_quarter": engine._last_play_start_quarter,
         "home_end_zone_interception_return": engine.home_end_zone_interception_return,
         "away_end_zone_interception_return": engine.away_end_zone_interception_return,
         "home_end_zone_interception_policy": engine.home_end_zone_interception_policy,
@@ -214,6 +218,9 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
     state.ot_coin_toss_winner_is_home = save_data.get("ot_coin_toss_winner_is_home", False)
     state.is_playoff = save_data.get("is_playoff", False)
     state.untimed_down_pending = save_data.get("untimed_down_pending", False)
+    engine._last_play_start_quarter = save_data.get(
+        "last_play_start_quarter", state.quarter
+    )
     
     # Repair stale aggregates only when the component history is complete.
     # Legacy totals without a full breakdown cannot safely be reconstructed.
@@ -251,14 +258,45 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
             random_state=save_data.get("dice_random_state"),
         )
 
-    # Check for invalid ball positions that indicate unsaved scores
-    # ball_position >= 100 means a touchdown that wasn't processed
-    # ball_position <= 0 means a safety that wasn't processed
-    pending_score = None
-    if state.ball_position >= 100:
-        pending_score = "touchdown"
-    elif state.ball_position <= 0:
-        pending_score = "safety"
+    # Scores are applied and logged by the engine at play time. A field
+    # position at a goal line is not evidence that points are still owed.
+    has_marker = "pending_post_score_action" in save_data
+    pending_score = save_data.get("pending_post_score_action")
+    if has_marker:
+        engine._pending_post_score_action = pending_score
+        pending_score = engine.resume_pending_post_score_action()
+
+    # Legacy saves predate the explicit marker. Only those may infer a
+    # follow-up from the scoring log, and never a score from field position.
+    # A modern save recording no owed action means the score is complete.
+    if not has_marker and state.ball_position >= 100:
+        last_score = state.scoring_plays[-1] if state.scoring_plays else None
+        if (
+            last_score is not None
+            and last_score.play_type == "TD"
+            and engine.can_attempt_conversion_after_touchdown()
+        ):
+            pending_score = "try"
+            engine.setup_for_pat()
+        elif last_score is not None and last_score.play_type == "TD":
+            pending_score = None
+        else:
+            raise ValueError(
+                "Save has an end-zone field position without a pending score or "
+                "touchdown record; it cannot be resumed safely"
+            )
+    elif not has_marker and state.ball_position <= 0:
+        last_score = state.scoring_plays[-1] if state.scoring_plays else None
+        if last_score is not None and last_score.play_type == "Safety":
+            pending_score = "safety_free_kick"
+            engine.setup_for_kickoff(from_safety=True)
+        else:
+            raise ValueError(
+                "Save has an own-end-zone field position without a pending safety "
+                "record; it cannot be resumed safely"
+            )
+
+    engine._pending_post_score_action = pending_score
 
     # Return engine and human control settings
     human_is_away = save_data.get("human_is_away", True)
