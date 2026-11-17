@@ -82,7 +82,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
-| [FLOW-033](issues/FLOW/FLOW-033.md) | Low | — | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | — |
+| [FLOW-033](issues/FLOW/FLOW-033.md) | Low | v1.10.7 | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | — |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | — | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | — | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
 | [STAT-006](issues/STAT/STAT-006.md) | Low | — | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |
