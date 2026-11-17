@@ -277,6 +277,12 @@ with a try still owed at 0:00 can prompt a two-point attempt when the season
 rules allow it; a game-ending overtime touchdown cannot. The API PAT-choice
 query also distinguishes an owed try from an already finished game.
 
+## Season-Aware Late-Game Pace
+
+In regulation Q4, a trailing CPU offense enters hurry-up below the configured multi-score threshold when the active season rules say the deficit requires at least two scoring possessions. The default threshold is 3:00, so exactly 3:00 remains ordinary. The score count uses eight points per possession when two-point conversions are available and seven when they are not. Thus, down eight at 2:59 is urgent in a no-conversion season but remains a one-possession situation in a conversion season.
+
+This additional gate does not apply while tied or leading, in earlier quarters, or in overtime. When it applies, ordinary, analyzed, red-zone, goal-line, and fourth-down calls request no-huddle consistently; eligible passing calls retain the configured chance to use the sideline designation.
+
 ## Shared Clock Policy
 
 All three modes use the same offensive and defensive timeout thresholds and accounting.

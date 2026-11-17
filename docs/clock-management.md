@@ -204,6 +204,12 @@ An already stopped out-of-bounds play needs no additional spike. Check the
 engine's finalized result: an incompletion, accepted or declined foul, or useful
 defensive timeout must not be mistaken for a completed play followed by a spike.
 
+## CPU Multi-Score Hurry-Up
+
+In regulation Q4, the CPU requests hurry-up strictly below 3:00 when it trails by a deficit that requires at least two scoring possessions under the season's conversion rules. A no-two-point season treats an eight-point deficit as two scores; a season with two-point tries treats it as one. Exactly 3:00, earlier quarters, overtime, tied games, and CPU leads retain their existing pace.
+
+The qualifying state carries no-huddle through ordinary and special offensive branches. Passing calls may also use the existing out-of-bounds designation policy, so a timeout spent to preserve a late multi-score drive is followed by a compatible pace plan.
+
 ## Final Seconds Strategy
 
 Before calling a play, check time, downs, field position, score, and remaining timeouts.

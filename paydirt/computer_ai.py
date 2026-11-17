@@ -374,7 +374,7 @@ class ComputerAI:
                     play, use_oob, use_no_huddle, punt_short_drop,
                     punt_coffin_corner_yards, False,
                 )
-            if self._needs_hurry_up(time_left, quarter, score_diff):
+            if self._needs_hurry_up(game, time_left, quarter, score_diff):
                 use_no_huddle = True
                 if play in [
                     PlayType.SHORT_PASS,
@@ -386,7 +386,7 @@ class ComputerAI:
             return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards, False)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
-        if self._is_two_minute_drill(time_left, quarter, score_diff):
+        if self._is_two_minute_drill(game, time_left, quarter, score_diff):
             self.last_mode = "Two-Minute Drill"
             if self._offense_rng is None:
                 self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
@@ -433,7 +433,7 @@ class ComputerAI:
         if field_pos >= 95:
             self.last_mode = "Goal Line"
             play = self._goal_line_offense(ytg)
-            if self._needs_hurry_up(time_left, quarter, score_diff):
+            if self._needs_hurry_up(game, time_left, quarter, score_diff):
                 use_no_huddle = True
             return (play, use_oob, use_no_huddle, False, 0, False)
 
@@ -441,8 +441,9 @@ class ComputerAI:
         if field_pos >= 80:
             self.last_mode = "Red Zone"
             play = self._red_zone_offense(down, ytg)
-            if self._needs_hurry_up(time_left, quarter, score_diff):
-                use_no_huddle = True
+            use_oob, use_no_huddle = self._hurry_up_flags(
+                game, play, time_left, quarter, score_diff,
+            )
             return (play, use_oob, use_no_huddle, False, 0, False)
 
         # ============================================================
@@ -459,6 +460,9 @@ class ComputerAI:
                 if self._offense_rng is None:
                     self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
                 play = self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
+                use_oob, use_no_huddle = self._hurry_up_flags(
+                    game, play, time_left, quarter, score_diff,
+                )
                 return (play, use_oob, use_no_huddle, False, 0, False)
 
         # 3rd Down
@@ -471,6 +475,9 @@ class ComputerAI:
         else:
             play = self._first_down_offense(field_pos)
 
+        use_oob, use_no_huddle = self._hurry_up_flags(
+            game, play, time_left, quarter, score_diff,
+        )
         return (play, use_oob, use_no_huddle, False, 0, False)
 
     def _multi_score_fourth_down_urgent(
@@ -483,8 +490,7 @@ class ComputerAI:
         eighty seconds per later drive, a field-position-sensitive current drive,
         and a defensive stop shortened by the offense's remaining timeouts.
         """
-        points_per_score = 8 if game.season_rules.two_point_conversion else 7
-        scores_needed = (deficit + points_per_score - 1) // points_per_score
+        scores_needed = game.season_rules.scores_needed(deficit)
         if scores_needed < 2 or minutes_left >= 5 or distance > 10:
             return False
         state = game.state
@@ -615,10 +621,9 @@ class ComputerAI:
             # 2-5 minutes left, trailing. A field goal that removes one needed
             # possession remains useful; otherwise preserve a scarce drive.
             if time_left < 5.0:
-                points_per_score = 8 if game.season_rules.two_point_conversion else 7
                 deficit = -score_diff
-                scores_needed = (deficit + points_per_score - 1) // points_per_score
-                scores_after_fg = (max(0, deficit - 3) + points_per_score - 1) // points_per_score
+                scores_needed = game.season_rules.scores_needed(deficit)
+                scores_after_fg = game.season_rules.scores_needed(max(0, deficit - 3))
                 if scores_needed >= 2 and fg_makeable and scores_after_fg < scores_needed:
                     return (PlayType.FIELD_GOAL, punt_short_drop, punt_coffin_corner_yards)
                 if self._multi_score_fourth_down_urgent(game, ytg, field_pos, time_left, deficit):
@@ -1056,11 +1061,61 @@ class ComputerAI:
             ]
         )
 
-    def _is_two_minute_drill(self, time_left, quarter, score_diff) -> bool:
+    def _season_aware_two_score_urgency(
+        self, game: PaydirtGameEngine, time_left: float, score_diff: int,
+        threshold: float,
+    ) -> bool:
+        """Identify a regulation-Q4 multi-score deficit inside the pace window."""
+        state = game.state
+        if (state.is_overtime or state.quarter != 4 or score_diff >= 0
+                or time_left >= threshold):
+            return False
+        return game.season_rules.scores_needed(-score_diff) >= 2
+
+    def _hurry_up_flags(
+        self, game: PaydirtGameEngine, play: PlayType, time_left: float,
+        quarter: int, score_diff: int,
+    ) -> tuple[bool, bool]:
+        """Return sideline and no-huddle requests for a selected play."""
+        if not self._needs_hurry_up(game, time_left, quarter, score_diff):
+            return False, False
+        if self._offense_rng is None:
+            self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
+        passing_play = play in (
+            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
+            PlayType.LONG_PASS, PlayType.SCREEN,
+        )
+        use_oob = (
+            passing_play
+            and self._offense_rng.random()
+            < self.ai_behavior.strategic.oob_designation_aggression
+        )
+        return use_oob, True
+
+    def _is_two_minute_drill(
+        self, game: PaydirtGameEngine, time_left: float, quarter: int,
+        score_diff: int,
+    ) -> bool:
         """Check if we should be in hurry-up mode."""
         tmd = self.ai_behavior.two_minute_drill
+        if game.state.is_overtime:
+            return False
+        if game.state.quarter == 4 and score_diff < 0:
+            scores_needed = game.season_rules.scores_needed(-score_diff)
+            if (scores_needed >= 2
+                    and time_left <= tmd.q4_deficit_9_minutes):
+                if time_left == tmd.q4_deficit_9_minutes:
+                    return False
+                return self._season_aware_two_score_urgency(
+                    game, time_left, score_diff, tmd.q4_deficit_9_minutes,
+                )
         if quarter == 2 and time_left < 2.0 and score_diff < tmd.skip_when_leading_by:
             return True
+        if (game.state.quarter == 4 and score_diff < 0
+                and game.season_rules.two_point_conversion
+                and score_diff == -8
+                and time_left >= tmd.q4_always_minutes):
+            return False
         if quarter == 4 and score_diff < 0:
             if score_diff <= -9 and time_left < tmd.q4_deficit_9_minutes:
                 return True
@@ -1070,9 +1125,28 @@ class ComputerAI:
                 return True
         return bool(quarter == 4 and score_diff <= -14)
 
-    def _needs_hurry_up(self, time_left, quarter, score_diff) -> bool:
+    def _needs_hurry_up(
+        self, game: PaydirtGameEngine, time_left: float, quarter: int,
+        score_diff: int,
+    ) -> bool:
         """Check if we need to hurry (no-huddle, OOB designation)."""
         hur = self.ai_behavior.hurry_up
+        if game.state.is_overtime:
+            return False
+        if game.state.quarter == 4 and score_diff < 0:
+            scores_needed = game.season_rules.scores_needed(-score_diff)
+            if (scores_needed >= 2
+                    and time_left <= hur.q4_deficit_9_minutes):
+                if time_left == hur.q4_deficit_9_minutes:
+                    return False
+                return self._season_aware_two_score_urgency(
+                    game, time_left, score_diff, hur.q4_deficit_9_minutes,
+                )
+        if (game.state.quarter == 4 and score_diff < 0
+                and game.season_rules.two_point_conversion
+                and score_diff == -8
+                and time_left >= hur.q4_any_minutes):
+            return False
         if quarter == 4 and score_diff < 0:
             if score_diff <= -9 and time_left < hur.q4_deficit_9_minutes:
                 return True

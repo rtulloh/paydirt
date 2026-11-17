@@ -50,8 +50,11 @@ def test_passing_pressure_increases_as_clock_shrinks_but_does_not_ban_runs(home:
     shares = []
     for minutes in (15, 4, .5):
         game, ai = trailing_game(minutes=minutes, home=home)
-        counts = Counter(ai.select_offense(game) for _ in range(2400))
-        shares.append(sum(n for play, n in counts.items() if is_passing_play(play)) / 2400)
+        weights = ai.get_hurry_up_weights(game)
+        shares.append(
+            sum(weight for play, weight in weights.items() if is_passing_play(play))
+            / sum(weights.values())
+        )
     assert shares[0] < shares[1] < shares[2]
     assert .90 < shares[2] < 1
 
@@ -145,7 +148,7 @@ def test_eight_point_deficit_is_more_urgent_when_season_has_no_two_point_convers
 
     pass_weights = []
     for can_go_for_two in (True, False):
-        game, ai = trailing_game(minutes=3, deficit=8)
+        game, ai = trailing_game(minutes=2.99, deficit=8)
         game.season_rules = replace(game.season_rules, two_point_conversion=can_go_for_two)
         weights = ai.get_hurry_up_weights(game)
         pass_weights.append(sum(w for p, w in weights.items() if is_passing_play(p))

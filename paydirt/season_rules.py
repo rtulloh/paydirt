@@ -75,6 +75,12 @@ class SeasonRules:
     overtime: OvertimeConfig
     ai_behavior: AIBehavior = field(default_factory=AIBehavior)
 
+    def scores_needed(self, deficit: int) -> int:
+        """Return the minimum scoring possessions needed to erase a deficit."""
+        if deficit <= 0:
+            return 0
+        points_per_score = 8 if self.two_point_conversion else 7
+        return (deficit + points_per_score - 1) // points_per_score
     def missed_field_goal_position(self, scrimmage_position: int, kick_position: int) -> int:
         """Return the new offense's spot for an unreturned, unblocked miss.
 
