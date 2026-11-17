@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-228 issues: 74 open, 77 resolved, 77 closed.
+228 issues: 74 open, 76 resolved, 78 closed.
 
 ## Open (74)
 
@@ -39,13 +39,13 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-041](issues/DATA/DATA-041.md) | Medium | — | Empirical variant allocation locks primary QT into low-weight rows that layout cannot disperse | created 2026-11-06 | DATA-039 |
 | [DATA-042](issues/DATA/DATA-042.md) | Medium | — | Updated season simulations still inflate scoring and offensive play counts | created 2026-11-07 | DATA-018, AI-030 |
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
-| [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.6 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
-| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.6 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | FLOW-027 |
+| [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.7 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
+| [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.7 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | FLOW-027 |
 | [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
-| [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.6 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
+| [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.7 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -91,7 +91,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (77)
+## Resolved (awaiting play-test confirmation) (76)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -149,7 +149,6 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AI-006](issues/AI/AI-006.md) | Medium | — | Late-game offense/defense and season-aware conversions needed better decisions | created 2026-10-17, resolved 2026-10-17 | AI-003, AI-028, AI-029 |
 | [AI-008](issues/AI/AI-008.md) | Medium | — | Hard can become predictable by overconcentrating on any top chart recommendation | created 2026-10-18, resolved 2026-10-18 | — |
 | [AI-015](issues/AI/AI-015.md) | Medium | — | CPU receiving team never takes "keep return + yards" on a kicking-team punt foul (always index 0 = decline) | created 2026-10-19, resolved 2026-11-07 | AUD-020, TRACE-004 |
-| [AI-017](issues/AI/AI-017.md) | Medium | v1.10.6 | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19, resolved 2026-11-14 | — |
 | [AI-022](issues/AI/AI-022.md) | Medium | — | CPU two-point try play is chosen by the ordinary policy on the stale post-touchdown state | created 2026-10-27, resolved 2026-10-28 | RULE-001 |
 | [AI-024](issues/AI/AI-024.md) | Medium | v1.10.6 | Fourth-down AI uses fixed 1983 field-goal ranges for every season | created 2026-11-01, resolved 2026-11-15 | DATA-011, AI-034 |
 | [AI-029](issues/AI/AI-029.md) | Medium | v1.10.6 | Last-possession fourth-down call prioritizes conversion over remaining scoring distance and time | created 2026-11-06, resolved 2026-11-15 | AI-003, AI-006 |
@@ -176,7 +175,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (77)
+## Closed (78)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -218,6 +217,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [AI-009](issues/AI/AI-009.md) | Medium | — | Existing balanced auto/season checks do not exercise Hard-vs-Hard or expose structured play-balance evidence | created 2026-10-18, resolved 2026-10-18, closed 2026-10-26 | AI-025 |
 | [AI-010](issues/AI/AI-010.md) | Medium | — | Opponent learning treated punts/field goals as runs because a false pass flag overrode action classification | created 2026-10-18, resolved 2026-10-18, closed 2026-10-28 | AI-012 |
 | [AI-011](issues/AI/AI-011.md) | Medium | — | A two-score Q4 deficit triggered a whole-quarter deep-pass-only hurry-up branch, bypassing down/distance and… | created 2026-10-18, resolved 2026-10-18, closed 2026-11-02 | — |
+| [AI-017](issues/AI/AI-017.md) | Medium | v1.10.6 | Defense accepts a made field goal instead of the offensive foul that would force a longer re-kick | created 2026-10-19, resolved 2026-11-14, closed 2026-11-17 | — |
 | [AI-028](issues/AI/AI-028.md) | Medium | — | Fourth-down urgency falls through to conservative punting in own territory when multiple scores are needed | created 2026-11-06, resolved 2026-11-07, closed 2026-11-07 | AI-003, AI-006 |
 | [AUD-009](issues/AUD/AUD-009.md) | Medium | — | QB-time rushing touchdown is described as a completed pass to a receiver | created 2026-10-19, resolved 2026-10-19, closed 2026-11-02 | — |
 | [AUD-016](issues/AUD/AUD-016.md) | Medium | v1.10.6 | Web play-log team labels and colouring assume the human is home (PlayingPhase.jsx offense/defense naming) | created 2026-10-19, resolved 2026-11-15, closed 2026-11-15 | — |

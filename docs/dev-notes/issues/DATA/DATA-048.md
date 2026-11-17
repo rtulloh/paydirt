@@ -3,7 +3,7 @@ id: DATA-048
 title: Move fictional teams into sample and exclude them from season play
 status: open
 priority: Medium
-target-release: v1.10.6
+target-release: v1.10.7
 created-at: 2026-11-11
 resolved-at:
 closed-at:
@@ -30,3 +30,9 @@ The fictional Thunderhawks and Ironclads currently live in seasons/2026 and appe
 
 --- 2026-11-11 00:00 ---
 Created with scripts/create_issue.py. Keep evidence public-safe.
+
+--- 2026-11-17 18:15 ---
+Deferred to v1.10.7 during the v1.10.6 release review. Moving the fictional
+sample teams changes season discovery, saved-game identity, packaging, and
+installation verification. It should ship as a separately qualified migration
+rather than expand the completed v1.10.6 release candidate.

@@ -3,7 +3,7 @@ id: FLOW-007
 title: Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge
 status: open
 priority: Medium
-target-release: v1.10.6
+target-release: v1.10.7
 created-at: 2026-10-19
 resolved-at: 
 closed-at:
@@ -43,3 +43,9 @@ outcome is never processed, so a return touchdown or safety skips the try and
 kickoff or the safety free kick. Tracked as [FLOW-027](../FLOW/FLOW-027.md) so
 that defect can be verified on its own; the shared-loop and presentation items
 above remain open here.
+
+--- 2026-11-17 18:15 ---
+Deferred to v1.10.7 during the v1.10.6 release review. The remaining work is a
+broader CLI parity and shared-loop cleanup with no evidence of blocking the
+completed v1.10.6 gameplay fixes or the Week 7 play-test. Keeping it out of the
+release avoids expanding scope after regression and play-test qualification.

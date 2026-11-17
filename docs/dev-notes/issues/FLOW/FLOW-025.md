@@ -3,7 +3,7 @@ id: FLOW-025
 title: Kickoff penalty menu duplicates the decline option and offers three choices
 status: open
 priority: Medium
-target-release: v1.10.6
+target-release: v1.10.7
 created-at: 2026-11-13
 resolved-at:
 closed-at:
@@ -32,3 +32,8 @@ Owner review of the FLOW-024 replay: the decline choice is understandable as
 the opposite of the re-kick, but its "[3] Accept PENALTY: Decline penalty"
 prefix is self-contradictory. Recorded separately from the safety-possession
 fix. No change to kickoff rules or penalty enforcement is intended.
+
+--- 2026-11-17 18:15 ---
+Deferred to v1.10.7 during the v1.10.6 release review. This is a prompt wording
+and duplicate-choice presentation issue; the underlying kickoff enforcement is
+unchanged. It does not block the gameplay and AI fixes qualified for v1.10.6.
