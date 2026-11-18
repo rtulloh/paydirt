@@ -569,3 +569,16 @@ file-name searches found no recoverable original bundle. Publication remains
 blocked pending restoration and required acceptance; no policy was weakened,
 no original report reconstructed, and no final-candidate push or tag performed.
 Private evidence has not been claimed remotely preserved.
+
+### Owner-directed gate applicability correction — November 17, 2026
+
+The owner directed making the fresh 1977 acceptance requirement contingent on
+actual chart changes. AGENTS.md and the canonical released-chart guide now allow
+unchanged 1977 data to carry forward with exact complete inventory/byte identity
+against immutable v1.10.6 plus current public chart mechanics. Fresh private
+source/reproduction/statistical qualification remains required for new,
+regenerated or changed chart inputs. Engine/runtime/UI/version changes alone do
+not trigger it. Existing fit exceptions remain visible and full regression and
+published native-install checks remain mandatory. This supersedes the missing-
+private-evidence release blocker recorded above; the failed original gate attempt
+remains retained and is not relabeled as passing.

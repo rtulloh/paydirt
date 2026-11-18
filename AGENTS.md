@@ -149,27 +149,42 @@ metadata change still fails. See
 [released chart regression](docs/released-chart-regression.md). Private source
 inventories and historical logs remain in ignored local audit storage.
 
-The owner's explicit 1977 finite-search authorization permits a narrow, reviewed,
-hash-bound statistical release exception for the best canonically generated and
-characterized candidate. Record the actual missed bounds and owner authorization;
-never relabel failed strict fit as passing or alter tolerances. Source identity,
-reproduction, sample requirements, mechanics, screen-INT, gameplay, full regression
-and downloaded native-install checks remain mandatory. This is specific to the
+For new or changed 1977 charts, the owner's explicit finite-search authorization
+permits a narrow, reviewed, hash-bound statistical release exception for the best
+canonically generated and characterized candidate. Record the actual missed
+bounds and owner authorization; never relabel failed strict fit as passing or
+alter tolerances. Source identity, reproduction, sample requirements, mechanics,
+screen-INT, gameplay, full regression and downloaded native-install checks remain
+mandatory for that qualification. This is specific to the
 [1977 release goal](docs/dev-notes/1977-calibration-release-goal.md), not a generic
 new-season bypass.
 
+**Unchanged released 1977 charts do not require fresh statistical acceptance.**
+When carrying them forward, verify the complete `seasons/1977` inventory and every
+file byte against immutable v1.10.6 commit
+`88fd6ce4de042bb768933ef1e60cc9db55764e4a`; reject missing, extra, changed or
+symlinked files. Retain a fresh ignored identity receipt and run
+`python3 scripts/audit_public_charts.py --season-dir seasons/1977 --expected-teams 28 --output .ai-audits/public-chart-quality-1977.json`.
+Keep all published statistical exceptions and failed bounds visible in the season
+notes and manifest. This route carries forward released data; it does not claim
+new source reproduction, recalibration or statistical fit. Engine, runtime,
+backend, frontend, packaging and version changes alone do not trigger fresh 1977
+statistical acceptance. They still require the full applicable regression, code
+review and downloaded native-install checks. Missing original private statistical
+evidence does not block this unchanged-chart route.
 
-When the 1977 set is included, also run the separately reviewed
+New, regenerated or changed 1977 chart data, metadata, rules, provenance or
+source-contract inputs require the separately reviewed
 `scripts/audit_1977_release.py` command documented in
 [released chart regression](docs/released-chart-regression.md#exact-1977-statistical-acceptance),
 using the immutable pinned policy and its exact canonical, independent
 reproduction, source-contract and minimum-72-repetition execution evidence.
-Retain a fresh ignored acceptance receipt for each regression. A missing policy,
-changed chart/source/runtime, incomplete public season or nonstatistical failure
-blocks pushing. Its passing release-policy receipt does not relabel strict fit
-misses as passes or replace any command above. The owner-authorized statistical
-exceptions and all actual failed bounds must remain visible in the public season
-notes and manifest. Raw private source paths and inventories stay local.
+Retain a fresh ignored acceptance receipt for each such qualification. Missing
+required evidence, an incomplete public season or a nonstatistical failure blocks
+pushing changed charts. Its passing release-policy receipt does not relabel strict
+fit misses as passes or replace full regression. Do not fall back to the
+unchanged-chart route when identity differs. Raw private source paths and
+inventories stay local.
 
 For corrective v1.10.5 only, the owner-approved 1977 version-metadata equivalence
 retains the immutable policy and original execution report. The gate verifies all

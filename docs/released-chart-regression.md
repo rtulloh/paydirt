@@ -113,7 +113,35 @@ unchanged-public-release collector. `required_regression_commands(released_chart
 exposes the explicit AGENTS inventory; the default remains strict for existing
 candidate tooling. Run and retain every AGENTS result for the released route.
 
+## Unchanged released 1977 charts
+
+The owner approved this route on November 17, 2026: carrying released charts
+forward unchanged does not require repeating their original statistical study.
+Compare the complete `seasons/1977` inventory and every file byte against immutable
+v1.10.6 commit `88fd6ce4de042bb768933ef1e60cc9db55764e4a`. Reject extra, missing,
+changed or symlinked files; retain a fresh ignored identity receipt. Also run:
+
+```sh
+python3 scripts/audit_public_charts.py --season-dir seasons/1977 --expected-teams 28 --output .ai-audits/public-chart-quality-1977.json
+```
+
+Keep the published statistical exceptions and failed bounds visible in the notes
+and manifest. This verifies unchanged released data and current chart mechanics;
+it does not claim fresh source reproduction or statistical fit. Changes confined
+to the engine, runtime, backend, frontend, packaging or version metadata do not
+require fresh 1977 statistical acceptance. Full applicable regression, code review
+and downloaded native-install acceptance remain mandatory. Missing original
+private statistical evidence does not block this route.
+
+New, regenerated or changed 1977 chart data, metadata, rules, provenance or source-
+contract inputs require the qualification below. An identity mismatch cannot use
+the unchanged-chart route. The original policy and statistical tolerances remain
+unchanged.
+
 ## Exact 1977 statistical acceptance
+
+This gate applies to new, regenerated or changed 1977 chart inputs, rather than
+releases carrying the existing charts forward unchanged.
 
 `scripts/audit_1977_release.py` invokes a separate, fail-closed acceptance gate.
 It requires a reviewed policy pinned to an immutable Git commit and SHA-256;
