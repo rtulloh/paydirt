@@ -95,9 +95,12 @@ test('static GitHub build completes home and away games without an HTTP backend'
       }
       await expect(button, 'An actionable control must exist at step ' + step).toBeEnabled()
       const count = (await replies()).length
+      const closesResult = (await button.innerText()).trim() === 'CONTINUE'
       await button.click()
       await expect.poll(async () => {
         if ((await replies()).length > count) return true
+        // Closing a result panel changes only the UI; it sends no engine operation.
+        if (closesResult && !await button.isVisible()) return true
         if (await page.getByTestId('game-over').isVisible()) return true
         return await page.getByRole('button', { name: 'EXECUTE PLAY', exact: true }).isVisible()
           || await page.getByRole('button', { name: 'NORMAL PUNT', exact: true }).isVisible()

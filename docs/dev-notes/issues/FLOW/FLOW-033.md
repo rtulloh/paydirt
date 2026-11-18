@@ -168,3 +168,19 @@ registration. Full browser games, final regression/push gates and deployed-site
 verification remain pending; no GitHub playable URL or completed feature is claimed.
 Known release warnings are accepted per the owner's instruction; genuine failures
 and missing acceptance evidence remain separately recorded. Ticket stays open.
+
+--- 2026-11-17 19:16 ---
+Pre-publication spike gates now pass: core and clean checkout each 11,559 tests,
+474 backend tests, 407 frontend tests, both builds, lint, gameplay/season/AI and
+released-chart gates. The owner launched isolated Chrome for automation; all 20
+HTTP browser tests and the static browser's two complete games pass. The latter
+verified both human roles, halftime, finals and fresh new-game state without an
+HTTP game backend. Corrected a driver wait for UI-only CONTINUE transitions;
+full-game and isolation assertions were retained. Fixed native helper packaging
+and strengthened its transitive-import regression. Core gameplay and charts remain
+unchanged. The 1977 gate is not applicable to the verified sample-only deployment
+inventory; this is not a historical-season qualification claim.
+
+See the canonical plan's validation checkpoint for retained evidence. Publishing
+and deployed-origin verification are next. Ticket remains open for production
+scope beyond the playable sample spike; no v1.11.0 release/tag is being cut.

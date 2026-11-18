@@ -372,3 +372,32 @@ started from the owner's Terminal when agent process registration fails. The
 fixture's four tests pass with 100% line and branch coverage; default launching and
 loopback request guards remain in place. This connection option does not itself
 constitute a browser-game pass.
+
+### Pre-publication validation — November 17, 19:16
+
+All unconditional local gates now pass. Core and tracked-files-only checkout each
+pass 11,559 tests. Backend passes 474 tests, frontend passes 407 tests, native and
+static browser builds pass, and lint, all-games, full-season, both AI audits and
+both released-chart audits pass. Existing release warnings remain accepted by the
+owner. The earlier failed core run identified a missing native helper in
+`paydirt.spec`; adding `operations.py` and `http_adapter.py` fixed it, and the full
+core and clean-checkout reruns passed. The packaging regression was strengthened
+to follow transitive local helper imports; no assertion was weakened.
+
+With the owner's separately launched Chrome 157, the normal browser suite passes
+all 20 tests, including two complete games. The static browser suite also passes
+both complete games, home/receiving and away/kicking, all quarters, one halftime
+per game, final screens and fresh new-game state, with no HTTP game backend.
+Its initial live run exposed an incorrect driver expectation: closing CONTINUE
+changes only the UI and need not produce a worker reply. The corrected driver
+accepts disappearance of that panel while retaining all complete-game, state and
+backend-isolation assertions. No gameplay fix was needed.
+
+Evidence is retained in ignored `.ai-audits/browser-spike/`: `full-regression/`
+for unchanged gates and the final clean checkout, `final-core-regression/` for
+the repaired core, `final-ui-regression/` for frontend/build, and
+`final-browser-regression/` for HTTP browser qualification. The static suite's
+successful Playwright run is additional evidence. The original failed receipts
+remain history; they are not relabeled as passing. Publication and actual deployed
+origin verification follow this checkpoint. This spike does not close FLOW-033's
+remaining production-runtime, persistence, offline and player-comparison work.
