@@ -9,7 +9,7 @@ async function initialize(manifestLocation) {
   const manifestResponse = await fetch(manifestUrl);
   if (!manifestResponse.ok) throw new Error('Could not download the browser game manifest.');
   const manifest = await manifestResponse.json();
-  if (manifest.version !== 1 || manifest.scope !== 'public-2026-spike' || manifest.files?.length !== 1) throw new Error('Unsupported browser game manifest.');
+  if (manifest.version !== 1 || manifest.scope !== 'public-released-seasons' || manifest.files?.length !== 1) throw new Error('Unsupported browser game manifest.');
   const archive = manifest.files[0];
   if (archive.url !== 'python.zip' || archive.mount !== '/app' || !/^[a-f0-9]{64}$/.test(archive.sha256)) throw new Error('Invalid browser game archive manifest.');
   const response = await fetch(new URL(archive.url, manifestUrl));

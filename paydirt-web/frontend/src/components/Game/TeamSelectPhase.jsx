@@ -12,35 +12,70 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const [playerIsHome, setPlayerIsHome] = useState(true);
   const [difficulty, setDifficulty] = useState('medium');
   const [loading, setLoading] = useState(true);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [seasonRetry, setSeasonRetry] = useState(0);
+  const [teamRetry, setTeamRetry] = useState(0);
 
   const { setGameId, updateGameState, setIsKickoff, setCurrentSeason } = useGameStore.getState();
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
     gameFetch(`${API_BASE}/api/seasons`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Could not load seasons.');
+        return res.json();
+      })
       .then(data => {
+        if (!active) return;
         setSeasons(data.seasons);
         if (data.seasons.length > 0) {
           setSelectedSeason(data.seasons[0]);
+        } else {
+          setTeamsLoading(false);
         }
         setLoading(false);
       })
-      .catch(err => {
-        console.error('Failed to load seasons:', err);
+      .catch(() => {
+        if (!active) return;
+        setLoadError({ kind: 'seasons', message: 'Could not load seasons. Please retry.' });
+        setTeamsLoading(false);
         setLoading(false);
       });
-  }, []);
+    return () => { active = false; };
+  }, [seasonRetry]);
 
   useEffect(() => {
+    let active = true;
     if (selectedSeason) {
+      setTeams([]);
+      setPlayerTeam(null);
+      setOpponentTeam(null);
+      setTeamsLoading(true);
+      setLoadError(null);
       gameFetch(`${API_BASE}/api/teams?season=${selectedSeason}`)
-        .then(res => res.json())
-        .then(data => setTeams(data.teams || []))
-        .catch(err => console.error('Failed to load teams:', err));
+        .then(res => {
+          if (!res.ok) throw new Error('Could not load teams.');
+          return res.json();
+        })
+        .then(data => {
+          if (!active) return;
+          setTeams(data.teams || []);
+          setTeamsLoading(false);
+        })
+        .catch(() => {
+          if (!active) return;
+          setLoadError({ kind: 'teams', message: `Could not load teams for ${selectedSeason}. Please retry.` });
+          setTeamsLoading(false);
+        });
     }
-  }, [selectedSeason]);
+    return () => { active = false; };
+  }, [selectedSeason, teamRetry]);
 
   const handleTeamClick = (team) => {
+    if (teamsLoading || loadError) return;
     if (!playerTeam) {
       setPlayerTeam(team);
     } else if (!opponentTeam && team.id !== playerTeam.id) {
@@ -52,7 +87,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
     }
   };
 
-  const canStart = playerTeam && opponentTeam;
+  const canStart = !teamsLoading && !loadError && playerTeam && opponentTeam;
 
   const handleStartGame = () => {
     if (!canStart) return;
@@ -90,7 +125,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading teams...</div>
+        <div role="status" className="text-white text-xl">Loading teams...</div>
       </div>
     );
   }
@@ -105,9 +140,9 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
 
         {seasons.length > 0 && (
           <div className="mb-6 text-center">
-            <div className="inline-flex items-center gap-4 bg-gray-800 rounded-lg px-6 py-3">
+            <div className="inline-flex flex-wrap justify-center items-center gap-4 bg-gray-800 rounded-lg px-6 py-3">
               <span className="font-bold text-gray-300">SEASON:</span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 {seasons.map((season) => (
                   <button
                     key={season}
@@ -134,6 +169,19 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
           <h3 className="text-lg font-bold mb-3 text-gray-300 text-center">
             {selectedSeason ? `TEAMS (${selectedSeason})` : 'TEAMS'}
           </h3>
+          {teamsLoading && <p role="status" className="text-center text-gray-300">Loading teams...</p>}
+          {loadError && (
+            <div role="alert" className="text-center text-red-300 mb-4">
+              <p>{loadError.message}</p>
+              <button className="mt-2 px-4 py-2 bg-gray-700 rounded-lg text-white" onClick={() => {
+                if (loadError.kind === 'seasons') setSeasonRetry(value => value + 1);
+                else setTeamRetry(value => value + 1);
+              }}>Retry</button>
+            </div>
+          )}
+          {!teamsLoading && !loadError && teams.length === 0 && (
+            <p className="text-center text-gray-300">No teams available for this season.</p>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {teams.map(team => {
               const isPlayer = playerTeam?.id === team.id;

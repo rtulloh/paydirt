@@ -59,7 +59,8 @@ def test_archive_is_exact_public_allowlist_with_verified_manifest(source: Path, 
     saved = json.loads((output / "manifest.json").read_text())
     assert manifest == saved
     assert saved["version"] == 1
-    assert saved["scope"] == "public-2026-spike"
+    assert saved["scope"] == "public-released-seasons"
+    assert saved["seasons"] == {year: list(teams) for year, teams in module.PUBLIC_SEASONS.items()}
     assert saved["files"] == [{
         "url": "python.zip", "mount": "/app", "bytes": len(archive_bytes),
         "sha256": hashlib.sha256(archive_bytes).hexdigest(),
@@ -165,16 +166,27 @@ def test_output_asset_symlink_is_rejected(source: Path, tmp_path: Path) -> None:
     assert target.read_text() == "retain me"
 
 
-def test_public_allowlist_contains_only_two_public_sample_teams() -> None:
+def test_public_allowlist_contains_exact_released_seasons() -> None:
     module = builder()
-    season_files = {name for name in module.PUBLIC_FILES if name.startswith("seasons/")}
-    expected = {"seasons/2026/2026.yaml", "seasons/2026/ai_behavior.yaml"}
-    for team in ("Ironclads", "Thunderhawks"):
-        expected.update(
-            f"seasons/2026/{team}/{name}"
-            for name in ("team.yaml", "offense.csv", "defense.csv", "special.csv", "roster.json")
-        )
-    assert season_files == expected
+    assert {year: len(teams) for year, teams in module.PUBLIC_SEASONS.items()} == {
+        "1977": 28, "1983": 28, "2024": 32, "2026": 2,
+    }
+    expected = set()
+    for year, teams in module.PUBLIC_SEASONS.items():
+        assert len(teams) == len(set(teams))
+        expected.add(f"seasons/{year}/{year}.yaml")
+        for team in teams:
+            expected.update(f"seasons/{year}/{team}/{name}" for name in (
+                "team.yaml", "offense.csv", "defense.csv", "special.csv", "roster.json",
+            ))
+    expected.update({
+        "seasons/1977/NOTES.md", "seasons/1977/generation-manifest.json",
+        "seasons/1983/ATTRIBUTION.md", "seasons/1983/generation-manifest.json",
+        "seasons/1983/chart-audit.json", "seasons/2024/ATTRIBUTION.md",
+        "seasons/2024/generation-manifest.json", "seasons/2024/chart-audit.json",
+        "seasons/2026/ai_behavior.yaml",
+    })
+    assert {name for name in module.PUBLIC_FILES if name.startswith("seasons/")} == expected
     assert len(module.PUBLIC_FILES) == len(set(module.PUBLIC_FILES))
     assert "paydirt-web/backend/http_adapter.py" not in module.PUBLIC_FILES
     assert all(not name.startswith((".ai-audits/", "private-data/")) for name in module.PUBLIC_FILES)
@@ -184,7 +196,7 @@ def test_cli_builds_default_output(source: Path, capsys: pytest.CaptureFixture) 
     module = builder()
     assert module.main(["--source-root", str(source)]) == 0
     assert (source / ".ai-audits/browser-spike/staging/manifest.json").is_file()
-    assert "53 public files" in capsys.readouterr().out
+    assert f"{len(module.PUBLIC_FILES)} public files" in capsys.readouterr().out
 
 
 def test_cli_reports_invalid_output(source: Path, capsys: pytest.CaptureFixture) -> None:

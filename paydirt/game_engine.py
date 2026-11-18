@@ -4075,7 +4075,9 @@ class PaydirtGameEngine:
             or self.state.is_home_possession != offense_was_home
             or outcome.play_type in (PlayType.PUNT, PlayType.FIELD_GOAL)
             or (not two_minute_warning_before and self.state.two_minute_warning_called)
-            or time_before_play * 60 <= 10
+            # Match _apply_timeout's ten-second cost and subsecond clamp before
+            # restoring old-half budgets or charging a timeout that saves no time.
+            or time_before_play - 0.167 < 0.0167
         ):
             return False
 
@@ -4184,6 +4186,8 @@ class PaydirtGameEngine:
         # Clamp to 0 if less than 1 second remains
         if time_after_timeout < 0.0167:
             time_after_timeout = 0
+        if self.state.quarter > quarter_before_play and time_after_timeout == 0:
+            return  # Keep the fresh period clock (or the finalized game) intact.
         self.state.time_remaining = time_after_timeout
 
         # If quarter advanced during the play but timeout preserves time, revert quarter

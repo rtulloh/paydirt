@@ -443,3 +443,101 @@ advisories remain documented in AI-008/009/029. No Hard warning or new audit
 closure is claimed. Corrected tracker timestamps pass all 461 documentation and
 tracker checks. The upcoming push is a sample-spike correction, not a release/tag;
 GitHub CI and actual deployed-origin verification remain separate next gates.
+
+### Public-season expansion — November 17, 20:16
+
+The owner confirmed carrying the extensively tested, released chart files forward
+unchanged. The browser bundle now explicitly enumerates the 28 teams from 1977,
+28 from 1983, 32 from 2024 and two 2026 samples. Private and experimental local
+seasons are excluded. No chart generation, calibration, core gameplay, statistical
+policy or tolerance changes are part of this work. Existing 1977 accuracy
+exceptions and attribution travel with the released data.
+
+An earlier investigation incorrectly treated the old native statistical execution
+identity as a WebAssembly redistribution requirement. That claim was corrected:
+the statistical gate prevents misidentifying the original experiment; it does not
+specify that independently tested browser gameplay must use that native runtime.
+The actual v1.10.6 release passed its public 1977 chart check and all five native
+installation jobs. Current core and season files are being checked against that
+immutable release. The old private statistical receipt is not relabeled, and this
+expansion does not claim a new statistical study or regeneration qualification.
+
+Test-first changes cover explicit all-season inventory, stale season responses,
+loading/errors/retry and browser scope labels. Builder baseline was two failures
+with seventeen passing controls; its final suite has 100% statement and branch
+coverage. The rendered selection baseline exposed six failures; focused selection
+coverage is 98.34% lines and 91.35% branches. All 428 frontend tests pass. Actual
+Node WebAssembly initializes every team and its chart book, then completes eight
+games across all seasons. The real browser inventory check also passes all ninety
+teams and era-rule metadata; eight rendered full games and full regression are
+in progress. Deployment still serves the separately verified sample until this
+expanded candidate passes its push gates.
+
+### Clock regression found during expansion — November 17, 20:26
+
+The first expanded browser campaign initialized all ninety teams and completed
+both 1977 games, but stopped the 2026 pair at a genuine engine response showing
+halftime, Q3 and zero seconds. The existing 900-second halftime assertion stayed.
+Trace decoding and a deterministic public-sample reproduction showed that a
+near-expiring timeout could restore old-half budgets and overwrite the fresh
+period clock; the next kickoff could skip Q3. This is RULE-032, discovered while
+qualifying the browser feature. Chart files are unaffected.
+
+The test-first baseline produced 44 failures and 37 passing controls. The narrow
+core fix rejects timeout requests that retain no playable old-period time before
+budget restoration/charging, and preserves an already advanced period clock.
+All 242 focused timeout tests and an independent 362-test clock suite pass.
+No existing expectation changed. Measured `paydirt.game_engine` coverage in the
+latter suite is 50.62% statements and 46.81% branches across the large module.
+The changed `_apply_timeout` has 100% statement/branch coverage, and
+`_apply_requested_timeout` has 95.65% statements/92.86% branches. Its remaining
+uncovered return concerns an existing unavailable-budget path; unrelated rules
+are exercised by full regression.
+
+The earlier complete core byte-identity receipt describes the pre-fix candidate;
+it does not certify this intentional engine change. Full regression and all eight
+rendered browser games are being repeated against the rebuilt archive. The fixed
+2026 pair already passes both complete games and both original halftime checks.
+Fresh public/generated AI audits reconcile all 480 games and 70,689 calls, with
+only the same two balanced third-and-long advisories and no Hard warnings. Ticket
+statuses remain unchanged pending issue-specific play-test evidence.
+
+### All-season candidate qualification — November 17, 20:35
+
+The rebuilt archive `b74c4f628cbce17105df2e55af245830260cd9778ec4bf9ace19ad663a95a113`
+contains 504 explicitly reviewed files and is 1,970,080 bytes, 274,813 bytes larger
+than the sample archive. All 463 public season files match immutable v1.10.6
+commit `88fd6ce4de042bb768933ef1e60cc9db55764e4a`; among core modules only the
+intentional RULE-032 clock fix differs. Attribution and statistical disclosures
+remain unchanged. This carries established released inputs forward as directed
+by the owner; it does not claim fresh source reproduction, recalibration or a new
+1977 statistical-acceptance execution.
+
+The actual browser campaign passes all five tests in 12.6 minutes: every team is
+covered by 45 normal game initializations and 90 chart books, with exact inventory
+and era-rule checks, followed by eight complete rendered games. Both human roles,
+all quarters, one halftime with a 900-second Q3 clock, final score/state agreement
+and fresh new-game state pass for each season. No HTTP game backend is used.
+Node WebAssembly separately passes all ninety teams and eight complete games.
+Its export audit now compares full canonical GET state against export; comparing
+an action-only snapshot was incorrect because final scoring can override its
+kickoff flag. Complete equality remains; FLOW-034 records that separate metadata
+finding and the original failed receipt stays retained.
+
+Working-tree and tracked-files-only core runs each pass 11,633 tests; the later
+documentation/tracker checks pass all 465 cases, including the newly added issue
+records. Backend passes 474 tests, frontend 428, both builds and lint pass, all
+224 regular-season/nine postseason games complete, both AI schedules reconcile,
+and both released-chart gates pass. The public 1977 chart/decoder check also
+passes on the corrected engine. The HTTP browser rerun passes all twenty tests.
+An initial port collision was resolved by isolated ports 18200/15273 and the
+regression Python on PATH; that infrastructure failure is not relabeled.
+
+Evidence remains under ignored `browser-spike/all-seasons-clock-{core,clean,
+regression}/`, `all-seasons-clock-browser-final.log`,
+`all-seasons-browser-clock-fixed/runner-final.log`,
+`node-wasm-all-seasons-clock-fix-canonical.json` and the final identity receipt.
+Existing backend deprecations, stale Browserslist data and color-environment
+warnings remain disclosed/accepted. No skips or statistical-tolerance changes
+were introduced. GitHub qualification and actual all-season deployed-origin
+verification follow this checkpoint; no release tag is being cut.

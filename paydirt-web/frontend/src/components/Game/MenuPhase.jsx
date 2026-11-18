@@ -62,6 +62,7 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
         <p className="text-gray-400 text-xl mb-12">
           Classic Football Board Game
         </p>
+        {browserMode && <p className="text-gray-400 mb-6">Public seasons: 1977, 1983, 2024 and 2026 sample teams</p>}
         <div className="space-y-4">
           <button
             onClick={handleNewGame}

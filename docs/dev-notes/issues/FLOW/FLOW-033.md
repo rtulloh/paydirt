@@ -10,6 +10,8 @@ closed-at:
 tags:
   - investigating
 links:
+  - RULE-032
+  - FLOW-034
 commits:
 ---
 
@@ -203,3 +205,18 @@ audit-comment timestamps caught by an earlier run are corrected and the full cor
 rerun passes. The native browser CI job budget is twenty minutes after cold browser
 installation consumed 7m19s of its prior ten-minute limit; per-test limits remain.
 Corrective push follows; deployed-origin proof and GitHub reruns are still pending.
+
+--- 2026-11-17 20:35 ---
+The expanded candidate includes all 90 public teams across 1977/1983/2024/2026,
+with unchanged released charts and disclosures. Five browser tests pass: complete
+inventory/chart/era-rule checks and eight complete rendered games, both human
+roles in every season. The campaign caught RULE-032, a real period-boundary
+timeout bug; its deterministic test-first fix retains the original halftime
+assertion and passes focused/independent review. Core and clean checkout each
+pass 11,633 tests, frontend 428, backend 474, documentation/tracker 465; native
+browser, season/AI/chart/lint/build gates pass. Node export comparison now uses
+full canonical state rather than action-only kickoff metadata; FLOW-034 records
+that separate finding. Candidate archive b74c4f62 is 1,970,080 bytes. Push and
+deployed-origin verification follow; temporary sessions and remaining production
+feature work stay explicit limitations. No formal v1.11.0 release/tag is being
+published.

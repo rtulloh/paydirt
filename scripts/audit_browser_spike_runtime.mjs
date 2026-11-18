@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Exercise the built public sample archive in actual Pyodide Wasm under Node.
+ * Exercise the built public released-season archive in actual Pyodide Wasm under Node.
  * This supplements, and never replaces, real browser UI/worker qualification.
  * Install pyodide@0.27.7 separately; pass its pyodide.mjs using --pyodide-module.
  */
@@ -49,9 +49,9 @@ async function call(method, path, body) {
   return response.body;
 }
 
-async function playGame(home) {
+async function playGame(season, teams, home) {
   const created = await call('POST', '/api/game/new', {
-    season: '2026', player_team: 'Ironclads', opponent_team: 'Thunderhawks',
+    season, player_team: teams[0], opponent_team: teams[1],
     play_as_home: home, difficulty: 'hard',
   });
   const id = created.game_id;
@@ -110,18 +110,21 @@ async function playGame(home) {
   assert.ok([1, 2, 3, 4].every(quarter => quarters.has(quarter)), 'Every quarter must execute');
   assert.equal(halftime, 1, 'Exactly one halftime must execute');
   assert.ok(plays > 80, 'A complete unshortened game must be played');
+  // Action responses can carry a presentation-only kickoff flag after a final
+  // score. Export must match the complete authoritative state, not that snapshot.
+  const finalState = await call('GET', '/api/game/state/' + id);
   const replay = await call('POST', '/api/game/save-replay/' + id);
-  assert.deepEqual(replay.game_state, state, 'Exported final state must match the played game');
+  assert.deepEqual(replay.game_state, finalState, 'Exported final state must match authoritative game state');
   receipt.games.push({
-    home, id, actions, plays, halftime, quarters: [...quarters],
-    final: state, play_history_entries: replay.play_history.length,
+    season, home, id, actions, plays, halftime, quarters: [...quarters],
+    final: finalState, terminal_action_state: state, play_history_entries: replay.play_history.length,
   });
   await call('DELETE', '/api/game/' + id);
 }
 
 try {
   const { loadPyodide } = await import(pathToFileURL(resolve(values['pyodide-module'])).href);
-  pyodide = await loadPyodide();
+  pyodide = await loadPyodide({ stdout: () => {} });
   assert.equal(pyodide.version, receipt.pyodide, 'Use the exact qualified Pyodide version');
   await pyodide.loadPackage(['pydantic', 'pyyaml'], {
     packageBaseUrl: 'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/',
@@ -132,7 +135,10 @@ try {
   const manifestBytes = await readFile(resolve(bundle, 'manifest.json'));
   const manifest = JSON.parse(manifestBytes);
   assert.equal(manifest.version, 1);
-  assert.equal(manifest.scope, 'public-2026-spike');
+  assert.equal(manifest.scope, 'public-released-seasons');
+  assert.deepEqual(Object.fromEntries(Object.entries(manifest.seasons).map(([year, teams]) => [year, teams.length])), {
+    '1977': 28, '1983': 28, '2024': 32, '2026': 2,
+  });
   assert.equal(manifest.files.length, 1);
   assert.equal(manifest.files[0].url, 'python.zip');
   assert.equal(manifest.files[0].mount, '/app');
@@ -152,10 +158,33 @@ try {
   assert.equal(receipt.packages.yaml, '6.0.2');
   assert.equal(pyodide.runPython("'fastapi' in sys.modules"), false);
   await call('GET', '/api/health');
-  const teams = await call('GET', '/api/teams/2026');
-  assert.deepEqual(teams.teams.map(team => team.id).sort(), ['Ironclads', 'Thunderhawks']);
+  assert.deepEqual((await call('GET', '/api/seasons')).seasons,
+    Object.keys(manifest.seasons).sort().reverse());
+  receipt.seasons = {};
+  for (const [season, expectedTeams] of Object.entries(manifest.seasons)) {
+    const teams = (await call('GET', '/api/teams/' + season)).teams;
+    assert.deepEqual(teams.map(team => team.id).sort(), [...expectedTeams].sort());
+    const rules = await call('GET', '/api/season-rules?season=' + season);
+    assert.equal(rules.two_point_conversion, Number(season) >= 1994);
+    const initialized = [];
+    for (const team of expectedTeams) {
+      const created = await call('POST', '/api/game/new', {
+        season, player_team: team,
+        opponent_team: expectedTeams.find(other => other !== team),
+        play_as_home: true, difficulty: 'hard',
+      });
+      for (const side of ['home', 'away']) {
+        await call('GET', '/api/game/charts/' + created.game_id + '?side=' + side);
+      }
+      await call('DELETE', '/api/game/' + created.game_id);
+      initialized.push(team);
+    }
+    receipt.seasons[season] = { teams: initialized, rules };
+  }
   await call('GET', '/api/guide');
-  for (const home of [true, false]) await playGame(home);
+  for (const [season, teams] of Object.entries(manifest.seasons)) {
+    for (const home of [true, false]) await playGame(season, teams, home);
+  }
   receipt.status = 'passed';
 } catch (error) {
   receipt.status = 'failed';
@@ -168,8 +197,9 @@ await writeFile(resolve(values.output), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify({
   ...receipt,
   checks: receipt.checks.length,
+  seasons: Object.fromEntries(Object.entries(receipt.seasons || {}).map(([year, data]) => [year, data.teams.length])),
   games: receipt.games.map(game => ({
-    home: game.home, actions: game.actions, plays: game.plays, halftime: game.halftime,
+    season: game.season, home: game.home, actions: game.actions, plays: game.plays, halftime: game.halftime,
     score: [game.final.home_score, game.final.away_score],
   })),
 }, null, 2));

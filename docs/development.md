@@ -44,19 +44,20 @@ npm run test:e2e:browser
 `build:browser` writes `dist-browser/` with the `/paydirt/` deployment prefix and
 stages an allowlisted Python archive and manifest under `dist-browser/browser/`.
 The staging receipt lives in ignored `.ai-audits/browser-spike/staging/`. The
-archive contains only reviewed application files, public 2026 sample teams and
-bundled guide content; it must never include private charts, source inventories,
-audits, standings or saved games. The worker verifies the archive's SHA-256 and
-size before mounting it at `/app` and importing `browser_bridge`.
+archive contains only reviewed application files, the unchanged public 1977,
+1983, 2024 and 2026 charts with attribution/disclosures, and bundled guide content.
+It must never include private charts, source inventories, audits, standings or
+saved games. The worker verifies the archive's SHA-256 and size before mounting
+it at `/app` and importing `browser_bridge`.
 
 The browser must support module Web Workers and WebAssembly. Startup downloads
 pinned **Pyodide 0.27.7**, Pydantic and PyYAML from
 `https://cdn.jsdelivr.net/pyodide/v0.27.7/full/`; network or policy failures must
 surface through the loading/error screen. No service worker or offline guarantee
-is implemented. Game sessions are temporary; checkpoint export/import, autosave,
-historical seasons and custom chart import remain outside this spike. Detached
-chart tabs use a bounded read-only snapshot of the current public chart books,
-not a second engine session.
+is implemented. Game sessions are temporary; checkpoint export/import, autosave
+and custom chart import remain outside this spike. Detached chart tabs use a
+bounded read-only snapshot of the current public chart books, not a second
+engine session.
 
 `test:e2e:browser` serves the built static directory on port **18733** and runs the
 separate Chromium suite in `e2e-browser/` with no game backend. Build first and
@@ -86,10 +87,10 @@ npm install --prefix /tmp/paydirt-spike-runtime pyodide@0.27.7
 node scripts/audit_browser_spike_runtime.mjs --pyodide-module /tmp/paydirt-spike-runtime/node_modules/pyodide/pyodide.mjs
 ```
 
-This checks the built archive and completes two sample games. It writes an ignored
-receipt under `.ai-audits/browser-spike/`; `--bundle` and `--output` override those
-paths. Node execution does not exercise React or Web Workers and cannot replace
-either required browser suite.
+This checks the built archive and completes games for its bundled public seasons.
+It writes an ignored receipt under `.ai-audits/browser-spike/`; `--bundle` and
+`--output` override those paths. Node execution does not exercise React or Web
+Workers and cannot replace either required browser suite.
 ## Architecture and Project Structure
 
 The core engine is authoritative for game rules, state, scoring, descriptions, and timing.

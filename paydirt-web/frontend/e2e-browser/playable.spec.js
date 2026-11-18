@@ -1,8 +1,15 @@
 import { test, expect } from '../e2e/browser-fixture.js'
 import { findEnabledPenaltyChoice } from './penalty-choice.js'
 
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return
+  const evidence = await page.evaluate(() => ({ requests: window.__engineRequests, replies: window.__engineReplies }))
+  await testInfo.attach('worker-failure-evidence', { body: JSON.stringify(evidence), contentType: 'application/json' })
+})
+
 // Observe genuine worker replies. All game-changing actions remain rendered UI clicks.
-test('static GitHub build completes home and away games without an HTTP backend', async ({ page, context }, testInfo) => {
+for (const year of ['2026', '1977', '1983', '2024']) {
+test(`static ${year} build completes home and away games without an HTTP backend`, async ({ page, context }, testInfo) => {
   const errors = []
   const apiRequests = []
   await context.route('**/api/**', route => {
@@ -12,6 +19,7 @@ test('static GitHub build completes home and away games without an HTTP backend'
   page.on('pageerror', error => errors.push(String(error)))
   await page.addInitScript(() => {
     window.__engineReplies = []
+    window.__engineRequests = []
     const NativeWorker = window.Worker
     window.Worker = class extends NativeWorker {
       constructor(...args) {
@@ -19,6 +27,10 @@ test('static GitHub build completes home and away games without an HTTP backend'
         this.addEventListener('message', ({ data }) => {
           if (data.result) window.__engineReplies.push(data.result)
         })
+      }
+      postMessage(...args) {
+        window.__engineRequests.push(args[0])
+        return super.postMessage(...args)
       }
     }
     Math.random = () => 0.75
@@ -36,12 +48,25 @@ test('static GitHub build completes home and away games without an HTTP backend'
   await page.goto('./')
   await expect(page.getByRole('button', { name: 'NEW GAME', exact: true })).toBeVisible({ timeout: 120_000 })
   await expect(page.getByText(/temporary|session/i).first()).toBeVisible()
+  const manifestResponse = await page.request.get(new URL('browser/manifest.json', page.url()).href)
+  expect(manifestResponse.ok()).toBe(true)
+  const manifest = await manifestResponse.json()
+  const expectedTeams = manifest.seasons[year]
+  expect(expectedTeams.length).toBe(year === '2026' ? 2 : year === '2024' ? 32 : 28)
   const ids = []
   for (const home of [true, false]) {
     await page.getByRole('button', { name: 'NEW GAME', exact: true }).click()
-    await expect(page.getByRole('button', { name: '2026', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: /Ironclads/ }).click()
-    await page.getByRole('button', { name: /Thunderhawks/ }).click()
+    await page.getByRole('button', { name: year, exact: true }).click()
+    await expect(page.getByRole('heading', { name: `TEAMS (${year})`, exact: true })).toBeVisible()
+    let availableTeams
+    await expect.poll(async () => {
+      const response = [...await replies()].reverse().find(reply => reply.body?.teams)
+      availableTeams = response?.body.teams
+      return availableTeams?.map(team => team.id).sort()
+    }).toEqual([...expectedTeams].sort())
+    for (const team of availableTeams.slice(0, 2)) {
+      await page.getByRole('button').filter({ has: page.getByText(team.name, { exact: true }) }).click()
+    }
     await page.getByRole('button', { name: home ? 'HOME' : 'AWAY', exact: true }).click()
     await page.getByRole('button', { name: 'hard', exact: true }).click()
     await page.getByRole('button', { name: 'START GAME', exact: true }).click()
@@ -56,6 +81,7 @@ test('static GitHub build completes home and away games without an HTTP backend'
     await page.getByTestId(home ? 'choose-receive' : 'choose-kick').click()
     const quarters = new Set()
     let halftime = 0
+    let patChoices = 0
     let plays = 0
     let completed = false
     for (let step = 0; step < 500; step++) {
@@ -74,6 +100,12 @@ test('static GitHub build completes home and away games without an HTTP backend'
         expect(before.time_remaining).toBe(900)
         await page.getByTestId('continue-button').click()
         continue
+      }
+      if (await page.getByRole('button', { name: 'KICK XP (1 PT)', exact: true }).isVisible()) {
+        const twoPoint = page.getByRole('button', { name: 'GO FOR 2!', exact: true })
+        if (Number(year) >= 1994) await expect(twoPoint).toBeVisible()
+        else await expect(twoPoint).toHaveCount(0)
+        patChoices++
       }
       let button = await findEnabledPenaltyChoice(page)
       if (!button && await page.getByText('PENALTY ON THE PLAY!', { exact: true }).isVisible()) {
@@ -119,7 +151,7 @@ test('static GitHub build completes home and away games without an HTTP backend'
     expect(halftime).toBe(1)
     expect(plays).toBeGreaterThan(80)
     const final = await state()
-    await testInfo.attach('browser-game-' + id, { body: JSON.stringify({ id, home, final, plays, halftime }), contentType: 'application/json' })
+    await testInfo.attach(`browser-game-${year}-${id}`, { body: JSON.stringify({ year, archive: manifest.files[0].sha256, id, home, final, plays, halftime, patChoices }), contentType: 'application/json' })
     await page.getByTestId('new-game-button').click()
     // NEW GAME on the final screen goes directly to team selection.
     if (!home) break
@@ -131,3 +163,4 @@ test('static GitHub build completes home and away games without an HTTP backend'
   const failures = (await replies()).filter(reply => reply.status >= 400)
   expect(failures).toEqual([])
 })
+}

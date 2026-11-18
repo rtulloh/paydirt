@@ -7,11 +7,12 @@ Running frontend/backend services from source is covered in the [web development
 
 ## Browser-only prototype
 
-The experimental browser-only build uses the same game screen and Python engine,
-with no installed Paydirt application or local game server. It currently includes
-only the fictional **2026 Thunderhawks and Ironclads** sample teams. This is an
-implementation spike for 1.11.0; deployment and complete browser-game validation
-are still pending, and this guide does not announce a published browser release.
+[Play the experimental browser build](https://rtulloh.github.io/paydirt/) using the
+same game screen and Python engine, with no installed Paydirt application or
+local game server. Choose from **1977 (28 teams), 1983 (28), 2024 (32)** and the
+fictional **2026 sample (2)**. These are the unchanged publicly released charts;
+their existing accuracy notes and attribution remain included. This is the
+browser feature under development for 1.11.0.
 
 Wait for **Loading the Python game engine…** to finish, then choose **NEW GAME**.
 The first load downloads the Python runtime and packages from a public CDN and

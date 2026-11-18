@@ -1,6 +1,6 @@
-"""Stage public sample assets for the FLOW-033 browser feasibility spike.
+"""Stage the explicitly reviewed released public seasons for the browser build.
 
-This is a sample-only experiment, not the v1.11.0 release asset inventory.
+Chart bytes are preserved; only the reviewed asset inventory is staged.
 No recursive source-directory copying or implicit asset discovery is permitted.
 """
 
@@ -16,6 +16,49 @@ from typing import Any
 
 # Reviewed import closure of routes/chart_viewer plus the browser transport.
 # Additions require review; unrelated code, user data and other seasons stay out.
+PUBLIC_SEASONS = {
+    "1977": (
+        "49ers", "Bears", "Bengals", "Bills", "Broncos",
+        "Browns", "Buccaneers", "Cardinals", "Chargers", "Chiefs",
+        "Colts", "Cowboys", "Dolphins", "Eagles", "Falcons",
+        "Giants", "Jets", "Lions", "Oilers", "Packers",
+        "Patriots", "Raiders", "Rams", "Redskins", "Saints",
+        "Seahawks", "Steelers", "Vikings",
+    ),
+    "1983": (
+        "49ers", "Bears", "Bengals", "Bills", "Broncos",
+        "Browns", "Buccaneers", "Cardinals", "Chargers", "Chiefs",
+        "Colts", "Cowboys", "Dolphins", "Eagles", "Falcons",
+        "Giants", "Jets", "Lions", "Oilers", "Packers",
+        "Patriots", "Raiders", "Rams", "Redskins", "Saints",
+        "Seahawks", "Steelers", "Vikings",
+    ),
+    "2024": (
+        "49ers", "Bears", "Bengals", "Bills", "Broncos",
+        "Browns", "Buccaneers", "Cardinals", "Chargers", "Chiefs",
+        "Colts", "Commanders", "Cowboys", "Dolphins", "Eagles",
+        "Falcons", "Giants", "Jaguars", "Jets", "Lions",
+        "Packers", "Panthers", "Patriots", "Raiders", "Rams",
+        "Ravens", "Saints", "Seahawks", "Steelers", "Texans",
+        "Titans", "Vikings",
+    ),
+    "2026": (
+        "Ironclads", "Thunderhawks",
+    ),
+}
+TEAM_FILES = ("team.yaml", "offense.csv", "defense.csv", "special.csv", "roster.json")
+SEASON_DOCUMENTS = (
+    'seasons/1977/NOTES.md',
+    'seasons/1977/generation-manifest.json',
+    'seasons/1983/ATTRIBUTION.md',
+    'seasons/1983/chart-audit.json',
+    'seasons/1983/generation-manifest.json',
+    'seasons/2024/ATTRIBUTION.md',
+    'seasons/2024/chart-audit.json',
+    'seasons/2024/generation-manifest.json',
+    "seasons/2026/ai_behavior.yaml",
+)
+
 PUBLIC_FILES = (
     "paydirt/__init__.py",
     "paydirt/ai_analysis.py",
@@ -55,22 +98,14 @@ PUBLIC_FILES = (
     "docs/images/kickoff-and-scoreboard.png",
     "docs/images/offense.png",
     "docs/images/team-select.png",
-    "seasons/2026/Ironclads/team.yaml",
-    "seasons/2026/Ironclads/offense.csv",
-    "seasons/2026/Ironclads/defense.csv",
-    "seasons/2026/Ironclads/special.csv",
-    "seasons/2026/Ironclads/roster.json",
-    "seasons/2026/Thunderhawks/team.yaml",
-    "seasons/2026/Thunderhawks/offense.csv",
-    "seasons/2026/Thunderhawks/defense.csv",
-    "seasons/2026/Thunderhawks/special.csv",
-    "seasons/2026/Thunderhawks/roster.json",
-    "seasons/2026/2026.yaml",
-    "seasons/2026/ai_behavior.yaml",
     "LICENSE",
     "README.md",
     "CHART_ATTRIBUTION.md",
-)
+) + tuple(
+    f"seasons/{year}/{team}/{name}"
+    for year, teams in PUBLIC_SEASONS.items() for team in teams for name in TEAM_FILES
+) + tuple(f"seasons/{year}/{year}.yaml" for year in PUBLIC_SEASONS) + SEASON_DOCUMENTS
+
 OUTPUT_FILES = {"python.zip", "manifest.json"}
 
 
@@ -104,7 +139,7 @@ def _validate_output(root: Path, output: Path) -> Path:
 
 
 def build_bundle(source_root: Path, output: Path) -> dict[str, Any]:
-    """Build deterministic sample assets and their SHA-256 inventory.
+    """Build deterministic public assets and their SHA-256 inventory.
 
     Args:
         source_root: Repository or synthetic export containing the exact allowlist.
@@ -139,7 +174,8 @@ def build_bundle(source_root: Path, output: Path) -> dict[str, Any]:
     archive_bytes = buffer.getvalue()
     manifest = {
         "version": 1,
-        "scope": "public-2026-spike",
+        "scope": "public-released-seasons",
+        "seasons": {year: list(teams) for year, teams in PUBLIC_SEASONS.items()},
         "files": [{
             "url": "python.zip", "mount": "/app", "bytes": len(archive_bytes),
             "sha256": hashlib.sha256(archive_bytes).hexdigest(),
@@ -155,7 +191,7 @@ def build_bundle(source_root: Path, output: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Build the exact public sample bundle from this repository or an export."""
+    """Build the exact public released-season bundle from this repository or an export."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source-root", type=Path, default=Path(__file__).resolve().parents[1],
