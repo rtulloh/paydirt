@@ -401,3 +401,45 @@ successful Playwright run is additional evidence. The original failed receipts
 remain history; they are not relabeled as passing. Publication and actual deployed
 origin verification follow this checkpoint. This spike does not close FLOW-033's
 remaining production-runtime, persistence, offline and player-comparison work.
+
+### First CI browser failure — November 17, 19:30
+
+Run `44214569238` exposed a real UI sequencing bug: a punt returned a pending
+human penalty choice, but CPU fourth-down controls rearmed and allowed another
+punt before that choice was resolved. The trace contains two separate execute
+responses with no penalty decision between them. Pending choices now block the
+next snap and CPU fourth-down recommendation. A regression failed before the fix;
+the focused controls pass afterward. An independent synthetic kickoff regression
+also caught incorrect chooser ownership inferred from possession; backend-returned
+pending choices are human decisions and now remain actionable. No engine changed.
+
+The static-game driver now resolves a visible penalty before other play controls,
+prefers the first enabled choice, and fails explicitly if every choice stays
+disabled. It does not skip the decision. Frontend verification passes 420 tests;
+PlayingPhase coverage across that suite is 74.71% statements/lines and 79.66%
+branches, with unrelated existing handlers still uncovered. Full regression and
+two complete static browser games are being repeated before the corrective push.
+
+The normal `browser-games` CI job separately exhausted its ten-minute job budget:
+Chromium/system dependency installation alone took 7m19s, and the game step was
+canceled after approximately two minutes. Its overall budget is now twenty
+minutes; individual browser test limits and full-game assertions are unchanged.
+Both static games and all twenty native browser tests pass locally after the
+penalty correction. Backend, frontend, builds, lint, season, AI and released-chart
+gates pass. The clean checkout passes 11,559 tests. The working-tree core run
+caught malformed audit-comment timestamps while those comments were being added;
+all 461 documentation/tracker tests pass after correction, and the full core run
+is being repeated. No failed receipt is relabeled as passing.
+
+### Corrective push gate — November 17, 19:53
+
+The final full core rerun passes all 11,559 tests (`penalty-fix-final-core/`);
+the clean candidate checkout separately passes all 11,559 (`penalty-fix-clean/`).
+All eleven remaining full-regression steps pass (`penalty-fix-regression/`),
+including 474 backend tests, 420 frontend tests and twenty native browser tests.
+The rebuilt static sample completes both full browser games. Both AI reports
+reconcile 480 games and 70,689 calls; the two existing balanced third-and-long
+advisories remain documented in AI-008/009/029. No Hard warning or new audit
+closure is claimed. Corrected tracker timestamps pass all 461 documentation and
+tracker checks. The upcoming push is a sample-spike correction, not a release/tag;
+GitHub CI and actual deployed-origin verification remain separate next gates.

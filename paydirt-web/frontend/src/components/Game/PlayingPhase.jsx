@@ -164,7 +164,7 @@ const PlayingPhase = () => {
   useEffect(() => {
     // FLOW-026: the engine waits for the end-zone return choice and would reject
     // a new snap, so no coaching query or kick panel may start while it is open.
-    if (localShowEndZoneChoice) return;
+    if (localShowEndZoneChoice || localShowPenaltyChoice) return;
     if (!gameId || localExecuting || isKickoff || gameOver || pendingPat || halftimePending || showHalftime) return;
     if (playerOffense) return;  // Player is on offense, no special handling needed
     if (down !== 4) return;  // Not 4th down
@@ -207,7 +207,7 @@ const PlayingPhase = () => {
       cpuDecisionPendingRef.current = false;
     };
   }, [gameId, localExecuting, isKickoff, gameOver, pendingPat, halftimePending, showHalftime,
-      localShowEndZoneChoice, playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
+      localShowEndZoneChoice, localShowPenaltyChoice, playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
       homeScore, awayScore, homeTimeouts, awayTimeouts, cpuGoingForIt, cpuDecisionRetry,
       pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
 
@@ -255,7 +255,7 @@ const PlayingPhase = () => {
   }, [homeScore, awayScore]);
 
   const handleKickoff = async () => {
-    if (!gameId || localExecuting || localShowEndZoneChoice) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice) return;
     setLocalExecuting(true);
     setLocalLastResult(null);
     setLocalDiceResult(null);
@@ -599,7 +599,7 @@ const PlayingPhase = () => {
 
   const executePlay = async (play, cpuPlayOverride = null, puntOptions = null) => {
     // FLOW-026: the engine owns the guard; the UI must not offer the snap either.
-    if (!gameId || localExecuting || localShowEndZoneChoice) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice) return;
     
     // Store state BEFORE the play for the log
     const prePlayQuarter = quarter;
@@ -807,7 +807,7 @@ const PlayingPhase = () => {
   };
 
   const handleOffensePlay = (play) => {
-    if (localShowEndZoneChoice) return;
+    if (localShowEndZoneChoice || localShowPenaltyChoice) return;
     // Check if it's a punt - show punt options panel
     if (play === 'P' && playerOffense) {
       setPendingPuntPlay(play);
@@ -818,14 +818,14 @@ const PlayingPhase = () => {
   };
 
   const handlePuntOptions = (puntOptions) => {
-    if (localShowEndZoneChoice) return;
+    if (localShowEndZoneChoice || localShowPenaltyChoice) return;
     setShowPuntOptions(false);
     setPendingPuntPlay(null);
     executePlay('P', null, puntOptions);
   };
 
   const handleCpuDecisionExecute = () => {
-    if (!cpuFourthDownDecision || !pendingDefensePlay || localShowEndZoneChoice) return;
+    if (!cpuFourthDownDecision || !pendingDefensePlay || localShowEndZoneChoice || localShowPenaltyChoice) return;
     
     // Execute the CPU's chosen play (punt or FG) with user's defense
     const cpuPlay = cpuFourthDownDecision.play;
@@ -839,7 +839,7 @@ const PlayingPhase = () => {
   };
 
   const handleCpuFourthDownExecute = () => {
-    if (!pendingCpuFourthDown || localShowEndZoneChoice) return;
+    if (!pendingCpuFourthDown || localShowEndZoneChoice || localShowPenaltyChoice) return;
     
     const decision = pendingCpuFourthDown;
     const cpuPlay = decision.play;  // 'F' or 'P'
@@ -1290,10 +1290,11 @@ const PlayingPhase = () => {
         {/* Penalty Decision Panel */}
         {localShowPenaltyChoice && localPendingPenaltyData && !localShowEndZoneChoice && (
           <div className="px-4 pb-2">
+            {/* The API resolves CPU penalties before returning a pending human choice. */}
             <PenaltyDecisionPanel 
               penaltyData={localPendingPenaltyData} 
               onDecision={handlePenaltyDecision}
-              cpuIsOnDefense={localPendingPenaltyData?.play_type === 'kickoff' ? !playerOffense : playerOffense}
+              cpuIsOnDefense={false}
             />
           </div>
         )}

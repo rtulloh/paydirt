@@ -184,3 +184,22 @@ inventory; this is not a historical-season qualification claim.
 See the canonical plan's validation checkpoint for retained evidence. Publishing
 and deployed-origin verification are next. Ticket remains open for production
 scope beyond the playable sample spike; no v1.11.0 release/tag is being cut.
+
+--- 2026-11-17 19:30 ---
+
+Browser run `44214569238` failed after the UI allowed a second CPU punt while a
+human penalty decision was pending. Trace review confirmed two execute responses
+without an intervening decision. Added failing regressions before fixing pending
+choice guards and an independently reproduced kickoff chooser-ownership bug.
+Frontend now passes 420 tests; full regression and both complete browser games
+are being repeated before pushing. Core rules and charts remain unchanged.
+FLOW-033 stays open pending deployed-origin proof and remaining feature evaluation.
+
+--- 2026-11-17 19:53 ---
+The penalty correction now passes full regression: core and clean checkout each
+11,559 tests, backend 474, frontend 420, all twenty native browser tests, both
+complete static browser games, season/AI/chart/lint/build gates. The malformed
+audit-comment timestamps caught by an earlier run are corrected and the full core
+rerun passes. The native browser CI job budget is twenty minutes after cold browser
+installation consumed 7m19s of its prior ten-minute limit; per-test limits remain.
+Corrective push follows; deployed-origin proof and GitHub reruns are still pending.

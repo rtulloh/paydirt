@@ -97,6 +97,35 @@ describe('CPU fourth-down request lifecycle', () => {
     expect(replies).toHaveLength(1);
   });
 
+  it('does not offer another CPU punt while its human penalty choice is pending', async () => {
+    fetchMock.mockImplementation(url => {
+      if (url.includes('/cpu-4th-down-decision/')) {
+        return new Promise(resolve => replies.push(resolve));
+      }
+      if (url.endsWith('/execute')) {
+        return Promise.resolve({ ok: true, json: async () => ({
+          result: {
+            play_type: 'punt', description: 'Punt penalty awaiting receiving team.',
+            pending_penalty_decision: true,
+            penalty_choice: { offended_team: 'defense',
+              penalty_options: [{ description: 'Replay punt', yards: 10 }] },
+          },
+          game_state: { down: 4, player_offense: false, ball_position: 39 },
+        }) });
+      }
+      throw new Error('Unexpected request: ' + url);
+    });
+    render(<PlayingPhase />);
+    await reply(0);
+    fireEvent.click(screen.getByRole('button', { name: 'EXECUTE PLAY' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+
+    expect(screen.getByRole('button', { name: /^\[1\]/ })).toBeVisible();
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith('/execute'))).toHaveLength(1);
+    expect(replies).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'EXECUTE PLAY' })).not.toBeInTheDocument();
+  });
+
   it('uses the completed go-for-it decision without asking for it again', async () => {
     render(<PlayingPhase />);
     await reply(0, 'go_for_it');

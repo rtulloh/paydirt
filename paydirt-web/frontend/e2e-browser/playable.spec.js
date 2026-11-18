@@ -1,4 +1,5 @@
 import { test, expect } from '../e2e/browser-fixture.js'
+import { findEnabledPenaltyChoice } from './penalty-choice.js'
 
 // Observe genuine worker replies. All game-changing actions remain rendered UI clicks.
 test('static GitHub build completes home and away games without an HTTP backend', async ({ page, context }, testInfo) => {
@@ -74,14 +75,19 @@ test('static GitHub build completes home and away games without an HTTP backend'
         await page.getByTestId('continue-button').click()
         continue
       }
-      let button
-      for (const name of ['KICK OFF', 'KICK XP (1 PT)', 'TAKE TOUCHBACK', 'CONTINUE', 'NORMAL PUNT', 'EXECUTE PLAY']) {
-        const candidate = page.getByRole('button', { name, exact: true })
-        if (await candidate.isVisible()) { button = candidate; break }
+      let button = await findEnabledPenaltyChoice(page)
+      if (!button && await page.getByText('PENALTY ON THE PLAY!', { exact: true }).isVisible()) {
+        await expect.poll(async () => {
+          button = await findEnabledPenaltyChoice(page)
+          return Boolean(button) || !await page.getByText('PENALTY ON THE PLAY!', { exact: true }).isVisible()
+        }, { message: 'The pending penalty must offer an enabled choice or finish its CPU decision' }).toBe(true)
+        if (!button) continue
       }
       if (!button) {
-        const penalty = page.getByRole('button', { name: /^\[1\]/ })
-        if (await penalty.isVisible()) button = penalty
+        for (const name of ['KICK OFF', 'KICK XP (1 PT)', 'TAKE TOUCHBACK', 'CONTINUE', 'NORMAL PUNT', 'EXECUTE PLAY']) {
+          const candidate = page.getByRole('button', { name, exact: true })
+          if (await candidate.isVisible()) { button = candidate; break }
+        }
       }
       if (!button) {
         const offense = page.getByTestId('offense-play-1')

@@ -71,7 +71,8 @@ jobs:
 
   browser-games:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # Cold Chromium/system dependency installation can consume over seven minutes.
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: paydirt-web/frontend

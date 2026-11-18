@@ -61,3 +61,16 @@ Its acceptance checks must compare pre-save/post-load authoritative statistics
 and phase, then execute additional plays and verify that exported history
 contains both the loaded and newly completed entries. Use synthetic/public-2026
 fixtures and failing round-trip regressions before changing behavior.
+
+--- 2026-11-17 19:32 ---
+Browser-spike full-game audit reconfirmed the existing difficulty serialization
+gap using both public 2026 sample-team games. The genuine Python worker new-game
+responses report top-level `difficulty: hard` after the rendered Hard control is
+clicked, while nested `game_state.difficulty` and subsequent state responses say
+`medium`. Source inspection confirms new_game stores the requested difficulty
+and constructs the CPU with it, but game_state_to_response omits the field and
+GameStateResponse defaults it to medium. This evidence identifies incorrect
+state reporting; it does not demonstrate that the CPU actually uses Medium.
+Retain the issue as open and cover the existing state-response acceptance check
+in a separate test-first correction. No gameplay or backend changes made during
+this observation.
