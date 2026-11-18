@@ -14,6 +14,7 @@ use the [documentation index](../README.md).
 ## Notes
 
 - [Issue tracker](issue-tracker.md): priorities, current status, and resolution/verification history.
+- [v1.11.0 browser-only plan](release-1.11.0-plan.md): FLOW-033 as the sole feature, with runtime feasibility, player comparison and release gates.
 - [v1.10.2 scope and verification](release-1.10.2-scope.md): interception-location audit, fourth-down urgency, faster tests and reliable release publication.
 - [v1.10.3 targeted-fix plan](release-1.10.3-plan.md): current ticket/season scope and retained historical AI investigation.
 - [v1.10.3 validation checkpoint](release-1.10.3-validation.md): ticket acceptance, required checks and unresolved release blockers.

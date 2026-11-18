@@ -24,6 +24,72 @@ existing local checks; this does not lower the declared Python 3.10+ requirement
 Optional-operation fallback failures emit traceback diagnostics at DEBUG level
 without enabling debug logging by default or changing their existing fallback.
 
+## Building the browser-only prototype
+
+The FLOW-033 spike runs the existing Python engine and shared Python application
+operations inside one dedicated Pyodide Web Worker behind the React interface.
+The HTTP application remains available. Enable the worker transport only with
+`VITE_PAYDIRT_BROWSER=1`; the regular `npm run build` continues to use HTTP.
+JavaScript handles transport, loading, image blobs and chart snapshots, while
+Python owns gameplay and AI decisions.
+
+With frontend dependencies installed and Python 3 available, run:
+
+```sh
+cd paydirt-web/frontend
+npm run build:browser
+npm run test:e2e:browser
+```
+
+`build:browser` writes `dist-browser/` with the `/paydirt/` deployment prefix and
+stages an allowlisted Python archive and manifest under `dist-browser/browser/`.
+The staging receipt lives in ignored `.ai-audits/browser-spike/staging/`. The
+archive contains only reviewed application files, public 2026 sample teams and
+bundled guide content; it must never include private charts, source inventories,
+audits, standings or saved games. The worker verifies the archive's SHA-256 and
+size before mounting it at `/app` and importing `browser_bridge`.
+
+The browser must support module Web Workers and WebAssembly. Startup downloads
+pinned **Pyodide 0.27.7**, Pydantic and PyYAML from
+`https://cdn.jsdelivr.net/pyodide/v0.27.7/full/`; network or policy failures must
+surface through the loading/error screen. No service worker or offline guarantee
+is implemented. Game sessions are temporary; checkpoint export/import, autosave,
+historical seasons and custom chart import remain outside this spike. Detached
+chart tabs use a bounded read-only snapshot of the current public chart books,
+not a second engine session.
+
+`test:e2e:browser` serves the built static directory on port **18733** and runs the
+separate Chromium suite in `e2e-browser/` with no game backend. Build first and
+install Playwright Chromium as described in the
+[browser regression setup](../paydirt-web/frontend/e2e/README.md). The regular
+`npm run test:e2e` still tests the HTTP-backed application and remains mandatory;
+the browser-only suite supplements it. The browser-only implementation and test
+commands do not establish that deployment, complete games, offline behavior or
+cross-browser compatibility have been verified. Record actual outcomes and
+remaining gaps in the [1.11.0 plan](dev-notes/release-1.11.0-plan.md).
+
+For a local manual check after building, run:
+
+```sh
+npx vite preview --host 127.0.0.1 --port 18733 --strictPort --outDir dist-browser --base /paydirt/
+```
+
+Open `http://127.0.0.1:18733/paydirt/`. This preview serves static files only;
+Python gameplay executes inside the browser. Publishing a static artifact still
+requires all project pre-push gates and separate verification of the actual
+published site. No published-site URL is claimed by these instructions.
+
+For a separate engine-only WebAssembly check, run from the repository root:
+
+```sh
+npm install --prefix /tmp/paydirt-spike-runtime pyodide@0.27.7
+node scripts/audit_browser_spike_runtime.mjs --pyodide-module /tmp/paydirt-spike-runtime/node_modules/pyodide/pyodide.mjs
+```
+
+This checks the built archive and completes two sample games. It writes an ignored
+receipt under `.ai-audits/browser-spike/`; `--bundle` and `--output` override those
+paths. Node execution does not exercise React or Web Workers and cannot replace
+either required browser suite.
 ## Architecture and Project Structure
 
 The core engine is authoritative for game rules, state, scoring, descriptions, and timing.

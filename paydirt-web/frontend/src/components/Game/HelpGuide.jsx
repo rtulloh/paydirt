@@ -1,7 +1,26 @@
+import { gameFetch, browserMode } from '../../runtime/gameFetch';
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { API_BASE } from '../../config';
+
+function BrowserGuideImage({ src, alt = '', ...props }) {
+  const [image, setImage] = useState('');
+  useEffect(() => {
+    let current = true;
+    let objectUrl;
+    gameFetch(src).then(response => {
+      if (!response.ok) throw new Error('Image unavailable');
+      return response.blob();
+    }).then(blob => {
+      objectUrl = URL.createObjectURL(blob);
+      if (current) setImage(objectUrl);
+      else URL.revokeObjectURL(objectUrl);
+    }).catch(() => {});
+    return () => { current = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [src]);
+  return image ? <img src={image} alt={alt} {...props} /> : <span>{alt}</span>;
+}
 
 // Match the backend's Markdown heading slugs; code examples are not headings.
 function remarkGuideAnchors() {
@@ -31,7 +50,7 @@ const HelpGuide = ({ onBackToMenu }) => {
   useEffect(() => {
     const fetchGuide = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/guide`);
+        const response = await gameFetch(`${API_BASE}/api/guide`);
         if (!response.ok) {
           throw new Error('Failed to load guide');
         }
@@ -110,7 +129,7 @@ const HelpGuide = ({ onBackToMenu }) => {
           prose-td:border prose-td:border-gray-700 prose-td:px-4 prose-td:py-2
           prose-hr:border-gray-700"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm, remarkGuideAnchors]}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkGuideAnchors]} components={browserMode ? { img: BrowserGuideImage } : undefined}>{content}</ReactMarkdown>
         </div>
       </div>
 

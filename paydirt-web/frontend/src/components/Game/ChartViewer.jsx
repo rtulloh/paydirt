@@ -1,6 +1,8 @@
+import { gameFetch, browserMode } from '../../runtime/gameFetch';
 import React, { useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../config';
 import './ChartViewer.css';
+import { readChartSnapshot, writeChartSnapshots } from '../../runtime/chartSnapshots';
 
 const CHARTS = [
   ['offense', 'Offense'], ['defense', 'Defense'],
@@ -77,6 +79,7 @@ function ChartPanel({ gameId, homeTeam, awayTeam, initialSide, initialChart, onC
   const [book, setBook] = useState(null);
   const [error, setError] = useState('');
   const [launchError, setLaunchError] = useState('');
+  const [snapshotReady, setSnapshotReady] = useState(!browserMode);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -84,9 +87,16 @@ function ChartPanel({ gameId, homeTeam, awayTeam, initialSide, initialChart, onC
     const controller = new AbortController();
     setBook(null);
     setError('');
+    setSnapshotReady(!browserMode);
     const load = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/game/charts/${encodeURIComponent(gameId)}?side=${side}`, {
+        if (browserMode && !onClose) {
+          const snapshot = readChartSnapshot(gameId, side);
+          if (!snapshot) throw new Error('Chart snapshot unavailable. Reopen charts from your active game.');
+          if (current) { setBook(snapshot); setTeams(previous => ({ ...previous, [side]: snapshot.team })); }
+          return;
+        }
+        const response = await gameFetch(`${API_BASE}/api/game/charts/${encodeURIComponent(gameId)}?side=${side}`, {
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -96,6 +106,14 @@ function ChartPanel({ gameId, homeTeam, awayTeam, initialSide, initialChart, onC
           return;
         }
         const data = await response.json();
+        if (browserMode) {
+          const otherSide = side === 'home' ? 'away' : 'home';
+          const otherResponse = await gameFetch(`${API_BASE}/api/game/charts/${encodeURIComponent(gameId)}?side=${otherSide}`);
+          if (otherResponse.ok) {
+            const otherBook = await otherResponse.json();
+            if (current) setSnapshotReady(writeChartSnapshots(gameId, { [side]: data, [otherSide]: otherBook }));
+          }
+        }
         if (current) {
           setBook(data);
           setTeams(previous => ({ ...previous, [side]: data.team }));
@@ -154,9 +172,11 @@ function ChartPanel({ gameId, homeTeam, awayTeam, initialSide, initialChart, onC
       <div className="paydirt-chart-reference-bar">
         <p className="paydirt-chart-note">{book.note}</p>
         <div className="paydirt-chart-launchers">
+          {snapshotReady ? <>
           <a className="paydirt-chart-button" href={detachedUrl} target="_blank" rel="noopener noreferrer"
             onClick={() => onClose?.()}>Open in new tab</a>
           <button type="button" className="paydirt-chart-button" onClick={openWindow}>Open in separate window</button>
+          </> : <p>Separate charts need browser storage. You can keep using charts here.</p>}
         </div>
       </div>
       {launchError && <p role="alert" className="paydirt-chart-note">{launchError}</p>}

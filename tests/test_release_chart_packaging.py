@@ -75,11 +75,22 @@ def test_bundled_backend_can_find_its_local_imports(tmp_path: Path) -> None:
         shutil.copyfile(ROOT / source, staged)
 
     backend = ROOT / "paydirt-web/backend"
-    routes = ast.parse((backend / "routes.py").read_text())
-    local_modules = {node.module for node in ast.walk(routes)
-                     if isinstance(node, ast.ImportFrom) and node.module
-                     and (backend / f"{node.module}.py").is_file()}
+    # Follow local imports through every helper: routes -> adapter -> registry.
+    pending = [backend / "routes.py"]
+    local_modules = set()
+    while pending:
+        source = pending.pop()
+        for node in ast.walk(ast.parse(source.read_text())):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                module = node.module
+            else:
+                continue
+            local_source = backend / f"{module}.py"
+            if local_source.is_file() and module not in local_modules:
+                local_modules.add(module)
+                pending.append(local_source)
     assert "chart_viewer" in local_modules, "The chart API must exercise its actual helper import"
+    assert {"operations", "http_adapter"} <= local_modules
     for module in local_modules:
         spec = PathFinder.find_spec(module, [str(tmp_path / "paydirt-web/backend")])
         assert spec is not None, f"Bundled routes cannot import local helper {module}"

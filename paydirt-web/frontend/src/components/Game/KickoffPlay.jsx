@@ -1,3 +1,4 @@
+import { gameFetch } from '../../runtime/gameFetch';
 import { useState, useEffect } from 'react'
 
 const API_BASE = ''
@@ -31,7 +32,7 @@ export function KickoffPlay({ homeTeam, awayTeam, playerOffense, gameId, onCompl
     await new Promise(resolve => setTimeout(resolve, 1500))
     
     try {
-      const res = await fetch(`${API_BASE}/api/game/kickoff`, {
+      const res = await gameFetch(`${API_BASE}/api/game/kickoff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

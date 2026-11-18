@@ -1,3 +1,4 @@
+import { gameFetch } from '../../runtime/gameFetch';
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { API_BASE } from '../../config';
@@ -15,7 +16,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const { setGameId, updateGameState, setIsKickoff, setCurrentSeason } = useGameStore.getState();
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/seasons`)
+    gameFetch(`${API_BASE}/api/seasons`)
       .then(res => res.json())
       .then(data => {
         setSeasons(data.seasons);
@@ -32,7 +33,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
 
   useEffect(() => {
     if (selectedSeason) {
-      fetch(`${API_BASE}/api/teams?season=${selectedSeason}`)
+      gameFetch(`${API_BASE}/api/teams?season=${selectedSeason}`)
         .then(res => res.json())
         .then(data => setTeams(data.teams || []))
         .catch(err => console.error('Failed to load teams:', err));
@@ -56,7 +57,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const handleStartGame = () => {
     if (!canStart) return;
 
-    fetch(`${API_BASE}/api/game/new`, {
+    gameFetch(`${API_BASE}/api/game/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

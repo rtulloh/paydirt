@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, Literal, Optional
 
 import yaml
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from operations import FileAsset, OperationRegistry
+from operations import OperationError as HTTPException
 from pydantic import BaseModel
 
 # Handle both development and bundled (PyInstaller) environments
@@ -47,12 +47,12 @@ from paydirt.game_engine import PaydirtGameEngine
 from paydirt.play_resolver import DefenseType, PlayType, is_passing_play
 from paydirt.season_rules import load_season_rules
 
-router = APIRouter()
+registry = OperationRegistry()
 
 games: dict[str, dict[str, Any]] = {}
 
 
-@router.get("/api/health")
+@registry.get("/api/health")
 async def health_check():
     return {"status": "ok"}
 
@@ -192,7 +192,7 @@ class GuideResponse(BaseModel):
     title: str = "Paydirt User Guide"
 
 
-@router.get("/api/guide", response_model=GuideResponse)
+@registry.get("/api/guide", response_model=GuideResponse)
 async def get_guide():
     """Return the complete player manual from the bundled canonical topic files."""
     docs_path = _get_docs_path()
@@ -227,7 +227,7 @@ def _get_docs_path() -> Optional[Path]:
     return docs_path if docs_path.exists() else None
 
 
-@router.get("/api/docs/images/{image_name}")
+@registry.get("/api/docs/images/{image_name}")
 async def get_doc_image(image_name: str):
     """
     Serve documentation images.
@@ -263,7 +263,7 @@ async def get_doc_image(image_name: str):
     }
     media_type = media_types.get(ext, "application/octet-stream")
 
-    return FileResponse(image_path, media_type=media_type)
+    return FileAsset(image_path, media_type=media_type)
 
 
 class Team(BaseModel):
@@ -829,7 +829,7 @@ def _find_season_dir(season: str) -> Optional[Path]:
     return None
 
 
-@router.get("/api/seasons", response_model=SeasonsResponse)
+@registry.get("/api/seasons", response_model=SeasonsResponse)
 async def get_seasons():
     # Collect seasons from all paths (user seasons + built-in)
     # Use a set to avoid duplicates, user paths come first so they take precedence
@@ -846,8 +846,8 @@ async def get_seasons():
     return {"seasons": seasons}
 
 
-@router.get("/api/teams", response_model=TeamsResponse)
-@router.get("/api/teams/{season}", response_model=TeamsResponse)
+@registry.get("/api/teams", response_model=TeamsResponse)
+@registry.get("/api/teams/{season}", response_model=TeamsResponse)
 async def get_teams(season: str):
     season_dir = _find_season_dir(season)
     if season_dir is None:
@@ -861,7 +861,7 @@ async def get_teams(season: str):
     return {"teams": teams}
 
 
-@router.get("/api/season-rules")
+@registry.get("/api/season-rules")
 async def get_season_rules(season: str):
     """
     Get season rules for a specific season.
@@ -892,7 +892,7 @@ def _extract_team_name(team_id: str, season: str) -> str:
     return team_id
 
 
-@router.post("/api/game/new", response_model=NewGameResponse)
+@registry.post("/api/game/new", response_model=NewGameResponse)
 async def new_game(request: NewGameRequest):
     # Extract team names from 'season/team' format if present
     player_team = _extract_team_name(request.player_team, request.season)
@@ -999,7 +999,7 @@ async def new_game(request: NewGameRequest):
     )
 
 
-@router.get("/api/game/state/{game_id}", response_model=GameStateResponse)
+@registry.get("/api/game/state/{game_id}", response_model=GameStateResponse)
 async def get_game_state(game_id: str):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1007,7 +1007,7 @@ async def get_game_state(game_id: str):
     return game_state_to_response(games[game_id])
 
 
-@router.get("/api/game/charts/{game_id}", response_model=ChartBookResponse)
+@registry.get("/api/game/charts/{game_id}", response_model=ChartBookResponse)
 async def get_game_charts(game_id: str, side: Literal["home", "away"] = "home") -> ChartBookResponse:
     """Display a team's already-loaded charts without advancing the game."""
     if game_id not in games:
@@ -1027,7 +1027,7 @@ class CoinTossRequest(BaseModel):
     human_plays_offense: Optional[bool] = True
 
 
-@router.post("/api/game/coin-toss")
+@registry.post("/api/game/coin-toss")
 async def process_coin_toss(request: CoinTossRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1102,7 +1102,7 @@ def _offense_play_key(play: PlayType) -> str:
     }[play]
 
 
-@router.post("/api/game/cpu-play", response_model=CPUPlayResponse)
+@registry.post("/api/game/cpu-play", response_model=CPUPlayResponse)
 async def get_cpu_play(request: GameIdRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1139,7 +1139,7 @@ class CPUFourthDownResponse(BaseModel):
     play: Optional[str] = None
 
 
-@router.get("/api/game/cpu-4th-down-decision/{game_id}", response_model=CPUFourthDownResponse)
+@registry.get("/api/game/cpu-4th-down-decision/{game_id}", response_model=CPUFourthDownResponse)
 async def get_cpu_4th_down_decision(game_id: str):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1167,7 +1167,7 @@ async def get_cpu_4th_down_decision(game_id: str):
         return CPUFourthDownResponse(decision="go_for_it", play=play_key)
 
 
-@router.post("/api/game/execute", response_model=ExecutePlayResponse)
+@registry.post("/api/game/execute", response_model=ExecutePlayResponse)
 async def execute_play(request: PlayRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1485,7 +1485,7 @@ async def execute_play(request: PlayRequest):
     )
 
 
-@router.delete("/api/game/{game_id}")
+@registry.delete("/api/game/{game_id}")
 async def delete_game(game_id: str):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1494,7 +1494,7 @@ async def delete_game(game_id: str):
     return {"status": "deleted", "game_id": game_id}
 
 
-@router.post("/api/game/timeout")
+@registry.post("/api/game/timeout")
 async def call_timeout(request: GameIdRequest):
     """
     Call a timeout for the current team.
@@ -1549,7 +1549,7 @@ async def call_timeout(request: GameIdRequest):
     }
 
 
-@router.post("/api/game/overtime/start")
+@registry.post("/api/game/overtime/start")
 async def start_overtime(request: GameIdRequest):
     """
     Start overtime period.
@@ -1590,7 +1590,7 @@ async def start_overtime(request: GameIdRequest):
     }
 
 
-@router.get("/api/game/pat-choice/{game_id}", response_model=PATChoiceResponse)
+@registry.get("/api/game/pat-choice/{game_id}", response_model=PATChoiceResponse)
 async def get_pat_choice(game_id: str):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1621,7 +1621,7 @@ async def get_pat_choice(game_id: str):
     )
 
 
-@router.post("/api/game/extra-point", response_model=ExtraPointResponse)
+@registry.post("/api/game/extra-point", response_model=ExtraPointResponse)
 async def attempt_extra_point(request: GameIdRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1665,7 +1665,7 @@ class KickoffRequest(BaseModel):
     kickoff_spot: int = 35
 
 
-@router.post("/api/game/kickoff")
+@registry.post("/api/game/kickoff")
 async def perform_kickoff(request: KickoffRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1794,7 +1794,7 @@ class TwoPointRequest(BaseModel):
     defense_play: str = "A"
 
 
-@router.post("/api/game/two-point", response_model=ExecutePlayResponse)
+@registry.post("/api/game/two-point", response_model=ExecutePlayResponse)
 async def attempt_two_point(request: TwoPointRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1864,7 +1864,7 @@ class PenaltyDecisionRequest(BaseModel):
     accept_penalty: bool
 
 
-@router.post("/api/game/penalty-decision", response_model=ExecutePlayResponse)
+@registry.post("/api/game/penalty-decision", response_model=ExecutePlayResponse)
 async def apply_penalty_decision(request: PenaltyDecisionRequest):
     if request.game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -1995,7 +1995,7 @@ class EndZoneInterceptionDecisionRequest(BaseModel):
     attempt_return: bool
 
 
-@router.post("/api/game/end-zone-interception-decision", response_model=ExecutePlayResponse)
+@registry.post("/api/game/end-zone-interception-decision", response_model=ExecutePlayResponse)
 async def apply_end_zone_interception_decision(request: EndZoneInterceptionDecisionRequest):
     """Resolve the engine's pending own-end-zone interception return choice."""
     if request.game_id not in games:
@@ -2076,7 +2076,7 @@ class LoadReplayRequest(BaseModel):
     replay_data: dict[str, Any]
 
 
-@router.post("/api/game/save-replay/{game_id}", response_model=SaveReplayResponse)
+@registry.post("/api/game/save-replay/{game_id}", response_model=SaveReplayResponse)
 async def save_replay(game_id: str):
     """Save current game state and play history for replay."""
     if game_id not in games:
@@ -2095,7 +2095,7 @@ async def save_replay(game_id: str):
     )
 
 
-@router.post("/api/game/load-replay")
+@registry.post("/api/game/load-replay")
 async def load_replay(request: LoadReplayRequest):
     """Load a saved replay and create a new game from it."""
     replay_data = request.replay_data
@@ -2308,7 +2308,7 @@ async def load_replay(request: LoadReplayRequest):
     )
 
 
-@router.get("/api/debug/settings")
+@registry.get("/api/debug/settings")
 async def get_debug_settings():
     """Get current debug settings."""
     return {
@@ -2322,7 +2322,7 @@ class SetDebugModeRequest(BaseModel):
     seed: Optional[int] = None
 
 
-@router.post("/api/debug/settings")
+@registry.post("/api/debug/settings")
 async def set_debug_settings(request: SetDebugModeRequest):
     """Set debug mode for deterministic dice rolls."""
     return {
@@ -2330,3 +2330,13 @@ async def set_debug_settings(request: SetDebugModeRequest):
         "seed": request.seed,
         "status": "ok",
     }
+
+
+def __getattr__(name: str) -> Any:
+    """Load the native router only when an HTTP host asks for it."""
+    if name == "router":
+        from http_adapter import build_router
+        native_router = build_router(registry)
+        globals()["router"] = native_router
+        return native_router
+    raise AttributeError(name)

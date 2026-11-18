@@ -1,3 +1,4 @@
+import { gameFetch, browserMode } from './runtime/gameFetch';
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from './store/gameStore';
 import MenuPhase from './components/Game/MenuPhase';
@@ -15,7 +16,28 @@ function App() {
   if (params.has('charts')) {
     return <DetachedCharts gameId={params.get('charts')} initialSide={params.get('side')} initialChart={params.get('view')} />;
   }
-  return <GameApp />;
+  return browserMode ? <BrowserGameApp /> : <GameApp />;
+}
+
+function BrowserGameApp() {
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    const runtimeError = event => { setError(event.detail); setStatus('failed'); };
+    window.addEventListener('paydirt-runtime-error', runtimeError);
+    gameFetch('/api/health').then(async response => {
+      if (!response.ok) throw new Error('The browser game engine could not start.');
+      if (active) setStatus('ready');
+    }).catch(failure => { if (active) { setError(failure.message); setStatus('failed'); } });
+    return () => { active = false; window.removeEventListener('paydirt-runtime-error', runtimeError); };
+  }, []);
+  return <>
+    <aside className="bg-amber-100 text-gray-900 px-4 py-3 text-center">Browser prototype · Sample teams only. Temporary session: closing or reloading loses your game. Saves and offline play are unavailable.</aside>
+    {status === 'loading' && <main className="p-8 text-white"><p role="status">Loading the Python game engine… The first download may take a moment.</p></main>}
+    {status === 'failed' && <main className="p-8 text-white"><p role="alert">{error}</p><button type="button" onClick={() => window.location.reload()}>Reload browser prototype</button></main>}
+    {status === 'ready' && <GameApp />}
+  </>;
 }
 
 function GameApp() {
@@ -24,7 +46,7 @@ function GameApp() {
 
   // Check backend health on load
   useEffect(() => {
-    fetch(`${API_BASE}/api/health`)
+    gameFetch(`${API_BASE}/api/health`)
       .then(res => {
         if (res.ok) return res.json();
         throw new Error('Backend not available');
@@ -113,7 +135,7 @@ const handleCoinTossComplete = async (coinData) => {
   const { updateGameState, setGamePhase, setIsKickoff, setPlayerOffense, setPossession, gameId } = useGameStore.getState();
   
   try {
-    const res = await fetch(`${API_BASE}/api/game/coin-toss`, {
+    const res = await gameFetch(`${API_BASE}/api/game/coin-toss`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

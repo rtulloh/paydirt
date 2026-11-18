@@ -3,7 +3,7 @@ id: FLOW-033
 title: Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly
 status: open
 priority: Low
-target-release: v1.10.7
+target-release: v1.11.0
 created-at: 2026-11-14
 resolved-at:
 closed-at:
@@ -19,6 +19,7 @@ Evaluate the proposal to offer a browser-only Paydirt distribution that runs the
 
 ## Resolution / verification
 
+- Follow the [v1.11.0 approach and evaluation plan](../../release-1.11.0-plan.md); FLOW-033 is the release's sole feature. The latest planning update below supersedes the earlier v1.10.7 scheduling and unverified architecture assumptions.
 - Run a time-boxed feasibility spike that loads the existing core engine under Pyodide or PyScript in an isolated browser context, using only public sample teams under seasons/2026, and record startup, package size and basic play-path results.
 - Inventory runtime assumptions that may block or complicate browser execution: Python version, standard-library use, path and filesystem access, process/environment dependencies, subprocess use, native or optional packages, chart/season asset layout, save/load and standings persistence, and any browser-incompatible code.
 - Compare the static PyScript prototype with a Pyodide plus Web Worker/React or Vite architecture. Cover load time, memory, UI responsiveness, caching/offline behavior, browser support, debugging, automated testing and maintainability; do not assume zero rewrites or a weekend delivery until the spike proves it.
@@ -126,3 +127,44 @@ package and filesystem documentation; the current Pyodide threading FAQ; PyScrip
 worker and `sync_main_only` configuration documentation; and MDN documentation for
 storage quotas, worker termination and service-worker deployment. These references
 establish candidate capabilities, not measured Paydirt compatibility.
+
+--- 2026-11-17 18:34 ---
+Owner scheduled FLOW-033 as the sole feature for v1.11.0. See the
+[canonical approach and evaluation plan](../../release-1.11.0-plan.md), informed by
+independent architecture, player-experience and adversarial subagent reviews.
+
+Preferred candidate remains the existing React interface plus a dedicated Pyodide
+worker. Begin with a bounded 16-hour import/vertical-slice investigation, including
+at most two hours of PyScript comparison; complete service extraction and save
+migration are later work. Follow with a comparable playable prototype and observed
+owner/player first-use and return sessions before choosing production delivery.
+Judge ease, enjoyment and responsiveness from observed tasks, not framework labels.
+
+Corrections to the earlier comment: direct HTTP calls are scattered; revision and
+idempotency protection are new work; native path-based saves and web replay
+reconstruction do not provide an already-proven portable checkpoint. Keep engine,
+AI, RNG and pending-session state explicit. Reassess the shipping runtime and resolve
+1977 source/runtime qualification without expanding its historical allowance.
+
+No production code, browser prototype or human playtest was run in this planning
+change. This ticket remains open; targeting v1.11.0 is not evidence of delivery.
+
+--- 2026-11-17 18:51 ---
+Owner authorized implementation and publication of the playable GitHub spike.
+Three agents divided runtime extraction, player interface and public bundle/review;
+the integrator owns static hosting and final qualification. See the executed
+breakdown in the canonical v1.11.0 plan.
+
+Local implementation loads the unchanged core through Pyodide in one worker,
+uses the existing React controls and includes only the public 2026 sample teams.
+Sessions are explicitly temporary; save/replay controls are disabled in this spike.
+Actual Node-hosted Wasm completed two full games, including both human roles and
+halftime. Backend and frontend tests pass. The owner reports the local Chrome
+build launched successfully and reached kickoff without issue. This is direct
+human startup evidence, not confirmation of complete browser games or enjoyment.
+
+Agent-launched Chromium aborts before loading pages during macOS process
+registration. Full browser games, final regression/push gates and deployed-site
+verification remain pending; no GitHub playable URL or completed feature is claimed.
+Known release warnings are accepted per the owner's instruction; genuine failures
+and missing acceptance evidence remain separately recorded. Ticket stays open.

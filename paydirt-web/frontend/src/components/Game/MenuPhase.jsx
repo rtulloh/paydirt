@@ -1,3 +1,4 @@
+import { browserMode } from '../../runtime/gameFetch';
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
@@ -68,7 +69,7 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
           >
             NEW GAME
           </button>
-          {hasSavedGame && (
+          {!browserMode && hasSavedGame && (
             <button
               onClick={handleLoadGame}
               className="w-64 px-8 py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-all transform hover:scale-105 text-xl"
@@ -76,7 +77,7 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
               LOAD GAME
             </button>
           )}
-          {hasSavedReplay && (
+          {!browserMode && hasSavedReplay && (
             <div className="space-y-2">
               <button
                 onClick={handleLoadReplay}
@@ -102,7 +103,7 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
           </button>
         </div>
         <p className="text-gray-500 text-sm mt-4">
-          Tip: Save Replay during gameplay to capture the exact state for debugging
+          {browserMode ? 'This prototype keeps your game only while this tab stays open.' : 'Tip: Save Replay during gameplay to capture the exact state for debugging'}
         </p>
       </div>
     </div>

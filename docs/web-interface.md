@@ -5,6 +5,32 @@
 The pre-built application starts a local web server and opens Paydirt in your browser.
 Running frontend/backend services from source is covered in the [web development guide](../paydirt-web/README.md).
 
+## Browser-only prototype
+
+The experimental browser-only build uses the same game screen and Python engine,
+with no installed Paydirt application or local game server. It currently includes
+only the fictional **2026 Thunderhawks and Ironclads** sample teams. This is an
+implementation spike for 1.11.0; deployment and complete browser-game validation
+are still pending, and this guide does not announce a published browser release.
+
+Wait for **Loading the Python game engine…** to finish, then choose **NEW GAME**.
+The first load downloads the Python runtime and packages from a public CDN and
+requires an internet connection. The prototype does not support offline play.
+
+Keep the game tab open: closing or reloading it loses the current game. **SAVE
+GAME** and **SAVE REPLAY** are disabled, and saved-game/replay loading is unavailable
+in this build. Use the installed application for its existing save features.
+If the engine stops or times out, the prototype shows an error; reloading starts
+a fresh session rather than retrying an uncertain play.
+
+The chart viewer can open a read-only copy of both teams' charts in another tab
+or window. This uses browser storage for chart data only; it does not preserve
+your game. If storage is blocked, continue using the chart viewer in the game tab.
+
+The remaining instructions describe the shared game controls. References to
+installed seasons, backend sessions, saves and offline guide availability apply
+to the installed application unless the prototype behavior above says otherwise.
+
 ## Main Menu
 
 Start a new game or open the User Guide. The guide's player content and screenshots are bundled for offline reading.

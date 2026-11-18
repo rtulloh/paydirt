@@ -1,3 +1,4 @@
+import { gameFetch } from '../runtime/gameFetch';
 import { create } from 'zustand'
 
 const initialGameState = {
@@ -251,7 +252,7 @@ export const useGameStore = create((set, get) => ({
         // Use the same fetch as loadReplay
         const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
         
-        fetch(`${apiBase}/api/game/load-replay`, {
+        gameFetch(`${apiBase}/api/game/load-replay`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ replay_data: replayData }),
@@ -381,7 +382,7 @@ export const useGameStore = create((set, get) => ({
         const gameState = replayData.game_state;
         const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
         
-        return fetch(`${apiBase}/api/game/load-replay`, {
+        return gameFetch(`${apiBase}/api/game/load-replay`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ replay_data: replayData }),

@@ -26,6 +26,40 @@ unchanged. Browser fixtures also block requests to unrelated loopback ports, so 
 missed URL cannot fall back to a separately installed local app.
 The GitHub Actions `browser-games` job runs this suite on pushes and PRs.
 
+## Attach to an isolated Chrome for launch diagnostics
+
+If agent-launched Chromium fails before a page opens, you can start a separate
+Chrome instance yourself and attach the same tests over CDP. On macOS, run:
+
+```sh
+open -n -a "Google Chrome" --args --remote-debugging-address=127.0.0.1 --remote-debugging-port=19333 --user-data-dir=/tmp/paydirt-browser-test --no-first-run --no-default-browser-check about:blank
+```
+
+Use a dedicated test profile, then run either suite:
+
+```sh
+PAYDIRT_E2E_CDP_URL=http://127.0.0.1:19333 npm run test:e2e
+```
+
+```sh
+npm run build:browser
+PAYDIRT_E2E_CDP_URL=http://127.0.0.1:19333 npm run test:e2e:browser
+```
+
+The shared fixture attaches only when `PAYDIRT_E2E_CDP_URL` is set. Otherwise,
+Playwright launches Chromium as before. Tests create their own isolated contexts,
+retain their request interception and service-port checks, and close only those
+test contexts. At teardown, Playwright disconnects from externally started Chrome;
+your manually opened Chrome and its original tabs remain open. You can quit that
+isolated Chrome when finished. The normal suite still owns its test backend and
+frontend; the browser-only suite serves its built static files without a backend.
+
+[CDP attachment](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp)
+has lower fidelity than Playwright's normal connection, so record when you use
+this diagnostic route and verify the default launcher separately when available.
+[Connected-browser close semantics](https://playwright.dev/docs/api/class-browser#browser-close)
+differ from closing a browser launched by Playwright.
+
 ## What it tests
 
 The chart viewer test opens all three sections for the public 2026 teams, switches

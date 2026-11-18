@@ -13,6 +13,16 @@ Call the plays, manage the clock, and take on a computer opponent in your browse
 - Interactive CLI saves and season standings; browser play history and saved replays.
 - Support for your own team charts and seasons.
 
+## Play the Browser Spike
+
+[Play the sample game](https://rtulloh.github.io/paydirt/) in your desktop browser
+without installing Paydirt. This experimental build includes the **2026 Thunderhawks
+and Ironclads** only. Allow time for the initial Python download; internet access is
+required. Sessions are temporary, and refreshing loses your game.
+
+See the [browser guide](docs/web-interface.md) for scope and controls. The downloadable
+application below includes the historical seasons, saves and replays.
+
 ## Download & Install
 
 Download the latest build from [GitHub Releases](https://github.com/rtulloh/paydirt/releases):

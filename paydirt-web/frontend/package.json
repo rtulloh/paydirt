@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:browser": "VITE_PAYDIRT_BROWSER=1 vite build --base=/paydirt/ --outDir=dist-browser && python3 ../../scripts/build_browser_spike.py --output ../../.ai-audits/browser-spike/staging && mkdir -p dist-browser/browser && cp ../../.ai-audits/browser-spike/staging/manifest.json ../../.ai-audits/browser-spike/staging/python.zip dist-browser/browser/",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:browser": "playwright test --config playwright.browser.config.js"
   },
   "dependencies": {
     "framer-motion": "^11.0.0",

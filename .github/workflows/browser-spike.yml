@@ -1,0 +1,75 @@
+name: Browser spike
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-spike-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24.22.1'
+          cache: npm
+          cache-dependency-path: paydirt-web/frontend/package-lock.json
+      - name: Install dependencies
+        run: |
+          python -m pip install pytest pyyaml
+          npm ci --prefix paydirt-web/frontend
+      - name: Verify public-only asset staging
+        run: python -m pytest tests/test_browser_spike_build.py -q -o addopts=
+      - name: Build the public sample spike
+        run: |
+          cd paydirt-web/frontend
+          npm run build:browser
+      - name: Install browser
+        run: cd paydirt-web/frontend && npx playwright install --with-deps chromium
+      - name: Complete real-engine games without a backend
+        run: cd paydirt-web/frontend && npm run test:e2e:browser
+      - name: Preserve static build
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: paydirt-browser-spike
+          path: paydirt-web/frontend/dist-browser/
+      - name: Preserve browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: browser-spike-failures
+          path: paydirt-web/frontend/test-results/
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: paydirt-web/frontend/dist-browser/
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy playable sample spike
+        id: deployment
+        uses: actions/deploy-pages@v4

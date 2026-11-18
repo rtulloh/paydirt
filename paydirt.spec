@@ -19,6 +19,8 @@ datas = [
     ('paydirt-web/backend/main.py', 'paydirt-web/backend/main.py'),
     ('paydirt-web/backend/routes.py', 'paydirt-web/backend/routes.py'),
     ('paydirt-web/backend/chart_viewer.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/operations.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/http_adapter.py', 'paydirt-web/backend'),
     ('paydirt-web/backend/__init__.py', 'paydirt-web/backend/__init__.py'),
 ]
 
