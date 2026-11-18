@@ -1,5 +1,21 @@
 # Paydirt Release Notes
 
+## v1.11.0
+
+- [Play Paydirt directly from GitHub Pages](https://rtulloh.github.io/paydirt/) using the existing Python game engine in your browser. Includes all 90 public teams from 1977, 1983, 2024 and the fictional 2026 sample (FLOW-033).
+- Switch seasons without selecting stale teams, and retry failed catalog loads directly from the team-selection screen.
+- Resolve human penalty choices before another play can start, including CPU punts and kickoff decisions.
+- Preserve the new period's clock and timeout budgets when a late timeout cannot retain playable time in the old period, preventing a skipped third quarter (RULE-032).
+
+Browser play is experimental and requires internet access to load Python and its
+packages. Keep the tab open: refreshing or closing it loses the current game.
+Browser saves, replays and offline play are not included; use the installed app
+for its existing save features. See the [browser guide](docs/web-interface.md).
+
+All released chart files remain unchanged. Existing historical accuracy
+limitations and the [1977 statistical exceptions](seasons/1977/NOTES.md) remain
+disclosed; this feature does not regenerate or recalibrate seasons.
+
 ## v1.10.6
 
 - Make saved-score resume engine-owned: a save records whether a try or free kick is still owed, and resuming never adds touchdown or safety points again. A completed score stays complete, and a kick is consumed only when it is actually taken (FLOW-006).

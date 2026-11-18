@@ -541,3 +541,31 @@ Existing backend deprecations, stale Browserslist data and color-environment
 warnings remain disclosed/accepted. No skips or statistical-tolerance changes
 were introduced. GitHub qualification and actual all-season deployed-origin
 verification follow this checkpoint; no release tag is being cut.
+
+### Final release attempt — November 17, 21:30
+
+The owner authorized completing v1.11.0 publication. Final core passes 11,662
+tests and the clean tracked-only checkout passes. Backend, frontend, build,
+lint, all-games, full season, both AI audits and both released-chart checks pass.
+Native browser passes twenty tests; static browser passes five tests including
+all ninety teams and eight complete games. The tested 1.11.0 archive SHA-256 is
+`e2e4b1d8af10244d13e3e787f7828de43ab13d3dc09c20c2c6166ce8bf8eb14e`.
+Existing deprecation, Browserslist and color notices remain disclosed. AI-009
+records the fresh audit review: two known balanced advisories, no Hard warnings,
+no unsupported ticket closures. Both upstream workflows at `5f847b5` pass; its
+published archive was downloaded and every one of 504 files verified against
+that exact commit. Final version/profile changes need their own CI before tagging.
+
+The separate mandatory 1977 acceptance gate cannot execute: the recorded private
+canonical charts, contract, original 72-repetition report, source map, statistics
+and independent reproduction are missing. The immutable policy is present and
+unchanged. The attempted command exited during input preparation, before any
+statistical/runtime validation. The failed attempt is retained in ignored
+`.ai-audits/browser-spike/v111-final-1977-gate-attempt.json`. All 143 tracked 1977
+files still match v1.10.6 exactly. Unchanged identity and passing gameplay do not
+constitute the fresh receipt explicitly required by AGENTS.md. Local audit,
+likely Drive mounts, relevant temporary/download folders and configured Drive
+file-name searches found no recoverable original bundle. Publication remains
+blocked pending restoration and required acceptance; no policy was weakened,
+no original report reconstructed, and no final-candidate push or tag performed.
+Private evidence has not been claimed remotely preserved.

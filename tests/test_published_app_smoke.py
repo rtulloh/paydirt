@@ -185,12 +185,14 @@ def test_shutdown_rejects_surviving_owned_application_process(remaining):
         ("1.10.3", False, 3),
         ("1.10.4", False, 3),
         ("1.10.4", True, 4),
+        ("1.11.0", True, 4),
     ],
 )
 def test_explicit_version_aware_season_profile(version, include_1977, count):
     smoke = smoke_module()
     profile = smoke.season_profile(version, include_1977)
     assert len(profile) == count
+    assert profile == {"1983": 28, "2024": 32, "2026": 2, **({"1977": 28} if include_1977 else {})}
     assert profile["2026"] == 2
     assert (profile.get("1977") == 28) == include_1977
 
@@ -258,10 +260,17 @@ def test_candidate_profile_checks_every_synthetic_1977_team(monkeypatch, candida
         "wrong-chart-team",
     ],
 )
-def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failure):
+@pytest.mark.parametrize("version", ["1.10.4", "1.11.0"])
+def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failure, version):
     smoke = smoke_module()
     responses = api_responses()
-    responses["/openapi.json"]["info"]["version"] = "1.10.4"
+    responses["/openapi.json"]["info"]["version"] = version
+    if version == "1.11.0":
+        responses["/api/teams?season=1983"]["teams"][:3] = [
+            {"id": team, "short_name": label} for team, label in {
+                "Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83",
+            }.items()
+        ]
     responses["/api/seasons"]["seasons"].append("1977")
     responses["/api/teams?season=1977"] = {"teams": [{"id": f"Synthetic{i}"} for i in range(28)]}
     game_1977 = {
@@ -314,9 +323,11 @@ def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failu
     monkeypatch.setattr(smoke, "request_json", request)
     if failure:
         with pytest.raises(ValueError):
-            smoke.check_api("http://synthetic", "1.10.4", True)
+            smoke.check_api("http://synthetic", version, True)
     else:
-        result = smoke.check_api("http://synthetic", "1.10.4", True)
+        result = smoke.check_api("http://synthetic", version, True)
+        assert result["team_counts"] == {"1983": 28, "2024": 32, "2026": 2, "1977": 28}
+        assert sum(result["team_counts"].values()) == 90
         assert result["season_games"]["1977"]["game_id"] == "game_synthetic_1977"
         assert result["season_games"]["2026"]["game_id"] == "game_public"
         created = [payload for path, payload in calls if path == "/api/game/new"]
@@ -349,13 +360,15 @@ def test_next_reviewed_release_preserves_1977_and_immutable_profiles() -> None:
 @pytest.mark.parametrize(
     "failure", [None, "Chargers", "Cardinals", "Raiders", "missing", "duplicate"]
 )
+@pytest.mark.parametrize("version", ["1.10.5", "1.10.6", "1.11.0"])
 def test_corrective_release_checks_packaged_1983_identity_labels(
     monkeypatch: pytest.MonkeyPatch,
     failure: str | None,
+    version: str,
 ) -> None:
     smoke = smoke_module()
     responses = api_responses()
-    responses["/openapi.json"]["info"]["version"] = "1.10.5"
+    responses["/openapi.json"]["info"]["version"] = version
     teams = responses["/api/teams?season=1983"]["teams"]
     corrected = {"Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83"}
     teams[:3] = [{"id": team, "short_name": label} for team, label in corrected.items()]
@@ -369,9 +382,9 @@ def test_corrective_release_checks_packaged_1983_identity_labels(
     monkeypatch.setattr(smoke, "request_json", lambda base, path, payload=None: responses[path])
     if failure:
         with pytest.raises(ValueError, match="1983.*identity"):
-            smoke.check_api("http://synthetic", "1.10.5")
+            smoke.check_api("http://synthetic", version)
     else:
-        result = smoke.check_api("http://synthetic", "1.10.5")
+        result = smoke.check_api("http://synthetic", version)
         assert result["verified_1983_labels"] == corrected
 
 
@@ -385,3 +398,9 @@ def test_release_automatically_calls_published_install_verification() -> None:
     assert "uses: ./.github/workflows/post-release-smoke.yml" in post_release
     assert "release_tag: ${{ needs.verify-ci.outputs.tag }}" in post_release
     assert "include_1977: true" in post_release
+
+
+@pytest.mark.parametrize("version", ["1.10.7", "1.11.1", "1.12.0", "2.0.0"])
+def test_unreviewed_future_native_profiles_are_rejected(version: str) -> None:
+    with pytest.raises(ValueError, match="reviewed"):
+        smoke_module().season_profile(version, True)
