@@ -457,3 +457,56 @@ def test_accepted_field_goal_foul_first_down_is_penalty(game):
     game.apply_fg_penalty_decision(pending, accept_play=False)
     assert game.state.home_stats.first_downs == 1
     assert counters(game)["first_downs_penalty"] == 1
+
+
+@pytest.mark.parametrize("kicking_home", [False, True])
+@pytest.mark.parametrize(
+    "scenario,inside_twenty",
+    [
+        ("later_recovery_td", 1),
+        ("recovery_hold", 1),
+        ("first_return_td", 0),
+        ("outside_twenty_recovery_td", 0),
+        ("touchback", 0),
+    ],
+)
+def test_punt_inside_twenty_uses_first_return_end_even_after_recovery_score(
+    kicking_home: bool,
+    scenario: str,
+    inside_twenty: int,
+) -> None:
+    from tests.test_punt_return_chains import punt, punt_game
+
+    cell = (
+        "TD"
+        if scenario == "first_return_td"
+        else "F + 15"
+        if scenario == "outside_twenty_recovery_td"
+        else "F + 5"
+    )
+    engine = punt_game({13: cell}, kicking_home=kicking_home)
+    engine.state.ball_position = 40
+    kicker = engine.state.home_chart if kicking_home else engine.state.away_chart
+    kicker.special_teams.punt[24] = "70" if scenario == "touchback" else "50"
+    kicker.special_teams.interception_return[15] = "TD"
+    rolls = [24] if scenario == "touchback" else [24, 13]
+    if scenario == "recovery_hold":
+        rolls += [30]
+    elif scenario in ("later_recovery_td", "outside_twenty_recovery_td"):
+        rolls += [37, 15]
+    outcome = punt(engine, *rolls)
+    kicking = counters(engine, kicking_home)
+    receiving = counters(engine, not kicking_home)
+    assert kicking["punts"] == 1
+    assert kicking["punts_inside_20"] == inside_twenty
+    if scenario in ("later_recovery_td", "outside_twenty_recovery_td"):
+        assert outcome.touchdown
+        assert (engine.state.home_score if kicking_home else engine.state.away_score) == 6
+        assert receiving["punt_return_yards"] == (5 if scenario == "later_recovery_td" else 15)
+        assert receiving["punt_return_touchdowns"] == 0
+    elif scenario == "first_return_td":
+        assert outcome.touchdown and receiving["punt_return_touchdowns"] == 1
+        assert receiving["punt_return_yards"] == 90
+    else:
+        assert not outcome.touchdown
+        assert kicking["punt_touchbacks"] == int(scenario == "touchback")

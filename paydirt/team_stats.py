@@ -189,10 +189,8 @@ def _commit(engine: Any, context: dict, outcome: Any) -> None:
             add(kicker, "longest_punt", distance)
             if facts.get("touchback"):
                 add(kicker, "punt_touchbacks")
-            elif (
-                100 - facts["ball"] - distance + context.get("return", {}).get("yards", 0) < 20
-                and not outcome.touchdown
-            ):
+            # Later fumble-recovery scores do not change the first return's end.
+            elif 100 - facts["ball"] - distance + context.get("return", {}).get("yards", 0) < 20:
                 add(kicker, "punts_inside_20")
             if facts.get("fair"):
                 add(kicker, "punt_fair_catches")
