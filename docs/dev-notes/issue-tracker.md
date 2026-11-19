@@ -46,7 +46,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-036, FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.7 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
-| [FLOW-036](issues/FLOW/FLOW-036.md) | Medium | — | Add persistent web seasons, custom mixed-era leagues, and browser save/load | created 2026-11-18 | FLOW-020, FLOW-021, STAT-006, FLOW-008, FLOW-033 |
+| [FLOW-036](issues/FLOW/FLOW-036.md) | Medium | v1.12.0 | Add persistent web seasons, custom mixed-era leagues, and browser save/load | created 2026-11-18 | FLOW-020, FLOW-021, STAT-006, FLOW-008, FLOW-033 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |

@@ -247,3 +247,27 @@ def test_capture_factory_cannot_execute_with_foreign_globals(monkeypatch: pytest
     monkeypatch.setattr(game_engine, "capture_team_play", altered)
     with pytest.raises(RuntimeError, match="loaded globals differ"):
         loaded_runtime_identity()
+
+
+
+@pytest.mark.parametrize("tampered", [False, True])
+def test_team_capture_accepts_python310_compiled_nested_name(
+    monkeypatch: pytest.MonkeyPatch, tampered: bool,
+) -> None:
+    from paydirt import chart_runtime_identity as identity
+
+    path = Path(identity.__file__).resolve().with_name("team_stats.py")
+    identity._source_expectations(path)
+    data, tree, dependencies, compiled = identity._source_cache[path]
+    compiled = dict(compiled)
+    compiled["capture_team_play.wrapped"] = compiled.pop("capture_team_play.<locals>.wrapped")
+    if tampered:
+        compiled["capture_team_play.wrapped"] = {"not-the-source-wrapper-hash"}
+    # Python 3.10 lacks co_qualname and the existing recursive compiler index
+    # therefore spells the same verified source code with this qualified key.
+    monkeypatch.setitem(identity._source_cache, path, (data, tree, dependencies, compiled))
+    if tampered:
+        with pytest.raises(RuntimeError, match="loaded capture wrapper differs"):
+            identity.loaded_runtime_identity()
+    else:
+        assert identity.loaded_runtime_identity()["definitions_sha256"]

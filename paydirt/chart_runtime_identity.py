@@ -175,8 +175,10 @@ def loaded_runtime_identity() -> dict[str, Any]:
                                 and wrapper.__kwdefaults__ is None
                                 and wrapper.__code__.co_freevars == ("method",)
                                 and len(cells) == 1 and cells[0].cell_contents is original
-                                and _code_hash(wrapper.__code__) in sources["team_stats"][2].get(
-                                    "capture_team_play.<locals>.wrapped", set())
+                                and _code_hash(wrapper.__code__) in (
+                                    sources["team_stats"][2].get("capture_team_play.<locals>.wrapped", set())
+                                    | sources["team_stats"][2].get("capture_team_play.wrapped", set())
+                                )
                             )
                         except ValueError:  # Empty closure cells are invalid.
                             valid_capture = False

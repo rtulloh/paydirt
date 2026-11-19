@@ -3,7 +3,7 @@ id: FLOW-036
 title: Add persistent web seasons, custom mixed-era leagues, and browser save/load
 status: open
 priority: Medium
-target-release:
+target-release: v1.12.0
 created-at: 2026-11-18
 resolved-at:
 closed-at:
@@ -17,6 +17,8 @@ links:
   - FLOW-008
   - FLOW-033
 commits:
+  - d059990035d5d8f235936696b8e1a24b968bc169
+  - ced3856
 ---
 
 ## Description
@@ -354,3 +356,21 @@ Owner-requested season refinements are implemented locally: default conference/d
 
 --- 2026-11-18 21:40 ---
 Implemented sortable season-table headers, keyboard/direction announcements, raw numeric sorting and unknown-last behavior. Zero coverage now reads Not recorded rather than Partial. All 574 frontend tests/four rendered season checks pass; focused SeasonDesk coverage 89.72% lines/87.13% branches. Also recovered missing kicking/offensive attempt counters for the owner’s specific completed legacy game from fully aligned structured history, with all existing yardage/sack/INT counters reconciling, normal result correction/history retention and atomic CAS. Actual UI verifies both teams’ offense/defense/kicking fields populated. Private receipts remain ignored; score 21–20 and single result preserved. See acceptance notes for tests/baselines and repair boundaries. Issue remains open for integration; no push/release claimed.
+
+--- 2026-11-19 11:36 ---
+Integrated work is committed locally for v1.12.0: persistent browser/native seasons,
+canonical checkpoints, mixed-era setup, team statistics and the owner-requested
+Overview/Standings consolidation. Browser-only acceptance completed all 90 team/chart
+initializations and eight full games (both roles across all four public years).
+A locally built Mac candidate completed both an initial campaign run and a fresh-browser
+reopen after application restart: identical exports and full counter coverage across
+all thirteen categories. This is not downloaded published-artifact acceptance.
+The first broad core run found 39 failures and 149 setup errors, all from runtime
+identity rejecting the new retained-play decorators. Strict source-bound wrapper,
+original/helper globals and policy-constant verification was added test-first;
+180 audit-policy and 97 reference-pair tests pass, coverage 92%, with independent
+tamper and hash-seed review. No pinned chart policy was weakened.
+A fresh fail-fast full regression and clean export are running. Keep this issue open
+until the complete gates and per-issue play-test review finish; no push/tag is claimed.
+Private data and Git history have locally verified archives for the owner to upload;
+remote private preservation is still unverified.
