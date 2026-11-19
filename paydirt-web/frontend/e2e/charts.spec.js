@@ -15,7 +15,12 @@ test('original-style chart sheets display real loaded teams without advancing pl
   const { game_id: gameId } = await (await created).json()
   try {
     await page.getByTestId('choose-heads').click()
+    const tossing = page.waitForResponse(response => response.url().endsWith('/api/game/coin-toss') && response.request().method() === 'POST')
     await page.getByTestId('choose-receive').click()
+    const tossResponse = await tossing
+    expect(tossResponse.ok(), await tossResponse.text()).toBe(true)
+    expect(tossResponse.request().postDataJSON().game_id).toBe(gameId)
+    expect((await tossResponse.json()).status).toBe('ok')
     await expect(page.getByRole('button', { name: 'KICK OFF', exact: true })).toBeVisible()
     const state = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
 
@@ -89,7 +94,12 @@ async function startChartGame(page) {
   await page.getByRole('button', { name: 'START GAME', exact: true }).click()
   const { game_id: gameId } = await (await created).json()
   await page.getByTestId('choose-heads').click()
+  const tossing = page.waitForResponse(response => response.url().endsWith('/api/game/coin-toss') && response.request().method() === 'POST')
   await page.getByTestId('choose-receive').click()
+  const tossResponse = await tossing
+  expect(tossResponse.ok(), await tossResponse.text()).toBe(true)
+  expect(tossResponse.request().postDataJSON().game_id).toBe(gameId)
+  expect((await tossResponse.json()).status).toBe('ok')
   await expect(page.getByRole('button', { name: 'KICK OFF', exact: true })).toBeVisible()
   return gameId
 }
