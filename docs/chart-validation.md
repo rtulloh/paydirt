@@ -183,6 +183,13 @@ relative dependencies and compiled expectations use a bounded content cache;
 every check rereads source bytes and inspects live definitions, defaults,
 closures, constants, aliases and module origins. Same-size or same-timestamp
 edits cannot reuse old expectations. Successful identity results are never cached.
+The engine's retained-play statistics decorator has one explicit, source-bound
+verification path: both the executable wrapper and original method must match
+freshly compiled source, with exact module globals, defaults and closure links.
+The decorator factory and its helpers remain part of the transitive checks;
+`__wrapped__` alone cannot establish identity. Literal enum-member sets and
+frozensets are checked and canonicalized so worker hash seeds cannot change a
+valid receipt. Unknown wrappers and changed helper bindings still fail.
 These are consistency checks
 within a trusted process, not hostile-process attestation or a substitute for
 the final clean-snapshot check.

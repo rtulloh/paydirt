@@ -123,3 +123,127 @@ def test_warm_source_graph_follows_added_relative_dependency(runtime_package: tu
     after = identity.loaded_runtime_identity()
     assert "extra.py" in after["module_files"] and "extra.py" not in before["module_files"]
     assert before["definitions_sha256"] != after["definitions_sha256"]
+
+
+def test_source_bound_team_capture_decorator_is_valid_runtime() -> None:
+    from paydirt.chart_runtime_identity import loaded_runtime_identity
+
+    receipt = loaded_runtime_identity()
+    assert "team_stats.py" in receipt["module_files"]
+    assert len(receipt["definitions_sha256"]) == 64
+
+
+@pytest.mark.parametrize("mutation", [
+    "wrapper_code", "wrapper_defaults", "wrapper_globals", "original_code",
+    "original_defaults", "original_globals", "forged_wrapped", "closure_target",
+])
+def test_team_capture_verifies_wrapper_and_original_independently(
+    monkeypatch: pytest.MonkeyPatch, mutation: str,
+) -> None:
+    from types import FunctionType
+
+    from paydirt.chart_runtime_identity import loaded_runtime_identity
+    from paydirt.game_engine import PaydirtGameEngine
+
+    wrapper = PaydirtGameEngine.kickoff
+    original = wrapper.__wrapped__
+
+    def cell(value: Any) -> Any:
+        return (lambda: value).__closure__[0]
+
+    if mutation == "wrapper_code":
+        monkeypatch.setattr(wrapper, "__code__", wrapper.__code__.replace(co_filename="/forged.py"))
+    elif mutation == "wrapper_defaults":
+        monkeypatch.setattr(wrapper, "__defaults__", (True,))
+    elif mutation == "wrapper_globals":
+        replacement = FunctionType(wrapper.__code__, dict(wrapper.__globals__), closure=wrapper.__closure__)
+        replacement.__dict__.update(wrapper.__dict__)
+        monkeypatch.setattr(PaydirtGameEngine, "kickoff", replacement)
+    elif mutation == "original_code":
+        monkeypatch.setattr(original, "__code__", original.__code__.replace(co_filename="/forged.py"))
+    elif mutation == "original_defaults":
+        monkeypatch.setattr(original, "__defaults__", (False, False))
+    elif mutation == "original_globals":
+        replacement = FunctionType(original.__code__, dict(original.__globals__), argdefs=original.__defaults__)
+        monkeypatch.setattr(wrapper, "__wrapped__", replacement)
+        altered = FunctionType(wrapper.__code__, wrapper.__globals__, closure=(cell(replacement),))
+        altered.__dict__.update(wrapper.__dict__)
+        monkeypatch.setattr(PaydirtGameEngine, "kickoff", altered)
+    elif mutation == "forged_wrapped":
+        monkeypatch.setattr(wrapper, "__wrapped__", lambda: None)
+    else:
+        altered = FunctionType(wrapper.__code__, wrapper.__globals__, closure=(cell(lambda: None),))
+        altered.__dict__.update(wrapper.__dict__)
+        monkeypatch.setattr(PaydirtGameEngine, "kickoff", altered)
+    with pytest.raises(RuntimeError, match="Invalid loaded runtime"):
+        loaded_runtime_identity()
+
+
+@pytest.mark.parametrize("constant", ["MAX_FIELDS", "SIGNED_TEAM_FIELDS", "PASS_PLAYS"])
+def test_capture_helper_policy_constants_are_source_bound(
+    monkeypatch: pytest.MonkeyPatch, constant: str,
+) -> None:
+    from paydirt import offense_stats, team_stats
+    from paydirt.chart_runtime_identity import loaded_runtime_identity
+
+    loaded_runtime_identity()
+    if constant != "PASS_PLAYS":
+        monkeypatch.setattr(team_stats, constant, frozenset())
+        with pytest.raises(RuntimeError, match="loaded constant differs"):
+            loaded_runtime_identity()
+    else:
+        # Preserve shared import identity: the policy set itself changed.
+        before = set(offense_stats.PASS_PLAYS)
+        try:
+            offense_stats.PASS_PLAYS.clear()
+            with pytest.raises(RuntimeError, match="loaded constant differs"):
+                loaded_runtime_identity()
+        finally:
+            offense_stats.PASS_PLAYS.update(before)
+
+
+def test_capture_helper_cannot_execute_with_foreign_globals(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import FunctionType
+
+    from paydirt import team_stats
+    from paydirt.chart_runtime_identity import loaded_runtime_identity
+
+    original = team_stats._commit
+    altered = FunctionType(original.__code__, {**original.__globals__, "add": lambda *args: None},
+                           original.__name__, original.__defaults__, original.__closure__)
+    monkeypatch.setattr(team_stats, "_commit", altered)
+    with pytest.raises(RuntimeError, match="loaded globals differ"):
+        loaded_runtime_identity()
+
+
+def test_capture_receipt_is_stable_across_python_hash_seeds() -> None:
+    import json
+    import subprocess
+
+    program = (
+        "import json; from paydirt.chart_runtime_identity import loaded_runtime_identity; "
+        "print(json.dumps(loaded_runtime_identity(), sort_keys=True))"
+    )
+    receipts = []
+    for seed in ("1", "42"):
+        completed = subprocess.run(
+            [sys.executable, "-c", program], check=True, capture_output=True, text=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+        )
+        receipts.append(json.loads(completed.stdout))
+    assert receipts[0] == receipts[1]
+    assert {"team_stats.py", "offense_stats.py", "kicking_stats.py"} <= set(receipts[0]["module_files"])
+
+
+def test_capture_factory_cannot_execute_with_foreign_globals(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import FunctionType
+
+    from paydirt import game_engine, team_stats
+    from paydirt.chart_runtime_identity import loaded_runtime_identity
+
+    original = team_stats.capture_team_play
+    altered = FunctionType(original.__code__, dict(original.__globals__), original.__name__)
+    monkeypatch.setattr(team_stats, "capture_team_play", altered)
+    monkeypatch.setattr(game_engine, "capture_team_play", altered)
+    with pytest.raises(RuntimeError, match="loaded globals differ"):
+        loaded_runtime_identity()

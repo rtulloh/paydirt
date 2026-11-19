@@ -1,6 +1,6 @@
 # v1.12.0 release qualification
 
-Status: implementation and review in progress; no commit, push, tag, publication or remote preservation claimed by this note.
+Status: candidate committed locally as `d059990035d5d8f235936696b8e1a24b968bc169`; full qualification is incomplete. No push, tag, publication or remote preservation is claimed.
 
 ## Authorized scope
 
@@ -50,3 +50,20 @@ The owner requested removing duplicate Overview/Standings navigation. Overview i
 Domain/persistence: 122 focused core tests and 114 backend tests pass; measured coverage is campaigns 94%, save/load 79%, browser builder 100%, checkpoints 89%, campaign operations 88%. Remaining coverage gaps are existing catalog/error and legacy end-zone branches. All new paths have focused coverage.
 
 Independent review checked checkpoint retained-decision context, legacy unknowns, paired rate/turnover coverage, signed returns, MAX aggregation and duplicate-decision suppression. It found a field-goal penalty first-down classification gap; review also found fumble-recovery automatic-first-down classification gaps. The initial full regression was deliberately interrupted before qualification so these could receive failing regressions and authoritative source corrections. No result from that interrupted run qualifies the final candidate.
+
+### First integrated candidate: actual results
+
+- Core: 11,737 passed, 39 failed and 149 setup errors. All 188 failures/errors report the same runtime-identity mismatch for the new capture decorators; these are a release blocker, not ignored failures. The runner was interrupted after the initial browser checks so a correction could be qualified from a new process.
+- Backend: 667 passed, 486 existing dependency/deprecation warnings. Frontend: 588 passed across 71 files. Build passed with the existing chunk/Browserslist warnings.
+- Browser-only candidate: all five checks passed, including all 90 team/chart initializations and home/away complete games for each of 2026, 1977, 1983 and 2024 (eight games). Built Python archive SHA-256: `9a00e02473f5e0a210f199b99b106d40443303dfebab8b2f046b7081c11bbede`. The initial invocation was intentionally interrupted to give this run a separate output directory from HTTP Playwright; only the completed isolated invocation qualifies.
+- Local macOS arm64 PyInstaller candidate: executable SHA-256 `6ae2dc3ac1b020d2c56010341f1b297acd4023bdeb3bb1ba7ee1f54c1d0bd589`. Launched twice from an isolated directory outside the source checkout, without Python import overrides, on port 18786 with isolated native data. All four bundled team lists and charts loaded, the rendered UI reached a new game, and a two-game campaign retained identical exported data after app shutdown/restart and a fresh browser session. All thirteen statistics categories showed full 2/2-game counter coverage and no browser/API errors. Both normal shutdowns passed. This is local candidate evidence, not downloaded published-artifact acceptance.
+- The native audit driver initially expected default-launch shutdown wording. The app correctly emitted the distinct `--web` shutdown message. The audit-only assertion was corrected, both logs verified, and the second launch/reopen completed; no application shutdown behavior was changed.
+- Private preservation additionally includes a source snapshot and complete Git-history bundle. An independent clone and full Git object check restored exact candidate commit `d059990`; all eight existing experiment worktrees are clean and their branches are in the private bundle. Remote upload remains unverified.
+
+The runtime-identity correction must preserve tamper detection. Test-first controls cover the known wrapper and original, helper/factory globals, constant mutation and cross-hash-seed receipt stability. Fresh full regression remains mandatory after this correction.
+
+### Strict runtime-identity correction
+
+The reviewed correction verifies the exact known capture wrapper, original method, defaults, closure links, factory and helper globals against source. It retains normal verification for unknown wrappers and binds all three statistics modules through the existing import graph. Enum-member/frozenset literal checks and canonicalization reject changed policies while preserving identical receipts across independent hash seeds. No pinned chart/release-policy inventory was changed.
+
+Test-first evidence: the pristine decorated runtime initially failed with 17 tamper controls passing; additional helper-policy and foreign-globals tamper regressions failed before the corresponding strengthening. Final validation: 180 identity/engine-audit/released-chart/1977-policy tests and 97 reference-pair tests passed. Verifier coverage is 92%; remaining gaps are defensive origin, emptied-closure, replaced-definition, cache-limit and unresolvable-literal paths, with no exclusions. An independent reviewer reproduced rejection of a foreign-globals no-op helper and double wrapper, acceptance of the pristine runtime, and full receipt equality for hash seeds 1 and 42.
