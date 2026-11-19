@@ -1,0 +1,11 @@
+import React from 'react';
+import {render,screen,fireEvent,cleanup} from '@testing-library/react';
+import {it,expect,afterEach,vi} from 'vitest';
+import App from './App';
+import {useGameStore} from './store/gameStore';
+vi.mock('./runtime/gameFetch',()=>({gameFetch:vi.fn(async()=>({ok:true,json:async()=>({})})),browserMode:false,saveCurrentSession:vi.fn()}));
+vi.mock('./components/Scoreboard/Scoreboard',()=>({default:()=>null}));
+vi.mock('./components/Field/FootballField',()=>({default:()=>null}));
+vi.mock('./components/Dice/DiceDisplay',()=>({default:()=>null}));
+afterEach(()=>{cleanup();useGameStore.getState().reset()});
+it('continues a restored halftime once into the engine-owned second-half kickoff',()=>{useGameStore.getState().restoreSession({game_id:'half',game_state:{home_team:{name:'Home'},away_team:{name:'Away'},home_score:7,away_score:3,quarter:2,time_remaining:0,halftime_pending:true,is_kickoff:true,player_offense:true}},{phase:'halftime'});render(<App/>);expect(screen.getByTestId('halftime')).toBeInTheDocument();fireEvent.click(screen.getByTestId('continue-button'));expect(screen.queryByTestId('halftime')).toBeNull();expect(screen.getByRole('button',{name:/KICK OFF/i})).toBeInTheDocument();expect(useGameStore.getState()).toMatchObject({homeScore:7,awayScore:3,quarter:2,timeRemaining:0,halftimePending:true,isKickoff:true})});

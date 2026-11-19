@@ -1,3 +1,5 @@
+// These UI tests exercise engine responses; persistence/leases have dedicated integration suites.
+vi.mock('../../runtime/gameFetch', async () => { const actual = await vi.importActual('../../runtime/gameFetch'); return { ...actual, gameFetch: actual.rawGameFetch }; });
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PlayingPhase from './PlayingPhase'
@@ -78,19 +80,22 @@ describe('Pending end-zone choice blocks a new play', () => {
     expect(screen.queryByRole('button', { name: 'EXECUTE PLAY' })).not.toBeInTheDocument()
   })
 
-  it('withdraws a visible kickoff control while the choice is open', async () => {
-    useGameStore.setState({ isKickoff: true, down: 2 })
+  it('withholds a restored kickoff control while the choice is open', async () => {
+    // A pending decision takes precedence over a retained kickoff display flag.
+    // Normal snaps during an owed kickoff are independently rejected by the UI.
+    useGameStore.getState().restoreSession({
+      game_id: 'end-zone-guard',
+      game_state: { home_team: {}, away_team: {}, is_kickoff: true, down: 2 },
+      pending_result: pendingEndZone,
+    })
     render(<PlayingPhase />)
-    expect(screen.getByRole('button', { name: /KICK OFF/i })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByTestId('defense-play-a'))
-    await screen.findByText('END-ZONE INTERCEPTION!', {}, { timeout: 6000 })
-
+    expect(screen.getByText('END-ZONE INTERCEPTION!')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /KICK OFF/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Call timeout/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /SAVE GAME/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /SAVE REPLAY/i })).toBeDisabled()
-    expect(executeCalls).toBe(1)
+    expect(executeCalls).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('withdraws visible try controls while the choice is open', async () => {

@@ -19,8 +19,14 @@ sys.path.insert(0, str(ROOT / "paydirt-web" / "backend"))
 import routes
 from main import app
 from try_fixture import install_try_fixture
+from checkpoint_fixture import install_checkpoint_fixture
+from simulation_diagnostics import instrument_simulation
+from paydirt import campaign_simulation
+
+campaign_simulation.run_auto_game = instrument_simulation(campaign_simulation.run_auto_game)
 
 install_try_fixture(app)
+install_checkpoint_fixture(app)
 
 
 @app.middleware("http")

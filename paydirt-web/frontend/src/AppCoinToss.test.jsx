@@ -1,0 +1,13 @@
+import React from 'react';
+import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import App from './App';
+import {useGameStore} from './store/gameStore';
+import {gameFetch} from './runtime/gameFetch';
+vi.mock('./runtime/gameFetch',()=>({gameFetch:vi.fn(),browserMode:false,saveCurrentSession:vi.fn()}));
+vi.mock('./components/Game/CoinToss',()=>({default:({onComplete})=><button onClick={()=>onComplete({playerWonToss:true,playerReceives:true})}>Submit toss</button>}));
+vi.mock('./components/Game/PlayingPhase',()=>({default:()=> <div>Playing now</div>}));
+beforeEach(()=>{useGameStore.getState().reset();useGameStore.setState({gamePhase:'coinToss',gameId:'g'});gameFetch.mockImplementation(async path=>{if(path.endsWith('/health'))return {ok:true,json:async()=>({})};throw Error('Save blocked');})});
+afterEach(cleanup);
+it.each(['guard','http'])('retains toss and shows %s failure',async kind=>{if(kind==='http')gameFetch.mockResolvedValue({ok:false,json:async()=>({detail:'Toss rejected'})});render(<App/>);fireEvent.click(screen.getByText('Submit toss'));expect(await screen.findByRole('alert')).toHaveTextContent(kind==='guard'?'Save blocked':'Toss rejected');expect(useGameStore.getState().gamePhase).toBe('coinToss');expect(screen.queryByText('Playing now')).toBeNull()});
+it('advances only after an acknowledged toss',async()=>{gameFetch.mockResolvedValue({ok:true,json:async()=>({possession:'home',player_offense:true})});render(<App/>);fireEvent.click(screen.getByText('Submit toss'));await waitFor(()=>expect(screen.getByText('Playing now')).toBeInTheDocument());expect(useGameStore.getState().possession).toBe('home')});

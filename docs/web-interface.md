@@ -18,11 +18,12 @@ Wait for **Loading the Python game engine…** to finish, then choose **NEW GAME
 The first load downloads the Python runtime and packages from a public CDN and
 requires an internet connection. The prototype does not support offline play.
 
-Keep the game tab open: closing or reloading it loses the current game. **SAVE
-GAME** and **SAVE REPLAY** are disabled, and saved-game/replay loading is unavailable
-in this build. Use the installed application for its existing save features.
-If the engine stops or times out, the prototype shows an error; reloading starts
-a fresh session rather than retrying an uncertain play.
+The source build now supports durable game checkpoints and multiple season campaigns in this
+browser. Use **Saved games** to resume and export a backup, and **Seasons** for schedules,
+standings and team statistics. A storage failure is visible and retains the previous committed
+save; retry saving instead of repeating an executed play. Offline engine loading remains unavailable.
+The published experimental site can lag the source build; its own startup banner describes the
+capabilities deployed there. See [saved games](saved-games-and-standings.md) for storage boundaries.
 
 The chart viewer can open a read-only copy of both teams' charts in another tab
 or window. This uses browser storage for chart data only; it does not preserve
@@ -41,7 +42,9 @@ Links to GitHub, releases, and contributor documentation still need an internet 
 
 ## Starting a Browser Game
 
-Select a season, home and away teams, which team you control, and CPU difficulty.
+Select each team's chart year independently, choose home and away teams, which team you
+control, and CPU difficulty. Swap sides moves the complete year/team selections. Exhibitions
+use the displayed home-year rules; custom campaigns use their selected fixed rules year.
 Published builds include generated 1983 and 2024 teams plus the fictional 2026 Thunderhawks and Ironclads. Additional teams require locally installed charts.
 
 End-zone interception returns are a game-time decision only. There is no pre-game
@@ -148,14 +151,14 @@ roll dice or advance play. Close the viewer or press **Escape** to return to the
 
 ## Play History and Replays
 
-**SAVE GAME** stores the current position and displayed play history in this
-browser and confirms **Game saved in this browser.** The confirmation stays in
-the visible window even when the controls are below the fold. If browser storage fails,
-the screen reports **Could not save game in this browser.** The open game stays
-available so you can retry.
+**SAVE GAME** writes a complete engine checkpoint and confirms **Game saved locally.**
+Actions also autosave. Open **Saved games** from the main menu to resume, rename, export, import,
+or delete a named game. Both teams retain their independent chart years. A restored game resumes
+its recorded phase and procedures rather than guessing from the displayed play history.
+The checkpoint retains the authoritative play log, including resolved decisions and dice.
 
-Browser saved replays preserve displayed game history. They are distinct from
-[CLI saved games](saved-games-and-standings.md), which resume an unfinished game,
-and from proposed deterministic engine-log replay tooling.
+Legacy **SAVE REPLAY** retains the older displayed-history/debugging workflow where available;
+it is separate from full engine checkpoints, [CLI saves](saved-games-and-standings.md), and
+proposed deterministic engine-log replay tooling. Use the new checkpoint flow for reliable continuation.
 
 Season and team selections, including imported replays, must refer to entries within configured season directories. Links to outside directories or assets are rejected.

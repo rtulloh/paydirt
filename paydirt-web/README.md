@@ -67,8 +67,14 @@ npm test -- --run
 npm run build
 ```
 
+The build writes `frontend/dist`. The native launcher serves `backend/web_static`;
+the release workflow copies the fresh frontend build there before packaging.
+For source development, use the frontend development server with the backend;
+a frontend build alone does not refresh an older native static bundle.
+
 The required [full-game browser regression](frontend/e2e/README.md) starts isolated services and needs Chromium.
-Stop development services on ports 8000 and 5173 before running it.
+If ports 8000 or 5173 are occupied, select free isolated ports with
+`PAYDIRT_E2E_BACKEND_PORT` and `PAYDIRT_E2E_FRONTEND_PORT`; leave existing app sessions running.
 Follow [AGENTS.md](../AGENTS.md#required-full-regression-before-any-push) for the complete pre-push checklist;
 these local commands alone are not full regression validation.
 
@@ -153,6 +159,13 @@ The engine determines whether to charge the timeout after resolving the
 play and any pending penalty decision. Sending this flag while the human
 is on offense returns HTTP 400 without advancing the game. Execute and
 penalty-decision results expose the engine's `defensive_timeout_used` flag.
+
+Game state responses include authoritative `play_history`. The shared HTTP/worker
+operation layer records each acknowledged game action once; unresolved penalty or
+end-zone choices retain their pre-play context until resolution. Checkpoints preserve
+that history, and the frontend replaces its displayed log from it instead of appending
+a second local copy. Execute responses also expose `offense_play` and `defense_play`
+for the actual resolved calls, including CPU calls.
 
 Browser saved replays are not resumable CLI games or deterministic engine-log replay.
 See [saved games](../docs/saved-games-and-standings.md) and the separately labeled

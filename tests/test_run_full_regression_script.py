@@ -6,7 +6,9 @@ private chart material and never touch the ignored local audit storage.
 
 from __future__ import annotations
 
+import errno
 import os
+import socket
 import subprocess
 from pathlib import Path
 
@@ -15,6 +17,7 @@ import pytest
 from paydirt.chart_release_gate import required_regression_commands
 from scripts.run_full_regression import (
     StepResult,
+    _port_free,
     browser_environment,
     choose_ports,
     clean_core_checkout,
@@ -26,6 +29,12 @@ from scripts.run_full_regression import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(autouse=True)
+def isolated_port_environment(monkeypatch):
+    monkeypatch.delenv("PAYDIRT_E2E_BACKEND_PORT", raising=False)
+    monkeypatch.delenv("PAYDIRT_E2E_FRONTEND_PORT", raising=False)
 
 
 def test_steps_cover_every_release_gate_command() -> None:
@@ -68,6 +77,100 @@ def test_occupied_default_ports_get_isolated_replacements() -> None:
     assert env["PAYDIRT_E2E_BACKEND_PORT"] != "8000"
     assert env["PAYDIRT_E2E_FRONTEND_PORT"] != "5173"
     assert env["PAYDIRT_E2E_BACKEND_PORT"] != env["PAYDIRT_E2E_FRONTEND_PORT"]
+
+
+@pytest.mark.parametrize("values", [
+    {"PAYDIRT_E2E_BACKEND_PORT": "19000", "PAYDIRT_E2E_FRONTEND_PORT": "19001"},
+])
+def test_explicit_ports_are_preserved(monkeypatch, values) -> None:
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+    assert choose_ports(probe=lambda port: True) == values
+
+
+@pytest.mark.parametrize("backend,frontend", [
+    ("bad", "19001"), ("0", "19001"), ("65536", "19001"),
+    ("19000", "19000"), ("19000", None),
+])
+def test_invalid_explicit_ports_fail_before_execution(monkeypatch, backend, frontend) -> None:
+    monkeypatch.setenv("PAYDIRT_E2E_BACKEND_PORT", backend)
+    if frontend is None:
+        monkeypatch.delenv("PAYDIRT_E2E_FRONTEND_PORT", raising=False)
+    else:
+        monkeypatch.setenv("PAYDIRT_E2E_FRONTEND_PORT", frontend)
+    with pytest.raises(ValueError, match="port|PORT"):
+        choose_ports(probe=lambda port: True)
+
+
+def test_occupied_explicit_ports_are_rejected(monkeypatch) -> None:
+    monkeypatch.setenv("PAYDIRT_E2E_BACKEND_PORT", "19000")
+    monkeypatch.setenv("PAYDIRT_E2E_FRONTEND_PORT", "19001")
+    with pytest.raises(ValueError, match="occupied|available"):
+        choose_ports(probe=lambda port: port != 19001)
+
+
+def test_exhausted_isolation_range_never_returns_unprobed_port(monkeypatch) -> None:
+    monkeypatch.delenv("PAYDIRT_E2E_BACKEND_PORT", raising=False)
+    monkeypatch.delenv("PAYDIRT_E2E_FRONTEND_PORT", raising=False)
+    with pytest.raises(ValueError, match="available|free"):
+        choose_ports(probe=lambda port: False)
+
+
+def test_port_probe_checks_both_localhost_families(monkeypatch) -> None:
+    bound = []
+    class FakeSocket:
+        def __init__(self, family, kind):
+            self.family = family
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def setsockopt(self, *args):
+            pass
+        def bind(self, address):
+            bound.append(address)
+            if self.family == socket.AF_INET6:
+                raise OSError(48, "Address already in use")
+    monkeypatch.setattr(socket, "socket", FakeSocket)
+    assert _port_free(19000) is False
+    assert ("127.0.0.1", 19000) in bound
+    assert ("::1", 19000) in bound
+
+
+@pytest.mark.parametrize("ipv6_error", [None, errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL])
+def test_port_probe_allows_free_or_unavailable_ipv6(monkeypatch, ipv6_error) -> None:
+    class FakeSocket:
+        def __init__(self, family, kind):
+            self.family = family
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def bind(self, address):
+            if self.family == socket.AF_INET6 and ipv6_error:
+                raise OSError(ipv6_error, "IPv6 unavailable")
+    monkeypatch.setattr(socket, "socket", FakeSocket)
+    assert _port_free(19000) is True
+
+
+def test_isolated_pair_avoids_overlap_and_probes_next_candidate(monkeypatch) -> None:
+    monkeypatch.setattr("scripts.run_full_regression.ISOLATED_FRONTEND_BASE", 18000)
+    probed = []
+    def probe(port):
+        probed.append(port)
+        return port not in (8000, 18001)
+    assert choose_ports(probe) == {
+        "PAYDIRT_E2E_BACKEND_PORT": "18000",
+        "PAYDIRT_E2E_FRONTEND_PORT": "18002",
+    }
+    assert 18002 in probed
+
+
+def test_invalid_ports_are_preflight_failure_not_traceback(monkeypatch, tmp_path, capsys) -> None:
+    monkeypatch.setattr("scripts.run_full_regression._preflight", lambda root: [])
+    monkeypatch.setenv("PAYDIRT_E2E_BACKEND_PORT", "invalid")
+    assert main(["--only", "browser"], root=tmp_path) == 2
+    assert "PREFLIGHT:" in capsys.readouterr().err
 
 
 def test_browser_step_pins_the_regression_interpreter_on_path() -> None:

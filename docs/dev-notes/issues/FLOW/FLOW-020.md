@@ -8,6 +8,8 @@ resolved-at:
 closed-at:
 tags:
   - feature-request
+links:
+  - FLOW-036
 ---
 
 ## Description
@@ -44,3 +46,15 @@ Future backlog feature; not an additional release 1.10.2 requirement.
 Requested after a Facebook question about selecting different years. Current
 season buttons appear above the team grid on the SELECT TEAMS screen; this
 ticket extends that shared selector to independent cross-season matchups.
+
+--- 2026-11-18 11:17 ---
+Coordinated by [FLOW-036](../FLOW/FLOW-036.md), the owner-approved web seasons
+umbrella and six-slice design. Retain this issue's acceptance/evidence requirements;
+no fix or closure is claimed. Team statistics only; individual player statistics
+are explicitly excluded by the owner.
+
+--- 2026-11-18 13:56 ---
+Independent team-year selection/search, mixed-era exhibition and save/reload are implemented and confirmed in actual built-Wasm Chromium.
+See [FLOW-036 acceptance](../../season-ui-acceptance.md) for final-source receipts,
+coverage and retained original failures. Work remains uncommitted; this issue stays
+open for review/integration rather than claiming a published fix.

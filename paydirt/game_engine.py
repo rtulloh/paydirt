@@ -22,6 +22,8 @@ from .game_state import (
     TeamStats,
 )
 from .interception_policy import should_attempt_end_zone_return
+from .kicking_stats import empty_field_goal_stats, record_field_goal
+from .offense_stats import OFFENSIVE_ATTEMPT_FIELDS, record_offensive_attempt
 from .overtime_rules import OvertimeFormat, OvertimeRules
 from .packaging import get_seasons_path
 from .penalty_handler import resolve_pass_interference, resolve_penalty
@@ -55,6 +57,8 @@ from .play_resolver import (
     roll_white_dice,
 )
 from .season_rules import SeasonRules, load_season_rules, season_rules_to_overtime_rules
+from .team_stats import add as add_team_stat
+from .team_stats import capture_team_play, empty_extended_team_stats, record_return
 from .utils import (
     clamp_ball_position,
     format_down_and_distance,
@@ -201,6 +205,14 @@ class PaydirtGameEngine:
         from pathlib import Path
 
         self.state = GameState(home_chart=home_chart, away_chart=away_chart)
+        self.state.home_stats._extended_team_stats = empty_extended_team_stats()
+        self.state.away_stats._extended_team_stats = empty_extended_team_stats()
+        self._team_stats_context = {}
+        self._team_stats_depth = 0
+        self.state.home_stats._field_goal_stats = empty_field_goal_stats()
+        self.state.away_stats._field_goal_stats = empty_field_goal_stats()
+        self.state.home_stats._offensive_attempt_stats = dict.fromkeys(OFFENSIVE_ATTEMPT_FIELDS, 0)
+        self.state.away_stats._offensive_attempt_stats = dict.fromkeys(OFFENSIVE_ATTEMPT_FIELDS, 0)
 
         # Load season rules from home team's season directory
         # Derive season dir from team_dir (e.g., "seasons/1972/Dolphins" -> "seasons/1972")
@@ -254,6 +266,7 @@ class PaydirtGameEngine:
 
         self.play_log: list[PlayOutcome] = []
         self.last_clock_trace: ClockTrace | None = None
+        self.last_kickoff_context: dict | None = None
         # Period in which the most recent scoring-capable action began. Scores that
         # expire a half must not be followed by the scoring team's kickoff, and
         # only the engine can know this once _use_time has advanced the period.
@@ -560,6 +573,7 @@ class PaydirtGameEngine:
                 "final_position": landing_spot,
             }
 
+    @capture_team_play
     def kickoff(self, kicking_home: bool = True, kickoff_spot: int = 35) -> PlayOutcome:
         """
         Perform a kickoff.
@@ -619,6 +633,17 @@ class PaydirtGameEngine:
             # Clear the pending penalty
             self.state.pending_kickoff_penalty_yards = 0
             self.state.pending_kickoff_penalty_is_offense = False
+
+        # Capture the effective engine-owned origin after deferred scoring fouls.
+        # Consumers must not reconstruct this from the requested kickoff spot.
+        self.last_kickoff_context = {
+            "spot": kickoff_spot,
+            "kicking_home": kicking_home,
+            "field_position": format_field_position_with_team(
+                kickoff_spot, kicking_chart.peripheral.short_name,
+                receiving_chart.peripheral.short_name,
+            ),
+        }
 
         # Kickoff consumers use the receiving team as offense in both phases.
         # OFF is a receiving-team foul; DEF is a kicking-team foul.
@@ -1247,6 +1272,8 @@ class PaydirtGameEngine:
     ) -> PlayOutcome:
         """Apply a kickoff's return (or lack of one) and describe it."""
         kicking_home = ctx["kicking_home"]
+        if chain is not None:
+            record_return(self,home=not kicking_home,chain=chain,cancelled=bool(accept_choice and chain.choice))
         kickoff_spot = ctx["kickoff_spot"]
         ko_result = ctx["ko_result"]
         ko_yards = ctx["ko_yards"]
@@ -1927,6 +1954,8 @@ class PaydirtGameEngine:
                         for penalty in chain.penalties
                     )
                     if net_yards >= ytg_before or penalty_first_down:
+                        if net_yards < ytg_before and penalty_first_down:
+                            self._team_stats_context["penalty_first_downs"] = 1
                         first_down = True
                         self.state.down = 1
                         self.state.yards_to_go = min(10, 100 - final_position)
@@ -2088,7 +2117,7 @@ class PaydirtGameEngine:
     @staticmethod
     def _record_scrimmage_yardage(
         stats: TeamStats, play_type: PlayType, result: PlayResult,
-        yards: int, ball_position: int,
+        yards: int, ball_position: int, *, touchdown: bool = False,
     ) -> None:
         """Credit signed offensive yardage to the team that snapped the ball.
 
@@ -2096,6 +2125,7 @@ class PaydirtGameEngine:
         QB-time identifies a passer fumble: at/behind the line it is a sack,
         beyond the line it is rushing. Other fumbles retain the play category.
         """
+        record_offensive_attempt(stats, play_type, result, touchdown=touchdown)
         if result.replay_down:
             return
         if result.result_type not in (
@@ -2127,6 +2157,7 @@ class PaydirtGameEngine:
         else:
             stats.rushing_yards += credited_yards
 
+    @capture_team_play
     def run_play(
         self,
         play_type: PlayType,
@@ -2442,7 +2473,7 @@ class PaydirtGameEngine:
             turnover_on_downs = self.state.next_down()
 
         # Resolve possession/scoring first, but credit the original offense.
-        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
+        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before, touchdown=touchdown and not turnover)
 
         if (first_down or (touchdown and not turnover)) and result.result_type != ResultType.FUMBLE:
             self.state.offense_stats.first_downs += 1
@@ -2523,6 +2554,7 @@ class PaydirtGameEngine:
 
         return outcome
 
+    @capture_team_play
     def run_play_with_penalty_procedure(
         self,
         play_type: PlayType,
@@ -3110,6 +3142,7 @@ class PaydirtGameEngine:
         )
         return probe.can_kneel_out_game()
 
+    @capture_team_play
     def apply_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0
     ) -> PlayOutcome:
@@ -3318,6 +3351,7 @@ class PaydirtGameEngine:
 
             return final_outcome
 
+    @capture_team_play
     def _apply_play_result(
         self,
         play_type: PlayType,
@@ -3486,7 +3520,7 @@ class PaydirtGameEngine:
             elif not first_down:
                 turnover_on_downs = self.state.next_down()
 
-        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before)
+        self._record_scrimmage_yardage(offense_stats, play_type, result, yards, ball_pos_before, touchdown=touchdown and not turnover)
 
         # A touchdown is a statistical first down even on a goal-to-go play.
         # Fumble first downs are recorded in the centralized handler.
@@ -3815,6 +3849,7 @@ class PaydirtGameEngine:
         state["random_state"] = random.getstate()
         return outcome
 
+    @capture_team_play
     def apply_end_zone_interception_return_decision(
         self, outcome: PlayOutcome, attempt_return: bool
     ) -> PlayOutcome:
@@ -3909,6 +3944,7 @@ class PaydirtGameEngine:
             seconds += 3 + abs(result.int_return_yards) // 10 if result.int_return_dice else 1
         return float(seconds)
 
+    @capture_team_play
     def _handle_qb_sneak(self) -> PlayOutcome:
         """
         Handle a QB Sneak play per official rules.
@@ -3924,6 +3960,7 @@ class PaydirtGameEngine:
         field_pos_before = self.state.field_position_str()
         down_before = self.state.down
 
+        snapping_stats = self.state.offense_stats
         # Roll offensive dice only
         dice_roll, _dice_desc = roll_chart_dice()
 
@@ -3979,6 +4016,7 @@ class PaydirtGameEngine:
             elif not first_down:
                 turnover_on_downs = self.state.next_down()
 
+        record_offensive_attempt(snapping_stats, PlayType.QB_SNEAK, result, touchdown=touchdown and not turnover)
         # Update stats
         if yards > 0 and not turnover:
             self.state.offense_stats.total_yards += yards
@@ -4230,6 +4268,9 @@ class PaydirtGameEngine:
         # the additional down against the series established by the play.
         if context["down_before"] == 1 and outcome.first_down:
             self.state.down = 2
+        self._team_stats_context.setdefault("spikes",[]).append({"home":self.state.is_home_possession,"down":self.state.down})
+        record_offensive_attempt(self.state.offense_stats, PlayType.SPIKE_BALL,
+                                 PlayResult(result_type=ResultType.INCOMPLETE, yards=0, description="Spike"))
         outcome.turnover_on_downs = self.state.next_down()
         outcome.spike_used = True
         outcome.down_after = self.state.down
@@ -4299,6 +4340,7 @@ class PaydirtGameEngine:
             # charging additional time or changing the spike down procedure.
             self._use_time(0)
 
+    @capture_team_play
     def _handle_hail_mary(self) -> PlayOutcome:
         """
         Handle a Hail Mary pass per official rules.
@@ -4314,6 +4356,7 @@ class PaydirtGameEngine:
         30-38      | INC
         39         | DEF PI (25 + T1*10 yards downfield)
         """
+        snapping_stats = self.state.offense_stats
         field_pos_before = self.state.field_position_str()
         ball_pos_before = self.state.ball_position
         down_before = self.state.down
@@ -4391,6 +4434,7 @@ class PaydirtGameEngine:
             # Incomplete - next down
             turnover_on_downs = self.state.next_down()
 
+        record_offensive_attempt(snapping_stats, PlayType.HAIL_MARY, result, touchdown=touchdown and not turnover)
         # Update passing stats
         if yards > 0 and not turnover and result.result_type != ResultType.PASS_INTERFERENCE:
             self.state.offense_stats.total_yards += yards
@@ -4436,6 +4480,7 @@ class PaydirtGameEngine:
 
         return outcome
 
+    @capture_team_play
     def _handle_spike_ball(self) -> PlayOutcome:
         """
         Handle a standalone three-second spike without dice or chart rolls.
@@ -4455,6 +4500,7 @@ class PaydirtGameEngine:
             raw_result="SPIKE",
         )
 
+        record_offensive_attempt(self.state.offense_stats, PlayType.SPIKE_BALL, result)
         # Advance to next down - returns True if turnover on downs
         turnover = self.state.next_down()
 
@@ -4516,6 +4562,7 @@ class PaydirtGameEngine:
                 return True
         return False
 
+    @capture_team_play
     def _handle_qb_kneel(self) -> PlayOutcome:
         """
         Handle a QB Kneel play per official Paydirt rules.
@@ -4600,6 +4647,7 @@ class PaydirtGameEngine:
         )
         return f"{receiving_team} 1st and 10 at {field_position}"
 
+    @capture_team_play
     def _handle_punt(
         self, short_drop: bool = False, coffin_corner_yards: int = 0, punt_from: int | None = None,
         first: tuple[int, str] | None = None,
@@ -4648,6 +4696,7 @@ class PaydirtGameEngine:
         is_fair_catch = "*" in punt_result  # * = fair catch
         is_blocked = "BK" in punt_result.upper()
         is_penalty = "OFF" in punt_result.upper() or "DEF" in punt_result.upper()
+        self._team_stats_context["punt"] = {"home":self.state.is_home_possession,"ball":field_pos_before,"blocked":is_blocked,"distance":0}
 
         # Short-drop punt: delete all * and † markers
         if is_short_drop:
@@ -4894,6 +4943,8 @@ class PaydirtGameEngine:
         # Calculate where punt lands (from punting team's perspective)
         # Ball position is yards from own goal, punt travels toward opponent's goal
         landing_spot = self.state.ball_position + punt_yards
+
+        self._team_stats_context["punt"].update(distance=punt_yards, fair=is_fair_catch and not is_coffin_corner and landing_spot < 100, touchback=landing_spot >= 100)
 
         # Check for touchback
         if landing_spot >= 100:
@@ -5666,6 +5717,7 @@ class PaydirtGameEngine:
         field_pos_before: int, prefix: str = "Punt", lead: str = "", shanked: bool = False,
     ) -> PlayOutcome:
         """Apply a punt return exactly once, after any kick-chart decision."""
+        record_return(self,home=not self._team_stats_context.get("punt",{}).get("home",self.state.is_home_possession),chain=chain)
         result = self._punt_return_chain_result(chain, punt_result, punt_roll)
         if punt_result.strip().isdigit():
             result.raw_result = str(punt_yards)
@@ -5732,6 +5784,7 @@ class PaydirtGameEngine:
         outcome.clock_trace = self.last_clock_trace
         return outcome
 
+    @capture_team_play
     def apply_punt_penalty_decision(
         self, outcome: PlayOutcome, accept_penalty: bool, penalty_index: int = 0
     ) -> PlayOutcome:
@@ -5967,6 +6020,7 @@ class PaydirtGameEngine:
 
         return new_outcome
 
+    @capture_team_play
     def apply_kickoff_penalty_decision(
         self, outcome: PlayOutcome, accept_penalty: bool
     ) -> PlayOutcome:
@@ -6147,6 +6201,7 @@ class PaydirtGameEngine:
         """
         return random.uniform(5, 10) if accept_play else random.uniform(25, 45)
 
+    @capture_team_play
     def apply_fg_penalty_decision(
         self, outcome: PlayOutcome, accept_play: bool, penalty_index: int = 0
     ) -> PlayOutcome:
@@ -6175,6 +6230,7 @@ class PaydirtGameEngine:
         ytg_before = getattr(outcome, "_fg_ytg_before", self.state.yards_to_go)
 
         if accept_play:
+            kicking_stats = self.state.offense_stats
             # Accept the FG result - apply the full FG logic
             fg_result = outcome.result.raw_result
 
@@ -6231,6 +6287,10 @@ class PaydirtGameEngine:
                     self.state.yards_to_go = 10
                     description = f"Field goal NO GOOD from {statistical_distance} yards"
 
+            if not outcome.result.field_goal_snap_fumble and not re.match(r"^F\s*[+-]", fg_result, re.IGNORECASE):
+                record_field_goal(kicking_stats, statistical_distance, success and not blocked)
+                if success and not blocked:
+                    add_team_stat(kicking_stats, "longest_field_goal", statistical_distance)
             outcome.field_goal_made = success and not blocked
             outcome.field_position_after = self.state.field_position_str()
             outcome.description = description + " (play result accepted)"
@@ -6369,6 +6429,7 @@ class PaydirtGameEngine:
             self.state.possession_team.special_teams, distance_to_goal
         )
 
+    @capture_team_play
     def _handle_field_goal(self) -> PlayOutcome:
         """
         Handle a field goal attempt per official Paydirt rules with full penalty handling.
@@ -6750,6 +6811,11 @@ class PaydirtGameEngine:
             self.state.down = 1
             self.state.yards_to_go = 10
 
+        if not nullified and not is_fumble:
+            kicking_stats = self.state.home_stats if fg_kicking_home else self.state.away_stats
+            record_field_goal(kicking_stats, statistical_distance, success and not blocked)
+            if success and not blocked:
+                add_team_stat(kicking_stats, "longest_field_goal", statistical_distance)
         parsed.replay_down = nullified
         outcome = PlayOutcome(
             play_type=PlayType.FIELD_GOAL,
@@ -6801,6 +6867,8 @@ class PaydirtGameEngine:
         else:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
+        add_team_stat(self.state.offense_stats,"extra_points_attempted")
+        add_team_stat(self.state.offense_stats,"extra_points_made",int(success))
         self._recompute_game_over_after_try()
         self._pending_post_score_action = (
             "kickoff" if self.can_kickoff_after_play() else None

@@ -50,6 +50,11 @@ for (const playerOffense of [true, false]) {
         expect(decision.ok(), await decision.text()).toBeTruthy()
       }
 
+      // Wait for the acknowledged action to reach the rendered log after autosave.
+      await expect.poll(() => page.evaluate(async () => {
+        const { useGameStore } = await import('/src/store/gameStore.js')
+        return useGameStore.getState().playLog.length
+      })).toBe(1)
       const log = await page.evaluate(async () => {
         const { useGameStore } = await import('/src/store/gameStore.js')
         return useGameStore.getState().playLog

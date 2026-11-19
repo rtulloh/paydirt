@@ -225,3 +225,27 @@ def test_output_cannot_use_symlink_parent(source: Path, tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Symlink"):
         module.build_bundle(source, parent / "bundle")
     assert list(target.iterdir()) == []
+
+
+def test_season_runtime_dependencies_are_explicitly_packaged() -> None:
+    """A static browser must have the same save/campaign operations as native."""
+    required = {
+        "paydirt/campaigns.py", "paydirt/campaign_simulation.py", "paydirt/auto_game.py",
+        "paydirt-web/backend/campaign_operations.py", "paydirt-web/backend/checkpoints.py",
+        "config/season-schedules/1983.json", "config/season-schedules/2024.json",
+    }
+    assert required <= set(builder().PUBLIC_FILES)
+
+
+
+def test_browser_bundle_includes_authoritative_kicking_statistics_module():
+    assert 'paydirt/kicking_stats.py' in builder().PUBLIC_FILES
+
+
+
+def test_browser_bundle_includes_offensive_efficiency_module():
+    assert 'paydirt/offense_stats.py' in builder().PUBLIC_FILES
+
+
+def test_extended_team_stats_module_is_in_public_worker_allowlist():
+    assert "paydirt/team_stats.py" in builder().PUBLIC_FILES

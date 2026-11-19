@@ -37,6 +37,8 @@ async function startGame(page, { home, seed, player, receives }) {
   expect(data.game_state.quarter).toBe(1)
   expect(data.game_state.time_remaining).toBe(900)
   expect(data.game_state.human_is_home).toBe(home)
+  // A raw engine response precedes durable checkpointing and the UI commit.
+  await expect.poll(async () => (await snapshot(page)).gameId).toBe(data.game_id)
   const fresh = await snapshot(page)
   expect(fresh).toMatchObject({
     gameId: data.game_id, homeScore: 0, awayScore: 0,
@@ -147,9 +149,20 @@ async function completeGame(page, request, gameId) {
     const saveButton = page.getByRole('button', { name: 'SAVE GAME', exact: true })
     if (!saveVerified && await saveButton.isEnabled()) {
       await saveButton.click()
-      await expect(page.getByRole('status')).toHaveText('Game saved in this browser.')
-      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('paydirt_save')))
-      expect(saved).toMatchObject({ gameId, timeRemaining: state.timeRemaining, ballPosition: state.ballPosition })
+      await expect(page.getByRole('status').filter({ hasText: /^Game saved locally\.$/ })).toHaveText('Game saved locally.')
+      const saved = await page.evaluate(async id => {
+        const { gameLibrary } = await import('/src/runtime/gameLibrary.js')
+        const record = await gameLibrary.get(id)
+        const response = await fetch('/api/game/checkpoint/' + encodeURIComponent(id), { method: 'POST' })
+        if (!response.ok) throw new Error('Could not independently export the current engine checkpoint')
+        return { record, currentCheckpoint: (await response.json()).checkpoint }
+      }, gameId)
+      expect(saved.record.metadata.gameId).toBe(gameId)
+      // Compare the durable engine save, rather than a UI snapshot or legacy localStorage.
+      expect(JSON.parse(saved.record.checkpoint)).toEqual(JSON.parse(saved.currentCheckpoint))
+      const checkpointState = JSON.parse(saved.record.checkpoint).engine.attrs.state.attrs
+      expect(checkpointState.time_remaining * 60).toBeCloseTo(state.timeRemaining, 6)
+      expect(checkpointState.ball_position).toBe(state.ballPosition)
       saveVerified = true
     }
     if (endpoint === 'execute' && !state.playerOffense) {

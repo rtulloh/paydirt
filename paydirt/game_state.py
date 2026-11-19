@@ -42,6 +42,10 @@ class TeamStats:
     # Not a dataclass field: save_game persists this only for incomplete legacy
     # records, without changing the statistics/API schema.
     _turnover_breakdown_complete = True
+    # Optional checkpoint/CLI metadata: absent legacy kicking coverage is unknown.
+    _field_goal_stats = None
+    _offensive_attempt_stats = None
+    _extended_team_stats = None
     @property
     def net_passing_yards(self) -> int:
         """Return team passing yardage after sack losses, without altering saves."""

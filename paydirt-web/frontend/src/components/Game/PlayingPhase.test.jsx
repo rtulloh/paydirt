@@ -1,3 +1,5 @@
+// These UI tests exercise engine responses; persistence/leases have dedicated integration suites.
+vi.mock('../../runtime/gameFetch', async () => { const actual = await vi.importActual('../../runtime/gameFetch'); return { ...actual, gameFetch: actual.rawGameFetch }; });
 import { act, fireEvent, render, screen, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PlayingPhase from './PlayingPhase';

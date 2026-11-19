@@ -1,12 +1,22 @@
 import { gameFetch } from '../../runtime/gameFetch';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { API_BASE } from '../../config';
 
 const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
   const [seasons, setSeasons] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [teamSearch, setTeamSearch] = useState('');
+  const [playerSeason, setPlayerSeason] = useState(null);
+  const [opponentSeason, setOpponentSeason] = useState(null);
+  const [activeSide, setActiveSide] = useState('player');
+  const selectedSeason = activeSide === 'player' ? playerSeason : opponentSeason;
+  const visibleTeams = teams.filter(team => team.name.toLocaleLowerCase().includes(teamSearch.trim().toLocaleLowerCase()));
+  const catalogCache = useRef(new Map());
+
+  useEffect(() => { setTeamSearch(''); }, [selectedSeason, activeSide]);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState('');
   const [playerTeam, setPlayerTeam] = useState(null);
   const [opponentTeam, setOpponentTeam] = useState(null);
   const [playerIsHome, setPlayerIsHome] = useState(true);
@@ -32,7 +42,8 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
         if (!active) return;
         setSeasons(data.seasons);
         if (data.seasons.length > 0) {
-          setSelectedSeason(data.seasons[0]);
+          setPlayerSeason(data.seasons[0]);
+          setOpponentSeason(data.seasons[0]);
         } else {
           setTeamsLoading(false);
         }
@@ -51,17 +62,21 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
     let active = true;
     if (selectedSeason) {
       setTeams([]);
-      setPlayerTeam(null);
-      setOpponentTeam(null);
       setTeamsLoading(true);
       setLoadError(null);
-      gameFetch(`${API_BASE}/api/teams?season=${selectedSeason}`)
+      if (catalogCache.current.has(selectedSeason)) {
+        setTeams(catalogCache.current.get(selectedSeason));
+        setTeamsLoading(false);
+        return () => { active = false; };
+      }
+      gameFetch(`${API_BASE}/api/teams?season=${encodeURIComponent(selectedSeason)}`)
         .then(res => {
           if (!res.ok) throw new Error('Could not load teams.');
           return res.json();
         })
         .then(data => {
           if (!active) return;
+          catalogCache.current.set(selectedSeason, data.teams || []);
           setTeams(data.teams || []);
           setTeamsLoading(false);
         })
@@ -74,30 +89,56 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
     return () => { active = false; };
   }, [selectedSeason, teamRetry]);
 
-  const handleTeamClick = (team) => {
-    if (teamsLoading || loadError) return;
-    if (!playerTeam) {
-      setPlayerTeam(team);
-    } else if (!opponentTeam && team.id !== playerTeam.id) {
-      setOpponentTeam(team);
-    } else if (playerTeam && team.id === playerTeam.id) {
-      setPlayerTeam(null);
-    } else if (opponentTeam && team.id === opponentTeam.id) {
-      setOpponentTeam(null);
+  const changeSeason = (side, season) => {
+    setActiveSide(side);
+    setStartError('');
+    if (side === 'player') {
+      if (season !== playerSeason) setPlayerTeam(null);
+      setPlayerSeason(season);
+    } else {
+      if (season !== opponentSeason) setOpponentTeam(null);
+      setOpponentSeason(season);
     }
   };
 
-  const canStart = !teamsLoading && !loadError && playerTeam && opponentTeam;
+  const sameEdition = (team, edition, season) => team?.id === edition?.id && selectedSeason === season;
+  const handleTeamClick = team => {
+    if (teamsLoading || loadError || starting) return;
+    setStartError('');
+    if (activeSide === 'player') {
+      if (team.id === opponentTeam?.id && playerSeason === opponentSeason) return;
+      setPlayerTeam(team);
+      setActiveSide('opponent');
+    } else {
+      if (team.id === playerTeam?.id && playerSeason === opponentSeason) {
+        setActiveSide('player');
+        return;
+      }
+      setOpponentTeam(team);
+    }
+  };
+  const canStart = !teamsLoading && !loadError && !starting && playerTeam && opponentTeam
+    && !(playerTeam.id === opponentTeam.id && playerSeason === opponentSeason);
+  const rulesSeason = playerIsHome ? playerSeason : opponentSeason;
+  const swapTeams = () => {
+    setPlayerTeam(opponentTeam); setOpponentTeam(playerTeam);
+    setPlayerSeason(opponentSeason); setOpponentSeason(playerSeason);
+    setStartError('');
+  };
 
   const handleStartGame = () => {
     if (!canStart) return;
+    setStarting(true);
+    setStartError('');
 
     gameFetch(`${API_BASE}/api/game/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         player_team: playerTeam.id,
-        season: selectedSeason,
+        season: rulesSeason,
+        player_season: playerSeason,
+        opponent_season: opponentSeason,
         play_as_home: playerIsHome,
         opponent_team: opponentTeam.id,
         difficulty: difficulty,
@@ -109,16 +150,21 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
         player_attempt_end_zone_interception_returns: false,
       })
     })
-      .then(res => res.json())
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not start this game.');
+        return data;
+      })
       .then(data => {
         setGameId(data.game_id);
         updateGameState(data.game_state);
         setIsKickoff(true);
-        setCurrentSeason(selectedSeason);
-        onTeamSelected({ playerTeam, opponentTeam, playerIsHome });
+        setCurrentSeason(rulesSeason);
+        onTeamSelected?.({ playerTeam, opponentTeam, playerIsHome, playerSeason, opponentSeason });
       })
       .catch(err => {
-        console.error('Failed to start game:', err);
+        setStartError(err.message || 'Could not start this game. Please retry.');
+        setStarting(false);
       });
   };
 
@@ -135,21 +181,35 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">SELECT TEAMS</h1>
-          <p className="text-gray-400">Click a team to select YOUR team, then click another to select OPPONENT</p>
+          <p className="text-gray-400">Choose your team, then your opponent. Each can use a different chart year.</p>
         </div>
 
         {seasons.length > 0 && (
-          <div className="mb-6 text-center">
+          <div className="mb-6 text-center space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="text-white text-left">Your chart year
+                <select aria-label="Your chart year" value={playerSeason || ''} onChange={event => changeSeason('player', event.target.value)} className="block w-full bg-gray-800 rounded-lg p-3 mt-1">
+                  {seasons.map(season => <option key={season} value={season}>{season}</option>)}
+                </select>
+              </label>
+              <label className="text-white text-left">Opponent chart year
+                <select aria-label="Opponent chart year" value={opponentSeason || ''} onChange={event => changeSeason('opponent', event.target.value)} className="block w-full bg-gray-800 rounded-lg p-3 mt-1">
+                  {seasons.map(season => <option key={season} value={season}>{season}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <button aria-pressed={activeSide === 'player'} onClick={() => setActiveSide('player')} className="text-white rounded-lg border border-gray-600 p-3">Choose your team</button>
+              <button aria-pressed={activeSide === 'opponent'} onClick={() => setActiveSide('opponent')} className="text-white rounded-lg border border-gray-600 p-3">Choose opponent</button>
+            </div>
             <div className="inline-flex flex-wrap justify-center items-center gap-4 bg-gray-800 rounded-lg px-6 py-3">
-              <span className="font-bold text-gray-300">SEASON:</span>
+              <span className="font-bold text-gray-300">{activeSide === 'player' ? 'YOUR TEAM' : 'OPPONENT'} YEAR:</span>
               <div className="flex flex-wrap justify-center gap-2">
                 {seasons.map((season) => (
                   <button
                     key={season}
                     onClick={() => {
-                      setSelectedSeason(season);
-                      setPlayerTeam(null);
-                      setOpponentTeam(null);
+                      changeSeason(activeSide, season);
                     }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${
                       selectedSeason === season
@@ -169,6 +229,15 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
           <h3 className="text-lg font-bold mb-3 text-gray-300 text-center">
             {selectedSeason ? `TEAMS (${selectedSeason})` : 'TEAMS'}
           </h3>
+          <label className="block text-gray-300 mb-3">Search by name within year
+            <input type="search" aria-label={`Search teams in ${selectedSeason || 'selected year'}`}
+              value={teamSearch} onChange={event => setTeamSearch(event.target.value)}
+              disabled={teamsLoading || !!loadError}
+              className="block w-full bg-gray-800 rounded-lg p-3 mt-1 text-white" />
+          </label>
+          {!teamsLoading && !loadError && teams.length > 0 && visibleTeams.length === 0 && (
+            <p role="status" className="text-center text-gray-300">No matching teams in {selectedSeason}.</p>
+          )}
           {teamsLoading && <p role="status" className="text-center text-gray-300">Loading teams...</p>}
           {loadError && (
             <div role="alert" className="text-center text-red-300 mb-4">
@@ -183,9 +252,9 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
             <p className="text-center text-gray-300">No teams available for this season.</p>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {teams.map(team => {
-              const isPlayer = playerTeam?.id === team.id;
-              const isOpponent = opponentTeam?.id === team.id;
+            {visibleTeams.map(team => {
+              const isPlayer = sameEdition(team, playerTeam, playerSeason);
+              const isOpponent = sameEdition(team, opponentTeam, opponentSeason);
               return (
                 <button
                   key={team.id}
@@ -222,7 +291,16 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
           </div>
         </div>
 
-        {canStart && (
+        <div className="mb-6 text-center text-gray-200 space-y-2" aria-live="polite">
+          {playerTeam && <p>Your team: {playerSeason} {playerTeam.name}</p>}
+          {opponentTeam && <p>Opponent: {opponentSeason} {opponentTeam.name}</p>}
+          {playerTeam && opponentTeam && <>
+            <p>Playing under {rulesSeason} rules</p>
+            <p className="text-gray-400 text-sm">The home team's chart year governs this exhibition.</p>
+            <button onClick={swapTeams} disabled={starting} className="text-white border border-gray-600 px-4 py-2 rounded-lg">Swap teams</button>
+          </>}
+        </div>
+        {playerTeam && opponentTeam && (
           <div className="mb-6 text-center">
             <div className="flex flex-col items-center gap-4 bg-gray-800 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-4">
@@ -273,6 +351,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
           </div>
         )}
 
+        {startError && <p role="alert" className="text-red-300 text-center mb-4">{startError}</p>}
         <div className="text-center">
           <button
             onClick={handleStartGame}
@@ -283,7 +362,7 @@ const TeamSelectPhase = ({ onTeamSelected, onBackToMenu }) => {
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {canStart ? 'START GAME' : 'SELECT BOTH TEAMS'}
+            {starting ? 'STARTING GAME…' : canStart ? 'START GAME' : 'SELECT BOTH TEAMS'}
           </button>
         </div>
 

@@ -216,3 +216,72 @@ class TestGetSaveInfo:
         """get_save_info should return None for nonexistent file."""
         info = get_save_info("/nonexistent/path/save.json")
         assert info is None
+
+
+
+def test_kicking_counts_survive_cli_save_and_legacy_stays_unknown(game, temp_save_file):
+    game.state.home_stats._offensive_attempt_stats['passing_attempts'] = 3
+    game.state.home_stats._offensive_attempt_stats['passing_completions'] = 2
+    game.state.home_stats._field_goal_stats['field_goals_attempted'] = 1
+    game.state.home_stats._field_goal_stats['field_goals_40_49_attempted'] = 1
+    save_game(game, filepath=temp_save_file)
+    restored, *_ = load_game(temp_save_file)
+    assert restored.state.home_stats._field_goal_stats == game.state.home_stats._field_goal_stats
+    assert restored.state.home_stats._offensive_attempt_stats == game.state.home_stats._offensive_attempt_stats
+    with open(temp_save_file) as saved:
+        data = json.load(saved)
+    data.pop('field_goal_stats', None)
+    data.pop('offensive_attempt_stats', None)
+    with open(temp_save_file, 'w') as saved:
+        json.dump(data, saved)
+    legacy, *_ = load_game(temp_save_file)
+    assert legacy.state.home_stats._field_goal_stats is None
+    assert legacy.state.home_stats._offensive_attempt_stats is None
+
+
+def test_extended_team_stats_cli_roundtrip_and_old_save_unknown(game, temp_save_file):
+    expected = {"longest_rush": 27, "third_down_attempts": 3, "third_down_conversions": 1}
+    game.state.home_stats._extended_team_stats = expected
+    save_game(game, filepath=temp_save_file)
+    loaded, *_ = load_game(temp_save_file)
+    assert loaded.state.home_stats._extended_team_stats == expected
+    with open(temp_save_file) as source: data = json.load(source)
+    data.pop("extended_team_stats")
+    with open(temp_save_file, "w") as target: json.dump(data, target)
+    loaded, *_ = load_game(temp_save_file)
+    assert loaded.state.home_stats._extended_team_stats is None
+
+
+def test_pending_interception_preserves_extended_capture_context_and_commits_once(tmp_path):
+    from unittest.mock import patch
+
+    from tests.game_fixtures import make_sample_game
+    from tests.test_resume_pending_end_zone_flow import pending_game
+    candidate = make_sample_game()
+    candidate.state.down = 3
+    with patch("tests.test_resume_pending_end_zone_flow.make_sample_game", return_value=candidate):
+        game, _ = pending_game()
+    context = dict(game._team_stats_context)
+    assert context.get("pending") is True
+    before = dict(game.state.away_stats._extended_team_stats)
+    path = tmp_path / "pending-team-stat-context.json"
+    save_game(game, str(path))
+    loaded, *_ = load_game(str(path))
+    assert loaded._team_stats_context == context
+    assert loaded.state.away_stats._extended_team_stats == before
+    loaded.apply_end_zone_interception_return_decision(loaded._last_play_outcome, False)
+    assert loaded._team_stats_context == {}
+    assert loaded.state.away_stats._extended_team_stats["third_down_attempts"] == before["third_down_attempts"] + 1
+    with pytest.raises(ValueError):
+        loaded.apply_end_zone_interception_return_decision(loaded._last_play_outcome, False)
+    assert loaded.state.away_stats._extended_team_stats["third_down_attempts"] == before["third_down_attempts"] + 1
+
+
+def test_cli_rejects_capture_context_without_resumable_engine_choice(game, temp_save_file):
+    save_game(game, temp_save_file)
+    with open(temp_save_file) as source: data = json.load(source)
+    data["team_stats_context"] = {"home": True, "ball": 50, "down": 1, "first_downs": 0,
+                                  "passing_yards": 0, "rushing_yards": 0, "pending": True}
+    with open(temp_save_file, "w") as target: json.dump(data, target)
+    with pytest.raises(ValueError, match="no resumable pending"):
+        load_game(temp_save_file)

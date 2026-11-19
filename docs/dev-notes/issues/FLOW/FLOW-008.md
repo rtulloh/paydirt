@@ -8,6 +8,8 @@ resolved-at:
 closed-at:
 tags:
   - code-read
+links:
+  - FLOW-036
 ---
 
 ## Description
@@ -74,3 +76,9 @@ state reporting; it does not demonstrate that the CPU actually uses Medium.
 Retain the issue as open and cover the existing state-response acceptance check
 in a separate test-first correction. No gameplay or backend changes made during
 this observation.
+
+--- 2026-11-18 11:17 ---
+Coordinated by [FLOW-036](../FLOW/FLOW-036.md), the owner-approved web seasons
+umbrella and six-slice design. Retain this issue's acceptance/evidence requirements;
+no fix or closure is claimed. Team statistics only; individual player statistics
+are explicitly excluded by the owner.

@@ -167,7 +167,7 @@ for (const launcher of ['Open in new tab', 'Open in separate window']) {
     try {
       const before = await (await request.get(`${backendURL}/api/game/state/${gameId}`)).json()
       const posts = []
-      context.on('request', sent => { if (sent.method() === 'POST') posts.push(sent.url()) })
+      context.on('request', sent => { if (sent.method() === 'POST' && !new URL(sent.url()).pathname.startsWith('/api/game/checkpoint/')) posts.push(sent.url()) })
       await page.getByRole('button', { name: 'CHARTS', exact: true }).click()
       const dialog = page.getByRole('dialog')
       await dialog.getByLabel('Chart team').selectOption('away')
@@ -213,7 +213,7 @@ for (const launcher of ['Open in new tab', 'Open in separate window']) {
 
 test('an expired standalone chart link offers retry without mounting game setup', async ({ page }) => {
   const posts = []
-  page.on('request', sent => { if (sent.method() === 'POST') posts.push(sent.url()) })
+  page.on('request', sent => { if (sent.method() === 'POST' && !new URL(sent.url()).pathname.startsWith('/api/game/checkpoint/')) posts.push(sent.url()) })
   await page.goto('/?charts=expired-game&side=away&view=defense')
   await expect(page.getByRole('alert')).toContainText('This game is no longer available')
   await expect(page.getByRole('button', { name: 'Retry charts', exact: true })).toBeVisible()

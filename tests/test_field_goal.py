@@ -690,3 +690,135 @@ class TestFGPenaltyResultDisplay:
             # This prevents "Gain of 12 yards" from showing in the display
             assert outcome.penalty_choice.play_result.yards == 0, \
                 f"Expected yards=0, got {outcome.penalty_choice.play_result.yards}"
+
+
+@pytest.mark.parametrize("distance,band", [(18,"0_19"),(20,"20_29"),(29,"20_29"),(30,"30_39"),(39,"30_39"),(40,"40_49"),(49,"40_49"),(50,"50_plus")])
+def test_kicking_statistics_use_statistical_distance(game, distance, band):
+    game.state.ball_position = 117 - distance
+    game.state.is_home_possession = True
+    with patch('paydirt.game_engine.resolve_field_goal_with_penalties', return_value=create_fg_result(10,"99",chart_yards=99)):
+        game.run_play(PlayType.FIELD_GOAL, None)
+    stats = game.state.home_stats._field_goal_stats
+    assert stats['field_goals_attempted'] == stats['field_goals_made'] == 1
+    assert stats[f'field_goals_{band}_attempted'] == stats[f'field_goals_{band}_made'] == 1
+    assert game.state.away_stats._field_goal_stats['field_goals_attempted'] == 0
+
+
+def test_missed_field_goal_tracks_original_kicking_team(game):
+    game.state.ball_position = 75
+    game.state.is_home_possession = True
+    with patch('paydirt.game_engine.resolve_field_goal_with_penalties', return_value=create_fg_result(10,"1",chart_yards=1)):
+        game.run_play(PlayType.FIELD_GOAL, None)
+    assert game.state.home_stats._field_goal_stats['field_goals_40_49_attempted'] == 1
+    assert game.state.home_stats._field_goal_stats['field_goals_made'] == 0
+    assert game.state.away_stats._field_goal_stats['field_goals_attempted'] == 0
+
+
+@pytest.mark.parametrize("keep", [True, False])
+def test_kicking_counts_only_retained_penalty_result_once(game, keep):
+    from paydirt.play_resolver import PenaltyOption
+    game.state.ball_position = 75
+    game.state.is_home_possession = True
+    kick = create_fg_result(10, "99", chart_yards=99)
+    kick.is_penalty = True
+    kick.penalty_options = [PenaltyOption(penalty_type="DEF", raw_result="DEF 5", yards=5, description="Defensive foul")]
+    kick.offended_team = "offense"
+    with patch('paydirt.game_engine.resolve_field_goal_with_penalties', return_value=kick):
+        outcome = game.run_play(PlayType.FIELD_GOAL, None)
+    assert outcome.pending_penalty_decision
+    assert game.state.home_stats._field_goal_stats['field_goals_attempted'] == 0
+    game.apply_fg_penalty_decision(outcome, keep)
+    game.apply_fg_penalty_decision(outcome, keep)
+    assert game.state.home_stats._field_goal_stats['field_goals_attempted'] == int(keep)
+    assert game.state.home_stats._field_goal_stats['field_goals_made'] == int(keep)
+
+
+@pytest.mark.parametrize("raw,blocked,fumble,attempted", [("BK -8",True,False,1),("F -5",False,True,0)])
+def test_blocked_kick_counts_but_fumbled_snap_does_not(game, raw, blocked, fumble, attempted):
+    game.state.ball_position = 75
+    game.state.is_home_possession = True
+    with (patch('paydirt.game_engine.resolve_field_goal_with_penalties', return_value=create_fg_result(10,raw,is_blocked=blocked,is_fumble=fumble)),
+          patch('paydirt.game_engine.roll_chart_dice', return_value=(35,"synthetic recovery"))):
+        game.run_play(PlayType.FIELD_GOAL, None)
+    assert game.state.home_stats._field_goal_stats['field_goals_attempted'] == attempted
+    assert game.state.home_stats._field_goal_stats['field_goals_made'] == 0
+
+
+@pytest.mark.parametrize("play,raw,yards,kind", [(PlayType.SHORT_PASS,"5",5,"passing_completions"),(PlayType.LINE_PLUNGE,"5",5,"rushing_attempts")])
+def test_offensive_attempt_counters_follow_engine_yardage(game, play, raw, yards, kind):
+    from paydirt.play_resolver import DefenseType, PlayResult, ResultType
+    game.state.is_home_possession = True
+    result = PlayResult(result_type=ResultType.YARDS, yards=yards, raw_result=raw, description="Synthetic gain")
+    with patch('paydirt.game_engine.resolve_play', return_value=result):
+        game.run_play(play, DefenseType.STANDARD)
+    assert game.state.home_stats._offensive_attempt_stats[kind] == 1
+
+
+@pytest.mark.parametrize("play,kind,yards", [(PlayType.SHORT_PASS,"SACK",-5),(PlayType.SHORT_PASS,"QB_SCRAMBLE",5),(PlayType.SHORT_PASS,"YARDS",5)])
+def test_engine_pass_attempts_exclude_sacks_scrambles_and_count_passing_td(game,play,kind,yards):
+    from paydirt.play_resolver import DefenseType, PlayResult, ResultType
+    game.state.is_home_possession=True
+    game.state.ball_position=97 if kind=='YARDS' else 50
+    result=PlayResult(result_type=ResultType[kind],yards=yards,description='Synthetic')
+    with patch('paydirt.game_engine.resolve_play',return_value=result):
+        outcome=game.run_play(play,DefenseType.STANDARD)
+    counts=game.state.home_stats._offensive_attempt_stats
+    assert counts['passing_attempts']==int(kind=='YARDS')
+    assert counts['rushing_attempts']==int(kind=='QB_SCRAMBLE')
+    assert counts['passing_touchdowns']==int(outcome.touchdown and kind=='YARDS')
+
+
+@pytest.mark.parametrize('play,key', [(PlayType.SPIKE_BALL,'passing_attempts'),(PlayType.QB_KNEEL,'rushing_attempts')])
+def test_standalone_clock_procedures_record_attempts(game,play,key):
+    from paydirt.play_resolver import DefenseType
+    game.state.is_home_possession=True
+    game.run_play(play,DefenseType.STANDARD)
+    assert game.state.home_stats._offensive_attempt_stats[key]==1
+
+
+def test_play_plus_spike_adds_separate_incomplete_attempt_once(game):
+    from paydirt.play_resolver import DefenseType, PenaltyChoice, PlayResult, ResultType
+    game.state.is_home_possession=True
+    game.state.quarter=4
+    game.state.time_remaining=1
+    game.state.two_minute_warning_called=True
+    result=PlayResult(result_type=ResultType.YARDS,yards=5,description='Synthetic')
+    with (patch('paydirt.game_engine.resolve_play_with_penalties',return_value=PenaltyChoice(result)),
+          patch('paydirt.game_engine.random.uniform',return_value=25)):
+        outcome=game.run_play_with_penalty_procedure(PlayType.SHORT_PASS,DefenseType.STANDARD,call_spike=True)
+    assert outcome.spike_used
+    assert game.state.home_stats._offensive_attempt_stats['passing_attempts']==2
+    assert game.state.home_stats._offensive_attempt_stats['passing_completions']==1
+
+
+@pytest.mark.parametrize('play,resolver,yards,key', [(PlayType.QB_SNEAK,'resolve_qb_sneak',1,'rushing_attempts'),(PlayType.HAIL_MARY,'resolve_hail_mary',5,'passing_completions')])
+def test_special_offensive_calls_record_attempts(game,play,resolver,yards,key):
+    from paydirt.play_resolver import DefenseType, PlayResult, ResultType
+    game.state.is_home_possession=True
+    result=PlayResult(result_type=ResultType.YARDS,yards=yards,description='Synthetic')
+    with (patch(f'paydirt.game_engine.{resolver}',return_value=result),
+          patch('paydirt.game_engine.roll_chart_dice',return_value=(10,'Synthetic'))):
+        game.run_play(play,DefenseType.STANDARD)
+    assert game.state.home_stats._offensive_attempt_stats[key]==1
+
+
+@pytest.mark.parametrize('keep',[True,False])
+def test_offensive_attempts_wait_for_foul_decision_and_count_retained_play_once(game,keep):
+    from paydirt.play_resolver import (
+        DefenseType,
+        PenaltyChoice,
+        PenaltyOption,
+        PlayResult,
+        ResultType,
+    )
+    game.state.is_home_possession=True
+    result=PlayResult(result_type=ResultType.YARDS,yards=5,description='Synthetic pass')
+    choice=PenaltyChoice(result,penalty_options=[PenaltyOption(penalty_type='DEF',raw_result='DEF 5',yards=5,description='Synthetic foul')],offended_team='offense')
+    with patch('paydirt.game_engine.resolve_play_with_penalties',return_value=choice):
+        outcome=game.run_play_with_penalty_procedure(PlayType.SHORT_PASS,DefenseType.STANDARD)
+    assert outcome.pending_penalty_decision
+    assert game.state.home_stats._offensive_attempt_stats['passing_attempts']==0
+    outcome=game.apply_penalty_decision(outcome,keep)
+    game.apply_penalty_decision(outcome,keep)
+    assert game.state.home_stats._offensive_attempt_stats['passing_attempts']==int(keep)
+    assert game.state.home_stats._offensive_attempt_stats['passing_completions']==int(keep)

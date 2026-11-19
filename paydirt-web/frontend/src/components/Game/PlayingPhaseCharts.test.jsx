@@ -1,3 +1,4 @@
+import { API_BASE } from '../../config';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PlayingPhase from './PlayingPhase';
@@ -74,7 +75,7 @@ describe('Game chart reference viewer', () => {
     const trigger = screen.getByRole('button', { name: 'CHARTS' });
     fireEvent.click(trigger);
     const chart = await screen.findByRole('table', { name: 'Offense · Sample Home' });
-    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/game/charts/chart-game?side=home', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(fetch).toHaveBeenCalledWith(`${API_BASE}/api/game/charts/chart-game?side=home`, expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(within(chart).getByRole('cell', { name: /^\(2\)/ })).toHaveClass('paydirt-chart-cell-green');
     expect(within(chart).getByRole('cell', { name: /^INT 7/ })).toHaveClass('paydirt-chart-cell-red');
     expect(within(chart).getByRole('cell', { name: /^OFF 15/ })).toHaveClass('paydirt-chart-cell-yellow');
@@ -301,7 +302,7 @@ describe('Game chart reference viewer', () => {
     expect(screen.getByLabelText('Chart team')).toHaveValue('away');
     expect(screen.getByRole('option', { name: 'Sample Away (away)' })).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch.mock.calls[0][0]).toBe('http://localhost:8000/api/game/charts/detached-game?side=away');
+    expect(fetch.mock.calls[0][0]).toBe(`${API_BASE}/api/game/charts/detached-game?side=away`);
     expect(useGameStore.getState().gameId).toBe('chart-game');
   });
 

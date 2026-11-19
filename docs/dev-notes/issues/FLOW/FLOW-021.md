@@ -9,6 +9,7 @@ closed-at:
 tags:
   - requested
 links:
+  - FLOW-036
   - FLOW-022
 ---
 
@@ -32,3 +33,15 @@ Keep aggregate season statistics as a related follow-up; this request specifical
 Requested by the owner. Moved from mistakenly created GitHub issue #1 to the
 repository tracker; implementation remains pending. GitHub is not the tracker for
 this request. No release commitment or gameplay change accompanies this ticket.
+
+--- 2026-11-18 11:17 ---
+Coordinated by [FLOW-036](../FLOW/FLOW-036.md), the owner-approved web seasons
+umbrella and six-slice design. Retain this issue's acceptance/evidence requirements;
+no fix or closure is claimed. Team statistics only; individual player statistics
+are explicitly excluded by the owner.
+
+--- 2026-11-18 13:56 ---
+The rendered season desk, result recording/revisions, standings, simulation/postseason and restart recovery pass actual Chromium acceptance.
+See [FLOW-036 acceptance](../../season-ui-acceptance.md) for final-source receipts,
+coverage and retained original failures. Work remains uncommitted; this issue stays
+open for review/integration rather than claiming a published fix.

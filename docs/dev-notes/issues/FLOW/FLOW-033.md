@@ -10,8 +10,10 @@ closed-at:
 tags:
   - investigating
 links:
+  - FLOW-036
   - RULE-032
   - FLOW-034
+  - FLOW-035
 commits:
 ---
 
@@ -220,3 +222,9 @@ that separate finding. Candidate archive b74c4f62 is 1,970,080 bytes. Push and
 deployed-origin verification follow; temporary sessions and remaining production
 feature work stay explicit limitations. No formal v1.11.0 release/tag is being
 published.
+
+--- 2026-11-18 11:17 ---
+Coordinated by [FLOW-036](../FLOW/FLOW-036.md), the owner-approved web seasons
+umbrella and six-slice design. Retain this issue's acceptance/evidence requirements;
+no fix or closure is claimed. Team statistics only; individual player statistics
+are explicitly excluded by the owner.

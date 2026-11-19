@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import posixpath
@@ -7,14 +8,16 @@ import random
 import re
 import sys
 import uuid
+from copy import deepcopy
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, get_type_hints
 
 import yaml
 from operations import FileAsset, OperationRegistry
 from operations import OperationError as HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Handle both development and bundled (PyInstaller) environments
 if getattr(sys, "frozen", False):
@@ -267,6 +270,8 @@ async def get_doc_image(image_name: str):
 
 
 class Team(BaseModel):
+    season: Optional[str] = None
+    edition_id: Optional[str] = None
     id: str
     name: str
     short_name: Optional[str] = None
@@ -391,6 +396,8 @@ class TeamsResponse(BaseModel):
 class NewGameRequest(BaseModel):
     player_team: str
     season: str
+    player_season: Optional[str] = None
+    opponent_season: Optional[str] = None
     play_as_home: bool = True
     opponent_team: Optional[str] = None
     difficulty: str = "medium"
@@ -404,6 +411,7 @@ class NewGameRequest(BaseModel):
 
 class GameStateResponse(BaseModel):
     game_id: str
+    play_history: list[dict[str, Any]] = Field(default_factory=list)
     home_team: Team
     away_team: Team
     home_score: int
@@ -431,6 +439,7 @@ class GameStateResponse(BaseModel):
     home_stats: Optional[dict[str, int]] = None
     away_stats: Optional[dict[str, int]] = None
     season: str = "1983"  # Season year for replay saving
+    rules_season: Optional[str] = None
     # Engine-owned: the first half has ended and the second-half kickoff is still owed.
     halftime_pending: bool = False
     home_end_zone_interception_return: bool = False
@@ -468,6 +477,8 @@ class CPUPlayResponse(BaseModel):
 class ExecutePlayResponse(BaseModel):
     player_play: str
     cpu_play: str
+    offense_play: Optional[str] = None
+    defense_play: Optional[str] = None
     dice_roll_offense: int
     dice_roll_defense: int
     dice_details: Optional[dict[str, Any]] = None  # Full dice breakdown
@@ -549,6 +560,8 @@ def load_team_info(season_dir: Path, team_id: str) -> Team:
                 team_info["city"] = data.get("city")
                 team_info["state"] = data.get("state")
 
+    team_info["season"] = season_dir.name
+    team_info["edition_id"] = f"{season_dir.name}/{team_id}"
     return Team(**team_info)
 
 
@@ -601,6 +614,9 @@ def _arm_follow_up_state(game: dict[str, Any], engine, outcome) -> tuple:
     Returns:
         (scoring, is_pending_pat, pre_kickoff_ball_position)
     """
+    # Recovery and campaign-final validation must follow the current outcome,
+    # including the resolved replacement returned by a penalty decision.
+    engine._last_play_outcome = outcome
     if outcome.pending_penalty_decision or outcome.pending_end_zone_interception_return_decision:
         game["pending_pat"] = False
         return False, False, None
@@ -651,7 +667,7 @@ def _arm_kickoff(game: dict[str, Any], engine, *, from_safety: bool = False) -> 
     game["is_kickoff"] = True
 
 def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = None) -> GameStateResponse:
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
     pending_pat = game.get("pending_pat", False)
@@ -719,6 +735,8 @@ def game_state_to_response(game: dict[str, Any], is_kickoff: Optional[bool] = No
         home_stats=home_stats,
         away_stats=away_stats,
         season=game.get("season", "1983"),
+        rules_season=str(game.get("rules_season") or game["engine"].season_rules.season),
+        play_history=game.get("play_history", []),
     )
     return response
 
@@ -894,63 +912,38 @@ def _extract_team_name(team_id: str, season: str) -> str:
 
 @registry.post("/api/game/new", response_model=NewGameResponse)
 async def new_game(request: NewGameRequest):
-    # Extract team names from 'season/team' format if present
-    player_team = _extract_team_name(request.player_team, request.season)
+    player_season = request.player_season or request.season
+    opponent_season = request.opponent_season or request.season
+    player_team = _extract_team_name(request.player_team, player_season)
     opponent_team = (
-        _extract_team_name(request.opponent_team, request.season) if request.opponent_team else None
+        _extract_team_name(request.opponent_team, opponent_season) if request.opponent_team else None
     )
-
-    season_dir = _find_season_dir(request.season)
-    if season_dir is None:
-        raise HTTPException(status_code=404, detail=f"Season '{request.season}' not found")
-
-    available_teams = [d.name for d in season_dir.iterdir()
-                       if _team_directory(season_dir, d.name) is not None]
-    if player_team not in available_teams:
-        raise HTTPException(
-            status_code=404, detail=f"Team '{player_team}' not found in season '{request.season}'"
-        )
-
-    if opponent_team:
-        if opponent_team not in available_teams:
-            raise HTTPException(
-                status_code=404, detail=f"Opponent team '{opponent_team}' not found"
-            )
-        if opponent_team == player_team:
-            raise HTTPException(
-                status_code=400, detail="Player team and opponent team cannot be the same"
-            )
-        player_team_id = player_team
-        cpu_team_id = opponent_team
-        player_is_home = request.play_as_home
-        human_plays_offense = random.choice([True, False])
-        if player_is_home:
-            home_id = player_team_id
-            away_id = cpu_team_id
-        else:
-            home_id = cpu_team_id
-            away_id = player_team_id
-    else:
-        cpu_teams = [t for t in available_teams if t != player_team]
-        cpu_team = random.choice(cpu_teams) if cpu_teams else player_team
-        player_is_home = request.play_as_home
-        human_plays_offense = random.choice([True, False])
-        if player_is_home:
-            player_team_id = player_team
-            cpu_team_id = cpu_team
-            home_id = player_team_id
-            away_id = cpu_team_id
-        else:
-            player_team_id = player_team
-            cpu_team_id = cpu_team
-            home_id = cpu_team_id
-            away_id = player_team_id
-
-    home_team = load_team_info(season_dir, home_id)
-    away_team = load_team_info(season_dir, away_id)
-
-    home_chart = load_team_chart(str(season_dir / home_team.id))
-    away_chart = load_team_chart(str(season_dir / away_team.id))
+    player_dir = _find_season_dir(player_season)
+    opponent_dir = _find_season_dir(opponent_season)
+    if player_dir is None or opponent_dir is None:
+        raise HTTPException(status_code=404, detail="Selected season not found")
+    if _team_directory(player_dir, player_team) is None:
+        raise HTTPException(status_code=404, detail="Player team not found")
+    if opponent_team is None:
+        candidates = [d.name for d in opponent_dir.iterdir()
+                      if _team_directory(opponent_dir, d.name) is not None
+                      and (opponent_season, d.name) != (player_season, player_team)]
+        if not candidates:
+            raise HTTPException(status_code=400, detail="No eligible opponent available")
+        opponent_team = random.choice(candidates)
+    if _team_directory(opponent_dir, opponent_team) is None:
+        raise HTTPException(status_code=404, detail="Opponent team not found")
+    if (player_season, player_team) == (opponent_season, opponent_team):
+        raise HTTPException(status_code=400, detail="Player team and opponent team cannot be the same")
+    player_team_id, cpu_team_id = player_team, opponent_team
+    player_is_home = request.play_as_home
+    human_plays_offense = random.choice([True, False])
+    home_dir, away_dir = (player_dir, opponent_dir) if player_is_home else (opponent_dir, player_dir)
+    home_id, away_id = (player_team, opponent_team) if player_is_home else (opponent_team, player_team)
+    home_team = load_team_info(home_dir, home_id)
+    away_team = load_team_info(away_dir, away_id)
+    home_chart = load_team_chart(str(home_dir / home_id))
+    away_chart = load_team_chart(str(away_dir / away_id))
 
     game_id = f"game_{uuid.uuid4().hex[:8]}"
 
@@ -983,9 +976,10 @@ async def new_game(request: NewGameRequest):
         "player_team_id": player_team_id,
         "cpu_team_id": cpu_team_id,
         "engine": engine,
-        "ai": create_computer_ai(difficulty, engine, cpu_is_home=home_team.id == cpu_team_id),
+        "ai": create_computer_ai(difficulty, engine, cpu_is_home=not player_is_home),
+        "human_is_home": player_is_home,
         "created_at": datetime.now(),
-        "season": request.season,
+        "season": home_dir.name,
         "difficulty": difficulty,
     }
 
@@ -1017,7 +1011,7 @@ async def get_game_charts(game_id: str, side: Literal["home", "away"] = "home") 
     team = game[f"{side}_team"]
     # Pydantic v2 uses model_dump; v1 compatibility keeps local/CI runtimes working.
     team_info = team.model_dump() if hasattr(team, "model_dump") else team.dict()
-    return build_chart_book(chart, team_info, game["season"])
+    return build_chart_book(chart, team_info, team.season or game["season"])
 
 
 class CoinTossRequest(BaseModel):
@@ -1044,7 +1038,7 @@ async def process_coin_toss(request: CoinTossRequest):
     # player_kicks = False means player receives (opponent has possession to kick)
     # Extract team ID from home_chart.team_dir (e.g., "seasons/2026/TeamName" -> "TeamName")
     home_team_id = engine.state.home_chart.team_dir.split("/")[-1]
-    human_is_home = home_team_id == game["player_team_id"]
+    human_is_home = game.get("human_is_home", home_team_id == game["player_team_id"])
 
     if request.player_kicks:
         # Player kicks - player has possession to kick
@@ -1113,7 +1107,7 @@ async def get_cpu_play(request: GameIdRequest):
         raise HTTPException(status_code=400, detail="Game is over")
 
     # Calculate player_offense based on actual possession, not stale flag
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     is_home_possession = game["engine"].state.is_home_possession
     player_offense = human_is_home == is_home_possession
     cpu_is_offense = not player_offense
@@ -1148,7 +1142,7 @@ async def get_cpu_4th_down_decision(game_id: str):
     state = game["engine"].state
 
     # Determine CPU offense status based on current possession
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     is_home_possession = state.is_home_possession
     player_is_on_offense = human_is_home == is_home_possession
     cpu_is_offense = not player_is_on_offense
@@ -1189,7 +1183,7 @@ async def execute_play(request: PlayRequest):
     player_play = request.player_play.upper()
     # Determine if player's team is on offense based on CURRENT possession,
     # not the static human_plays_offense flag (which is stale after turnovers/kickoffs)
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     is_home_possession = engine.state.is_home_possession
     player_offense = human_is_home == is_home_possession
 
@@ -1399,7 +1393,7 @@ async def execute_play(request: PlayRequest):
     # resolves with the shared core situation policy before any return dice roll.
     pending_interception = False
     if result.pending_end_zone_interception_return_decision:
-        human_is_home = game["home_team"].id == game.get("player_team_id")
+        human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
         return_team_is_home = not engine.state.is_home_possession
         if return_team_is_home != human_is_home:
             attempt_return = cpu_should_attempt_end_zone_return(
@@ -1445,6 +1439,8 @@ async def execute_play(request: PlayRequest):
     return ExecutePlayResponse(
         player_play=player_play,
         cpu_play="CPU",
+        offense_play=off_key,
+        defense_play=def_key,
         dice_roll_offense=dice_details["offense"]["total"],
         dice_roll_defense=dice_details["defense"]["total"],
         dice_details=dice_details,
@@ -1508,7 +1504,7 @@ async def call_timeout(request: GameIdRequest):
     game = games[request.game_id]
     engine = game["engine"]
     _reject_pending_end_zone_action(engine)
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
 
     # Determine which team is calling the timeout
     is_home_timeout = human_is_home
@@ -1598,7 +1594,7 @@ async def get_pat_choice(game_id: str):
     game = games[game_id]
     engine = game["engine"]
 
-    human_is_home = game["home_team"].id == game["player_team_id"]
+    human_is_home = game.get("human_is_home", game["home_team"].id == game["player_team_id"])
     is_home_possession = engine.state.is_home_possession
     scoring_team_is_player = (human_is_home and is_home_possession) or (
         not human_is_home and not is_home_possession
@@ -1698,7 +1694,7 @@ async def perform_kickoff(request: KickoffRequest):
     # decisions use the receiving team as "offense" (engine convention).
     penalty_choice_model = None
     if result.pending_penalty_decision and result.penalty_choice:
-        human_is_home = game["home_team"].id == game.get("player_team_id")
+        human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
         human_receives = human_is_home != kicking_home
         human_decides = (result.penalty_choice.offended_team == "offense") == human_receives
         if human_decides:
@@ -1880,7 +1876,7 @@ async def apply_penalty_decision(request: PenaltyDecisionRequest):
     # Decide from the live possession, never the stale human_plays_offense flag.
     # While a kickoff decision is pending the kicker holds the ball and the
     # receiver is "offense" (engine convention).
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     if outcome.play_type == PlayType.KICKOFF:
         player_offense = human_is_home != engine.state.is_home_possession
     else:
@@ -2013,7 +2009,7 @@ async def apply_end_zone_interception_decision(request: EndZoneInterceptionDecis
             status_code=400, detail="No pending end-zone interception decision"
         )
 
-    human_is_home = game["home_team"].id == game.get("player_team_id")
+    human_is_home = game.get("human_is_home", game["home_team"].id == game.get("player_team_id"))
     return_team_is_home = not engine.state.is_home_possession
     if return_team_is_home == human_is_home:
         attempt_return = request.attempt_return
@@ -2074,6 +2070,115 @@ class SaveReplayResponse(BaseModel):
 
 class LoadReplayRequest(BaseModel):
     replay_data: dict[str, Any]
+
+
+class RestoreCheckpointRequest(BaseModel):
+    checkpoint: str
+
+
+@registry.post("/api/game/checkpoint/{game_id}")
+async def checkpoint_game(game_id: str) -> dict:
+    """Export a portable full engine checkpoint, rather than a display replay."""
+    from checkpoints import chart_identity, export_checkpoint
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    game = games[game_id]
+    try:
+        identities = {
+            side: chart_identity(game[f"{side}_team"],
+                                 Path(getattr(game["engine"].state, f"{side}_chart").team_dir))
+            for side in ("home", "away")
+        }
+        rules_year = str(game['engine'].season_rules.season)
+        rules_dir = _find_season_dir(rules_year)
+        if rules_dir is None:
+            raise ValueError("Governing rules are unavailable")
+        rules_path = rules_dir / f"{rules_year}.yaml"
+        rules = {"season": rules_year, "sha256": hashlib.sha256(rules_path.read_bytes()).hexdigest()}
+        return {"checkpoint": export_checkpoint(game, identities, rules)}
+    except (ValueError, TypeError, RecursionError, OSError) as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot save this session: {exc}") from exc
+
+
+def _restored_pending_result(engine: PaydirtGameEngine) -> Optional[PlayResult]:
+    """Expose retained engine choices without executing or inferring a play."""
+    outcome = getattr(engine, "_last_play_outcome", None)
+    penalty = bool(getattr(outcome, "pending_penalty_decision", False))
+    interception = bool(engine.has_pending_end_zone_interception)
+    if not penalty and not interception:
+        return None
+    if outcome is None:
+        raise ValueError("Pending choice has no retained engine outcome")
+    state = engine.state
+    return PlayResult(
+        result=outcome.result.result_type.value, yards=outcome.yards_gained,
+        description=outcome.description, turnover=outcome.turnover,
+        new_ball_position=state.ball_position, new_down=state.down,
+        new_yards_to_go=state.yards_to_go, new_score_home=state.home_score,
+        new_score_away=state.away_score, game_over=state.game_over,
+        pending_penalty_decision=penalty,
+        penalty_choice=_penalty_choice_model(engine.get_penalty_choice_preview(outcome)) if penalty else None,
+        pending_end_zone_interception_return_decision=interception,
+        int_catch_depth=getattr(outcome, "int_catch_depth", 0),
+        int_catch_field_position=getattr(outcome, "int_catch_field_position", ""),
+        interception_return_situation=getattr(outcome, "interception_return_situation", ""),
+        int_return_team=getattr(outcome, "int_return_team", ""),
+    )
+
+
+@registry.post("/api/game/restore")
+async def restore_game_checkpoint(request: RestoreCheckpointRequest) -> dict:
+    """Restore only compatible trusted chart editions; register after validation."""
+    from checkpoints import Codec, chart_identity, parse_checkpoint, restore_checkpoint
+    try:
+        data = parse_checkpoint(request.checkpoint)
+        teams = {}
+        charts = {}
+        for side in ("home", "away"):
+            identity = data["teams"][side]
+            if not isinstance(identity, dict) or set(identity) != {"season", "team_id", "hashes"}:
+                raise ValueError("Invalid team identity")
+            directory = _find_season_dir(identity["season"])
+            if directory is None or _team_directory(directory, identity["team_id"]) is None:
+                raise ValueError("Required chart edition is unavailable")
+            team = load_team_info(directory, identity["team_id"])
+            if chart_identity(team, directory / team.id) != identity:
+                raise ValueError("Chart or rules content differs from saved edition")
+            teams[side] = team
+            charts[side] = load_team_chart(str(directory / team.id))
+        engine = PaydirtGameEngine(charts["home"], charts["away"])
+        rules = data['rules']
+        if not isinstance(rules, dict) or set(rules) != {'season', 'sha256'}:
+            raise ValueError("Invalid governing rules")
+        rules_dir = _find_season_dir(rules['season'])
+        if rules_dir is None:
+            raise ValueError("Governing rules are unavailable")
+        rules_path = rules_dir / f"{rules['season']}.yaml"
+        if rules_path.is_symlink() or hashlib.sha256(rules_path.read_bytes()).hexdigest() != rules['sha256']:
+            raise ValueError("Governing rules content differs")
+        engine.season_rules = load_season_rules(rules_dir)
+        # Decode session metadata with a complete, trusted codec before choosing
+        # normal AI construction. Nothing enters the active registry yet.
+        template = {"engine": engine, "ai": create_computer_ai('hard', engine, cpu_is_home=False)}
+        session = Codec(template).decode(data["session"])
+        if not isinstance(session, dict) or type(session.get("human_is_home")) is not bool:
+            raise ValueError("Missing control metadata")
+        difficulty = session.get("difficulty")
+        if difficulty not in {"easy", "medium", "hard"}:
+            raise ValueError("Unsupported difficulty")
+        game_id = f"game_{uuid.uuid4().hex[:8]}"
+        game = {"game_id": game_id, "engine": engine,
+                "ai": create_computer_ai(difficulty, engine, cpu_is_home=not session['human_is_home']),
+                "human_is_home": session['human_is_home'],
+                "home_team": teams['home'], "away_team": teams['away']}
+        game = restore_checkpoint(data, game)
+        state = game_state_to_response(game)
+        pending_result = _restored_pending_result(game["engine"])
+    except (ValueError, TypeError, KeyError, AttributeError, OverflowError, RecursionError, OSError) as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot restore checkpoint: {exc}") from exc
+    games[game_id] = game
+    return {"game_id": game_id, "game_state": state, "play_history": game.get("play_history", []),
+            "difficulty": difficulty, "pending_result": pending_result}
 
 
 @registry.post("/api/game/save-replay/{game_id}", response_model=SaveReplayResponse)
@@ -2340,3 +2445,104 @@ def __getattr__(name: str) -> Any:
         globals()["router"] = native_router
         return native_router
     raise AttributeError(name)
+
+
+from campaign_operations import register_campaign_operations
+
+register_campaign_operations(registry, sys.modules[__name__])
+
+from native_library_operations import register_native_library_operations
+
+register_native_library_operations(registry, sys.modules[__name__])
+
+
+def _history_response(value: Any) -> dict[str, Any]:
+    return value.model_dump() if isinstance(value, BaseModel) else value
+
+
+def _record_web_history(game: dict, before: dict, action: str, response: Any) -> None:
+    """Retain engine-owned outcome data, including the original pre-choice state."""
+    if action == "kickoff" and game["engine"].last_kickoff_context:
+        origin = game["engine"].last_kickoff_context
+        before = {**before, "possession": "home" if origin["kicking_home"] else "away",
+            "ball_position": origin["spot"], "field_position": origin["field_position"]}
+    body = _history_response(response)
+    after = _history_response(body.get("game_state", {}))
+    result = _history_response(body.get("result", {}))
+    if result.get("pending_penalty_decision") or result.get("pending_end_zone_interception_return_decision"):
+        game.setdefault("history_pending_preplay", {**before, "history_action": action,
+            "history_player_play": body.get("player_play", ""), "history_cpu_play": body.get("cpu_play", ""),
+            "history_offense_play": body.get("offense_play"), "history_defense_play": body.get("defense_play")})
+        return
+    before = game.pop("history_pending_preplay", before)
+    action = before.get("history_action", action)
+    home = before["home_team"]
+    away = before["away_team"]
+    home_label = home.get("short_name") or home["id"]
+    away_label = away.get("short_name") or away["id"]
+    offense = home_label if before["possession"] == "home" else away_label
+    defense = away_label if before["possession"] == "home" else home_label
+    dice = body.get("dice_details") or {}
+    player_play = before.get("history_player_play", body.get("player_play", ""))
+    cpu_play = before.get("history_cpu_play", body.get("cpu_play", ""))
+    offense_play, defense_play = (player_play, cpu_play) if before["player_offense"] else (cpu_play, player_play)
+    offense_play = before.get("history_offense_play") or body.get("offense_play") or offense_play
+    defense_play = before.get("history_defense_play") or body.get("defense_play") or defense_play
+    if action == "kickoff":
+        offense_play, defense_play = "KO", "KR"
+    elif action == "extra-point":
+        offense_play, defense_play = "XP", ""
+    elif action == "two-point":
+        offense_play, defense_play = "2PT", ""
+    entry = {
+        "action": action, "quarter": before["quarter"],
+        "timeRemaining": before["time_remaining"] if action == "execute" else after["time_remaining"],
+        "down": before["down"], "yardsToGo": before["yards_to_go"],
+        "ballPosition": before["ball_position"], "lineOfScrimmage": before["ball_position"],
+        "fieldPosition": before["field_position"], "newFieldPosition": after["field_position"],
+        "newPosition": after["ball_position"], "possession": before["possession"],
+        "possessionSemantics": "preplay", "humanIsHome": before["human_is_home"],
+        "offenseTeam": offense, "defenseTeam": defense,
+        "homeTeamAbbrev": home_label, "awayTeamAbbrev": away_label,
+        "playerTeam": home_label if before["human_is_home"] else away_label,
+        "offensePlay": offense_play, "defensePlay": defense_play,
+        "offenseDice": dice.get("offense"), "defenseDice": dice.get("defense"),
+        "description": result.get("description") or body.get("description") or action.replace("-", " ").capitalize(),
+        "ruleExplanation": result.get("rule_explanation"), "headline": result.get("headline"),
+        "yards": result.get("yards", 0),
+        "turnover": result.get("turnover", False), "bigPlayFactor": result.get("big_play_factor", 0),
+        "scoreChange": f"SCORE! {after['home_score']}-{after['away_score']}" if
+            (after["home_score"], after["away_score"]) != (before["home_score"], before["away_score"]) else None,
+    }
+    game.setdefault("play_history", []).append(entry)
+
+
+def _install_web_history() -> None:
+    """Use the same acknowledgement boundary for HTTP and worker dispatch."""
+    actions = {"execute", "kickoff", "extra-point", "two-point", "penalty-decision",
+               "end-zone-interception-decision", "timeout", "overtime/start"}
+    def wrap(handler: Any, action: str) -> Any:
+        @wraps(handler)
+        async def recorded(*args: Any, **kwargs: Any) -> Any:
+            request = kwargs.get("request") or (args[0] if args else None)
+            game = games.get(getattr(request, "game_id", None))
+            before = deepcopy(game_state_to_response(game).model_dump(exclude={"play_history"})) if game else None
+            response = await handler(*args, **kwargs)
+            if game is not None and before is not None:
+                _record_web_history(game, before, action, response)
+                state = response.game_state if isinstance(response, BaseModel) else response.get("game_state")
+                history = deepcopy(game.get("play_history", []))
+                if isinstance(state, BaseModel):
+                    state.play_history = history
+                elif isinstance(state, dict):
+                    state["play_history"] = history
+            return response
+        recorded.__annotations__ = get_type_hints(handler)
+        return recorded
+    for operation in registry.operations:
+        action = operation.path.removeprefix("/api/game/")
+        if operation.method == "POST" and action in actions:
+            operation.handler = wrap(operation.handler, action)
+
+
+_install_web_history()

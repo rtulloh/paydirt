@@ -45,13 +45,31 @@ for (const offense of [true, false]) {
       }
       await expect(page.getByText('Q2 0:41', { exact: true })).toBeVisible()
       await expect(page.getByText('Q3 15:00', { exact: true })).toBeVisible()
+      const legacySave = await page.evaluate(() => localStorage.getItem('paydirt_save'))
+      const checkpointed = page.waitForResponse(r => r.url().endsWith(`/api/game/checkpoint/${gameId}`) && r.request().method() === 'POST')
       await page.getByRole('button', { name: 'SAVE GAME', exact: true }).click()
-      await expect(page.getByRole('status')).toHaveText('Game saved in this browser.')
+      const checkpointResponse = await checkpointed
+      expect(checkpointResponse.ok()).toBeTruthy()
+      const { checkpoint } = await checkpointResponse.json()
+      expect(typeof checkpoint).toBe('string')
+      expect(checkpoint.length).toBeGreaterThan(0)
+      const saveConfirmation = page.getByRole('status').filter({ hasText: /^Game saved locally\.$/ })
+      await expect(saveConfirmation).toBeVisible()
       await page.evaluate(() => window.scrollTo(0, 0))
-      const box = await page.getByRole('status').boundingBox()
+      const box = await saveConfirmation.boundingBox()
       expect(box.y).toBeGreaterThanOrEqual(0)
       expect(box.y + box.height).toBeLessThanOrEqual(844)
-      expect((await page.evaluate(() => JSON.parse(localStorage.getItem('paydirt_save')))).gameId).toBe(gameId)
+      // SAVE GAME writes a full engine checkpoint to the canonical library.
+      // The legacy replay source remains intact for compatibility/recovery.
+      const saved = await page.evaluate(async id => {
+        const { gameLibrary } = await import('/src/runtime/gameLibrary.js')
+        return gameLibrary.get(id)
+      }, gameId)
+      expect(saved.metadata.gameId).toBe(gameId)
+      expect(saved.revision).toBeGreaterThan(0)
+      expect(saved.checkpoint).toBe(checkpoint)
+      expect(await page.evaluate(() => localStorage.getItem('paydirt_save'))).toBe(legacySave)
+      expect(JSON.parse(legacySave).gameId).toBe('synthetic-help')
       await page.screenshot({ path: testInfo.outputPath('player-help-save.png') })
     } finally {
       await request.delete(new URL(`/api/game/${gameId}`, response.url()).href)

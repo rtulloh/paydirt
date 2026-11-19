@@ -36,7 +36,7 @@ def get_web_static_path():
         )
 
 
-def start_web_server(port=8000, open_browser=True):
+def start_web_server(port=8000, open_browser=True, user_data_dir=None):
     """Start the web server in a separate thread."""
 
     def run_server():
@@ -53,10 +53,10 @@ def start_web_server(port=8000, open_browser=True):
         from fastapi.responses import FileResponse
 
         # Create app
-        app = FastAPI(title="Paydirt Web API", version="1.11.0")
+        app = FastAPI(title="Paydirt Web API", version="1.12.0")
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=[f"http://127.0.0.1:{port}", f"http://localhost:{port}"],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -102,6 +102,19 @@ def start_web_server(port=8000, open_browser=True):
                 sys.modules["routes"] = backend_routes
                 try:
                     spec.loader.exec_module(backend_routes)
+                    native_directory = user_data_dir
+                    if native_directory is None:
+                        native_directory = os.environ.get("PAYDIRT_NATIVE_USER_DATA_DIR") or None
+                    if native_directory is None and getattr(sys, "frozen", False):
+                        from paydirt.packaging import get_user_data_path
+                        native_directory = get_user_data_path()
+                    if native_directory is not None:
+                        from native_library_operations import (
+                            configure_native_library,
+                            install_native_library_guard,
+                        )
+                        configure_native_library(backend_routes, native_directory)
+                        install_native_library_guard(app, backend_routes, f"http://127.0.0.1:{port}")
                     if not hasattr(backend_routes, "router"):
                         raise RuntimeError("routes.py has no router")
                     app.include_router(backend_routes.router)
@@ -161,6 +174,9 @@ def start_web_server(port=8000, open_browser=True):
 
 def main():
     """Main entry point - choose between interactive, chart-based, web, or simple mode."""
+    # -w is the existing week option in interactive/automatic CLI games.
+    cli_game = any(arg in sys.argv for arg in ("--play", "-p", "--auto", "-a", "auto"))
+    web_requested = "--web" in sys.argv or ("-w" in sys.argv and not cli_game)
     # For bundled app: if no CLI args, start web mode; if CLI args present, run CLI
     if getattr(sys, "frozen", False):
         # Bundled app - check if CLI args are present
@@ -179,7 +195,7 @@ def main():
         ]
         has_cli_arg = any(arg in sys.argv for arg in cli_args)
 
-        if not has_cli_arg:
+        if not has_cli_arg and not web_requested:
             # No CLI args - start web mode
             print("Starting Paydirt Web Interface...")
             start_web_server(port=8000, open_browser=True)
@@ -192,7 +208,7 @@ def main():
         # Has CLI args - fall through to CLI mode
 
     # Development mode - check CLI args
-    if len(sys.argv) == 1:
+    if len(sys.argv) == 1 or web_requested:
         port = 8000
         open_browser = True
 

@@ -18,7 +18,7 @@
 - [Two-phase chart generation workflow](chart-generation-workflow.md): generate, train, validate, promote, and prepare a season for playtesting.
 - [Calibration process and reference profiles](chart-calibration.md): controls, paired experiments, sample sizes, and verified released starting values.
 
-Published builds include generated 1983 and 2024 charts plus the fictional 2026 sample. See the
+Published builds include generated 1977, 1983 and 2024 charts plus the fictional 2026 sample. See the
 [chart attribution](../CHART_ATTRIBUTION.md); keep original charts, source workbooks, raw data, and historical logs local.
 
 ## Development

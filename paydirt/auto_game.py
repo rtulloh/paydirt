@@ -15,9 +15,15 @@ from typing import Optional
 from .chart_loader import find_team_charts, load_team_chart
 from .computer_ai import ComputerAI
 from .game_engine import PaydirtGameEngine, PlayOutcome
-from .interactive_game import display_box_score
 from .packaging import get_seasons_path
 from .play_resolver import DefenseType, PlayType, is_passing_play
+from .season_rules import load_season_rules
+
+
+def display_box_score(game: PaydirtGameEngine, title: str) -> None:
+    """Load CLI presentation only for an interactive auto-game invocation."""
+    from .interactive_game import display_box_score as show
+    show(game, title)
 
 
 def resolve_team_path(team_spec: str, charts: list, seasons_dir: str) -> str:
@@ -163,6 +169,8 @@ def run_auto_game(
     on_decision: Callable[[PaydirtGameEngine, ComputerAI, PlayType, DefenseType], None] | None = None,
     on_result: Callable[[PaydirtGameEngine, PlayOutcome], None] | None = None,
     play_limit: int = 500,
+    rules_dir: Path | None = None,
+    display_stats: bool = True,
 ) -> PaydirtGameEngine | None:
     """
     Run a CPU vs CPU game between two teams.
@@ -176,6 +184,8 @@ def run_auto_game(
         on_decision: Read-only observer after selection, before execution.
         on_result: Read-only observer after penalty resolution, before scoring chains.
         play_limit: Maximum selected calls; incomplete runs raise RuntimeError.
+        rules_dir: Optional governing rule directory for a fixed-rule campaign.
+        display_stats: Whether to invoke CLI box-score presentation.
 
     Returns:
         Completed engine, or None if team lookup fails. Observers must not mutate it.
@@ -230,6 +240,8 @@ def run_auto_game(
 
     # Create game engine
     game = PaydirtGameEngine(home_chart, away_chart)
+    if rules_dir is not None:
+        game.season_rules = load_season_rules(rules_dir)
     game.state.is_playoff = is_playoff
 
     # Create AI for both teams (home team's season rules govern AI behavior)
@@ -264,7 +276,8 @@ def run_auto_game(
         if state.time_remaining <= 0 and game.has_untimed_down():
             print("  UNTIMED DOWN - period extended by the engine")
         elif game.needs_overtime():
-            display_box_score(game, "END OF REGULATION")
+            if display_stats:
+                display_box_score(game, "END OF REGULATION")
             print(f"\n  {game.start_overtime()}")
             last_quarter = state.quarter
             quarter_before = state.quarter
@@ -277,7 +290,8 @@ def run_auto_game(
         if state.quarter != last_quarter:
             print("\n" + "=" * 70)
             print(f"  END OF QUARTER {last_quarter}")
-            display_box_score(game, f"QUARTER {last_quarter} STATS")
+            if display_stats:
+                display_box_score(game, f"QUARTER {last_quarter} STATS")
             print("=" * 70)
 
             # Halftime
@@ -398,7 +412,8 @@ def run_auto_game(
     else:
         print("\n  TIE GAME!")
 
-    display_box_score(game, "FINAL STATISTICS")
+    if display_stats:
+        display_box_score(game, "FINAL STATISTICS")
     return game
 
 

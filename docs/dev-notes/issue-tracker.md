@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-230 issues: 75 open, 77 resolved, 78 closed.
+232 issues: 77 open, 77 resolved, 78 closed.
 
-## Open (75)
+## Open (77)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -41,11 +41,12 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-046](issues/DATA/DATA-046.md) | Medium | — | 1977 candidate misses Washington interception fit and overstates scoring | created 2026-11-08 | — |
 | [DATA-048](issues/DATA/DATA-048.md) | Medium | v1.10.7 | Move fictional teams into sample and exclude them from season play | created 2026-11-11 | — |
 | [FLOW-007](issues/FLOW/FLOW-007.md) | Medium | v1.10.7 | Resumed CLI omits spike and skipped-modifier messages; duplicated game loops still diverge | created 2026-10-19 | FLOW-027 |
-| [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | — |
+| [FLOW-008](issues/FLOW/FLOW-008.md) | Medium | — | Web load_replay reconstructs state by scanning history text ("touchdown", "extra point", …) and switches possession | created 2026-10-19 | FLOW-036 |
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
-| [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-022 |
+| [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08 | FLOW-036, FLOW-022 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.7 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
+| [FLOW-036](issues/FLOW/FLOW-036.md) | Medium | — | Add persistent web seasons, custom mixed-era leagues, and browser save/load | created 2026-11-18 | FLOW-020, FLOW-021, STAT-006, FLOW-008, FLOW-033 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -80,13 +81,14 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-045](issues/DATA/DATA-045.md) | Low | — | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
 | [DATA-050](issues/DATA/DATA-050.md) | Low | — | Use season-aware player availability and roles in roster commentary | created 2026-11-11 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
-| [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07 | — |
+| [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07 | FLOW-036 |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
-| [FLOW-033](issues/FLOW/FLOW-033.md) | Low | v1.11.0 | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | RULE-032, FLOW-034 |
+| [FLOW-033](issues/FLOW/FLOW-033.md) | Low | v1.11.0 | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | FLOW-036, RULE-032, FLOW-034, FLOW-035 |
 | [FLOW-034](issues/FLOW/FLOW-034.md) | Low | — | Final scoring action can report kickoff pending after game over | created 2026-11-17 | FLOW-033 |
+| [FLOW-035](issues/FLOW/FLOW-035.md) | Low | — | Add roster-backed player narration to ordinary web plays | created 2026-11-17 | FLOW-033 |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | — | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | — | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
-| [STAT-006](issues/STAT/STAT-006.md) | Low | — | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | — |
+| [STAT-006](issues/STAT/STAT-006.md) | Low | — | Track cumulative team statistics and performance throughout a season | created 2026-11-07 | FLOW-036 |
 | [TRACE-008](issues/TRACE/TRACE-008.md) | Low | — | End-line fumble depth roll is dropped from the description when the defense recovers | created 2026-10-27 | — |
 | [VAL-008](issues/VAL/VAL-008.md) | Low | — | CLI argv dispatch rejects the advertised -l flag, ignores -A/-H ordering and skips validation on --load | created 2026-10-27 | VAL-005 |
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |

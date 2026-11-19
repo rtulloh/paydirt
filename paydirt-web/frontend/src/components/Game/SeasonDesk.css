@@ -1,0 +1,268 @@
+.season-desk{
+  min-height:100vh;
+  background:#101820;
+  color:#f4f2eb;
+  font:15px/1.55 system-ui,sans-serif}
+  .season-desk *{
+    box-sizing:border-box}
+    .season-desk header{
+      border-bottom:1px solid #34414c;
+      padding:18px 5%;
+      display:flex;
+      align-items:center;
+      gap:35px;
+      flex-wrap:wrap}
+      .season-brand{
+        font-size:24px;
+        letter-spacing:3px}
+        .season-brand span,.season-eyebrow{
+          color:#f5bc68}
+          .season-desk nav,.season-actions,.season-row{
+            display:flex;
+            gap:12px;
+            align-items:center;
+            flex-wrap:wrap}
+            .season-row{
+              justify-content:space-between}
+              .season-desk main{
+                max-width:1220px;
+                margin:auto;
+                padding:32px 24px 70px}
+                .season-desk h1{
+                  font-size:36px;
+                  font-weight:800;
+                  letter-spacing:-1px;
+                  margin:4px 0 10px}
+                  .season-desk h2{
+                    font-size:23px;
+                    font-weight:750;
+                    margin:10px 0}
+                    .season-desk h3{
+                      font-size:20px;
+                      margin:12px 0}
+                      .season-desk p{
+                        color:#acbac6;
+                        margin:10px 0 20px}
+                        .season-desk small{
+                          color:#acbac6}
+                          .season-eyebrow{
+                            font-size:11px;
+                            letter-spacing:2px;
+                            text-transform:uppercase;
+                            font-weight:800}
+                            .season-desk button,.season-desk select,.season-desk input,.season-desk textarea{
+                              font:inherit;
+                              border:1px solid #34414c;
+                              background:#23323e;
+                              border-radius:7px;
+                              padding:9px 13px;
+                              color:inherit;
+                              max-width:100%}
+                              .season-desk button{
+                                cursor:pointer}
+                                .season-desk button:hover{
+                                  border-color:#f5bc68}
+                                  .season-desk button:disabled{
+                                    opacity:.45;
+                                    cursor:wait}
+                                    .season-desk button:focus-visible,.season-desk select:focus-visible,.season-desk input:focus-visible,.season-desk textarea:focus-visible{
+                                      outline:3px solid #f5bc68;
+                                      outline-offset:3px}
+                                      .season-desk button.season-primary{
+                                        background:#f5bc68;
+                                        color:#17222c;
+                                        font-weight:750}
+                                        .season-desk label{
+                                          display:block;
+                                          font-size:13px;
+                                          margin:10px 0}
+                                          .season-desk label>input,.season-desk label>select,.season-desk textarea{
+                                            display:block;
+                                            margin-top:5px;
+                                            min-width:160px;
+                                            width:100%}
+                                            .season-card{
+                                              background:#19242e;
+                                              border:1px solid #34414c;
+                                              border-radius:12px;
+                                              padding:22px;
+                                              margin-top:22px}
+                                              .season-hero{
+                                                background:linear-gradient(120deg,#23362f,#1b2a32);
+                                                display:grid;
+                                                grid-template-columns:1.4fr 1fr;
+                                                gap:24px}
+                                                .season-hero>div+div{
+                                                  border-left:3px solid #f5bc68;
+                                                  padding-left:22px}
+                                                  .season-pill{
+                                                    border:1px solid #4a6554;
+                                                    border-radius:20px;
+                                                    padding:3px 10px;
+                                                    color:#b5dfc2;
+                                                    font-size:12px}
+                                                    .season-tabs{
+                                                      display:flex;
+                                                      gap:24px;
+                                                      overflow:auto;
+                                                      border-bottom:1px solid #34414c;
+                                                      margin-top:24px}
+                                                      .season-tabs button{
+                                                        border:0;
+                                                        border-radius:0;
+                                                        background:none;
+                                                        white-space:nowrap;
+                                                        padding:14px 0}
+                                                        .season-tabs button[aria-selected=true]{
+                                                          border-bottom:3px solid #f5bc68;
+                                                          color:#f5bc68}
+                                                          .season-table{
+                                                            overflow:auto;
+                                                            max-width:100%}
+                                                            .season-table table{
+                                                              width:100%;
+                                                              border-collapse:collapse;
+                                                              white-space:nowrap}
+                                                              .season-table td,.season-table th{
+                                                                padding:13px 10px;
+                                                                text-align:left;
+                                                                border-bottom:1px solid #2a3843}
+                                                                .season-table th{
+                                                                  font-size:11px;
+                                                                  text-transform:uppercase;
+                                                                  letter-spacing:1px;
+                                                                  color:#acbac6}
+                                                                  .season-table pre{
+                                                                    max-width:320px;
+                                                                    white-space:pre-wrap;
+                                                                    max-height:300px;
+                                                                    overflow:auto}
+                                                                    .season-spaced{
+                                                                      margin-top:24px}
+                                                                      .season-box-score{
+                                                                        white-space:normal;
+                                                                        min-width:300px;
+                                                                        max-width:600px}
+                                                                        .season-fixture-editor{
+                                                                          border:1px solid #34414c;
+                                                                          border-radius:8px;
+                                                                          padding:14px;
+                                                                          margin-top:16px}
+                                                                          .season-fixture-editor legend{
+                                                                            padding:0 8px}
+                                                                            .season-note,.season-desk footer{
+                                                                              font-size:12px;
+                                                                              color:#acbac6;
+                                                                              margin-top:20px}
+                                                                              .season-error{
+                                                                                background:#531f2a;
+                                                                                padding:14px;
+                                                                                border-radius:8px;
+                                                                                margin:15px 0}
+                                                                                .season-error button{
+                                                                                  margin-left:14px}
+                                                                                  .season-leaders{
+                                                                                    display:grid;
+                                                                                    grid-template-columns:repeat(2,minmax(0,1fr));
+                                                                                    gap:20px}
+                                                                                    .season-leaders > .season-card{
+  min-width:0;
+}
+.season-modal{
+                                                                                      position:fixed;
+                                                                                      inset:0;
+                                                                                      background:#000b;
+                                                                                      display:flex;
+                                                                                      align-items:center;
+                                                                                      justify-content:center;
+                                                                                      padding:20px;
+                                                                                      z-index:100}
+                                                                                      .season-modal form{
+                                                                                        max-height:90vh;
+                                                                                        overflow:auto;
+                                                                                        width:720px;
+                                                                                        margin:0}
+                                                                                        .season-modal label{
+                                                                                          margin-top:16px}
+                                                                                          .season-empty{
+                                                                                            padding:45px;
+                                                                                            text-align:center}
+                                                                                            @media(max-width:760px){
+                                                                                              .season-desk main{
+                                                                                                padding:24px 14px}
+                                                                                                .season-hero,.season-leaders{
+                                                                                                  grid-template-columns:minmax(0,1fr)}
+                                                                                                  .season-hero>div+div{
+                                                                                                    border:0;
+                                                                                                    border-top:1px solid #34414c;
+                                                                                                    padding:18px 0 0}
+                                                                                                    .season-card{
+                                                                                                      padding:16px}
+                                                                                                      .season-desk h1{
+                                                                                                        font-size:29px}
+                                                                                                        .season-desk header{
+                                                                                                          gap:12px;
+                                                                                                          padding:15px}
+                                                                                                          .season-tabs{
+                                                                                                            gap:18px}
+                                                                                                          }
+
+.season-conferences {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.season-conference { min-width: 0; }
+.season-conference:only-child { grid-column: 1 / -1; }
+.season-conference h3 { color: #e7ba75; margin: 8px 0 16px; }
+.season-division + .season-division { margin-top: 24px; }
+.season-division h4 { margin: 0; padding-bottom: 8px; border-bottom: 1px solid #34414c; }
+@media (max-width: 1050px) {
+  .season-conferences { grid-template-columns: minmax(0, 1fr); }
+}
+
+.season-stat-categories { display: flex; flex-wrap: wrap; gap: 8px; }
+.season-stat-categories button[aria-pressed="true"] { background: #f3be67; border-color: #f3be67; color: #101820; }
+
+.season-desk .season-sort {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  padding: 4px 0;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+.season-desk .season-sort:hover { color: #f3be67; background: transparent; }
+.season-desk .season-sort:focus-visible { outline: 2px solid #f3be67; outline-offset: 4px; }
+
+.season-sort-indicator::after { content: ' ↕'; }
+.season-sort-indicator.ascending::after { content: ' ↑'; }
+.season-sort-indicator.descending::after { content: ' ↓'; }
+
+.season-desk nav.season-stat-directory { display: grid; align-items: start; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.season-stat-directory section { min-width: 0; border-top: 2px solid var(--border-color, #64748b); }
+.season-stat-directory h3 { margin: .6rem .5rem; }
+.season-stat-directory button { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; padding: .7rem .6rem; background: transparent; color: inherit; border-top: 1px solid #64748b55; }
+.season-stat-directory button:nth-of-type(even) { background: #64748b15; }
+.season-stat-directory button:hover, .season-stat-directory button[aria-pressed="true"] { background: #b08d3433; }
+.season-stat-directory button:focus-visible { outline: 2px solid #e6bb56; outline-offset: -2px; }
+@media (max-width: 650px) { .season-desk nav.season-stat-directory { grid-template-columns: 1fr; } }
+
+.season-leader-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.season-leader-cards > section { min-width: 0; border: 1px solid #34414c; border-radius: 8px; padding: 10px; }
+.season-leader-cards h4 { margin: 0 0 10px; color: #f5bc68; }
+.season-leader-cards h4 small { display: block; font-weight: normal; }
+.season-leader-cards ol { list-style: none; margin: 0; padding: 0; }
+.season-leader-cards li { display: grid; grid-template-columns: 1.2em minmax(0, 1fr) auto; gap: 5px; align-items: baseline; border-top: 1px solid #34414c; padding: 7px 0; font-size: 12px; }
+.season-leader-rank { color: #acbac6; }
+.season-table th[aria-label] { letter-spacing: .025em; padding: 9px 6px; }
+@media (max-width: 1050px) { .season-leader-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 650px) { .season-leader-cards { grid-template-columns: 1fr; } }
+
+.season-table-compact td small { font-size: 10px; white-space: normal; max-width: 70px; line-height: 1.35; }
+.season-table-compact td { padding: 10px 6px; font-variant-numeric: tabular-nums; }
+
+.season-stat-group{min-width:0;margin-top:1rem}.season-stat-group h4{margin:0 0 .5rem;font-size:1rem}

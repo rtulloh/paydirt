@@ -1,3 +1,5 @@
+// Engine-response UI coverage; persistence and writer ownership are tested separately.
+vi.mock('../../runtime/gameFetch', async () => { const actual = await vi.importActual('../../runtime/gameFetch'); return { ...actual, gameFetch: actual.rawGameFetch }; });
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { KickoffPlay } from './KickoffPlay'

@@ -10,7 +10,7 @@ async function browserTransport(result) {
     addEventListener(name, handler) { this.handlers[name] = handler; }
     postMessage(message) { sent.push(message); queueMicrotask(() => this.handlers.message({ data: { id: message.id, result } })); }
   });
-  const { gameFetch } = await import('./gameFetch');
+  const { rawGameFetch: gameFetch } = await import('./gameFetch');
   return { gameFetch, sent };
 }
 describe('browser fetch response compatibility', () => {

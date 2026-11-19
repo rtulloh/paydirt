@@ -20,6 +20,11 @@ datas = [
     ('paydirt-web/backend/routes.py', 'paydirt-web/backend/routes.py'),
     ('paydirt-web/backend/chart_viewer.py', 'paydirt-web/backend'),
     ('paydirt-web/backend/operations.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/checkpoints.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/campaign_operations.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/native_library.py', 'paydirt-web/backend'),
+    ('paydirt-web/backend/native_library_operations.py', 'paydirt-web/backend'),
+    ('config/season-schedules', 'config/season-schedules'),
     ('paydirt-web/backend/http_adapter.py', 'paydirt-web/backend'),
     ('paydirt-web/backend/__init__.py', 'paydirt-web/backend/__init__.py'),
 ]
@@ -44,8 +49,9 @@ a = Analysis(
     datas=all_datas,
     hiddenimports=all_hiddenimports + [
         'yaml', 'pkg_resources', 'msvcrt', 'winreg', '_winapi', 'nt', 'typing_extensions',
-        'paydirt.chart_layout',
+        'paydirt.chart_layout', 'paydirt.campaigns', 'paydirt.campaign_simulation', 'paydirt.auto_game',
         'python_multipart',
+        'sqlite3', '_sqlite3',
         'wsproto', 'wsproto.extensions', 'wsproto.frame',
         'httptools', 'httptools.parser', 'httptools.parser.http_parser',
     ],

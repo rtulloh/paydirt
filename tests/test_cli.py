@@ -280,3 +280,36 @@ class TestCLIIncompatibleOptions:
             main()
             output = mock_stdout.getvalue()
             assert 'Usage' in output or 'Error' in output
+
+
+@pytest.mark.parametrize("frozen", [False, True])
+@pytest.mark.parametrize("play_flag", ["--play", "-p"])
+def test_week_shorthand_stays_in_play_dispatch(monkeypatch, frozen, play_flag):
+    """A week argument must never launch a browser or enter a server loop."""
+    from paydirt import __main__ as entry
+    monkeypatch.setattr(entry.sys, "frozen", frozen, raising=False)
+    monkeypatch.setattr(entry.sys, "argv", ["paydirt", play_flag, "-w", "10"])
+    with (
+        patch.object(entry, "start_web_server") as web,
+        patch.object(entry.time, "sleep", side_effect=KeyboardInterrupt),
+        patch("paydirt.interactive_game.run_interactive_game") as interactive,
+    ):
+        entry.main()
+    web.assert_not_called()
+    interactive.assert_called_once()
+    assert interactive.call_args.kwargs["week"] == 10
+
+
+@pytest.mark.parametrize("frozen", [False, True])
+def test_standalone_short_web_flag_keeps_web_dispatch(monkeypatch, frozen):
+    from paydirt import __main__ as entry
+    monkeypatch.setattr(entry.sys, "frozen", frozen, raising=False)
+    monkeypatch.setattr(entry.sys, "argv", ["paydirt", "-w", "--port", "18077", "--no-browser"])
+    with (
+        patch.object(entry, "start_web_server") as web,
+        patch.object(entry.time, "sleep", side_effect=KeyboardInterrupt),
+        patch("paydirt.interactive_game.run_interactive_game") as interactive,
+    ):
+        entry.main()
+    web.assert_called_once_with(port=18077, open_browser=False)
+    interactive.assert_not_called()

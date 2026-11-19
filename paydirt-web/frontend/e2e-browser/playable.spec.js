@@ -1,9 +1,27 @@
 import { test, expect } from '../e2e/browser-fixture.js'
-import { findEnabledPenaltyChoice } from './penalty-choice.js'
+import { createEngineObserver } from './engine-observer.mjs'
+import { findEnabledPenaltyChoice, isActionable } from './penalty-choice.js'
+
+// Re-evaluate procedures after every worker/React transition. A response can
+// replace a normal-play control while its durable checkpoint is still saving.
+async function findEnabledProcedure(page) {
+  const penalty = await findEnabledPenaltyChoice(page)
+  if (penalty) return penalty
+  const controls = [
+    page.getByRole('button', { name: 'KICK OFF', exact: true }),
+    page.getByRole('button', { name: 'KICK XP (1 PT)', exact: true }),
+    page.getByRole('button', { name: /^\[1\]/ }),
+    ...['TAKE TOUCHBACK', 'CONTINUE', 'NORMAL PUNT', 'EXECUTE PLAY'].map(name => page.getByRole('button', { name, exact: true })),
+  ]
+  for (const control of controls) {
+    if (await isActionable(control)) return control
+  }
+  return null
+}
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return
-  const evidence = await page.evaluate(() => ({ requests: window.__engineRequests, replies: window.__engineReplies }))
+  const evidence = await page.evaluate(() => ({ requests: window.__engineObserver.requests, replies: window.__engineObserver.replies, failures: window.__engineObserver.failures, count: window.__engineObserver.count }))
   await testInfo.attach('worker-failure-evidence', { body: JSON.stringify(evidence), contentType: 'application/json' })
 })
 
@@ -17,19 +35,18 @@ test(`static ${year} build completes home and away games without an HTTP backend
     return route.abort()
   })
   page.on('pageerror', error => errors.push(String(error)))
+  await page.addInitScript(createEngineObserver)
   await page.addInitScript(() => {
-    window.__engineReplies = []
-    window.__engineRequests = []
     const NativeWorker = window.Worker
     window.Worker = class extends NativeWorker {
       constructor(...args) {
         super(...args)
         this.addEventListener('message', ({ data }) => {
-          if (data.result) window.__engineReplies.push(data.result)
+          if (data.result) window.__engineObserver.reply(data.result)
         })
       }
       postMessage(...args) {
-        window.__engineRequests.push(args[0])
+        window.__engineObserver.request(args[0])
         return super.postMessage(...args)
       }
     }
@@ -37,17 +54,11 @@ test(`static ${year} build completes home and away games without an HTTP backend
     const timeout = window.setTimeout.bind(window)
     window.setTimeout = (fn, delay, ...args) => timeout(fn, delay >= 300 && delay <= 2000 ? 0 : delay, ...args)
   })
-  const replies = () => page.evaluate(() => window.__engineReplies)
-  const state = () => page.evaluate(() => {
-    for (const reply of [...window.__engineReplies].reverse()) {
-      if (reply.body?.game_state) return reply.body.game_state
-      if (reply.body?.quarter) return reply.body
-    }
-    return null
-  })
+  const replyCount = () => page.evaluate(() => window.__engineObserver.count)
+  const state = () => page.evaluate(() => window.__engineObserver.state)
   await page.goto('./')
   await expect(page.getByRole('button', { name: 'NEW GAME', exact: true })).toBeVisible({ timeout: 120_000 })
-  await expect(page.getByText(/temporary|session/i).first()).toBeVisible()
+  await expect(page.getByText('Browser prototype · Public seasons: 1977, 1983, 2024 and 2026 sample teams. Saved games and seasons stay in this browser. Export backups to keep a portable copy. Offline engine loading is unavailable.', { exact: true })).toBeVisible()
   const manifestResponse = await page.request.get(new URL('browser/manifest.json', page.url()).href)
   expect(manifestResponse.ok()).toBe(true)
   const manifest = await manifestResponse.json()
@@ -56,12 +67,15 @@ test(`static ${year} build completes home and away games without an HTTP backend
   const ids = []
   for (const home of [true, false]) {
     await page.getByRole('button', { name: 'NEW GAME', exact: true }).click()
-    await page.getByRole('button', { name: year, exact: true }).click()
+    // Each team has its own chart year; select the player last to focus that catalog.
+    await page.getByRole('combobox', { name: 'Opponent chart year', exact: true }).selectOption(year)
+    await page.getByRole('combobox', { name: 'Your chart year', exact: true }).selectOption(year)
+    await expect(page.getByRole('combobox', { name: 'Your chart year', exact: true })).toHaveValue(year)
+    await expect(page.getByRole('combobox', { name: 'Opponent chart year', exact: true })).toHaveValue(year)
     await expect(page.getByRole('heading', { name: `TEAMS (${year})`, exact: true })).toBeVisible()
     let availableTeams
     await expect.poll(async () => {
-      const response = [...await replies()].reverse().find(reply => reply.body?.teams)
-      availableTeams = response?.body.teams
+      availableTeams = await page.evaluate(() => window.__engineObserver.teams)
       return availableTeams?.map(team => team.id).sort()
     }).toEqual([...expectedTeams].sort())
     for (const team of availableTeams.slice(0, 2)) {
@@ -73,8 +87,7 @@ test(`static ${year} build completes home and away games without an HTTP backend
     await expect(page.getByTestId('choose-heads')).toBeVisible()
     const created = await state()
     expect(created).toMatchObject({ home_score: 0, away_score: 0, quarter: 1, time_remaining: 900, human_is_home: home })
-    const allReplies = await replies()
-    const id = [...allReplies].reverse().find(reply => reply.body?.game_id)?.body.game_id
+    const id = await page.evaluate(() => window.__engineObserver.gameId)
     expect(ids).not.toContain(id)
     ids.push(id)
     await page.getByTestId('choose-heads').click()
@@ -101,12 +114,6 @@ test(`static ${year} build completes home and away games without an HTTP backend
         await page.getByTestId('continue-button').click()
         continue
       }
-      if (await page.getByRole('button', { name: 'KICK XP (1 PT)', exact: true }).isVisible()) {
-        const twoPoint = page.getByRole('button', { name: 'GO FOR 2!', exact: true })
-        if (Number(year) >= 1994) await expect(twoPoint).toBeVisible()
-        else await expect(twoPoint).toHaveCount(0)
-        patChoices++
-      }
       let button = await findEnabledPenaltyChoice(page)
       if (!button && await page.getByText('PENALTY ON THE PLAY!', { exact: true }).isVisible()) {
         await expect.poll(async () => {
@@ -115,12 +122,7 @@ test(`static ${year} build completes home and away games without an HTTP backend
         }, { message: 'The pending penalty must offer an enabled choice or finish its CPU decision' }).toBe(true)
         if (!button) continue
       }
-      if (!button) {
-        for (const name of ['KICK OFF', 'KICK XP (1 PT)', 'TAKE TOUCHBACK', 'CONTINUE', 'NORMAL PUNT', 'EXECUTE PLAY']) {
-          const candidate = page.getByRole('button', { name, exact: true })
-          if (await candidate.isVisible()) { button = candidate; break }
-        }
-      }
+      if (!button) button = await findEnabledProcedure(page)
       if (!button) {
         const offense = page.getByTestId('offense-play-1')
         if (await offense.isVisible()) {
@@ -131,12 +133,59 @@ test(`static ${year} build completes home and away games without an HTTP backend
         }
         plays++
       }
-      await expect(button, 'An actionable control must exist at step ' + step).toBeEnabled()
-      const count = (await replies()).length
-      const closesResult = (await button.innerText()).trim() === 'CONTINUE'
-      await button.click()
+      // A worker response can arrive before its checkpoint and React commit.
+      // Reacquire the procedure control while waiting rather than holding a
+      // defense/offense locator that correctly becomes disabled by a new foul.
+      let phaseChanged = false
       await expect.poll(async () => {
-        if ((await replies()).length > count) return true
+        if (await page.getByTestId('halftime').isVisible() || await page.getByTestId('game-over').isVisible()) {
+          phaseChanged = true
+          return true
+        }
+        const procedure = await findEnabledProcedure(page)
+        if (procedure) button = procedure
+        return isActionable(button)
+      }, { message: 'An actionable control must exist at step ' + step }).toBe(true)
+      if (phaseChanged) continue
+      // The poll proved enabledness; click checks it again atomically. Do not
+      // wait on a separate stale locator assertion if an automatic result closes.
+      const selectedText = (await button.allTextContents()).join('').trim()
+      if (!selectedText) {
+        await expect.poll(async () => Boolean(await findEnabledProcedure(page))
+          || await page.getByTestId('halftime').isVisible()
+          || await page.getByTestId('game-over').isVisible(),
+        { message: 'A disappeared control must expose its next phase' }).toBe(true)
+        continue
+      }
+      if (selectedText === 'KICK XP (1 PT)') {
+        const twoPoint = page.getByRole('button', { name: 'GO FOR 2!', exact: true })
+        if (Number(year) >= 1994) await expect(twoPoint).toBeVisible()
+        else await expect(twoPoint).toHaveCount(0)
+        patChoices++
+      }
+      const count = await replyCount()
+      const closesResult = selectedText === 'CONTINUE'
+      try {
+        await button.click(closesResult ? { timeout: 2000 } : {})
+      } catch (error) {
+        // A result may close through response-driven UI progress while click
+        // waits for its animation. Only that vanished UI-only control may be
+        // reevaluated; transport errors and a still-present button must fail.
+        if (error.name !== 'TimeoutError' || !closesResult || await button.isVisible()) throw error
+        await expect.poll(async () => {
+          if (await replyCount() > count) return true
+          if (await page.getByTestId('halftime').isVisible() || await page.getByTestId('game-over').isVisible()) return true
+          for (const selector of ['[data-testid^="offense-play-"]', '[data-testid^="defense-play-"]']) {
+            const controls = page.locator(selector)
+            for (const control of await controls.all()) {
+              if (await isActionable(control)) return true
+            }
+          }
+          return Boolean(await findEnabledProcedure(page))
+        }, { message: 'A vanished result must expose an advanced engine or actionable phase' }).toBe(true)
+      }
+      await expect.poll(async () => {
+        if (await replyCount() > count) return true
         // Closing a result panel changes only the UI; it sends no engine operation.
         if (closesResult && !await button.isVisible()) return true
         if (await page.getByTestId('game-over').isVisible()) return true
@@ -160,7 +209,7 @@ test(`static ${year} build completes home and away games without an HTTP backend
   expect(ids).toHaveLength(2)
   expect(apiRequests).toEqual([])
   expect(errors).toEqual([])
-  const failures = (await replies()).filter(reply => reply.status >= 400)
+  const failures = await page.evaluate(() => window.__engineObserver.failures)
   expect(failures).toEqual([])
 })
 }

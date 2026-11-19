@@ -8,6 +8,8 @@ resolved-at:
 closed-at:
 tags:
   - feature-request
+links:
+  - FLOW-036
 ---
 
 ## Description
@@ -51,3 +53,23 @@ Acceptance criteria:
 --- 2026-11-07 00:00 ---
 Requested by the user so players can follow team performance over a season.
 This ticket records the feature request; no implementation is included yet.
+
+--- 2026-11-18 11:17 ---
+Coordinated by [FLOW-036](../FLOW/FLOW-036.md), the owner-approved web seasons
+umbrella and six-slice design. Retain this issue's acceptance/evidence requirements;
+no fix or closure is claimed. Team statistics only; individual player statistics
+are explicitly excluded by the owner.
+
+--- 2026-11-18 13:56 ---
+Canonical team totals, rates, per-counter coverage/Partial labels and team leader categories are implemented; rendered statistics and revision recomputation pass actual Chromium acceptance. Individual player statistics are excluded.
+See [FLOW-036 acceptance](../../season-ui-acceptance.md) for final-source receipts,
+coverage and retained original failures. Work remains uncommitted; this issue stays
+open for review/integration rather than claiming a published fix.
+
+--- 2026-11-18 16:30 ---
+Owner-requested season refinements are implemented locally: default conference/division standings (NFC before AFC; responsive columns), distinct Offense/Defense/Kicking categories, defensive interceptions/fumble recoveries/sacks, FG distance bands, passing/rushing attempts and weighted team efficiency including NFL passer rating. The final stable-source actual Chromium run passed all 12 selected checks: both complete games (38–24, 41–34), real-engine season simulations and team-stat reconciliation, pending-decision recovery, single final recording, persistent browser restart and desktop/phone layouts. Reviewed this issue against that play-test evidence; retain open for review/integration, with no published fix/commit claimed. Coverage and original interrupted/failed receipts remain in [acceptance notes](../../season-ui-acceptance.md) and ignored `.ai-audits/season-ui/standings-kicking/`. Broad final core test run remains in progress; no complete pre-push qualification claimed.
+
+2026-11-18 final validation: complete stable-source core suite 11,839 passed; backend 657 passed (480 existing deprecation warnings), frontend 572 passed, all 12 selected real Chromium checks passed, including complete games and requested team-stat displays. Ruff/docs pass. Detailed coverage and original interrupted evidence retained in acceptance notes. Current requested refinements are complete locally; status remains open for review/integration, with required pre-push gates still applicable.
+
+--- 2026-11-18 21:40 ---
+Implemented sortable season-table headers, keyboard/direction announcements, raw numeric sorting and unknown-last behavior. Zero coverage now reads Not recorded rather than Partial. All 574 frontend tests/four rendered season checks pass; focused SeasonDesk coverage 89.72% lines/87.13% branches. Also recovered missing kicking/offensive attempt counters for the owner’s specific completed legacy game from fully aligned structured history, with all existing yardage/sack/INT counters reconciling, normal result correction/history retention and atomic CAS. Actual UI verifies both teams’ offense/defense/kicking fields populated. Private receipts remain ignored; score 21–20 and single result preserved. See acceptance notes for tests/baselines and repair boundaries. Issue remains open for integration; no push/release claimed.

@@ -186,6 +186,7 @@ def test_shutdown_rejects_surviving_owned_application_process(remaining):
         ("1.10.4", False, 3),
         ("1.10.4", True, 4),
         ("1.11.0", True, 4),
+        ("1.12.0", True, 4),
     ],
 )
 def test_explicit_version_aware_season_profile(version, include_1977, count):
@@ -260,12 +261,12 @@ def test_candidate_profile_checks_every_synthetic_1977_team(monkeypatch, candida
         "wrong-chart-team",
     ],
 )
-@pytest.mark.parametrize("version", ["1.10.4", "1.11.0"])
+@pytest.mark.parametrize("version", ["1.10.4", "1.11.0", "1.12.0"])
 def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failure, version):
     smoke = smoke_module()
     responses = api_responses()
     responses["/openapi.json"]["info"]["version"] = version
-    if version == "1.11.0":
+    if version in {"1.11.0", "1.12.0"}:
         responses["/api/teams?season=1983"]["teams"][:3] = [
             {"id": team, "short_name": label} for team, label in {
                 "Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83",
@@ -360,7 +361,7 @@ def test_next_reviewed_release_preserves_1977_and_immutable_profiles() -> None:
 @pytest.mark.parametrize(
     "failure", [None, "Chargers", "Cardinals", "Raiders", "missing", "duplicate"]
 )
-@pytest.mark.parametrize("version", ["1.10.5", "1.10.6", "1.11.0"])
+@pytest.mark.parametrize("version", ["1.10.5", "1.10.6", "1.11.0", "1.12.0"])
 def test_corrective_release_checks_packaged_1983_identity_labels(
     monkeypatch: pytest.MonkeyPatch,
     failure: str | None,
@@ -400,7 +401,13 @@ def test_release_automatically_calls_published_install_verification() -> None:
     assert "include_1977: true" in post_release
 
 
-@pytest.mark.parametrize("version", ["1.10.7", "1.11.1", "1.12.0", "2.0.0"])
+@pytest.mark.parametrize("version", ["1.10.7", "1.11.1", "1.13.0", "2.0.0"])
 def test_unreviewed_future_native_profiles_are_rejected(version: str) -> None:
     with pytest.raises(ValueError, match="reviewed"):
         smoke_module().season_profile(version, True)
+
+
+def test_reviewed_season_release_112_preserves_complete_season_profile() -> None:
+    assert smoke_module().season_profile('1.12.0', True) == {
+        '1977': 28, '1983': 28, '2024': 32, '2026': 2,
+    }

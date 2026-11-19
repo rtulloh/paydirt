@@ -1,4 +1,5 @@
-import { gameFetch, browserMode } from '../../runtime/gameFetch';
+import { sessionPersistence } from '../../runtime/sessionPersistence';
+import { gameFetch, browserMode, saveCurrentSession } from '../../runtime/gameFetch';
 import React, { useEffect, useState, useRef } from 'react';
 import Scoreboard from '../Scoreboard/Scoreboard';
 import FootballField from '../Field/FootballField';
@@ -86,15 +87,16 @@ const PlayingPhase = () => {
 
   const [localLastResult, setLocalLastResult] = useState(null);
   const [saveFeedback, setSaveFeedback] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const [localDiceResult, setLocalDiceResult] = useState(null);
   const [localIsRolling, setLocalIsRolling] = useState(false);
   const [localShowPatChoice, setLocalShowPatChoice] = useState(false);
   const [localPatResult, setLocalPatResult] = useState(null);
   const [scoringTeamIsPlayer, setScoringTeamIsPlayer] = useState(false);
-  const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(false);
-  const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(null);
-  const [localShowEndZoneChoice, setLocalShowEndZoneChoice] = useState(false);
-  const [localPendingEndZoneData, setLocalPendingEndZoneData] = useState(null);
+  const [localShowPenaltyChoice, setLocalShowPenaltyChoice] = useState(() => store.restoredPendingResult?.pending_penalty_decision === true);
+  const [localPendingPenaltyData, setLocalPendingPenaltyData] = useState(() => store.restoredPendingResult?.pending_penalty_decision ? store.restoredPendingResult : null);
+  const [localShowEndZoneChoice, setLocalShowEndZoneChoice] = useState(() => store.restoredPendingResult?.pending_end_zone_interception_return_decision === true);
+  const [localPendingEndZoneData, setLocalPendingEndZoneData] = useState(() => store.restoredPendingResult?.pending_end_zone_interception_return_decision ? store.restoredPendingResult : null);
   const [homeScoreFlash, setHomeScoreFlash] = useState(false);
   const [awayScoreFlash, setAwayScoreFlash] = useState(false);
   const prevScoresRef = useRef({ homeScore: undefined, awayScore: undefined });
@@ -107,7 +109,27 @@ const PlayingPhase = () => {
   const cpuDecisionPendingRef = useRef(false);
   const [showHalftime, setShowHalftime] = useState(false);
   const halftimeShownRef = useRef(false);
+  const halftimeAcknowledgedRef = useRef(false);
+  const normalPlayBlocked = halftimePending || showHalftime || isKickoff;
+  // A click callback may predate the render that displays the halftime overlay.
+  const blocksNormalPlay = () => {
+    const current = useGameStore.getState();
+    return normalPlayBlocked || current.halftimePending || current.isKickoff;
+  };
   const cpuPatInFlightRef = useRef(false);
+  const [saveRecovery, setSaveRecovery] = useState(0);
+  useEffect(() => {
+    const recovered = event => {
+      if (event.detail?.status === 'saved' && !sessionPersistence.getFailure()) {
+        setSaveRecovery(value => value + 1);
+      }
+    };
+    window.addEventListener('paydirt-save-status', recovered);
+    return () => window.removeEventListener('paydirt-save-status', recovered);
+  }, []);
+
+  // Consume the restored presentation once; local choice state then follows API results.
+  useEffect(() => { useGameStore.setState({ restoredPendingResult: null }); }, []);
 
   // Every API path publishes the engine's final flag through the store.
   // Keep an outstanding PAT/decision on screen until it has been resolved.
@@ -121,6 +143,7 @@ const PlayingPhase = () => {
   useEffect(() => {
     if (!halftimePending) {
       halftimeShownRef.current = false;
+      halftimeAcknowledgedRef.current = false;
       return;
     }
     if (!halftimeShownRef.current && !pendingPat && !localShowPenaltyChoice && !localShowEndZoneChoice && !localExecuting) {
@@ -131,7 +154,7 @@ const PlayingPhase = () => {
   // Sync pendingPat from store to local state to show PAT panel
   // Only show if player scored (CPU auto-handles their own PAT)
   useEffect(() => {
-    if (pendingPat && !localShowPatChoice) {
+    if (pendingPat && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice) {
       // Check if scoring team is the player (not CPU)
       // When player is on offense and pendingPat, they scored
       // When player is on defense and pendingPat, CPU scored (auto-handled)
@@ -141,7 +164,7 @@ const PlayingPhase = () => {
         setScoringTeamIsPlayer(true); // Player scored, so they should see PAT options
       }
     }
-  }, [pendingPat, localShowPatChoice, playerOffense]);
+  }, [pendingPat, localShowPatChoice, playerOffense, localShowPenaltyChoice, localShowEndZoneChoice]);
 
   // Auto-clear result banner for non-special plays after 2 seconds
   useEffect(() => {
@@ -164,7 +187,7 @@ const PlayingPhase = () => {
   useEffect(() => {
     // FLOW-026: the engine waits for the end-zone return choice and would reject
     // a new snap, so no coaching query or kick panel may start while it is open.
-    if (localShowEndZoneChoice || localShowPenaltyChoice) return;
+    if (localShowEndZoneChoice || localShowPenaltyChoice || sessionPersistence.getFailure()) return;
     if (!gameId || localExecuting || isKickoff || gameOver || pendingPat || halftimePending || showHalftime) return;
     if (playerOffense) return;  // Player is on offense, no special handling needed
     if (down !== 4) return;  // Not 4th down
@@ -209,7 +232,7 @@ const PlayingPhase = () => {
   }, [gameId, localExecuting, isKickoff, gameOver, pendingPat, halftimePending, showHalftime,
       localShowEndZoneChoice, localShowPenaltyChoice, playerOffense, down, quarter, timeRemaining, ballPosition, yardsToGo,
       homeScore, awayScore, homeTimeouts, awayTimeouts, cpuGoingForIt, cpuDecisionRetry,
-      pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown]);
+      pendingCpuFourthDown, clearPendingCpuFourthDown, setPendingCpuFourthDown, saveRecovery]);
 
   // Clear cpuGoingForIt when down changes away from 4th, possession changes, kickoff, halftime, or game over
   useEffect(() => {
@@ -255,8 +278,10 @@ const PlayingPhase = () => {
   }, [homeScore, awayScore]);
 
   const handleKickoff = async () => {
-    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice ||
+        showHalftime || (halftimePending && !halftimeAcknowledgedRef.current)) return;
     setLocalExecuting(true);
+    setActionError(null);
     setLocalLastResult(null);
     setLocalDiceResult(null);
     setLocalIsRolling(false);
@@ -298,6 +323,7 @@ const PlayingPhase = () => {
         })
       });
       
+      if (!res.ok) throw new Error(await res.text());
       if (res.ok) {
         const data = await res.json();
         
@@ -382,7 +408,9 @@ const PlayingPhase = () => {
       }
     } catch (err) {
       console.error('Failed to perform kickoff:', err);
+      setActionError(err.message || 'The action failed. Please try again.');
     } finally {
+      setLocalIsRolling(false);
       setLocalExecuting(false);
     }
   };
@@ -390,6 +418,7 @@ const PlayingPhase = () => {
   const handlePatKick = async () => {
     if (!gameId || localExecuting || localShowEndZoneChoice) return;
     setLocalExecuting(true);
+    setActionError(null);
     try {
       const res = await gameFetch(`${API_BASE}/api/game/extra-point`, {
         method: 'POST',
@@ -399,6 +428,7 @@ const PlayingPhase = () => {
           player_play: 'XP',
         })
       });
+      if (!res.ok) throw new Error(await res.text());
       if (res.ok) {
         const data = await res.json();
         setLocalPatResult({
@@ -415,6 +445,7 @@ const PlayingPhase = () => {
       }
     } catch (err) {
       console.error('Failed to attempt extra point:', err);
+      setActionError(err.message || 'The action failed. Please try again.');
     } finally {
       setLocalExecuting(false);
     }
@@ -423,6 +454,7 @@ const PlayingPhase = () => {
   const handlePatTwoPoint = async () => {
     if (!gameId || localExecuting || localShowEndZoneChoice) return;
     setLocalExecuting(true);
+    setActionError(null);
     try {
       const res = await gameFetch(`${API_BASE}/api/game/two-point`, {
         method: 'POST',
@@ -432,6 +464,7 @@ const PlayingPhase = () => {
           play: '2PT',
         })
       });
+      if (!res.ok) throw new Error(await res.text());
       if (res.ok) {
         const data = await res.json();
         setLocalPatResult({
@@ -443,12 +476,13 @@ const PlayingPhase = () => {
         await new Promise(r => setTimeout(r, 2000));
         setLocalPatResult(null);
         setLocalLastResult(null);
+        setLocalShowPatChoice(false);
       }
     } catch (err) {
       console.error('Failed to attempt two-point conversion:', err);
+      setActionError(err.message || 'The action failed. Please try again.');
     } finally {
       setLocalExecuting(false);
-      setLocalShowPatChoice(false);
     }
   };
 
@@ -464,7 +498,9 @@ const PlayingPhase = () => {
 
   const handleCpuPatAuto = async (gid) => {
     // CPU scored — auto-attempt extra point, show result then kickoff
-    if (!gid || localShowEndZoneChoice) return;
+    if (!gid || localShowEndZoneChoice || localShowPenaltyChoice || sessionPersistence.getFailure()) return;
+    let acknowledged = false;
+    setActionError(null);
     try {
       const res = await gameFetch(`${API_BASE}/api/game/extra-point`, {
         method: 'POST',
@@ -474,6 +510,8 @@ const PlayingPhase = () => {
           player_play: 'XP',
         })
       });
+      if (!res.ok) throw new Error('CPU extra point was not accepted.');
+      acknowledged = true;
       if (res.ok) {
         const data = await res.json();
         setLocalPatResult({
@@ -518,7 +556,9 @@ const PlayingPhase = () => {
         setLocalLastResult(null);
       }
     } catch (err) {
+      if (!acknowledged) cpuPatInFlightRef.current = false;
       console.error('Failed to auto-attempt CPU extra point:', err);
+      setActionError(err.message || 'The automatic try failed. Please retry after resolving the error.');
     }
   };
 
@@ -527,13 +567,13 @@ const PlayingPhase = () => {
       cpuPatInFlightRef.current = false;
       return;
     }
-    if (playerOffense || cpuPatInFlightRef.current) {
+    if (playerOffense || cpuPatInFlightRef.current || localShowPenaltyChoice || localShowEndZoneChoice || sessionPersistence.getFailure()) {
       return;
     }
 
     cpuPatInFlightRef.current = true;
     void handleCpuPatAuto(gameId);
-  }, [gameId, pendingPat, playerOffense]);
+  }, [gameId, pendingPat, playerOffense, localShowPenaltyChoice, localShowEndZoneChoice, saveRecovery]);
 
   const handleNewGame = () => {
     // Reset game state
@@ -550,34 +590,15 @@ const PlayingPhase = () => {
     setGamePhase('menu');
   };
 
-  const handleSaveGame = () => {
-    if (browserMode || localShowEndZoneChoice) return;
-    const { saveGame } = useGameStore.getState();
-    const state = useGameStore.getState();
-    const saved = saveGame({
-      gameId: state.gameId,
-      homeTeam: state.homeTeam,
-      awayTeam: state.awayTeam,
-      homeScore: state.homeScore,
-      awayScore: state.awayScore,
-      quarter: state.quarter,
-      timeRemaining: state.timeRemaining,
-      possession: state.possession,
-      ballPosition: state.ballPosition,
-      down: state.down,
-      yardsToGo: state.yardsToGo,
-      homeTimeouts: state.homeTimeouts,
-      awayTimeouts: state.awayTimeouts,
-      humanPlaysOffense: state.humanPlaysOffense,
-      humanTeamId: state.humanTeamId,
-      cpuTeamId: state.cpuTeamId,
-      playLog: state.playLog,
-      currentSeason: state.currentSeason,
-    });
-    setSaveFeedback({
-      error: !saved,
-      message: saved ? 'Game saved in this browser.' : 'Could not save game in this browser.',
-    });
+  const handleSaveGame = async () => {
+    if (!gameId || localExecuting) return;
+    setSaveFeedback(null);
+    try {
+      await saveCurrentSession(gameId);
+      setSaveFeedback({error:false,message:'Game saved locally.'});
+    } catch (error) {
+      setSaveFeedback({error:true,message:`Could not save game: ${error.message}`});
+    }
   };
 
   const handleSaveReplay = async () => {
@@ -599,7 +620,7 @@ const PlayingPhase = () => {
 
   const executePlay = async (play, cpuPlayOverride = null, puntOptions = null) => {
     // FLOW-026: the engine owns the guard; the UI must not offer the snap either.
-    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice) return;
+    if (!gameId || localExecuting || localShowEndZoneChoice || localShowPenaltyChoice || blocksNormalPlay()) return;
     
     // Store state BEFORE the play for the log
     const prePlayQuarter = quarter;
@@ -616,6 +637,7 @@ const PlayingPhase = () => {
     setIsKickPlay(isKick);
     
     setLocalExecuting(true);
+    setActionError(null);
     setCpuGoingForIt(false);
     setLocalLastResult(null);
     setLocalDiceResult(null);
@@ -801,12 +823,15 @@ const PlayingPhase = () => {
       }
     } catch (err) {
       console.error('Failed to execute play:', err);
+      setActionError(err.message || 'The action failed. Please try again.');
     } finally {
+      setLocalIsRolling(false);
       setLocalExecuting(false);
     }
   };
 
   const handleOffensePlay = (play) => {
+    if (blocksNormalPlay()) return;
     if (localShowEndZoneChoice || localShowPenaltyChoice) return;
     // Check if it's a punt - show punt options panel
     if (play === 'P' && playerOffense) {
@@ -818,6 +843,7 @@ const PlayingPhase = () => {
   };
 
   const handlePuntOptions = (puntOptions) => {
+    if (blocksNormalPlay()) return;
     if (localShowEndZoneChoice || localShowPenaltyChoice) return;
     setShowPuntOptions(false);
     setPendingPuntPlay(null);
@@ -825,6 +851,7 @@ const PlayingPhase = () => {
   };
 
   const handleCpuDecisionExecute = () => {
+    if (blocksNormalPlay()) return;
     if (!cpuFourthDownDecision || !pendingDefensePlay || localShowEndZoneChoice || localShowPenaltyChoice) return;
     
     // Execute the CPU's chosen play (punt or FG) with user's defense
@@ -839,6 +866,7 @@ const PlayingPhase = () => {
   };
 
   const handleCpuFourthDownExecute = () => {
+    if (blocksNormalPlay()) return;
     if (!pendingCpuFourthDown || localShowEndZoneChoice || localShowPenaltyChoice) return;
     
     const decision = pendingCpuFourthDown;
@@ -885,6 +913,7 @@ const PlayingPhase = () => {
   };
 
   const handleDefensePlay = (play) => {
+    if (blocksNormalPlay()) return;
     if (!gameId || localExecuting || localShowEndZoneChoice) return;
     
     // If CPU already decided to punt/FG on 4th down, don't let player pick defense
@@ -901,10 +930,7 @@ const PlayingPhase = () => {
   };
 
   const handlePenaltyDecision = async (acceptPenalty, penaltyIndex = 0) => {
-    if (gameId && localShowEndZoneChoice) return;
-    // Always dismiss the modal first
-    setLocalShowPenaltyChoice(false);
-    setLocalPendingPenaltyData(null);
+    if (localExecuting || localShowEndZoneChoice) return;
     // Clear any CPU fourth down decision states
     clearCpuFourthDownDecision();
     clearPendingCpuFourthDown();
@@ -915,6 +941,7 @@ const PlayingPhase = () => {
     }
     
     setLocalExecuting(true);
+    setActionError(null);
     try {
       const body = {
         game_id: gameId,
@@ -930,6 +957,8 @@ const PlayingPhase = () => {
       
       if (res.ok) {
         const data = await res.json();
+        setLocalShowPenaltyChoice(false);
+        setLocalPendingPenaltyData(null);
         updateGameState(data.game_state);
 
         if (data.result?.pending_end_zone_interception_return_decision) {
@@ -978,10 +1007,11 @@ const PlayingPhase = () => {
         });
       } else {
         const error = await res.text();
-        console.error('Penalty decision failed:', res.status, error);
+        throw new Error(error || `Penalty decision failed (${res.status}).`);
       }
     } catch (err) {
       console.error('Failed to handle penalty decision:', err);
+      setActionError(err.message || 'The penalty decision failed. Please try again.');
     } finally {
       setLocalExecuting(false);
     }
@@ -1058,6 +1088,7 @@ const PlayingPhase = () => {
   };
 
   const handleCallTimeout = async () => {
+    if (blocksNormalPlay()) return;
     if (!gameId || localExecuting || localShowEndZoneChoice) return;
     // Check if human has timeouts
     const humanTimeouts = humanIsHome ? homeTimeouts : awayTimeouts;
@@ -1104,6 +1135,9 @@ const PlayingPhase = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900">
+      {(homeTeam?.season || awayTeam?.season) && <div className="text-gray-300 text-xs px-4 pt-2" role="note">
+        Home: {homeTeam?.season} {homeTeam?.name} · Away: {awayTeam?.season} {awayTeam?.name} · Rules: {store.rulesSeason || store.currentSeason}
+      </div>}
       <Scoreboard
         homeTeam={homeTeam}
         awayTeam={awayTeam}
@@ -1120,7 +1154,7 @@ const PlayingPhase = () => {
         awayTimeouts={awayTimeouts}
         humanIsHome={humanIsHome}
         onCallTimeout={handleCallTimeout}
-        canCallTimeout={!localExecuting && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice}
+        canCallTimeout={!normalPlayBlocked && !localExecuting && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice}
         isOvertime={isOvertime || false}
         otPeriod={otPeriod || 0}
         homeScoreFlash={homeScoreFlash}
@@ -1151,6 +1185,7 @@ const PlayingPhase = () => {
             awayScore={awayScore}
             quarter={quarter}
             onContinue={() => {
+              halftimeAcknowledgedRef.current = true;
               setShowHalftime(false);
               setIsKickoff(true);
             }}
@@ -1158,7 +1193,7 @@ const PlayingPhase = () => {
         )}
 
         {/* Inline Kickoff Banner - More Prominent */}
-        {isKickoff && !localExecuting && !localLastResult && !showHalftime && !localShowEndZoneChoice && (
+        {isKickoff && !localExecuting && !localLastResult && !showHalftime && !localShowEndZoneChoice && !localShowPenaltyChoice && (
           <div className="px-4 py-4 mx-4 mt-4 bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl text-center shadow-lg border-2 border-blue-400">
             <div className="text-2xl font-bold text-white mb-3 uppercase tracking-wider">KICKOFF</div>
             <div className="text-lg text-blue-100 mb-4">
@@ -1258,7 +1293,7 @@ const PlayingPhase = () => {
         )}
 
         {/* PAT Choice Panel */}
-        {localShowPatChoice && !localShowEndZoneChoice && (
+        {localShowPatChoice && !localShowEndZoneChoice && !localShowPenaltyChoice && (
           <div className="px-4 pb-2">
             <PATChoicePanel 
               canGoForTwo={canGoForTwo}
@@ -1320,7 +1355,7 @@ const PlayingPhase = () => {
               selectedPlay={humanPlaySelected}
               onSelectPlay={handleOffensePlay}
               isHumanTurn={true}
-              disabled={localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
+              disabled={normalPlayBlocked || localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
             />
           ) : (
             <div>
@@ -1333,7 +1368,7 @@ const PlayingPhase = () => {
                 selectedPlay={humanPlaySelected}
                 onSelectPlay={handleDefensePlay}
                 isHumanTurn={true}
-                disabled={localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
+                disabled={normalPlayBlocked || localExecuting || localShowPenaltyChoice || localShowEndZoneChoice}
               />
             </div>
           )}
@@ -1372,6 +1407,11 @@ const PlayingPhase = () => {
         })()
       )}
 
+      {actionError && <p role="alert" className="rounded-lg bg-red-900 px-4 py-3 text-white">{actionError}{pendingPat && !playerOffense && <button className="ml-4 underline" onClick={() => {
+        if (cpuPatInFlightRef.current || sessionPersistence.getFailure()) return;
+        cpuPatInFlightRef.current = true;
+        void handleCpuPatAuto(gameId);
+      }}>Retry automatic try</button>}</p>}
       {/* Bottom Controls */}
       {saveFeedback && (
         <p role={saveFeedback.error ? 'alert' : 'status'} className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] rounded-lg border border-gray-400 bg-gray-800 px-4 py-3 text-sm text-white shadow-lg pointer-events-none">
@@ -1402,7 +1442,7 @@ const PlayingPhase = () => {
           </button>
           <button
             onClick={handleSaveGame}
-            disabled={browserMode || isKickoff || pendingPat || pendingPenaltyData || localShowEndZoneChoice}
+            disabled={localExecuting || localShowEndZoneChoice}
             className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SAVE GAME

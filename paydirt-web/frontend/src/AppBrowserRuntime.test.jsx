@@ -6,13 +6,13 @@ vi.mock('./components/Game/MenuPhase', () => ({ default: () => <p>Game menu</p> 
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetModules(); });
 
 describe('browser prototype startup', () => {
-  it('labels public seasons and the temporary session while Python loads', async () => {
+  it('labels public seasons and durable saves while Python loads', async () => {
     vi.stubEnv('VITE_PAYDIRT_BROWSER', '1');
     vi.stubGlobal('Worker', class { postMessage() {} addEventListener() {} });
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     const { default: App } = await import('./App');
     render(<App />);
-    expect(screen.getByText(/public seasons/i)).toHaveTextContent(/temporary session/i);
+    expect(screen.getByText(/public seasons/i)).toHaveTextContent(/saved games.*browser/i);
     expect(screen.getByRole('status')).toHaveTextContent(/loading/i);
     expect(screen.queryByText('Game menu')).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();

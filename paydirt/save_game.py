@@ -123,6 +123,17 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
 
     # Version-1 readers ignore this optional metadata. Without it, a later load
     # would mistake defaulted component counters for a complete legacy history.
+    from .team_stats import validate_team_stats_context
+    save_data["team_stats_context"] = validate_team_stats_context(engine._team_stats_context)
+    save_data["extended_team_stats"] = {
+        name: getattr(getattr(state, name), "_extended_team_stats", None) for name in ("home_stats", "away_stats")
+    }
+    save_data["offensive_attempt_stats"] = {
+        name: getattr(state, name)._offensive_attempt_stats for name in ("home_stats", "away_stats")
+    }
+    save_data["field_goal_stats"] = {
+        name: getattr(state, name)._field_goal_stats for name in ("home_stats", "away_stats")
+    }
     incomplete = [
         name for name in ("home_stats", "away_stats")
         if not getattr(state, name)._turnover_breakdown_complete
@@ -228,6 +239,15 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
     for name in ("home_stats", "away_stats"):
         data = save_data.get(name, {})
         stats = TeamStats(**data)
+        from .kicking_stats import validate_field_goal_stats
+        from .offense_stats import validate_offensive_attempt_stats
+        from .team_stats import validate_extended_team_stats
+        stats._extended_team_stats = validate_extended_team_stats(
+            save_data.get("extended_team_stats", {}).get(name))
+        stats._offensive_attempt_stats = validate_offensive_attempt_stats(
+            save_data.get("offensive_attempt_stats", {}).get(name))
+        stats._field_goal_stats = validate_field_goal_stats(
+            save_data.get("field_goal_stats", {}).get(name))
         stats._turnover_breakdown_complete = (
             name not in incomplete
             and "interceptions_thrown" in data and "fumbles_lost" in data
@@ -296,6 +316,10 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
                 "record; it cannot be resumed safely"
             )
 
+    from .team_stats import validate_team_stats_context
+    engine._team_stats_context = validate_team_stats_context(save_data.get("team_stats_context", {}))
+    if engine._team_stats_context and not engine.has_pending_end_zone_interception:
+        raise ValueError("Team-stat capture has no resumable pending engine choice")
     engine._pending_post_score_action = pending_score
 
     # Return engine and human control settings

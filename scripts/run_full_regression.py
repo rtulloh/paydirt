@@ -27,6 +27,7 @@ Deliberately not automated:
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import shutil
@@ -109,35 +110,52 @@ def conditional_skip_reason(step: Step, root: Path) -> str | None:
 
 
 def _port_free(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    """Probe both localhost families without reusing another process's address."""
+    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
         try:
-            sock.bind(("127.0.0.1", port))
-        except OSError:
+            with socket.socket(family, socket.SOCK_STREAM) as sock:
+                sock.bind((host, port))
+        except OSError as error:
+            if family == socket.AF_INET6 and error.errno in (
+                errno.EAFNOSUPPORT, errno.EPROTONOSUPPORT, errno.EADDRNOTAVAIL,
+            ):
+                continue  # IPv6 localhost is unavailable on this machine.
             return False
     return True
 
 
 def choose_ports(probe: Callable[[int], bool] | None = None) -> dict[str, str]:
-    """Return E2E port overrides only when the Playwright defaults are occupied.
+    """Honor an explicit free pair; otherwise retain defaults or find isolation.
 
-    ``probe(port)`` must report whether the port is bindable (free).
+    Both PAYDIRT_E2E_*_PORT values must be distinct decimal ports in 1..65535.
+    ``probe(port)`` reports whether both localhost addresses are bindable. Probes
+    cannot reserve ports: the services still detect a race when they start.
     """
     is_free = probe or _port_free
+    names = ("PAYDIRT_E2E_BACKEND_PORT", "PAYDIRT_E2E_FRONTEND_PORT")
+    explicit = [os.environ.get(name) for name in names]
+    if any(value is not None for value in explicit):
+        if not all(value and value.isascii() and value.isdecimal() for value in explicit):
+            raise ValueError("Both PAYDIRT_E2E ports must be decimal port numbers")
+        ports = [int(value) for value in explicit]
+        if any(not 1 <= port <= 65535 for port in ports) or len(set(ports)) != 2:
+            raise ValueError("E2E ports must be distinct and in 1..65535")
+        if not all(is_free(port) for port in ports):
+            raise ValueError("Explicit E2E port pair is occupied; select available ports")
+        return dict(zip(names, map(str, ports)))
     if is_free(DEFAULT_BACKEND_PORT) and is_free(DEFAULT_FRONTEND_PORT):
         return {}
 
     chosen: dict[str, str] = {}
-    for env_name, base in (
-        ("PAYDIRT_E2E_BACKEND_PORT", ISOLATED_BACKEND_BASE),
-        ("PAYDIRT_E2E_FRONTEND_PORT", ISOLATED_FRONTEND_BASE),
-    ):
-        port = base
-        while port < base + 500 and not is_free(port):
-            port += 1
-        chosen[env_name] = str(port)
-    if chosen["PAYDIRT_E2E_BACKEND_PORT"] == chosen["PAYDIRT_E2E_FRONTEND_PORT"]:
-        chosen["PAYDIRT_E2E_FRONTEND_PORT"] = str(int(chosen["PAYDIRT_E2E_FRONTEND_PORT"]) + 1)
+    used: set[int] = set()
+    for name, base in zip(names, (ISOLATED_BACKEND_BASE, ISOLATED_FRONTEND_BASE)):
+        for port in range(base, min(base + 500, 65536)):
+            if port not in used and is_free(port):
+                chosen[name] = str(port)
+                used.add(port)
+                break
+        else:
+            raise ValueError(f"No available E2E port in isolation range beginning {base}")
     return chosen
 
 
@@ -408,9 +426,13 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     log_root = args.log_dir or base_root / ".ai-audits" / "full-regression" / stamp
     log_root.mkdir(parents=True, exist_ok=True)
-    port_env = choose_ports()
+    try:
+        port_env = choose_ports()
+    except ValueError as error:
+        print(f"PREFLIGHT: {error}", file=sys.stderr)
+        return 2
     if port_env:
-        print(f"Default E2E ports busy; isolating browser regression on {port_env}")
+        print(f"Browser regression port overrides: {port_env}")
 
     results: list[StepResult] = []
     for step in steps:

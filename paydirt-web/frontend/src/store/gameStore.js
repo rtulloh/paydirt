@@ -29,12 +29,15 @@ const initialGameState = {
   canGoForTwo: false,
   pendingPat: false,
   pendingPenalty: null,
+  restoredPendingResult: null,
   difficulty: 'medium',
   playLogVersion: 0,
   isKickoff: false,
   halftimePending: false,
   playLog: [],
+  authoritativeHistory: false,
   currentSeason: '1983',
+  rulesSeason: null,
   fieldPosition: '',
   isOvertime: false,
   otPeriod: 0,
@@ -49,13 +52,27 @@ export const useGameStore = create((set, get) => ({
 
   setGamePhase: (phase) => set({ gamePhase: phase }),
   setGameId: (id) => set({ gameId: id }),
+  restoreSession: (response, metadata = {}) => {
+    set({ ...initialGameState, gameId: response.game_id });
+    get().updateGameState(response.game_state);
+    const state = response.game_state;
+    const pending = response.pending_result || null;
+    const hasPendingChoice = pending?.pending_penalty_decision || pending?.pending_end_zone_interception_return_decision;
+    set({ restoredPendingResult: pending,
+      gamePhase: hasPendingChoice || state.pending_pat ? 'playing' : state.game_over ? 'gameOver' : (response.game_phase || metadata.phase) === 'coinToss' ? 'coinToss' : 'playing',
+      playLog: response.play_history || state.play_history || [],
+      noHuddleMode: metadata.noHuddleMode === true,
+      selectedModifier: metadata.selectedModifier || null,
+      difficulty: response.difficulty || state.difficulty || 'medium',
+    });
+  },
   setIsKickoff: (value) => set({ isKickoff: value }),
   setPendingPat: (value) => set({ pendingPat: value }),
   setCurrentSeason: (season) => set({ currentSeason: season }),
   setPossession: (possession) => set({ possession: possession }),
   setPlayerOffense: (offense) => set({ playerOffense: offense }),
   setPlayLog: (log) => set({ playLog: log }),
-  addToPlayLog: (entry) => set((state) => ({ playLog: [...state.playLog, entry] })),
+  addToPlayLog: (entry) => set((state) => state.authoritativeHistory ? {} : ({ playLog: [...state.playLog, entry] })),
   
   setHumanPlay: (play) => set({ humanPlaySelected: play }),
   setCpuPlay: (play) => set({ cpuPlaySelected: play }),
@@ -79,6 +96,7 @@ export const useGameStore = create((set, get) => ({
   clearModifiers: () => set({ selectedModifier: null }),
   
   updateGameState: (state) => {
+    if (Array.isArray(state.play_history)) set({playLog:state.play_history,authoritativeHistory:true});
     const possession = state.possession
     // Backend sends player_offense, not human_plays_offense
     const playerIsOnOffense = state.player_offense !== undefined ? state.player_offense : true
@@ -132,6 +150,7 @@ export const useGameStore = create((set, get) => ({
       noHuddleMode: possessionChanged ? false : get().noHuddleMode,
       // Update season from backend if provided
       currentSeason: state.season || get().currentSeason,
+      rulesSeason: state.rules_season || state.season || get().rulesSeason,
     })
   },
    

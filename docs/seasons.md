@@ -26,6 +26,112 @@ that every statistical tolerance passed. Consult the bundled season
 `NOTES.md` for source gaps, final measurements and known interception/scoring
 biases. Historical winners and playoff qualifiers are never forced.
 
+## Web Season Campaigns
+
+Choose **Seasons** from the web main menu to create or reopen a campaign. A campaign is your
+saved competition, separate from a chart year. You can keep several independent replays of the
+same historical year, or build a custom league from team editions across installed years.
+In exhibition team selection, **Search by name within year** filters only the active chart year.
+Changing the year or selection side clears the search and keeps the other selected edition.
+
+Use **New season** to choose an installed historical calendar or a custom league. Historical
+1983 and 2024 templates appear only when the full team/rule/calendar inputs are available;
+they begin with empty results. Actual historical scores do not determine your outcomes.
+A custom league lets you select year/team editions, divisions and conferences, and one shared
+rules year. Choose a single or home-and-away round robin, or enter individual fixtures.
+The same franchise from different years is allowed; duplicate exact team editions are rejected.
+Odd-sized round robins include byes. Team membership/rules become fixed once play begins.
+After creation, review the **Schedule** and use **Edit schedule** before starting a game.
+Editing a historical calendar turns that competition into a custom season. **Duplicate season**
+creates a fresh competition with the regular calendar and team editions, without results,
+active games or playoff progress. Choose a followed team to focus the overview and schedule;
+this preference stays with that campaign and can change after play starts.
+
+Use the campaign selector to switch competitions. **Schedule** shows each fixture and its state.
+Choose **Play** on an unstarted fixture to open **Game setup**. Select the home or away team
+to coach and **Easy**, **Medium** (the default), or **Hard** CPU difficulty, then choose
+**Start game** to continue to the coin toss. **Cancel** leaves the fixture unstarted. The side
+and difficulty stay with the saved game when resumed. Reopen an in-progress fixture from
+**Saved games**. A legal final is recorded once; reloads do not add a second win or statistics.
+**Simulate unplayed games** runs real engine games and saves each completed result. Stop takes
+effect between games. Played or in-progress fixtures are never overwritten by simulation.
+
+**Overview** combines division standings and recent results. Standings show every division grouped by conference. NFC appears before
+AFC, side by side on wider screens and stacked on smaller screens. Custom conferences are also
+shown. Use **Standings scope** to narrow the view to a conference or division. Following a team
+does not hide the other divisions. Tables show W/L/T and points for/against.
+Click a column header to sort; click again to reverse direction. Number columns start highest
+first and names start alphabetically. Sorting a division keeps its teams within that division.
+The arrow and header announce the current direction; keyboard users can press Enter or Space.
+Missing values always stay last. Statistics sort by the full recorded value, before rounding.
+
+**Team statistics** has separate **Offense**, **Defense** and **Kicking** categories. Offense and
+defense offer totals or per-game counts. Each counter shows its recorded-game count against
+completed regular-season games. **Not recorded** means none of those games contains that
+counter; **Partial** means only some games contain it. Neither label means a recorded zero.
+**Leaders** ranks teams in supported categories, with game counts. Individual player statistics
+are not tracked. Missing older statistics are unknown, not zero; per-game denominators include
+only games with that statistic recorded. Regular-season totals exclude playoff games. Ranking
+uses winning fraction, point differential, points scored and team name; it does **not** implement
+every official NFL tiebreak.
+
+**Offense** includes team points, net total offense, gross and net passing yards, passing and
+rushing attempts, touchdowns, long gains and fumbles. Receiving shows receptions, yards,
+yards per reception, touchdowns, longest reception and receiving fumbles from completed-pass
+production. **Downs** separates rushing, passing and penalty first downs, then third- and
+fourth-down conversions, attempts and percentages. The directory keeps passing, rushing,
+receiving and downs in focused tables. Compact headings have full accessible names and hover
+labels; gross and net passing yards remain explicitly distinguished.
+
+Completion percentage, yards per attempt/reception and **Team passer rating** use combined
+recorded counters, including when the table shows per-game counts. Passing averages exclude
+sacks. Team passer rating uses the [NFL passer-rating formula](https://www.profootballhof.com/news/nfl-s-passer-rating),
+including its component limits, with the team’s combined attempts, completions, gross yards,
+passing touchdowns and interceptions. Each rate uses only games with all its required counters
+recorded; zero attempts produce no rate. Rates are not averages of game ratings or percentages.
+Longest gains and kicks remain season maximums in either view. Points include all team scoring
+and remain available from final scores even when an older game has no detailed box score.
+
+**Defense** shows the corresponding opponent production, including scoring, passing, rushing,
+receiving and down conversions allowed. Interceptions, fumble recoveries, takeaways and sacks
+come from the opposing offense’s recorded interceptions thrown, fumbles lost, total giveaways
+and sacks taken. The **Turnovers** table shows season totals. Its giveaways, takeaways and
+differential use the same games with both teams’ turnover totals recorded; differential is
+takeaways minus giveaways. That paired coverage can differ from the individual interception
+and fumble-recovery coverage. With no paired games, the turnover balance remains unknown. These are team statistics; individual players are not tracked.
+
+**Kicking** shows field-goal and extra-point makes, attempts and percentages, the longest made
+field goal, and field-goal makes and attempts in 0–19, 20–29, 30–39, 40–49 and 50+ yard bands.
+Distances include the snap and hold. **Punting** shows attempts, yards, gross and net averages,
+longest punt, blocks, inside-20 punts, touchbacks, fair catches, returned punts and return yards
+allowed, plus the opponents’ average yards per recorded return. Team gross punt average is punt yards divided by all recorded punts, including blocked
+team kicks. Net average subtracts punt-return yards and 20 yards per touchback before dividing
+by that same count. A blocked team punt contributes no punt yards or punt-return statistics,
+following the [NFL GSIS statistical definitions](https://www.nflgsis.com/gsis/Documentation/Partners/StatIDs_files/sheet001.html). These team measures are provided by the engine statistics, not calculated
+by the UI. **Returning** separates kickoff and punt returns into counts, yards, averages, long
+returns and touchdowns, with punt fair catches shown separately. Special teams tables show
+season totals and authoritative combined rates, rather than per-game counts. No attempts or
+unavailable required counters show — for an average or percentage.
+
+Blocked kicks count as attempts; fumbled snaps and kicks erased by accepted penalties do not.
+A declined penalty counts the retained kick once. Older saves keep unknown detailed coverage
+even when resumed; new recorded zero-attempt games remain distinct from those older records.
+The overview retains five cards, each showing the top five teams for total offense, passing,
+rushing, scoring and total defense.
+
+Once the regular schedule is complete, seed the playoffs. Historical campaigns use their supported
+8/10/14-team formats; custom campaigns use the selected power-of-two field. Advance each completed
+round from campaign results; original historical entrants/winners are not forced. Tied playoff
+finals cannot advance. This is a game competition, not official historical qualification certification.
+
+Browser/hosted campaigns and checkpoints are stored in this browser profile. The installed
+application uses its durable local user-data library instead. **Export season** keeps a portable
+backup; imports create a separate
+campaign rather than replacing an existing one. Keep all required chart editions installed;
+exports contain saved play state, not chart files. Clearing site data or changing browser origin/profile
+can remove access to browser-owned saves. Export before changing devices or resetting the machine.
+See [saved games](saved-games-and-standings.md) for recovery and compatibility boundaries.
+
 ## Season Data Locations
 
 For a source checkout, put data under the repository's `seasons/` directory. Release builds
@@ -129,7 +235,9 @@ Example `roster.json` (position lists supply commentary names):
 
 ## Season Rules
 
-The **home team's season rules** apply, including cross-season games.
+Exhibitions use the **home team's season rules**, including cross-season games.
+A web custom campaign instead uses its explicitly selected fixed rules year for every fixture;
+historical campaigns use their calendar year.
 Missing rules YAML is an error. The file controls conversion availability and overtime rather than the UI guessing from a year.
 
 The season year also determines possession after an unblocked, unreturned
@@ -219,3 +327,22 @@ ignored. Generated releases carry the concise notice in
 sample teams in unit tests; the larger historical sets are release data, not test fixtures.
 Standalone local integration runners have separate private-data requirements documented in
 [AGENTS.md](../AGENTS.md).
+
+### Team-statistics categories
+
+The Team statistics tab includes an Offense, Defense and Special teams directory.
+Choose a category, such as Passing or Receiving, to open a focused sortable table.
+The Offense, Defense and Kicking overview buttons restore the full tables.
+Totals and Per game remain available for offensive and defensive counters;
+percentages and efficiency ratings retain their combined-total definitions.
+Receiving uses the recorded completed-pass production counters.
+Returning separates kickoff and punt returns; Punting includes team gross and net averages.
+Existing saves and completed results retain their recorded coverage, so newly supported
+counters remain unknown for older games that did not record them.
+
+The main statistics view shows five leader cards (total offense, passing, rushing,
+scoring and total defense), each listing up to five teams using recorded per-game
+rankings. Detailed tables use abbreviated headers such as GP, CMP, ATT, CMP%,
+YDS and AVG. Hover or focus a column button for its full name; screen readers
+retain the full names. Passing and rushing prefixes distinguish shared labels
+in the combined overview.

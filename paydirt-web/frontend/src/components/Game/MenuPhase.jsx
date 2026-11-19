@@ -2,11 +2,11 @@ import { browserMode } from '../../runtime/gameFetch';
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
-const MenuPhase = ({ onNewGame, onOpenGuide }) => {
+const MenuPhase = ({ onNewGame, onOpenGuide, onOpenSeasons, onOpenSaves }) => {
   const [hasSavedGame, setHasSavedGame] = useState(false);
   const [hasSavedReplay, setHasSavedReplay] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { reset, loadGame, loadReplay, clearReplay, setGamePhase, gamePhase } = useGameStore();
+  const { reset, loadReplay, clearReplay, setGamePhase, gamePhase } = useGameStore();
 
   useEffect(() => {
     try {
@@ -29,10 +29,8 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
   };
   
   const handleLoadGame = () => {
-    const success = loadGame();
-    if (!success) {
-      console.error('Failed to load saved game');
-    }
+    if (onOpenSaves) onOpenSaves();
+    else setGamePhase('saves');
   };
   
   const handleLoadReplay = () => {
@@ -63,7 +61,9 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
           Classic Football Board Game
         </p>
         {browserMode && <p className="text-gray-400 mb-6">Public seasons: 1977, 1983, 2024 and 2026 sample teams</p>}
-        <div className="space-y-4">
+        <div className="space-y-4 flex flex-col items-center">
+          {onOpenSeasons && <button onClick={onOpenSeasons} className="w-64 px-8 py-4 bg-amber-500 text-gray-950 rounded-lg font-bold hover:bg-amber-400 text-xl">SEASONS</button>}
+          {onOpenSaves && <button onClick={onOpenSaves} className="w-64 px-8 py-4 bg-green-700 text-white rounded-lg font-bold hover:bg-green-600 text-xl">SAVED GAMES</button>}
           <button
             onClick={handleNewGame}
             className="w-64 px-8 py-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all transform hover:scale-105 text-xl"
@@ -104,7 +104,7 @@ const MenuPhase = ({ onNewGame, onOpenGuide }) => {
           </button>
         </div>
         <p className="text-gray-500 text-sm mt-4">
-          {browserMode ? 'This prototype keeps your game only while this tab stays open.' : 'Tip: Save Replay during gameplay to capture the exact state for debugging'}
+          {browserMode ? 'Saved games stay in the same browser profile. Export a copy before clearing site data.' : 'Tip: Save Replay during gameplay to capture the exact state for debugging'}
         </p>
       </div>
     </div>

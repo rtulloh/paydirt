@@ -1,5 +1,22 @@
 # Paydirt Release Notes
 
+## v1.12.0 — Persistent seasons and team statistics (release candidate)
+
+- Create and switch between independent seasons, use historical schedules, or build custom leagues with teams from different years. Review division standings, play fixtures, simulate unplayed games and seed postseason brackets from campaign results.
+- Save and resume games and seasons across browser sessions, with portable import/export. Installed applications keep their library in application data; browser games use storage for that browser profile and site.
+- Choose your coaching side and CPU difficulty before starting a season fixture. Recover pending decisions, possession changes and final results through engine checkpoints without counting a final twice.
+- Review sortable team offense, defense and special-teams statistics with compact headers and top-five leader cards. Player statistics are not tracked.
+
+Campaign ranking uses the documented simulated-season tiebreaks, rather than the
+complete official NFL procedure. Browser play still requires internet access to
+load Python and its packages; browser storage can be cleared by browser settings,
+so export important games and seasons. Older saved games can lack newly introduced
+statistic counters, which remain unknown rather than becoming fabricated zeros.
+
+No released charts are regenerated or recalibrated. Existing historical accuracy
+limitations and the [1977 statistical exceptions](seasons/1977/NOTES.md) remain
+applicable. Release qualification and downloaded-package checks are pending.
+
 ## v1.11.0
 
 - [Play Paydirt directly from GitHub Pages](https://rtulloh.github.io/paydirt/) using the existing Python game engine in your browser. Includes all 90 public teams from 1977, 1983, 2024 and the fictional 2026 sample (FLOW-033).

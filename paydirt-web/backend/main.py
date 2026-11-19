@@ -8,12 +8,14 @@ from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'paydirt'))
 
+import routes
+from native_library_operations import install_native_library_guard
 from routes import router as api_router
 
 app = FastAPI(
     title="Paydirt Web API",
     description="Backend API for the Paydirt board game web interface",
-    version="1.11.0"
+    version="1.12.0"
 )
 
 app.add_middleware(
@@ -23,6 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+install_native_library_guard(app, routes)
 
 # Include API router FIRST so API routes take precedence
 app.include_router(api_router)

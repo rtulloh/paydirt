@@ -26,6 +26,12 @@ unchanged. Browser fixtures also block requests to unrelated loopback ports, so 
 missed URL cannot fall back to a separately installed local app.
 The GitHub Actions `browser-games` job runs this suite on pushes and PRs.
 
+`season-recovery.spec.js` uses public 2026 teams and real IndexedDB. It removes
+the original backend session, reloads the page, resumes through Saved games, and
+checks that an exported/imported active campaign has separate linked identities.
+Setup uses the application runtime; restore uses the rendered UI. This supplements
+the full-game checks and must run in a real browser to qualify restart recovery.
+
 ## Attach to an isolated Chrome for launch diagnostics
 
 If agent-launched Chromium fails before a page opens, you can start a separate
@@ -123,7 +129,7 @@ Each action must produce its API response or reveal its required confirmation
 within five seconds. The driver follows a late CPU kick confirmation instead
 of waiting for an execution that the first defense click did not request.
 
-All game-changing actions are rendered UI clicks. The test reads (never writes)
+In the full-game regression, all game-changing actions are rendered UI clicks. The test reads (never writes)
 the Zustand store for progress and log assertions. No API responses are mocked,
 no engine state is injected, and no quarters are shortened. The test-only server
 copies only public `seasons/2026/` data into a temporary directory and excludes
@@ -134,6 +140,17 @@ The first genuine CPU fourth-down response is held until an early defense click,
 then forwarded unchanged. This forces the asynchronous decision-panel handoff;
 the first completed game must record that follow-up confirmation. It also checks
 that a late decision cannot revive a kick panel after possession changes.
+
+`season-desk-acceptance.spec.js` exercises rendered custom season creation, schedule
+editing, followed-team standings, engine simulation, statistics/leaders, playoffs,
+keyboard focus, mobile table scrolling and persistent-profile Chromium restart.
+`checkpoint-recovery.spec.js` uses synthetic engine situations installed only in the
+isolated test service to reach a pending penalty, end-zone choice, halftime and an
+expired touchdown with a try owed. Recovery then uses the real checkpoint APIs and
+rendered Saved games controls; each pending action must resolve exactly once.
+`result-review.spec.js` uses trusted synthetic final checkpoints to verify rendered
+cancel/confirm, idempotence, correction revisions, statistics recomputation and
+temporary-engine cleanup. Its setup endpoints exist only in the isolated test service.
 
 This is a smoke/regression suite, not exhaustive coverage of overtime, safety,
 all penalty decisions, or all rule eras. Small mocked component tests remain the
@@ -146,4 +163,5 @@ npx playwright show-trace test-results/<failed-test>/trace.zip
 ```
 
 Completed games attach their final API state and action list to the test result.
-The suite deletes its in-memory games and never saves standings or replays.
+The suite uses isolated in-memory games, browser contexts and temporary profiles;
+season tests persist their own campaign results there, without changing a player's library.
