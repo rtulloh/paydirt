@@ -75,3 +75,41 @@ it.each(['transport','http'])('shows a rejected penalty choice (%s) and keeps bo
  expect(screen.queryByRole('alert')).toBeNull();
  expect(screen.queryByText('PENALTY ON THE PLAY!')).toBeNull();
 });
+
+it.each([true, false])('keeps an expired-clock kickoff touchdown in playing only while a try is owed (%s)', async pendingPat => {
+ gameFetch.mockResolvedValueOnce({ok:true,json:async()=>({
+  game_state:{...state,is_kickoff:false,pending_pat:pendingPat,game_over:true,quarter:4,time_remaining:0},
+  result:{description:'Kickoff fumble recovered for a touchdown',touchdown:true,turnover:true},
+ })});
+ useGameStore.getState().restoreSession({game_id:'final-kick',game_state:{...state,is_kickoff:true,quarter:4,time_remaining:1}});
+ render(<PlayingPhase/>);
+ fireEvent.click(screen.getByRole('button',{name:'KICK OFF'}));
+ await act(async()=>{await vi.advanceTimersByTimeAsync(2100)});
+ expect(gameFetch).toHaveBeenCalledTimes(1);
+ expect(useGameStore.getState().gameOver).toBe(true);
+ expect(useGameStore.getState().pendingPat).toBe(pendingPat);
+ expect(useGameStore.getState().gamePhase).toBe(pendingPat?'playing':'gameOver');
+ if(pendingPat) expect(screen.getByRole('button',{name:'Try kick'})).toBeVisible();
+});
+
+it('automatically takes a CPU-owned kickoff touchdown try exactly once', async () => {
+ gameFetch.mockResolvedValueOnce({ok:true,json:async()=>({
+  game_state:{...state,player_offense:false,is_kickoff:false,pending_pat:true,home_score:0,away_score:6},
+  result:{description:'CPU recovers kickoff fumble for a touchdown',touchdown:true,turnover:true},
+ })}).mockResolvedValueOnce({ok:true,json:async()=>({
+  game_state:{...state,player_offense:false,is_kickoff:true,pending_pat:false,home_score:0,away_score:7},
+  is_kickoff:true,success:true,description:'Extra point good',
+ })});
+ useGameStore.getState().restoreSession({game_id:'cpu-kick',game_state:{...state,is_kickoff:true}});
+ render(<PlayingPhase/>);
+ fireEvent.click(screen.getByRole('button',{name:'KICK OFF'}));
+ await act(async()=>{await vi.advanceTimersByTimeAsync(2100)});
+ expect(gameFetch).toHaveBeenCalledTimes(2);
+ expect(gameFetch.mock.calls[1][0]).toMatch(/\/api\/game\/extra-point$/);
+ expect(JSON.parse(gameFetch.mock.calls[1][1].body)).toEqual({game_id:'cpu-kick',player_play:'XP'});
+ await act(async()=>{await vi.advanceTimersByTimeAsync(2100)});
+ expect(gameFetch).toHaveBeenCalledTimes(2);
+ expect(useGameStore.getState().pendingPat).toBe(false);
+ expect(useGameStore.getState().awayScore).toBe(7);
+ expect(screen.getByRole('button',{name:'KICK OFF'})).toBeVisible();
+});

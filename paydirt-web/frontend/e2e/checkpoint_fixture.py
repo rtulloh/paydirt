@@ -22,6 +22,15 @@ def install_checkpoint_fixture(app: FastAPI) -> None:
         game = routes.games[request.game_id]
         engine = game['engine']
         state = engine.state
+        if request.kind == 'kickoff-stale-try':
+            if engine.pending_post_score_action() != 'try':
+                raise HTTPException(status_code=400, detail='Fixture requires an engine-owned try')
+            # Reproduce the old API's lost flag and pre-try placement, without
+            # changing the engine-owned score, clock, possession or statistics.
+            game['pending_pat'] = False
+            state.ball_position, state.down, state.yards_to_go = 99, 1, 10
+            response = routes.game_state_to_response(game)
+            return {'game_state': response.model_dump()}
         game['is_kickoff'] = False
         state.is_home_possession = True
         state.quarter, state.time_remaining = 2, 3
@@ -39,6 +48,17 @@ def install_checkpoint_fixture(app: FastAPI) -> None:
                     {'quarter': 2, 'timeRemaining': 41, 'description': 'Synthetic first-half play'},
                     {'quarter': 3, 'timeRemaining': 900, 'description': 'Synthetic second-half play'},
                 ]
+        elif request.kind == 'kickoff-fumble-td':
+            # The real engine resolves a return fumble in the receiver's end zone.
+            # Every dice row has the same synthetic outcome; no gameplay RNG patch.
+            state.is_home_possession = game['human_is_home']
+            state.quarter, state.time_remaining = 2, 3
+            game['is_kickoff'] = True
+            game['pending_pat'] = False
+            kicker, receiver = state.possession_team, state.defense_team
+            kicker.special_teams.kickoff = dict.fromkeys(range(10, 40), '74')
+            receiver.special_teams.kickoff_return = dict.fromkeys(range(10, 40), 'F + 3')
+            receiver.peripheral.fumble_recovered_range = (0, 0)
         elif request.kind == 'pending-try':
             state.is_home_possession = game['human_is_home']
             state.quarter, state.time_remaining = 2, 20 / 60

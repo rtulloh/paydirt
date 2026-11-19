@@ -1716,7 +1716,9 @@ async def perform_kickoff(request: KickoffRequest):
     field_pos = engine.state.field_position_str()
     print(f"[{kicking_abbrev} KO → {receiving_abbrev}] {result.description} @ {field_pos}")
 
-    scoring = result.touchdown or result.safety
+    # A finalized kick can score for either team. Publish its engine-owned try
+    # or free-kick obligation just as execute/penalty-decision do.
+    scoring, _, _ = _arm_follow_up_state(game, engine, result)
     possession_changed = not result.pending_penalty_decision
 
     # Get dice roll from result - decompose into display dice
@@ -2172,6 +2174,13 @@ async def restore_game_checkpoint(request: RestoreCheckpointRequest) -> dict:
                 "human_is_home": session['human_is_home'],
                 "home_team": teams['home'], "away_team": teams['away']}
         game = restore_checkpoint(data, game)
+        # Earlier kickoff checkpoints could retain the engine's owed try while
+        # omitting the web flag and PAT setup. Recover that obligation without
+        # replaying the score or changing clock, possession or recorded stats.
+        if game["engine"].pending_post_score_action() == "try" and not game.get("pending_pat", False):
+            game["pending_pat"] = True
+            game["is_kickoff"] = False
+            game["engine"].setup_for_pat()
         state = game_state_to_response(game)
         pending_result = _restored_pending_result(game["engine"])
     except (ValueError, TypeError, KeyError, AttributeError, OverflowError, RecursionError, OSError) as exc:

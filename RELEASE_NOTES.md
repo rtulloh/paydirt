@@ -2,6 +2,8 @@
 
 ## v1.12.0 — Persistent seasons and team statistics
 
+- Continue to the extra-point choice after kickoff touchdowns, including fumble recoveries; recover an owed try from affected saved games without replaying the touchdown.
+
 - Create and switch between independent seasons, use historical schedules, or build custom leagues with teams from different years. Review division standings, play fixtures, simulate unplayed games and seed postseason brackets from campaign results.
 - Save and resume games and seasons across browser sessions, with portable import/export. Installed applications keep their library in application data; browser games use storage for that browser profile and site.
 - Choose your coaching side and CPU difficulty before starting a season fixture. Recover pending decisions, possession changes and final results through engine checkpoints without counting a final twice.

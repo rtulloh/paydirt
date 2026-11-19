@@ -402,7 +402,7 @@ const PlayingPhase = () => {
           scoreChange: data.result.touchdown ? `SCORE! ${data.game_state.home_score}-${data.game_state.away_score}` : null,
         });
         
-        if (data.game_state.game_over) {
+        if (data.game_state.game_over && !data.game_state.pending_pat) {
           setGamePhase('gameOver');
         }
       }

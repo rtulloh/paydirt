@@ -7,7 +7,7 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-232 issues: 74 open, 77 resolved, 81 closed.
+233 issues: 74 open, 77 resolved, 82 closed.
 
 ## Open (74)
 
@@ -176,7 +176,7 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (81)
+## Closed (82)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -200,6 +200,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [FLOW-013](issues/FLOW/FLOW-013.md) | High | — | Web modifier panel hides defensive timeout requests and does not forward them to the engine | created 2026-11-02, resolved 2026-11-07, closed 2026-11-08 | — |
 | [FLOW-019](issues/FLOW/FLOW-019.md) | High | — | Offsetting kickoff fouls end the period before the required re-kick | created 2026-11-07, resolved 2026-11-07, closed 2026-11-07 | — |
 | [FLOW-029](issues/FLOW/FLOW-029.md) | High | v1.10.6 | Browser regression assumes a defensive timeout is used by the request that asked for it | created 2026-11-14, resolved 2026-11-14, closed 2026-11-14 | AI-002 |
+| [FLOW-037](issues/FLOW/FLOW-037.md) | High | v1.12.0 | Advance kickoff fumble-recovery touchdowns to the conversion choice | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
 | [RULE-010](issues/RULE/RULE-010.md) | High | — | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | — | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
 | [RULE-017](issues/RULE/RULE-017.md) | High | — | Own-recovery fumble advance resets the down to second regardless of the down before | created 2026-10-27, resolved 2026-10-27, closed 2026-11-06 | — |

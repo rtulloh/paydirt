@@ -262,3 +262,46 @@ def test_blocked_kick_return_fumble_safety_propagates_to_outcome(kind: str, reco
     assert (game.state.home_score, game.state.away_score) == ((0, 2) if recovery == 17 else (2, 0))
     assert "SAFETY" in outcome.description
     assert "TURNOVER ON DOWNS" not in outcome.description
+
+
+@pytest.mark.parametrize("kicking_home", [False, True])
+@pytest.mark.parametrize("quarter,seconds", [(2, 141), (4, 1)])
+@pytest.mark.parametrize("recovery", [20, 37])
+def test_kickoff_end_zone_fumble_preserves_authoritative_try_obligation(
+    kicking_home: bool, quarter: int, seconds: int, recovery: int,
+) -> None:
+    """The kickoff adapter must publish the core's already-resolved scoring team."""
+    game, kicker, receiver = kick_game(kicking_home)
+    game.state.quarter = quarter
+    game.state.time_remaining = seconds / 60
+    game.state.home_score = 3 if kicking_home else 9
+    game.state.away_score = 9 if kicking_home else 3
+    kicker.kickoff[36] = "66"  # Caught one yard deep; no return advance.
+    receiver.kickoff_return[39] = "F"
+
+    outcome = kick(game, kicking_home, 36, 39, recovery)
+
+    lost = recovery == 37
+    assert outcome.touchdown is lost
+    assert outcome.result.touchdown is lost
+    assert outcome.turnover is lost
+    assert not outcome.pending_penalty_decision
+    assert game.state.is_home_possession is (kicking_home if lost else not kicking_home)
+    assert (game.state.home_score, game.state.away_score) == (
+        (9, 9) if lost else ((3, 9) if kicking_home else (9, 3))
+    )
+    assert (game._pending_post_score_action == "try") is lost
+    receiving_stats = game.state.away_stats if kicking_home else game.state.home_stats
+    assert receiving_stats.fumbles_lost == int(lost)
+    assert receiving_stats.turnovers == int(lost)
+    assert len(game.play_log) == 1
+    if lost:
+        assert game.can_attempt_conversion_after_touchdown()
+        game.setup_for_pat()
+        assert game.state.is_home_possession is kicking_home
+        assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == (98, 1, 2)
+        assert game._pending_post_score_action == "try"
+        assert (game.state.home_score, game.state.away_score) == (9, 9)
+    else:
+        assert game.state.ball_position == 20
+        assert "touchback" in outcome.description.lower()
