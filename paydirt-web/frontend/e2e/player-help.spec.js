@@ -1,28 +1,13 @@
 import { test, expect } from './fixtures.js'
-
+import { resumeFixture } from './saved-checkpoint.js'
+import { backendURL } from './ports.js'
 for (const offense of [true, false]) {
   test(`clock labels, modifier help and visible save confirmation on ${offense ? 'offense' : 'defense'}`, async ({ page, request }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.addInitScript(({ offense }) => {
-      localStorage.setItem('paydirt_save', JSON.stringify({
-        gameId: 'synthetic-help', currentSeason: '2026',
-        homeTeam: { id: 'Ironclads' }, awayTeam: { id: 'Thunderhawks' },
-        humanTeamId: 'Ironclads', cpuTeamId: 'Thunderhawks',
-        humanPlaysOffense: offense, possession: offense ? 'home' : 'away',
-        quarter: 2, timeRemaining: 41, down: 3, yardsToGo: 9, ballPosition: 77,
-        homeScore: 0, awayScore: 0, homeTimeouts: 3, awayTimeouts: 1,
-        playLog: [
-          { quarter: 2, timeRemaining: 41, description: 'Synthetic first-half play' },
-          { quarter: 3, timeRemaining: 900, description: 'Synthetic second-half play' },
-        ],
-      }))
-    }, { offense })
-    await page.goto('/')
-    const loaded = page.waitForResponse(r => r.url().endsWith('/api/game/load-replay'))
-    await page.getByRole('button', { name: 'LOAD GAME', exact: true }).click()
-    const response = await loaded
-    expect(response.ok()).toBeTruthy()
-    const { game_id: gameId } = await response.json()
+    const { game_id: gameId, saveId } = await resumeFixture(page, request, {
+      kind: offense ? 'help-offense' : 'help-defense', name: `Player help ${offense}`,
+      legacySave: { gameId: 'synthetic-help', currentSeason: '2026' },
+    })
     try {
       const scoreboard = page.getByTestId('scoreboard')
       const homeTimeouts = scoreboard.getByLabel('Ironclads timeouts remaining')
@@ -64,7 +49,8 @@ for (const offense of [true, false]) {
       const saved = await page.evaluate(async id => {
         const { gameLibrary } = await import('/src/runtime/gameLibrary.js')
         return gameLibrary.get(id)
-      }, gameId)
+      }, saveId)
+      expect(saved.id).toBe(saveId)
       expect(saved.metadata.gameId).toBe(gameId)
       expect(saved.revision).toBeGreaterThan(0)
       expect(saved.checkpoint).toBe(checkpoint)
@@ -72,7 +58,7 @@ for (const offense of [true, false]) {
       expect(JSON.parse(legacySave).gameId).toBe('synthetic-help')
       await page.screenshot({ path: testInfo.outputPath('player-help-save.png') })
     } finally {
-      await request.delete(new URL(`/api/game/${gameId}`, response.url()).href)
+      await request.delete(`${backendURL}/api/game/${gameId}`)
     }
   })
 }

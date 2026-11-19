@@ -1,37 +1,20 @@
 import { backendURL } from './ports.js'
 import { test, expect } from './fixtures.js'
-
+import { resumeFixture } from './saved-checkpoint.js'
 // AUD-016: labels and colors are team identity, not "who has the ball".
 // Each case loads an away-human real-engine game and runs one snap through the
 // rendered controls, once as offense and once as defense.
 for (const playerOffense of [true, false]) {
   test(`play log labels the real teams with an away human on ${playerOffense ? 'offense' : 'defense'}`, async ({ page, request }) => {
-    const created = await request.post(backendURL + '/api/game/new', {
-      data: {
-        player_team: 'Ironclads', opponent_team: 'Thunderhawks',
-        season: '2026', play_as_home: false,
-      },
-    })
-    expect(created.ok()).toBeTruthy()
-    const game = await created.json()
+    const legacySave = { gameId: 'obsolete-labels', ballPosition: 20 }
     let loadedId = null
     try {
-      const state = game.game_state
-      const save = {
-        gameId: game.game_id, currentSeason: '2026',
-        homeTeam: state.home_team, awayTeam: state.away_team,
-        humanTeamId: state.human_team_id, cpuTeamId: state.cpu_team_id,
-        humanPlaysOffense: playerOffense, homeScore: 0, awayScore: 0,
-        quarter: 1, timeRemaining: 900,
-        possession: playerOffense ? 'away' : 'home',
-        ballPosition: 20, down: 1, yardsToGo: 10,
-        homeTimeouts: 3, awayTimeouts: 3, playLog: [],
-      }
-      await page.addInitScript(save => localStorage.setItem('paydirt_save', JSON.stringify(save)), save)
-      await page.goto('/')
-      const loading = page.waitForResponse(r => r.url().endsWith('/api/game/load-replay'))
-      await page.getByRole('button', { name: /LOAD SAVED GAME|LOAD GAME|RESUME/i }).click()
-      loadedId = (await (await loading).json()).game_id
+      const restored = await resumeFixture(page, request, {
+        kind: playerOffense ? 'label-offense' : 'label-defense', home: false,
+        name: `AUD-016 ${playerOffense ? 'offense' : 'defense'}`, legacySave,
+      })
+      loadedId = restored.game_id
+      expect(restored.game_state.player_offense).toBe(playerOffense)
 
       const possession = playerOffense ? 'away' : 'home'
       const offenseTeam = playerOffense ? 'HBI' : 'MCT'
@@ -69,9 +52,9 @@ for (const playerOffense of [true, false]) {
         .toHaveClass(playerOffense ? 'text-green-400' : 'text-red-400')
       await expect(page.getByText(`DEF: ${log[0].defensePlay}`, { exact: true }))
         .toHaveClass(playerOffense ? 'text-red-400' : 'text-green-400')
+      expect(await page.evaluate(() => localStorage.getItem('paydirt_save'))).toBe(JSON.stringify(legacySave))
     } finally {
       if (loadedId) await request.delete(backendURL + '/api/game/' + loadedId)
-      await request.delete(backendURL + '/api/game/' + game.game_id)
     }
   })
 }

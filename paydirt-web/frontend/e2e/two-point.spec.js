@@ -1,29 +1,15 @@
 import { backendURL } from './ports.js'
 import { test, expect } from './fixtures.js'
-
+import { resumeFixture } from './saved-checkpoint.js'
 // Public charts and a synthetic saved pending touchdown establish the situation.
 // The visible buttons call the real conversion and kickoff APIs without mocks.
 for (const home of [true, false]) {
   for (const good of [true, false]) {
     test(`real engine two-point ${good ? 'success' : 'failure'}, human ${home ? 'home' : 'away'}`, async ({ page, request }) => {
-      const created = await request.post(backendURL + '/api/game/new', {
-        data: { player_team: 'Ironclads', opponent_team: 'Thunderhawks', season: '2026', play_as_home: home },
+      const legacySave = { gameId: 'obsolete-two-point', pendingPat: true }
+      const loaded = await resumeFixture(page, request, {
+        kind: 'pending-try', home, name: `Two-point ${home} ${good}`, legacySave,
       })
-      const initial = await created.json()
-      const state = initial.game_state
-      const save = {
-        gameId: initial.game_id, homeTeam: state.home_team, awayTeam: state.away_team,
-        humanTeamId: state.human_team_id, cpuTeamId: state.cpu_team_id,
-        humanPlaysOffense: true, homeScore: home ? 6 : 0, awayScore: home ? 0 : 6,
-        quarter: 2, timeRemaining: 20, possession: home ? 'home' : 'away',
-        ballPosition: 98, down: 1, yardsToGo: 2, homeTimeouts: 1, awayTimeouts: 2,
-        currentSeason: '2026', pendingPat: true, playLog: [],
-      }
-      await page.addInitScript(save => localStorage.setItem('paydirt_save', JSON.stringify(save)), save)
-      await page.goto('/')
-      const loading = page.waitForResponse(r => r.url().endsWith('/api/game/load-replay'))
-      await page.getByRole('button', { name: /LOAD SAVED GAME|LOAD GAME|RESUME/i }).click()
-      const loaded = await (await loading).json()
       const id = loaded.game_id
       const fixture = await request.post(backendURL + '/api/test/two-point-fixture', {
         data: { game_id: id, cell: good ? '2' : '0' },
@@ -57,8 +43,8 @@ for (const home of [true, false]) {
       await page.getByRole('button', { name: 'KICK OFF', exact: true }).click()
       const kicked = await (await kicking).json()
       expect(kicked.game_state.possession).toBe(home ? 'away' : 'home')
+      expect(await page.evaluate(() => localStorage.getItem('paydirt_save'))).toBe(JSON.stringify(legacySave))
       await request.delete(backendURL + '/api/game/' + id)
-      await request.delete(backendURL + '/api/game/' + initial.game_id)
     })
   }
 }

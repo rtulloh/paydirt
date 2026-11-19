@@ -26,7 +26,27 @@ def install_checkpoint_fixture(app: FastAPI) -> None:
         state.is_home_possession = True
         state.quarter, state.time_remaining = 2, 3
         state.ball_position, state.down, state.yards_to_go = 40, 1, 10
-        if request.kind == 'field-goal-penalty':
+        if request.kind in ('label-offense', 'label-defense', 'help-offense', 'help-defense'):
+            offense = request.kind.endswith('offense')
+            state.is_home_possession = game['human_is_home'] == offense
+            state.quarter, state.time_remaining = 1, 15
+            state.ball_position, state.down, state.yards_to_go = 20, 1, 10
+            if request.kind.startswith('help-'):
+                state.quarter, state.time_remaining = 2, 41 / 60
+                state.ball_position, state.down, state.yards_to_go = 77, 3, 9
+                state.home_timeouts, state.away_timeouts = 3, 1
+                game['play_history'] = [
+                    {'quarter': 2, 'timeRemaining': 41, 'description': 'Synthetic first-half play'},
+                    {'quarter': 3, 'timeRemaining': 900, 'description': 'Synthetic second-half play'},
+                ]
+        elif request.kind == 'pending-try':
+            state.is_home_possession = game['human_is_home']
+            state.quarter, state.time_remaining = 2, 20 / 60
+            state.home_timeouts, state.away_timeouts = 1, 2
+            engine._score_touchdown()
+            engine.setup_for_pat()
+            game['pending_pat'] = True
+        elif request.kind == 'field-goal-penalty':
             from paydirt.play_resolver import FieldGoalResult, PenaltyOption
             state.is_home_possession = False
             state.quarter, state.time_remaining = 2, 9 / 60
