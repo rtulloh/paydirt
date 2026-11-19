@@ -36,3 +36,9 @@ the real screen-pass/out-of-bounds pipeline with both timeout owners. An indepen
 review and 362 broader clock tests pass. No existing expectation was weakened.
 Full regression and eight browser games are being repeated. Keep resolved pending
 issue-specific play-test confirmation; unit tests alone do not close this ticket.
+
+--- 2026-11-19 11:46 ---
+Fresh browser-only acceptance completed home and away games for all four public years (eight complete games). Each game retained the explicit Q3/900-second halftime assertion, exactly one halftime and quarters 1–4. This confirms the full-season browser coverage clause, but these receipts do not identify the original late-timeout trigger or independently prove its timeout-budget path. Keep resolved, not closed. Evidence: ignored release-1.12.0/wasm-results and the completed playable.spec.js assertions. The final rebuilt browser archive is byte-identical to the tested artifact.
+
+--- 2026-11-19 12:25 ---
+The final rebuilt c0b4292 Wasm suite reconfirms eight complete games across all four years, with exactly one Q3/900 halftime transition per game. Keep resolved: the original late-timeout trigger and timeout-budget controls still need their specific play-test evidence.

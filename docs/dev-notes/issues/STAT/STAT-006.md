@@ -1,11 +1,11 @@
 ---
 id: STAT-006
 title: Track cumulative team statistics and performance throughout a season
-status: open
+status: closed
 priority: Low
 created-at: 2026-11-07
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - feature-request
 links:
@@ -23,14 +23,12 @@ points scored and allowed, cumulative offensive and defensive statistics,
 and per-game averages. Include rushing and passing production, turnovers,
 and sacks where the engine records them. A team detail view should show
 game-by-game results so players can follow progress through the schedule.
-Individual player season statistics can be considered separately.
+Individual player statistics are excluded by owner instruction.
 
 ## Resolution / verification
 
-Future backlog feature; not an additional requirement for release 1.10.2.
-Before implementation, review existing season, standings, game-statistics,
-and save/load support to reuse authoritative records and define the supported
-season workflow.
+Implemented for v1.12.0 using canonical campaign results and engine team statistics.
+The acceptance criteria below were reviewed against the November 19 evidence.
 
 Acceptance criteria:
 
@@ -73,3 +71,6 @@ Owner-requested season refinements are implemented locally: default conference/d
 
 --- 2026-11-18 21:40 ---
 Implemented sortable season-table headers, keyboard/direction announcements, raw numeric sorting and unknown-last behavior. Zero coverage now reads Not recorded rather than Partial. All 574 frontend tests/four rendered season checks pass; focused SeasonDesk coverage 89.72% lines/87.13% branches. Also recovered missing kicking/offensive attempt counters for the owner’s specific completed legacy game from fully aligned structured history, with all existing yardage/sack/INT counters reconciling, normal result correction/history retention and atomic CAS. Actual UI verifies both teams’ offense/defense/kicking fields populated. Private receipts remain ignored; score 21–20 and single result preserved. See acceptance notes for tests/baselines and repair boundaries. Issue remains open for integration; no push/release claimed.
+
+--- 2026-11-19 12:25 ---
+Closed after actual c0b4292 packaged-app acceptance: all thirteen team-statistics categories have complete 2/2-game counter coverage, rendered sortable compact tables and identical campaign exports after process/browser restart. Domain regressions verify totals, weighted rates, MAX values, paired turnover coverage, ties/overtime and duplicate/revision recomputation. Retained-play capture covers punts, kicks, attempts/completions, rushing/receiving, first downs and defense; test-first final correction preserves inside-20 credit when a later fumble recovery scores. Browser-only all 90 inventory plus eight complete games pass. Legacy unavailable counters remain explicitly unknown; no individual player statistics. Release-wide gates/publication remain FLOW-036.

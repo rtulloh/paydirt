@@ -1,11 +1,11 @@
 ---
 id: FLOW-020
 title: Allow web players to select opposing teams from different seasons
-status: open
+status: closed
 priority: Low
 created-at: 2026-11-07
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - feature-request
 links:
@@ -25,7 +25,7 @@ year clearly, including when the same franchise is selected from different years
 
 ## Resolution / verification
 
-Future backlog feature; not an additional release 1.10.2 requirement.
+Implemented for v1.12.0; the following criteria were verified before closure.
 
 - Review existing engine and API cross-season support before implementation;
   preserve each team's complete season-qualified identity through creation,
@@ -58,3 +58,6 @@ Independent team-year selection/search, mixed-era exhibition and save/reload are
 See [FLOW-036 acceptance](../../season-ui-acceptance.md) for final-source receipts,
 coverage and retained original failures. Work remains uncommitted; this issue stays
 open for review/integration rather than claiming a published fix.
+
+--- 2026-11-19 12:25 ---
+Closed after actual local-package play-test confirmation on committed v1.12.0 source. Final c0b4292 Mac candidate verifies independent 1983/2024 Cardinals selection, swap, both human roles, governing home rules, both rendered chart books, checkpoint restore with exact state/history and fresh-process recovery. Browser-only inventory and eight complete games across all bundled seasons also pass. The subsequent 49afba9 change updates obsolete E2E setup only; all nine focused label/help/try browser cases pass. Player setup/save guidance is maintained. Final release qualification and publication remain tracked separately by FLOW-036; this closure does not claim a published release.

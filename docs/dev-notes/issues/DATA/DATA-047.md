@@ -56,3 +56,9 @@ only the approved exact version-string equivalence and retains its four disclose
 statistical misses. Both released-chart gates and the 90-team identity audit pass.
 The browser run uses public 2026 teams; correction-specific downloaded-native
 label checks remain required before closing this issue.
+
+--- 2026-11-19 11:46 ---
+Fresh local packaged-candidate acceptance independently confirms the corrected 1983 API labels Chargers SD, Cardinals STL and Raiders LA on both initial launch and app restart. The candidate also exposes all 28 unique 1983 team identifiers. This is a locally built macOS arm64 candidate, not a downloaded published artifact; correction-specific downloaded-release acceptance remains outstanding. Keep resolved, not closed. Evidence: ignored release-1.12.0/native-final-smoke/receipt.json, both launch API receipts.
+
+--- 2026-11-19 12:25 ---
+The final rebuilt c0b4292 native candidate independently reconfirms corrected SD/STL/LA 1983 API labels on both launches. Keep resolved: this is a locally built package, not the downloaded published-native acceptance required by this ticket.

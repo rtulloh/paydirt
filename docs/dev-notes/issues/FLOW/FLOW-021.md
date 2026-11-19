@@ -1,11 +1,11 @@
 ---
 id: FLOW-021
 title: Web UI cannot record completed games to season standings or show season progress
-status: open
+status: closed
 priority: Medium
 created-at: 2026-11-08
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - requested
 links:
@@ -18,6 +18,8 @@ links:
 Players can complete games in the web UI, but final scores are not recorded in season standings. The CLI already offers this through the shared standings module. This prevents players from continuing an existing season entirely in the browser.
 
 ## Resolution / verification
+
+The approved campaign/fixture workflow below is implemented in v1.12.0; it supersedes the original post-game picker and shared-module prescription retained in the historical checklist. See the November 19 verification comment for the explicit reconciliation.
 - Offer an explicit action after a completed web game to record its final result to a selected season and week.
 - Reuse the shared standings implementation and authoritative engine final score; retain existing CLI standings and save compatibility.
 - Show current standings and completed games so players can identify the next unplayed matchup.
@@ -45,3 +47,6 @@ The rendered season desk, result recording/revisions, standings, simulation/post
 See [FLOW-036 acceptance](../../season-ui-acceptance.md) for final-source receipts,
 coverage and retained original failures. Work remains uncommitted; this issue stays
 open for review/integration rather than claiming a published fix.
+
+--- 2026-11-19 12:25 ---
+Closed after actual native/browser season acceptance. The owner-approved six-slice workflow supersedes the original post-game season/week picker: select a campaign fixture before play, then atomically record the authoritative legal final into its known week. Campaign standings reuse the canonical campaign result ledger, rather than modifying the separate CLI standings storage. Tests cover historical fixture/week validation, ties, both human roles, replay/final idempotency, persistence failure safety and retained revisions. Actual packaged two-game campaigns, mixed-edition standings and identical exports after application/browser restart confirm persistence and single contributions. Existing CLI saves/standings remain covered by passing core suites. No claim that the superseded literal UI/module prescription was delivered. Release qualification remains FLOW-036.

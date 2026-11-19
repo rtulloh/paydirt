@@ -15,7 +15,8 @@ statistic counters, which remain unknown rather than becoming fabricated zeros.
 
 No released charts are regenerated or recalibrated. Existing historical accuracy
 limitations and the [1977 statistical exceptions](seasons/1977/NOTES.md) remain
-applicable. Release qualification and downloaded-package checks are pending.
+applicable. Local candidate regression and distribution checks pass. Exact-commit
+CI and downloaded published-package checks remain release gates.
 
 ## v1.11.0
 
