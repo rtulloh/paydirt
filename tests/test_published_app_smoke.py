@@ -411,3 +411,97 @@ def test_reviewed_season_release_112_preserves_complete_season_profile() -> None
     assert smoke_module().season_profile('1.12.0', True) == {
         '1977': 28, '1983': 28, '2024': 32, '2026': 2,
     }
+
+
+@pytest.mark.parametrize("first_year", ["synthetic-older", "2026"])
+@pytest.mark.parametrize("browser_error", [False, True])
+def test_packaged_ui_sets_both_independent_years(monkeypatch, tmp_path, first_year, browser_error):
+    """A year button changes only the active side, as in the rendered selector."""
+    import sys
+    from types import SimpleNamespace
+
+    smoke = smoke_module()
+    years = {"player": first_year, "opponent": first_year}
+    expected = dict.fromkeys([first_year, "2026"], 2)
+    state = {"side": "player", "selected": [], "grids": [], "closed": False}
+    callbacks = {}
+
+    class Control:
+        def __init__(self, name):
+            self.name = name
+
+        def filter(self, *, has_text):
+            return Control(has_text)
+
+        def select_option(self, year):
+            side = {"Your chart year": "player", "Opponent chart year": "opponent"}[self.name]
+            years[side] = year
+            state["side"] = side
+
+        def click(self):
+            if self.name in expected:
+                years[state["side"]] = self.name
+            elif self.name == "Choose your team":
+                state["side"] = "player"
+            elif self.name in {"Harbor Bay Ironclads", "Metro City Thunderhawks"}:
+                assert years[state["side"]] == "2026", "Selected team's edition is unavailable"
+                state["selected"].append((state["side"], self.name, "2026"))
+                state["side"] = "opponent"
+            elif self.name == "START GAME":
+                assert len(state["selected"]) == 2
+
+        def wait_for(self):
+            assert self.name == "coin-toss"
+            assert len(state["selected"]) == 2
+
+    class Page:
+        def on(self, event, callback):
+            callbacks[event] = callback
+
+        def goto(self, base):
+            if browser_error:
+                callbacks["pageerror"]("synthetic render failure")
+
+        def get_by_role(self, role, *, name=None, exact=False):
+            return Control(name)
+
+        def get_by_test_id(self, name):
+            return Control(name)
+
+        def wait_for_function(self, script, *, arg):
+            assert arg == expected[years[state["side"]]]
+            state["grids"].append(years[state["side"]])
+
+        def screenshot(self, **kwargs):
+            pass
+
+    class Browser:
+        def new_page(self, **kwargs):
+            return Page()
+
+        def close(self):
+            state["closed"] = True
+
+    class Playwright:
+        chromium = SimpleNamespace(launch=Browser)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+    fake = SimpleNamespace(Error=type("BrowserError", (Exception,), {}), sync_playwright=Playwright)
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", fake)
+    if browser_error:
+        with pytest.raises(RuntimeError, match="synthetic render failure"):
+            smoke.check_ui("http://synthetic", tmp_path, expected)
+    else:
+        result = smoke.check_ui("http://synthetic", tmp_path, expected)
+        assert result == {"team_grids": expected, "new_game_screen": True, "errors": []}
+    assert state["selected"] == [
+        ("player", "Harbor Bay Ironclads", "2026"),
+        ("opponent", "Metro City Thunderhawks", "2026"),
+    ]
+    assert set(expected).issubset(state["grids"])
+    assert state["closed"]

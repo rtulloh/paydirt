@@ -38,9 +38,9 @@ function BrowserGameApp() {
     return () => { active = false; window.removeEventListener('paydirt-runtime-error', runtimeError); };
   }, []);
   return <>
-    <aside className="bg-amber-100 text-gray-900 px-4 py-3 text-center">Browser prototype · Public seasons: 1977, 1983, 2024 and 2026 sample teams. Saved games and seasons stay in this browser. Export backups to keep a portable copy. Offline engine loading is unavailable.</aside>
+    <aside className="bg-amber-100 text-gray-900 px-4 py-3 text-center">Browser edition · Public seasons: 1977, 1983, 2024 and 2026 sample teams. Saved games and seasons stay in this browser. Export backups to keep a portable copy. Offline engine loading is unavailable.</aside>
     {status === 'loading' && <main className="p-8 text-white"><p role="status">Loading the Python game engine… The first download may take a moment.</p></main>}
-    {status === 'failed' && <main className="p-8 text-white"><p role="alert">{error}</p><button type="button" onClick={() => window.location.reload()}>Reload browser prototype</button></main>}
+    {status === 'failed' && <main className="p-8 text-white"><p role="alert">{error}</p><button type="button" onClick={() => window.location.reload()}>Reload browser edition</button></main>}
     {status === 'ready' && <GameApp />}
   </>;
 }

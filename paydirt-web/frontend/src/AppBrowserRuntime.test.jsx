@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./components/Game/MenuPhase', () => ({ default: () => <p>Game menu</p> }));
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetModules(); });
 
-describe('browser prototype startup', () => {
+describe('browser edition startup', () => {
   it('labels public seasons and durable saves while Python loads', async () => {
     vi.stubEnv('VITE_PAYDIRT_BROWSER', '1');
     vi.stubGlobal('Worker', class { postMessage() {} addEventListener() {} });
@@ -49,7 +49,7 @@ describe('browser prototype startup', () => {
     const { default: App } = await import('./App');
     render(<App />);
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not download the Python runtime.');
-    expect(screen.getByRole('button', { name: 'Reload browser prototype' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reload browser edition' })).toBeInTheDocument();
     expect(screen.queryByText('Game menu')).not.toBeInTheDocument();
   });
 });

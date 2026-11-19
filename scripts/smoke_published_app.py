@@ -132,7 +132,9 @@ def check_ui(base: str, output: Path, expected: dict[str, int]) -> dict:
             for season, count in expected.items():
                 page.get_by_role("button", name=season, exact=True).click()
                 page.wait_for_function("expected => document.querySelectorAll('div.grid > button').length === expected", arg=count)
-            page.get_by_role("button", name="2026", exact=True).click()
+            page.get_by_role("combobox", name="Your chart year", exact=True).select_option("2026")
+            page.get_by_role("combobox", name="Opponent chart year", exact=True).select_option("2026")
+            page.get_by_role("button", name="Choose your team", exact=True).click()
             page.wait_for_function("expected => document.querySelectorAll('div.grid > button').length === expected", arg=expected["2026"])
             page.get_by_role("button").filter(has_text="Harbor Bay Ironclads").click()
             page.get_by_role("button").filter(has_text="Metro City Thunderhawks").click()

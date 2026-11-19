@@ -1,6 +1,6 @@
 # Paydirt Release Notes
 
-## v1.12.0 — Persistent seasons and team statistics (release candidate)
+## v1.12.0 — Persistent seasons and team statistics
 
 - Create and switch between independent seasons, use historical schedules, or build custom leagues with teams from different years. Review division standings, play fixtures, simulate unplayed games and seed postseason brackets from campaign results.
 - Save and resume games and seasons across browser sessions, with portable import/export. Installed applications keep their library in application data; browser games use storage for that browser profile and site.
@@ -15,8 +15,10 @@ statistic counters, which remain unknown rather than becoming fabricated zeros.
 
 No released charts are regenerated or recalibrated. Existing historical accuracy
 limitations and the [1977 statistical exceptions](seasons/1977/NOTES.md) remain
-applicable. Local candidate regression and distribution checks pass. Exact-commit
-CI and downloaded published-package checks remain release gates.
+applicable. Release qualification includes full gameplay and browser regression,
+exact-commit CI, and checks of downloaded published packages. See the
+[release evidence](docs/dev-notes/release-1.12.0-readiness.md) for results and
+verification limits.
 
 ## v1.11.0
 

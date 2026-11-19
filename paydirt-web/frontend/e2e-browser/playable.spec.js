@@ -58,7 +58,7 @@ test(`static ${year} build completes home and away games without an HTTP backend
   const state = () => page.evaluate(() => window.__engineObserver.state)
   await page.goto('./')
   await expect(page.getByRole('button', { name: 'NEW GAME', exact: true })).toBeVisible({ timeout: 120_000 })
-  await expect(page.getByText('Browser prototype · Public seasons: 1977, 1983, 2024 and 2026 sample teams. Saved games and seasons stay in this browser. Export backups to keep a portable copy. Offline engine loading is unavailable.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Browser edition · Public seasons: 1977, 1983, 2024 and 2026 sample teams. Saved games and seasons stay in this browser. Export backups to keep a portable copy. Offline engine loading is unavailable.', { exact: true })).toBeVisible()
   const manifestResponse = await page.request.get(new URL('browser/manifest.json', page.url()).href)
   expect(manifestResponse.ok()).toBe(true)
   const manifest = await manifestResponse.json()
