@@ -269,15 +269,19 @@ class TestSpecialTeams:
         assert sum(good_punter_distances) / 100 > sum(bad_punter_distances) / 100
     
     def test_resolve_extra_point_high_success(self):
-        """Extra points should succeed almost always."""
+        """A rating-five kicker succeeds on exactly 35 of 36 ordered 2d6 pairs."""
         successes = 0
-        for _ in range(100):
-            _, success = resolve_extra_point(kicker_rating=5)
-            if success:
-                successes += 1
-        
-        # Should succeed almost all the time
-        assert successes > 90
+        for first_die in range(1, 7):
+            for second_die in range(1, 7):
+                total = first_die + second_die
+                with patch("paydirt.team_charts.roll_dice", return_value=total) as dice:
+                    returned_roll, success = resolve_extra_point(kicker_rating=5)
+                dice.assert_called_once_with()
+                assert returned_roll == total
+                assert success is ((first_die, second_die) != (1, 1))
+                successes += success
+
+        assert successes == 35
     
     def test_resolve_two_point_conversion(self):
         """Two-point conversions should succeed about 40-50% of the time."""
