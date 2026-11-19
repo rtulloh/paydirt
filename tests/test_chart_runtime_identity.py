@@ -260,7 +260,11 @@ def test_team_capture_accepts_python310_compiled_nested_name(
     identity._source_expectations(path)
     data, tree, dependencies, compiled = identity._source_cache[path]
     compiled = dict(compiled)
-    compiled["capture_team_play.wrapped"] = compiled.pop("capture_team_play.<locals>.wrapped")
+    qualified_key = "capture_team_play.<locals>.wrapped"
+    fallback_key = "capture_team_play.wrapped"
+    if qualified_key in compiled:
+        compiled[fallback_key] = compiled.pop(qualified_key)
+    assert fallback_key in compiled
     if tampered:
         compiled["capture_team_play.wrapped"] = {"not-the-source-wrapper-hash"}
     # Python 3.10 lacks co_qualname and the existing recursive compiler index
