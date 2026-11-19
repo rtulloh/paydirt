@@ -31,7 +31,11 @@ export function createBrowserTransport(worker, { timeout = 120000, onFatal = () 
   worker.addEventListener('error', () => fail(new Error('The game engine stopped. This session cannot continue. Reload and restore a saved game.')));
   return request => new Promise((resolve, reject) => {
     if (failed) { reject(failed); return; }
-    const mutation = !['GET', 'HEAD', 'OPTIONS'].includes((request.method || 'GET').toUpperCase());
+    const method = (request.method || 'GET').toUpperCase();
+    // Campaign views POST their document but only project standings/statistics.
+    // Keep them in the worker queue without treating them as a second action.
+    const campaignView = method === 'POST' && request.path === '/api/campaign/view';
+    const mutation = !['GET', 'HEAD', 'OPTIONS'].includes(method) && !campaignView;
     if (mutation && Array.from(pending.values()).some(entry => entry.mutation)) {
       reject(new Error('A game action is already in progress. Wait for its result.'));
       return;

@@ -80,3 +80,36 @@ it('ends an uncertain session after an internal engine failure', async () => {
   expect(worker.terminate).toHaveBeenCalledOnce();
   expect(onFatal).toHaveBeenCalledOnce();
 });
+
+it('allows the next awaited fixture simulation while its read-only campaign view is pending', async () => {
+  const worker = fakeWorker();
+  const request = createBrowserTransport(worker);
+  const first = request({ method: 'POST', path: '/api/campaign/simulate', body: '{"fixture_id":"one"}' });
+  worker.reply({ id: 1, result: { status: 200, body: { completed: 'one' } } });
+  await first;
+  // Updating the saved campaign starts SeasonDesk's view effect between fixtures.
+  const view = request({ method: 'POST', path: '/api/campaign/view', body: '{}' });
+  const second = request({ method: 'POST', path: '/api/campaign/simulate', body: '{"fixture_id":"two"}' });
+  const result = expect(second).resolves.toMatchObject({ status: 200, body: { completed: 'two' } });
+  worker.reply({ id: 2, result: { status: 200, body: { standings: [] } } });
+  worker.reply({ id: 3, result: { status: 200, body: { completed: 'two' } } });
+  await view;
+  await result;
+  expect(worker.postMessage.mock.calls.map(([message]) => message.request.path)).toEqual([
+    '/api/campaign/simulate', '/api/campaign/view', '/api/campaign/simulate',
+  ]);
+});
+
+it('does not let a campaign view bypass the guard against two actual simulations', async () => {
+  const worker = fakeWorker();
+  const request = createBrowserTransport(worker);
+  const first = request({ method: 'POST', path: '/api/campaign/simulate' });
+  const view = request({ method: 'POST', path: '/api/campaign/view' });
+  const viewResult = expect(view).resolves.toMatchObject({ status: 200 });
+  await expect(request({ method: 'POST', path: '/api/campaign/simulate' })).rejects.toThrow(/already in progress/);
+  worker.reply({ id: 1, result: { status: 200 } });
+  worker.reply({ id: 2, result: { status: 200 } });
+  await first;
+  await viewResult;
+  expect(worker.postMessage).toHaveBeenCalledTimes(2);
+});

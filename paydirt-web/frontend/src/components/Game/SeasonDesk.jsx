@@ -180,6 +180,9 @@ function Standings({ view, scope, setScope }) {
     const priority = name => name === 'NFC' ? 0 : name === 'AFC' ? 1 : 2;
     return priority(a) - priority(b) || a.localeCompare(b);
   });
+  const divisionRows = Math.max(0, ...conferences.map(conference => new Set(rows
+    .filter(row => (row.conference || 'Unassigned') === conference)
+    .map(row => row.division || 'Unassigned')).size)) + 1;
   const table = teams => <SeasonTable headers={['Team edition', 'W', 'L', 'T', 'PF', 'PA', 'Pct']}
     sortValues={teams.map(row => [edition(row), row.wins, row.losses, row.ties, row.points_for, row.points_against, row.win_pct || 0])}
     rows={teams.map(row => [edition(row), row.wins, row.losses, row.ties, row.points_for, row.points_against, Number(row.win_pct || 0).toFixed(3)])} />;
@@ -191,7 +194,7 @@ function Standings({ view, scope, setScope }) {
         {[...new Set(view.participants.map(p => `${p.conference} / ${p.division}`))].map(name => <option key={name}>{name}</option>)}
       </select>
     </label></div>
-    <div className="season-conferences">
+    <div className="season-conferences" style={{ '--division-rows': divisionRows }}>
       {conferences.map(conference => {
         const teams = rows.filter(row => (row.conference || 'Unassigned') === conference);
         const divisions = [...new Set(teams.map(row => row.division || 'Unassigned'))].sort();

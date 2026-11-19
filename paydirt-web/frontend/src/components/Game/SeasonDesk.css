@@ -212,13 +212,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
 }
-.season-conference { min-width: 0; }
+.season-conference {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span var(--division-rows);
+}
 .season-conference:only-child { grid-column: 1 / -1; }
-.season-conference h3 { color: #e7ba75; margin: 8px 0 16px; }
-.season-division + .season-division { margin-top: 24px; }
+.season-conference h3 { color: #e7ba75; margin: 8px 0 0; }
+.season-division { min-width: 0; }
 .season-division h4 { margin: 0; padding-bottom: 8px; border-bottom: 1px solid #34414c; }
 @media (max-width: 1050px) {
   .season-conferences { grid-template-columns: minmax(0, 1fr); }
+  .season-conference { display: block; grid-row: auto; }
+  .season-conference h3 { margin-bottom: 16px; }
+  .season-division + .season-division { margin-top: 24px; }
 }
 
 .season-stat-categories { display: flex; flex-wrap: wrap; gap: 8px; }
