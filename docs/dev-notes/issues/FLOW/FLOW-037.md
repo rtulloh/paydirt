@@ -8,7 +8,7 @@ created-at: 2026-11-19
 resolved-at: 2026-11-19
 closed-at: 2026-11-19
 tags:
-- bug
+  - bug
 links:
 commits:
 ---
@@ -26,11 +26,11 @@ Owner reported a browser game becoming unresponsive after the kicking team recov
 --- 2026-11-19 00:00 ---
 Created with scripts/create_issue.py. Keep evidence public-safe.
 
---- 2026-11-19 15:50 CST ---
+--- 2026-11-19 15:50 ---
 The core engine correctly identifies the recovering kicker, scores the touchdown and retains its owed-try obligation. The kickoff API omitted the shared follow-up arming used by scrimmage plays and penalty decisions, leaving the UI pending-conversion flag false. Before the adapter fix, four public-2026 API cases failed on the missing flag (ordinary return touchdowns and fumble touchdowns, each human role); nine controls passed. The narrow fix uses the existing engine-driven follow-up helper. Thirteen focused API cases then passed, including checkpoint restoration, a playable extra point, and rejection of a duplicate try. Additional browser and expired-regulation checks are in progress; this issue remains open.
 
---- 2026-11-19 15:51 CST ---
+--- 2026-11-19 15:51 ---
 The owner saved the stuck game successfully. A diagnostic confirms that the pre-fix checkpoint can retain a false UI pending-try flag while the engine still authoritatively owes a conversion; reloading the old implementation does not repair it. Acceptance therefore includes narrow canonical-restore reconciliation from the engine obligation, preserving the touchdown, score, clock, possession and statistics without replay. Negative controls must prevent inventing a conversion when none is owed.
 
---- 2026-11-19 15:53 CST ---
+--- 2026-11-19 15:53 ---
 Verified and closed after four actual-engine Chromium play cases: human home/away, each with a newly saved touchdown and an affected older missing-flag checkpoint. Every case played the kickoff-fumble touchdown, saved through the UI, removed the old backend session, resumed into a new session, preserved the entire engine state apart from the required PAT field placement, and took the visible extra point once. No score, clock, statistics or play history was replayed. Full backend: 682 passed (525 existing dependency/deprecation warnings), routes 89% coverage with changed paths and condition branches covered. PlayingPhase focused: 110 passed, 83.24% lines/83.95% branches; ordinary returns, both scoring owners, expired-regulation tries and duplicate rejection remain covered. Core characterization: 159 passed with unchanged engine rules. Receipts remain in ignored flow037 audit logs; full release regression and exact-commit CI remain publication gates.
