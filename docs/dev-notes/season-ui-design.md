@@ -1,11 +1,12 @@
 # Web seasons, cross-era games, and durable saves
 
-Owner-approved preview and six-slice direction · 2026-11-18 · **IMPLEMENTED LOCALLY — ACCEPTANCE VERIFIED; REVIEW/PUBLICATION PENDING**
+Owner-approved preview and six-slice direction · 2026-11-18 · **IMPLEMENTED AND RELEASED — v1.12.2; QUALIFICATION AND LIMITATIONS RECORDED**
 
 Tracked in [FLOW-036](issues/FLOW/FLOW-036.md). Documentation approval is not implementation or release completion.
 
 The original proposal below is retained as design evidence; dated implementation and
-acceptance-audit notes follow it. FLOW-036 is open. Earlier progress statements do not
+acceptance-audit notes follow it. FLOW-036 is closed from actual acceptance and
+[verified v1.12.2 publication](release-1.12.2-readiness.md). Earlier progress statements do not
 override missing acceptance criteria identified by the later requirement-by-requirement audit.
 The [interactive preview](season-ui-preview.html) uses invented demonstration results;
 it neither reads nor modifies games, charts, standings, or the issue tracker.

@@ -1,12 +1,12 @@
 ---
 id: FLOW-036
 title: Add persistent web seasons, custom mixed-era leagues, and browser save/load
-status: open
+status: closed
 priority: Medium
-target-release: v1.12.0
+target-release: v1.12.2
 created-at: 2026-11-18
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - feature-request
   - umbrella
@@ -17,6 +17,7 @@ links:
   - FLOW-008
   - FLOW-033
 commits:
+  - 2618016116f4bf4489924aa63e6ca528d3332cce
   - d059990035d5d8f235936696b8e1a24b968bc169
   - ced3856
 ---
@@ -380,3 +381,19 @@ Final product source c0b4292 passes 11,952 core tests, 667 backend tests, 588 fr
 
 --- 2026-11-19 12:57 ---
 Qualified source 47587b5 is verified on remote main. Its first CI run found old random-sampling XP and chart-setup observation races, corrected test-only in 1fbf09c/b457594. No production input changed or assertion weakened. All thirteen local gates were rerun and pass, including both 11,952-test core runs, 667 backend, 588 frontend/build and all 34 browser cases. Original CI/focused failures remain retained. The follow-up push/exact CI and owner private-upload handoff remain pending; no tag/publication or remotely verified private archive is claimed. Feature closures retain actual play-test evidence.
+
+--- 2026-11-19 22:49 ---
+v1.12.2 at `2618016116f4bf4489924aa63e6ca528d3332cce` completes the approved six-slice seasons,
+mixed-edition exhibitions, canonical game/campaign persistence, team-only statistics
+and Overview scope. Actual HTTP, built-Wasm and native create/play/save/restart
+acceptance is retained in the [acceptance matrix](../../season-ui-acceptance.md).
+All thirteen pre-tag gates passed, including 12,029 core tests again in a clean
+tracked export, 39 real-engine browser cases, the actual 224-game calendar/nine-game
+postseason and reviewed AI/chart gates. Exact-commit upstream CI passed before tagging.
+All five actual downloaded native packages passed inventory, independent new-game/chart,
+UI, clean-log and normal-shutdown checks in the [release workflow](https://github.com/rtulloh/paydirt/actions/runs/44674721368).
+The [current readiness note](../../release-1.12.2-readiness.md) records asset hashes,
+coverage and actual Mac security limitations. Local private archives were readback
+verified; the owner reports private upload complete, but independent remote readback
+is unavailable. Earlier failed candidates/releases remain recorded. Closed from
+implemented scope and actual acceptance, not a preview or unit tests alone.

@@ -1,12 +1,12 @@
 ---
 id: DATA-047
 title: 1983 Chargers are presented as Los Angeles instead of correct San Diego naming
-status: resolved
+status: closed
 priority: Low
 target-release: v1.10.5
 created-at: 2026-11-09
 resolved-at: 2026-11-10
-closed-at:
+closed-at: 2026-11-19
 tags:
   - reproduced
 links:
@@ -62,3 +62,25 @@ Fresh local packaged-candidate acceptance independently confirms the corrected 1
 
 --- 2026-11-19 12:25 ---
 The final rebuilt c0b4292 native candidate independently reconfirms corrected SD/STL/LA 1983 API labels on both launches. Keep resolved: this is a locally built package, not the downloaded published-native acceptance required by this ticket.
+
+--- 2026-11-19 22:49 ---
+All five actual v1.12.2 downloaded-native profiles confirm the exact approved
+1983 short names SD '83, STL '83 and LA '83, plus the complete unique team inventory.
+The actual published Apple Silicon package now also passes correction-specific
+rendered selection, scoreboard, chart and play checks in an isolated non-checkout
+launch: Chargers/Cardinals and Raiders/Chargers each advance through coin toss,
+actual kickoff and one scrimmage play; both teams' three chart sections contain
+all 30 rows. All 28 rendered 1983 selection entries are present and the three
+corrected labels remain visible during play. No JavaScript or request errors occur.
+
+The test binds the published ARM DMG SHA-256
+`72ea95514afe0a7ce1e842f7a3e40da6a591ab1c5e301ee43702d7f3d699e9a4`
+and v1.12.2 commit `2618016116f4bf4489924aa63e6ca528d3332cce`.
+The ignored targeted receipt is
+`.ai-audits/release-1.12.2/data047-published-browser-ready-controls/receipt.json`;
+the [published-native workflow](https://github.com/rtulloh/paydirt/actions/runs/44674721368)
+records all five profiles. An initial QA helper raced the role controls; waiting
+for their ready state fixes the helper without a product change. Closed from
+actual corrected-label play and downloaded-native acceptance. This is not a full
+game or fresh-quarantine first-launch proof; the Mac security limitation remains
+explicit in the [readiness note](../../release-1.12.2-readiness.md).

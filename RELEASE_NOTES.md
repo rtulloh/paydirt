@@ -11,10 +11,12 @@ saves for backup or transfer; internet access is needed to load the engine.
 - Retain the pinned desktop runtime dependencies and macOS bundle-signature correction from v1.12.1, with the same 90 public teams and browser-first play option. No chart files or gameplay policies change.
 
 The four assets published for v1.12.1 passed their native runtime checks, but
-that does not qualify the missing Windows installer. Use browser play while the
-v1.12.2 packages await publication and downloaded-artifact verification. macOS
-applications remain ad-hoc signed, not Developer ID signed or notarized;
-Gatekeeper can block a fresh download.
+that does not qualify the missing Windows installer. All five actual v1.12.2
+downloads now pass native API/UI inventory, independent new-game/chart, clean-log
+and shutdown checks. Both Mac bundle resource seals pass, but a fresh quarantined
+Apple Silicon download is rejected by Gatekeeper without an override. Applications
+remain ad-hoc signed, not Developer ID signed or notarized. Browser play remains
+primary; see [verified release qualification](docs/dev-notes/release-1.12.2-readiness.md).
 
 ## v1.12.1 — Desktop packaging correction
 
@@ -23,14 +25,13 @@ Gatekeeper can block a fresh download.
 - Retain persistent seasons, mixed-year teams, durable saves, sortable team statistics and the kickoff-touchdown recovery improvements described below.
 
 The v1.12.0 desktop packages failed downloaded-artifact startup verification and
-remain immutable history. Use the corrective release once its published-package
-verification is complete. Browser play was unaffected by the dependency mismatch.
+remain immutable history. Use the verified v1.12.2 correction. Browser play was unaffected by the dependency mismatch.
 
 
 ## v1.12.0 — Persistent seasons and team statistics
 
 Desktop packages failed post-publication startup verification. Use the corrective
-v1.12.2 release once its complete package set is verified; the original tag and assets remain immutable.
+v1.12.2 release with its verified complete package set; the original tag and assets remain immutable.
 
 - Continue to the extra-point choice after kickoff touchdowns, including fumble recoveries; recover an owed try from affected saved games without replaying the touchdown.
 

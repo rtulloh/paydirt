@@ -2,6 +2,7 @@
 
 Status: published as v1.12.1 at `2376746473905bd14ea8cf71c9801ed6be9467a0`; downloaded-package qualification is incomplete because the Windows installer was never produced. The incomplete release is marked prerelease; v1.12.2 is the corrective target.
 
+The actual five-package v1.12.2 correction is now qualified; see [current readiness](release-1.12.2-readiness.md). This does not change the failed/incomplete status of the earlier immutable release.
 ## Published defect and immutable history
 
 The v1.12.0 tag binds commit `205fbaec47ebe247ecac11378e2aa2592751621b`.

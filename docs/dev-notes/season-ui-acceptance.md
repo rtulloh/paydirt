@@ -1,9 +1,11 @@
 # FLOW-036 acceptance evidence
 
-Local implementation acceptance completed on 2026-11-18. This records actual feature
-acceptance, not a published-release or remote-preservation qualification.
+Local feature acceptance completed on 2026-11-18. Subsequent verified v1.12.2
+publication and actual downloaded-native qualification are recorded in the
+[current readiness note](release-1.12.2-readiness.md). Historical candidate evidence
+and its limitations below remain intact.
 The [design](season-ui-design.md) retains the approved scope and dated investigation history.
-The [umbrella issue](issues/FLOW/FLOW-036.md) remains open.
+The [umbrella issue](issues/FLOW/FLOW-036.md) is closed from actual acceptance.
 
 | Requirement | Implementation and current evidence | Acceptance status |
 | --- | --- | --- |
@@ -12,7 +14,7 @@ The [umbrella issue](issues/FLOW/FLOW-036.md) remains open.
 | Custom and mixed-era seasons | Independent edition pickers, round robin/byes/manual fixtures, definition locks; synthetic domain tests | Rendered custom/mixed-edition creation and schedule editing pass |
 | Review/edit generated schedules and duplicate fresh seasons | edit_schedule/duplicate_campaign and public operations; Schedule editor and fresh-selection UI tests | Rendered custom/mixed-edition creation and schedule editing pass |
 | Follow a team, division/conference/league standings | Persistent followed_participant_id with import/duplicate remapping; overview/filter/standings tests | Rendered custom/mixed-edition creation and schedule editing pass |
-| Team statistics and leader categories | Canonical result ledger, all 12 supported team counters, totals/rates/coverage denominators, tied ranks; no individual player statistics | Rendered statistics/rates/leaders and mobile review pass |
+| Team statistics and leader categories | Canonical result ledger, all thirteen supported team-statistic categories and authoritative counters, totals/rates/coverage denominators, tied ranks; no individual player statistics | Rendered statistics/rates/leaders and mobile review pass |
 | Exactly-once finals and explicit corrections | Engine-bound legal final, revisions/history/recompute, frozen feeding results; Saved games review/confirmation with leased revision checks | Rendered cancel/idempotent confirm/correction revision, stats recompute and engine cleanup pass |
 | Cross-year exhibitions | Complete edition identity/swap/role/rules banner, confined catalog lookup, checkpoint roundtrip | Actual built Wasm mixed-era exhibition/save/reload passes |
 | Canonical checkpoint recovery | Closed typed JSON codec, trusted chart/rule bindings, engine/AI/history/pending choices/phase/linkage | Backend continuation tests and Wasm verified |
@@ -27,8 +29,8 @@ The [umbrella issue](issues/FLOW/FLOW-036.md) remains open.
 | Portable backups and compatibility safety | Opaque checkpoints; new imported identities; atomic active bundles; no chart content; reject unknown schemas/changed bindings | Unit, native HTTP and Wasm verified |
 | Accessible dialogs, mobile tables and visuals | Labeled row editors, keyboard/Escape/focus controls, overflow containers | Actual keyboard/Escape/focus, 390px tables and independent screenshot review pass |
 | Packaging and guides | Explicit browser registry allowlist; native SQLite modules/spec; maintained season/save/web guides | Packaging tests pass; final bundle checks recorded below |
-| Full regression | 11,765 core tests pass in working tree and clean export; all other required commands have passing follow-up evidence; combined original receipt remains 12 pass/1 browser failure | Current command evidence passes via documented follow-ups; original combined failure retained; no push/release claim |
-| Native release artifacts | No release published by this task | Downloaded-artifact qualification not claimed |
+| Full regression | All thirteen gates on `2618016`, including core and clean export (12,029 each), backend 682, frontend 593 and 39 browser cases | Pass; exact receipts and CI in [current readiness](release-1.12.2-readiness.md) |
+| Native release artifacts | All five actual v1.12.2 downloads pass native inventory, UI/game/chart, log and shutdown verification | Functional qualification passes; Mac first-launch security limitation remains explicit |
 
 ## Runtime receipts
 
@@ -501,3 +503,19 @@ Fresh Wasm acceptance passes all 90 teams and eight complete games across the fo
 See [release readiness](release-1.12.0-readiness.md) for exact receipts, artifact hashes, test-first failures, coverage gaps, E2E setup changes, warning review and tracker decisions. FLOW-020, FLOW-021 and STAT-006 are closed from actual acceptance; FLOW-036 remains open for release/preservation follow-through. Upstream exact-commit CI, remote preservation and downloaded published-package health are distinct gates; none is inferred from this local acceptance. The private archive is locally readback-verified for the owner to upload, with final evidence supplementation and remote verification status recorded separately.
 
 The first qualified push exposed two existing test reliability defects in upstream CI: random-sampling extra-point odds and chart observation starting before setup acknowledgement. Test-only `1fbf09c`/`b457594` make these checks deterministic without changing production or weakening assertions. The full thirteen-gate qualification was repeated: core/clean core 11,952 each, backend 667, frontend 588/build, full 34-case browser regression, every required gameplay/AI/chart gate and lint all pass. Full evidence and the retained intermediate failures are in the release readiness note. Exact follow-up CI remains pending until its push; local package acceptance applies to unchanged product bytes.
+
+## Verified v1.12.2 publication — 2026-11-19
+
+The six-slice umbrella is closed. The [current release readiness](release-1.12.2-readiness.md)
+binds all thirteen pre-tag gates, exact-commit upstream CI, actual five-platform-package
+functional receipts and asset hashes to `2618016116f4bf4489924aa63e6ca528d3332cce`.
+Earlier local/Wasm/native feature and restart receipts remain their own evidence;
+packaged smoke checks are new-game checks, not a claim of complete native games.
+Both downloaded Mac bundle resource seals pass. Fresh quarantined Apple Silicon
+launch is rejected by Gatekeeper without an override; ad-hoc signing is not
+Developer ID signing/notarization. Browser play remains primary.
+
+Local private base/delta archives are readback verified; the owner reports private
+upload complete. Independent remote readback remains unavailable. DATA-047 is closed after actual
+downloaded ARM corrected-label selection/chart/kickoff/scrimmage checks plus all
+five native API profiles; STAT-007 and DATA-051 remain open follow-ups. No individual player statistics are introduced.

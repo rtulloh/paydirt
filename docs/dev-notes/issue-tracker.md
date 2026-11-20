@@ -7,17 +7,14 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-240 issues: 79 open, 77 resolved, 84 closed.
+240 issues: 75 open, 76 resolved, 89 closed.
 
-## Open (79)
+## Open (75)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
-| [FLOW-040](issues/FLOW/FLOW-040.md) | High | v1.12.1 | Pin native release runtime dependencies to the tested backend requirements | created 2026-11-19 | — |
-| [FLOW-041](issues/FLOW/FLOW-041.md) | High | v1.12.1 | Seal the completed macOS app bundle before creating its DMG | created 2026-11-19 | — |
-| [FLOW-042](issues/FLOW/FLOW-042.md) | High | v1.12.2 | Require every desktop package before publishing a release | created 2026-11-19 | — |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
@@ -48,7 +45,6 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-009](issues/FLOW/FLOW-009.md) | Medium | — | On interception, fumble-advance and blocked-kick returns the "other team recovers the reroll fumble while a… | created 2026-10-20 | RULE-014 |
 | [FLOW-023](issues/FLOW/FLOW-023.md) | Medium | v1.10.6 | Choose end-zone interception returns during play | created 2026-11-11 | FLOW-026, FLOW-027, FLOW-028, RULE-031 |
 | [FLOW-025](issues/FLOW/FLOW-025.md) | Medium | v1.10.7 | Kickoff penalty menu duplicates the decline option and offers three choices | created 2026-11-13 | FLOW-024 |
-| [FLOW-036](issues/FLOW/FLOW-036.md) | Medium | v1.12.0 | Add persistent web seasons, custom mixed-era leagues, and browser save/load | created 2026-11-18 | FLOW-020, FLOW-021, STAT-006, FLOW-008, FLOW-033 |
 | [RULE-003](issues/RULE/RULE-003.md) | Medium | — | Originally reported as: when the defense chart shows DEF n and the offense rolled B, QT, BLACK, TD, F, or I n, the… | created 2026-10-19 | AUD-014, FLOW-003 |
 | [RULE-004](issues/RULE/RULE-004.md) | Medium | — | Run_play and _apply_play_result disagree on the −5 designation (floor at 0 vs negative), sack distance… | created 2026-10-19 | — |
 | [RULE-005](issues/RULE/RULE-005.md) | Medium | — | Apply_fg_penalty_decision extends the half for an accepted offensive foul (time_remaining <= 0.5 heuristic) but… | created 2026-10-19 | — |
@@ -96,7 +92,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |
 
 
-## Resolved (awaiting play-test confirmation) (77)
+## Resolved (awaiting play-test confirmation) (76)
 
 A fix is committed with tests. A play-test audit must confirm it before the issue is closed.
 
@@ -178,10 +174,9 @@ A fix is committed with tests. A play-test audit must confirm it before the issu
 | [AUD-005](issues/AUD/AUD-005.md) | Low | — | Offensive fumble-advance commentary exposes internal positions, conflates recovery/advance rolls and chart/actual… | created 2026-10-19, resolved 2026-10-19 | — |
 | [AUD-006](issues/AUD/AUD-006.md) | Low | — | CLI repeats touchdowns/first downs, made field goals, defensive fumble scores, safeties, and fourth-down kneel… | created 2026-10-19, resolved 2026-11-07 | AUD-025 |
 | [AUD-011](issues/AUD/AUD-011.md) | Low | — | Complete new/resumed CLI loops repeat the actual turnover-on-downs announcement | created 2026-10-19, resolved 2026-10-19 | AUD-001 |
-| [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10 | — |
 
 
-## Closed (84)
+## Closed (89)
 
 A play-test audit confirmed the issue no longer occurs.
 
@@ -207,6 +202,9 @@ A play-test audit confirmed the issue no longer occurs.
 | [FLOW-029](issues/FLOW/FLOW-029.md) | High | v1.10.6 | Browser regression assumes a defensive timeout is used by the request that asked for it | created 2026-11-14, resolved 2026-11-14, closed 2026-11-14 | AI-002 |
 | [FLOW-037](issues/FLOW/FLOW-037.md) | High | v1.12.0 | Advance kickoff fumble-recovery touchdowns to the conversion choice | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
 | [FLOW-038](issues/FLOW/FLOW-038.md) | High | v1.12.0 | Allow browser season simulations to refresh views between fixtures | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
+| [FLOW-040](issues/FLOW/FLOW-040.md) | High | v1.12.2 | Pin native release runtime dependencies to the tested backend requirements | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
+| [FLOW-041](issues/FLOW/FLOW-041.md) | High | v1.12.2 | Seal the completed macOS app bundle before creating its DMG | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
+| [FLOW-042](issues/FLOW/FLOW-042.md) | High | v1.12.2 | Require every desktop package before publishing a release | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |
 | [RULE-010](issues/RULE/RULE-010.md) | High | — | Kickoffs resolved the kick distance and the return from **one** dice roll | created 2026-10-19, resolved 2026-10-19, closed 2026-10-20 | AUD-021, FLOW-005, RULE-014 |
 | [RULE-013](issues/RULE/RULE-013.md) | High | — | A penalty on the kickoff-return chart was enforced automatically with no reroll trace and no fumble handling… | created 2026-10-19, resolved 2026-10-20, closed 2026-10-20 | AI-016 |
 | [RULE-017](issues/RULE/RULE-017.md) | High | — | Own-recovery fumble advance resets the down to second regardless of the down before | created 2026-10-27, resolved 2026-10-27, closed 2026-11-06 | — |
@@ -242,6 +240,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [FLOW-018](issues/FLOW/FLOW-018.md) | Medium | — | Browser omits the season-enabled two-point conversion choice after a touchdown | created 2026-11-06, resolved 2026-11-07, closed 2026-11-08 | RULE-001, STAT-003 |
 | [FLOW-021](issues/FLOW/FLOW-021.md) | Medium | — | Web UI cannot record completed games to season standings or show season progress | created 2026-11-08, resolved 2026-11-19, closed 2026-11-19 | FLOW-036, FLOW-022 |
 | [FLOW-024](issues/FLOW/FLOW-024.md) | Medium | v1.10.6 | Safety free-kick kickoff penalty strands the conceding team on offense | created 2026-11-13, resolved 2026-11-13, closed 2026-11-13 | FLOW-025 |
+| [FLOW-036](issues/FLOW/FLOW-036.md) | Medium | v1.12.2 | Add persistent web seasons, custom mixed-era leagues, and browser save/load | created 2026-11-18, resolved 2026-11-19, closed 2026-11-19 | FLOW-020, FLOW-021, STAT-006, FLOW-008, FLOW-033 |
 | [RULE-001](issues/RULE/RULE-001.md) | Medium | — | Two-point tries run through run_play | created 2026-10-19, resolved 2026-11-07, closed 2026-11-08 | RULE-002, RULE-007, STAT-003, AI-022, FLOW-018 |
 | [RULE-007](issues/RULE/RULE-007.md) | Medium | — | Uncommitted _log_score try attribution relies on scoring_plays[-1] being the TD | created 2026-10-19, resolved 2026-11-07, closed 2026-11-08 | RULE-001 |
 | [SPIKE-002](issues/SPIKE/SPIKE-002.md) | Medium | — | Offense 7S is processed before a defensive AT, so execution order blocks the agreed defensive-timeout priority | created 2026-10-18, resolved 2026-10-28, closed 2026-10-28 | AI-005, RULE-006 |
@@ -266,6 +265,7 @@ A play-test audit confirmed the issue no longer occurs.
 | [AUD-012](issues/AUD/AUD-012.md) | Low | — | Pass interference repeats the achieved first-down wording | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
 | [AUD-013](issues/AUD/AUD-013.md) | Low | — | Incomplete result/menu labels say No gain, obscuring the actual pass result | created 2026-10-19, resolved 2026-10-19, closed 2026-10-28 | — |
 | [AUD-027](issues/AUD/AUD-027.md) | Low | — | Chart viewer loses keyboard focus when its native modal closes | created 2026-11-05, resolved 2026-11-07, closed 2026-11-08 | — |
+| [DATA-047](issues/DATA/DATA-047.md) | Low | v1.10.5 | 1983 Chargers are presented as Los Angeles instead of correct San Diego naming | created 2026-11-09, resolved 2026-11-10, closed 2026-11-19 | — |
 | [FLOW-017](issues/FLOW/FLOW-017.md) | Low | — | Scoreboard omits the opponent timeout budget and leaves the displayed count ambiguous | created 2026-11-06, resolved 2026-11-07, closed 2026-11-08 | — |
 | [FLOW-020](issues/FLOW/FLOW-020.md) | Low | — | Allow web players to select opposing teams from different seasons | created 2026-11-07, resolved 2026-11-19, closed 2026-11-19 | FLOW-036 |
 | [FLOW-039](issues/FLOW/FLOW-039.md) | Low | v1.12.0 | Align division standings across conference columns | created 2026-11-19, resolved 2026-11-19, closed 2026-11-19 | — |

@@ -1,16 +1,17 @@
 ---
 id: FLOW-042
 title: Require every desktop package before publishing a release
-status: open
+status: closed
 priority: High
 target-release: v1.12.2
 created-at: 2026-11-19
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - packaging
 links:
 commits:
+  - 2618016116f4bf4489924aa63e6ca528d3332cce
 ---
 
 ## Description
@@ -38,3 +39,14 @@ eight branches; the per-fixture aggregate is reported separately rather than
 mistaken for combined path coverage. This does not qualify native packages:
 full regression, exact-commit CI and all-five downloaded verification remain
 required. No retries or weaker gates hide an external installer-tool failure.
+
+--- 2026-11-19 22:49 ---
+The [v1.12.2 release workflow](https://github.com/rtulloh/paydirt/actions/runs/44674721368) at `2618016116f4bf4489924aa63e6ca528d3332cce`
+requires every exact nonempty package and fails closed on installer acquisition,
+compilation or missing inventory. The published `PaydirtSetup.exe` exists and its
+actual downloaded install/launch/API/UI/chart/log/shutdown checks pass alongside the
+other four packages. Independent five-asset digest and native-receipt verification
+passes; exact hashes are in the [readiness note](../../release-1.12.2-readiness.md).
+Full regression and exact-commit CI passed before tagging. Closed from actual
+five-package proof, not asset presence alone. The incomplete v1.12.1 tag/assets
+remain unchanged and identified as superseded; browser play remains primary.

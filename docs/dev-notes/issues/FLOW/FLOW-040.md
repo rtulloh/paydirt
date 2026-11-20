@@ -1,17 +1,18 @@
 ---
 id: FLOW-040
 title: Pin native release runtime dependencies to the tested backend requirements
-status: open
+status: closed
 priority: High
-target-release: v1.12.1
+target-release: v1.12.2
 created-at: 2026-11-19
-resolved-at:
-closed-at:
+resolved-at: 2026-11-19
+closed-at: 2026-11-19
 tags:
   - packaging
   - regression
 links:
 commits:
+  - 2618016116f4bf4489924aa63e6ca528d3332cce
 ---
 
 ## Description
@@ -50,3 +51,14 @@ compatibility and retains a dependency freeze receipt. Native guard and game
 rules remain unchanged. Local packaged acceptance, complete regression and new
 published-package verification remain pending; this issue is not closed by the
 workflow unit test alone.
+
+--- 2026-11-19 22:49 ---
+The actual [v1.12.2 downloads](https://github.com/rtulloh/paydirt/releases/tag/v1.12.2) at `2618016116f4bf4489924aa63e6ca528d3332cce`
+launch on all five supported package targets with the pinned backend dependency recipe.
+The [release workflow](https://github.com/rtulloh/paydirt/actions/runs/44674721368) records the dependency checks/freeze and actual
+published-native API/UI inventories (90 teams), distinct 2026/1977 game/chart checks,
+clean logs and normal shutdown, including the Windows installer. Independent local
+asset/digest/receipt verification passes for all five. Full thirteen-gate regression
+and exact-commit CI passed before the tag. Closed for the startup dependency mismatch;
+v1.12.0 remains immutable failed history. Functional launch is separate from Mac
+Developer ID signing/notarization; see the [readiness note](../../release-1.12.2-readiness.md).

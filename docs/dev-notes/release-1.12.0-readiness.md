@@ -2,6 +2,7 @@
 
 Status: published package startup failed on all five targets. Retain the immutable v1.12.0 tag and failed assets. v1.12.1 repairs startup and macOS resource sealing but omitted its Windows installer; final correction targets v1.12.2. Dated qualification history follows.
 
+The actual five-package v1.12.2 correction is now qualified; see [current readiness](release-1.12.2-readiness.md). This does not change the failed/incomplete status of the earlier immutable release.
 ## Authorized scope
 
 On November 19, 2026 the owner approved completion of the remaining team statistics, committing the integrated seasons/save-load work, full regression, ticket/play-test review, release preparation and preservation. v1.11.0 is already published, so the new feature release targets v1.12.0. The six season slices and subsequent owner-requested fixes remain in scope; individual player statistics and FLOW-035 narration remain excluded.
