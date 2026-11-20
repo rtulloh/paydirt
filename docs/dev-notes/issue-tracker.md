@@ -78,7 +78,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-044](issues/DATA/DATA-044.md) | Low | — | 1983 Buccaneers commentary roster incorrectly includes Doug Williams | created 2026-11-08 | — |
 | [DATA-045](issues/DATA/DATA-045.md) | Low | — | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
 | [DATA-050](issues/DATA/DATA-050.md) | Low | — | Use season-aware player availability and roles in roster commentary | created 2026-11-11 | — |
-| [DATA-051](issues/DATA/DATA-051.md) | Low | — | Review 1983 Eagles field-goal chart probability near a 39-yard attempt | created 2026-11-19 | — |
+| [DATA-051](issues/DATA/DATA-051.md) | Low | — | Add team field-goal distance-band calibration and qualification to chart generation | created 2026-11-19 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
 | [FLOW-033](issues/FLOW/FLOW-033.md) | Low | v1.11.0 | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | FLOW-036, RULE-032, FLOW-034, FLOW-035 |

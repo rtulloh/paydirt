@@ -1,6 +1,6 @@
 ---
 id: DATA-051
-title: Review 1983 Eagles field-goal chart probability near a 39-yard attempt
+title: Add team field-goal distance-band calibration and qualification to chart generation
 status: open
 priority: Low
 target-release:
@@ -25,12 +25,86 @@ The core's 1983 ordinary unreturned, unblocked missed kick from this spot gives 
 
 Keep this neutral chart investigation separate from AI policy defects. DATA-046 concerns a different, 1977 interception/scoring qualification issue and is not evidence for this 1983 kicking question.
 
+## Proposed calibration stage — owner direction, 2026-11-20
+
+This is now a chart-generation/calibration improvement, extending the completed
+probability audit below. The owner withdraws the fixed-distance coaching proposal:
+keep the AI probability-based, with its existing situational policy. Do not add an
+inside-the-25 override or tune charts to force the reported punt into a kick.
+This proposal is not implemented and does not change the verified v1.12.2 release.
+
+### Inputs and targets
+
+- Reconcile team-season field-goal makes/attempts for **1–19, 20–29, 30–39,
+  40–49 and 50+ statistical kick yards**, including all kickers who contributed.
+  Individual-player statistics remain outside the game UI scope.
+- Preserve source identity, counts, distance convention, era and accounting of
+  blocked kicks, penalties/no-plays and aborted snaps. Reconcile band sums to
+  official team totals. An aborted snap without an official attempt is not an FGA.
+- Prefer verified exact attempt distances within each band when available. With
+  band-only sources, disclose the unknown distance mix and use an explicitly
+  reviewed modeling/uncertainty policy; do not silently spread attempts uniformly
+  or equate the band's observed percentage with every distance in that band.
+- For sparse or zero-attempt bands, use a reproducible, declared era-appropriate
+  pooling/prior policy and label the evidence limitation. Zero attempts is not 0%
+  ability, and a perfect small sample is not certain success. Treat 50+ as an
+  open-ended range with an explicit extrapolation policy; longest made alone does
+  not establish zero probability beyond that distance. Mark distances the engine
+  cannot represent separately rather than inventing coverage.
+
+### Fit, realize and measure
+
+1. Fit a coherent distance-dependent curve against the team's band targets and
+   available exact-distance evidence. Preserve nonincreasing underlying success
+   probability, allow era/team differences and avoid arbitrary band-edge cliffs.
+   Statistical uncertainty and discrete chart resolution may prevent exact fits;
+   retain and explain residuals rather than forcing historical game outcomes.
+2. Generate the actual field-goal chart, then independently compute its realized
+   engine-weighted probability at every supported distance. Qualification must
+   measure the quantized chart, not just the smooth pre-chart target. Verify
+   distance conversion, penalty rerolls, block/snap-event accounting and attempt
+   denominators against the core resolver.
+3. Produce a per-team/per-band report: sourced M/A and percentage, model target,
+   realized expected makes/rate over the historical attempt-distance mix, error,
+   sample/uncertainty, fallback/pooling, quantization residual and verdict. When
+   exact distances are unavailable, report bounds or declared model assumptions;
+   do not present a broad feasible envelope as proof of calibration. Include the
+   exact-distance curve, boundary jumps, range support and overall reconciliation.
+4. Add kicking as an explicit generation qualification stage alongside existing
+   offensive/defensive calibration. Define reviewed sample rules, band/overall
+   error criteria and uncertainty/quantization allowances before implementation
+   experiments. Bind policy, sources, generator/profile, engine and chart hashes
+   in the manifest/validation contract. Missing required evidence is insufficient
+   qualification, not a pass; exceptions must be visible and reviewed.
+5. Use controlled engine checks independent of coaching attempt selection to
+   establish kicking ability. Then run full games/AI audits to assess interactions
+   and termination. AI-selected attempts are a biased distance mix and cannot be
+   the only calibration measure. Separate source-fit evidence used to fit the
+   model from independent implementation/held-out validation where available.
+
 ## Resolution / verification
 
-- Review the source-to-chart mapping, exact weighted kick resolution, distance convention and discrete boundary around the observed spot. Distinguish source/sample limitations, intentional modeling choices and actual implementation errors; retain provenance and denominators.
-- Do not alter AI policy or unchanged released charts merely to change this call. Establish any concrete implementation defect with synthetic/public-2026-only failing regressions before production changes; historical chart checks remain separate integration evidence.
-- Preserve the unchanged released-1983 regression route while chart bytes are unchanged. Any changed or regenerated charts must pass the strict source/reproduction and applicable minimum-sample fit qualification for new or changed charts, plus required full regression. Do not weaken tolerances, exclusions or mechanics checks, or relabel unchanged-chart identity as new source-fit qualification.
-- Record findings and remaining uncertainty before proposing a correction. No calibration run, chart edit, AI edit or release-blocking defect is implied by this ticket.
+- Implement the proposed explicit team kicking calibration stage and report;
+  preserve the probability-based AI. The earlier inside-the-25 suggestion is
+  superseded, not a second implementation requirement.
+- Use test-first synthetic/public-2026 fixtures for fitting, band reconciliation,
+  sparse/empty/perfect samples, conflicting noisy bands, 50+ extrapolation,
+  boundaries, distance conversion, protected event accounting and chart
+  quantization. Demonstrate expected failures before production changes; include
+  controls proving AI policy remains unchanged. Historical qualification remains
+  standalone integration evidence, not collected unit fixtures.
+- Retain the completed 1983/2024 Eagles investigation as a baseline and qualify
+  the complete season cohort, not a hand-tuned Eagles exception. Publish remaining
+  evidence limitations and actual failed bounds; choose no new numerical
+  tolerances merely to make an existing chart pass.
+- Preserve the unchanged released-chart regression route while chart bytes are
+  unchanged. Regenerated charts require strict source/reproduction, applicable
+  minimum-sample fit and full regression under the reviewed changed-chart policy.
+  Existing 1977 rules/explicit exceptions remain in force; this new stage grants
+  no waiver and does not overwrite immutable releases.
+- Update generator/calibration/workflow and validation guides with implementation.
+  Close only after test, independent realized-probability, cohort qualification and
+  actual gameplay/audit evidence meet the agreed criteria.
 
 ## Comments
 
@@ -126,3 +200,15 @@ Ignored reproducibility evidence: `.ai-audits/data-051-fg-calibration/` contains
 standalone script, hashed-code/primary-source receipt, all-query CSV and official
 PDFs. No historical collected unit fixtures, chart/AI edits or threshold changes.
 Keep DATA-051 open for the source-ledger/calibration-report follow-up.
+
+--- 2026-11-20 06:21 ---
+Owner directs a calibration-stage change using team 1–19/20–29/30–39/40–49/50+
+field-goal ability, rather than a fixed-distance AI rule. Promoted this ticket
+from a neutral probability investigation to the proposed generation/qualification
+work above; historical findings remain unchanged. The generator already accepts
+`field_goal_by_distance` and constructs a nonincreasing curve in
+`paydirt/chart_generator.py`; `paydirt/chart_calibration.py` currently exposes
+aggregate FGA/FGM/rate rather than this proposed band qualification. The new work
+must assess the realized chart by band and carry evidence/uncertainty into the
+qualification report. No production code, AI, chart data, thresholds or release
+artifacts changed in this planning update. Keep open for implementation.
