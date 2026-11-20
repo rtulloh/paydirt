@@ -178,3 +178,68 @@ def test_backend_runtime_manifest_keeps_compatible_fastapi_and_models_pinned():
     assert "fastapi==0.109.0" in requirements
     assert "pydantic==2.5.0" in requirements
     assert "uvicorn[standard]==0.27.0" in requirements
+
+
+def test_windows_installer_failures_stop_the_release_build():
+    steps = workflow()["jobs"]["build"]["steps"]
+    for name in ("Install NSIS", "Create Windows installer"):
+        step = next(step for step in steps if step.get("name") == name)
+        assert step.get("continue-on-error", False) is False, f"{name} must fail closed"
+
+
+@pytest.mark.parametrize("defect", [None, "linux", "portable", "installer", "arm64", "intel", "empty", "symlink", "extra-dmg"])
+def test_publication_requires_every_nonempty_exact_version_package(monkeypatch, tmp_path, defect):
+    steps = workflow()["jobs"]["release"]["steps"]
+    guard = next((step for step in steps if step.get("name") == "Verify all five mandatory release packages"), None)
+    assert guard is not None, "Publication needs an explicit five-package completeness gate"
+    publish = next(step for step in steps if step.get("uses", "").startswith("softprops/"))
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert steps.index(download) < steps.index(guard) < steps.index(publish)
+    assert guard["env"]["RELEASE_TAG"] == "${{ needs.verify-ci.outputs.tag }}"
+    files = {
+        "linux": "paydirt-linux/Paydirt-x86_64.AppImage",
+        "portable": "paydirt-windows/paydirt.exe",
+        "installer": "paydirt-windows/PaydirtSetup.exe",
+        "arm64": "paydirt-macos-arm64/Paydirt-9.9.9-arm64.dmg",
+        "intel": "paydirt-macos-intel/Paydirt-9.9.9-x86_64.dmg",
+    }
+    for relative in files.values():
+        path = tmp_path / "artifacts" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"synthetic package; never executed")
+    if defect in files:
+        (tmp_path / "artifacts" / files[defect]).unlink()
+    elif defect == "empty":
+        (tmp_path / "artifacts" / files["installer"]).write_bytes(b"")
+    elif defect == "symlink":
+        path = tmp_path / "artifacts" / files["installer"]
+        path.unlink()
+        path.symlink_to(tmp_path / "artifacts" / files["portable"])
+    elif defect == "extra-dmg":
+        (tmp_path / "artifacts/paydirt-macos-arm64/Paydirt-OLD-arm64.dmg").write_bytes(b"stale")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("RELEASE_TAG", "v9.9.9")
+    code = guard["run"].split("python - <<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    script = tmp_path / "package_gate.py"
+    script.write_text(code)
+    if defect is None:
+        runpy.run_path(str(script), run_name="__main__")
+    else:
+        with pytest.raises(SystemExit, match="release package"):
+            runpy.run_path(str(script), run_name="__main__")
+
+
+def test_release_upload_rejects_any_unmatched_mandatory_file():
+    publish = next(step for step in workflow()["jobs"]["release"]["steps"]
+                   if step.get("uses", "").startswith("softprops/"))
+    assert publish["with"].get("fail_on_unmatched_files") is True
+
+
+def test_release_body_prioritizes_browser_play_without_a_security_override():
+    publish = next(step for step in workflow()["jobs"]["release"]["steps"]
+                   if step.get("uses", "").startswith("softprops/"))
+    body = publish["with"]["body"]
+    assert body.index("https://rtulloh.github.io/paydirt/") < body.index("Optional desktop downloads")
+    assert "browser profile" in body and "Export" in body
+    assert "not notarized" in body and "first launch" in body
+    assert "xattr" not in body and "spctl --master-disable" not in body

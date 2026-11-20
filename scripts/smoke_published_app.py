@@ -25,8 +25,8 @@ def season_profile(version: str, include_1977: bool = False) -> dict[str, int]:
     """Require an explicit candidate opt-in without changing shipped profiles."""
     profile = dict(EXPECTED_TEAMS)
     if include_1977:
-        if version not in {"1.10.4", "1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1"}:
-            raise ValueError("1977 requires a reviewed profile: 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0 or 1.12.1")
+        if version not in {"1.10.4", "1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1", "1.12.2"}:
+            raise ValueError("1977 requires a reviewed profile: 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0, 1.12.1 or 1.12.2")
         profile["1977"] = 28
     return profile
 
@@ -60,7 +60,7 @@ def check_api(base: str, version: str, include_1977: bool = False) -> dict:
     if counts != expected:
         raise ValueError(f"Incomplete team lists: {counts}")
     verified_labels = {}
-    if version in {"1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1"}:
+    if version in {"1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1", "1.12.2"}:
         corrected = {"Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83"}
         identifiers = [team.get("id") for team in teams["1983"]]
         if len(set(identifiers)) != len(identifiers):
@@ -342,7 +342,7 @@ def main() -> int:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--include-1977", action="store_true",
-                        help="Opt in only after reviewed 1977 is bundled in 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0 or 1.12.1")
+                        help="Opt in only after reviewed 1977 is bundled in 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0, 1.12.1 or 1.12.2")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)

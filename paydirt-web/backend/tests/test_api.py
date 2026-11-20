@@ -2158,7 +2158,9 @@ def test_get_guide_contains_expected_sections():
 
     content = data["content"]
     # Should contain user-facing sections
-    assert "## Download & Install" in content
+    assert "## Play Without Installing" in content
+    assert "https://rtulloh.github.io/paydirt/" in content
+    assert "## Optional Desktop Downloads" in content
     assert "## How to Play" in content
     assert "## Time Management" in content
     assert "## Strategy Tips" in content

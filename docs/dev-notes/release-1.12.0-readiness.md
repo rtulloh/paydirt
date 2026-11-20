@@ -1,6 +1,6 @@
 # v1.12.0 release qualification
 
-Status: candidate committed locally as `d059990035d5d8f235936696b8e1a24b968bc169`; full qualification is incomplete. No push, tag, publication or remote preservation is claimed.
+Status: published package startup failed on all five targets. Retain the immutable v1.12.0 tag and failed assets. v1.12.1 repairs startup and macOS resource sealing but omitted its Windows installer; final correction targets v1.12.2. Dated qualification history follows.
 
 ## Authorized scope
 

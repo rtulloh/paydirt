@@ -19,7 +19,7 @@ on:
         type: string
         default: v1.10.3
       include_1977:
-        description: Require 1977 for reviewed 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0 or 1.12.1 profiles
+        description: Require 1977 for reviewed 1.10.4, 1.10.5, 1.10.6, 1.11.0, 1.12.0, 1.12.1 or 1.12.2 profiles
         required: true
         type: boolean
         default: false

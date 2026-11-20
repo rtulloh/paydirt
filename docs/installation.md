@@ -2,10 +2,18 @@
 
 [Documentation index](README.md) · Next: [browser interface](web-interface.md) or [CLI play](playing.md)
 
-## Download & Install
+## Play Without Installing
+
+[Play Paydirt in your browser](https://rtulloh.github.io/paydirt/) as the primary
+play option. Internet access is needed to load the Python engine. Games and
+seasons save in that browser profile and site; export important saves for backup
+or transfer. See [browser controls](web-interface.md) and
+[save storage boundaries](saved-games-and-standings.md).
+
+## Optional Desktop Downloads
 
 Get a build from [GitHub Releases](https://github.com/rtulloh/paydirt/releases).
-Pre-built downloads include the browser interface, generated 1983 and 2024 seasons, and the public 2026 sample teams; Python and Node.js are not needed to play.
+Pre-built downloads include the browser interface, generated 1977, 1983 and 2024 seasons, and the public 2026 sample teams; Python and Node.js are not needed to play.
 
 | Platform | File | Launch |
 |----------|------|--------|
@@ -20,14 +28,11 @@ See the [browser walkthrough](web-interface.md) for screenshots and controls.
 
 ### macOS Gatekeeper
 
-If macOS blocks the app, try right-clicking it, selecting **Open**, and confirming the dialog.
-For a downloaded build you have verified and trust, the existing quarantine workaround is:
-
-```sh
-xattr -cr "/Applications/Paydirt.app"
-```
-
-This clears extended attributes, including quarantine, on that app. Do not apply it to an untrusted download.
+The macOS app is ad-hoc signed, not Developer ID signed or notarized. A fresh
+Safari download of v1.12.1 passed strict signature verification but was blocked
+by Gatekeeper. A valid ad-hoc signature does not establish notarization or a
+warning-free first launch. Use the [browser edition](https://rtulloh.github.io/paydirt/)
+to play without installing the desktop app or changing macOS security settings.
 
 ### Linux AppImage
 

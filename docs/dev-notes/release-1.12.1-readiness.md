@@ -1,6 +1,6 @@
 # v1.12.1 corrective release qualification
 
-Status: local correction and qualification in progress; not published.
+Status: published as v1.12.1 at `2376746473905bd14ea8cf71c9801ed6be9467a0`; downloaded-package qualification is incomplete because the Windows installer was never produced. The incomplete release is marked prerelease; v1.12.2 is the corrective target.
 
 ## Published defect and immutable history
 
@@ -61,4 +61,14 @@ The v1.12.1 smoke profile first failed nine cases with 89 passing controls,
 then all 98 passed. Smoke-driver coverage is 45%; download, extraction and
 platform process paths require native artifact integration. Existing immutable
 profiles remain covered, and no test assertions or skips were weakened.
-Full current-source regression and exact-commit CI remain pending.
+All thirteen local regression gates, including the tracked-files-only checkout, passed before the source and tag pushes. Exact-commit upstream Tests workflow [44659362805](https://github.com/rtulloh/paydirt/actions/runs/44659362805) passed 11,995 Python 3.10 tests with 87% coverage. Browser workflow [44659362861](https://github.com/rtulloh/paydirt/actions/runs/44659362861) passed the actual browser engine checks and deployed the browser edition.
+
+## Distribution preference and fresh macOS security check
+
+The owner selected the [browser edition](https://rtulloh.github.io/paydirt/) as the primary way to play. Desktop packages remain optional alternatives. Browser games and seasons persist in the same site/profile; portable exports provide backups and transfers, with no cloud sync or guaranteed offline engine loading.
+
+A fresh Safari download of the actual v1.12.1 Apple Silicon DMG matched its published SHA-256 and retained download quarantine. Disk-image integrity and deep strict app-bundle signature verification passed. LaunchServices then displayed Apple’s unverified-application block; the owner supplied a screenshot. No security override or quarantine removal was used, and the API did not start. This records the unnotarized first-launch limitation separately from native functional checks. Ad-hoc signature validity does not imply Developer ID signing, notarization or Gatekeeper acceptance.
+
+## Missing Windows installer and retained incomplete release
+
+Four actual downloads passed native launch, all 90 API/UI teams, 2026 and 1977 game/chart checks, error-free browser and normal shutdown. The installer check failed before launch because no installer asset existed. Build logs show Chocolatey returned HTTP 503 during NSIS acquisition; both acquisition and installer compilation allowed failure, and the combined artifact upload accepted the portable executable alone. This is tracked in [FLOW-042](issues/FLOW/FLOW-042.md). The original tag and four assets remain immutable. No all-five acceptance or completed release is claimed.

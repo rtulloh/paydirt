@@ -1,11 +1,11 @@
 # Paydirt Documentation
 
-[Project home](../README.md) · [Downloads](https://github.com/rtulloh/paydirt/releases) · [Release notes](../RELEASE_NOTES.md)
+[Play in your browser](https://rtulloh.github.io/paydirt/) · [Project home](../README.md) · [Optional desktop downloads](https://github.com/rtulloh/paydirt/releases) · [Release notes](../RELEASE_NOTES.md)
 
 ## Start Playing
 
-1. [Install Paydirt](installation.md): downloads, source installation, and platform troubleshooting.
-2. [Use the browser interface](web-interface.md), or [play in the terminal](playing.md).
+1. [Play Paydirt in your browser](https://rtulloh.github.io/paydirt/), with no desktop installation.
+2. Read the [browser controls](web-interface.md), or choose an [optional desktop installation](installation.md) or [terminal play](playing.md).
 3. Choose [CPU difficulty and coaching](ai-difficulty.md).
 4. Learn [clock management](clock-management.md) and [saving games and standings](saved-games-and-standings.md).
 5. Use the [priority chart reference](priority-chart.md) to understand combined results, with worked examples.

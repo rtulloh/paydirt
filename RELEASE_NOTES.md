@@ -1,5 +1,21 @@
 # Paydirt Release Notes
 
+[Play Paydirt in your browser](https://rtulloh.github.io/paydirt/) as the primary
+play option; desktop downloads are optional alternatives. Browser games and
+seasons save locally in the same browser profile and site. Export important
+saves for backup or transfer; internet access is needed to load the engine.
+
+## v1.12.2 — Complete Windows release packaging
+
+- Require successful Windows installer tooling and package creation before publishing a complete desktop release. The v1.12.1 release omitted `PaydirtSetup.exe` after its installer-tool download failed; its original tag and assets remain unchanged.
+- Retain the pinned desktop runtime dependencies and macOS bundle-signature correction from v1.12.1, with the same 90 public teams and browser-first play option. No chart files or gameplay policies change.
+
+The four assets published for v1.12.1 passed their native runtime checks, but
+that does not qualify the missing Windows installer. Use browser play while the
+v1.12.2 packages await publication and downloaded-artifact verification. macOS
+applications remain ad-hoc signed, not Developer ID signed or notarized;
+Gatekeeper can block a fresh download.
+
 ## v1.12.1 — Desktop packaging correction
 
 - Bundle the pinned backend dependencies used by tested installations, correcting the desktop startup failure in v1.12.0.
@@ -14,7 +30,7 @@ verification is complete. Browser play was unaffected by the dependency mismatch
 ## v1.12.0 — Persistent seasons and team statistics
 
 Desktop packages failed post-publication startup verification. Use the corrective
-v1.12.1 release once verified; the original tag and assets remain immutable.
+v1.12.2 release once its complete package set is verified; the original tag and assets remain immutable.
 
 - Continue to the extra-point choice after kickoff touchdowns, including fumble recoveries; recover an owed try from affected saved games without replaying the touchdown.
 

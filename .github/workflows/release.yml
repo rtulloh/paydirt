@@ -219,14 +219,12 @@ jobs:
       
       - name: Install NSIS
         if: matrix.os == 'windows-latest'
-        continue-on-error: true
         run: |
           choco install nsis -y
         shell: pwsh
       
       - name: Create Windows installer
         if: matrix.os == 'windows-latest'
-        continue-on-error: true
         run: |
           & 'C:\Program Files (x86)\NSIS\makensis.exe' packaging/windows/installer.nsi
       
@@ -299,6 +297,31 @@ jobs:
         with:
           path: artifacts
       
+      - name: Verify all five mandatory release packages
+        env:
+          RELEASE_TAG: ${{ needs.verify-ci.outputs.tag }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          version = os.environ["RELEASE_TAG"].removeprefix("v")
+          required = [
+              Path("artifacts/paydirt-linux/Paydirt-x86_64.AppImage"),
+              Path("artifacts/paydirt-windows/paydirt.exe"),
+              Path("artifacts/paydirt-windows/PaydirtSetup.exe"),
+              Path(f"artifacts/paydirt-macos-arm64/Paydirt-{version}-arm64.dmg"),
+              Path(f"artifacts/paydirt-macos-intel/Paydirt-{version}-x86_64.dmg"),
+          ]
+          for package in required:
+              if package.is_symlink() or not package.is_file() or package.stat().st_size == 0:
+                  raise SystemExit(f"Missing or invalid mandatory release package: {package}")
+          for package in required[-2:]:
+              if set(package.parent.glob("*.dmg")) != {package}:
+                  raise SystemExit(f"Unexpected release package inventory: {package.parent}")
+          print("Verified all five mandatory nonempty release packages")
+          PY
+
       # An explicit older target_commitish triggers GitHub's workflow-write
       # restriction even for an existing tag. Verify the tag, then let the API
       # use its default target metadata; the existing tag still selects source.
@@ -340,6 +363,7 @@ jobs:
         with:
           tag_name: ${{ needs.verify-ci.outputs.tag }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/paydirt-linux/Paydirt-x86_64.AppImage
             artifacts/paydirt-windows/paydirt.exe
@@ -349,23 +373,21 @@ jobs:
           draft: false
           prerelease: ${{ contains(needs.verify-ci.outputs.tag, '-') }}
           body: |
-            ## Downloads by Architecture
-            
-            ### macOS
-            - **Apple Silicon (M1 or later)** - Download the `arm64.dmg` file
-            - **Intel Mac** - Download the `x86_64.dmg` file
-            
-            ### Windows
-            - **paydirt.exe** - Portable executable
-            - **PaydirtSetup.exe** - Windows installer
-            
-            ### Linux
-            - **Paydirt-x86_64.AppImage** - AppImage for Linux
-            
-            ## macOS Installation Note
-            If you see "Paydirt is damaged and can't be opened":
-            - Option 1: Right-click the app → Open → Click "Open" in the dialog
-            - Option 2: Run in Terminal: `xattr -cr "/Applications/Paydirt.app"`
+            ## Play in your browser
+            [Open Paydirt](https://rtulloh.github.io/paydirt/) to play without installing a desktop application.
+            Games and seasons stay in the same browser profile and site. Export backups before clearing site data or changing devices. Browser play needs internet access to load Python and its packages; saving does not guarantee offline loading.
+
+            Create persistent seasons, customize mixed-era leagues, and follow standings and team statistics. Individual player statistics are not tracked. Historical accuracy limitations, approximate season tiebreaks and unknown counters in older saves remain documented in the guides.
+
+            ## Optional desktop downloads
+            - **macOS Apple Silicon:** the `arm64.dmg` asset
+            - **macOS Intel:** the `x86_64.dmg` asset
+            - **Windows installer:** `PaydirtSetup.exe`
+            - **Windows portable:** `paydirt.exe`
+            - **Linux x86-64:** `Paydirt-x86_64.AppImage`
+
+            Desktop applications keep their library in local application data. Export remains the portable backup route.
+            macOS bundles are ad-hoc signed, not notarized; operating-system security may block a first launch. Functional package checks do not establish signing trust or clean browser-quarantine approval. See the installation guide for verification limits.
           token: ${{ secrets.GITHUB_TOKEN }}
   verify-published-install:
     needs: [verify-ci, release]

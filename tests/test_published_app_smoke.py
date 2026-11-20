@@ -188,6 +188,7 @@ def test_shutdown_rejects_surviving_owned_application_process(remaining):
         ("1.11.0", True, 4),
         ("1.12.0", True, 4),
         ("1.12.1", True, 4),
+        ("1.12.2", True, 4),
     ],
 )
 def test_explicit_version_aware_season_profile(version, include_1977, count):
@@ -262,12 +263,12 @@ def test_candidate_profile_checks_every_synthetic_1977_team(monkeypatch, candida
         "wrong-chart-team",
     ],
 )
-@pytest.mark.parametrize("version", ["1.10.4", "1.11.0", "1.12.0", "1.12.1"])
+@pytest.mark.parametrize("version", ["1.10.4", "1.11.0", "1.12.0", "1.12.1", "1.12.2"])
 def test_opt_in_1977_creates_game_and_checks_both_chart_books(monkeypatch, failure, version):
     smoke = smoke_module()
     responses = api_responses()
     responses["/openapi.json"]["info"]["version"] = version
-    if version in {"1.11.0", "1.12.0", "1.12.1"}:
+    if version in {"1.11.0", "1.12.0", "1.12.1", "1.12.2"}:
         responses["/api/teams?season=1983"]["teams"][:3] = [
             {"id": team, "short_name": label} for team, label in {
                 "Chargers": "SD '83", "Cardinals": "STL '83", "Raiders": "LA '83",
@@ -362,7 +363,7 @@ def test_next_reviewed_release_preserves_1977_and_immutable_profiles() -> None:
 @pytest.mark.parametrize(
     "failure", [None, "Chargers", "Cardinals", "Raiders", "missing", "duplicate"]
 )
-@pytest.mark.parametrize("version", ["1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1"])
+@pytest.mark.parametrize("version", ["1.10.5", "1.10.6", "1.11.0", "1.12.0", "1.12.1", "1.12.2"])
 def test_corrective_release_checks_packaged_1983_identity_labels(
     monkeypatch: pytest.MonkeyPatch,
     failure: str | None,
@@ -510,5 +511,11 @@ def test_packaged_ui_sets_both_independent_years(monkeypatch, tmp_path, first_ye
 
 def test_reviewed_corrective_1121_preserves_90_team_profile() -> None:
     assert smoke_module().season_profile("1.12.1", True) == {
+        "1977": 28, "1983": 28, "2024": 32, "2026": 2,
+    }
+
+
+def test_reviewed_corrective_1122_preserves_90_team_profile() -> None:
+    assert smoke_module().season_profile("1.12.2", True) == {
         "1977": 28, "1983": 28, "2024": 32, "2026": 2,
     }

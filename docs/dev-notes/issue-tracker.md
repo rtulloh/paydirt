@@ -7,9 +7,9 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-237 issues: 76 open, 77 resolved, 84 closed.
+240 issues: 79 open, 77 resolved, 84 closed.
 
-## Open (76)
+## Open (79)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
@@ -17,6 +17,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 |----|----------|----------------|-------|-------|-------|
 | [FLOW-040](issues/FLOW/FLOW-040.md) | High | v1.12.1 | Pin native release runtime dependencies to the tested backend requirements | created 2026-11-19 | — |
 | [FLOW-041](issues/FLOW/FLOW-041.md) | High | v1.12.1 | Seal the completed macOS app bundle before creating its DMG | created 2026-11-19 | — |
+| [FLOW-042](issues/FLOW/FLOW-042.md) | High | v1.12.2 | Require every desktop package before publishing a release | created 2026-11-19 | — |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |
@@ -81,6 +82,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [DATA-044](issues/DATA/DATA-044.md) | Low | — | 1983 Buccaneers commentary roster incorrectly includes Doug Williams | created 2026-11-08 | — |
 | [DATA-045](issues/DATA/DATA-045.md) | Low | — | Evaluate pre-1977 historical seasons with incomplete play-by-play, starting with 1972 | created 2026-11-08 | — |
 | [DATA-050](issues/DATA/DATA-050.md) | Low | — | Use season-aware player availability and roles in roster commentary | created 2026-11-11 | — |
+| [DATA-051](issues/DATA/DATA-051.md) | Low | — | Review 1983 Eagles field-goal chart probability near a 39-yard attempt | created 2026-11-19 | — |
 | [DOC-001](issues/DOC/DOC-001.md) | Low | — | Run_full_season.py comment attributes the changed historical seeds to narration RNG only (the CPU penalty change… | created 2026-10-19 | — |
 | [FLOW-022](issues/FLOW/FLOW-022.md) | Low | — | Web UI cannot start and watch an AI-versus-AI game | created 2026-11-08 | FLOW-021 |
 | [FLOW-033](issues/FLOW/FLOW-033.md) | Low | v1.11.0 | Evaluate browser-only Paydirt using Pyodide/PyScript and WebAssembly | created 2026-11-14 | FLOW-036, RULE-032, FLOW-034, FLOW-035 |
@@ -88,6 +90,7 @@ Confirmed work remains, or an observation whose cause is not yet established.
 | [FLOW-035](issues/FLOW/FLOW-035.md) | Low | — | Add roster-backed player narration to ordinary web plays | created 2026-11-17 | FLOW-033 |
 | [RULE-008](issues/RULE/RULE-008.md) | Low | — | Spikes, kneels, and fourth-down offensive fumble recoveries that exhaust downs set turnover=True as well as… | created 2026-10-19 | AUD-022 |
 | [RULE-009](issues/RULE/RULE-009.md) | Low | — | In run_play, a +3 QB scramble with a −5 designation becomes −2 and is classified as a sack | created 2026-10-19 | — |
+| [STAT-007](issues/STAT/STAT-007.md) | Low | — | Distinguish offense yardage columns in compact season statistics | created 2026-11-19 | — |
 | [TRACE-008](issues/TRACE/TRACE-008.md) | Low | — | End-line fumble depth roll is dropped from the description when the defense recovers | created 2026-10-27 | — |
 | [VAL-008](issues/VAL/VAL-008.md) | Low | — | CLI argv dispatch rejects the advertised -l flag, ignores -A/-H ordering and skips validation on --load | created 2026-10-27 | VAL-005 |
 | [VAL-011](issues/VAL/VAL-011.md) | Low | — | Documented frontend lint command has no npm script | created 2026-10-30 | — |

@@ -2,36 +2,40 @@
 
 [Documentation index](README.md) · [Installation](installation.md)
 
-The pre-built application starts a local web server and opens Paydirt in your browser.
-Running frontend/backend services from source is covered in the [web development guide](../paydirt-web/README.md).
+[Play Paydirt in your browser](https://rtulloh.github.io/paydirt/) without a
+desktop installation. Optional desktop applications start a local web server
+and open the same game interface. Running frontend/backend services from source
+is covered in the [web development guide](../paydirt-web/README.md).
 
-## Browser-only prototype
+## Browser Edition
 
-[Play the experimental browser build](https://rtulloh.github.io/paydirt/) using the
+[Play the browser edition](https://rtulloh.github.io/paydirt/) using the
 same game screen and Python engine, with no installed Paydirt application or
 local game server. Choose from **1977 (28 teams), 1983 (28), 2024 (32)** and the
 fictional **2026 sample (2)**. These are the unchanged publicly released charts;
-their existing accuracy notes and attribution remain included. This is the
-browser feature under development for 1.11.0.
+their existing accuracy notes and attribution remain included.
 
 Wait for **Loading the Python game engine…** to finish, then choose **NEW GAME**.
 The first load downloads the Python runtime and packages from a public CDN and
-requires an internet connection. The prototype does not support offline play.
+requires an internet connection. Offline engine loading is not supported.
 
-The source build now supports durable game checkpoints and multiple season campaigns in this
+The browser edition supports durable game checkpoints and multiple season campaigns in this
 browser. Use **Saved games** to resume and export a backup, and **Seasons** for schedules,
 standings and team statistics. A storage failure is visible and retains the previous committed
 save; retry saving instead of repeating an executed play. Offline engine loading remains unavailable.
-The published experimental site can lag the source build; its own startup banner describes the
-capabilities deployed there. See [saved games](saved-games-and-standings.md) for storage boundaries.
+Saves survive ordinary reloads and browser restarts in the same profile and site.
+Export important games and seasons: clearing site data or moving to another
+browser or device does not transfer local saves, and there is no cloud sync.
+See [saved games](saved-games-and-standings.md) for storage boundaries.
 
 The chart viewer can open a read-only copy of both teams' charts in another tab
 or window. This uses browser storage for chart data only; it does not preserve
 your game. If storage is blocked, continue using the chart viewer in the game tab.
 
 The remaining instructions describe the shared game controls. References to
-installed seasons, backend sessions, saves and offline guide availability apply
-to the installed application unless the prototype behavior above says otherwise.
+installed seasons and backend sessions apply to the optional desktop application;
+browser-owned saves use the storage boundaries above. Bundled guide content can
+be read after the app loads, but this does not provide offline engine loading.
 
 ## Main Menu
 
@@ -45,7 +49,7 @@ Links to GitHub, releases, and contributor documentation still need an internet 
 Select each team's chart year independently, choose home and away teams, which team you
 control, and CPU difficulty. Swap sides moves the complete year/team selections. Exhibitions
 use the displayed home-year rules; custom campaigns use their selected fixed rules year.
-Published builds include generated 1983 and 2024 teams plus the fictional 2026 Thunderhawks and Ironclads. Additional teams require locally installed charts.
+Published builds include generated 1977, 1983 and 2024 teams plus the fictional 2026 Thunderhawks and Ironclads. Additional teams require locally installed charts in the desktop or source application.
 
 End-zone interception returns are a game-time decision only. There is no pre-game
 return setting. When your team intercepts in its own end zone, the engine pauses
