@@ -15,7 +15,7 @@ from routes import router as api_router
 app = FastAPI(
     title="Paydirt Web API",
     description="Backend API for the Paydirt board game web interface",
-    version="1.12.0"
+    version="1.12.1"
 )
 
 app.add_middleware(

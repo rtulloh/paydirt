@@ -144,3 +144,20 @@ The owner’s live browser demonstration completed all fourteen 1983 first-week 
 FLOW-039 aligns conference division rows using content-sized shared grid rows, preserving semantic sections and mobile conference ordering. The geometry regression first found a 50.25-pixel offset; the fixed desktop/mobile/filter/custom-conference case passed. All 42 existing SeasonDesk cases passed, with 91.28% line/89.14% branch coverage and all changed lines covered. Existing unrelated UI controls account for the focused gaps. Both follow-ups are closed on their targeted browser evidence. These changes restore documented behavior or adjust presentation, so the issue evidence and release notes suffice without changing player instructions.
 
 At the owner’s commute request, publication is paused. Complete Python and clean tracked-export suites each passed 11,966 tests before these JavaScript-only follow-ups and their new issue files; the added issue metadata passes the focused tracker checks. The prior complete web run passed 682 backend, 593 frontend and 38 browser cases; the final run including division geometry must finish and be reviewed. Seven nonbrowser gameplay/AI/chart gates and fresh unchanged-1977 checks pass with unchanged engine/backend bytes. No v1.12.0 tag or release has been published. Resume with the saved local commits, finish current-source regression, push and qualify exact-commit CI, then perform the immutable tag and all five downloaded-native checks.
+
+### Published-package failure and corrective release
+
+The resumed source passed all thirteen gates and clean checkout (11,970 core
+tests), all 39 HTTP browser cases and six browser-edition cases. Exact-commit
+Tests run `44643776532` passed after retrying a Chromium dependency-install
+connection failure; browser build/deployment `44643776537` passed. The immutable
+v1.12.0 tag was published at `205fbae`. Actual downloaded native startup then
+failed on all five targets because release builds installed unbounded web
+dependencies rather than the tested backend requirements. A fresh quarantined
+Safari download also exposed an invalid macOS app-bundle resource seal.
+
+v1.12.0 is marked prerelease with a do-not-install notice. It is not a healthy
+desktop release and is not ready to announce. FLOW-040/FLOW-041 and the
+[v1.12.1 correction record](release-1.12.1-readiness.md) track the repair under a
+new immutable tag. Browser play remains available. The season umbrella remains
+open until actual corrective packages pass their required checks.

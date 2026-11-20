@@ -5,7 +5,7 @@ set -e
 APP_NAME="Paydirt"
 APP_BUNDLE="${APP_NAME}.app"
 EXECUTABLE="paydirt"
-VERSION="${GITHUB_REF_NAME:-1.12.0}"
+VERSION="${GITHUB_REF_NAME:-1.12.1}"
 VERSION="${VERSION#v}"
 
 # Create .app bundle structure
@@ -49,6 +49,12 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
 </dict>
 </plist>
 EOF
+
+# Seal the completed bundle, including Info.plist and bundled resources. The
+# executable's PyInstaller ad-hoc signature alone does not seal its new app.
+# This is not Developer ID signing or notarization.
+codesign --force --sign - --timestamp=none "${APP_BUNDLE}"
+codesign --verify --deep --strict "${APP_BUNDLE}"
 
 # Create DMG using create-dmg
 # Install create-dmg if not present

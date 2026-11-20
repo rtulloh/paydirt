@@ -1,6 +1,20 @@
 # Paydirt Release Notes
 
+## v1.12.1 — Desktop packaging correction
+
+- Bundle the pinned backend dependencies used by tested installations, correcting the desktop startup failure in v1.12.0.
+- Seal and verify the completed macOS app bundle before creating its disk image. This corrects its invalid ad-hoc signature; Developer ID signing and notarization remain unavailable.
+- Retain persistent seasons, mixed-year teams, durable saves, sortable team statistics and the kickoff-touchdown recovery improvements described below.
+
+The v1.12.0 desktop packages failed downloaded-artifact startup verification and
+remain immutable history. Use the corrective release once its published-package
+verification is complete. Browser play was unaffected by the dependency mismatch.
+
+
 ## v1.12.0 — Persistent seasons and team statistics
+
+Desktop packages failed post-publication startup verification. Use the corrective
+v1.12.1 release once verified; the original tag and assets remain immutable.
 
 - Continue to the extra-point choice after kickoff touchdowns, including fumble recoveries; recover an owed try from affected saved games without replaying the touchdown.
 

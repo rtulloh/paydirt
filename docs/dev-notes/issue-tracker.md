@@ -7,14 +7,16 @@ Open an issue's own file for its description, verification and comments.
 See the [conventions and work order](issues/README.md) and the
 [developer-note disclaimer](README.md).
 
-235 issues: 74 open, 77 resolved, 84 closed.
+237 issues: 76 open, 77 resolved, 84 closed.
 
-## Open (74)
+## Open (76)
 
 Confirmed work remains, or an observation whose cause is not yet established.
 
 | ID | Priority | Target release | Title | Dates | Links |
 |----|----------|----------------|-------|-------|-------|
+| [FLOW-040](issues/FLOW/FLOW-040.md) | High | v1.12.1 | Pin native release runtime dependencies to the tested backend requirements | created 2026-11-19 | — |
+| [FLOW-041](issues/FLOW/FLOW-041.md) | High | v1.12.1 | Seal the completed macOS app bundle before creating its DMG | created 2026-11-19 | — |
 | [AI-003](issues/AI/AI-003.md) | Medium | — | Evaluate whether Hard uses weaker-team strengths, varies calls, and makes sensible situation-dependent choices | created 2026-10-18 | AI-001, AI-002, AI-006, AI-028, AI-029 |
 | [AI-012](issues/AI/AI-012.md) | Medium | — | Third-and-long competitive window may admit a weakly scored run despite much stronger alternatives | created 2026-10-18 | AI-010 |
 | [AI-013](issues/AI/AI-013.md) | Medium | — | Fourth-and-one midfield choice ignores a large late lead | created 2026-10-19 | — |

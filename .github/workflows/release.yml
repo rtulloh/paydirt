@@ -199,7 +199,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools==69.5.1 pyinstaller pyyaml typing_extensions uvicorn fastapi pydantic
+          python -m pip install setuptools==69.5.1 pyinstaller typing_extensions -r paydirt-web/backend/requirements.txt
+          python -m pip check
+          python -m pip freeze > build-requirements.txt
+
+      - name: Preserve resolved build dependencies
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dependencies-${{ matrix.artifact }}
+          path: build-requirements.txt
+          if-no-files-found: error
        
       - name: Build executable
         run: |

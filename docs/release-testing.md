@@ -11,6 +11,13 @@ gh run list --workflow post-release-smoke.yml --limit 1
 
 The workflow uses native hosted Windows, Linux x86_64, Intel Mac and Apple Silicon Mac runners. Windows separately tests the portable executable and an isolated silent installation of the published NSIS installer. The installed executable must also match the published portable executable's digest. Linux extracts the actual AppImage and launches its AppRun entry point, avoiding a runner FUSE dependency; this launch method is recorded. Each Mac mounts the published DMG, copies its app to an isolated directory and launches its normal executable.
 
+Native release builds install the checked-in backend requirements, including the tested FastAPI,
+Pydantic and Uvicorn versions, rather than resolving those runtime packages independently.
+The build runs `python -m pip check` before freezing and retains its resolved dependency list
+as the `dependencies-<platform>` workflow artifact. Inspect that list when a packaged runtime
+fails even though source tests pass. Build tools are separate from the pinned backend runtime;
+this is not a complete transitive dependency lock.
+
 Every downloaded asset must match GitHub's published size and SHA-256 digest before execution. The application runs outside the source checkout with Python import overrides removed. Windows/Linux use isolated application-data directories; fresh hosted Mac user data and the exact season inventory prevent local data from masking missing bundled teams. No local developer application or port is touched by dispatching the workflow.
 
 The base acceptance profile covers the three bundled seasons in v1.10.3: 1983 has 28 teams, 2024 has 32, and public sample 2026 has two. The actual packaged API must report the requested version, expose all team lists, create a fresh Ironclads–Thunderhawks game and return populated home/away chart books. A headless Chromium browser must render each season’s full team grid, select both public teams and reach the new game’s coin-toss screen without browser or failed local asset requests. Inspect application logs and require bounded shutdown.

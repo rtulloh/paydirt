@@ -146,3 +146,35 @@ def test_manual_hotfix_qualification(monkeypatch, tmp_path, event, run_event, he
         with pytest.raises(SystemExit):
             runpy.run_path(str(script), run_name="__main__")
         assert not output.exists()
+
+
+def test_release_build_installs_the_tested_backend_runtime_requirements():
+    """Frozen applications must use the same runtime versions as backend CI."""
+    import shlex
+
+    steps = workflow()["jobs"]["build"]["steps"]
+    install = next(step for step in steps if step.get("name") == "Install dependencies")
+    commands = [shlex.split(line) for line in install["run"].splitlines() if line.strip()]
+    requirements = "paydirt-web/backend/requirements.txt"
+    assert any("-r" in words and words[words.index("-r") + 1] == requirements
+               for words in commands), "Native packages must install the backend runtime requirements"
+    runtime = {line.split("==")[0].split("[")[0].lower()
+               for line in (ROOT / requirements).read_text().splitlines()
+               if line.strip() and not line.startswith("#")}
+    for words in commands:
+        if "install" in words:
+            assert not (runtime & {word.lower() for word in words}), "Unbounded runtime overrides the tested pins"
+    assert ["python", "-m", "pip", "check"] in commands
+    assert ["python", "-m", "pip", "freeze", ">", "build-requirements.txt"] in commands
+    evidence = next(step for step in steps if step.get("name") == "Preserve resolved build dependencies")
+    assert evidence["with"]["path"] == "build-requirements.txt"
+    assert evidence["with"]["if-no-files-found"] == "error"
+    build = next(step for step in steps if step.get("name") == "Build executable")
+    assert steps.index(install) < steps.index(build)
+
+
+def test_backend_runtime_manifest_keeps_compatible_fastapi_and_models_pinned():
+    requirements = (ROOT / "paydirt-web/backend/requirements.txt").read_text().splitlines()
+    assert "fastapi==0.109.0" in requirements
+    assert "pydantic==2.5.0" in requirements
+    assert "uvicorn[standard]==0.27.0" in requirements
