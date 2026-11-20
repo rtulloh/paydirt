@@ -1,8 +1,8 @@
 # Two-point conversion completion investigation
 
-Implementation and validation notes for [RULE-001](issues/RULE/RULE-001.md),
-[STAT-003](issues/STAT/STAT-003.md), [FLOW-018](issues/FLOW/FLOW-018.md), and
-linked [RULE-007](issues/RULE/RULE-007.md). This is developer evidence, not
+Implementation and validation notes for [RULE-001](https://github.com/rtulloh/paydirt/issues/164),
+[STAT-003](https://github.com/rtulloh/paydirt/issues/202), [FLOW-018](https://github.com/rtulloh/paydirt/issues/138), and
+linked [RULE-007](https://github.com/rtulloh/paydirt/issues/170). This is developer evidence, not
 release qualification. No push, tag, or release is authorized.
 
 The engine resolves the actual chart and return chain on an isolated conversion

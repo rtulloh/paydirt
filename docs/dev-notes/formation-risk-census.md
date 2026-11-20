@@ -86,7 +86,7 @@ runtime `9c472dbf…d8088`; the terminal run binds `12774fb8…ede52f`, after an
 spacing-only source-bundle cleanup. Each run checks its own inputs before/after;
 these are versioned component results, not a final frozen-candidate certificate.
 No new defect ticket is warranted from the absent repeated-template mechanism;
-[DATA-022](issues/DATA/DATA-022.md) records the diagnostic alongside its distinct
+[DATA-022](https://github.com/rtulloh/paydirt/issues/90) records the diagnostic alongside its distinct
 interception-floor verification. All 31 resolved tickets were checked for new
 issue-specific play-test confirmation; this stationary audit supplies none, so
 no ticket is closed.

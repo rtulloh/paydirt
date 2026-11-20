@@ -52,31 +52,31 @@ Philadelphia scores seven immediately on Dallas's kickoff-return giveaway.
 
 ## Findings and limitations
 
-- [RULE-022](issues/RULE/RULE-022.md): the declined late-game foul uses the
+- [RULE-022](https://github.com/rtulloh/paydirt/issues/185): the declined late-game foul uses the
   ordinary 44-second completion charge. Fixed using the supplied 2008 rules'
   selected action-time method: five seconds for this flagged completion,
   without enabling the entire optional timing system.
-- [RULE-023](issues/RULE/RULE-023.md): two naturally marked out-of-bounds runs
+- [RULE-023](https://github.com/rtulloh/paydirt/issues/186): two naturally marked out-of-bounds runs
   inside Q4's last five minutes consume 29 and 35 seconds. A full-resolver
   public/synthetic reproduction confirms numeric defense adjustments suppress
   the ten-second timing benefit. Blank and actual-overrule controls distinguish
   the defect from valid ordinary timing.
-- [RULE-024](issues/RULE/RULE-024.md): an untouched missed field goal gives
+- [RULE-024](https://github.com/rtulloh/paydirt/issues/187): an untouched missed field goal gives
   Philadelphia its 42 instead of its 35 under 1983 rules. Public reproduction
   confirms the unconditional holder-spot policy; primary rule-history sources
   document the 1994 change.
-- [AUD-026](issues/AUD/AUD-026.md): the kickoff penalty menu falsely predicts
+- [AUD-026](https://github.com/rtulloh/paydirt/issues/63): the kickoff penalty menu falsely predicts
   another touchdown from a stored scoring spot. The CPU accepts the re-kick
   and the actual score remains correct. Reproduced with public sample teams.
-- [STAT-005](issues/STAT/STAT-005.md): follow-up identifies the hidden
+- [STAT-005](https://github.com/rtulloh/paydirt/issues/204): follow-up identifies the hidden
   fifteen-yard scrimmage-fumble-return enforcement. Its return-chain evidence
   now reaches the action explanation. The isolated kickoff controls did not
   exercise this different return path; the total reconciles to four for 45.
-- [AUD-025](issues/AUD/AUD-025.md): this already-running process still shows
+- [AUD-025](https://github.com/rtulloh/paydirt/issues/62): this already-running process still shows
   the old punt narrative and duplicate touchdown wording. The underlying score
   is valid; this game cannot verify the later presentation patch.
-- [TRACE-001](issues/TRACE/TRACE-001.md) and
-  [TRACE-003](issues/TRACE/TRACE-003.md): secondary QT rolls and complete called
+- [TRACE-001](https://github.com/rtulloh/paydirt/issues/207) and
+  [TRACE-003](https://github.com/rtulloh/paydirt/issues/209): secondary QT rolls and complete called
   modifiers remain absent, preventing an exact full-game replay. Clock traces
   round display seconds while headers truncate them, explaining one-second
   apparent disagreements without establishing a second clock charge. The

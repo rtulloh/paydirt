@@ -7,7 +7,7 @@ generator, tolerance, coaching policy or release was changed by this audit.
 The concern does occur in Paydirt. Repeated defensive cells come from a shared
 tactical template and ordered interception allocation. They deserve explicit
 model review; visual repetition alone does not establish an incorrect frequency.
-The dedicated follow-up is [DATA-040](issues/DATA/DATA-040.md).
+The dedicated follow-up is [DATA-040](https://github.com/rtulloh/paydirt/issues/108).
 
 ## Coverage and verification
 
@@ -127,7 +127,7 @@ not. This reproduces the mechanism without inferring a historical formation
 rate or changing any chart.
 
 The newer candidates keep every defensive INT on the 1/36 subrow, removing the
-older high-mass interception floor tracked in [DATA-022](issues/DATA/DATA-022.md).
+older high-mass interception floor tracked in [DATA-022](https://github.com/rtulloh/paydirt/issues/90).
 That correction can still create row-five stripes and retains fixed depth
 support. Existing formation contrast does not establish that these placements
 or depths are historically accurate.
@@ -141,4 +141,4 @@ qualification. This census makes no cosmetic permutation or new source claim.
 
 No game or browser campaign ran for this audit. Existing resolved issues were
 reviewed; these stationary diagnostics supply no new issue-specific play-test
-closure evidence. DATA-022 and [DATA-039](issues/DATA/DATA-039.md) remain open.
+closure evidence. DATA-022 and [DATA-039](https://github.com/rtulloh/paydirt/issues/107) remain open.

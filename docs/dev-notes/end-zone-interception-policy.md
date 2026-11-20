@@ -1,6 +1,6 @@
 # Own-end-zone interception return preference
 
-Implementation and qualification notes for [RULE-030](issues/RULE/RULE-030.md).
+Implementation and qualification notes for [RULE-030](https://github.com/rtulloh/paydirt/issues/193).
 The official rulebook's VI-12-E/F distinguishes catch geometry from the
 coach's own-end-zone choice. Both the implementation worker and owner reviewed
 the complete saved page independently. The source PDF and scan identities

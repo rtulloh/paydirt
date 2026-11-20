@@ -14,16 +14,16 @@ not a claim that this review or a new play test ran on that date.
 
 | Ticket | Status after review | Priority | Finding |
 | --- | --- | --- | --- |
-| [DATA-017](issues/DATA/DATA-017.md) | resolved | High | Historical review already reconciled the 1983 totals to 1,215 sacks, 620 interceptions and 771 field-goal attempts. |
-| [DATA-028](issues/DATA/DATA-028.md) | resolved | High | The source gate checks required-field coverage and ledger identity. |
-| [DATA-032](issues/DATA/DATA-032.md) | resolved | High | Current punt snap-fumble regressions pass. |
-| [DATA-035](issues/DATA/DATA-035.md) | resolved | High | Historical raw-input review removed exactly five false offensive entries while preserving their INT/return representations; current ownership and joint-adapter controls pass. |
-| [AI-026](issues/AI/AI-026.md) | open | Medium | This is an optional coaching capability improvement over the released fair own-offense-chart/history baseline, not evidence that games cannot be played correctly. |
-| [DATA-030](issues/DATA/DATA-030.md) | open | Medium | Source facts and modeled statistical classes are now explicitly separated, including the user-authorized historical proxy and uniform fitting-only exclusion policy. |
-| [DATA-036](issues/DATA/DATA-036.md) | open | Medium | This remains a real compound-event projection limitation: the corrected modern screen has five compound plays, not the original four, and a historical omitted secondary occurrence is documented. |
-| [VAL-019](issues/VAL/VAL-019.md) | open | Medium | Year-selected actual calendars, generated-chart support, 1983/2024 postseason formats, failure handling and source/chart identity checks are implemented and exercised. |
-| [STAT-004](issues/STAT/STAT-004.md) | open | High | Fresh synthetic in-memory review reproduces the mismatch: display_games sorts week 1 ahead of an earlier-inserted week 2 record, while edit/delete still index season.games in insertion order. |
-| [VAL-009](issues/VAL/VAL-009.md) | open | High | Fresh temporary synthetic-directory reproduction confirms _find_season_dir accepts a directory outside configured roots; replay team lookup also joins request-derived paths without resolved containment. |
+| [DATA-017](https://github.com/rtulloh/paydirt/issues/85) | resolved | High | Historical review already reconciled the 1983 totals to 1,215 sacks, 620 interceptions and 771 field-goal attempts. |
+| [DATA-028](https://github.com/rtulloh/paydirt/issues/96) | resolved | High | The source gate checks required-field coverage and ledger identity. |
+| [DATA-032](https://github.com/rtulloh/paydirt/issues/100) | resolved | High | Current punt snap-fumble regressions pass. |
+| [DATA-035](https://github.com/rtulloh/paydirt/issues/103) | resolved | High | Historical raw-input review removed exactly five false offensive entries while preserving their INT/return representations; current ownership and joint-adapter controls pass. |
+| [AI-026](https://github.com/rtulloh/paydirt/issues/28) | open | Medium | This is an optional coaching capability improvement over the released fair own-offense-chart/history baseline, not evidence that games cannot be played correctly. |
+| [DATA-030](https://github.com/rtulloh/paydirt/issues/98) | open | Medium | Source facts and modeled statistical classes are now explicitly separated, including the user-authorized historical proxy and uniform fitting-only exclusion policy. |
+| [DATA-036](https://github.com/rtulloh/paydirt/issues/104) | open | Medium | This remains a real compound-event projection limitation: the corrected modern screen has five compound plays, not the original four, and a historical omitted secondary occurrence is documented. |
+| [VAL-019](https://github.com/rtulloh/paydirt/issues/234) | open | Medium | Year-selected actual calendars, generated-chart support, 1983/2024 postseason formats, failure handling and source/chart identity checks are implemented and exercised. |
+| [STAT-004](https://github.com/rtulloh/paydirt/issues/203) | open | High | Fresh synthetic in-memory review reproduces the mismatch: display_games sorts week 1 ahead of an earlier-inserted week 2 record, while edit/delete still index season.games in insertion order. |
+| [VAL-009](https://github.com/rtulloh/paydirt/issues/224) | open | High | Fresh temporary synthetic-directory reproduction confirms _find_season_dir accepts a directory outside configured roots; replay team lookup also joins request-derived paths without resolved containment. |
 
 ## Evidence and limits
 

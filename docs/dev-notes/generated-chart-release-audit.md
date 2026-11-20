@@ -28,18 +28,18 @@ including differently arranged charts with identical weighted distributions.
    interception target can become zero even when a mass-2 physical row is closer.
    The independent oracle rejects final output at all three tested seeds.
    [Allocation evidence](generated-event-allocation-audit.md),
-   [DATA-016](issues/DATA/DATA-016.md).
+   [DATA-016](https://github.com/rtulloh/paydirt/issues/84).
 2. **Classified source events disagree with official totals.** 1983 extraction
    has 629 interceptions versus 620, 1,207 sacks versus 1,215, and 775 field-goal
    attempts versus 771. 2024 has 1,306 sacks versus 1,314. Reconciliation has not
    been established. [Source evidence](generated-source-consistency-audit.md),
-   [DATA-017](issues/DATA/DATA-017.md).
+   [DATA-017](https://github.com/rtulloh/paydirt/issues/85).
 3. **Selected fumble priority can be overwritten during result classification.**
    Priority selects `F + 2` over defensive `INT 5`, but the resolver can classify
    the selected fumble as an interception because a raw cell contains `INT`.
-   [RULE-026](issues/RULE/RULE-026.md). Calibration must be rerun after its fix.
+   [RULE-026](https://github.com/rtulloh/paydirt/issues/189). Calibration must be rerun after its fix.
 4. **Current full-engine accuracy misses source tolerances.**
-   [DATA-018](issues/DATA/DATA-018.md) tracks this separately from playable games
+   [DATA-018](https://github.com/rtulloh/paydirt/issues/86) tracks this separately from playable games
    and reproducible chart files.
 
 The owner's subsequent visual review triggered a focused
@@ -52,8 +52,8 @@ developer reference.
 ## Fresh full-engine evidence
 
 Two observer defects were corrected test-first before the final run:
-[QT-fumble classification](issues/DATA/DATA-019.md) and
-[nullified offsetting plays](issues/DATA/DATA-020.md). Eight stateful controls
+[QT-fumble classification](https://github.com/rtulloh/paydirt/issues/87) and
+[nullified offsetting plays](https://github.com/rtulloh/paydirt/issues/88). Eight stateful controls
 now pass, including retained-play controls. All per-team and league denominator
 identities reconcile over the final complete samples. Earlier affected reports
 were archived as stale and cannot certify a release. The table below uses only
@@ -125,7 +125,7 @@ single generic failure.
 The full core suite passes **6,915 tests**, with **eight existing skips**, all
 conditioned on missing 1972 data (roster 1, team discovery 2, season rules 3,
 legacy extra-point encoding 2). No skip was added. These legacy fixture
-dependencies are tracked in [VAL-010](issues/VAL/VAL-010.md), a cleanup item under the synthetic/public-only unit policy.
+dependencies are tracked in [VAL-010](https://github.com/rtulloh/paydirt/issues/225), a cleanup item under the synthetic/public-only unit policy.
 Ruff, documentation/tracker checks and whitespace checks pass. No push or full
 private integration/AI regression was performed; the new gate is deliberately
 blocking current release acceptance.

@@ -123,7 +123,7 @@ forces every play to appear or declares a team balanced just because it won.
 `summary.balance_calls` and situation distributions include only completed,
 validated games. A zero exit status means games/evidence passed validation, **not**
 that every decision was sensible. Review warnings and record findings in the
-[issue tracker](dev-notes/issue-tracker.md). CSV is a situation summary; use JSON
+[issue tracker](https://github.com/rtulloh/paydirt/issues). CSV is a situation summary; use JSON
 for per-call evidence.
 
 ## Reproducibility and Regression

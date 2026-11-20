@@ -52,7 +52,7 @@ The user's normal terminal runs Chromium successfully. Both full games pass
 team switching, all four sections, mobile scrolling, modal focus containment,
 and unchanged game state before failing the final Escape focus-restoration
 assertion. This is an application lifecycle bug, tracked in
-[AUD-027](issues/AUD/AUD-027.md), rather than a browser-installation problem.
+[AUD-027](https://github.com/rtulloh/paydirt/issues/64), rather than a browser-installation problem.
 
 The fix closes the native modal before focusing the CHARTS button, releasing
 the game's native inertness. New tests model that missing browser behavior:
@@ -162,7 +162,7 @@ The accompanying offline guide browser check exposed an IPv6/IPv4 mismatch
 in Vite's development API proxy. Its unchanged image assertions failed, while
 all eight chart checks passed. Targeting IPv4 loopback fixes the connection;
 the guide browser test then passes and a proxied image returns HTTP 200. See
-[VAL-016](issues/VAL/VAL-016.md) for the baseline and verification. Reviewed the
+[VAL-016](https://github.com/rtulloh/paydirt/issues/231) for the baseline and verification. Reviewed the
 resolved issue inventory after the focused play checks; no additional ticket
 has scenario-specific confirmation for closure. No push or season/AI audit was
 performed.

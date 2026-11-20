@@ -2,8 +2,8 @@
 
 Investigation checkpoint, 2026-11-06 06:40 CST. This records current behavior
 and an unimplemented correction direction. It does not certify chart fit,
-coaching strength or season qualification. See [AI-026](issues/AI/AI-026.md)
-and [VAL-019](issues/VAL/VAL-019.md). Release remains held.
+coaching strength or season qualification. See [AI-026](https://github.com/rtulloh/paydirt/issues/28)
+and [VAL-019](https://github.com/rtulloh/paydirt/issues/234). Release remains held.
 
 ## Verified data flow
 

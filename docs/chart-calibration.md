@@ -151,7 +151,7 @@ the cohort recipe. Its 144-repetition run completed 28,224 games: all five leagu
 remains elevated. Candidate-06 is an authorized experiment, not a validated result at this checkpoint.
 
 The [1977 experiment record](dev-notes/1977-season-feasibility.md) and
-[DATA-046](dev-notes/issues/DATA/DATA-046.md) track current findings. Exact inputs, profiles,
+[DATA-046](https://github.com/rtulloh/paydirt/issues/114) track current findings. Exact inputs, profiles,
 recipes, seeds, sample counts and receipts remain in ignored
 `.ai-audits/chart-generation/1977-reviewed/`. Update released values from the final manifest
 and immutable release identity when a new season is published; retain failures in the development record.

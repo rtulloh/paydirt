@@ -1,6 +1,6 @@
 # Play-testing dice-weighted AI analysis
 
-Current follow-ups and completed AI changes are indexed in the [issue files](issues/README.md).
+Current follow-ups and completed AI changes are indexed in the [issue files](https://github.com/rtulloh/paydirt/issues).
 
 ## What changed
 

@@ -1,0 +1,1687 @@
+{
+  "repo": "rtulloh/paydirt",
+  "source_commit": "448f88e7cca2ff332d74b044e6273b604168321f",
+  "verified_at": "2026-11-20T16:13:03.169932+00:00",
+  "issues": [
+    {
+      "id": "AI-001",
+      "number": 3,
+      "url": "https://github.com/rtulloh/paydirt/issues/3",
+      "original_status": "closed",
+      "source_sha256": "dff84f4855d64f06f988c9d819d6b39f58b3e497d17c502df875710c099382e3"
+    },
+    {
+      "id": "AI-002",
+      "number": 4,
+      "url": "https://github.com/rtulloh/paydirt/issues/4",
+      "original_status": "resolved",
+      "source_sha256": "6b6c16b8c7b47aeb08924af60321562fd1fcfc2f95facca4484f29cdc8e281f7"
+    },
+    {
+      "id": "AI-003",
+      "number": 5,
+      "url": "https://github.com/rtulloh/paydirt/issues/5",
+      "original_status": "open",
+      "source_sha256": "c6776f0c157a42710b99f999bacb5af4e3e6754304a3dbadbd9914dc4e5e147b"
+    },
+    {
+      "id": "AI-004",
+      "number": 6,
+      "url": "https://github.com/rtulloh/paydirt/issues/6",
+      "original_status": "resolved",
+      "source_sha256": "c30dc1362badc21da9424d31867690c30882ae2ba17ee3530553a974498fb981"
+    },
+    {
+      "id": "AI-005",
+      "number": 7,
+      "url": "https://github.com/rtulloh/paydirt/issues/7",
+      "original_status": "resolved",
+      "source_sha256": "62b5de07a6daa3253b3dd47b57944a7897a0e991d8ec18566cca8f88e7061283"
+    },
+    {
+      "id": "AI-006",
+      "number": 8,
+      "url": "https://github.com/rtulloh/paydirt/issues/8",
+      "original_status": "resolved",
+      "source_sha256": "be60019ba508ab7fceb7662cd26f64b1cb1370258e9103cbdd21e5837e4a3534"
+    },
+    {
+      "id": "AI-007",
+      "number": 9,
+      "url": "https://github.com/rtulloh/paydirt/issues/9",
+      "original_status": "closed",
+      "source_sha256": "cefeb5dae6db20b468d0c5b2382f551b03376868ec0ab6e3e421e261e68c4e1a"
+    },
+    {
+      "id": "AI-008",
+      "number": 10,
+      "url": "https://github.com/rtulloh/paydirt/issues/10",
+      "original_status": "resolved",
+      "source_sha256": "8d6106c85802ef31027a7ee92f6e9e25fd1efea5a4dd4c875579c454fd728f7d"
+    },
+    {
+      "id": "AI-009",
+      "number": 11,
+      "url": "https://github.com/rtulloh/paydirt/issues/11",
+      "original_status": "closed",
+      "source_sha256": "d6846ab624918668502d8f8b2c296b50a4c080f614ccd65d91138e043c6666e9"
+    },
+    {
+      "id": "AI-010",
+      "number": 12,
+      "url": "https://github.com/rtulloh/paydirt/issues/12",
+      "original_status": "closed",
+      "source_sha256": "9c1aff97aca0f7e645bd85a504caf3e9fa1f73b2d64a2a71b7e1ba19270d3213"
+    },
+    {
+      "id": "AI-011",
+      "number": 13,
+      "url": "https://github.com/rtulloh/paydirt/issues/13",
+      "original_status": "closed",
+      "source_sha256": "66a93ed5e95334ea8f0d339b66c684b0dda251eac889828ac5f6c63e16578129"
+    },
+    {
+      "id": "AI-012",
+      "number": 14,
+      "url": "https://github.com/rtulloh/paydirt/issues/14",
+      "original_status": "open",
+      "source_sha256": "a52404572f524868cf25dea360c45a9fda4c8819b762fc761919928db049696e"
+    },
+    {
+      "id": "AI-013",
+      "number": 15,
+      "url": "https://github.com/rtulloh/paydirt/issues/15",
+      "original_status": "open",
+      "source_sha256": "d22e5fd5a876e099459b329d4ee70cf605e3952468d51359c3251a27e5945122"
+    },
+    {
+      "id": "AI-014",
+      "number": 16,
+      "url": "https://github.com/rtulloh/paydirt/issues/16",
+      "original_status": "closed",
+      "source_sha256": "33892d3ab9ded255185e16e712b018c0ad112b8e09c76bdd376757edce5e84c4"
+    },
+    {
+      "id": "AI-015",
+      "number": 17,
+      "url": "https://github.com/rtulloh/paydirt/issues/17",
+      "original_status": "resolved",
+      "source_sha256": "d6f9c9952f05fcbc4dfba21f874b8be03b62e4af356fceed636b118152e46d2c"
+    },
+    {
+      "id": "AI-016",
+      "number": 18,
+      "url": "https://github.com/rtulloh/paydirt/issues/18",
+      "original_status": "open",
+      "source_sha256": "8c5561581cc76e2a2b90aa90c469d559cbe8c87f4e7d33142ed45c4885070845"
+    },
+    {
+      "id": "AI-017",
+      "number": 19,
+      "url": "https://github.com/rtulloh/paydirt/issues/19",
+      "original_status": "closed",
+      "source_sha256": "ff31bdc246fd05e4f8506a6638e31389a2360af60854eb7f5267d42240e10367"
+    },
+    {
+      "id": "AI-018",
+      "number": 20,
+      "url": "https://github.com/rtulloh/paydirt/issues/20",
+      "original_status": "open",
+      "source_sha256": "c7f430dfb2228330db46214665880a0827040be77dacb588a0d621f7c181633b"
+    },
+    {
+      "id": "AI-019",
+      "number": 21,
+      "url": "https://github.com/rtulloh/paydirt/issues/21",
+      "original_status": "open",
+      "source_sha256": "3340515d8d53314f0e33fffda05b14031cf47870302faf2d3b5af85ae1e676b3"
+    },
+    {
+      "id": "AI-020",
+      "number": 22,
+      "url": "https://github.com/rtulloh/paydirt/issues/22",
+      "original_status": "open",
+      "source_sha256": "3775d51284a413848d505f740fcfaeb2233d61e1b32d5b349ee13a8de540ca63"
+    },
+    {
+      "id": "AI-021",
+      "number": 23,
+      "url": "https://github.com/rtulloh/paydirt/issues/23",
+      "original_status": "open",
+      "source_sha256": "932e3dc0b5f1e8090fee44e3fe5f08c0bdf140f050e1e11ef9f488453c127a5a"
+    },
+    {
+      "id": "AI-022",
+      "number": 24,
+      "url": "https://github.com/rtulloh/paydirt/issues/24",
+      "original_status": "resolved",
+      "source_sha256": "617adfb74daff1ee551b96b50a37af1f0d43b84831bfca5752f50d219244061d"
+    },
+    {
+      "id": "AI-023",
+      "number": 25,
+      "url": "https://github.com/rtulloh/paydirt/issues/25",
+      "original_status": "open",
+      "source_sha256": "797b20869817cecb1eaf42d8cef73db753a36c9b80f297f5e91e4ae45050301e"
+    },
+    {
+      "id": "AI-024",
+      "number": 26,
+      "url": "https://github.com/rtulloh/paydirt/issues/26",
+      "original_status": "resolved",
+      "source_sha256": "cfc849325e3e5dba650ec3298eba4b97338ba7707445a420010029de9aca362f"
+    },
+    {
+      "id": "AI-025",
+      "number": 27,
+      "url": "https://github.com/rtulloh/paydirt/issues/27",
+      "original_status": "closed",
+      "source_sha256": "e12091f5a9fde9f5b8ce5b5bd66437f01a6437f93179571adb49fca99709801b"
+    },
+    {
+      "id": "AI-026",
+      "number": 28,
+      "url": "https://github.com/rtulloh/paydirt/issues/28",
+      "original_status": "open",
+      "source_sha256": "6771bf517deaf514a396d4ef251dba30b0572c4187158bd3e9d4c6356963b45f"
+    },
+    {
+      "id": "AI-027",
+      "number": 29,
+      "url": "https://github.com/rtulloh/paydirt/issues/29",
+      "original_status": "closed",
+      "source_sha256": "f1193f7fda8e72ce016165bbe12d747d40b1e94acf54682a07d33b0d303b02d4"
+    },
+    {
+      "id": "AI-028",
+      "number": 30,
+      "url": "https://github.com/rtulloh/paydirt/issues/30",
+      "original_status": "closed",
+      "source_sha256": "e4b63a6852aa3fc8be7c41889fee4618050813c9cc36f0a0395281add1901f73"
+    },
+    {
+      "id": "AI-029",
+      "number": 31,
+      "url": "https://github.com/rtulloh/paydirt/issues/31",
+      "original_status": "resolved",
+      "source_sha256": "080db1d3f18fe9f05783f745f191d6cb8c5e87d73db96e33077292e74154b662"
+    },
+    {
+      "id": "AI-030",
+      "number": 32,
+      "url": "https://github.com/rtulloh/paydirt/issues/32",
+      "original_status": "open",
+      "source_sha256": "d8f234c33d6fe11489142fd78b5df0251f8d69362519299506281a89c436358b"
+    },
+    {
+      "id": "AI-031",
+      "number": 33,
+      "url": "https://github.com/rtulloh/paydirt/issues/33",
+      "original_status": "resolved",
+      "source_sha256": "7f271c2311bc926cbf01c8b0d2bd0b2c9dc8044e72da4d6a34fb337081fb09a0"
+    },
+    {
+      "id": "AI-032",
+      "number": 34,
+      "url": "https://github.com/rtulloh/paydirt/issues/34",
+      "original_status": "open",
+      "source_sha256": "e046ca2d68eabeead5969b0b7c9c20ddd9ed0085d3ea799e29db586a6ed9c8ff"
+    },
+    {
+      "id": "AI-033",
+      "number": 35,
+      "url": "https://github.com/rtulloh/paydirt/issues/35",
+      "original_status": "resolved",
+      "source_sha256": "d87ca13030833f6907f0f6e028e0f13340c972ae2260c3276279fdf6e30a2e5d"
+    },
+    {
+      "id": "AI-034",
+      "number": 36,
+      "url": "https://github.com/rtulloh/paydirt/issues/36",
+      "original_status": "resolved",
+      "source_sha256": "580f8ea11ba5a91ab346ec9d1e23e1b9fd44cbae07f2219f4570a5324b5c3345"
+    },
+    {
+      "id": "AI-035",
+      "number": 37,
+      "url": "https://github.com/rtulloh/paydirt/issues/37",
+      "original_status": "open",
+      "source_sha256": "c4135d0d0324124b94cce7911dd08b744449dd893d66221a2ddbc162c81d233b"
+    },
+    {
+      "id": "AUD-001",
+      "number": 38,
+      "url": "https://github.com/rtulloh/paydirt/issues/38",
+      "original_status": "resolved",
+      "source_sha256": "0136fe60d4f27b942348222fb93fa424fb76815d2a693c77d8ba68c8e933fd6f"
+    },
+    {
+      "id": "AUD-002",
+      "number": 39,
+      "url": "https://github.com/rtulloh/paydirt/issues/39",
+      "original_status": "closed",
+      "source_sha256": "b49d54e583c7aafb231400c8e56d884eec71c7da760e8562ef9a0a21773ab68c"
+    },
+    {
+      "id": "AUD-003",
+      "number": 40,
+      "url": "https://github.com/rtulloh/paydirt/issues/40",
+      "original_status": "closed",
+      "source_sha256": "626927c3ce05a6ddb7dea4d1c94f9dd2f4fa0611ba264c8fc3a2d5d215787556"
+    },
+    {
+      "id": "AUD-004",
+      "number": 41,
+      "url": "https://github.com/rtulloh/paydirt/issues/41",
+      "original_status": "closed",
+      "source_sha256": "b1054a290f2fcfc039de2f2e13288d851ec389ea180871996c38de959d588ea1"
+    },
+    {
+      "id": "AUD-005",
+      "number": 42,
+      "url": "https://github.com/rtulloh/paydirt/issues/42",
+      "original_status": "resolved",
+      "source_sha256": "89f830189c8823f4bfe6b38261722aeac44615f475afca4df498da869d226928"
+    },
+    {
+      "id": "AUD-006",
+      "number": 43,
+      "url": "https://github.com/rtulloh/paydirt/issues/43",
+      "original_status": "resolved",
+      "source_sha256": "da0b65aed2255ac2ab94c4d5c99c70581e91e1193f7b85af92f0bcd0d3a257eb"
+    },
+    {
+      "id": "AUD-007",
+      "number": 44,
+      "url": "https://github.com/rtulloh/paydirt/issues/44",
+      "original_status": "resolved",
+      "source_sha256": "3af290e0e867091c34a3ca0c9b413fd058bc43528dd8d6bb7855f45cb76dd638"
+    },
+    {
+      "id": "AUD-008",
+      "number": 45,
+      "url": "https://github.com/rtulloh/paydirt/issues/45",
+      "original_status": "resolved",
+      "source_sha256": "2a8b9d6798696c49767509ada0ba7f56a8a0f6edce13c8de722e6a6c6956522c"
+    },
+    {
+      "id": "AUD-009",
+      "number": 46,
+      "url": "https://github.com/rtulloh/paydirt/issues/46",
+      "original_status": "closed",
+      "source_sha256": "97ebbf4126502ce9e6ca7f8e6a3ecea44f088b3a5a47fe3043b189e3ffcb5fd5"
+    },
+    {
+      "id": "AUD-010",
+      "number": 47,
+      "url": "https://github.com/rtulloh/paydirt/issues/47",
+      "original_status": "closed",
+      "source_sha256": "843ec42418f59c8ea2b2d93a2f0c306f46eaeea64fd3d848d7fdd6a6eafd079d"
+    },
+    {
+      "id": "AUD-011",
+      "number": 48,
+      "url": "https://github.com/rtulloh/paydirt/issues/48",
+      "original_status": "resolved",
+      "source_sha256": "1474513a2a71ec473434cca44adb08ae289663b2f7414a9ad21a2f58819fa374"
+    },
+    {
+      "id": "AUD-012",
+      "number": 49,
+      "url": "https://github.com/rtulloh/paydirt/issues/49",
+      "original_status": "closed",
+      "source_sha256": "2ed6e2a0f8531d388fbc61f9fa333f211998ca49933177957edd4a60b7f1fb14"
+    },
+    {
+      "id": "AUD-013",
+      "number": 50,
+      "url": "https://github.com/rtulloh/paydirt/issues/50",
+      "original_status": "closed",
+      "source_sha256": "0031835b74715b5e05ffea1e716c0b942f72c153b859a89fd927669916644f31"
+    },
+    {
+      "id": "AUD-014",
+      "number": 51,
+      "url": "https://github.com/rtulloh/paydirt/issues/51",
+      "original_status": "open",
+      "source_sha256": "c572a1255ea13380cb8b79fea0f6dadb5983864ce7543a684362235871d18f00"
+    },
+    {
+      "id": "AUD-015",
+      "number": 52,
+      "url": "https://github.com/rtulloh/paydirt/issues/52",
+      "original_status": "open",
+      "source_sha256": "5080d0996790765b602a3e24166cfc093c0239f99e304442106762674972a8c9"
+    },
+    {
+      "id": "AUD-016",
+      "number": 53,
+      "url": "https://github.com/rtulloh/paydirt/issues/53",
+      "original_status": "closed",
+      "source_sha256": "a11e194a713fad362bf4fdd727232ecc368b704b8055c1d7bdd2d9c683836542"
+    },
+    {
+      "id": "AUD-017",
+      "number": 54,
+      "url": "https://github.com/rtulloh/paydirt/issues/54",
+      "original_status": "open",
+      "source_sha256": "af99a417384968e74683d99da22d99e75e9855cfc0edaee278b5027a799982e1"
+    },
+    {
+      "id": "AUD-018",
+      "number": 55,
+      "url": "https://github.com/rtulloh/paydirt/issues/55",
+      "original_status": "open",
+      "source_sha256": "b59512a9dfd76744701ad078ec138f4ac6d09282072fab692370eb58eac27f57"
+    },
+    {
+      "id": "AUD-019",
+      "number": 56,
+      "url": "https://github.com/rtulloh/paydirt/issues/56",
+      "original_status": "open",
+      "source_sha256": "f89dc3e58c989ae290487daed2936a05ba1bd9be6e87ef383034aca55db2a06a"
+    },
+    {
+      "id": "AUD-020",
+      "number": 57,
+      "url": "https://github.com/rtulloh/paydirt/issues/57",
+      "original_status": "open",
+      "source_sha256": "c80242cfe783a752cf9eec22f4a7dc5c0e27e926ff1e9748b89145306f26d79a"
+    },
+    {
+      "id": "AUD-021",
+      "number": 58,
+      "url": "https://github.com/rtulloh/paydirt/issues/58",
+      "original_status": "open",
+      "source_sha256": "c852b64c6126cb217c2515ad6160c1c926ab36bd7a98019a69c5facd6f5fc7e9"
+    },
+    {
+      "id": "AUD-022",
+      "number": 59,
+      "url": "https://github.com/rtulloh/paydirt/issues/59",
+      "original_status": "open",
+      "source_sha256": "66311e90af116fafb58043387d9c513fd7b42a64316a452f4ddb7b6d33540af9"
+    },
+    {
+      "id": "AUD-023",
+      "number": 60,
+      "url": "https://github.com/rtulloh/paydirt/issues/60",
+      "original_status": "open",
+      "source_sha256": "1fb7a5bbe58f9a7ff8c86f1ab7212bb1a054d503c156d19660cd376f08fa138e"
+    },
+    {
+      "id": "AUD-024",
+      "number": 61,
+      "url": "https://github.com/rtulloh/paydirt/issues/61",
+      "original_status": "open",
+      "source_sha256": "2bf2f93c6f39c6510e63a2171c08ce87a9224f07d6eb0552835d125550672ab2"
+    },
+    {
+      "id": "AUD-025",
+      "number": 62,
+      "url": "https://github.com/rtulloh/paydirt/issues/62",
+      "original_status": "resolved",
+      "source_sha256": "5437b4ef237e6fec83d3ed27285b0305e72f72bef9c15477b865ca6f1793e6d0"
+    },
+    {
+      "id": "AUD-026",
+      "number": 63,
+      "url": "https://github.com/rtulloh/paydirt/issues/63",
+      "original_status": "closed",
+      "source_sha256": "a28b306197edd3cc28ef6e4adbfe770ff3e5e72b7c142158ed60fdf5250a8b17"
+    },
+    {
+      "id": "AUD-027",
+      "number": 64,
+      "url": "https://github.com/rtulloh/paydirt/issues/64",
+      "original_status": "closed",
+      "source_sha256": "7421c2ab44bfc49f9030d71ef51036d19c93f569abc1c44f175f68c42cf0e422"
+    },
+    {
+      "id": "AUD-028",
+      "number": 65,
+      "url": "https://github.com/rtulloh/paydirt/issues/65",
+      "original_status": "resolved",
+      "source_sha256": "94beca6025323c7ee268d49693552f7874f5a3a8812b1c41cf8405a9ea8d0a72"
+    },
+    {
+      "id": "AUD-029",
+      "number": 66,
+      "url": "https://github.com/rtulloh/paydirt/issues/66",
+      "original_status": "resolved",
+      "source_sha256": "55087593849a6c7cd7439ae44c8f3b1884bdee9e21dff36b0aa84549b84d72b1"
+    },
+    {
+      "id": "AUD-030",
+      "number": 67,
+      "url": "https://github.com/rtulloh/paydirt/issues/67",
+      "original_status": "resolved",
+      "source_sha256": "d37a38e4c0f4d5343514e22dea60031dcda4cd0cbca0be81fc8fe4b31e328572"
+    },
+    {
+      "id": "AUD-031",
+      "number": 68,
+      "url": "https://github.com/rtulloh/paydirt/issues/68",
+      "original_status": "closed",
+      "source_sha256": "af243b0d59216bbf899ea5bb63d80df43e58b914c3d800f3039dc704c08d1a3e"
+    },
+    {
+      "id": "DATA-001",
+      "number": 69,
+      "url": "https://github.com/rtulloh/paydirt/issues/69",
+      "original_status": "resolved",
+      "source_sha256": "5774abcc6f10ed1c3ab14f871e1fd17ff530898eb17771b5c884e6e4f0a37a9e"
+    },
+    {
+      "id": "DATA-002",
+      "number": 70,
+      "url": "https://github.com/rtulloh/paydirt/issues/70",
+      "original_status": "open",
+      "source_sha256": "74a3deca7bf8d110f651cb8fdbf4da4c0497c5b868e760c4fdf7f203ad7908b1"
+    },
+    {
+      "id": "DATA-003",
+      "number": 71,
+      "url": "https://github.com/rtulloh/paydirt/issues/71",
+      "original_status": "open",
+      "source_sha256": "5e10e5eb9508d473291163abdff38b8629dd76bb1dffdd36f1886218c430eae3"
+    },
+    {
+      "id": "DATA-004",
+      "number": 72,
+      "url": "https://github.com/rtulloh/paydirt/issues/72",
+      "original_status": "closed",
+      "source_sha256": "617fd9ad52824fcfa9807365cf9eb64c30852a7a7e443da422c30d0f5f556233"
+    },
+    {
+      "id": "DATA-005",
+      "number": 73,
+      "url": "https://github.com/rtulloh/paydirt/issues/73",
+      "original_status": "closed",
+      "source_sha256": "3bb8718c4dc282f85ac1d3fd794e113ba94313450a2086eb9b8cc28fe60926e8"
+    },
+    {
+      "id": "DATA-006",
+      "number": 74,
+      "url": "https://github.com/rtulloh/paydirt/issues/74",
+      "original_status": "closed",
+      "source_sha256": "74c1e67a97f938c8d65d498cb18bf687e31d48f14dfd05aa138ff6ef34ccb96a"
+    },
+    {
+      "id": "DATA-007",
+      "number": 75,
+      "url": "https://github.com/rtulloh/paydirt/issues/75",
+      "original_status": "closed",
+      "source_sha256": "af89f404c05998aae095cd55325761585bd069bc4bc3c8f9d4d2b6ed0b61636c"
+    },
+    {
+      "id": "DATA-008",
+      "number": 76,
+      "url": "https://github.com/rtulloh/paydirt/issues/76",
+      "original_status": "closed",
+      "source_sha256": "a1d3077419a5aa43fdb148ed4ddb20e983562ec6ec4fea2b317e6eeb6f102102"
+    },
+    {
+      "id": "DATA-009",
+      "number": 77,
+      "url": "https://github.com/rtulloh/paydirt/issues/77",
+      "original_status": "closed",
+      "source_sha256": "0a888b43f8dabc3671cd718a18348be66e3fb65518c57601cc2e8bbc3dc4fdfa"
+    },
+    {
+      "id": "DATA-010",
+      "number": 78,
+      "url": "https://github.com/rtulloh/paydirt/issues/78",
+      "original_status": "closed",
+      "source_sha256": "97f544e4898e85a6bce35355afb0d8c8afed10fe444e736204d01db92baf7f85"
+    },
+    {
+      "id": "DATA-011",
+      "number": 79,
+      "url": "https://github.com/rtulloh/paydirt/issues/79",
+      "original_status": "resolved",
+      "source_sha256": "b56acf8cfcfb1c444450f467bc2f099d225960246976d39eb9c68b46d54c3894"
+    },
+    {
+      "id": "DATA-012",
+      "number": 80,
+      "url": "https://github.com/rtulloh/paydirt/issues/80",
+      "original_status": "closed",
+      "source_sha256": "78f2f688cebb2a0ade6143424ccc43fe6b98b1b20282aaa325b12abdeed213b4"
+    },
+    {
+      "id": "DATA-013",
+      "number": 81,
+      "url": "https://github.com/rtulloh/paydirt/issues/81",
+      "original_status": "closed",
+      "source_sha256": "c45270d269530e11a2f0bef755f2ff77a105e2b83ca2974497130863ace85a4f"
+    },
+    {
+      "id": "DATA-014",
+      "number": 82,
+      "url": "https://github.com/rtulloh/paydirt/issues/82",
+      "original_status": "closed",
+      "source_sha256": "556953bbbfd23adc409174394bbd9c0028ae359035c1ddf93c2bc64fc886b988"
+    },
+    {
+      "id": "DATA-015",
+      "number": 83,
+      "url": "https://github.com/rtulloh/paydirt/issues/83",
+      "original_status": "open",
+      "source_sha256": "4287d42656b656f65a645b498923b2ce40e7ceec3c81d856ad9d37e7863001e8"
+    },
+    {
+      "id": "DATA-016",
+      "number": 84,
+      "url": "https://github.com/rtulloh/paydirt/issues/84",
+      "original_status": "resolved",
+      "source_sha256": "8e1d7e09591cf3a8d05e58760386ddec7b3cd0512dccbe2a8ec6cd52777026b5"
+    },
+    {
+      "id": "DATA-017",
+      "number": 85,
+      "url": "https://github.com/rtulloh/paydirt/issues/85",
+      "original_status": "resolved",
+      "source_sha256": "9c086a87897e4ea50b7047353f17b1582ecaa853367ba60a7381122601e14128"
+    },
+    {
+      "id": "DATA-018",
+      "number": 86,
+      "url": "https://github.com/rtulloh/paydirt/issues/86",
+      "original_status": "open",
+      "source_sha256": "e24a8232e7f31f8151fcf7ea84c7cf51a0fa3bf8011fc29ad64fbd148bfa017d"
+    },
+    {
+      "id": "DATA-019",
+      "number": 87,
+      "url": "https://github.com/rtulloh/paydirt/issues/87",
+      "original_status": "closed",
+      "source_sha256": "ba359f9e2d925235ddfffba9e9fb1b3f83876db13970b399fc0e6ff92ee46ee2"
+    },
+    {
+      "id": "DATA-020",
+      "number": 88,
+      "url": "https://github.com/rtulloh/paydirt/issues/88",
+      "original_status": "closed",
+      "source_sha256": "0dcf144936aa6e79ade1f34552615bdb30e69da1ad6e526c3c05671f3cf7018e"
+    },
+    {
+      "id": "DATA-021",
+      "number": 89,
+      "url": "https://github.com/rtulloh/paydirt/issues/89",
+      "original_status": "closed",
+      "source_sha256": "34848f3e168abf79484c3a8f3d2f55b5e3b24cdcd466f75728ecaf9da1dd1589"
+    },
+    {
+      "id": "DATA-022",
+      "number": 90,
+      "url": "https://github.com/rtulloh/paydirt/issues/90",
+      "original_status": "resolved",
+      "source_sha256": "d5cf1b81e2226ba1d33c7776edaf5ebcc1fc3b00e7f7d4c8582bc66fcd5dd2ce"
+    },
+    {
+      "id": "DATA-023",
+      "number": 91,
+      "url": "https://github.com/rtulloh/paydirt/issues/91",
+      "original_status": "resolved",
+      "source_sha256": "ec8b5d207ebb38b0827a40bbaefd80ecc812cb3ecc4f24be8558362ec3af42a2"
+    },
+    {
+      "id": "DATA-024",
+      "number": 92,
+      "url": "https://github.com/rtulloh/paydirt/issues/92",
+      "original_status": "resolved",
+      "source_sha256": "63fc61b47039b25cb7080ab999e94c984d9c9f15459a3446250c28b6647c6425"
+    },
+    {
+      "id": "DATA-025",
+      "number": 93,
+      "url": "https://github.com/rtulloh/paydirt/issues/93",
+      "original_status": "resolved",
+      "source_sha256": "802eb949be9f2b9516aaff06707a04c2224c9c02fb48b1997b0f5624ca7ef92b"
+    },
+    {
+      "id": "DATA-026",
+      "number": 94,
+      "url": "https://github.com/rtulloh/paydirt/issues/94",
+      "original_status": "resolved",
+      "source_sha256": "b1e51c796f3e996f8e87a557bf4afec6507a45c2df465eb27c421868689b9d9f"
+    },
+    {
+      "id": "DATA-027",
+      "number": 95,
+      "url": "https://github.com/rtulloh/paydirt/issues/95",
+      "original_status": "resolved",
+      "source_sha256": "4519fdd6925c2354aa5cc34cbe827584ac4f4e92d88b6b0ee855f3ca3f401c79"
+    },
+    {
+      "id": "DATA-028",
+      "number": 96,
+      "url": "https://github.com/rtulloh/paydirt/issues/96",
+      "original_status": "resolved",
+      "source_sha256": "f4771279547b3b5840910f34977ccad9ad073d9cf41c5163168154dce9a6ac18"
+    },
+    {
+      "id": "DATA-029",
+      "number": 97,
+      "url": "https://github.com/rtulloh/paydirt/issues/97",
+      "original_status": "resolved",
+      "source_sha256": "694b52762d61f89a85275c4b1fa84f835f9e86ec2d51d1ee3099dbb56a2a834e"
+    },
+    {
+      "id": "DATA-030",
+      "number": 98,
+      "url": "https://github.com/rtulloh/paydirt/issues/98",
+      "original_status": "open",
+      "source_sha256": "147fa8669350f33f6bba8d119379725452170fba7e612b7c3b7d0ab8b39ccc9d"
+    },
+    {
+      "id": "DATA-031",
+      "number": 99,
+      "url": "https://github.com/rtulloh/paydirt/issues/99",
+      "original_status": "resolved",
+      "source_sha256": "540df7389c390a3bc2bda3c4f3b138155cd4b3c7603efb3a881a54cc36581d1c"
+    },
+    {
+      "id": "DATA-032",
+      "number": 100,
+      "url": "https://github.com/rtulloh/paydirt/issues/100",
+      "original_status": "resolved",
+      "source_sha256": "90e4666979d18b982c8ed4a08c2f059addce38949ba91f407363d6a7553c1a50"
+    },
+    {
+      "id": "DATA-033",
+      "number": 101,
+      "url": "https://github.com/rtulloh/paydirt/issues/101",
+      "original_status": "closed",
+      "source_sha256": "4f1065d9cb0ff2786de87e1c19782ca896bf1fa11baf968ded70f59444a231ce"
+    },
+    {
+      "id": "DATA-034",
+      "number": 102,
+      "url": "https://github.com/rtulloh/paydirt/issues/102",
+      "original_status": "closed",
+      "source_sha256": "5a797349fc64b96a1643949ec87a27378a07b6f3e98f16346f006d86f24346d7"
+    },
+    {
+      "id": "DATA-035",
+      "number": 103,
+      "url": "https://github.com/rtulloh/paydirt/issues/103",
+      "original_status": "resolved",
+      "source_sha256": "d1cbeb5fd68defd30867346c58c5c6a5b4aebc7785e4dbdff5fcaa314a569f65"
+    },
+    {
+      "id": "DATA-036",
+      "number": 104,
+      "url": "https://github.com/rtulloh/paydirt/issues/104",
+      "original_status": "open",
+      "source_sha256": "456d770e926bf590a0200eeaf7fdc988a4a91b8634584f7938abb213dd9651f4"
+    },
+    {
+      "id": "DATA-037",
+      "number": 105,
+      "url": "https://github.com/rtulloh/paydirt/issues/105",
+      "original_status": "resolved",
+      "source_sha256": "388f6e63c88ec354dcf646f0ece18170aba7a5a23cfd1615f945044af05d3dfe"
+    },
+    {
+      "id": "DATA-038",
+      "number": 106,
+      "url": "https://github.com/rtulloh/paydirt/issues/106",
+      "original_status": "open",
+      "source_sha256": "4014fd22cc5acf8a3caab81b3e3fe077496b0011f7bf142114b4ba0bde42b8bf"
+    },
+    {
+      "id": "DATA-039",
+      "number": 107,
+      "url": "https://github.com/rtulloh/paydirt/issues/107",
+      "original_status": "open",
+      "source_sha256": "552cd7aef8b9036ee68165b134d77c4f553cdfc5f1cce7bbabf280d4f833b1fb"
+    },
+    {
+      "id": "DATA-040",
+      "number": 108,
+      "url": "https://github.com/rtulloh/paydirt/issues/108",
+      "original_status": "open",
+      "source_sha256": "b75666df4336c62fc548306be0919348c0a82862b34b1bfdd48b8a68dbf0a0ce"
+    },
+    {
+      "id": "DATA-041",
+      "number": 109,
+      "url": "https://github.com/rtulloh/paydirt/issues/109",
+      "original_status": "open",
+      "source_sha256": "4c421df7da5ff7a8345d34bfa16fd1751d22b1bad7fa35fad4c812d5cc002154"
+    },
+    {
+      "id": "DATA-042",
+      "number": 110,
+      "url": "https://github.com/rtulloh/paydirt/issues/110",
+      "original_status": "open",
+      "source_sha256": "877d1598118f4db4750402ff4704dcd769b7c81d69d3bb4066ea28c545027a78"
+    },
+    {
+      "id": "DATA-043",
+      "number": 111,
+      "url": "https://github.com/rtulloh/paydirt/issues/111",
+      "original_status": "closed",
+      "source_sha256": "cb6def7e9d7115cc93901c098a7859de27903cc81ef60b82de9f60659f060e98"
+    },
+    {
+      "id": "DATA-044",
+      "number": 112,
+      "url": "https://github.com/rtulloh/paydirt/issues/112",
+      "original_status": "open",
+      "source_sha256": "f0cd87464bd5479c3fa6f23b360db7a3e80eed407d527d19226fd1969f0e21e3"
+    },
+    {
+      "id": "DATA-045",
+      "number": 113,
+      "url": "https://github.com/rtulloh/paydirt/issues/113",
+      "original_status": "open",
+      "source_sha256": "3008f0a9e91c60d27b998d4f121302b97530a4177fa6747ad75c7c0cd3d34ee4"
+    },
+    {
+      "id": "DATA-046",
+      "number": 114,
+      "url": "https://github.com/rtulloh/paydirt/issues/114",
+      "original_status": "open",
+      "source_sha256": "3ca9a4cbd2e84c563ec4cb1440c386e0ec6c367aeed82d0744263941eb1f6cfc"
+    },
+    {
+      "id": "DATA-047",
+      "number": 115,
+      "url": "https://github.com/rtulloh/paydirt/issues/115",
+      "original_status": "closed",
+      "source_sha256": "7cf681d53f7e9e40f775d27a7dc9e6c4f1e2cfd936a7e97ace7ffd95f95abe91"
+    },
+    {
+      "id": "DATA-048",
+      "number": 116,
+      "url": "https://github.com/rtulloh/paydirt/issues/116",
+      "original_status": "open",
+      "source_sha256": "f2eeb3f89ace0f92da653200e03d67a920b77b321cd933d1b31d0a5ba13dd4f2"
+    },
+    {
+      "id": "DATA-049",
+      "number": 117,
+      "url": "https://github.com/rtulloh/paydirt/issues/117",
+      "original_status": "closed",
+      "source_sha256": "1df9b08f650f16cbbb9b7b7c6b03b3ed206fda4522710676f6ec5217478305d3"
+    },
+    {
+      "id": "DATA-050",
+      "number": 118,
+      "url": "https://github.com/rtulloh/paydirt/issues/118",
+      "original_status": "open",
+      "source_sha256": "5b681f90ce80e5e68777e4448b7fbb4b13d049e29e71b7b276bbc16c6bf94744"
+    },
+    {
+      "id": "DATA-051",
+      "number": 119,
+      "url": "https://github.com/rtulloh/paydirt/issues/119",
+      "original_status": "open",
+      "source_sha256": "8cd6552041410a0237ae69edd9485c7deaf0a64f995ea7d0e6e90b8bef9e37f8"
+    },
+    {
+      "id": "DOC-001",
+      "number": 120,
+      "url": "https://github.com/rtulloh/paydirt/issues/120",
+      "original_status": "open",
+      "source_sha256": "2589b1bd4b19ac47d9c7f1e92b190bcbd1b975259cbb1019b80aee6dc68d4598"
+    },
+    {
+      "id": "FLOW-001",
+      "number": 121,
+      "url": "https://github.com/rtulloh/paydirt/issues/121",
+      "original_status": "resolved",
+      "source_sha256": "a81ccd1e6a0d4cc5e7334f551ce82bb1b28289612fcdf9ed5c174eeaa9253224"
+    },
+    {
+      "id": "FLOW-002",
+      "number": 122,
+      "url": "https://github.com/rtulloh/paydirt/issues/122",
+      "original_status": "resolved",
+      "source_sha256": "342977a406cdde3aa42f656fd573f2589ae239ba07e75d9ee27ab337733a4e4d"
+    },
+    {
+      "id": "FLOW-003",
+      "number": 123,
+      "url": "https://github.com/rtulloh/paydirt/issues/123",
+      "original_status": "resolved",
+      "source_sha256": "26c040ec752b39df051cff2c210bf1bb5e06917bd13f32fb1084f8a2790e9dce"
+    },
+    {
+      "id": "FLOW-004",
+      "number": 124,
+      "url": "https://github.com/rtulloh/paydirt/issues/124",
+      "original_status": "resolved",
+      "source_sha256": "c9869bb1d901b24ce746c6feb4564c02015818d58f87bb84540e2b752d017a45"
+    },
+    {
+      "id": "FLOW-005",
+      "number": 125,
+      "url": "https://github.com/rtulloh/paydirt/issues/125",
+      "original_status": "closed",
+      "source_sha256": "83acadfc0b0c0da5073e1f7d906768c01c522f51ad6d8b9121e547634f32b406"
+    },
+    {
+      "id": "FLOW-006",
+      "number": 126,
+      "url": "https://github.com/rtulloh/paydirt/issues/126",
+      "original_status": "resolved",
+      "source_sha256": "751add62e658ad47efd83dde985f689287f1c5743541f77dc9d124119d82e27e"
+    },
+    {
+      "id": "FLOW-007",
+      "number": 127,
+      "url": "https://github.com/rtulloh/paydirt/issues/127",
+      "original_status": "open",
+      "source_sha256": "827232a9ae5e5bf0424cef286c09792c2c37960e6be53c4f0b1b133a258d340b"
+    },
+    {
+      "id": "FLOW-008",
+      "number": 128,
+      "url": "https://github.com/rtulloh/paydirt/issues/128",
+      "original_status": "open",
+      "source_sha256": "a18b3d20342afd482db75f7869a44c515458d2bd0ba0f5f51364a7c941ec38d2"
+    },
+    {
+      "id": "FLOW-009",
+      "number": 129,
+      "url": "https://github.com/rtulloh/paydirt/issues/129",
+      "original_status": "open",
+      "source_sha256": "008f5630e586186e8ba32052124f990f3c6208061d8ee16156ecf36b7d5d89de"
+    },
+    {
+      "id": "FLOW-010",
+      "number": 130,
+      "url": "https://github.com/rtulloh/paydirt/issues/130",
+      "original_status": "resolved",
+      "source_sha256": "e4ba7d30ec8c598fe2b4eda903a55e4162a5f638e0be366a9dcc87782f62bc4f"
+    },
+    {
+      "id": "FLOW-011",
+      "number": 131,
+      "url": "https://github.com/rtulloh/paydirt/issues/131",
+      "original_status": "resolved",
+      "source_sha256": "9ed33e3f463b252dd20c599e9c7b07650f9af20ea1b72f4fe9448d30d59b9a61"
+    },
+    {
+      "id": "FLOW-012",
+      "number": 132,
+      "url": "https://github.com/rtulloh/paydirt/issues/132",
+      "original_status": "closed",
+      "source_sha256": "7f68bd3e27e5d8a734bcde825506a4f41d90b0d2392a366bebca76f40cbe4dc8"
+    },
+    {
+      "id": "FLOW-013",
+      "number": 133,
+      "url": "https://github.com/rtulloh/paydirt/issues/133",
+      "original_status": "closed",
+      "source_sha256": "5d266bbd8c02281869aa3b7f7f16cd74c3f7fc67a725ee3467bd725ae0862743"
+    },
+    {
+      "id": "FLOW-014",
+      "number": 134,
+      "url": "https://github.com/rtulloh/paydirt/issues/134",
+      "original_status": "closed",
+      "source_sha256": "72674bd0e4d51b445be7e1af67580627cbf7d7e0aef2f9b61d243687cd25d8c4"
+    },
+    {
+      "id": "FLOW-015",
+      "number": 135,
+      "url": "https://github.com/rtulloh/paydirt/issues/135",
+      "original_status": "resolved",
+      "source_sha256": "ad1b27c7ff46ab184427e22d8bc173ac1805b122b67d51c58bbf33e2d3901726"
+    },
+    {
+      "id": "FLOW-016",
+      "number": 136,
+      "url": "https://github.com/rtulloh/paydirt/issues/136",
+      "original_status": "resolved",
+      "source_sha256": "b6a7d956c6faab9f81e088d1b0d54583ae4c9a5862f49b2f76973323d79c0f60"
+    },
+    {
+      "id": "FLOW-017",
+      "number": 137,
+      "url": "https://github.com/rtulloh/paydirt/issues/137",
+      "original_status": "closed",
+      "source_sha256": "fc06a0d1f79fbf378b40770cba8d4edc8036e26e7f26b004d658b02f08e3279e"
+    },
+    {
+      "id": "FLOW-018",
+      "number": 138,
+      "url": "https://github.com/rtulloh/paydirt/issues/138",
+      "original_status": "closed",
+      "source_sha256": "f70344347f86ed481a2f7ca6f84e86f29639c32556528c97398a396f07f97b7d"
+    },
+    {
+      "id": "FLOW-019",
+      "number": 139,
+      "url": "https://github.com/rtulloh/paydirt/issues/139",
+      "original_status": "closed",
+      "source_sha256": "2916563995b085beb8955081dc9f575ca2bad9bc82a383c240e81f41bef04335"
+    },
+    {
+      "id": "FLOW-020",
+      "number": 140,
+      "url": "https://github.com/rtulloh/paydirt/issues/140",
+      "original_status": "closed",
+      "source_sha256": "28744c3a280f09b6098d5b8b996e4d73548aa399cb9f8067d24f2e6e21532a1e"
+    },
+    {
+      "id": "FLOW-021",
+      "number": 141,
+      "url": "https://github.com/rtulloh/paydirt/issues/141",
+      "original_status": "closed",
+      "source_sha256": "8d131d3b4d95ce22725ed05a71b41371b346b77afda7fe65dbba41a80e79716e"
+    },
+    {
+      "id": "FLOW-022",
+      "number": 142,
+      "url": "https://github.com/rtulloh/paydirt/issues/142",
+      "original_status": "open",
+      "source_sha256": "ee56da820820b34413537071a63f91c22f4f0c34e27764c791c378d442bd0bc7"
+    },
+    {
+      "id": "FLOW-023",
+      "number": 143,
+      "url": "https://github.com/rtulloh/paydirt/issues/143",
+      "original_status": "open",
+      "source_sha256": "e23833dd9d61fe3fc904445abdc680198df7464e737b01856f89f64be8bac0d9"
+    },
+    {
+      "id": "FLOW-024",
+      "number": 144,
+      "url": "https://github.com/rtulloh/paydirt/issues/144",
+      "original_status": "closed",
+      "source_sha256": "cfd1fd3ced7bfcecd5ea2e94b4be700c17092367692594bfe084da54f43821da"
+    },
+    {
+      "id": "FLOW-025",
+      "number": 145,
+      "url": "https://github.com/rtulloh/paydirt/issues/145",
+      "original_status": "open",
+      "source_sha256": "06ceb2216a7219bc4a89e447f5981e73a88796a96d5c5c42e4461b02fe40e6f1"
+    },
+    {
+      "id": "FLOW-026",
+      "number": 146,
+      "url": "https://github.com/rtulloh/paydirt/issues/146",
+      "original_status": "resolved",
+      "source_sha256": "78c6028e99f8195f6d42d000246054541f014dee0b12c743ba983a8df2672846"
+    },
+    {
+      "id": "FLOW-027",
+      "number": 147,
+      "url": "https://github.com/rtulloh/paydirt/issues/147",
+      "original_status": "resolved",
+      "source_sha256": "94b88a3be8a308b9a4545f39730a856e5ad0f46f7dff057745e8a8c772393576"
+    },
+    {
+      "id": "FLOW-028",
+      "number": 148,
+      "url": "https://github.com/rtulloh/paydirt/issues/148",
+      "original_status": "resolved",
+      "source_sha256": "551b7143efeec8d8a5381979274e97b72bddf9123bdfc3d712cb623d28eabff9"
+    },
+    {
+      "id": "FLOW-029",
+      "number": 149,
+      "url": "https://github.com/rtulloh/paydirt/issues/149",
+      "original_status": "closed",
+      "source_sha256": "05f95a3b51512a3acd8e6018d752cf82b1c01e48c77848e848f26a1cb7f47b0d"
+    },
+    {
+      "id": "FLOW-030",
+      "number": 150,
+      "url": "https://github.com/rtulloh/paydirt/issues/150",
+      "original_status": "resolved",
+      "source_sha256": "897b5b51313f608232e4e76cd844449b4c9fcf6ab4e0182a27a00237e2efb58a"
+    },
+    {
+      "id": "FLOW-031",
+      "number": 151,
+      "url": "https://github.com/rtulloh/paydirt/issues/151",
+      "original_status": "resolved",
+      "source_sha256": "6053482234b0859fe34a7415e2435794f93b6cfe2f4348df2c6048822c2a6dca"
+    },
+    {
+      "id": "FLOW-032",
+      "number": 152,
+      "url": "https://github.com/rtulloh/paydirt/issues/152",
+      "original_status": "resolved",
+      "source_sha256": "85b6c8d7e29c6e9ea215b0c56a44e14387d5080994b0e999bc947b3c3907d46d"
+    },
+    {
+      "id": "FLOW-033",
+      "number": 153,
+      "url": "https://github.com/rtulloh/paydirt/issues/153",
+      "original_status": "open",
+      "source_sha256": "7168e1609aba0eb0acfa0e40c4c8da8abb4fd08f08011530a0e07160d40a893d"
+    },
+    {
+      "id": "FLOW-034",
+      "number": 154,
+      "url": "https://github.com/rtulloh/paydirt/issues/154",
+      "original_status": "open",
+      "source_sha256": "154650bd584f81157727df8839f869ba0ddcca3a7ac207f8ee6f760cc390a608"
+    },
+    {
+      "id": "FLOW-035",
+      "number": 155,
+      "url": "https://github.com/rtulloh/paydirt/issues/155",
+      "original_status": "open",
+      "source_sha256": "bb007b11bb363a0c7a636ca1c5162877ef32fd8822b808b29cecf9da252ea960"
+    },
+    {
+      "id": "FLOW-036",
+      "number": 156,
+      "url": "https://github.com/rtulloh/paydirt/issues/156",
+      "original_status": "closed",
+      "source_sha256": "2be666d747f87a45690763599a83127af4413a8f74fd986cc6c9d8e3049f3c26"
+    },
+    {
+      "id": "FLOW-037",
+      "number": 157,
+      "url": "https://github.com/rtulloh/paydirt/issues/157",
+      "original_status": "closed",
+      "source_sha256": "86ea46089c4b2d965f773fcba13e75a058777a9235b88f166ef4e043f66a76ea"
+    },
+    {
+      "id": "FLOW-038",
+      "number": 158,
+      "url": "https://github.com/rtulloh/paydirt/issues/158",
+      "original_status": "closed",
+      "source_sha256": "5d2fdce3085ebb808bce00ec348d0b60aa7ca6e89bd792cf29152eba83d87db0"
+    },
+    {
+      "id": "FLOW-039",
+      "number": 159,
+      "url": "https://github.com/rtulloh/paydirt/issues/159",
+      "original_status": "closed",
+      "source_sha256": "9f1fdf6d62612580f1f594ffb528f32475fb31b6cd82b14aea985efd433c8d54"
+    },
+    {
+      "id": "FLOW-040",
+      "number": 160,
+      "url": "https://github.com/rtulloh/paydirt/issues/160",
+      "original_status": "closed",
+      "source_sha256": "1d21ba6cf337626f86fbb1db9e954f6ac4d7cdebfd3d48cf0cb2f50b6b1461a7"
+    },
+    {
+      "id": "FLOW-041",
+      "number": 161,
+      "url": "https://github.com/rtulloh/paydirt/issues/161",
+      "original_status": "closed",
+      "source_sha256": "a4d21494ce6667c05b2d6ec62480bdd4504fa4909158d1093cb1d8ae9c83681d"
+    },
+    {
+      "id": "FLOW-042",
+      "number": 162,
+      "url": "https://github.com/rtulloh/paydirt/issues/162",
+      "original_status": "closed",
+      "source_sha256": "7166ecbd7b327533329ce96a1fac35b9e4bd1911c6a92c2f5b9b42ad65d8ba65"
+    },
+    {
+      "id": "LINT-001",
+      "number": 163,
+      "url": "https://github.com/rtulloh/paydirt/issues/163",
+      "original_status": "resolved",
+      "source_sha256": "e0c3ebfd6028450c7c8dfb5f5f3c40fb451d75daf8825180b4a8a4b3d2e847fb"
+    },
+    {
+      "id": "RULE-001",
+      "number": 164,
+      "url": "https://github.com/rtulloh/paydirt/issues/164",
+      "original_status": "closed",
+      "source_sha256": "acfbc1725858a79a03474e360d9fd7d6536245208ee96c4c417e9822023c2d57"
+    },
+    {
+      "id": "RULE-002",
+      "number": 165,
+      "url": "https://github.com/rtulloh/paydirt/issues/165",
+      "original_status": "resolved",
+      "source_sha256": "89e0e7b87bfd1b1456e7c6d88f7ed8a5a7c68cc65720373a8c4f40dbf8be6568"
+    },
+    {
+      "id": "RULE-003",
+      "number": 166,
+      "url": "https://github.com/rtulloh/paydirt/issues/166",
+      "original_status": "open",
+      "source_sha256": "ade6da2b26b06ec0ec71b6388e9bcf0391476a7a9040bde15293935ee33da245"
+    },
+    {
+      "id": "RULE-004",
+      "number": 167,
+      "url": "https://github.com/rtulloh/paydirt/issues/167",
+      "original_status": "open",
+      "source_sha256": "c8f5ffb857e0d5b587ee76de483d74ebac170671eb68985ccf66c7399d52e3fd"
+    },
+    {
+      "id": "RULE-005",
+      "number": 168,
+      "url": "https://github.com/rtulloh/paydirt/issues/168",
+      "original_status": "open",
+      "source_sha256": "7d1b3b0bea1acd55626703cc3348049dd5aea8b1f497573a72e92afca7a806e0"
+    },
+    {
+      "id": "RULE-006",
+      "number": 169,
+      "url": "https://github.com/rtulloh/paydirt/issues/169",
+      "original_status": "open",
+      "source_sha256": "76af2e4fbee9bd8651936b67f53dc8a1996151d72ee67d6f1243fadd06921b24"
+    },
+    {
+      "id": "RULE-007",
+      "number": 170,
+      "url": "https://github.com/rtulloh/paydirt/issues/170",
+      "original_status": "closed",
+      "source_sha256": "2bcd9026abe0c4d362238dcd0e26e6247808ca765adb922a9f4bda0ccc2eec7d"
+    },
+    {
+      "id": "RULE-008",
+      "number": 171,
+      "url": "https://github.com/rtulloh/paydirt/issues/171",
+      "original_status": "open",
+      "source_sha256": "55dde716b2735c4efbd744b1f30058feb70117a6ae4ccce0d4ede24f050ea215"
+    },
+    {
+      "id": "RULE-009",
+      "number": 172,
+      "url": "https://github.com/rtulloh/paydirt/issues/172",
+      "original_status": "open",
+      "source_sha256": "25ba259cd3d83312b8786668e2ca396fa8e273c5aa4ab9665d324c5ea29b3279"
+    },
+    {
+      "id": "RULE-010",
+      "number": 173,
+      "url": "https://github.com/rtulloh/paydirt/issues/173",
+      "original_status": "closed",
+      "source_sha256": "bd6c89caf5d39d66132ba51e1375690df619282bd70f562af0f0ee6d10075e1a"
+    },
+    {
+      "id": "RULE-011",
+      "number": 174,
+      "url": "https://github.com/rtulloh/paydirt/issues/174",
+      "original_status": "open",
+      "source_sha256": "1be207ec20c89c7b46764ae8543f388547f63139f700e56cfa1a26ae2a00af40"
+    },
+    {
+      "id": "RULE-012",
+      "number": 175,
+      "url": "https://github.com/rtulloh/paydirt/issues/175",
+      "original_status": "open",
+      "source_sha256": "2e18a86462d06dd793de81fc3e8b444113c16eab2008396bd663ddbc7e4ed9e4"
+    },
+    {
+      "id": "RULE-013",
+      "number": 176,
+      "url": "https://github.com/rtulloh/paydirt/issues/176",
+      "original_status": "closed",
+      "source_sha256": "512417756f74004213e1405a7874fc5d72a6c414c1a2e9b2f2241b3cd8e2884e"
+    },
+    {
+      "id": "RULE-014",
+      "number": 177,
+      "url": "https://github.com/rtulloh/paydirt/issues/177",
+      "original_status": "resolved",
+      "source_sha256": "e5ec5eedca6ec2d846d70d56bf88fb01cf84364993b2badca5df5c74178103e4"
+    },
+    {
+      "id": "RULE-015",
+      "number": 178,
+      "url": "https://github.com/rtulloh/paydirt/issues/178",
+      "original_status": "resolved",
+      "source_sha256": "85885878ee65cda6598a9e503cd1788c915c84b073ecd43bb17ac60482886275"
+    },
+    {
+      "id": "RULE-016",
+      "number": 179,
+      "url": "https://github.com/rtulloh/paydirt/issues/179",
+      "original_status": "resolved",
+      "source_sha256": "cd3a1ae2cf7bb83273e81121e26b4089fdbe03419bb8ddd5134eccf7954d4560"
+    },
+    {
+      "id": "RULE-017",
+      "number": 180,
+      "url": "https://github.com/rtulloh/paydirt/issues/180",
+      "original_status": "closed",
+      "source_sha256": "99acd30f12b29a44a187ac096221d9b5c7f55b4aa43c9499804cd419d965916f"
+    },
+    {
+      "id": "RULE-018",
+      "number": 181,
+      "url": "https://github.com/rtulloh/paydirt/issues/181",
+      "original_status": "resolved",
+      "source_sha256": "5ba1a60120d7d53331fd61ee098bb710484c9b4af978000c1cbfd23e638b32df"
+    },
+    {
+      "id": "RULE-019",
+      "number": 182,
+      "url": "https://github.com/rtulloh/paydirt/issues/182",
+      "original_status": "resolved",
+      "source_sha256": "6ea8b475de66cb9ee7407d9ac763274e354d1a2841e7358aed4740714a5f332d"
+    },
+    {
+      "id": "RULE-020",
+      "number": 183,
+      "url": "https://github.com/rtulloh/paydirt/issues/183",
+      "original_status": "resolved",
+      "source_sha256": "b3a5480e8058bfb1567e1ade59240cabecdc0f2132f68d866a07bd99514c9229"
+    },
+    {
+      "id": "RULE-021",
+      "number": 184,
+      "url": "https://github.com/rtulloh/paydirt/issues/184",
+      "original_status": "closed",
+      "source_sha256": "ea854aa2461d0740970c4f38cde8060b6d00f4b2f26c70de8e5066b7084950e8"
+    },
+    {
+      "id": "RULE-022",
+      "number": 185,
+      "url": "https://github.com/rtulloh/paydirt/issues/185",
+      "original_status": "closed",
+      "source_sha256": "f8a339352da455a2189b8ba144b2b350b7e1f5417713b4afc82cf093890ba25e"
+    },
+    {
+      "id": "RULE-023",
+      "number": 186,
+      "url": "https://github.com/rtulloh/paydirt/issues/186",
+      "original_status": "closed",
+      "source_sha256": "0739171ce3655dcce9f9bc61e88bf931b8f3c01f460e9520c3450d860772a8e9"
+    },
+    {
+      "id": "RULE-024",
+      "number": 187,
+      "url": "https://github.com/rtulloh/paydirt/issues/187",
+      "original_status": "closed",
+      "source_sha256": "333d80cddfcbed5c8afa798b02add8698c27ec204f65a74f05a558be0bbcf579"
+    },
+    {
+      "id": "RULE-025",
+      "number": 188,
+      "url": "https://github.com/rtulloh/paydirt/issues/188",
+      "original_status": "resolved",
+      "source_sha256": "9c657f0f66b5daadb9591870168694d61de9e3ef60438cc2592973f31a17772b"
+    },
+    {
+      "id": "RULE-026",
+      "number": 189,
+      "url": "https://github.com/rtulloh/paydirt/issues/189",
+      "original_status": "resolved",
+      "source_sha256": "80f884b33d978117ecbf2fcdd1ff0667220ae1d37c31aa78a23c68e0749483f1"
+    },
+    {
+      "id": "RULE-027",
+      "number": 190,
+      "url": "https://github.com/rtulloh/paydirt/issues/190",
+      "original_status": "open",
+      "source_sha256": "68ae9f816b46576059925b17ddf2b7a124b24edbe66ced19679cebaa09b86cc2"
+    },
+    {
+      "id": "RULE-028",
+      "number": 191,
+      "url": "https://github.com/rtulloh/paydirt/issues/191",
+      "original_status": "closed",
+      "source_sha256": "b0537619f644cc0158bb78b7de00136467d9d9a401cb150eeba79548e8381ad0"
+    },
+    {
+      "id": "RULE-029",
+      "number": 192,
+      "url": "https://github.com/rtulloh/paydirt/issues/192",
+      "original_status": "resolved",
+      "source_sha256": "4d4246388c841072eb99cb1b2bd3edbd78f6f76555f17cc428fd814169bee11a"
+    },
+    {
+      "id": "RULE-030",
+      "number": 193,
+      "url": "https://github.com/rtulloh/paydirt/issues/193",
+      "original_status": "resolved",
+      "source_sha256": "49b153614fb9722cec8be089fb0a706a6fcb6b422feb8e49cca4a2be8689e2a9"
+    },
+    {
+      "id": "RULE-031",
+      "number": 194,
+      "url": "https://github.com/rtulloh/paydirt/issues/194",
+      "original_status": "resolved",
+      "source_sha256": "99c25963b97bd8bf94f2399197d58bde82ec0f9558bbea7cc75d37e200577010"
+    },
+    {
+      "id": "RULE-032",
+      "number": 195,
+      "url": "https://github.com/rtulloh/paydirt/issues/195",
+      "original_status": "resolved",
+      "source_sha256": "2cc1fb9fce4060f16053407214f95a7c94f83e0f55452ed01ffac59a4af5fe05"
+    },
+    {
+      "id": "SPIKE-001",
+      "number": 196,
+      "url": "https://github.com/rtulloh/paydirt/issues/196",
+      "original_status": "closed",
+      "source_sha256": "acadb88c667f7c8ea9604419ccc9ba7a454792112218861a82ee6c15e3c59699"
+    },
+    {
+      "id": "SPIKE-002",
+      "number": 197,
+      "url": "https://github.com/rtulloh/paydirt/issues/197",
+      "original_status": "closed",
+      "source_sha256": "56d629ca6a2294d33b92d9dc749403da4770385fbab08ee0a2d4f580f6a40982"
+    },
+    {
+      "id": "SPIKE-003",
+      "number": 198,
+      "url": "https://github.com/rtulloh/paydirt/issues/198",
+      "original_status": "resolved",
+      "source_sha256": "f6f9d0ef5b588cc862a2c6c9513c595ba83463eda4fd0ea973d34504b5d98932"
+    },
+    {
+      "id": "SPIKE-004",
+      "number": 199,
+      "url": "https://github.com/rtulloh/paydirt/issues/199",
+      "original_status": "closed",
+      "source_sha256": "1a8611bee9d7bd15181d9332e5e7c8445c1a276153e33ca685d9cf446de77050"
+    },
+    {
+      "id": "STAT-001",
+      "number": 200,
+      "url": "https://github.com/rtulloh/paydirt/issues/200",
+      "original_status": "open",
+      "source_sha256": "b1f4357a7412add17cb394b56bebec62ed9b23479431f35b88ab19bf50efbbcd"
+    },
+    {
+      "id": "STAT-002",
+      "number": 201,
+      "url": "https://github.com/rtulloh/paydirt/issues/201",
+      "original_status": "closed",
+      "source_sha256": "fb287bd10bb6dfe8bf9ea0c05d8ac4f634cfccc95e9008393faaf5823c9cb243"
+    },
+    {
+      "id": "STAT-003",
+      "number": 202,
+      "url": "https://github.com/rtulloh/paydirt/issues/202",
+      "original_status": "closed",
+      "source_sha256": "b2a1892636d9ef272668a4f5f420c3e21913ad4235501d10b134a2b04e69b0c9"
+    },
+    {
+      "id": "STAT-004",
+      "number": 203,
+      "url": "https://github.com/rtulloh/paydirt/issues/203",
+      "original_status": "closed",
+      "source_sha256": "21eee7059ec2ecff5a13850b004b693f8ff19bc650ddfab4717da86392548915"
+    },
+    {
+      "id": "STAT-005",
+      "number": 204,
+      "url": "https://github.com/rtulloh/paydirt/issues/204",
+      "original_status": "closed",
+      "source_sha256": "8b723a6a90d6e6b3c920d0a528862b0ddd8dcf2ad042ac68904ef144ea5b286f"
+    },
+    {
+      "id": "STAT-006",
+      "number": 205,
+      "url": "https://github.com/rtulloh/paydirt/issues/205",
+      "original_status": "closed",
+      "source_sha256": "689ab144c8e6c87d15cdcdd3d3f4c1d994c1ea7de02d002fe36a0c0523c1213f"
+    },
+    {
+      "id": "STAT-007",
+      "number": 206,
+      "url": "https://github.com/rtulloh/paydirt/issues/206",
+      "original_status": "open",
+      "source_sha256": "188435e1e232996465748f330d09906bfae5f25b033485ff06be72a9492db783"
+    },
+    {
+      "id": "TRACE-001",
+      "number": 207,
+      "url": "https://github.com/rtulloh/paydirt/issues/207",
+      "original_status": "open",
+      "source_sha256": "711f4c7ecff8c7b02df5f518152e0e8ad3b37aa1d278b6dbe0cbaa30444a9184"
+    },
+    {
+      "id": "TRACE-002",
+      "number": 208,
+      "url": "https://github.com/rtulloh/paydirt/issues/208",
+      "original_status": "closed",
+      "source_sha256": "b47d77b5fda7c09c241cdbfc5542d9cedf0eeeb17d1212223e2928cd30c9bfaf"
+    },
+    {
+      "id": "TRACE-003",
+      "number": 209,
+      "url": "https://github.com/rtulloh/paydirt/issues/209",
+      "original_status": "open",
+      "source_sha256": "1b33069ae120d3617a9d08febd313a4ce38eb70ef742ba582d729b9005ed41e7"
+    },
+    {
+      "id": "TRACE-004",
+      "number": 210,
+      "url": "https://github.com/rtulloh/paydirt/issues/210",
+      "original_status": "open",
+      "source_sha256": "d4b74354e1dd764234cd890e744392d840f796a6698503e02070830cfc7ad102"
+    },
+    {
+      "id": "TRACE-005",
+      "number": 211,
+      "url": "https://github.com/rtulloh/paydirt/issues/211",
+      "original_status": "open",
+      "source_sha256": "64f86cfc5f665a12ba23a6895a0590f4452e37564079134c422fc4e7deac8258"
+    },
+    {
+      "id": "TRACE-006",
+      "number": 212,
+      "url": "https://github.com/rtulloh/paydirt/issues/212",
+      "original_status": "resolved",
+      "source_sha256": "f1e27e276b287b4d41478d1c9ede92eec029b3e17d1a1bf37ccb47ed041d9d7d"
+    },
+    {
+      "id": "TRACE-007",
+      "number": 213,
+      "url": "https://github.com/rtulloh/paydirt/issues/213",
+      "original_status": "open",
+      "source_sha256": "4dfef4b1d4aec3d29972f0b0bf3b6200aa55356a61bde46e247de9e36f69f1ea"
+    },
+    {
+      "id": "TRACE-008",
+      "number": 214,
+      "url": "https://github.com/rtulloh/paydirt/issues/214",
+      "original_status": "open",
+      "source_sha256": "2dc1a2bac3a56ee61454e30cdabd3c8fa2e5bb5ddab0995bcb243d7db1989063"
+    },
+    {
+      "id": "TRACE-009",
+      "number": 215,
+      "url": "https://github.com/rtulloh/paydirt/issues/215",
+      "original_status": "closed",
+      "source_sha256": "72d87271dd1614036704811cd8c06b99a1ca3b36a9198750e2d2cc38a3b46be7"
+    },
+    {
+      "id": "VAL-001",
+      "number": 216,
+      "url": "https://github.com/rtulloh/paydirt/issues/216",
+      "original_status": "open",
+      "source_sha256": "6758d8d1407b43dcd8c58952f865f19bd8c5b322070d01aef6aeb0bb861bf05b"
+    },
+    {
+      "id": "VAL-002",
+      "number": 217,
+      "url": "https://github.com/rtulloh/paydirt/issues/217",
+      "original_status": "resolved",
+      "source_sha256": "317b006120866bbb55706efa417ee4b2331836cec614c741cb6f387b55e7997b"
+    },
+    {
+      "id": "VAL-003",
+      "number": 218,
+      "url": "https://github.com/rtulloh/paydirt/issues/218",
+      "original_status": "closed",
+      "source_sha256": "3baf00eb2a349d379031a3fdba22726a54583d529df02f2cd7e722981d3ad515"
+    },
+    {
+      "id": "VAL-004",
+      "number": 219,
+      "url": "https://github.com/rtulloh/paydirt/issues/219",
+      "original_status": "open",
+      "source_sha256": "99b3510269e388790d66a1cc2f8ab33e578ad06b17980b93566677716550ae31"
+    },
+    {
+      "id": "VAL-005",
+      "number": 220,
+      "url": "https://github.com/rtulloh/paydirt/issues/220",
+      "original_status": "open",
+      "source_sha256": "d6f6d6272c90979b7ca8910b993849ae20da560347fe078f586754300eb1c3db"
+    },
+    {
+      "id": "VAL-006",
+      "number": 221,
+      "url": "https://github.com/rtulloh/paydirt/issues/221",
+      "original_status": "closed",
+      "source_sha256": "4dad1f0e66f41213fcca192689c9ddb1e69c6c6a2752b44166d57c36be7d0701"
+    },
+    {
+      "id": "VAL-007",
+      "number": 222,
+      "url": "https://github.com/rtulloh/paydirt/issues/222",
+      "original_status": "closed",
+      "source_sha256": "e3d6fd24b787b6def69486b0efb40ba055961540bb1d79a90d0d524137fa619e"
+    },
+    {
+      "id": "VAL-008",
+      "number": 223,
+      "url": "https://github.com/rtulloh/paydirt/issues/223",
+      "original_status": "open",
+      "source_sha256": "d01f4c908fc37796a4c974c19aff2550a437cee5126f54f2430571e15c6ceb38"
+    },
+    {
+      "id": "VAL-009",
+      "number": 224,
+      "url": "https://github.com/rtulloh/paydirt/issues/224",
+      "original_status": "closed",
+      "source_sha256": "2fce79451d100e297cd54885af3198368472c417d379b08f71fae7bf7a7245c7"
+    },
+    {
+      "id": "VAL-010",
+      "number": 225,
+      "url": "https://github.com/rtulloh/paydirt/issues/225",
+      "original_status": "closed",
+      "source_sha256": "a54354928c24895a99de6668ab7ae6822aae3c116995b838c7e37b5dbdf79c5a"
+    },
+    {
+      "id": "VAL-011",
+      "number": 226,
+      "url": "https://github.com/rtulloh/paydirt/issues/226",
+      "original_status": "open",
+      "source_sha256": "bfc7db95761ec4d80f9ee022d590f7e653fc3d75979db58382ba90f764271cc8"
+    },
+    {
+      "id": "VAL-012",
+      "number": 227,
+      "url": "https://github.com/rtulloh/paydirt/issues/227",
+      "original_status": "resolved",
+      "source_sha256": "85347ee68998783849b46696a29db95dfebbd90d66ad137416c1948e4bcb8b66"
+    },
+    {
+      "id": "VAL-013",
+      "number": 228,
+      "url": "https://github.com/rtulloh/paydirt/issues/228",
+      "original_status": "open",
+      "source_sha256": "cd3736426a649f2b3f8e20f379b9a5178abddb246c94e1dd21e93f76c8a16a1b"
+    },
+    {
+      "id": "VAL-014",
+      "number": 229,
+      "url": "https://github.com/rtulloh/paydirt/issues/229",
+      "original_status": "closed",
+      "source_sha256": "be9f944e6b1a2c947b3a239988dc43a1fc0b03d0a067be71c39d03bfac69ad1a"
+    },
+    {
+      "id": "VAL-015",
+      "number": 230,
+      "url": "https://github.com/rtulloh/paydirt/issues/230",
+      "original_status": "closed",
+      "source_sha256": "dfc5df085092e0767bcb1fbfe3cd89f3307100d2e6496907ee85618a384afb4a"
+    },
+    {
+      "id": "VAL-016",
+      "number": 231,
+      "url": "https://github.com/rtulloh/paydirt/issues/231",
+      "original_status": "closed",
+      "source_sha256": "b5cfab3a2db295adeca395cd8eed0db2a02c293d59dd441df577a0b9f1dfbac1"
+    },
+    {
+      "id": "VAL-017",
+      "number": 232,
+      "url": "https://github.com/rtulloh/paydirt/issues/232",
+      "original_status": "resolved",
+      "source_sha256": "eb9b023de385d58f1494866e9d598a9df87f083a75bdeff143cb0d98b06310af"
+    },
+    {
+      "id": "VAL-018",
+      "number": 233,
+      "url": "https://github.com/rtulloh/paydirt/issues/233",
+      "original_status": "resolved",
+      "source_sha256": "1a6eff1f352f5cfa83664d6407fbe9aea578205de9b490c7eb069e35b57c5a8e"
+    },
+    {
+      "id": "VAL-019",
+      "number": 234,
+      "url": "https://github.com/rtulloh/paydirt/issues/234",
+      "original_status": "open",
+      "source_sha256": "a323482a34ef65df5c9737f8b59bbe9a005b44175cd1589e5b555ff10a705f4b"
+    },
+    {
+      "id": "VAL-020",
+      "number": 235,
+      "url": "https://github.com/rtulloh/paydirt/issues/235",
+      "original_status": "open",
+      "source_sha256": "72b8a94d294307e39f7a9c009d91b01228e769abc935f051f50be89e4f5ad0b7"
+    },
+    {
+      "id": "VAL-021",
+      "number": 236,
+      "url": "https://github.com/rtulloh/paydirt/issues/236",
+      "original_status": "closed",
+      "source_sha256": "38b06f76ad94fb6885410b341d7c51a32d98d0cb763758d75db8433e62fe54aa"
+    },
+    {
+      "id": "VAL-022",
+      "number": 237,
+      "url": "https://github.com/rtulloh/paydirt/issues/237",
+      "original_status": "closed",
+      "source_sha256": "1d65780128d58294480e47dbe495f7031d026377ef7eafa25482e9212f3ce148"
+    },
+    {
+      "id": "VAL-023",
+      "number": 238,
+      "url": "https://github.com/rtulloh/paydirt/issues/238",
+      "original_status": "closed",
+      "source_sha256": "92bfe2185349f79690f38417a3c3f0da7f460632953011d20afbb80079147e7f"
+    },
+    {
+      "id": "VAL-024",
+      "number": 239,
+      "url": "https://github.com/rtulloh/paydirt/issues/239",
+      "original_status": "closed",
+      "source_sha256": "ba29619f45bd14e7b1b26ca3fc3f0519795239b49c42cde977309ab456497592"
+    },
+    {
+      "id": "VAL-025",
+      "number": 240,
+      "url": "https://github.com/rtulloh/paydirt/issues/240",
+      "original_status": "resolved",
+      "source_sha256": "24b350a137bfd7969e62c6a91d3fe14c615890dd31b63574c48e90e06bd7ce8a"
+    },
+    {
+      "id": "VAL-026",
+      "number": 241,
+      "url": "https://github.com/rtulloh/paydirt/issues/241",
+      "original_status": "resolved",
+      "source_sha256": "c6cfa68af4c8b227535ce0e51d3987049443feeed9bf065638510dafb043b331"
+    },
+    {
+      "id": "VAL-027",
+      "number": 242,
+      "url": "https://github.com/rtulloh/paydirt/issues/242",
+      "original_status": "resolved",
+      "source_sha256": "8f1b5221c914a8162b89822b591e2d22fad1fd600b5108109430935326b68637"
+    }
+  ]
+}

@@ -76,7 +76,7 @@ python3 -m pytest tests/test_chart_generator.py -q -o addopts= --tb=short \
 
 No generator, chart data or test expectations changed for this investigation.
 No season replay or AI play-selection audit ran. Uniqueness does not establish
-historical fit. [DATA-004](issues/DATA/DATA-004.md) remains closed: its original
+historical fit. [DATA-004](https://github.com/rtulloh/paydirt/issues/72) remains closed: its original
 duplicate-chart defect has not recurred. The findings provide no new play-level
 closure evidence for other resolved tickets, including DATA-011's retained
 calibration caveat, and no evidence of DATA-012's concentrated interception

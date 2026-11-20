@@ -43,7 +43,7 @@ This is an observed layout limitation, not proof of a probability defect. Any
 future visual redistribution must preserve the physical outcome distribution;
 an unrestricted shuffle among unequal-weight rows would change play behavior.
 The separate confirmed sparse-mass rounding bug remains
-[DATA-016](issues/DATA/DATA-016.md).
+[DATA-016](https://github.com/rtulloh/paydirt/issues/84).
 
 ## Why the rates and remaining gains need scrutiny
 
@@ -88,7 +88,7 @@ The final corrected-observer study already ran 1,024 Dolphins team-games and
 aggregate source target of 254/442 = 57.47%; passing YPA is 7.78 against
 3235/442 = 7.32. This is evidence under the declared measurement policy, not an
 independent historical coaching replay. It reinforces the open
-[DATA-018](issues/DATA/DATA-018.md) calibration finding. It does not identify one
+[DATA-018](https://github.com/rtulloh/paydirt/issues/86) calibration finding. It does not identify one
 parameter as the sole cause, prove the supplied developer chart accurate, or
 justify tuning around the unresolved source and priority defects.
 

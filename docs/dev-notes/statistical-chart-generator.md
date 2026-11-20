@@ -366,7 +366,7 @@ underpowered and is still tracked by DATA-006.
   also cannot simply be treated as an offense-only contribution without considering the
   defense adjustment that the engine will apply. The empirical boundary needs an explicit
   normalization contract. These calibration investigations are tracked in
-  [DATA-006](issues/DATA/DATA-006.md).
+  [DATA-006](https://github.com/rtulloh/paydirt/issues/74).
 
 The fixed defense template still encodes only a few efficiency/disruption dimensions.
 Thirty-two unique files establish differentiation, not thirty-two accurate defenses.
@@ -384,7 +384,7 @@ Monte Carlo uncertainty; it does not recover missing inputs or correct the mappi
 
 The focused generator/AI/audit/path/rules/documentation run passed 220 tests with three
 existing missing-1972-rule skips in `test_season_rules.py`; these remain covered by open
-[VAL-010](issues/VAL/VAL-010.md). Ruff passed. The tracker suite initially had one failure
+[VAL-010](https://github.com/rtulloh/paydirt/issues/225). Ruff passed. The tracker suite initially had one failure
 because its summary counts had not been regenerated after DATA-004 closed. The review
 regenerated that index while recording these findings. No production behavior or existing
 test expectations were changed, and no full push regression was claimed.

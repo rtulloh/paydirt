@@ -5,7 +5,7 @@ request after a penalty cluster was observed in the review UI. That census chang
 no generator, chart CSV, game rule, source fact or promoted artifact. Its starting
 [primary layout procedure](primary-chart-dispersion-proposal.md) optimized BLACK
 placement only. The later local v2 implementation is described in that procedure;
-this historical census does not qualify it. Follow-up: [DATA-039](issues/DATA/DATA-039.md).
+this historical census does not qualify it. Follow-up: [DATA-039](https://github.com/rtulloh/paydirt/issues/107).
 
 ## Scope and method
 
@@ -146,7 +146,7 @@ inventory freezes that mask. Its exact QT/QT* arrangement improves while pooled
 QT geometry remains 32 two-by-two blocks, 48 horizontal pairs and longest run five.
 The upstream empirical variant allocator's preference for small row weights is a
 separate constraint requiring review, not evidence of globally unavoidable football
-structure. [DATA-041](issues/DATA/DATA-041.md) tracks the source of this constraint,
+structure. [DATA-041](https://github.com/rtulloh/paydirt/issues/109) tracks the source of this constraint,
 all-family saturation census and test-first allocation follow-up. The protected
 supplemental QB Time lookup remains separate. No chart bytes changed for this finding.
 

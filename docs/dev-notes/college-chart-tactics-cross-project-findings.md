@@ -10,7 +10,7 @@ Paydirt's shipped Screen offense interception spots are 5–12 yards for 1983 an
 5 yards for 2024; there is no INT 44 Screen cell in that scan. A related baseline
 allocation/calibration risk needs a complete weighted offense/defense audit,
 separating interception location from return distance. Track the investigation
-in [DATA-043](issues/DATA/DATA-043.md); do not import a college-specific depth cap
+in [DATA-043](https://github.com/rtulloh/paydirt/issues/111); do not import a college-specific depth cap
 or claim aggregate interception-rate fit establishes play-specific fidelity.
 
 ## November 6 applicability and corrective-release priority

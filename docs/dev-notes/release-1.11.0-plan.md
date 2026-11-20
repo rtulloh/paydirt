@@ -4,7 +4,7 @@
 **Owner scope:** FLOW-033 is the sole feature for v1.11.0 (2026-11-17).
 No browser prototype, performance benchmark or human comparison has run for this plan.
 
-[Ticket](issues/FLOW/FLOW-033.md) · [Developer notes](README.md)
+[Ticket](https://github.com/rtulloh/paydirt/issues/153) · [Developer notes](README.md)
 
 ## Player outcome and recommendation
 

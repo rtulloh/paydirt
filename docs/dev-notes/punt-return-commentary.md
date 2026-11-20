@@ -1,7 +1,7 @@
 # Punt return-chain commentary
 
 November 2, 2026. Implemented presentation correction; verification is tracked in
-[AUD-025](issues/AUD/AUD-025.md). Private play-test logs stay local.
+[AUD-025](https://github.com/rtulloh/paydirt/issues/62). Private play-test logs stay local.
 
 The reported touchdown is valid. A public/synthetic reproduction follows this sequence:
 

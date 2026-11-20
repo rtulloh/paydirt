@@ -32,15 +32,15 @@ gameplay fix, standings write, push, tag or release was performed.
 
 | Ticket | Priority | Finding | Assessment |
 | --- | --- | --- | --- |
-| [AI-019](issues/AI/AI-019.md) | Medium | Every late-Q4 model defense is E; the model branch precedes situational policies. | Existing ticket updated. Six selections include one punt; determinism/bypass confirmed, not that every call was wrong. |
-| [AI-012](issues/AI/AI-012.md) | Medium | Third-and-27 Line Plunge while protecting an 11-point lead with over nine minutes left. | Existing review case updated, not a proven bad decision. The call ranks fourth of nine in the bounded chart-only utility; conservative strategy and unresolved outcomes matter. |
-| [TRACE-003](issues/TRACE/TRACE-003.md) | Medium | Called modifiers are absent from compact call echoes. | Existing ticket updated; effects alone cannot recover the original request. |
-| [TRACE-004](issues/TRACE/TRACE-004.md) | Medium | Offsetting scrimmage penalties omit their rolls/foul sequence. | Existing issue newly observed; ten-second replay and down/spot are otherwise consistent. |
-| [AI-007](issues/AI/AI-007.md) | Low/deferred | Incompletions consume 40 seconds at Q4 2:00 and 26 seconds at Q4 0:28. | Current code applies the generic 25-45-second timer to incompletions too. This explains the observations but does not establish conformity with the official Timing Chart. |
-| [AUD-023](issues/AUD/AUD-023.md) | Low | Startup repeats identical team-name/nickname components. | New ticket, confirmed with a synthetic 2026 object. |
-| [AUD-024](issues/AUD/AUD-024.md) | Low | Tendency summary prints exact-looking distances for aggregated bands. | New ticket. Four third-and-4-6 calls are printed as third-and-5 although only two were exact third-and-5. |
-| [TRACE-009](issues/TRACE/TRACE-009.md) | Medium/investigating | TD from Q2 0:45, try and kickoff recovery are followed by halftime without intermediate clock charges. | New dedicated issue. A lost snap is unproven: current TD/kickoff ranges can exhaust 45 seconds or leave time, and actual draws are missing. |
-| [DATA-002](issues/DATA/DATA-002.md) | Low | A player who died before the season appears in the installed historical commentary roster. | New dedicated issue. Local data provenance and public historical fact verified; the private roster is untouched. |
+| [AI-019](https://github.com/rtulloh/paydirt/issues/21) | Medium | Every late-Q4 model defense is E; the model branch precedes situational policies. | Existing ticket updated. Six selections include one punt; determinism/bypass confirmed, not that every call was wrong. |
+| [AI-012](https://github.com/rtulloh/paydirt/issues/14) | Medium | Third-and-27 Line Plunge while protecting an 11-point lead with over nine minutes left. | Existing review case updated, not a proven bad decision. The call ranks fourth of nine in the bounded chart-only utility; conservative strategy and unresolved outcomes matter. |
+| [TRACE-003](https://github.com/rtulloh/paydirt/issues/209) | Medium | Called modifiers are absent from compact call echoes. | Existing ticket updated; effects alone cannot recover the original request. |
+| [TRACE-004](https://github.com/rtulloh/paydirt/issues/210) | Medium | Offsetting scrimmage penalties omit their rolls/foul sequence. | Existing issue newly observed; ten-second replay and down/spot are otherwise consistent. |
+| [AI-007](https://github.com/rtulloh/paydirt/issues/9) | Low/deferred | Incompletions consume 40 seconds at Q4 2:00 and 26 seconds at Q4 0:28. | Current code applies the generic 25-45-second timer to incompletions too. This explains the observations but does not establish conformity with the official Timing Chart. |
+| [AUD-023](https://github.com/rtulloh/paydirt/issues/60) | Low | Startup repeats identical team-name/nickname components. | New ticket, confirmed with a synthetic 2026 object. |
+| [AUD-024](https://github.com/rtulloh/paydirt/issues/61) | Low | Tendency summary prints exact-looking distances for aggregated bands. | New ticket. Four third-and-4-6 calls are printed as third-and-5 although only two were exact third-and-5. |
+| [TRACE-009](https://github.com/rtulloh/paydirt/issues/215) | Medium/investigating | TD from Q2 0:45, try and kickoff recovery are followed by halftime without intermediate clock charges. | New dedicated issue. A lost snap is unproven: current TD/kickoff ranges can exhaust 45 seconds or leave time, and actual draws are missing. |
+| [DATA-002](https://github.com/rtulloh/paydirt/issues/70) | Low | A player who died before the season appears in the installed historical commentary roster. | New dedicated issue. Local data provenance and public historical fact verified; the private roster is untouched. |
 
 For the user's four follow-up findings, the dedicated open records are
 AI-007 (incomplete timing), TRACE-009 (halftime clock ambiguity), DATA-002

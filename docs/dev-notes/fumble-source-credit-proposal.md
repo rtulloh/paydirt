@@ -1,6 +1,6 @@
 # Proposed separation of source credit and modeled fumble gain
 
-For parent review under [DATA-030](issues/DATA/DATA-030.md) and the
+For parent review under [DATA-030](https://github.com/rtulloh/paydirt/issues/98) and the
 [chart-confidence charter](chart-confidence-agent-charter.md). **Bounded proxy
 implementation is local and experimental; all-team regeneration and accuracy
 acceptance remain incomplete.** This note preserves the original proposal and

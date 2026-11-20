@@ -14,7 +14,7 @@ Use low reasoning for implementation and medium reasoning for actual Codex revie
   reproduction, unchanged chart-fit gates and the correct historical calendar
   and eight-team/seven-game postseason pass. See the complete evidence and
   preserved candidate history in [1977 feasibility](1977-season-feasibility.md).
-- Complete [VAL-023](issues/VAL/VAL-023.md) native Windows shutdown acceptance.
+- Complete [VAL-023](https://github.com/rtulloh/paydirt/issues/238) native Windows shutdown acceptance.
   The reviewed harness changes are committed locally; native proof remains
   outstanding. Do not publish merely to diagnose a harness problem.
 - Preserve the published 1.10.3 missing-teams repair. AI-026 and unrelated AI
@@ -78,7 +78,7 @@ Never reuse or replace a tag. Verify the next unused tag before publication.
 
 ### Current integration blocker
 
-[VAL-024](issues/VAL/VAL-024.md) records a separate pre-push failure. Both required
+[VAL-024](https://github.com/rtulloh/paydirt/issues/239) records a separate pre-push failure. Both required
 1983/2024 strict source chart audits stop for missing current preparation.
 Preserved source bundles have matching chart CSV hashes, but preparation
 against the committed public manifests fails their original-manifest binding.
@@ -90,7 +90,7 @@ continue, but a failed required command prevents the integration push and thus
 updated upstream native Windows proof. Resolve the public/private validation
 contract and owner policy for unchanged legacy accuracy exceptions before pushing;
 this is not a missing token permission. The staged 1977 fit issue is separately
-tracked as [DATA-046](issues/DATA/DATA-046.md).
+tracked as [DATA-046](https://github.com/rtulloh/paydirt/issues/114).
 
 ## Native acceptance and publication
 

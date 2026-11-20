@@ -1,7 +1,7 @@
 # Public-only unit fixture cleanup
 
 Release-verification component, 2026-11-06, under
-[VAL-010](issues/VAL/VAL-010.md). This changes test fixtures only, not gameplay,
+[VAL-010](https://github.com/rtulloh/paydirt/issues/225). This changes test fixtures only, not gameplay,
 chart generation, chart data or player-facing behavior. It does not certify a
 release or replace the full regression.
 

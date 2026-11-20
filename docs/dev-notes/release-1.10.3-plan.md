@@ -53,7 +53,7 @@ This is a developer plan, not a description of shipped behavior.
 
 Improve simulation fidelity through demonstrated football mechanisms, working
 one issue and one bounded change at a time. Start with
-[AI-026](issues/AI/AI-026.md): Hard AI does not adequately respond to its own
+[AI-026](https://github.com/rtulloh/paydirt/issues/28): Hard AI does not adequately respond to its own
 defensive strengths or the opponent's offensive/defensive chart strengths.
 Demonstrate incremental improvement in controlled season simulations before
 expanding to another mechanism or ticket. Do not tune teams to force historical
@@ -80,8 +80,8 @@ playoff participants, records, or champions.
 
 ## Experimental discipline
 
-Use [AI-030](issues/AI/AI-030.md) to control policy-comparison confounders and
-[DATA-042](issues/DATA/DATA-042.md) to monitor existing scoring/pace discrepancies.
+Use [AI-030](https://github.com/rtulloh/paydirt/issues/32) to control policy-comparison confounders and
+[DATA-042](https://github.com/rtulloh/paydirt/issues/110) to monitor existing scoring/pace discrepancies.
 Neither reference authorizes unrelated fixes in this phase.
 
 - Bind baseline and candidate chart hashes, gameplay code, rules, source

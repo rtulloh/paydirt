@@ -1,4 +1,7 @@
-"""Create a public-safe repository-local ticket and regenerate its index."""
+"""Create an ignored offline issue draft; prefer GitHub Issues when online.
+
+Use --prefix OFFLINE; outputs live under .ai-audits/, not the migrated tracker.
+"""
 
 from __future__ import annotations
 

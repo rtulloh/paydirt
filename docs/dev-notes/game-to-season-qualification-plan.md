@@ -99,7 +99,7 @@ This is GO for that bounded runner scope; complete Stage 2 qualification remains
 UNVERIFIED. No repeated probability or reserved family is opened.
 
 The owner subsequently requested replacement of the generated schedule and a
-year-selected historical runner, tracked in [VAL-019](issues/VAL/VAL-019.md).
+year-selected historical runner, tracked in [VAL-019](https://github.com/rtulloh/paydirt/issues/234).
 The preceding description identifies the current implementation, not the desired
 end state. The replacement must use actual regular-season fixtures/results and
 membership, selected-year rules and a postseason seeded from simulated standings.

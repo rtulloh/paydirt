@@ -4,22 +4,22 @@ Planning record, 2026-11-11. This is a proposed scope, not a claim that changes 
 
 ## Selected work
 
-- [FLOW-023](issues/FLOW/FLOW-023.md): choose an end-zone interception return during play, after catch location is known and before return dice.
-- [DATA-048](issues/DATA/DATA-048.md): move fictional teams from `seasons/2026` to `seasons/sample`; exclude samples from season play while preserving explicit demo/test access and existing saves.
-- [AI-024](issues/AI/AI-024.md): use engine-derived field-goal make probabilities from the actual kicking chart, combined with game situation and season aggression. Preserve urgent scoring decisions and validate against the released baseline.
-- [FLOW-007](issues/FLOW/FLOW-007.md): share engine-driven modifier messages between new and resumed CLI games; test applied/skipped spikes and timeouts. Reproduce other reported loop differences before fixing them; a wholesale loop merge is not required.
-- [AI-002](issues/AI/AI-002.md): compare engine-projected penalty outcomes from the defense's perspective, including actual enforcement, down/distance, score, clock and timeout context. Test the first-and-25 versus second-and-10 case and situational exceptions; preserve AI-001's first-down comparisons. This covers the defensive subset of AI-018, not its entire remaining scope. Implemented and resolved 2026-11-13: enforcement is ranked by remaining distance to the goal, down and distance to convert; scores, safeties, turnovers, fumbles, return chains, fourth-down stops and requested spikes keep their existing policy. Closure still requires the full pre-push regression.
+- [FLOW-023](https://github.com/rtulloh/paydirt/issues/143): choose an end-zone interception return during play, after catch location is known and before return dice.
+- [DATA-048](https://github.com/rtulloh/paydirt/issues/116): move fictional teams from `seasons/2026` to `seasons/sample`; exclude samples from season play while preserving explicit demo/test access and existing saves.
+- [AI-024](https://github.com/rtulloh/paydirt/issues/26): use engine-derived field-goal make probabilities from the actual kicking chart, combined with game situation and season aggression. Preserve urgent scoring decisions and validate against the released baseline.
+- [FLOW-007](https://github.com/rtulloh/paydirt/issues/127): share engine-driven modifier messages between new and resumed CLI games; test applied/skipped spikes and timeouts. Reproduce other reported loop differences before fixing them; a wholesale loop merge is not required.
+- [AI-002](https://github.com/rtulloh/paydirt/issues/4): compare engine-projected penalty outcomes from the defense's perspective, including actual enforcement, down/distance, score, clock and timeout context. Test the first-and-25 versus second-and-10 case and situational exceptions; preserve AI-001's first-down comparisons. This covers the defensive subset of AI-018, not its entire remaining scope. Implemented and resolved 2026-11-13: enforcement is ranked by remaining distance to the goal, down and distance to convert; scores, safeties, turnovers, fumbles, return chains, fourth-down stops and requested spikes keep their existing policy. Closure still requires the full pre-push regression.
 
 ## Fixed during 1.10.6
 
-- [FLOW-024](issues/FLOW/FLOW-024.md): a safety free kick now resolves a pending kickoff penalty before the next snap, so the receiving team takes possession. Closed and play-tested. Commit `566a17c`.
+- [FLOW-024](https://github.com/rtulloh/paydirt/issues/144): a safety free kick now resolves a pending kickoff penalty before the next snap, so the receiving team takes possession. Closed and play-tested. Commit `566a17c`.
 
 ## Recommended additional fixes
 
-- [AI-029](issues/AI/AI-029.md): account for remaining scoring distance and time on last-possession fourth downs.
-- [RULE-011](issues/RULE/RULE-011.md): configure kickoff position by season rather than a universal constant.
-- [RULE-012](issues/RULE/RULE-012.md): apply season-appropriate final-touchdown try rules.
-- [AUD-016](issues/AUD/AUD-016.md): reproduce and correct away-player play-log team labels if still present.
+- [AI-029](https://github.com/rtulloh/paydirt/issues/31): account for remaining scoring distance and time on last-possession fourth downs.
+- [RULE-011](https://github.com/rtulloh/paydirt/issues/174): configure kickoff position by season rather than a universal constant.
+- [RULE-012](https://github.com/rtulloh/paydirt/issues/175): apply season-appropriate final-touchdown try rules.
+- [AUD-016](https://github.com/rtulloh/paydirt/issues/53): reproduce and correct away-player play-log team labels if still present.
 
 Reproduce older findings before changing production code. Add meaningful failing synthetic/sample tests first. Resolved tracker entries require issue-specific play-test confirmation before closure.
 
@@ -33,7 +33,7 @@ Gameplay changes require reviewed paired regression evidence against the immutab
 
 ## Additional manual-install finding
 
-[DATA-049](issues/DATA/DATA-049.md), targeted to v1.10.6: bundle verified player rosters for 1977 and 2024. The released tree contains no roster.json files for either season; all 28 1983 teams have them. Missing files trigger generic position names in commentary. Source season-correct names and verify packaged CLI/web narration without changing gameplay probabilities or RNG.
+[DATA-049](https://github.com/rtulloh/paydirt/issues/117), targeted to v1.10.6: bundle verified player rosters for 1977 and 2024. The released tree contains no roster.json files for either season; all 28 1983 teams have them. Missing files trigger generic position names in commentary. Source season-correct names and verify packaged CLI/web narration without changing gameplay probabilities or RNG.
 
 ## Existing-ticket review, 2026-11-11
 

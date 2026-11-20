@@ -55,10 +55,16 @@ measured modules, the percentage, and any deliberate gaps in the change summary.
 Do not replace a required test with a coverage measurement, and never add skips
 or exclusions to raise the number.
 
-### Required Full Regression Before Any Push
+### Full Regression for Core Engine or UI Changes
 
-Before **every push**, including tag/release pushes, run all of the following
-from the repository root. A "full test run" or "full regression" explicitly includes
+Run the full regression below only when a change affects the core game engine or
+UI. Before pushing those changes, including tag/release pushes that contain them,
+run all commands below from the repository root. For issue tracking, migration
+utilities, documentation, and other changes that do not affect the core engine or
+UI, run only focused checks appropriate to the affected files; do not run the full
+regression solely because a commit, push, or release is being prepared.
+
+When required, a "full test run" or "full regression" explicitly includes
 both the generated full-season runner and the public/local AI play-selection audits
 below; pytest alone is not sufficient. Do not push if any command fails; investigate
 and fix failures first. Disclose existing skips and warnings rather than hiding them.
@@ -246,11 +252,13 @@ even if it is available locally.** Do not introduce fixtures, parametrized cases
 or skip guards that rely on private/historical seasons (including 1972 or 1983).
 Do not skip unit regressions to hide missing private data. Keep private-chart
 integration checks in standalone local scripts outside unit-test collection.
-Before pushing, also verify unit tests in a clean, tracked-files-only checkout
-so ignored local data cannot mask CI failures. `scripts/run_full_regression.py
+When full regression is required for core engine or UI changes, also verify unit
+tests in a clean, tracked-files-only checkout before pushing so ignored local
+data cannot mask CI failures. `scripts/run_full_regression.py
 --clean-checkout` does this from the candidate work tree, not from `HEAD`.
-All 224 regular-season games and all nine playoff games must pass before pushing;
-a partial run is not sufficient, and no playoff game may finish tied.
+For those changes, all 224 regular-season games and all nine playoff games must
+pass before pushing; a partial run is not sufficient, and no playoff game may
+finish tied.
 
 ### Test Configuration (from pyproject.toml)
 
@@ -354,7 +362,8 @@ in prompts.
    they fail for the expected behavior, not because of broken fixtures, missing
    data, or unrelated setup errors. Report the baseline failures and controls.
 3. Make the production fix, then rerun the focused tests and relevant regression
-   suites. Follow the full validation checklist above before any push.
+   suites. Follow the validation scope above: full regression for core engine or
+   UI changes, otherwise focused checks for the affected files.
 4. Disclose every change to an existing test expectation and explain why the
    previous expectation was wrong. Never weaken assertions or add skips simply
    to make a failing implementation pass.
@@ -375,6 +384,33 @@ failing behavior test; run applicable existing checks instead.
 - Test class naming: `Test<ClassName>`
 - Use `unittest.mock.patch` for mocking dice rolls
 - Test file naming: `test_<module>.py`
+
+## Issue Tracking
+
+- Create and maintain issues in [GitHub Issues](https://github.com/rtulloh/paydirt/issues)
+  when internet and authenticated access are available. Preserve acceptance
+  criteria, evidence, related commits and verification history there.
+- Use [Paydirt Release Planning](https://github.com/users/rtulloh/projects/1) as the
+  ongoing backlog. GitHub milestones define agreed release scope; project membership
+  alone does not target an issue for the next release.
+- Set the native GitHub Priority field (High, Medium or Low) when creating issues.
+  Use its current value to schedule work; original imported metadata is historical.
+- A tested fix awaiting required play-test confirmation stays open, labeled
+  `awaiting-playtest`; close only when the applicable evidence supports closure.
+  Review GitHub issues after audits/play-tests, including imported tickets labeled
+  `local-status:resolved` (their status at import, not a live workflow label).
+- All 240 local tickets have been migrated and verified. Their original records
+  remain in Git history at commit `448f88e7cca2ff332d74b044e6273b604168321f`.
+  Use [.github/issue-migration.json](.github/issue-migration.json) to map legacy IDs
+  to GitHub URLs. Do not recreate the deleted local tracker.
+- When offline, `scripts/create_issue.py --prefix OFFLINE` retains the local format
+  in ignored `.ai-audits/offline-issues/`; `scripts/build_issue_index.py` writes
+  ignored `.ai-audits/offline-issue-tracker.md`. Reconcile these drafts with GitHub
+  when access returns and record their GitHub URLs; do not commit another tracker.
+- The reusable `scripts/migrate_github_issues.py` and
+  [migration guide](docs/github-issue-migration.md) support other repositories,
+  including resolved and closed tickets. Preview first and follow the user's
+  requested scope for bulk publication and cleanup.
 
 ## Documentation Maintenance
 

@@ -2,9 +2,9 @@
 
 Developer investigation, November 2, 2026. This records implemented corrections and remaining
 model limitations; it does not certify that generated charts reproduce developer charts or actual
-NFL results. Tickets: [DATA-014](issues/DATA/DATA-014.md),
-[DATA-013](issues/DATA/DATA-013.md), and [DATA-006](issues/DATA/DATA-006.md).
-Current calibration evidence belongs to [DATA-011](issues/DATA/DATA-011.md); DATA-006 records
+NFL results. Tickets: [DATA-014](https://github.com/rtulloh/paydirt/issues/82),
+[DATA-013](https://github.com/rtulloh/paydirt/issues/81), and [DATA-006](https://github.com/rtulloh/paydirt/issues/74).
+Current calibration evidence belongs to [DATA-011](https://github.com/rtulloh/paydirt/issues/79); DATA-006 records
 the earlier completed input and engine-measurement work.
 
 ## Coverage
@@ -137,14 +137,14 @@ The training policy is the generic situation-aware auto AI, without Hard chart-s
 Its scoring and volume remain diagnostics: 1983 produced 20.64 points and 58.52 plays per team-game;
 2024 produced 19.47 points and 57.60 plays. Passing five efficiency tolerances does not establish
 historical scoring, pace, standings, or strategy-independent accuracy. Existing fourth-down/field-
-goal coaching limitations remain tracked in [AI-024](issues/AI/AI-024.md).
+goal coaching limitations remain tracked in [AI-024](https://github.com/rtulloh/paydirt/issues/26).
 
 The supplementary generated-schedule AI audit completed 448/448 games, reconciling 61,834 calls
 across both policies. It covered 113 scoring-penalty choices, ten QB-scramble touchdown accounting
 checks, 10,611 incompletions, and 491 fumbles at the spot. Its one advisory was legacy balanced
 Screen on third-and-11+: 19/35 calls, three distinct calls, longest comparable streak three. Screen
 was behind Medium and Long in conditional chart yardage, so this remains a coaching observation
-under [AI-003](issues/AI/AI-003.md), not a reason to cap frequencies or alter charts. No Hard group
+under [AI-003](https://github.com/rtulloh/paydirt/issues/5), not a reason to cap frequencies or alter charts. No Hard group
 triggered the concentration advisory.
 
 The same audit recorded 258 finalized punt penalty calls and 23 finalized field-goal penalty calls.

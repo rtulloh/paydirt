@@ -56,7 +56,7 @@ inventory). Those are historical acquisition findings, superseded by the complet
 browser cache; they never established that PFR lacked the remaining games.
 
 See [1977 feasibility and archive receipts](1977-season-feasibility.md),
-[pre-1977 modeling backlog](issues/DATA/DATA-045.md), and
+[pre-1977 modeling backlog](https://github.com/rtulloh/paydirt/issues/113), and
 [chart attribution](../../CHART_ATTRIBUTION.md). Local raw pages, source hashes
 and detailed receipts stay in ignored audit storage; do not commit the raw data.
 

@@ -117,7 +117,7 @@ older blocked AI-026 goal was not falsely marked complete or overwritten.
 
 Keep raw sources/reports ignored under `.ai-audits/chart-generation/1977-reviewed/`.
 Update the [1977 record](1977-season-feasibility.md),
-[DATA-046](issues/DATA/DATA-046.md) and [calibration reference](../chart-calibration.md)
+[DATA-046](https://github.com/rtulloh/paydirt/issues/114) and [calibration reference](../chart-calibration.md)
 with selected values, actual results and release status.
 
 Routine checkpoints do not end the assignment or require the owner to restart it.

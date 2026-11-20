@@ -1,7 +1,7 @@
 # Eight-finding game audit repair: validation record
 
 Developer working record, 2026-10-19; the fixes were committed in `eb37c60` and are not yet in a release. Not a release
-promise. See the [issue tracker](issue-tracker.md) and
+promise. See the [issue tracker](https://github.com/rtulloh/paydirt/issues) and
 [semantic audit guide](../ai-auditing.md#semantic-checks-and-coverage).
 Private charts and original narrative logs remain local; none are reproduced here.
 

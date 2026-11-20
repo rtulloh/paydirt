@@ -13,14 +13,14 @@ from tested backend requirements; its macOS bundle resource seal was also invali
 v1.12.1 repaired both defects and four actual native packages passed functional
 acceptance, but an NSIS service error was allowed to omit the Windows installer.
 Both earlier tags and their assets are retained; neither establishes complete
-five-package release acceptance. See [FLOW-040](issues/FLOW/FLOW-040.md),
-[FLOW-041](issues/FLOW/FLOW-041.md) and [FLOW-042](issues/FLOW/FLOW-042.md).
+five-package release acceptance. See [FLOW-040](https://github.com/rtulloh/paydirt/issues/160),
+[FLOW-041](https://github.com/rtulloh/paydirt/issues/161) and [FLOW-042](https://github.com/rtulloh/paydirt/issues/162).
 
 The new correction must fail before publication if any required package is absent,
 retain exact-commit CI qualification, and verify all five actual published packages.
 No released charts or gameplay rules are changed. The owner-requested
-[STAT-007](issues/STAT/STAT-007.md) yardage-heading cleanup and
-[DATA-051](issues/DATA/DATA-051.md) kicking-chart review are follow-up tickets.
+[STAT-007](https://github.com/rtulloh/paydirt/issues/206) yardage-heading cleanup and
+[DATA-051](https://github.com/rtulloh/paydirt/issues/119) kicking-chart review are follow-up tickets.
 
 ## Qualification requirements
 

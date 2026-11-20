@@ -5,7 +5,7 @@ publication and actual downloaded-native qualification are recorded in the
 [current readiness note](release-1.12.2-readiness.md). Historical candidate evidence
 and its limitations below remain intact.
 The [design](season-ui-design.md) retains the approved scope and dated investigation history.
-The [umbrella issue](issues/FLOW/FLOW-036.md) is closed from actual acceptance.
+The [umbrella issue](https://github.com/rtulloh/paydirt/issues/156) is closed from actual acceptance.
 
 | Requirement | Implementation and current evidence | Acceptance status |
 | --- | --- | --- |

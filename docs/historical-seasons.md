@@ -99,4 +99,4 @@ developer charts and historical narrative logs are not included.
 
 See [development validation](development.md), the
 [staged qualification plan](dev-notes/game-to-season-qualification-plan.md) and
-[VAL-019](dev-notes/issues/VAL/VAL-019.md) for outstanding qualification work.
+[VAL-019](https://github.com/rtulloh/paydirt/issues/234) for outstanding qualification work.

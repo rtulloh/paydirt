@@ -8,10 +8,10 @@ focused test-first checks and the complete hosted workflow qualify this change.
 
 | Issue | Result / release gate | Verification |
 | --- | --- | --- |
-| [DATA-043](issues/DATA/DATA-043.md) | Prevent cross-play interception-location allocation across offense/defense and audit all reachable support. | Synthetic/public regressions first; all-team weighted spot support and reachable outcomes, with interception and return distances separate. No arbitrary universal depth cap or claim that the Bowl Bound defect is already reproduced here. |
-| [AI-028](issues/AI/AI-028.md) | Avoid a conservative fourth-down punt when the offense needs multiple scores and remaining possession opportunities demand urgency. | Failing public scenario plus nearby conservative controls; completed gameplay confirms score/time/timeout-aware behavior. No blanket always-go-for-it rule. |
-| [VAL-020](issues/VAL/VAL-020.md) | Open: retain measured focused fixture/source-expectation reuse; defer total core-runtime investigation to a subsequent release. Does not hold v1.10.2. | Preserve actual hosted duration and remaining hot spots without claiming an overall runtime fix; retain all assertions, cases and coverage. |
-| [VAL-021](issues/VAL/VAL-021.md) | Publish release assets automatically without the v1.10.1 manual-token fallback. | Diagnose the actual integration restriction, preserve exact tested-commit gating and immutable tags, and verify all five downloadable assets in the next authorized publication. |
+| [DATA-043](https://github.com/rtulloh/paydirt/issues/111) | Prevent cross-play interception-location allocation across offense/defense and audit all reachable support. | Synthetic/public regressions first; all-team weighted spot support and reachable outcomes, with interception and return distances separate. No arbitrary universal depth cap or claim that the Bowl Bound defect is already reproduced here. |
+| [AI-028](https://github.com/rtulloh/paydirt/issues/30) | Avoid a conservative fourth-down punt when the offense needs multiple scores and remaining possession opportunities demand urgency. | Failing public scenario plus nearby conservative controls; completed gameplay confirms score/time/timeout-aware behavior. No blanket always-go-for-it rule. |
+| [VAL-020](https://github.com/rtulloh/paydirt/issues/235) | Open: retain measured focused fixture/source-expectation reuse; defer total core-runtime investigation to a subsequent release. Does not hold v1.10.2. | Preserve actual hosted duration and remaining hot spots without claiming an overall runtime fix; retain all assertions, cases and coverage. |
+| [VAL-021](https://github.com/rtulloh/paydirt/issues/236) | Publish release assets automatically without the v1.10.1 manual-token fallback. | Diagnose the actual integration restriction, preserve exact tested-commit gating and immutable tags, and verify all five downloadable assets in the next authorized publication. |
 
 The two player-facing items and the two delivery items form the authorized
 bounded release. Interception findings may require reviewed regenerated charts;
@@ -19,7 +19,7 @@ do not regenerate unrelated cohorts or change historical fit targets by default.
 
 ## Diagnostic follow-up, not a promised broad fix
 
-[DATA-042](issues/DATA/DATA-042.md) and [AI-030](issues/AI/AI-030.md) should get a
+[DATA-042](https://github.com/rtulloh/paydirt/issues/110) and [AI-030](https://github.com/rtulloh/paydirt/issues/32) should get a
 controlled measurement plan for pace/scoring and chart-focused versus Hard
 policy. Do not tune individual teams to historical standings or fold a general
 AI rewrite into this release without reviewing new evidence and scope.

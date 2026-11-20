@@ -24,6 +24,7 @@ Published builds include generated 1977, 1983 and 2024 charts plus the fictional
 ## Development
 
 - [Development guide](development.md): architecture, testing, packaging, and release entry points.
+- [GitHub issue migration](github-issue-migration.md): preview and import all local tickets, including closed history; reuse with another repository.
 - [Web setup](../paydirt-web/README.md): frontend and backend development.
 - [Published application checks](release-testing.md): native runtime acceptance of actual release-page downloads.
 - [Browser regression](../paydirt-web/frontend/e2e/README.md): two full real-engine games.
@@ -37,7 +38,7 @@ Published builds include generated 1977, 1983 and 2024 charts plus the fictional
 
 Create all future development notes only under `docs/dev-notes/`. Read the [developer-only disclaimer](dev-notes/README.md); these are not player manuals or promises of implemented features:
 
-- [Issue tracker](dev-notes/issue-tracker.md): developer priorities, status, and resolution history.
+- [Issue tracker](https://github.com/rtulloh/paydirt/issues): developer priorities, status, and resolution history.
 - [AI play-testing](dev-notes/ai-playtesting.md): an experiment evaluating dice-weighted Hard analysis.
 - [Replayable game logs](dev-notes/replayable-game-logs.md): debugging requirements and deferred replay work.
 
