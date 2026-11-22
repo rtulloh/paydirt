@@ -145,7 +145,7 @@ evidence and exception class without exporting potentially private exception tex
 A failed game does not stop later independent games. Inspect the matchup/seed
 locally to diagnose errors; do not publish private chart logs.
 
-The [mandatory full-regression checklist](../AGENTS.md#full-regression-for-core-engine-or-ui-changes)
+The [mandatory full-regression checklist](../AGENTS.md#local-checks-and-full-regression)
 includes the 2026 and 1983 public-season play-selection/balance audits **and
 human review of the evidence**, in addition to unit/browser and existing
 postseason checks. Routine regression does not run private escrow charts. Unit

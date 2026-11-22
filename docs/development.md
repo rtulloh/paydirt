@@ -175,7 +175,7 @@ No separately maintained copy of the player manual is needed.
 
 The workflow builds releases on `v*` tags and also supports manual dispatch.
 Tags are immutable: always choose a new, increasing version; never delete and recreate a failed release tag.
-Before creating or pushing a release, follow all [required validation](../AGENTS.md#full-regression-for-core-engine-or-ui-changes)
+Before creating or pushing a release, follow all [required validation](../AGENTS.md#local-checks-and-full-regression)
 and the project's versioning instructions. [Release notes](../RELEASE_NOTES.md) remain separate from the user manual.
 
 ## Project Background

@@ -55,19 +55,22 @@ measured modules, the percentage, and any deliberate gaps in the change summary.
 Do not replace a required test with a coverage measurement, and never add skips
 or exclusions to raise the number.
 
-### Full Regression for Core Engine or UI Changes
+### Local Checks and Full Regression
 
-Run the full regression below only when a change affects the core game engine or
-UI. Before pushing those changes, including tag/release pushes that contain them,
-run all commands below from the repository root. For issue tracking, migration
-utilities, documentation, and other changes that do not affect the core engine or
-UI, run only focused checks appropriate to the affected files; do not run the full
-regression solely because a commit, push, or release is being prepared.
+For routine changes, including small core engine fixes and UI adjustments, run
+targeted local tests for the affected behavior and let GitHub Actions run the
+broader CI suite after pushing. Follow [Coverage While Fixing](#coverage-while-fixing)
+for changed Python modules. Use focused browser checks when the change affects
+the browser experience.
 
-When required, a "full test run" or "full regression" explicitly includes
-both the generated full-season runner and the public/local AI play-selection audits
-below; pytest alone is not sufficient. Do not push if any command fails; investigate
-and fix failures first. Disclose existing skips and warnings rather than hiding them.
+Run the full local regression before pushing large-scale changes to the core
+engine or UI, such as broad changes to gameplay rules, state transitions, or
+game flow. Follow the separate qualification gates below for applicable releases
+and chart changes.
+
+The full local regression includes every command below, including the season
+runner, browser tests, and AI play-selection audits. Resolve failures before
+pushing when this gate applies. Report existing skips and warnings.
 
 ```bash
 python3 -m pytest tests/ -q -o addopts= --tb=short -rs
@@ -84,17 +87,13 @@ python3 -m paydirt.released_chart_regression_audit --season 1983 --output .ai-au
 python3 -m paydirt.released_chart_regression_audit --season 2024 --output .ai-audits/chart-quality-2024.json
 ```
 
-The pre-push core run executes the complete suite but does not measure package
-coverage locally: that run is several times slower with branch coverage and it
-measures code nobody changed. Coverage is instead measured per changed module
-while fixing (see [Coverage While Fixing](#coverage-while-fixing)). The upstream
-`test.yml` workflow runs all Python 3.10 tests across independent shards and
-combines their branch coverage for every push. The combined report is the
-authoritative coverage evidence for the pushed commit. A
-push is qualified only when it is green, and coverage gaps it reports must be
-addressed in a follow-up commit before a tag or release is cut. Strict
-candidate/charted-release tooling keeps its own required coverage run; this
-change affects the local pre-push route only.
+The full local core run executes the unit suite without package-wide coverage.
+Measure coverage per changed module while fixing, as described in
+[Coverage While Fixing](#coverage-while-fixing). The upstream `test.yml` workflow
+runs the Python 3.10 tests across independent shards and combines their branch
+coverage. Use that report as the coverage evidence for the pushed commit.
+Require green CI and address reported coverage gaps before cutting a tag or
+release. Strict candidate and charted-release tooling has its own coverage run.
 
 ### One-command runner
 
@@ -255,13 +254,11 @@ even if it is available locally.** Do not introduce fixtures, parametrized cases
 or skip guards that rely on private/historical seasons (including 1972 or 1983).
 Do not skip unit regressions to hide missing private data. Keep private-chart
 integration checks in standalone local scripts outside unit-test collection.
-When full regression is required for core engine or UI changes, also verify unit
-tests in a clean, tracked-files-only checkout before pushing so ignored local
-data cannot mask CI failures. `scripts/run_full_regression.py
---clean-checkout` does this from the candidate work tree, not from `HEAD`.
-For those changes, all 224 regular-season games and all nine playoff games must
-pass before pushing; a partial run is not sufficient, and no playoff game may
-finish tied.
+When the full local regression gate applies, verify unit tests in a clean,
+tracked-files-only checkout before pushing. Run
+`scripts/run_full_regression.py --clean-checkout` to test an export of the
+candidate work tree without ignored local data. Require all 224 regular-season
+games and all nine playoff games to pass. Every playoff game must have a winner.
 
 ### Test Configuration (from pyproject.toml)
 

@@ -5,6 +5,15 @@ play option; desktop downloads are optional alternatives. Browser games and
 seasons save locally in the same browser profile and site. Export important
 saves for backup or transfer; internet access is needed to load the engine.
 
+## v1.12.3 — Browser game layout and controls
+
+- The browser game puts play selection, the play log, and game controls in three
+  columns on wide screens and stacks them on narrow screens.
+- Defense buttons use larger, high-contrast labels. Game controls show a blue
+  check for active options, and the play log can expand to show complete history.
+- Kickoff and regular-play dice animations take 0.9 seconds.
+- Developer issue tracking and release planning now use GitHub.
+
 ## v1.12.2 — Complete Windows release packaging
 
 - Require successful Windows installer tooling and package creation before publishing a complete desktop release. The v1.12.1 release omitted `PaydirtSetup.exe` after its installer-tool download failed; its original tag and assets remain unchanged.

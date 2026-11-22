@@ -75,7 +75,7 @@ a frontend build alone does not refresh an older native static bundle.
 The required [full-game browser regression](frontend/e2e/README.md) starts isolated services and needs Chromium.
 If ports 8000 or 5173 are occupied, select free isolated ports with
 `PAYDIRT_E2E_BACKEND_PORT` and `PAYDIRT_E2E_FRONTEND_PORT`; leave existing app sessions running.
-Follow [AGENTS.md](../AGENTS.md#full-regression-for-core-engine-or-ui-changes) for the complete pre-push checklist;
+Follow [AGENTS.md](../AGENTS.md#local-checks-and-full-regression) for the complete pre-push checklist;
 these local commands alone are not full regression validation.
 
 ## Structure and API
