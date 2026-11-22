@@ -169,7 +169,7 @@ def test_regression_command_inventory_matches_agents_without_omitting_required_r
     assert gate.required_regression_commands() == commands()
     root = Path(__file__).resolve().parents[1]
     section = (
-        (root / "AGENTS.md").read_text().split("### Required Full Regression Before Any Push", 1)[1]
+        (root / "AGENTS.md").read_text().split("### Full Regression for Core Engine or UI Changes", 1)[1]
     )
     checklist = section.split("```bash\n", 1)[1].split("```", 1)[0].strip().splitlines()
     actual = []
@@ -201,7 +201,8 @@ def test_agents_require_targeted_coverage_while_fixing() -> None:
     text = (root / "AGENTS.md").read_text()
     assert "measure coverage" in text
     assert "--cov=paydirt." in text
-    section = text.split("### Required Full Regression Before Any Push", 1)[1].split("###", 1)[0]
+    section = text.split("### Full Regression for Core Engine or UI Changes", 1)[1]
+    section = section.split("###", 1)[0]
     assert "upstream" in section.lower()
 
 
