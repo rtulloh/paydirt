@@ -53,7 +53,7 @@ describe('Web timeout request wiring', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
     render(<PlayingPhase />);
-    if (modifier) fireEvent.click(screen.getByRole('radio', { name: 'Timeout (3 left) [T]' }));
+    if (modifier) fireEvent.click(screen.getByRole('checkbox', { name: 'Timeout (3 left) [T]' }));
     fireEvent.click(screen.getByTestId(offense ? 'offense-play-1' : 'defense-play-a'));
     await act(async () => { await vi.advanceTimersByTimeAsync(1800); });
     const executions = fetchMock.mock.calls.filter(([url]) => url.endsWith('/execute'));

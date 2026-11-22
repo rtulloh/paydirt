@@ -12,7 +12,7 @@ import PATChoicePanel from './PATChoicePanel';
 import CpuDecisionPanel from './CpuDecisionPanel';
 import PuntOptionsPanel from './PuntOptionsPanel';
 import PlayModifiers from './PlayModifiers';
-import PlayLogDisplay from './PlayLogDisplay';
+import GamePlayArea from './GamePlayArea';
 import GameControls from './GameControls.tsx';
 import Halftime from './Halftime';
 import ChartViewer from './ChartViewer';
@@ -24,7 +24,7 @@ const BLACK_DIE = [1, 1, 2, 2, 3, 3];
 const WHITE_DIE = [0, 1, 2, 3, 4, 5];
 const RED_DIE = [1, 1, 1, 2, 2, 3];
 const GREEN_DIE = [0, 0, 0, 0, 1, 2];
-
+const DICE_ROLL_DURATION_MS = 900;
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const PlayingPhase = () => {
@@ -311,7 +311,7 @@ const PlayingPhase = () => {
         });
       }, 100);
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, DICE_ROLL_DURATION_MS));
       clearInterval(rollInterval);
       
       const res = await gameFetch(`${API_BASE}/api/game/kickoff`, {
@@ -686,7 +686,7 @@ const PlayingPhase = () => {
         });
       }, 100);
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, DICE_ROLL_DURATION_MS));
       clearInterval(rollInterval);
       
       // Execute the play
@@ -1132,7 +1132,6 @@ const PlayingPhase = () => {
       setLocalExecuting(false);
     }
   };
-
   return (
     <div className="flex flex-col h-screen bg-gray-900">
       {(homeTeam?.season || awayTeam?.season) && <div className="text-gray-300 text-xs px-4 pt-2" role="note">
@@ -1346,10 +1345,13 @@ const PlayingPhase = () => {
         )}
       </div>
 
-      {/* Play Selector - fixed position, stays in same place */}
-      <div className="flex-shrink-0 px-4 pb-2">
-        <div className="grid grid-cols-2 gap-4">
-          {/* Left column: offense/defense plays */}
+      <GamePlayArea plays={playLog} modifiers={
+        <PlayModifiers
+          selectedPlay={humanPlaySelected}
+          disabled={!gameId || localExecuting || isKickoff || pendingPat || gameOver ||
+            halftimePending || showHalftime || localShowPatChoice || localShowPenaltyChoice || localShowEndZoneChoice}
+        />
+      }>
           {playerOffense ? (
             <OffensePlays
               selectedPlay={humanPlaySelected}
@@ -1372,18 +1374,7 @@ const PlayingPhase = () => {
               />
             </div>
           )}
-          
-          {/* Right column: modifiers + play log */}
-          <div className="flex flex-col gap-2">
-            <PlayModifiers
-              selectedPlay={humanPlaySelected}
-              disabled={!gameId || localExecuting || isKickoff || pendingPat || gameOver ||
-                halftimePending || showHalftime || localShowPatChoice || localShowPenaltyChoice || localShowEndZoneChoice}
-            />
-            <PlayLogDisplay plays={playLog} onPlayClick={() => {}} />
-          </div>
-        </div>
-      </div>
+      </GamePlayArea>
 
       {/* Play Result - Show CONTINUE button for special plays only */}
       {localLastResult && !localExecuting && !localIsRolling && !localShowPatChoice && !localShowPenaltyChoice && !localShowEndZoneChoice && (

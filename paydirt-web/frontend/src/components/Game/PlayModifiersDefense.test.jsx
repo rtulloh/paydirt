@@ -18,12 +18,14 @@ describe('Defensive play modifiers', () => {
   it.each([true, false])('shows the human timeout budget, home=%s', home => {
     useGameStore.setState({ humanIsHome: home, possession: home ? 'away' : 'home' });
     render(<PlayModifiers selectedPlay="A" />);
-    fireEvent.click(screen.getByRole('radio', { name: `Timeout (${home ? 2 : 1} left) [T]` }));
+    const timeout = screen.getByRole('checkbox', { name: `Timeout (${home ? 2 : 1} left) [T]` });
+    fireEvent.click(timeout);
+    expect(timeout).toBeChecked();
     expect(useGameStore.getState().selectedModifier).toBe('T');
-    expect(screen.queryByText('No Huddle:')).not.toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Out of bounds [O]' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Spike [S]' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'None [0]' }));
+    expect(screen.queryByRole('checkbox', { name: 'No Huddle [N]' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Out of bounds [O]' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Spike [S]' })).not.toBeInTheDocument();
+    fireEvent.click(timeout);
     expect(useGameStore.getState().selectedModifier).toBeNull();
   });
 
@@ -38,19 +40,19 @@ describe('Defensive play modifiers', () => {
     expect(useGameStore.getState().selectedModifier).toBeNull();
   });
 
-  it('allows cancellation with a radio focused but leaves text input alone', () => {
+  it('allows cancellation with a checkbox focused but leaves text input alone', () => {
     useGameStore.setState({ selectedModifier: 'T' });
     render(<><PlayModifiers selectedPlay="A" /><input aria-label="Notes" /></>);
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Notes' }), { key: '0' });
     expect(useGameStore.getState().selectedModifier).toBe('T');
-    fireEvent.keyDown(screen.getByRole('radio', { name: 'Timeout (2 left) [T]' }), { key: '0' });
+    fireEvent.keyDown(screen.getByRole('checkbox', { name: 'Timeout (2 left) [T]' }), { key: '0' });
     expect(useGameStore.getState().selectedModifier).toBeNull();
   });
 
   it.each([true, false])('does not select an unavailable timeout on either side, offense=%s', offense => {
     useGameStore.setState({ playerOffense: offense, possession: offense ? 'home' : 'away', homeTimeouts: 0 });
     render(<PlayModifiers selectedPlay={offense ? '7' : 'A'} />);
-    expect(screen.getByRole('radio', { name: 'Timeout (0 left) [T]' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Timeout (0 left) [T]' })).toBeDisabled();
     fireEvent.keyDown(window, { key: 't' });
     expect(useGameStore.getState().selectedModifier).toBeNull();
   });
@@ -58,7 +60,7 @@ describe('Defensive play modifiers', () => {
   it('freezes controls and keyboard shortcuts during execution', () => {
     useGameStore.setState({ playerOffense: true, possession: 'home' });
     const view = render(<PlayModifiers selectedPlay="7" disabled />);
-    for (const input of screen.getAllByRole('radio')) expect(input).toBeDisabled();
+    for (const input of screen.getAllByRole('checkbox')) expect(input).toBeDisabled();
     for (const key of ['t', 'n', 'o', 's']) fireEvent.keyDown(window, { key });
     expect(useGameStore.getState().selectedModifier).toBeNull();
     expect(useGameStore.getState().noHuddleMode).toBe(false);

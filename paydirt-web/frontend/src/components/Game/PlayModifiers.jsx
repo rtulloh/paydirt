@@ -34,8 +34,8 @@ const PlayModifiers = ({ selectedPlay, onModifierChange, disabled = false }) => 
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (disabled) return;
-      // Radio focus must not suppress shortcuts, but typing must remain untouched.
-      if ((event.target.tagName === 'INPUT' && event.target.type !== 'radio') ||
+      // Keep shortcuts available while a control has focus, but leave typing alone.
+      if ((event.target.tagName === 'INPUT' && event.target.type !== 'checkbox') ||
           event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) return;
       
       const key = event.key.toUpperCase();
@@ -61,92 +61,68 @@ const PlayModifiers = ({ selectedPlay, onModifierChange, disabled = false }) => 
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [disabled, humanTimeouts, isHumanOffense, spikeDisabled, toggleNoHuddleMode, setModifier, onModifierChange]);
 
+  const toggleModifier = (modifier) => {
+    const nextModifier = selectedModifier === modifier ? null : modifier;
+    setModifier(nextModifier);
+    onModifierChange?.(nextModifier);
+  };
+
   return (
     <fieldset disabled={disabled} className="bg-gray-800 rounded px-2 py-1 min-w-0" data-testid="play-modifiers" title="Modifiers apply to the next play only. No Huddle persists until possession changes.">
-      <div className="flex flex-wrap gap-2 items-center text-xs">
-        {/* No-Huddle Toggle */}
-        {isHumanOffense && <div className="flex items-center gap-1">
-          <span className="text-gray-400">No Huddle:</span>
-          <button
-            onClick={toggleNoHuddleMode}
-            title="Use no huddle to reduce eligible running-clock plays from 40 to 20 seconds. May cause a no-huddle penalty. Stays on until possession changes or you turn it off. Shortcut: N."
-            className={`px-2 py-1 rounded font-bold text-xs ${
-              noHuddleMode 
-                ? 'bg-red-600 text-white hover:bg-red-700' 
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {noHuddleMode ? 'ON' : 'OFF'} [N]
-          </button>
+      <div className="space-y-3 text-sm">
+        {isHumanOffense && <div className="flex flex-wrap items-center gap-2 border-t border-slate-600 pt-3">
+          <h3 className="font-bold text-white">Pace</h3>
+          <label className="flex items-center gap-2 text-gray-200" title="Use no huddle to reduce eligible running-clock plays from 40 to 20 seconds. May cause a no-huddle penalty. Stays on until possession changes or you turn it off. Shortcut: N.">
+            <input type="checkbox" checked={noHuddleMode} onChange={toggleNoHuddleMode} className="h-4 w-4 shrink-0 accent-blue-600" />
+            <span>No Huddle [N]</span>
+          </label>
         </div>}
-
-        {/* Modifier Radio Buttons */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-gray-400">Modifier:</span>
-          <label className="flex items-center gap-0.5 cursor-pointer" title="Clear the next-play modifier. This does not turn off No Huddle. Shortcut: 0.">
+        <div className="space-y-2 border-t border-slate-600 pt-3">
+          <h3 className="font-bold text-white">Clock</h3>
+          <label className="flex items-center gap-2 text-gray-200" title={timeoutHelp}>
             <input
-              type="radio"
-              name="modifier"
-              checked={selectedModifier === null}
-              onChange={() => {
-                setModifier(null);
-                onModifierChange && onModifierChange(null);
-              }}
-              className="w-3 h-3"
-            />
-            <span className="text-gray-300">None [0]</span>
-          </label>
-          
-          <label className="flex items-center gap-0.5 cursor-pointer" title={timeoutHelp}>
-            <input
-              type="radio"
-              name="modifier"
+              type="checkbox"
               checked={selectedModifier === 'T'}
-              onChange={() => {
-                setModifier('T');
-                onModifierChange && onModifierChange('T');
-              }}
+              onChange={() => toggleModifier('T')}
               disabled={humanTimeouts <= 0}
-              className="w-3 h-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-4 w-4 shrink-0 accent-blue-600"
             />
-            <span className={humanTimeouts <= 0 ? 'text-gray-600' : 'text-gray-300'}>
-              Timeout ({humanTimeouts} left) [T]
-            </span>
+            <span>Timeout ({humanTimeouts} left) [T]</span>
           </label>
-          
-          {isHumanOffense && <>
-          <label className="flex items-center gap-0.5 cursor-pointer" title="Request out of bounds on the next play: eligible plays in the final minutes take ten seconds and cost five yards. The engine decides whether the result qualifies. Shortcut: O.">
-            <input
-              type="radio"
-              name="modifier"
-              checked={selectedModifier === '+'}
-              onChange={() => {
-                setModifier('+');
-                onModifierChange && onModifierChange('+');
-              }}
-              className="w-3 h-3"
-            />
-            <span className="text-gray-300">Out of bounds [O]</span>
-          </label>
-          
-          <label className="flex items-center gap-0.5 cursor-pointer" title="Request a spike after your next play to stop a running clock. Uses an extra down and caps eligible play-plus-spike time at 20 seconds. Available on first or second down for regular offensive plays. Shortcut: S.">
-            <input
-              type="radio"
-              name="modifier"
-              checked={selectedModifier === 'S'}
-              onChange={() => {
-                setModifier('S');
-                onModifierChange && onModifierChange('S');
-              }}
-              disabled={spikeDisabled}
-              className="w-3 h-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <span className={spikeDisabled ? 'text-gray-600' : 'text-gray-300'}>
-              Spike [S]
-            </span>
-          </label>
-          </>}
+          {isHumanOffense && (
+            <label className="flex items-center gap-2 text-gray-200" title="Request a spike after your next play to stop a running clock. Uses an extra down and caps eligible play-plus-spike time at 20 seconds. Available on first or second down for regular offensive plays. Shortcut: S.">
+              <input
+                type="checkbox"
+                checked={selectedModifier === 'S'}
+                onChange={() => toggleModifier('S')}
+                disabled={spikeDisabled}
+                className="h-4 w-4 shrink-0 accent-blue-600"
+              />
+              <span>Spike [S]</span>
+            </label>
+          )}
         </div>
+        {isHumanOffense && <div className="space-y-2 border-t border-slate-600 pt-3">
+          <h3 className="font-bold text-white">Next-play result</h3>
+          <label className="flex items-center gap-2 text-gray-200" title="Request out of bounds on the next play: eligible plays in the final minutes take ten seconds and cost five yards. The engine decides whether the result qualifies. Shortcut: O.">
+            <input
+              type="checkbox"
+              checked={selectedModifier === '+'}
+              onChange={() => toggleModifier('+')}
+              className="h-4 w-4 shrink-0 accent-blue-600"
+            />
+            <span>Out of bounds [O]</span>
+          </label>
+          <label className="flex items-center gap-2 text-gray-200" title="Request that the next eligible play stay in bounds to keep the clock running. The engine applies the yardage cost and determines eligibility.">
+            <input
+              type="checkbox"
+              checked={selectedModifier === '-'}
+              onChange={() => toggleModifier('-')}
+              className="h-4 w-4 shrink-0 accent-blue-600"
+            />
+            <span>Keep in bounds</span>
+          </label>
+        </div>}
       </div>
     </fieldset>
   );

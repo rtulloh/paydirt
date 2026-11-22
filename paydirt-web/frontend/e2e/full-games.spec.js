@@ -167,14 +167,14 @@ async function completeGame(page, request, gameId) {
     }
     if (endpoint === 'execute' && !state.playerOffense) {
       const modifiers = page.getByTestId('play-modifiers')
-      await expect(modifiers.getByRole('radio', { name: 'Out of bounds [O]' })).toHaveCount(0)
-      await expect(modifiers.getByRole('radio', { name: 'Spike [S]' })).toHaveCount(0)
-      const timeout = modifiers.getByRole('radio', { name: `Timeout (${state.humanTimeouts} left) [T]` })
+      await expect(modifiers.getByRole('checkbox', { name: 'Out of bounds [O]' })).toHaveCount(0)
+      await expect(modifiers.getByRole('checkbox', { name: 'Spike [S]' })).toHaveCount(0)
+      const timeout = modifiers.getByRole('checkbox', { name: `Timeout (${state.humanTimeouts} left) [T]` })
       if (state.humanTimeouts > 0) {
         await timeout.check()
         if (!timeoutKeyboardExercised) {
           await page.keyboard.press('0')
-          await expect(modifiers.getByRole('radio', { name: 'None [0]' })).toBeChecked()
+          await expect(timeout).not.toBeChecked()
           await page.keyboard.press('t')
           await expect(timeout).toBeChecked()
           timeoutKeyboardExercised = true

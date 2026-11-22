@@ -68,6 +68,7 @@ function formatFieldPosition(pos: number | undefined, possession: 'home' | 'away
 interface PlayLogDisplayProps {
   plays?: PlayLogEntry[];
   onPlayClick?: (play: PlayLogEntry) => void;
+  showHeading?: boolean;
 }
 
 function formatClock(seconds: number | undefined): string {
@@ -76,7 +77,7 @@ function formatClock(seconds: number | undefined): string {
   return `${Math.floor(wholeSeconds / 60)}:${String(wholeSeconds % 60).padStart(2, '0')}`;
 }
 
-const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
+const PlayLogDisplay = ({ plays = [], onPlayClick, showHeading = true }: PlayLogDisplayProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(plays?.length || 0);
   const initialScrollDone = useRef(false);
@@ -106,7 +107,7 @@ const PlayLogDisplay = ({ plays = [], onPlayClick }: PlayLogDisplayProps) => {
   
   return (
     <div className="w-full">
-      <div className="text-white font-bold mb-2">PLAY LOG</div>
+      {showHeading && <div className="text-white font-bold mb-2">PLAY LOG</div>}
       <div ref={scrollRef} className="h-64 overflow-y-auto border rounded p-2 space-y-1">
         {plays && plays.length > 0 ? plays.map((play, index) => {
           const teams = derivePlayLogDisplayTeams(play) as

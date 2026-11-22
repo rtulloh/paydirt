@@ -33,14 +33,16 @@ describe('PlayModifiers', () => {
 
   it('renders no huddle button', () => {
     render(<PlayModifiers selectedPlay="7" />)
-    expect(screen.getByText(/No Huddle:/)).toBeDefined()
-    expect(screen.getByText(/OFF \[N\]|ON \[N\]/i)).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Pace' })).toBeInTheDocument()
+    expect(screen.getByText('No Huddle [N]')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'No Huddle [N]' })).toBeDefined()
   })
 
-  it('renders modifier radio buttons', () => {
+  it('renders modifier checkboxes', () => {
     render(<PlayModifiers selectedPlay="7" />)
-    expect(screen.getByText(/Modifier:/)).toBeDefined()
-    expect(screen.getByLabelText(/None \[0\]/i)).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Clock' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Next-play result' })).toBeInTheDocument()
+    expect(screen.queryByText(/None/)).not.toBeInTheDocument()
     expect(screen.getByLabelText(/Timeout \(3 left\) \[T\]/i)).toBeDefined()
     expect(screen.getByLabelText(/Out of bounds \[O\]/i)).toBeDefined()
     expect(screen.getByLabelText(/Spike \[S\]/i)).toBeDefined()
@@ -48,15 +50,20 @@ describe('PlayModifiers', () => {
 
   it('calls toggleNoHuddleMode when button clicked', () => {
     render(<PlayModifiers selectedPlay="7" />)
-    const button = screen.getByText(/OFF \[N\]|ON \[N\]/i)
+    const button = screen.getByRole('checkbox', { name: 'No Huddle [N]' })
     fireEvent.click(button)
     expect(mockToggleNoHuddleMode).toHaveBeenCalledTimes(1)
   })
 
-  it('calls setModifier when radio button selected', () => {
+  it('calls setModifier when checkbox selected', () => {
     render(<PlayModifiers selectedPlay="7" />)
     const timeoutRadio = screen.getByLabelText(/Timeout \(3 left\) \[T\]/i)
     fireEvent.click(timeoutRadio)
     expect(mockSetModifier).toHaveBeenCalledWith('T')
   })
+})
+it('queues the keep-in-bounds instruction from the controls', () => {
+  render(<PlayModifiers selectedPlay="7" />)
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Keep in bounds' }))
+  expect(mockSetModifier).toHaveBeenLastCalledWith('-')
 })

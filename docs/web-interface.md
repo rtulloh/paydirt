@@ -90,15 +90,16 @@ or lost fumble from an older save still shows the team that ran the play.
 
 ## Browser Play Selection
 
+On wide screens, **Play selection**, **Play log**, and **Game controls** appear side by side. On narrow screens, they stack in that order. The log opens on the latest play. Use **Show complete history** in Game controls to see earlier plays.
 On offense, choose a running, passing, or special play. Select any available clock modifiers before executing it.
 See [clock management](clock-management.md) for what those modifiers mean.
 
 ![Offense Play Selection](images/offense.png)
 
 On defense, choose a formation to counter the CPU's offense. To request a
-timeout after that play, select **Timeout (remaining left) [T]** in the modifier panel
-before choosing the formation, or press **T**. Select **None [0]** or press
-**0** to cancel. The count is your team's remaining timeouts, whether you
+timeout after that play, select **Timeout (remaining left) [T]** under **Clock** in Game controls
+before choosing the formation, or press **T**. Uncheck the selected option or
+press **0** to clear it. The count is your team's remaining timeouts, whether you
 play home or away. The engine charges one only when the result needs it;
 incompletions, out-of-bounds plays and penalties already stop the clock.
 The selection clears after the play is submitted, including when a penalty

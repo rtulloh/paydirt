@@ -54,7 +54,9 @@ describe('PlayingPhase rule explanations', () => {
       })));
       render(<PlayingPhase />);
       fireEvent.click(screen.getByRole('button', { name: 'QB Sneak' }));
-      await act(async () => { await vi.advanceTimersByTimeAsync(1800); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(1199); });
+      expect(screen.queryByText(result.description)).not.toBeInTheDocument();
+      await act(async () => { await vi.advanceTimersByTimeAsync(1); });
 
       expect(screen.getAllByText(result.description)).toHaveLength(2);
       if (ruleExplanation) {
@@ -68,4 +70,15 @@ describe('PlayingPhase rule explanations', () => {
       }
     },
   );
+  it('places game controls after the play selection and log', () => {
+    render(<PlayingPhase />);
+    const selection = screen.getByRole('region', { name: 'Play selection' });
+    const log = screen.getByRole('region', { name: 'Play log' });
+    const controls = screen.getByRole('region', { name: 'Game controls' });
+    expect(selection.nextElementSibling).toBe(log);
+    expect(log.nextElementSibling).toBe(controls);
+    expect(selection).toContainElement(screen.getByRole('button', { name: 'QB Sneak' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show complete history' }));
+    expect(controls).toContainElement(screen.getByRole('button', { name: 'Show latest play' }));
+  });
 });
