@@ -352,7 +352,7 @@ def export_candidate_tree(root: Path, target: Path) -> None:
             shutil.copy2(source, destination)
 
 
-def clean_core_checkout(root: Path) -> int:
+def clean_core_checkout(root: Path, pytest_workers: int = 1) -> int:
     """Run core unit tests from a tracked-files-only export of the candidate.
 
     The export comes from the work tree, not ``HEAD``, so running the script
@@ -374,7 +374,8 @@ def clean_core_checkout(root: Path) -> int:
             + (f" with uncommitted tracked changes:\n{summary}" if summary else " at HEAD")
         )
         return subprocess.run(
-            [sys.executable, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/", "-q", "-o", "addopts=", "--tb=short",
+             *(["-n", str(pytest_workers)] if pytest_workers > 1 else [])],
             cwd=checkout,
             check=False,
         ).returncode
@@ -387,6 +388,8 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
     parser.add_argument("--only", help="Comma-separated step names to run.")
     parser.add_argument("--skip", help="Comma-separated step names to skip.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failing step.")
+    parser.add_argument("--pytest-workers", type=int, default=1,
+                        help="Process count for core pytest runs (counts above 1 require pytest-xdist).")
     parser.add_argument("--clean-checkout", action="store_true",
                         help="Also run core unit tests from a tracked-files-only export of the candidate work tree.")
     parser.add_argument("--timeout", type=float, default=0,
@@ -394,12 +397,20 @@ def main(argv: Sequence[str] | None = None, *, root: Path | None = None) -> int:
     parser.add_argument("--log-dir", type=Path, help="Override the ignored .ai-audits/full-regression log root.")
     parser.add_argument("--internal-clean-core", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.pytest_workers < 1:
+        parser.error("--pytest-workers must be positive")
 
     base_root = (root or ROOT).resolve()
     if args.internal_clean_core:
-        return clean_core_checkout(base_root)
+        return clean_core_checkout(base_root, args.pytest_workers)
 
     steps = regression_steps(base_root, include_clean_checkout=args.clean_checkout)
+    if args.pytest_workers > 1:
+        steps = [
+            Step(step.name, step.cwd, [*step.argv, flag, str(args.pytest_workers)], step.note)
+            if (flag := {"core": "-n", "clean_core": "--pytest-workers"}.get(step.name)) else step
+            for step in steps
+        ]
     by_name = {step.name: step for step in steps}
     if args.only:
         requested = [name.strip() for name in args.only.split(",") if name.strip()]

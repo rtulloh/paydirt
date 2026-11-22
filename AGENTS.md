@@ -88,8 +88,9 @@ The pre-push core run executes the complete suite but does not measure package
 coverage locally: that run is several times slower with branch coverage and it
 measures code nobody changed. Coverage is instead measured per changed module
 while fixing (see [Coverage While Fixing](#coverage-while-fixing)). The upstream
-`test.yml` job runs the full suite with coverage on Python 3.10 for every push;
-that result is the authoritative coverage evidence for the pushed commit. A
+`test.yml` workflow runs all Python 3.10 tests across independent shards and
+combines their branch coverage for every push. The combined report is the
+authoritative coverage evidence for the pushed commit. A
 push is qualified only when it is green, and coverage gaps it reports must be
 addressed in a follow-up commit before a tag or release is cut. Strict
 candidate/charted-release tooling keeps its own required coverage run; this
@@ -100,7 +101,9 @@ change affects the local pre-push route only.
 `python3 scripts/run_full_regression.py` runs every command above in order,
 streams per-step logs, and prints a compact pass/fail summary. `--list` shows the
 plan without running; `--only`/`--skip` narrow it; `--clean-checkout` adds the
-unit run from a tracked-files-only export of the candidate work tree. The export
+unit run from a tracked-files-only export of the candidate work tree. Install
+`pytest-xdist` and pass `--pytest-workers 8` to parallelize both core unit runs
+on a machine with enough CPU capacity. The export
 is taken from the files on disk, so uncommitted tracked edits and new
 untracked-but-not-ignored files are tested, while ignored local data is excluded;
 the step prints the uncommitted files it exported. Logs and
