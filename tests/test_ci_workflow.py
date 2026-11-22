@@ -12,13 +12,14 @@ def jobs() -> dict:
     return yaml.safe_load(workflow.read_text())["jobs"]
 
 
-@pytest.mark.parametrize("job", ["test", "lint", "browser-games"])
+@pytest.mark.parametrize("job", ["test", "core", "coverage", "lint", "browser-games"])
 def test_hosted_test_jobs_pin_supported_runner(jobs: dict, job: str) -> None:
     assert jobs[job]["runs-on"] == "ubuntu-24.04"
 
 
 def test_python_matrix_keeps_all_versions_and_collects_independent_failures(jobs: dict) -> None:
-    assert jobs["test"]["strategy"]["matrix"]["python-version"] == ["3.10", "3.11", "3.12"]
+    assert jobs["test"]["strategy"]["matrix"]["python-version"] == ["3.11", "3.12"]
+    assert jobs["core"]["strategy"]["fail-fast"] is False
     assert jobs["test"]["strategy"].get("fail-fast") is False
 
 
@@ -65,11 +66,11 @@ def test_workflows_use_reviewed_node24_actions(filename: str) -> None:
 
 
 def test_coverage_upload_keeps_optional_status_and_uses_supported_input(jobs: dict) -> None:
-    step = next(step for step in jobs["test"]["steps"]
+    step = next(step for step in jobs["coverage"]["steps"]
                 if step.get("uses", "").startswith("codecov/"))
     assert step["with"] == {"files": "./coverage.xml", "fail_ci_if_error": False}
     assert step["continue-on-error"] is True
-    assert step["if"] == "matrix.python-version == '3.10'"
+    assert jobs["coverage"]["needs"] == "core"
 
 
 def test_runtime_upgrade_preserves_release_safety_and_artifact_layout(jobs: dict) -> None:
@@ -143,19 +144,35 @@ def test_python_matrix_matches_declared_supported_versions(jobs: dict) -> None:
     metadata = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
     declared = re.findall(r'"Programming Language :: Python :: (\d+\.\d+)"', metadata)
     assert declared, "Package metadata must declare supported Python minor versions"
-    assert jobs["test"]["strategy"]["matrix"]["python-version"] == declared
+    setup = next(step for step in jobs["core"]["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    assert [setup["with"]["python-version"], *jobs["test"]["strategy"]["matrix"]["python-version"]] == declared
 
 
-def test_full_core_suite_runs_once_with_coverage_on_release_python(jobs: dict) -> None:
-    steps = jobs["test"]["steps"]
-    runs = [step for step in steps if "pytest" in step.get("run", "") and "pip install" not in step["run"]]
-    full = [step for step in runs if "--cov=paydirt" in step["run"]]
-    assert len(full) == 1
-    assert full[0]["if"] == "matrix.python-version == '3.10'"
-    assert "python -m pytest tests/" in full[0]["run"]
-    compatibility = [step for step in runs if step is not full[0]]
+def test_full_core_suite_shards_and_combines_coverage_on_release_python(jobs: dict) -> None:
+    core = jobs["core"]
+    shards = core["strategy"]["matrix"]["shard"]
+    assert len(shards) > 1
+    assert shards == list(range(len(shards)))
+    run = next(step["run"] for step in core["steps"] if "-m pytest" in step.get("run", ""))
+    assert "python -m pytest tests/" in run
+    assert f"--shard-count {len(shards)} --shard-index ${{{{ matrix.shard }}}}" in run
+    assert "-p scripts.pytest_shard" in run
+    assert "--cov=paydirt" in run
+    upload = next(step["with"] for step in core["steps"] if step.get("uses", "").startswith("actions/upload-artifact@"))
+    assert upload == {
+        "name": "core-coverage-${{ matrix.shard }}",
+        "path": ".coverage",
+        "include-hidden-files": True,
+        "if-no-files-found": "error",
+    }
+    coverage = jobs["coverage"]
+    assert coverage["needs"] == "core"
+    combine = next(step["run"] for step in coverage["steps"] if "coverage combine" in step.get("run", ""))
+    assert "{" + f"0..{len(shards) - 1}" + "}" in combine
+    assert "coverage xml" in combine
+    compatibility = [step for step in jobs["test"]["steps"] if "-m pytest" in step.get("run", "")]
     assert len(compatibility) == 1
-    assert compatibility[0]["if"] == "matrix.python-version != '3.10'"
+    assert "--cov" not in compatibility[0]["run"]
     for module in ("test_game.py", "test_save_game.py", "test_season_rules.py", "test_team_charts.py", "test_cli.py"):
         assert f"tests/{module}" in compatibility[0]["run"]
 

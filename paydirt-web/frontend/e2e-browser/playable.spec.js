@@ -122,28 +122,27 @@ test(`static ${year} build completes home and away games without an HTTP backend
         }, { message: 'The pending penalty must offer an enabled choice or finish its CPU decision' }).toBe(true)
         if (!button) continue
       }
-      if (!button) button = await findEnabledProcedure(page)
-      if (!button) {
-        const offense = page.getByTestId('offense-play-1')
-        if (await offense.isVisible()) {
-          const play = before.down === 4 ? (before.ball_position < 55 ? 'p' : 'f') : ['1', '2', '6', '7'][plays % 4]
-          button = page.getByTestId('offense-play-' + play)
-        } else {
-          button = page.getByTestId('defense-play-' + ['a', 'b', 'c', 'd', 'e', 'f'][plays % 6])
-        }
-        plays++
-      }
       // A worker response can arrive before its checkpoint and React commit.
       // Reacquire the procedure control while waiting rather than holding a
       // defense/offense locator that correctly becomes disabled by a new foul.
       let phaseChanged = false
+      let selectedPlay = false
       await expect.poll(async () => {
         if (await page.getByTestId('halftime').isVisible() || await page.getByTestId('game-over').isVisible()) {
           phaseChanged = true
           return true
         }
-        const procedure = await findEnabledProcedure(page)
-        if (procedure) button = procedure
+        button = await findEnabledProcedure(page)
+        selectedPlay = !button
+        if (!button) {
+          if (await page.getByTestId('offense-play-1').isVisible()) {
+            const current = await state()
+            const play = current.down === 4 ? (current.ball_position < 55 ? 'p' : 'f') : ['1', '2', '6', '7'][plays % 4]
+            button = page.getByTestId('offense-play-' + play)
+          } else {
+            button = page.getByTestId('defense-play-' + ['a', 'b', 'c', 'd', 'e', 'f'][plays % 6])
+          }
+        }
         return isActionable(button)
       }, { message: 'An actionable control must exist at step ' + step }).toBe(true)
       if (phaseChanged) continue
@@ -167,6 +166,7 @@ test(`static ${year} build completes home and away games without an HTTP backend
       const closesResult = selectedText === 'CONTINUE'
       try {
         await button.click(closesResult ? { timeout: 2000 } : {})
+        if (selectedPlay) plays++
       } catch (error) {
         // A result may close through response-driven UI progress while click
         // waits for its animation. Only that vanished UI-only control may be

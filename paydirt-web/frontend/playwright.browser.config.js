@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e-browser',
-  fullyParallel: false,
+  fullyParallel: true,
   workers: 1,
   retries: 0,
   timeout: 600_000,

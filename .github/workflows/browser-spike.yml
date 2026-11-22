@@ -38,30 +38,52 @@ jobs:
         run: |
           cd paydirt-web/frontend
           npm run build:browser
-      - name: Install browser
-        run: cd paydirt-web/frontend && npx playwright install --with-deps chromium
-      - name: Complete real-engine games without a backend
-        run: cd paydirt-web/frontend && npm run test:e2e:browser
       - name: Preserve static build
         uses: actions/upload-artifact@v7.0.2
         with:
           name: paydirt-browser-spike
           path: paydirt-web/frontend/dist-browser/
-      - name: Preserve browser failure evidence
-        if: failure()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: browser-spike-failures
-          path: paydirt-web/frontend/test-results/
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: paydirt-web/frontend/dist-browser/
 
+  browser-games:
+    needs: build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: paydirt-web/frontend
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24.22.1'
+          cache: npm
+          cache-dependency-path: paydirt-web/frontend/package-lock.json
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: paydirt-browser-spike
+          path: paydirt-web/frontend/dist-browser/
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Complete real-engine games without a backend
+        run: npm run test:e2e:browser -- --shard=${{ matrix.shard }}/3
+      - name: Preserve browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: browser-spike-failures-${{ matrix.shard }}
+          path: paydirt-web/frontend/test-results/
+
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: browser-games
     runs-on: ubuntu-24.04
     permissions:
       pages: write

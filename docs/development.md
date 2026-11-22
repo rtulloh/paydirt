@@ -60,7 +60,10 @@ bounded read-only snapshot of the current public chart books, not a second
 engine session.
 
 `test:e2e:browser` serves the built static directory on port **18733** and runs the
-separate Chromium suite in `e2e-browser/` with no game backend. Build first and
+separate Chromium suite in `e2e-browser/` with no game backend. CI runs this
+suite in three shards against the same build and deploys only after all pass.
+To reproduce a CI shard locally, append `-- --shard=1/3` and use the matching
+shard number. Build first and
 install Playwright Chromium as described in the
 [browser regression setup](../paydirt-web/frontend/e2e/README.md). The regular
 `npm run test:e2e` still tests the HTTP-backed application and remains mandatory;
