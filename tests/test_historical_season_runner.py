@@ -282,6 +282,7 @@ def test_cli_selects_year_and_generated_charts_and_preserves_output(
     if problem == "missing-fixture":
         source = tmp_path / "missing.json"
     if problem == "overwrite":
+        output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text("preserved")
     try:
         status = runner.main(["2026", "--charts", str(charts), "--schedule", str(source),

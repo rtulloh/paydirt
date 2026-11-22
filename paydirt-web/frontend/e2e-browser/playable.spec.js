@@ -135,8 +135,11 @@ test(`static ${year} build completes home and away games without an HTTP backend
         button = await findEnabledProcedure(page)
         selectedPlay = !button
         if (!button) {
+          const current = await state()
+          // The worker can report a try or kickoff before React renders its
+          // controls. Wait for that procedure before selecting another snap.
+          if (current.pending_pat || current.is_kickoff || current.halftime_pending || current.game_over) return false
           if (await page.getByTestId('offense-play-1').isVisible()) {
-            const current = await state()
             const play = current.down === 4 ? (current.ball_position < 55 ? 'p' : 'f') : ['1', '2', '6', '7'][plays % 4]
             button = page.getByTestId('offense-play-' + play)
           } else {
