@@ -167,6 +167,7 @@ def test_full_core_suite_shards_and_combines_coverage_on_release_python(jobs: di
     }
     coverage = jobs["coverage"]
     assert coverage["needs"] == "core"
+    assert any('"coverage[toml]"' in step.get("run", "") for step in coverage["steps"])
     combine = next(step["run"] for step in coverage["steps"] if "coverage combine" in step.get("run", ""))
     assert "{" + f"0..{len(shards) - 1}" + "}" in combine
     assert "coverage xml" in combine
