@@ -164,6 +164,60 @@ def test_summary_reconciles_and_does_not_export_charts_or_descriptions() -> None
         assert forbidden not in encoded
 
 
+def test_each_selected_call_records_the_defensive_choice_read_only() -> None:
+    audit = audit_module()
+    game = audit.audit_game(spec())
+    assert game["status"] == "passed", game.get("error")
+    valid_formations = {formation.value for formation in audit.DefenseType}
+    valid_branches = {
+        "goal_line", "red_zone", "prevent", "two_minute", "pressure",
+        "blended_key_down", "fourth_and_short", "model", "fourth_down",
+        "third_down", "early_down",
+    }
+    for call in game["calls"]:
+        defense = call["defense"]
+        before = call["before"]
+        assert defense["formation"] in valid_formations
+        assert defense["branch"] in valid_branches
+        assert defense["is_home"] is not before["is_home"]
+        assert defense["team"] != before["team"]
+        assert defense["difficulty"] in {"hard", "medium", "easy", "balanced"}
+        # The offense receipt stays offense-only so offense aggregation cannot
+        # start counting the unrevealed defensive decision.
+        assert "defense" not in before
+        assert "formation" not in before
+
+
+def test_defense_summary_reports_formation_mix_and_evidence_buckets() -> None:
+    audit = audit_module()
+    games = [audit.audit_game(spec(seed=seed)) for seed in (731, 732)]
+    report = audit.make_report(games)
+    summary = report["summary"]
+    recorded = sum(1 for game in games for call in game["calls"] if call.get("defense"))
+    assert recorded == sum(group["calls"] for group in summary["defense_situations"])
+    for group in summary["defense_situations"]:
+        assert group["calls"] == sum(group["formation_counts"].values())
+        assert group["largest_share"] == max(group["formation_counts"].values()) / group["calls"]
+        assert group["distinct_formations"] == len(group["formation_counts"])
+        assert group["branch"] in {"goal_line", "red_zone", "prevent", "two_minute",
+                                   "pressure", "blended_key_down", "fourth_and_short",
+                                   "model", "fourth_down", "third_down", "early_down"}
+    assert summary["defense_evidence"]
+    for group in summary["defense_evidence"]:
+        assert group["observations"] in {"0", "1", "2", "3-5", "6-10", "11-20"}
+        assert group["calls"] == sum(group["formation_counts"].values())
+
+
+def test_defense_instrumentation_is_reproducible_and_restores_caller_rng() -> None:
+    audit = audit_module()
+    before = random.getstate()
+    first = audit.audit_game(spec())
+    second = audit.audit_game(spec())
+    assert random.getstate() == before
+    assert first["calls"] == second["calls"]
+    assert all(call["defense"] for call in first["calls"])
+
+
 def test_batch_reports_failures_and_never_persists_standings(tmp_path: Path) -> None:
     audit = audit_module()
     with patch("paydirt.standings.StandingsManager.save_season", side_effect=AssertionError("saved standings")):
@@ -207,6 +261,20 @@ def test_cli_season_uses_complete_schedule_without_private_dependencies(tmp_path
     report = json.loads(output.read_text())
     assert report["summary"]["games"] == report["summary"]["passed"] == 3
     assert {game["config"]["week"] for game in report["games"]} == {1, 2, 3}
+
+
+def test_cli_defense_csv_reports_branch_and_formation_mix(tmp_path: Path) -> None:
+    cli = importlib.import_module("tests.run_ai_audit")
+    output, defense_csv = tmp_path / "report.json", tmp_path / "defense.csv"
+    status = cli.main([AWAY, HOME, "--games", "2", "--seed", "731",
+                       "--output", str(output), "--defense-csv", str(defense_csv)])
+    assert status == 0
+    report = json.loads(output.read_text())
+    text = defense_csv.read_text()
+    assert text.startswith("team,difficulty,branch,down,distance_band,calls,")
+    rows = text.strip().splitlines()[1:]
+    assert len(rows) == len(report["summary"]["defense_situations"])
+    assert any("blended_key_down" in row or "model" in row for row in rows)
 
 
 def test_cli_failure_is_nonzero_and_report_retains_every_matchup(tmp_path: Path) -> None:

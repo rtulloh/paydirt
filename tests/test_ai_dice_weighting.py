@@ -163,7 +163,7 @@ def test_hard_ai_ranks_likely_gains_above_more_rare_winning_rows(
 
 
 @pytest.mark.parametrize("difficulty,analysis,aggression", [
-    ("easy", False, 0.3), ("medium", False, 0.5), ("hard", True, 0.7),
+    ("easy", False, 0.3), ("medium", False, 0.5), ("hard", True, 0.6),
 ])
 def test_difficulty_configuration_is_unchanged(
     difficulty: str, analysis: bool, aggression: float,

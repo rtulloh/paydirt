@@ -699,12 +699,17 @@ class TestAIOpponentAnalysis:
         assert tendency.run_plays == 0
 
     def test_opponent_tracker_gets_defense_recommendation(self):
-        """Opponent tracker should give defense recommendations based on tendencies."""
+        """Recency weighting can downgrade an old lifetime pass majority.
+
+        Seven passes followed by three runs are only 70% passes over the whole
+        game, but the recent runs decay the pass evidence. The intended new
+        policy therefore calls Spread (C) rather than the old lifetime-average
+        Short Pass (D).
+        """
         from paydirt.computer_ai import ComputerAI
 
         ai = ComputerAI(aggression=0.7, use_analysis=True)
 
-        # Record mostly pass plays (>60%) -> should recommend D (Short Pass defense)
         for _ in range(7):
             ai.opponent_model.record_opponent_play(
                 down=3, distance=8, play_type="Long Pass", yards_gained=10, is_pass=True
@@ -714,10 +719,21 @@ class TestAIOpponentAnalysis:
                 down=3, distance=8, play_type="Run", yards_gained=2, is_pass=False
             )
 
-        # With >60% passes, should recommend D defense
         rec = ai.opponent_model.tracker.get_defense_recommendation(3, 8)
 
-        assert rec == "D"
+        assert rec == "C"
+
+    def test_opponent_tracker_recommends_short_pass_for_a_recent_pass_heavy_trend(self):
+        """Recent, consistently pass-heavy evidence should still call D."""
+        from paydirt.computer_ai import ComputerAI
+
+        ai = ComputerAI(aggression=0.7, use_analysis=True)
+        for _ in range(10):
+            ai.opponent_model.record_opponent_play(
+                down=3, distance=8, play_type="Long Pass", yards_gained=10, is_pass=True
+            )
+
+        assert ai.opponent_model.tracker.get_defense_recommendation(3, 8) == "D"
 
     def test_opponent_tracker_detects_streak(self):
         """Opponent tracker should detect streaks of same play types."""

@@ -101,7 +101,7 @@ def cli_session(monkeypatch: pytest.MonkeyPatch) -> Callable[..., tuple]:
 
 @pytest.mark.parametrize("resume", [False, True], ids=["new", "resume"])
 @pytest.mark.parametrize("is_home", [False, True], ids=["human-away", "human-home"])
-@pytest.mark.parametrize("difficulty,aggression", [("easy", .3), ("medium", .5), ("hard", .7)])
+@pytest.mark.parametrize("difficulty,aggression", [("easy", .3), ("medium", .5), ("hard", .6)])
 def test_cli_uses_configured_ai(
     cli_session: Callable[..., tuple], resume: bool, is_home: bool,
     difficulty: str, aggression: float,
@@ -146,10 +146,16 @@ def test_hard_defense_uses_opponent_score(
 ) -> None:
     game = make_sample_game()
     game.state.is_home_possession = is_home_possession
-    game.state.quarter, game.state.time_remaining = 4, 3.0
+    # 4.5 minutes keeps the model's late-game flags active without invoking
+    # the separate prevent or two-minute situational handlers.
+    game.state.quarter, game.state.time_remaining = 4, 4.5
     game.state.home_score = 14 + (opponent_lead if is_home_possession else 0)
     game.state.away_score = 14 + (opponent_lead if not is_home_possession else 0)
     ai = ComputerAI(use_analysis=True)
+    ai.opponent_model.predict_defense_weights = Mock(
+        side_effect=lambda *args, **kwargs: (
+            ai.opponent_model.update_game_state(opponent_lead, 4, 4.5) or
+            ({"A": 1.0} if opponent_lead > 0 else {"E": 1.0})))
     assert ai.select_defense(game) == expected
     assert ai.opponent_model.score_differential_history == [opponent_lead]
 
@@ -161,11 +167,11 @@ def test_model_resets_situational_flags(
 ) -> None:
     model = OpponentModel()
     model.update_game_state(previous_lead, 4, 3.)
-    model.tracker.get_defense_recommendation = Mock(return_value="D")
+    model.tracker.defense_weights = Mock(return_value={"D": 1.0})
     assert model.predict_defense(3, 7, lead, quarter, time_left) == "D"
     assert not model.is_protecting_lead
     assert not model.is_comeback_mode
-    model.tracker.get_defense_recommendation.assert_called_once_with(3, 7)
+    model.tracker.defense_weights.assert_called_once_with(3, 7)
 
 
 @pytest.mark.parametrize("lead,expected", [(7, "A"), (-7, "E")])

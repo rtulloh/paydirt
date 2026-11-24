@@ -34,7 +34,7 @@ python3 tests/run_ai_audit.py 2026/Ironclads 2026/Thunderhawks --seed 8306
 Repeated matchup, independent game seeds, asymmetric difficulties, and CSV summary:
 
 ```sh
-python3 tests/run_ai_audit.py 2026/Ironclads 2026/Thunderhawks --games 20 --away-difficulty hard --home-difficulty medium --seed 8306 --output .ai-audits/matchup.json --csv .ai-audits/matchup.csv
+python3 tests/run_ai_audit.py 2026/Ironclads 2026/Thunderhawks --games 20 --away-difficulty hard --home-difficulty medium --seed 8306 --output .ai-audits/matchup.json --csv .ai-audits/matchup.csv --defense-csv .ai-audits/matchup-defense.csv
 ```
 
 Generated season across all teams in a local season directory:
@@ -112,6 +112,17 @@ Reports group by team, difficulty, coaching mode, down, and distance band
 - Hard versus balanced groups, retaining special situations separately. Matching
   seeds do not guarantee identical game states once policies diverge.
 - Pre-play probabilities/context separately from outcomes: a good choice can fail.
+
+Defensive selections are recorded separately from offense evidence, because the
+offense never sees the simultaneously selected formation. Each call receipt has a
+`defense` block with the defending team, difficulty, formation, branch
+(`goal_line`, `red_zone`, `prevent`, `two_minute`, `pressure`,
+`blended_key_down`, `model`, `fourth_down`, `third_down`, `early_down`), the
+tracker's observation count for that bucket, and the model weights used.
+`summary.defense_situations` groups formations by team/difficulty/branch/down/band;
+`summary.defense_evidence` groups them by observation count (`0`, `1`, `2`, `3-5`,
+`6-10`, `11-20`) so over-smoothing is visible. `--defense-csv` writes the branch
+summary. These are read-only observations and do not change selection.
 
 Groups under 30 calls are labeled small samples. Ordinary groups with at least
 30 calls and a largest share of at least 50% receive an **observational warning**.

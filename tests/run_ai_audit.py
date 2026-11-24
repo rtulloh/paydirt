@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import sys
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 from typing import Optional
@@ -16,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from paydirt.packaging import get_seasons_path
 from tests.ai_audit import (
     DIFFICULTIES,
+    DEFENSE_CSV_FIELDS,
     SITUATION_CSV_FIELDS,
     GameSpec,
     game_seed,
@@ -40,10 +42,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compare-balanced", action="store_true", help="also run identical seeded matchups using legacy auto AI")
     parser.add_argument("--output", type=Path, default=Path(".ai-audits/latest.json"))
     parser.add_argument("--csv", type=Path, help="optional situation summary CSV, not raw chart data")
+    parser.add_argument("--defense-csv", type=Path,
+                        help="optional defensive formation/branch summary CSV")
     args = parser.parse_args(argv)
     if args.games < 1 or args.weeks < 1 or args.play_limit < 1:
         parser.error("games, weeks and play-limit must be positive")
     if args.csv is not None and args.csv.resolve() == args.output.resolve():
+        parser.error("JSON and CSV outputs must be different paths")
+    if (args.defense_csv is not None
+            and args.defense_csv.resolve() in {path.resolve() for path in
+                                               (args.output, args.csv) if path is not None}):
         parser.error("JSON and CSV outputs must be different paths")
     away_level = args.away_difficulty or args.difficulty
     home_level = args.home_difficulty or args.difficulty
@@ -84,6 +92,15 @@ def main(argv: list[str] | None = None) -> int:
                 for group in report["summary"]["situations"]:
                     writer.writerow({key: json.dumps(value, sort_keys=True) if isinstance(value, dict) else value
                                      for key, value in group.items()})
+        if args.defense_csv is not None:
+            args.defense_csv.parent.mkdir(parents=True, exist_ok=True)
+            with args.defense_csv.open("w", newline="", encoding="utf-8") as output:
+                writer = csv.DictWriter(output, fieldnames=DEFENSE_CSV_FIELDS)
+                writer.writeheader()
+                for group in report["summary"]["defense_situations"]:
+                    writer.writerow({key: json.dumps(value, sort_keys=True)
+                                     if isinstance(value, dict) else value
+                                     for key, value in group.items()})
     except OSError as error:
         print(f"Could not write audit report: {error}", file=sys.stderr)
         return 1
@@ -105,6 +122,27 @@ def main(argv: list[str] | None = None) -> int:
                   f"n={group['calls']} largest={group['largest_share']:.1%} "
                   f"distinct={group['distinct_plays']} streak={group['longest_streak']}"
                   + (" [small sample]" if group["small_sample"] else ""))
+    for difficulty in sorted({group["difficulty"]
+                              for group in summary.get("defense_situations", [])}):
+        groups = [group for group in summary["defense_situations"]
+                  if group["difficulty"] == difficulty]
+        formations = Counter(formation for group in groups
+                             for formation, count in group["formation_counts"].items()
+                             for _ in range(count))
+        total = sum(formations.values())
+        if not total:
+            continue
+        shares = ", ".join(f"{name}={count / total:.1%}"
+                           for name, count in formations.most_common())
+        print(f"{difficulty}: defensive formations over {total} calls: {shares}")
+        concentrated = sorted(
+            (group for group in groups if not group["small_sample"]),
+            key=lambda group: (-group["largest_share"], group["team"]))[:3]
+        for group in concentrated:
+            print(f"  {group['team']} {group['branch']} {group['down']}&"
+                  f"{group['distance_band']} n={group['calls']} "
+                  f"largest={group['largest_share']:.1%} "
+                  f"distinct={group['distinct_formations']}")
     print(f"Report: {args.output}. Review play selection/balance separately from scores; no universal usage cap.")
     return int(summary["failed"] > 0)
 

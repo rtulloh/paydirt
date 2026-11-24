@@ -31,6 +31,25 @@ DIFFICULTIES = ("easy", "medium", "hard", "balanced")
 SITUATION_CSV_FIELDS = ("team", "difficulty", "mode", "down", "distance_band", "calls",
                         "largest_share", "distinct_plays", "longest_streak", "small_sample",
                         "play_counts", "primary_play_shares")
+DEFENSE_CSV_FIELDS = ("team", "difficulty", "branch", "down", "distance_band", "calls",
+                      "largest_share", "distinct_formations", "small_sample",
+                      "formation_counts")
+EVIDENCE_BUCKETS = ("0", "1", "2", "3-5", "6-10", "11-20")
+
+
+def evidence_bucket(observations: int | None) -> str:
+    """Coarse, human-readable evidence size for one situation bucket."""
+    if observations is None or observations <= 0:
+        return "0"
+    if observations == 1:
+        return "1"
+    if observations == 2:
+        return "2"
+    if observations <= 5:
+        return "3-5"
+    if observations <= 10:
+        return "6-10"
+    return "11-20"
 
 
 @dataclass(frozen=True)
@@ -98,6 +117,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     original_kickoff = PaydirtGameEngine.kickoff
     semantics = SemanticAudit()
     original_penalty_choice = ComputerAI.should_accept_penalty
+    defenses: dict[bool, ComputerAI] = {}
 
     def checked_penalty(ai: ComputerAI, outcome: PlayOutcome, *args, **kwargs) -> tuple:
         decision = original_penalty_choice(ai, outcome, *args, **kwargs)
@@ -121,6 +141,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
         if difficulty != "balanced":
             ai._offense_rng = random.Random(game_seed(spec.seed, f"{is_home}:offense"))
             ai._defense_rng = random.Random(game_seed(spec.seed, f"{is_home}:defense"))
+        defenses[is_home] = ai
         return ai
 
     def decision(game: PaydirtGameEngine, ai: ComputerAI, play: PlayType, defense: DefenseType) -> None:
@@ -144,6 +165,22 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
             "mode": ai.last_mode or "ordinary", "play": play.value,
             "probabilities": {p.value: weight / total for p, weight in weights.items()},
         }})
+        # The defensive selection is separate evidence: the offense cannot see
+        # it, so it must never be folded into the offense receipt above.
+        defender_is_home = not home
+        defender = defenses[defender_is_home]
+        detail = getattr(defender, "last_defense_detail", None) or {}
+        record["calls"][-1]["defense"] = {
+            "team": config["home" if defender_is_home else "away"],
+            "is_home": defender_is_home,
+            "difficulty": (spec.home_difficulty if defender_is_home
+                           else spec.away_difficulty),
+            "formation": defense.value,
+            "branch": detail.get("branch", "unknown"),
+            "evidence": detail.get("evidence"),
+            "model_weights": detail.get("model_weights"),
+            "blend_situational": detail.get("blend_situational"),
+        }
         # Deliberately do not record the simultaneously selected defense as
         # offense evidence: the offense cannot see that unrevealed decision.
 
@@ -210,9 +247,13 @@ def make_report(games: list[dict]) -> dict:
     Streaks are consecutive appearances in the same comparable situation; they
     reset between games. Small samples and concentration are observational only.
     Partial failed games are retained but excluded from balance aggregates.
+    Defense is aggregated separately from offense: the offense never sees the
+    simultaneously selected formation, so mixing them would invent evidence.
     """
     groups = defaultdict(list)
     longest = Counter()
+    defense_groups = defaultdict(list)
+    evidence_groups = defaultdict(list)
     all_calls = sum(len(game["calls"]) for game in games)
     completed_calls = 0
     for game in games:
@@ -230,6 +271,17 @@ def make_report(games: list[dict]) -> dict:
             streaks[key] = play, count
             longest[key] = max(longest[key], count)
             completed_calls += 1
+            defense = call.get("defense")
+            if defense:
+                defense_key = (defense["team"], defense["difficulty"],
+                               defense["branch"], before["down"],
+                               situation_key(before["down"], before["distance"])[1])
+                defense_groups[defense_key].append(defense["formation"])
+                evidence_key = (defense["team"], defense["difficulty"],
+                                before["down"],
+                                situation_key(before["down"], before["distance"])[1],
+                                evidence_bucket(defense.get("evidence")))
+                evidence_groups[evidence_key].append(defense["formation"])
     situations, warnings = [], []
     bands = ("1-3", "4-6", "7-10", "11+")
     primary = {play.value for play in CHART_PLAY_TYPES}
@@ -249,6 +301,30 @@ def make_report(games: list[dict]) -> dict:
             warnings.append({"team": team, "difficulty": difficulty, "down": down,
                              "distance_band": bands[band], "calls": total,
                              "message": "Concentrated ordinary calls: inspect chart strengths and alternatives; not a failure or usage cap."})
+    defense_situations = []
+    for key, formations in sorted(defense_groups.items()):
+        team, difficulty, branch, down, band = key
+        counts = Counter(formations)
+        total = len(formations)
+        defense_situations.append({
+            "team": team, "difficulty": difficulty, "branch": branch,
+            "down": down, "distance_band": bands[band], "calls": total,
+            "formation_counts": dict(sorted(counts.items())),
+            "largest_share": max(counts.values()) / total,
+            "distinct_formations": len(counts), "small_sample": total < 30,
+        })
+    defense_evidence = []
+    for key, formations in sorted(evidence_groups.items()):
+        team, difficulty, down, band, observations = key
+        counts = Counter(formations)
+        total = len(formations)
+        defense_evidence.append({
+            "team": team, "difficulty": difficulty, "down": down,
+            "distance_band": bands[band], "observations": observations,
+            "calls": total, "formation_counts": dict(sorted(counts.items())),
+            "largest_share": max(counts.values()) / total,
+            "distinct_formations": len(counts), "small_sample": total < 30,
+        })
     return {"schema_version": 1, "python": platform.python_version(),
             "notes": "Generated games, not historical results. Serial seeds reproduce within the same code, data, and Python environment. Small samples are not balance verdicts. No standings saved.",
             "semantic_coverage": {event: sum(game.get("semantics", {}).get("covered", {}).get(event, 0)
@@ -257,7 +333,9 @@ def make_report(games: list[dict]) -> dict:
             "games": games, "summary": {
                 "games": len(games), "passed": sum(g["status"] == "passed" for g in games),
                 "failed": sum(g["status"] != "passed" for g in games), "calls": all_calls,
-                "balance_calls": completed_calls, "situations": situations, "warnings": warnings,
+                "balance_calls": completed_calls, "situations": situations,
+                "defense_situations": defense_situations,
+                "defense_evidence": defense_evidence, "warnings": warnings,
             }}
 
 

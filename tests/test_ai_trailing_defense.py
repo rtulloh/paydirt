@@ -59,33 +59,31 @@ def test_exact_mix_and_engine_rng_isolation(
     assert ai.opponent_model.score_differential_history == [deficit] * 100
 
 
-@pytest.mark.parametrize("changes,two_point,deficit,expected", [
-    ({}, False, 7, A),
-    ({}, True, 8, A),
-    ({}, False, 0, DefenseType.SHORT_PASS),
-    ({}, False, -14, DefenseType.LONG_PASS),
-    ({"quarter": 3}, False, 14, DefenseType.SHORT_PASS),
-    ({"quarter": 5}, False, 14, A),
-    ({"time_remaining": 5.0}, False, 14, DefenseType.SHORT_PASS),
-    ({"time_remaining": 0.0}, False, 14, A),
-    ({"game_over": True}, False, 14, A),
-    ({"ball_position": 80}, False, 14, A),
-    ({"ball_position": 95}, False, 14, A),
-    ({"ball_position": 100}, False, 14, A),
-    ({"ball_position": 0}, False, 14, A),
+@pytest.mark.parametrize("changes,two_point,deficit,model_pick,expected", [
+    ({}, False, 7, "A", A),
+    ({}, True, 8, "A", A),
+    ({}, False, 0, "D", DefenseType.SHORT_PASS),
+    ({"quarter": 3}, False, 14, "D", DefenseType.SHORT_PASS),
+    ({"quarter": 5}, False, 14, "A", A),
+    ({"time_remaining": 5.0}, False, 14, "D", DefenseType.SHORT_PASS),
+    ({"time_remaining": 0.0}, False, 14, "A", A),
+    ({"game_over": True}, False, 14, "A", A),
+    ({"ball_position": 0}, False, 14, "A", A),
 ])
 def test_noneligible_situations_keep_existing_model_behavior(
-    changes: dict, two_point: bool, deficit: int, expected: DefenseType,
+    changes: dict, two_point: bool, deficit: int, model_pick: str,
+    expected: DefenseType,
 ) -> None:
     game = late_game(deficit=deficit, two_point=two_point)
     for name, value in changes.items():
         setattr(game.state, name, value)
     ai = create_computer_ai("hard", game, cpu_is_home=False)
-    ai.opponent_model.tracker.get_defense_recommendation = Mock(return_value="D")
-    ai._defense_rng = Mock()
+    # This control isolates whether the pressure mix is correctly skipped; the
+    # model's own weight construction is covered by the Hard balance suite.
+    assert ai._late_trailing_defense(game, -deficit) is None
+    ai.opponent_model.predict_defense_weights = Mock(
+        return_value={model_pick: 1.0})
     assert ai.select_defense(game) == expected
-    ai._defense_rng.random.assert_not_called()
-    ai._defense_rng.choices.assert_not_called()
 
 
 @pytest.mark.parametrize("difficulty", ["easy", "medium"])

@@ -23,8 +23,8 @@ class OffensiveStrategy:
     """Select among credible calls while gently discounting recent repetition."""
 
     # These are coaching parameters, not usage quotas or gameplay probabilities.
-    TEMPERATURE = .45
-    COMPETITIVE_GAP = .9
+    TEMPERATURE = .55
+    COMPETITIVE_GAP = 1.0
     HISTORY_DECAY = .94
     REPETITION_FLOOR = .30
 

@@ -17,7 +17,9 @@ from dataclasses import dataclass
 from math import ceil, exp
 from typing import Optional
 
-from .ai_analysis import OffenseAnalyzer, OpponentModel, TeamAnalyzer
+from .ai_analysis import (
+    OffenseAnalyzer, OpponentModel, OpponentTendencyTracker, TeamAnalyzer,
+)
 from .chart_loader import OffenseChart
 from .game_engine import PaydirtGameEngine
 from .game_state import PenaltySituation
@@ -52,10 +54,25 @@ class CoachingPrecision:
     band_margin: float = 0.06
 
 
-HARD_PRECISION = CoachingPrecision(name="hard")
+HARD_PRECISION = CoachingPrecision(
+    name="hard", fg_optimism=0.0075, band_confusion=0.04, band_margin=0.06)
 MEDIUM_PRECISION = CoachingPrecision(name="medium", fg_optimism=0.02, band_confusion=0.12)
 EASY_PRECISION = CoachingPrecision(name="easy", fg_optimism=0.05, band_confusion=0.30)
 FG_BAND_EDGES = (FG_LONG_PROBABILITY, FG_KICK_PROBABILITY, FG_EASY_PROBABILITY)
+
+# Hard's 4th-and-short defense is a base-rate call, not a tendency lookup.
+# Formation is inert when the offense punts or kicks, so the kick-anticipating
+# STANDARD call protects nothing; a 4th-and-short attempt is a run situation
+# even with no recorded evidence. The model keeps a bounded minority share so
+# a genuinely run/pass-tilted opponent can still move the call.
+FOURTH_AND_SHORT_BASE_WEIGHTS = {
+    "B": 0.72,  # Short Yardage
+    "F": 0.18,  # Blitz
+    "A": 0.07,  # Standard
+    "D": 0.03,  # Short Pass
+}
+FOURTH_AND_SHORT_SITUATIONAL_SHARE = 0.90
+FOURTH_AND_SHORT_MIN_EVIDENCE = 3
 
 
 def _uncharted_field_goal_probability(statistical_distance: int) -> float:
@@ -216,6 +233,9 @@ class ComputerAI:
         self.offense_strategy: OffensiveStrategy | None = None
         self.use_team_strength = False  # Explicit Medium capability, enabled by the factory.
         self._run_bias = 0.0
+        # Read-only audit detail for the most recent select_defense call.
+        self.last_defense_detail: dict | None = None
+        self._last_blend_situational: bool | None = None
 
     def set_team(self, team_chart):
         """Set the AI's team for chart analysis."""
@@ -1320,48 +1340,67 @@ class ComputerAI:
         else:
             score_diff = state.home_score - state.away_score
 
-        # ============================================================
-        # USE OPPONENT MODELING (Phase 2) if enabled
-        # ============================================================
+        evidence = (self.opponent_model.tracker.observation_count(down, ytg)
+                    if self.opponent_model is not None else None)
 
-        if self.use_analysis and self.opponent_model:
-            # The model describes the opponent (offense), not our defense.
-            defense_rec = self.opponent_model.predict_defense(
-                down, ytg, -score_diff, quarter, time_left
-            )
-            pressure_defense = self._late_trailing_defense(game, score_diff)
-            if pressure_defense is not None:
-                return pressure_defense
-            # Convert to DefenseType
-            defense_map = {
-                "A": DefenseType.STANDARD,
-                "B": DefenseType.SHORT_YARDAGE,
-                "C": DefenseType.SPREAD,
-                "D": DefenseType.SHORT_PASS,
-                "E": DefenseType.LONG_PASS,
-                "F": DefenseType.BLITZ,
+        def chosen(branch: str, formation: DefenseType, **extra) -> DefenseType:
+            """Record read-only audit detail without altering the decision."""
+            self.last_defense_detail = {
+                "branch": branch, "formation": formation.value,
+                "evidence": evidence, "down": down, "distance": ytg,
+                "ball_position": field_pos, **extra,
             }
-            return defense_map.get(defense_rec, DefenseType.STANDARD)
+            return formation
 
         # ============================================================
         # SPECIAL SITUATIONS
         # ============================================================
 
+        # Hard coaching must not advance the gameplay dice stream. Its
+        # situational formations come from the dedicated defensive stream;
+        # Easy, Medium and the balanced baseline keep their global draw.
+        formation_rng = self._formation_rng() if self.use_analysis else None
+
         # Goal line defense (inside our 5)
         if field_pos >= 95:
-            return self._goal_line_defense(down, ytg)
+            return chosen("goal_line", self._goal_line_defense(down, ytg, formation_rng))
 
         # Red zone defense
         if field_pos >= 80:
-            return self._red_zone_defense(down, ytg)
+            return chosen("red_zone", self._red_zone_defense(down, ytg, formation_rng))
 
         # Prevent defense (protect big lead late)
         if self._should_play_prevent(time_left, quarter, score_diff):
-            return self._prevent_defense(down, ytg)
+            return chosen("prevent", self._prevent_defense(down, ytg, formation_rng))
 
         # Two-minute defense (opponent in hurry-up)
         if self._opponent_in_hurry_up(time_left, quarter, score_diff):
-            return self._two_minute_defense(down, ytg)
+            return chosen("two_minute", self._two_minute_defense(down, ytg, formation_rng))
+
+        # The opponent model describes the offense, not our defense. It is
+        # most useful on early downs and as a bounded second opinion on key
+        # downs; it never overrides goal-line, red-zone, prevent or hurry-up.
+        if self.use_analysis and self.opponent_model:
+            # The model describes the opponent (offense), not our defense.
+            model_weights = self.opponent_model.predict_defense_weights(
+                down, ytg, -score_diff, quarter, time_left)
+            pressure_defense = self._late_trailing_defense(game, score_diff)
+            if pressure_defense is not None:
+                return chosen("pressure", pressure_defense,
+                              model_weights=model_weights)
+            if down in (3, 4):
+                if down == 4 and ytg <= 3:
+                    return chosen(
+                        "fourth_and_short",
+                        self._fourth_and_short_defense(model_weights, evidence),
+                        model_weights=model_weights)
+                return chosen(
+                    "blended_key_down",
+                    self._blended_key_down_defense(down, ytg, field_pos, model_weights),
+                    model_weights=model_weights,
+                    blend_situational=self._last_blend_situational)
+            return chosen("model", self._model_defense(model_weights),
+                          model_weights=model_weights)
 
         # ============================================================
         # STANDARD SITUATIONS
@@ -1369,14 +1408,102 @@ class ComputerAI:
 
         # 4th down - they might go for it or kick
         if down == 4:
-            return self._fourth_down_defense(ytg, field_pos)
+            return chosen("fourth_down", self._fourth_down_defense(ytg, field_pos))
 
         # 3rd down - key down
         if down == 3:
-            return self._third_down_defense(ytg)
+            return chosen("third_down", self._third_down_defense(ytg))
 
         # Early downs - read and react
-        return self._early_down_defense(down, ytg)
+        return chosen("early_down", self._early_down_defense(down, ytg))
+
+    @staticmethod
+    def _model_mapping() -> dict[str, DefenseType]:
+        return {
+            "A": DefenseType.STANDARD,
+            "B": DefenseType.SHORT_YARDAGE,
+            "C": DefenseType.SPREAD,
+            "D": DefenseType.SHORT_PASS,
+            "E": DefenseType.LONG_PASS,
+            "F": DefenseType.BLITZ,
+        }
+
+    def _blended_key_down_defense(self, down: int, ytg: int, field_pos: int,
+                                  model_weights: dict[str, float]) -> DefenseType:
+        """Blend the model with situational coaching on third and fourth down."""
+        if down == 4 and ytg <= 3:
+            evidence = (self.opponent_model.tracker.observation_count(4, ytg)
+                        if self.opponent_model is not None else 0)
+            return self._fourth_and_short_defense(model_weights, evidence)
+        # Decide first: the situational handlers draw from a formation stream,
+        # so evaluating them on the model branch would change seeded dice.
+        situational = self._decision_random().random() < 0.30
+        self._last_blend_situational = situational
+        if situational:
+            formation_rng = self._formation_rng()
+            if down == 4:
+                return self._fourth_down_defense(ytg, field_pos, formation_rng)
+            return self._third_down_defense(ytg, formation_rng)
+        primary = max(model_weights, key=model_weights.get)
+        if ytg >= 7 and primary in ("C", "D") and len(model_weights) > 1:
+            return self._weighted_defense(model_weights)
+        return self._model_defense(model_weights)
+
+    def _fourth_and_short_defense(self, model_weights: dict[str, float],
+                                  evidence: int) -> DefenseType:
+        """Call a base-rate run defense on 4th-and-short, tilted by the model.
+
+        The mix is deterministic rather than an extra coin flip: the base rate
+        leads, and a bounded model share lets real tendency evidence move the
+        call. Sparse evidence is ignored entirely: the neutral prior's 92%
+        Standard answer is not a tendency read, and blending it back in would
+        recreate the over-concentration this branch exists to prevent.
+        Formation choice does not change a punt or field-goal result, so this
+        never costs the defense when the offense kicks.
+        """
+        if evidence < FOURTH_AND_SHORT_MIN_EVIDENCE:
+            return self._weighted_defense(dict(FOURTH_AND_SHORT_BASE_WEIGHTS))
+        share = FOURTH_AND_SHORT_SITUATIONAL_SHARE
+        keys = set(FOURTH_AND_SHORT_BASE_WEIGHTS) | set(model_weights)
+        weights = {
+            key: (share * FOURTH_AND_SHORT_BASE_WEIGHTS.get(key, 0.0)
+                  + (1 - share) * model_weights.get(key, 0.0))
+            for key in keys
+        }
+        return self._weighted_defense(weights)
+
+    def _model_defense(self, weights: dict[str, float]) -> DefenseType:
+        """Take the model's top call, with a bounded second-choice risk."""
+        defense_map = self._model_mapping()
+        choices = sorted(
+            ((defense_map[key], weight) for key, weight in weights.items()
+             if key in defense_map and weight > 0),
+            key=lambda item: item[1], reverse=True)
+        if not choices:
+            return DefenseType.STANDARD
+        index = 0
+        if (len(choices) > 1 and self._decision_random().random()
+                < OpponentTendencyTracker.SECOND_CHOICE_CHANCE):
+            index = 1
+        return choices[index][0]
+
+    def _weighted_defense(self, weights: dict[str, float]) -> DefenseType:
+        """Sample one formation from a bounded model/coaching weight map."""
+        defense_map = self._model_mapping()
+        choices = [(defense_map[key], weight) for key, weight in weights.items()
+                   if key in defense_map and weight > 0]
+        if not choices:
+            return DefenseType.STANDARD
+        return self._formation_rng().choices(
+            [play for play, _ in choices], weights=[weight for _, weight in choices], k=1,
+        )[0]
+
+    def _formation_rng(self) -> random.Random:
+        """Return the dedicated defensive stream, never the gameplay dice."""
+        if self._defense_rng is None:
+            # Derive a namespaced seed without advancing engine dice.
+            self._defense_rng = random.Random(f"paydirt-defense:{random.getstate()!r}")
+        return self._defense_rng
 
     def _late_trailing_defense(
         self, game: PaydirtGameEngine, score_diff: int,
@@ -1415,11 +1542,12 @@ class ComputerAI:
             weights=weights, k=1,
         )[0]
 
-    def _goal_line_defense(self, down, ytg) -> DefenseType:
+    def _goal_line_defense(self, down, ytg, rng=None) -> DefenseType:
         """Defense inside our own 5 yard line."""
+        rng = random if rng is None else rng
         if ytg <= 2:
             # Expect power run
-            return random.choice(
+            return rng.choice(
                 [
                     DefenseType.SHORT_YARDAGE,
                     DefenseType.SHORT_YARDAGE,
@@ -1428,30 +1556,32 @@ class ComputerAI:
                 ]
             )
         else:
-            return random.choice(
+            return rng.choice(
                 [DefenseType.SHORT_YARDAGE, DefenseType.SHORT_PASS, DefenseType.STANDARD]
             )
 
-    def _red_zone_defense(self, down, ytg) -> DefenseType:
+    def _red_zone_defense(self, down, ytg, rng=None) -> DefenseType:
         """Defense inside our 20."""
+        rng = random if rng is None else rng
         if down == 3:
             if ytg <= 3:
-                return random.choice(
+                return rng.choice(
                     [DefenseType.SHORT_YARDAGE, DefenseType.BLITZ, DefenseType.SHORT_PASS]
                 )
             else:
-                return random.choice(
+                return rng.choice(
                     [DefenseType.SHORT_PASS, DefenseType.BLITZ, DefenseType.STANDARD]
                 )
 
         # Tighten up in red zone
-        return random.choice(
+        return rng.choice(
             [DefenseType.STANDARD, DefenseType.SHORT_PASS, DefenseType.SHORT_YARDAGE]
         )
 
-    def _prevent_defense(self, down, ytg) -> DefenseType:
+    def _prevent_defense(self, down, ytg, rng=None) -> DefenseType:
         """Soft coverage to prevent big plays."""
-        return random.choice(
+        rng = random if rng is None else rng
+        return rng.choice(
             [
                 DefenseType.LONG_PASS,
                 DefenseType.LONG_PASS,
@@ -1460,61 +1590,65 @@ class ComputerAI:
             ]
         )
 
-    def _two_minute_defense(self, down, ytg) -> DefenseType:
+    def _two_minute_defense(self, down, ytg, rng=None) -> DefenseType:
         """Defense against hurry-up offense."""
+        rng = random if rng is None else rng
         if down == 3:
             if ytg <= 5:
-                return random.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ])
+                return rng.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ])
             else:
-                return random.choice(
+                return rng.choice(
                     [DefenseType.LONG_PASS, DefenseType.BLITZ, DefenseType.SHORT_PASS]
                 )
 
         # Expect quick passes
-        return random.choice([DefenseType.SHORT_PASS, DefenseType.SPREAD, DefenseType.BLITZ])
+        return rng.choice([DefenseType.SHORT_PASS, DefenseType.SPREAD, DefenseType.BLITZ])
 
-    def _fourth_down_defense(self, ytg, field_pos) -> DefenseType:
+    def _fourth_down_defense(self, ytg, field_pos, rng=None) -> DefenseType:
         """Defense on 4th down."""
+        rng = random if rng is None else rng
         # If they're likely to kick, standard
         if field_pos < 50 or (field_pos >= 60 and ytg > 3):
             return DefenseType.STANDARD
 
         # Short yardage - expect run
         if ytg <= 2:
-            return random.choice([DefenseType.SHORT_YARDAGE, DefenseType.BLITZ])
+            return rng.choice([DefenseType.SHORT_YARDAGE, DefenseType.BLITZ])
 
         # Medium/long - expect pass
-        return random.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ])
+        return rng.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ])
 
-    def _third_down_defense(self, ytg) -> DefenseType:
+    def _third_down_defense(self, ytg, rng=None) -> DefenseType:
         """3rd down defense - get off the field."""
+        rng = random if rng is None else rng
         if ytg <= 2:
             # 3rd and short - expect run, but watch for play action
-            return random.choice(
+            return rng.choice(
                 [DefenseType.SHORT_YARDAGE, DefenseType.STANDARD, DefenseType.BLITZ]
             )
         elif ytg <= 5:
             # 3rd and medium - could be run or pass
-            return random.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ, DefenseType.STANDARD])
+            return rng.choice([DefenseType.SHORT_PASS, DefenseType.BLITZ, DefenseType.STANDARD])
         elif ytg <= 10:
             # 3rd and long - passing situation
-            return random.choice([DefenseType.SHORT_PASS, DefenseType.LONG_PASS, DefenseType.BLITZ])
+            return rng.choice([DefenseType.SHORT_PASS, DefenseType.LONG_PASS, DefenseType.BLITZ])
         else:
             # 3rd and very long - prevent the first down
-            return random.choice(
+            return rng.choice(
                 [DefenseType.LONG_PASS, DefenseType.SHORT_PASS, DefenseType.SPREAD]
             )
 
-    def _early_down_defense(self, down, ytg) -> DefenseType:
+    def _early_down_defense(self, down, ytg, rng=None) -> DefenseType:
         """1st and 2nd down defense."""
+        rng = random if rng is None else rng
         if ytg <= 3:
             # Short yardage situation
-            return random.choice(
+            return rng.choice(
                 [DefenseType.SHORT_YARDAGE, DefenseType.STANDARD, DefenseType.BLITZ]
             )
 
         # Standard downs - balanced defense
-        return random.choice(
+        return rng.choice(
             [
                 DefenseType.STANDARD,
                 DefenseType.STANDARD,
@@ -1825,7 +1959,7 @@ def create_computer_ai(
     difficulty = (difficulty or "medium").lower()
     if difficulty not in ("easy", "medium", "hard"):
         difficulty = "medium"
-    aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.7}[difficulty]
+    aggression = {"easy": 0.3, "medium": 0.5, "hard": 0.6}[difficulty]
     precision = {
         "easy": EASY_PRECISION, "medium": MEDIUM_PRECISION, "hard": HARD_PRECISION,
     }[difficulty]

@@ -690,6 +690,11 @@ class OpponentTendencyTracker:
     
     Ignores penalties and turnovers - only tracks actual play outcomes.
     """
+
+    RECENCY_WINDOW = 20
+    RECENCY_DECAY = 0.88
+    NEUTRAL_PRIOR = 4.0
+    SECOND_CHOICE_CHANCE = 0.09
     
     def __init__(self):
         # Track plays by situation type
@@ -779,18 +784,49 @@ class OpponentTendencyTracker:
         
         Returns a defense type recommendation (A-F).
         """
-        tendency = self.get_tendency(down, distance)
-        
-        # If opponent runs a lot, use run defense (A, B)
-        # If opponent passes a lot, use pass defense (D, E)
-        if tendency.pass_percentage > 60:
-            return "D"  # Short Pass defense
-        elif tendency.pass_percentage > 40:
-            return "C"  # Spread (balanced)
-        elif tendency.run_percentage > 60:
-            return "B"  # Short Yardage
-        else:
-            return "A"  # Standard
+        weights = self.defense_weights(down, distance)
+        return max(weights, key=weights.get)
+
+    def observation_count(self, down: int, distance: int) -> int:
+        """Return recorded calls in this situation, capped by the recency window.
+
+        Read-only evidence for audit reporting. It never changes selection.
+        """
+        situation = get_situation_type(down, distance)
+        return len(self.situation_plays.get(situation, [])[-self.RECENCY_WINDOW:])
+
+    def defense_weights(self, down: int, distance: int) -> dict[str, float]:
+        """Return recency-weighted defense preferences with a neutral prior.
+
+        The last :attr:`RECENCY_WINDOW` observations in this situation carry
+        exponential weight. A symmetric prior keeps sparse samples from
+        pretending to be strong evidence: without enough evidence the result
+        stays a balanced Standard call rather than a confident tendency read.
+
+        The map is ranked, so a caller may keep the top call or take the
+        documented second-choice risk. Obvious-passing-down additions live in
+        :meth:`OpponentModel.predict_defense_weights`.
+        """
+        situation = get_situation_type(down, distance)
+        plays = self.situation_plays.get(situation, [])[-self.RECENCY_WINDOW:]
+        run = self.NEUTRAL_PRIOR
+        pas = self.NEUTRAL_PRIOR
+        for age, category in enumerate(reversed(plays)):
+            weight = self.RECENCY_DECAY ** age
+            if category == PlayCategory.RUN:
+                run += weight
+            elif category == PlayCategory.PASS:
+                pas += weight
+
+        evidence = run + pas - 2 * self.NEUTRAL_PRIOR
+        if evidence <= 0.5:
+            return {"A": 0.92, "B": 0.04, "D": 0.04}
+        pass_share = pas / (run + pas)
+        if pass_share > 0.60:
+            return {"D": 0.88, "A": 0.06, "E": 0.06}
+        if pass_share > 0.40:
+            return {"C": 0.86, "A": 0.07, "D": 0.07}
+        return {"B": 0.88, "A": 0.06, "D": 0.06}
     
     def to_dict(self) -> dict:
         """
@@ -872,25 +908,39 @@ class OpponentModel:
         self.is_comeback_mode = late_game and score_diff < 0
     
     def predict_defense(self, down: int, distance: int, score_diff: int,
-                       quarter: int, time_remaining: float) -> str:
+                       quarter: int, time_remaining: float,
+                       *, update_state: bool = True) -> str:
         """
         Predict the best defense to use against opponent.
         
         Considers both opponent tendencies and game state.
         score_diff is the opponent offense's score minus our defense's score.
         """
-        self.update_game_state(score_diff, quarter, time_remaining)
-        
-        # First, check game state overrides
+        weights = self.predict_defense_weights(
+            down, distance, score_diff, quarter, time_remaining,
+            update_state=update_state)
+        return max(weights, key=weights.get)
+
+    def predict_defense_weights(self, down: int, distance: int, score_diff: int,
+                                quarter: int, time_remaining: float,
+                                *, update_state: bool = True) -> dict[str, float]:
+        """Return model preferences without sampling a formation.
+
+        ``score_diff`` is the opponent offense's score minus our defense's
+        score. Game-state overrides stay deterministic; ordinary calls use the
+        tracker's recency-weighted prior.
+        """
+        if update_state:
+            self.update_game_state(score_diff, quarter, time_remaining)
         if self.is_protecting_lead:
-            # They're likely to run - use run defense
-            return "A"  # Standard/balanced
-        elif self.is_comeback_mode:
-            # They're likely to pass - use pass defense
-            return "E"  # Long Pass
-        
-        # Otherwise, use tendency data
-        return self.tracker.get_defense_recommendation(down, distance)
+            return {"A": 0.94, "B": 0.06}
+        if self.is_comeback_mode:
+            return {"E": 0.94, "D": 0.06}
+        weights = self.tracker.defense_weights(down, distance)
+        primary = max(weights, key=weights.get)
+        if down >= 3 and distance >= 7 and primary in ("C", "D"):
+            return {primary: 0.78, "E": 0.14, "F": 0.08}
+        return weights
     
     def record_opponent_play(self, down: int, distance: int, play_type: str,
                             yards_gained: int, is_pass: bool | None = None):

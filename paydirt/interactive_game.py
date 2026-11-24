@@ -3507,7 +3507,7 @@ def run_interactive_game(
         difficulty: CPU difficulty level ('easy', 'medium', 'hard')
                    - easy: CPU aggression 0.3 (conservative)
                    - medium: CPU aggression 0.5 (balanced, default)
-                   - hard: CPU aggression 0.7 (aggressive, optimal)
+                   - hard: CPU aggression 0.6 (aggressive, optimal)
         compact: If True, use compact display mode with less verbose output
         week: Week number for recording to standings (0 = auto-assign)
         home_team: Home team name/path (optional)

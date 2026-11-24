@@ -241,9 +241,9 @@ def test_invalid_limits_fail_before_model_is_read(limits):
 @pytest.mark.parametrize(
     "changed_call,modifier,expected",
     [
-        (None, "0", 0.7981686716503044),
-        ("short_pass", "-4", 0.7707350774),
-        ("long_pass", "-10", 0.04111004676),
+        (None, "0", 0.7851318672138162),
+        ("short_pass", "-4", 0.7465160738054392),
+        ("long_pass", "-10", 0.05586935705990011),
     ],
 )
 def test_public_numeric_witness_matches_actual_resolver_core_and_factory(

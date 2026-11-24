@@ -42,9 +42,12 @@ def test_factory_wires_profiles_and_keeps_legacy_construction_sharp() -> None:
     assert ComputerAI(aggression=0.5).precision is None
 
 
-def test_hard_and_legacy_ai_never_adjust_the_probability() -> None:
+def test_hard_stays_bounded_and_legacy_ai_never_adjusts_the_probability() -> None:
+    hard = coach(HARD_PRECISION)
+    hard._decision_rng = random.Random(1)
     for value in (0.0, 0.01, 0.14, 0.15, 0.2, 0.349, 0.35, 0.5, 0.699, 0.7, 1.0):
-        assert coach(HARD_PRECISION)._perceived_field_goal_probability(value) == value
+        assert abs(hard._perceived_field_goal_probability(value) - value) <= (
+            HARD_PRECISION.fg_optimism + HARD_PRECISION.band_margin)
         assert coach(None)._perceived_field_goal_probability(value) == value
 
 
@@ -65,8 +68,12 @@ def test_optimism_makes_easy_overrate_a_marginal_kick() -> None:
     ai = coach(EASY_PRECISION)
     ai._decision_rng = random.Random(3)
     assert ai.select_offense(game) == PlayType.FIELD_GOAL
-    assert coach(MEDIUM_PRECISION).select_offense(game) == PlayType.PUNT
-    assert coach(HARD_PRECISION).select_offense(game) == PlayType.PUNT
+    medium = coach(MEDIUM_PRECISION)
+    medium._decision_rng = random.Random(3)
+    hard = coach(HARD_PRECISION)
+    hard._decision_rng = random.Random(3)
+    assert medium.select_offense(game) == PlayType.PUNT
+    assert hard.select_offense(game) == PlayType.PUNT
 
 
 def test_marginal_call_order_easy_more_fallible_than_medium_than_hard() -> None:
@@ -85,7 +92,7 @@ def test_marginal_call_order_easy_more_fallible_than_medium_than_hard() -> None:
     medium = kicks(MEDIUM_PRECISION)
     easy = kicks(EASY_PRECISION)
 
-    assert hard == 0
+    assert 0 < hard < medium
     assert 0 < medium < easy
     assert easy > attempts * 0.6
 
@@ -135,7 +142,7 @@ def test_endgame_priorities_are_not_noised(profile) -> None:
 
 
 def test_band_edges_are_the_documented_decision_thresholds() -> None:
-    assert HARD_PRECISION.fg_optimism == 0
-    assert HARD_PRECISION.band_confusion == 0
+    assert 0 < HARD_PRECISION.fg_optimism < MEDIUM_PRECISION.fg_optimism
+    assert 0 < HARD_PRECISION.band_confusion < MEDIUM_PRECISION.band_confusion
     assert MEDIUM_PRECISION.band_confusion < EASY_PRECISION.band_confusion
     assert FG_KICK_PROBABILITY == 0.35

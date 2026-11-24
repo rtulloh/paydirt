@@ -11,7 +11,7 @@ Medium is the default. Difficulty changes decisions and coaching, **not dice odd
 |------|------------|-----------|------------------|
 | Easy | 0.3 | Bounded, fallible | Conservative CPU and CLI player coaching |
 | Medium | 0.5 | Slightly fallible | Balanced CPU with a coarse early-down run/pass strength adjustment |
-| Hard | 0.7 | Exact | Aggressive CPU, weighted individual-play chart analysis, recent-call variety, and opponent-tendency tracking |
+| Hard | 0.6 | Bounded, near-exact | Aggressive CPU, weighted individual-play chart analysis, recent-call variety, and recency-weighted opponent-tendency tracking |
 
 Aggression influences decisions such as going for it on fourth down and attempting longer field goals.
 Special situations still have their own policy. Hard is not an always-optimal opponent and does not
@@ -38,7 +38,7 @@ Coaching bands turn that make probability into an ordinary fourth-down choice:
 | Below 0.15 | Outside plausible range | Punt or go for it according to field position and distance |
 
 The season's `ai_behavior.strategic.fourth_down_aggression` sets the era
-baseline. Difficulty shifts that value by −0.2 for Easy, 0 for Medium and +0.2
+baseline. Difficulty shifts that value by −0.2 for Easy, 0 for Medium and +0.1
 for Hard, clamped to `[0, 1]`. Late-game rules still override the bands: a kick
 that can tie or win in the final seconds, an end-of-half kick with little time
 left, a multi-score urgency decision, victory formation and last-chance Hail
@@ -87,14 +87,14 @@ ordinary `4th Down` call.
 
 ## Decision Precision
 
-Difficulty is not only aggression. Easy and Medium may misjudge a marginal
+Difficulty is not only aggression. Every mode may misjudge a marginal
 fourth-down kick in two bounded ways:
 
-- **Optimism:** Easy adds 0.05 and Medium adds 0.02 to the chart probability,
-  modelling a coach who overrates a marginal kicker.
+- **Optimism:** Easy adds 0.05, Medium adds 0.02 and Hard adds 0.0075 to the
+  chart probability, modelling a coach who slightly overrates a marginal kicker.
 - **Band confusion:** when the adjusted probability is within 0.06 of a decision
-  threshold, Easy has a 30% chance and Medium a 12% chance to misread it by up to
-  0.06. Hard never adjusts the probability.
+  threshold, Easy has a 30% chance, Medium a 12% chance and Hard a 4% chance to
+  misread it by up to 0.06.
 
 The adjustment applies only to the ordinary field-goal bands below. It does not
 touch last-second tie/win kicks, end-of-half kicks, urgent multi-score drives,
@@ -108,6 +108,10 @@ The values are coaching heuristics, not calibrated estimates of human error.
 They are deterministic under a controlled decision-stream seed and are intended
 to make Easy and Medium less precise than Hard on marginal calls without
 changing dice odds or the core engine's resolution.
+
+Hard's profile is deliberately tiny: it can move only a borderline ordinary
+call, while last-second and endgame rules remain exact. The aggregate error
+still orders Easy above Medium above Hard.
 
 ## Easy Player Coaching
 
@@ -189,6 +193,36 @@ QB sneaks, and Hail Mary attempts count as run/pass choices. Punts, field goals,
 kickoffs, kneels, spikes, unknown names, and secondary tables do not change those
 totals or streaks—even if a caller labels them "not a pass." Previously saved
 aggregate learning cannot be retroactively corrected without the original calls.
+
+### Hard Defense
+
+Hard's defensive call keeps situational coaching authoritative. Goal-line, red-zone,
+prevent and two-minute situations are evaluated before the opponent model, so a
+formation such as Short Yardage remains available inside the five even when the
+model expects a pass. On third down, and on fourth down with four or more yards to
+go, the coach blends the model with the situational call: roughly 70% model and 30%
+situational coaching. The blend still respects the season's formation legality and
+never reveals the human's unrevealed offense.
+
+Fourth-and-short (one to three yards) is a **base-rate call** instead of a blend.
+A punt or field goal ignores the defensive formation, so the old
+"likely to kick, play Standard" rule protected nothing; a genuine fourth-and-short
+attempt is a run situation even when the opponent has shown no tendency yet.
+Hard therefore uses a fixed run-leaning base rate — roughly 72% Short Yardage,
+18% Blitz, 7% Standard and 3% Short Pass — and only mixes in the opponent model
+once at least three calls exist in that exact bucket. Sparse evidence is ignored
+rather than blended, because the neutral prior's Standard answer is not a tendency
+read. The rule is symmetric for both teams and changes no dice odds.
+
+The opponent model uses a recency window of the last 20 calls in the same
+down/distance situation, exponential decay of 0.88 per call, and a neutral prior
+of four weighted run and pass observations. Sparse evidence therefore stays close
+to balanced rather than pretending to be a strong tendency. On obvious passing
+downs (third or fourth and seven or more), the model keeps a bounded minority
+share for Long Pass and Blitz instead of collapsing every call onto one pass
+defense. A 9% second-choice mechanism occasionally selects the next-best
+formation, so Hard is less predictable without becoming random. These are coaching
+heuristics, not new dice probabilities or defensive-formation quotas.
 
 Call history is game-local and shared by the CLI and browser engine. Recommendations
 and previews do not add calls; penalty rerolls belong to one executed call. CLI saves
