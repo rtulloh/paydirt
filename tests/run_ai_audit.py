@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from paydirt.packaging import get_seasons_path
 from tests.ai_audit import (
-    DIFFICULTIES,
     DEFENSE_CSV_FIELDS,
+    DIFFICULTIES,
     SITUATION_CSV_FIELDS,
     GameSpec,
     game_seed,

@@ -43,7 +43,7 @@ def new_game(client: TestClient, difficulty: str, is_home: bool) -> dict:
 
 @pytest.mark.parametrize("replay", [False, True], ids=["new", "replay"])
 @pytest.mark.parametrize("is_home", [False, True])
-@pytest.mark.parametrize("difficulty,aggression", [("easy", .3), ("medium", .5), ("hard", .7)])
+@pytest.mark.parametrize("difficulty,aggression", [("easy", .3), ("medium", .5), ("hard", .6)])
 def test_web_difficulty_configuration(
     client: TestClient, replay: bool, is_home: bool, difficulty: str, aggression: float,
 ) -> None:

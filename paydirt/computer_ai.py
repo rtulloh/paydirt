@@ -18,7 +18,10 @@ from math import ceil, exp
 from typing import Optional
 
 from .ai_analysis import (
-    OffenseAnalyzer, OpponentModel, OpponentTendencyTracker, TeamAnalyzer,
+    OffenseAnalyzer,
+    OpponentModel,
+    OpponentTendencyTracker,
+    TeamAnalyzer,
 )
 from .chart_loader import OffenseChart
 from .game_engine import PaydirtGameEngine
