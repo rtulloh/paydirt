@@ -75,6 +75,10 @@ PLAY_SECONDS_BY_TYPE: dict[PlayType, tuple[float, float]] = {
     PlayType.HAIL_MARY: (5.0, 15.0),
 }
 ORDINARY_PLAY_SECONDS: tuple[float, float] = (25.0, 45.0)
+# A clean intercepted pass is a change-of-possession play. The published
+# timing chart charges the interception 10 seconds and the return 0 seconds,
+# and requires the shortest time when a play fits more than one row.
+INTERCEPTION_PLAY_SECONDS = 10.0
 # A single play can never consume more than a full period of assumed board play.
 MAX_PLAY_SECONDS = 15 * 60.0
 
@@ -414,6 +418,39 @@ class PaydirtGameEngine:
                 "play": play_type.value,
             })
             del self.offensive_call_history[:-96]
+
+    def _scrimmage_play_seconds(
+        self,
+        play_type: PlayType,
+        result: PlayResult,
+        *,
+        play_seconds_range: tuple[float, float] | None = None,
+        no_huddle: bool = False,
+    ) -> float:
+        """Return the clock time for a clean scrimmage result.
+
+        An intercepted pass is a change-of-possession play, so it uses the
+        timing chart's ten-second row rather than the ordinary scrimmage
+        sample. Other special results keep their existing precedence.
+
+        Args:
+            play_type: Called scrimmage play.
+            result: Applied scrimmage result.
+            play_seconds_range: Optional deferred-play clock range.
+            no_huddle: Whether the offense used no-huddle timing.
+
+        Returns:
+            Seconds to charge to the game clock.
+        """
+        if (
+            result.result_type == ResultType.INTERCEPTION
+            and play_type != PlayType.HAIL_MARY
+        ):
+            return INTERCEPTION_PLAY_SECONDS
+        if no_huddle:
+            return random.uniform(15, 25)
+        low, high = play_seconds_range or ORDINARY_PLAY_SECONDS
+        return random.uniform(low, high)
 
     def restore_offensive_call_history(self, records: object) -> None:
         """Validate optional save metadata without inventing legacy call history."""
@@ -2538,10 +2575,12 @@ class PaydirtGameEngine:
             )
         elif forced_10_sec:
             play_seconds = 10.0
-        elif no_huddle:
-            play_seconds = random.uniform(15, 25)
         else:
-            play_seconds = random.uniform(25, 45)
+            play_seconds = self._scrimmage_play_seconds(
+                play_type,
+                result,
+                no_huddle=no_huddle,
+            )
 
         self._use_time(
             play_seconds, out_of_bounds=is_out_of_bounds and not outcome.clock_stopped_for_penalty,
@@ -3594,11 +3633,13 @@ class PaydirtGameEngine:
             )
         elif forced_10_sec:
             play_seconds = 10.0
-        elif no_huddle:
-            play_seconds = random.uniform(15, 25)
         else:
-            low, high = play_seconds_range or ORDINARY_PLAY_SECONDS
-            play_seconds = random.uniform(low, high)
+            play_seconds = self._scrimmage_play_seconds(
+                play_type,
+                result,
+                play_seconds_range=play_seconds_range,
+                no_huddle=no_huddle,
+            )
 
         self._use_time(play_seconds, out_of_bounds=is_out_of_bounds and not penalty_clock_stopped)
         outcome.clock_trace = self.last_clock_trace
@@ -4172,6 +4213,9 @@ class PaydirtGameEngine:
 
         if outcome.result.out_of_bounds:
             return False, "[Timeout SKIPPED - play went out of bounds, clock already at 10 sec]"
+
+        if outcome.turnover:
+            return False, "[Timeout SKIPPED - change of possession already stopped the clock]"
 
         if quarter_before_play != self.state.quarter:
             return True, ""

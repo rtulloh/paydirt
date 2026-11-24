@@ -215,11 +215,12 @@ clock, so any action started first would be recorded out of order. Resolve the
 choice before the next action; the engine guard is the authority and the UI only
 withdraws its controls.
 
-The deferred play keeps its originating timing. Ordinary scrimmage interceptions
-resolve with the 25-45 second scrimmage range, Hail Mary interceptions with the
+The deferred play keeps its originating timing. Hail Mary interceptions use the
 5-15 second Hail Mary range, and the engine stores that range with the pending
 choice (`play_seconds_range`) so a save/load resume charges the same clock as
-the uninterrupted game. Legacy saves without the field derive the default from
+the uninterrupted game. A scrimmage interception uses the timing chart's
+ten-second change-of-possession row, including an own-end-zone catch that waits
+for its return choice. Legacy saves without the field derive the default from
 their saved `play_type`, so an older Hail Mary save also resolves with Hail Mary
 timing. A saved range must be two finite numbers of seconds, each within
 `0..900` and in order; anything else raises `ValueError` instead of reaching

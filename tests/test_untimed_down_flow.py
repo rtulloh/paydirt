@@ -185,6 +185,11 @@ def run_seeded_cli_game(
             # FLOW-023: accept the safe touchback so seeded clock tests remain
             # deterministic and do not gain return-yard variance.
             return "T"
+        if "Your try defense" in prompt:
+            # The ten-second interception timing can leave enough clock for a
+            # touchdown and untimed try in this seed; a legal formation keeps
+            # the harness supplying choices instead of looping on a blank.
+            return "A"
         return "1" if "1 for play" in prompt or "penalty number" in prompt else ""
 
     try:

@@ -50,6 +50,28 @@ separate ten-second timing. At expiry, only an accepted defensive foul or
 offsetting fouls extend the period. This is a selected use of the rulebook's
 alternate method, not an implementation of that entire optional system.
 
+### Interceptions and Other Change-of-Possession Plays
+
+A clean scrimmage interception uses **ten seconds**. The published timing
+chart charges the intercepted pass ten seconds and the interception return
+zero seconds; when a play fits more than one timing row, the chart requires
+the shortest applicable time. This applies to a return, touchback or
+pick-six alike. A deferred own-end-zone interception charges the same
+ten-second change-of-possession time as any other scrimmage interception; it
+does not keep the saved 25–45 second scrimmage range. A Hail Mary interception
+is the exception: it keeps its separate 5–15 second timing, including when the
+own-end-zone return choice is deferred.
+
+For example, an interception beginning at Q2 0:41 leaves 0:31. It does not
+consume the remaining 41 seconds merely because the return is described as a
+long one. The ten-second play can still end a period when ten seconds or less
+remain.
+
+An offensive timeout request after an interception is not charged. The
+change of possession already stops the clock, and a timeout cannot shorten a
+ten-second play. The engine treats the request as unnecessary rather than
+applying a second clock procedure.
+
 An offsetting kickoff foul that consumes the remaining ten seconds holds the
 original period at 0:00 for the re-kick. The replay resolves before the engine
 advances the period or ends the game; it does not consume the next period's time.

@@ -733,22 +733,23 @@ def test_hail_mary_return_choice_keeps_immediate_hail_mary_timing(
     assert deferred.state.time_remaining == pytest.approx(5.0 - 10 / 60)
 
 
-def test_direct_scrimmage_deferral_keeps_scrimmage_timing() -> None:
-    """FLOW-032 control: ordinary own-end-zone deferrals still use 25-45 seconds."""
+def test_direct_scrimmage_deferral_uses_change_of_possession_timing() -> None:
+    """FLOW-032 control: own-end-zone interceptions use the ten-second play row."""
     game, result = decision_game()
-    calls: list = []
     with (
         patch("paydirt.game_engine.resolve_play", return_value=result),
         patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")),
-        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+        patch("paydirt.game_engine.random.uniform", return_value=1.0) as timing,
     ):
         pending = game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
         assert pending.pending_end_zone_interception_return_decision is True
         final = game.apply_end_zone_interception_return_decision(
             pending, attempt_return=True,
         )
-    assert calls == [SCRIMMAGE_SECONDS]
+    timing.assert_not_called()
     assert final.turnover is True
+    assert final.clock_trace is not None
+    assert final.clock_trace.requested_seconds == 10
 
 
 def test_pending_hail_mary_timing_context_survives_save_and_load(
@@ -907,8 +908,10 @@ def test_legacy_save_derives_hail_mary_timing_from_play_type(tmp_path: Path) -> 
     assert loaded.state.time_remaining == pytest.approx(5.0 - 10 / 60)
 
 
-def test_legacy_save_keeps_scrimmage_timing_for_direct_play(tmp_path: Path) -> None:
-    """FLOW-032: legacy scrimmage saves still resolve with scrimmage timing."""
+def test_legacy_save_uses_change_of_possession_timing_for_direct_play(
+    tmp_path: Path,
+) -> None:
+    """FLOW-032: legacy scrimmage interceptions use the ten-second play row."""
     game, result = decision_game()
     with patch("paydirt.game_engine.resolve_play", return_value=result):
         game.run_play(PlayType.SHORT_PASS, DefenseType.STANDARD)
@@ -920,12 +923,13 @@ def test_legacy_save_keeps_scrimmage_timing_for_direct_play(tmp_path: Path) -> N
 
     loaded = load_game(str(save_path))[0]
     assert loaded._pending_end_zone_interception["play_seconds_range"] == SCRIMMAGE_SECONDS
-    calls: list = []
     with (
         patch("paydirt.game_engine.roll_chart_dice", return_value=(26, "15")),
-        patch("paydirt.game_engine.random.uniform", side_effect=_capture_uniform(calls)),
+        patch("paydirt.game_engine.random.uniform", return_value=1.0) as timing,
     ):
-        loaded.apply_end_zone_interception_return_decision(
+        final = loaded.apply_end_zone_interception_return_decision(
             loaded._last_play_outcome, attempt_return=True,
         )
-    assert calls == [SCRIMMAGE_SECONDS]
+    timing.assert_not_called()
+    assert final.clock_trace is not None
+    assert final.clock_trace.requested_seconds == 10

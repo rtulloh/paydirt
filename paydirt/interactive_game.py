@@ -3319,6 +3319,13 @@ def resume_game(
                 "CPU " if cpu_call_timeout else ""
             )
             print(f"\n  *** {team_name}TIMEOUT - Clock stops at {mins}:{secs:02d} ***")
+        elif (call_timeout or cpu_call_timeout) and not outcome.touchdown:
+            play_seconds = (time_before_play - game.state.time_remaining) * 60
+            _, skip_msg = game._should_apply_timeout_after_play(
+                outcome, play_seconds, quarter_before_play
+            )
+            if skip_msg:
+                print(f"  {skip_msg}")
 
         if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model and is_human_offense:
             from paydirt.play_resolver import is_passing_play
