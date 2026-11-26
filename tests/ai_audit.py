@@ -24,6 +24,7 @@ from paydirt.game_engine import PaydirtGameEngine
 from paydirt.game_state import PlayOutcome
 from paydirt.offense_strategy import situation_key
 from paydirt.play_resolver import CHART_PLAY_TYPES, DefenseType, PlayType
+from tests.clock_invariants import ClockInvariantAudit
 from tests.run_full_season import validate_game
 from tests.semantic_audit import SemanticAudit
 
@@ -116,18 +117,30 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     original_random = random.getstate()
     original_kickoff = PaydirtGameEngine.kickoff
     semantics = SemanticAudit()
+    clock = ClockInvariantAudit()
     original_penalty_choice = ComputerAI.should_accept_penalty
     defenses: dict[bool, ComputerAI] = {}
 
     def checked_penalty(ai: ComputerAI, outcome: PlayOutcome, *args, **kwargs) -> tuple:
         decision = original_penalty_choice(ai, outcome, *args, **kwargs)
         semantics.penalty(outcome, decision)
+        clock.penalty(outcome, decision)
         return decision
 
     def guarded_kickoff(engine: PaydirtGameEngine, *args, **kwargs) -> PlayOutcome:
         if engine.state.game_over:
             raise ValueError("Kickoff attempted after game over")
         return original_kickoff(engine, *args, **kwargs)
+
+    original_use_time = PaydirtGameEngine._use_time
+
+    def observed_use_time(engine: PaydirtGameEngine, seconds: float, out_of_bounds: bool = False,
+                          *, defensive_penalty: bool = False) -> bool:
+        # The engine's own defensive-hold verdict is the rule; observe it rather
+        # than re-deriving which chart foul type belongs to which team.
+        clock.charge(engine, defensive_penalty)
+        return original_use_time(engine, seconds, out_of_bounds,
+                                 defensive_penalty=defensive_penalty)
 
     def factory(game: PaydirtGameEngine, is_home: bool) -> ComputerAI:
         difficulty = spec.home_difficulty if is_home else spec.away_difficulty
@@ -146,6 +159,8 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
 
     def decision(game: PaydirtGameEngine, ai: ComputerAI, play: PlayType, defense: DefenseType) -> None:
         semantics.before(game)
+        # Watch the extension state carried into this action, before selection.
+        clock.decision(game)
         state = game.state
         home = state.is_home_possession
         weights = {}
@@ -188,6 +203,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
         if outcome.pending_penalty_decision:
             raise ValueError("Audit result still requires a penalty decision")
         semantics.result(game, outcome)
+        clock.result(game, outcome)
         call = record["calls"][-1]
         if "result" in call:
             raise ValueError("Duplicate audit result")
@@ -204,6 +220,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     try:
         random.seed(spec.seed)
         with (patch.object(PaydirtGameEngine, "kickoff", guarded_kickoff),
+              patch.object(PaydirtGameEngine, "_use_time", observed_use_time),
               patch.object(ComputerAI, "should_accept_penalty", checked_penalty),
               contextlib.redirect_stdout(output)):
             game = run_auto_game(spec.away, spec.home, is_playoff=spec.is_playoff,
@@ -233,6 +250,7 @@ def audit_game(spec: GameSpec, play_limit: int = 500) -> dict:
     finally:
         random.setstate(original_random)
     record["semantics"] = semantics.report()
+    record["clock_invariants"] = clock.report()
     return record
 
 
@@ -330,6 +348,10 @@ def make_report(games: list[dict]) -> dict:
             "semantic_coverage": {event: sum(game.get("semantics", {}).get("covered", {}).get(event, 0)
                                              for game in games if game["status"] == "passed")
                                   for event in SemanticAudit.EVENTS},
+            "clock_invariant_coverage": {
+                event: sum(game.get("clock_invariants", {}).get("covered", {}).get(event, 0)
+                           for game in games if game["status"] == "passed")
+                for event in ClockInvariantAudit.EVENTS},
             "games": games, "summary": {
                 "games": len(games), "passed": sum(g["status"] == "passed" for g in games),
                 "failed": sum(g["status"] != "passed" for g in games), "calls": all_calls,
@@ -391,6 +413,14 @@ def validate_report(report: dict, teams: list[str]) -> dict:
                         or any(type(value) is not int or value < 0 for value in covered.values())
                         or semantics.get("unexercised") != [event for event in SemanticAudit.EVENTS if not covered[event]]):
                     raise ValueError("Invalid or missing semantic coverage")
+                invariants = game.get("clock_invariants")
+                covered_clock = invariants.get("covered") if isinstance(invariants, dict) else None
+                if (not isinstance(covered_clock, dict)
+                        or set(covered_clock) != set(ClockInvariantAudit.EVENTS)
+                        or any(type(value) is not int or value < 0 for value in covered_clock.values())
+                        or invariants.get("unexercised") != [event for event in ClockInvariantAudit.EVENTS
+                                                             if not covered_clock[event]]):
+                    raise ValueError("Invalid or missing clock-invariant coverage")
                 observations = game.get("calls")
                 if not isinstance(observations, list) or not observations:
                     raise ValueError("Missing selected-call evidence")
@@ -422,7 +452,7 @@ def validate_report(report: dict, teams: list[str]) -> dict:
             except (ValueError, KeyError, TypeError) as error:
                 errors.append(f"Game {number}: {error}")
         rebuilt = make_report(recorded)
-        for field in ("summary", "semantic_coverage"):
+        for field in ("summary", "semantic_coverage", "clock_invariant_coverage"):
             saved_json = json.dumps(report.get(field), sort_keys=True, allow_nan=False)
             rebuilt_json = json.dumps(rebuilt[field], sort_keys=True, allow_nan=False)
             if saved_json != rebuilt_json:

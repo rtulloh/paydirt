@@ -8,6 +8,7 @@ import logging
 import os
 import random
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
@@ -26,7 +27,13 @@ from .game_engine import PaydirtGameEngine, PlayOutcome
 from .packaging import get_all_season_paths, get_seasons_path
 from .penalty_handler import apply_half_distance_rule
 from .play_events import EventType
-from .play_resolver import DefenseType, PlayType, ResultType, is_passing_play
+from .play_resolver import (
+    DefenseType,
+    PlayType,
+    ResultType,
+    dedupe_penalty_options,
+    is_passing_play,
+)
 from .priority_chart import ResultCategory, apply_priority_chart, categorize_result
 from .save_game import DEFAULT_SAVE_FILE, get_save_info, load_game, save_game
 from .utils import (
@@ -195,6 +202,19 @@ def select_team(prompt: str, exclude: str | None = None) -> TeamChart:
         print("Invalid choice. Please enter a number from the list.")
 
 
+def untimed_down_notice() -> list[str]:
+    """Return the CLI banner for a period extended by an accepted kick foul.
+
+    The engine's ``untimed_down_pending`` flag covers accepted defensive fouls
+    and offsetting fouls, not only a defensive penalty, so the wording must not
+    claim a defensive foul.
+    """
+    return [
+        "\n  *** UNTIMED DOWN - Accepted foul at 0:00 ***",
+        "  The quarter cannot end on an accepted defensive or offsetting foul.",
+    ]
+
+
 def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human_offense: bool):
     """Display current game status."""
     state = game.state
@@ -245,6 +265,14 @@ def display_game_status(game: PaydirtGameEngine, human_team: TeamChart, is_human
 _ordinal = ordinal_suffix
 
 
+_TRY_SUMMARY_TEXT = {
+    "PAT": "Extra point is good.",
+    "PAT no good": "Extra point is no good.",
+    "2PT": "Two-point conversion is good.",
+    "2PT no good": "Two-point conversion is no good.",
+}
+
+
 def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
     """Display a formatted box score with team statistics and scoring summary."""
     state = game.state
@@ -292,7 +320,7 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
                     next_play.play_type in ["PAT", "2PT"]
                     and next_play.is_home_team == play.is_home_team
                 ):
-                    # Combine TD + PAT
+                    # Combine TD + try.
                     combined_plays.append(
                         {
                             "quarter": play.quarter,
@@ -301,14 +329,32 @@ def display_box_score(game: PaydirtGameEngine, title: str = "BOX SCORE"):
                             "is_home": play.is_home_team,
                             "type": "Touchdown",
                             "description": play.description,
-                            "pat_desc": "Extra point is good."
-                            if next_play.play_type == "PAT"
-                            else "Two-point conversion good.",
+                            "pat_desc": _TRY_SUMMARY_TEXT[next_play.play_type],
                             "points": play.points + next_play.points,
                         }
                     )
                     i += 2
                     continue
+
+            # A touchdown whose try failed has no try entry to combine with; the
+            # outcome lives on the touchdown record so the row can still say so.
+            if play.play_type == "TD" and play.try_result == "no good":
+                combined_plays.append(
+                    {
+                        "quarter": play.quarter,
+                        "time": play.time_remaining,
+                        "team": play.team,
+                        "is_home": play.is_home_team,
+                        "type": "Touchdown",
+                        "description": play.description,
+                        "pat_desc": _TRY_SUMMARY_TEXT.get(
+                            f"{play.try_kind} no good"
+                        ),
+                        "points": play.points,
+                    }
+                )
+                i += 1
+                continue
 
             # Single play (FG, Safety, missed PAT TD, etc.)
             play_type_display = {
@@ -1348,6 +1394,25 @@ def computer_select_defense(game: PaydirtGameEngine, ai: ComputerAI = None) -> D
     return ai.select_defense(game)
 
 
+def _tendency_summary_rows(tracker):
+    """Return labeled tendency bands without presenting exemplars as exact spots.
+
+    ``get_tendency`` deliberately aggregates by documented band. The postgame
+    report must name that aggregation rather than print its exemplar distance
+    as if it were an exact first-and-10 or third-and-5 sample.
+    """
+    bands = (
+        (1, 10, "1st down (any distance)"),
+        (2, 7, "2nd & 7+"),
+        (3, 5, "3rd & 4-6"),
+        (4, 3, "4th & 1-3"),
+    )
+    return [
+        (label, tracker.get_tendency(down, distance))
+        for down, distance, label in bands
+    ]
+
+
 def display_play_result(
     game: PaydirtGameEngine,
     outcome,
@@ -1849,7 +1914,7 @@ def display_play_result(
                         )
 
             def_row = getattr(outcome.result, "defense_dice", "").split("=")[-1] or (
-                def_match.group(3) if def_match else "?"
+                def_match.group(3) if def_match else ""
             )
 
             # Add breakaway dice if this is a breakaway play
@@ -1860,9 +1925,17 @@ def display_play_result(
                 if b_dice:
                     breakaway_extra = f" | B:{b_dice}→{b_yards}"
 
-            print(
-                f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}" | D:{def_row}→"{outcome.result.defense_modifier}" | {combined.priority.value}{extra_info}{breakaway_extra})'
+            qt_dice = getattr(outcome.result, "qb_scramble_dice", 0)
+            qt_extra = (
+                f" | QT:{qt_dice}→{outcome.result.qb_scramble_yards}" if qt_dice else ""
             )
+            offense_roll = getattr(outcome.result, "dice_roll", None)
+            if play_type == PlayType.QB_SNEAK and not getattr(outcome.result, "defense_dice", ""):
+                print(f'  (O:{offense_roll}→"{outcome.result.raw_result}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})')
+            else:
+                print(
+                    f'  (O:{offense_roll}→"{outcome.result.raw_result}" | D:{def_row}→"{outcome.result.defense_modifier}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})'
+                )
 
             # Announce turnover on downs with expressive commentary and possession change
             if is_turnover_on_downs:
@@ -2004,7 +2077,7 @@ def display_play_result(
 
         # Line 2: Dice details (condensed) - include turnover return info here
         def_row = getattr(outcome.result, "defense_dice", "").split("=")[-1] or (
-            def_match.group(3) if def_match else "?"
+            def_match.group(3) if def_match else ""
         )
         extra_info = ""
         breakaway_extra = ""
@@ -2036,16 +2109,21 @@ def display_play_result(
             if b_dice:
                 breakaway_extra = f" | B:{b_dice}→{b_yards}"
 
-        # Add QB scramble (QT) dice if this is a QT result
-        if outcome.result.result_type in (ResultType.QB_SCRAMBLE, ResultType.SACK):
-            qt_dice = getattr(outcome.result, "qb_scramble_dice", 0)
-            qt_yards = getattr(outcome.result, "qb_scramble_yards", 0)
-            if qt_dice:
-                qt_extra = f" | QT:{qt_dice}→{qt_yards}"
+        # Add QB-time evidence whenever the chart sent the play to the QT column.
+        # A QT fumble keeps its fumble result type, so key off the captured roll.
+        qt_dice = getattr(outcome.result, "qb_scramble_dice", 0)
+        qt_yards = getattr(outcome.result, "qb_scramble_yards", 0)
+        if qt_dice:
+            qt_extra = f" | QT:{qt_dice}→{qt_yards}"
 
-        # Handle Hail Mary specially - only offense dice, no defense or priority chart
-        if play_type == PlayType.HAIL_MARY:
-            print(f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}")')
+        # Hail Mary, QB sneak, and QB kneel do not consult a defense chart.
+        # Keep the offense/priority evidence visible but omit a blank defense cell
+        # rather than inventing a ``D:?`` roll.
+        if play_type in (PlayType.HAIL_MARY, PlayType.QB_KNEEL) or (
+                play_type == PlayType.QB_SNEAK and not getattr(outcome.result, "defense_dice", "")):
+            print(
+                f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})'
+            )
         else:
             print(
                 f'  (O:{outcome.result.dice_roll}→"{outcome.result.raw_result}" | D:{def_row}→"{outcome.result.defense_modifier}" | {combined.priority.value}{extra_info}{breakaway_extra}{qt_extra})'
@@ -2348,7 +2426,9 @@ def handle_penalty_decision(
             print(f"    {log_entry}")
 
     # Filter penalty options to only show those that benefit the offended team
-    # This is used for both display and decision making
+    # This is used for both display and decision making. Repeated chart fouls
+    # are collapsed in the resolver, but a resumed game can still carry a
+    # pre-fix list, so collapse again before numbering either block.
     if offended_is_offense:
         filtered_penalties = [
             opt for opt in penalty_choice.penalty_options if opt.penalty_type in ["DEF", "PI"]
@@ -2357,12 +2437,14 @@ def handle_penalty_decision(
         filtered_penalties = [
             opt for opt in penalty_choice.penalty_options if opt.penalty_type == "OFF"
         ]
+    filtered_penalties = dedupe_penalty_options(filtered_penalties)
 
-    # Show penalty options
+    # Show penalty options. The play result is always option 1, so the fouls
+    # are numbered from 2 in both this preview and the decision prompt.
     print(f"\n  Penalty Options ({penalty_choice.offended_team.upper()} is offended):")
     for i, opt in enumerate(filtered_penalties):
         auto_first = " + automatic first down" if opt.auto_first_down else ""
-        print(f"    [{i + 1}] {opt.description}{auto_first}")
+        print(f"    [{i + 2}] {opt.description}{auto_first}")
 
     # Show play result with projected down/distance
     play_result = penalty_choice.play_result
@@ -2523,6 +2605,10 @@ def handle_penalty_decision(
         # Option 1 is always the play result
         if safety_preview:
             print(f"    [1] Accept PLAY result: {safety_preview}")
+        elif is_punt_penalty and outcome.pending_fumble_facts is not None:
+            # RULE-034: the engine already resolved this snap fumble's recovery,
+            # so its preview is the authoritative description of keeping it.
+            print(f"    [1] Accept PLAY result: {penalty_choice.play_result_preview}")
         elif is_punt_penalty and play_result.fumble_recovered:
             print(f"    [1] Accept PLAY result: {play_result.description}")
         elif not play_field_str:
@@ -2725,7 +2811,8 @@ def handle_end_zone_interception_decision(
 
 
 def handle_safety_free_kick(
-    game: PaydirtGameEngine, kicking_home: bool, human_is_home: bool, cpu_ai
+    game: PaydirtGameEngine, kicking_home: bool, human_is_home: bool, cpu_ai,
+    on_period_end: Callable[[int], None] | None = None,
 ):
     """Run the safety free kick and resolve any kickoff penalty first.
 
@@ -2738,6 +2825,8 @@ def handle_safety_free_kick(
         kicking_home: Whether the team that conceded the safety is home.
         human_is_home: Whether the human controls the home team.
         cpu_ai: Optional CPU coach.
+        on_period_end: Forwarded to the touchdown sequence so a caller's own
+            quarter handler does not repeat a banner the score already printed.
 
     Returns:
         The finalized free-kick outcome.
@@ -2754,7 +2843,11 @@ def handle_safety_free_kick(
         is_human_offense = (not kicking_home) == human_is_home
         outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
         print(f"  {outcome.description}")
-    return _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+    if on_period_end is None:
+        return _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+    return _complete_touchdown_sequence(
+        game, outcome, human_is_home, cpu_ai, on_period_end
+    )
 
 
 def get_human_defense_for_conversion(game: PaydirtGameEngine) -> DefenseType:
@@ -2771,22 +2864,57 @@ def get_human_defense_for_conversion(game: PaydirtGameEngine) -> DefenseType:
         print("  Invalid defense. Choose A-F.")
 
 
+def _period_ended_by_score(
+    game: PaydirtGameEngine, quarter_before_play: int,
+) -> int | None:
+    """Return the Q1/Q3 period a scoring play just ended, or ``None``.
+
+    A quarter-one/three score still owes an untimed try and a kickoff, and the
+    kickoff is taken in the new period. Announcing the period end here lets the
+    banner print with the score instead of on the next loop iteration, after
+    the next period has already run. Halftime is the deliberate exception: the
+    Q2 banner waits for the second-half kickoff, so this returns ``None`` for a
+    half-ending score.
+    """
+    if quarter_before_play in (1, 3) and game.state.quarter == quarter_before_play + 1:
+        return quarter_before_play
+    return None
+
+
 def _complete_touchdown_sequence(
     game: PaydirtGameEngine,
     outcome: PlayOutcome,
     human_is_home: bool,
     cpu_ai: ComputerAI | None = None,
+    on_period_end: Callable[[int], None] | None = None,
 ) -> PlayOutcome:
     """Collect conversion/kickoff choices until the engine returns a non-TD result.
 
     Scoring and play resolution remain in the engine. Recheck every kickoff
     result so a return touchdown cannot fall through to a scrimmage prompt.
+
+    Args:
+        game: The game engine.
+        outcome: The scoring play whose try and kick may still be owed.
+        human_is_home: Whether the human controls the home team.
+        cpu_ai: Optional CPU coach.
+        on_period_end: Called with the Q1/Q3 period number when this score
+            ended it, so a caller's own quarter-change handler does not
+            announce the same period a second time.
     """
     # The engine decides whether a try is still owed (regulation tries are played
     # even after the clock expires) and whether any kick may follow it.
     while outcome.touchdown and game.can_attempt_conversion_after_touchdown():
         if outcome.clock_trace is not None:
             print(f"  {outcome.clock_trace.description}")
+            # FLOW-043: the trace already reports "period ended"; announce the
+            # quarter now so it precedes the untimed try and the kickoff, which
+            # is taken in the new period.
+            ended_quarter = _period_ended_by_score(game, outcome.clock_trace.start_quarter)
+            if ended_quarter is not None:
+                print(f"\n  END OF QUARTER {ended_quarter}")
+                if on_period_end is not None:
+                    on_period_end(ended_quarter)
         next_outcome = _run_try_and_kickoff(game, human_is_home, cpu_ai)
         if next_outcome is None:
             return outcome
@@ -2968,6 +3096,14 @@ def resume_game(
 
     cpu_ai = create_computer_ai(difficulty, game, cpu_is_home=not human_is_home)
 
+    # FLOW-043: periods already announced with their score. The loop's own
+    # transition handler consults this so it never repeats the banner, even
+    # when the quarter changed inside a scoring chain that is still running.
+    announced_periods: set[int] = set()
+
+    def _sync_quarter(announced: int) -> None:
+        announced_periods.add(announced)
+
     # Try to load AI opponent model data (for persistent learning)
     save_dir = os.path.dirname(filepath) or "."
     if cpu_ai.use_analysis:
@@ -3000,7 +3136,7 @@ def resume_game(
             if outcome is not None:
                 # A kickoff return can score too; keep the same possession-aware
                 # follow-up the live loop uses instead of resuming at a stale snap.
-                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
             pending_score = None
 
     elif pending_score in {"safety_free_kick", "safety"}:
@@ -3039,6 +3175,7 @@ def resume_game(
     no_huddle_mode = False
     last_quarter = game.state.quarter
 
+
     # The engine records the opening kicker (persisted in saves); legacy saves
     # fall back to its documented approximation.
 
@@ -3057,7 +3194,7 @@ def resume_game(
                 )
         elif outcome.touchdown:
             outcome = _complete_touchdown_sequence(
-                game, outcome, human_is_home, cpu_ai
+                game, outcome, human_is_home, cpu_ai, _sync_quarter
             )
 
     while not game.state.game_over:
@@ -3097,16 +3234,17 @@ def resume_game(
                     )
 
                 print(f"  {outcome.description}")
-                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
                 print(f"  {game.state.possession_team.peripheral.short_name} will start at {game.state.field_position_str()}")
-            elif last_quarter < 4:
+            elif last_quarter < 4 and last_quarter not in announced_periods:
+                # FLOW-043: a score may already have announced this period.
                 print(f"\n  END OF QUARTER {last_quarter}")
 
             last_quarter = game.state.quarter
 
         # Check for end of game conditions
         if game.is_period_expired() and game.has_untimed_down():
-            print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
+            print("\n" + "\n".join(untimed_down_notice()))
         elif game.is_period_expired():
             if game.state.is_overtime:
                 if game.state.game_over:
@@ -3141,7 +3279,7 @@ def resume_game(
                         )
 
                     print(f"  {outcome.description}")
-                    outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+                    outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
                     print(f"  {game.state.possession_team.peripheral.short_name} will start at {game.state.field_position_str()}")
                     continue
                 else:
@@ -3325,7 +3463,12 @@ def resume_game(
                 outcome, play_seconds, quarter_before_play
             )
             if skip_msg:
-                print(f"  {skip_msg}")
+                attributed = skip_msg
+                if cpu_defensive_timeout and defense_timeout_used:
+                    attributed = skip_msg.replace(
+                        "[Timeout SKIPPED", "[CPU DEFENSIVE Timeout SKIPPED", 1
+                    )
+                print(f"  {attributed}")
 
         if cpu_ai and cpu_ai.use_analysis and cpu_ai.opponent_model and is_human_offense:
             from paydirt.play_resolver import is_passing_play
@@ -3376,7 +3519,7 @@ def resume_game(
                 outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
             print(f"  {outcome.description}")
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
             continue
 
         if outcome.safety:
@@ -3389,12 +3532,14 @@ def resume_game(
             kicking_home = game.state.is_home_possession
 
             outcome = handle_safety_free_kick(
-                game, kicking_home, human_is_home, cpu_ai
+                game, kicking_home, human_is_home, cpu_ai, _sync_quarter
             )
             continue
 
         if outcome.touchdown:
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = _complete_touchdown_sequence(
+                game, outcome, human_is_home, cpu_ai, _sync_quarter,
+            )
             continue
 
         # display_play_result owns the final turnover-on-downs announcement.
@@ -3448,19 +3593,11 @@ def resume_game(
                 )
 
             if total_plays >= 5:
-                common_situations = [
-                    (1, 10, "1st & 10"),
-                    (2, 7, "2nd & 7"),
-                    (3, 5, "3rd & 5"),
-                    (4, 3, "4th & 3"),
-                ]
                 print("\n  Tendencies by situation:")
-                for down, dist, name in common_situations:
-                    tendency = tracker.get_tendency(down, dist)
+                for name, tendency in _tendency_summary_rows(tracker):
                     if tendency.total_plays > 0:
-                        rec = tracker.get_defense_recommendation(down, dist)
                         print(
-                            f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P -> recommend {rec}"
+                            f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P"
                         )
             else:
                 print(
@@ -3791,6 +3928,14 @@ def run_interactive_game(
 
     cpu_ai = create_computer_ai(difficulty, game, cpu_is_home=not human_is_home)
 
+    # FLOW-043: periods already announced with their score. The loop's own
+    # transition handler consults this so it never repeats the banner, even
+    # when the quarter changed inside a scoring chain that is still running.
+    announced_periods: set[int] = set()
+
+    def _sync_quarter(announced: int) -> None:
+        announced_periods.add(announced)
+
     # Human-facing default: choose own-end-zone interception returns after the
     # catch depth, score and clock are known. The CPU uses its situation policy.
     game.set_end_zone_interception_policy(human_is_home, "ask")
@@ -3842,6 +3987,7 @@ def run_interactive_game(
     play_num = 0
     no_huddle_mode = False  # Track No Huddle offense state
     last_quarter = game.state.quarter  # Track quarter for detecting transitions
+
     while not game.state.game_over:
         play_num += 1
 
@@ -3883,10 +4029,10 @@ def run_interactive_game(
                     )
 
                 print(f"  {outcome.description}")
-                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+                outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
                 print(f"  {game.state.possession_team.peripheral.short_name} will start at {game.state.field_position_str()}")
-            elif last_quarter < 4:
-                # End of Q1 or Q3 - just announce
+            elif last_quarter < 4 and last_quarter not in announced_periods:
+                # End of Q1 or Q3 - just announce, unless the score already did.
                 print(f"\n  END OF QUARTER {last_quarter}")
 
             last_quarter = game.state.quarter
@@ -3894,8 +4040,7 @@ def run_interactive_game(
         # Check if quarter ended or overtime needed
         # But first check for untimed down (defensive penalty at 0:00)
         if game.is_period_expired() and game.has_untimed_down():
-            print("\n  *** UNTIMED DOWN - Defensive penalty at 0:00 ***")
-            print("  The quarter cannot end on an accepted defensive penalty.")
+            print("\n" + "\n".join(untimed_down_notice()))
         elif game.is_period_expired():
             if game.state.is_overtime:
                 # End of OT period - game engine handles this
@@ -3939,7 +4084,7 @@ def run_interactive_game(
                         )
 
                     print(f"  {outcome.description}")
-                    outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+                    outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
                     print(f"  {game.state.possession_team.peripheral.short_name} will start at {game.state.field_position_str()}")
                     continue
                 else:
@@ -4162,7 +4307,12 @@ def run_interactive_game(
                 outcome, play_seconds, quarter_before_play
             )
             if skip_msg:
-                print(f"  {skip_msg}")
+                attributed = skip_msg
+                if cpu_defensive_timeout and defense_timeout_used:
+                    attributed = skip_msg.replace(
+                        "[Timeout SKIPPED", "[CPU DEFENSIVE Timeout SKIPPED", 1
+                    )
+                print(f"  {attributed}")
 
         if outcome.spike_used:
             mins = int(game.state.time_remaining)
@@ -4227,7 +4377,7 @@ def run_interactive_game(
                 outcome = handle_penalty_decision(game, outcome, is_human_offense, human_is_home)
 
             print(f"  {outcome.description}")
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai, _sync_quarter)
             continue
 
         # Handle safety - free kick after score
@@ -4242,12 +4392,14 @@ def run_interactive_game(
             kicking_home = game.state.is_home_possession
 
             outcome = handle_safety_free_kick(
-                game, kicking_home, human_is_home, cpu_ai
+                game, kicking_home, human_is_home, cpu_ai, _sync_quarter
             )
             continue
 
         if outcome.touchdown:
-            outcome = _complete_touchdown_sequence(game, outcome, human_is_home, cpu_ai)
+            outcome = _complete_touchdown_sequence(
+                game, outcome, human_is_home, cpu_ai, _sync_quarter,
+            )
             continue
 
         # display_play_result owns the final turnover-on-downs announcement.
@@ -4303,19 +4455,11 @@ def run_interactive_game(
                 )
 
             if total_plays >= 5:
-                common_situations = [
-                    (1, 10, "1st & 10"),
-                    (2, 7, "2nd & 7"),
-                    (3, 5, "3rd & 5"),
-                    (4, 3, "4th & 3"),
-                ]
                 print("\n  Tendencies by situation:")
-                for down, dist, name in common_situations:
-                    tendency = tracker.get_tendency(down, dist)
+                for name, tendency in _tendency_summary_rows(tracker):
                     if tendency.total_plays > 0:
-                        rec = tracker.get_defense_recommendation(down, dist)
                         print(
-                            f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P -> recommend {rec}"
+                            f"    {name}: {tendency.run_plays}R/{tendency.pass_plays}P"
                         )
             else:
                 print(

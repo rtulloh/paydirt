@@ -506,3 +506,39 @@ def test_auto_game_feeds_only_opponent_model_after_final_resolution(
     assert not any(attacking.situation_plays.values())
     assert defending.get_tendency(1, 10).total_plays == 0
     assert all(not outcome.pending_penalty_decision for outcome in result["game"].play_log)
+
+
+def test_q3_expiring_touchdown_announces_period_before_untimed_try(
+    run_scenario: Callable,
+) -> None:
+    """FLOW-043 also covers the CPU-vs-CPU presentation."""
+    def setup(game: PaydirtGameEngine) -> None:
+        for chart in (game.state.home_chart, game.state.away_chart):
+            chart.offense.line_plunge = dict.fromkeys(range(10, 40), "TD")
+        set_scrimmage(game, home=True, position=98, seconds=7, quarter=3)
+
+    result = run_scenario(setup, (PlayType.LINE_PLUNGE,))
+    output = result["output"]
+    assert "END OF QUARTER 3" in output
+    assert output.count("END OF QUARTER 3") == 1
+    assert output.index("END OF QUARTER 3") < output.index("Extra point GOOD!")
+
+
+def test_quarter_box_score_still_prints_after_a_period_ending_score(
+    run_scenario: Callable,
+) -> None:
+    """FLOW-043 must not swallow the Q1/Q3 stats block.
+
+    The announced-period tracker suppresses the duplicate banner, but the same
+    branch also prints the quarterly box score when ``display_stats`` is on.
+    """
+    def setup(game: PaydirtGameEngine) -> None:
+        for chart in (game.state.home_chart, game.state.away_chart):
+            chart.offense.line_plunge = dict.fromkeys(range(10, 40), "TD")
+        set_scrimmage(game, home=True, position=98, seconds=7, quarter=3)
+
+    result = run_scenario(setup, (PlayType.LINE_PLUNGE,))
+    output = result["output"]
+    assert "END OF QUARTER 3" in output
+    assert output.count("END OF QUARTER 3") == 1
+    assert "QUARTER 3 STATS" in output, "the quarterly box score must still print"

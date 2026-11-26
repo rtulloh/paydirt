@@ -86,6 +86,8 @@ def save_game(engine: PaydirtGameEngine, filepath: str = DEFAULT_SAVE_FILE,
                 "play_type": sp.play_type,
                 "description": sp.description,
                 "points": sp.points,
+                "try_result": sp.try_result,
+                "try_kind": sp.try_kind,
             }
             for sp in state.scoring_plays
         ],
@@ -267,6 +269,8 @@ def load_game(filepath: str = DEFAULT_SAVE_FILE) -> tuple | None:
             play_type=sp["play_type"],
             description=sp["description"],
             points=sp["points"],
+            try_result=sp.get("try_result", ""),
+            try_kind=sp.get("try_kind", ""),
         )
         for sp in save_data.get("scoring_plays", [])
     ]

@@ -184,14 +184,19 @@ def test_declined_retained_kick_keeps_the_foul_annotation(
     game.state.ball_position, game.state.down, game.state.yards_to_go = 40, 4, 8
     game.state.possession_team.special_teams.punt = {10: foul, 11: cell}
     game.state.possession_team.peripheral.fumble_recovered_range = (10, 31)
-    with patch("paydirt.game_engine.roll_chart_dice", side_effect=[(10, "Foul"), (11, "Saved")]) as rolls:
+    # RULE-034: a retained fumble also consumes its recovery roll before the
+    # choice; ordinary and blocked kicks still stop at the yardage reroll.
+    recovery_roll = 20 if cell == "F + 0" else None
+    scripted = [(10, "Foul"), (11, "Saved")] + ([(recovery_roll, "Recovery")] if recovery_roll else [])
+    with patch("paydirt.game_engine.roll_chart_dice", side_effect=scripted) as rolls:
         run = game.run_play_with_penalty_procedure if procedure else game.run_play
         pending = run(PlayType.PUNT, DefenseType.STANDARD)
-    assert rolls.call_count == 2
+    assert rolls.call_count == (3 if recovery_roll else 2)
     assert pending.pending_penalty_decision
     with patch("paydirt.game_engine.roll_chart_dice", return_value=(20, "Recovery")) as rolls:
         outcome = game.apply_punt_penalty_decision(pending, False)
-    assert rolls.call_count == int(cell != "70")
+    # A resolved snap fumble is replayed without rolling again.
+    assert rolls.call_count == (0 if cell == "F + 0" else int(cell != "70"))
     assert not outcome.pending_penalty_decision
     assert not outcome.penalty_applied
     assert game.state.home_stats.penalties == game.state.away_stats.penalties == 0

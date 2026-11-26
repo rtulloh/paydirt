@@ -85,8 +85,13 @@ def test_return_penalty_is_visible_without_changing_its_accounting(
         offender_home = returning_home if cell.startswith("OFF") else not returning_home
         offender = state.home_stats if offender_home else state.away_stats
         assert (offender.penalties, offender.penalty_yards) == (1, effective)
-    returned = outcome.result.int_return_yards if kind == "interception" else outcome.result.fumble_return_yards
-    assert returned == net
+    if kind == "interception":
+        # Disclosed expectation change: interception returns now report the
+        # chart's return (21), not the net spot delta. The assessed foul is
+        # named beside it, and the spot below still reflects enforcement.
+        assert outcome.result.int_return_yards == 21
+    else:
+        assert outcome.result.fumble_return_yards == net
 
     monkeypatch.setattr(cli, "COMPACT_MODE", compact)
     cli.display_play_result(

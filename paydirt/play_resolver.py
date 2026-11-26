@@ -125,6 +125,9 @@ class PlayResult:
     fumble_resolved: bool = False  # True if fumble recovery was already determined
     fumble_return_yards: int = 0
     fumble_return_dice: int = 0
+    # A chained return already resolved by a preview. Replaying the retained
+    # fumble reuses it instead of consuming the dice stream a second time.
+    fumble_return_chain: ReturnChain | None = field(default=None, repr=False, compare=False)
     # Breakaway dice roll and yards (set when offense result is "B")
     breakaway_dice: int = 0
     breakaway_yards: int = 0
@@ -1255,6 +1258,41 @@ def _create_penalty_option(result_str: str) -> PenaltyOption:
     )
 
 
+def dedupe_penalty_options(options: list[PenaltyOption]) -> list[PenaltyOption]:
+    """Drop penalty options the deciding coach cannot tell apart.
+
+    The offense rerolls after every foul, so the same chart row can come up
+    more than once (a play-test roll of ``DEF 5`` twice offered two identical
+    menu entries). Enforcement reads the option's own yardage and never rerolls
+    it, so two options with the same type, spot and first-down status are one
+    decision. The reroll log keeps every roll; only the choice list collapses.
+
+    Distinct fouls stay separate: a different yardage, a different automatic
+    first-down outcome, pass interference, or a different raw chart row (for
+    example ``DEF S`` beside ``DEF 5``) all remain their own option.
+
+    Args:
+        options: Penalty options in roll order.
+
+    Returns:
+        Options in first-seen order, with indistinguishable repeats removed.
+    """
+    unique: list[PenaltyOption] = []
+    seen: set[tuple[str, str, int, bool]] = set()
+    for option in options:
+        key = (
+            option.penalty_type,
+            option.raw_result.strip().upper(),
+            option.yards,
+            option.auto_first_down,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(option)
+    return unique
+
+
 @dataclass
 class FieldGoalResult:
     """Result of a field goal attempt with penalty handling."""
@@ -1401,7 +1439,7 @@ def resolve_field_goal_with_penalties(special_teams_chart) -> FieldGoalResult:
         is_blocked=is_blocked,
         is_fumble=is_fumble,
         is_penalty=len(penalty_options) > 0,
-        penalty_options=penalty_options,
+        penalty_options=dedupe_penalty_options(penalty_options),
         offsetting=offsetting,
         offended_team=offended_team,
         reroll_log=reroll_log,
@@ -1501,7 +1539,7 @@ def resolve_play_with_penalties(
                 )
                 return PenaltyChoice(
                     play_result=play_result,
-                    penalty_options=penalty_options,
+                    penalty_options=dedupe_penalty_options(penalty_options),
                     offended_team="offense",  # Defense committed PI
                     offsetting=False,
                     is_pass_interference=True,
@@ -1678,7 +1716,7 @@ def resolve_play_with_penalties(
 
     return PenaltyChoice(
         play_result=play_result,
-        penalty_options=penalty_options,
+        penalty_options=dedupe_penalty_options(penalty_options),
         offended_team=offended_team,
         offsetting=offsetting,
         is_pass_interference=False,

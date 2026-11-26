@@ -39,6 +39,13 @@ FG_LAST_SECONDS_PROBABILITY = 0.10
 FOURTH_DOWN_NO_HUDDLE_SECONDS = 25.0
 FOURTH_DOWN_NEXT_SNAP_SECONDS = 5.0
 
+# A defensive timeout stops the clock but cannot shorten the opponent's current
+# possession. For a multi-score comeback, budget a bounded scoring drive for
+# each score that must follow, including the opponent's next score. One- and
+# two-score states keep their existing aggressive timeout windows.
+TRAILING_TIMEOUT_SCORE_SECONDS = 80.0
+TRAILING_TIMEOUT_AGGRESSIVE_SCORES = 2
+
 
 @dataclass(frozen=True)
 class CoachingPrecision:
@@ -397,15 +404,17 @@ class ComputerAI:
                     play, use_oob, use_no_huddle, punt_short_drop,
                     punt_coffin_corner_yards, False,
                 )
-            if self._needs_hurry_up(game, time_left, quarter, score_diff):
-                use_no_huddle = True
-                if play in [
-                    PlayType.SHORT_PASS,
-                    PlayType.MEDIUM_PASS,
-                    PlayType.LONG_PASS,
-                    PlayType.SCREEN,
-                ] and random.random() < self.ai_behavior.strategic.oob_designation_aggression:
-                    use_oob = True
+            if play in (PlayType.PUNT, PlayType.FIELD_GOAL):
+                # A kick keeps its pre-existing pace flagging: only the
+                # needs-hurry-up gate applies, and no sideline draw happens
+                # because a kick is not a passing play.
+                use_oob, use_no_huddle = self._hurry_up_flags(
+                    game, play, time_left, quarter, score_diff,
+                )
+            else:
+                play, use_oob, use_no_huddle = self._fourth_down_conversion_plan(
+                    game, play, time_left, quarter, score_diff,
+                )
             return (play, use_oob, use_no_huddle, punt_short_drop, punt_coffin_corner_yards, False)
 
         # 2-Minute Drill (time-critical - end of half, aggressive clock management)
@@ -417,7 +426,7 @@ class ComputerAI:
             play = self._offense_rng.choices(list(weights), weights=list(weights.values()), k=1)[0]
             use_no_huddle = True
             # Use OOB designation on passing plays based on aggression
-            if (play in [PlayType.SHORT_PASS, PlayType.MEDIUM_PASS, PlayType.LONG_PASS, PlayType.SCREEN]) and (self._offense_rng.random() < self.ai_behavior.strategic.oob_designation_aggression):
+            if self._sideline_eligible(play) and (self._offense_rng.random() < self.ai_behavior.strategic.oob_designation_aggression):
                 use_oob = True
             # Spike modifier: add spike to stop clock after play (only on 1st/2nd down, not 3rd)
             # On 3rd down, spiking wastes the down and we need to punt/kick on 4th
@@ -1095,6 +1104,48 @@ class ComputerAI:
             return False
         return game.season_rules.scores_needed(-score_diff) >= 2
 
+    def _fourth_down_conversion_plan(
+        self, game: PaydirtGameEngine, play: PlayType, time_left: float,
+        quarter: int, score_diff: int,
+    ) -> tuple[PlayType, bool, bool]:
+        """Return the call, sideline and no-huddle flags for a 4th-down attempt.
+
+        Fourth down is evaluated before the two-minute drill so that a kick
+        decision still wins, but a conversion attempt in a genuine hurry-up
+        state must run the same pace and play mixture as 1st-3rd down. Both
+        pace predicates are checked because they are not identical: the
+        two-minute drill also covers the end of the second quarter and a Q4
+        blowout that ``_needs_hurry_up`` does not.
+
+        Args:
+            game: Engine supplying the possession team's state and rules.
+            play: Conversion play already chosen by the fourth-down decision.
+            time_left: Minutes remaining in the quarter.
+            quarter: Effective quarter, with overtime folded into the fourth.
+            score_diff: Possession team's score minus its opponent's score.
+
+        Returns:
+            ``(play, out_of_bounds, no_huddle)``. The sideline draw always uses
+            the coaching stream, never the gameplay dice.
+        """
+        if self._is_two_minute_drill(game, time_left, quarter, score_diff):
+            self.last_mode = "Two-Minute Drill"
+            if self._offense_rng is None:
+                self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
+            weights = self.get_hurry_up_weights(game)
+            play = self._offense_rng.choices(
+                list(weights), weights=list(weights.values()), k=1)[0]
+            use_oob = (
+                self._sideline_eligible(play)
+                and self._offense_rng.random()
+                < self.ai_behavior.strategic.oob_designation_aggression
+            )
+            return play, use_oob, True
+        use_oob, use_no_huddle = self._hurry_up_flags(
+            game, play, time_left, quarter, score_diff,
+        )
+        return play, use_oob, use_no_huddle
+
     def _hurry_up_flags(
         self, game: PaydirtGameEngine, play: PlayType, time_left: float,
         quarter: int, score_diff: int,
@@ -1104,16 +1155,26 @@ class ComputerAI:
             return False, False
         if self._offense_rng is None:
             self._offense_rng = random.Random(f"paydirt-offense:{random.getstate()!r}")
-        passing_play = play in (
-            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
-            PlayType.LONG_PASS, PlayType.SCREEN,
-        )
         use_oob = (
-            passing_play
+            self._sideline_eligible(play)
             and self._offense_rng.random()
             < self.ai_behavior.strategic.oob_designation_aggression
         )
         return use_oob, True
+
+    @staticmethod
+    def _sideline_eligible(play: PlayType) -> bool:
+        """Return whether a hurry-up call can take a sideline designation.
+
+        Deliberately narrower than ``is_passing_play``: the tight-end route is
+        a pass but has no sideline variant here, so every hurry path must use
+        the same predicate or the same call would gain a designation on fourth
+        down that it never gets on first through third.
+        """
+        return play in (
+            PlayType.SHORT_PASS, PlayType.MEDIUM_PASS,
+            PlayType.LONG_PASS, PlayType.SCREEN,
+        )
 
     def _is_two_minute_drill(
         self, game: PaydirtGameEngine, time_left: float, quarter: int,
@@ -1146,7 +1207,13 @@ class ComputerAI:
                 return True
             if time_left < tmd.q4_always_minutes:
                 return True
-        return bool(quarter == 4 and score_diff <= -14)
+        # The old catch-all ran every Q4 snap for a multi-score deficit. It now
+        # uses the same configured late-game window as the other pace branches.
+        return bool(
+            quarter == 4
+            and score_diff <= -14
+            and time_left < tmd.q4_always_minutes
+        )
 
     def _needs_hurry_up(
         self, game: PaydirtGameEngine, time_left: float, quarter: int,
@@ -1177,7 +1244,11 @@ class ComputerAI:
                 return True
             if time_left < hur.q4_any_minutes:
                 return True
-        return bool(quarter == 2 and time_left < 2.0 and score_diff < 0)
+        return bool(
+            quarter == 2
+            and time_left < 2.0
+            and score_diff < self.ai_behavior.two_minute_drill.skip_when_leading_by
+        )
 
     def _should_run_clock(self, time_left, quarter, score_diff) -> bool:
         """Check if we should be killing clock."""
@@ -1713,11 +1784,13 @@ class ComputerAI:
             return False
 
         # End of 4th quarter - trailing and need to get ball back
-        # Trailing by any amount with < 5 minutes left
-        # More aggressive timeout usage when further behind or less time
+        # A timeout cannot help when the deficit is no longer recoverable.
         if (quarter == 4) and (score_diff < 0 and time_left <= 5.0):
+            if not self._defensive_timeout_comeback_reachable(
+                    game, -score_diff, time_left):
+                return False
             if time_left <= 2.0:
-                return True  # Always use timeouts in final 2 minutes when trailing
+                return True  # Preserve the clock in the final two minutes
             if score_diff <= -8 and time_left <= 4.0:
                 return True  # Down by more than a TD with < 4 min
             if score_diff <= -14 and time_left <= 5.0:
@@ -1731,6 +1804,37 @@ class ComputerAI:
                 return True  # Down by TD+ with < 2 min in half
 
         return False
+
+    def _defensive_timeout_comeback_reachable(
+        self, game: PaydirtGameEngine, deficit: int, time_left: float,
+    ) -> bool:
+        """Return whether a trailing defense can still erase this deficit.
+
+        One- and two-score deficits keep their existing aggressive windows. A
+        three-or-more-score deficit is bounded by a plausible scoring drive for
+        every required score, plus the opponent's next score, because the
+        opponent still has the ball after the timeout. This is coaching
+        arithmetic, not a win-probability model or a play-timing rule.
+
+        Args:
+            game: Engine supplying the active season's scoring rules.
+            deficit: Points the defending CPU trails by.
+            time_left: Minutes remaining in the period.
+
+        Returns:
+            True when the required comeback still fits the remaining clock.
+        """
+        scores_needed = game.season_rules.scores_needed(deficit)
+        if scores_needed <= TRAILING_TIMEOUT_AGGRESSIVE_SCORES:
+            return True
+        opponent_points = 8 if game.season_rules.two_point_conversion else 7
+        scores_after_opponent_score = game.season_rules.scores_needed(
+            deficit + opponent_points
+        )
+        return (
+            time_left * 60
+            >= scores_after_opponent_score * TRAILING_TIMEOUT_SCORE_SECONDS
+        )
 
     def should_call_timeout_on_offense(self, game: PaydirtGameEngine) -> bool:
         """

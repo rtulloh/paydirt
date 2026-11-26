@@ -102,3 +102,60 @@ def test_resumed_return_safety_runs_free_kick(monkeypatch, tmp_path) -> None:
     assert calls["free_kicks"].called
     assert not calls["attempts"].called
     assert not calls["kicks"].called
+
+
+def test_resumed_end_zone_td_expiring_q1_announces_the_period_once(
+    monkeypatch, tmp_path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """FLOW-043: a restored return TD that ends Q1 must not print the banner twice.
+
+    The pending end-zone branch calls the touchdown sequence before the loop's
+    own quarter handler runs, so it has to register the announced period too.
+    """
+    game, _pending = pending_game()
+    # Expire the quarter on the return: 10 seconds left in Q1, return ends it.
+    game.state.time_remaining = 10 / 60
+    save_path = tmp_path / "pending-end-zone-q1.json"
+    save_game(game, str(save_path), human_is_away=False, human_is_home=True)
+
+    attempts = Mock(return_value=(True, "Synthetic extra point"))
+    kicks = Mock(return_value=PlayOutcome(
+        PlayType.KICKOFF, DefenseType.STANDARD, PlayResult(ResultType.YARDS),
+        description="Synthetic kickoff",
+    ))
+    real_load_game = load_game
+
+    def load_for_resume(path: str):
+        loaded, away, home, pending_score = real_load_game(path)
+        loaded.state.home_chart.special_teams.interception_return = {26: "TD"}
+        loaded.state.home_chart.special_teams.extra_point_no_good = []
+        loaded.attempt_extra_point = attempts
+        loaded.kickoff = kicks
+        return loaded, away, home, pending_score
+
+    monkeypatch.setattr(cli, "load_game", load_for_resume)
+    monkeypatch.setattr(cli, "create_computer_ai", lambda *args, **kwargs: Mock(use_analysis=False))
+    monkeypatch.setattr(cli, "get_kickoff_choice", lambda *args: False)
+    monkeypatch.setattr(cli, "clear_screen", lambda: None)
+    monkeypatch.setattr(cli, "display_box_score", lambda *args: None)
+    monkeypatch.setattr(cli, "display_game_status", Mock(side_effect=StopBeforeNextSnap))
+
+    def answer(prompt: str = "") -> str:
+        # Resume the save, attempt the return so the clock can expire, then stop
+        # at the first prompt after the scoring chain.
+        if "Your choice" in prompt and "T/R" not in prompt:
+            return ""
+        if "T/R" in prompt:
+            return "R"
+        raise StopBeforeNextSnap
+
+    monkeypatch.setattr("builtins.input", answer)
+
+    with (
+        patch("paydirt.game_engine.roll_chart_dice", side_effect=[(26, "return")]),
+        pytest.raises(StopBeforeNextSnap),
+    ):
+        cli.resume_game(str(save_path), compact=True)
+    output = capsys.readouterr().out
+    assert "END OF QUARTER 1" in output
+    assert output.count("END OF QUARTER 1") == 1

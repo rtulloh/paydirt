@@ -9,6 +9,7 @@ import pytest
 
 from paydirt.play_resolver import PlayType
 from tests import ai_audit
+from tests.clock_invariants import ClockInvariantAudit
 from tests.semantic_audit import SemanticAudit
 
 
@@ -73,6 +74,7 @@ def synthetic_report(teams: list[str]) -> dict:
                     "untimed_down_pending": False,
                 },
                 "semantics": SemanticAudit().report(),
+                "clock_invariants": ClockInvariantAudit().report(),
             }
         )
     report = ai_audit.make_report(games)
@@ -130,6 +132,8 @@ def test_complete_synthetic_ai_evidence_reconciles(teams: list[str]) -> None:
         "bool-score",
         "invalid-semantic-count",
         "missing-semantics",
+        "clock-coverage-summary",
+        "missing-clock-invariants",
         "coverage-summary",
         "summary-count",
         "summary-groups",
@@ -192,13 +196,18 @@ def test_ai_report_mutants_fail_even_after_rebuilding_their_own_summary(
         game["semantics"]["covered"]["incomplete"] = -1
     elif mutation == "missing-semantics":
         game.pop("semantics")
+    elif mutation == "missing-clock-invariants":
+        game.pop("clock_invariants")
     elif mutation == "wrong-python":
         report["python"] = "0.0.0"
     if mutation not in {"empty-report", "wrong-version", "wrong-run"}:
         rebuilt = ai_audit.make_report(report["games"])
-        report.update(summary=rebuilt["summary"], semantic_coverage=rebuilt["semantic_coverage"])
+        report.update(summary=rebuilt["summary"], semantic_coverage=rebuilt["semantic_coverage"],
+                      clock_invariant_coverage=rebuilt["clock_invariant_coverage"])
     if mutation == "coverage-summary":
         report["semantic_coverage"]["incomplete"] += 1
+    elif mutation == "clock-coverage-summary":
+        report["clock_invariant_coverage"]["accepted_foul"] += 1
     elif mutation == "summary-count":
         report["summary"]["calls"] += 1
     elif mutation == "summary-groups":
@@ -208,7 +217,8 @@ def test_ai_report_mutants_fail_even_after_rebuilding_their_own_summary(
     elif mutation == "hidden-concentration-warning":
         game["calls"] = [deepcopy(call) for _ in range(30)]
         rebuilt = ai_audit.make_report(report["games"])
-        report.update(summary=rebuilt["summary"], semantic_coverage=rebuilt["semantic_coverage"])
+        report.update(summary=rebuilt["summary"], semantic_coverage=rebuilt["semantic_coverage"],
+                      clock_invariant_coverage=rebuilt["clock_invariant_coverage"])
         assert report["summary"]["warnings"]
         report["summary"]["warnings"] = []
     result = validate(report, teams)

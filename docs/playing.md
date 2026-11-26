@@ -111,10 +111,17 @@ fumble returns here; they do not grant the automatic touchdown used for blocked
 kicks.
 
 If a punt-chart foul is followed by a snap-fumble reroll, the offended team
-chooses between enforcing the foul and keeping that fumble. Recovery remains
-pending until the choice: accepting the foul cancels the fumble; declining it
-resolves the stored fumble without rolling another punt.
-The same choice preserves a blocked-punt reroll and defers its recovery.
+chooses between enforcing the foul and keeping that fumble. The recovery roll
+happens **before** the choice, so the offer names the completed outcome — who
+recovered, the resulting down and distance, or a safety, touchdown or turnover
+on downs — next to the enforced penalty. Accepting the foul cancels the fumble;
+declining it applies the recovery you were shown, without rolling another punt
+or a second recovery. That includes the advance a recovery roll of 17-19 or
+37-39 triggers: the preview resolves that return, and declining replays it
+rather than rolling the return chart again, so the spot, score and any chained
+fumble match what the offer described. A blocked-punt reroll keeps its own
+kick-recovery roll
+when the play is kept, and its offer says so rather than implying a fumble.
 Fair-catch/downed markers remain effective after a foul reroll, and a touchback
 retains the kick-foul choice. A declined foul stays in the final description
 alongside the saved kick result.
@@ -129,8 +136,10 @@ name the same actual team, the offended team can take the kick foul from the
 previous spot or keep the resolved return with its return foul. These choices
 enforce one foul. A genuine offset cancels the punt, preserves the down and
 charges ten seconds. An accepted defensive foul or offset at period expiry
-preserves an untimed down. An accepted kick foul preserves its own first-down
-rights and the original down when no first down is awarded.
+preserves an untimed down. An accepted offensive (kicking-team) foul at expiry
+does not: the replay is an ordinary timed down, so the period can end. An
+accepted kick foul preserves its own first-down rights and the original down
+when no first down is awarded.
 When a replay is announced, choose the next play from that preserved situation.
 A return foul cannot exceed half the distance to the offender's goal line. A
 half-yard spot rounds toward midfield, and the box score records the actual
@@ -141,8 +150,9 @@ five-yard foul and one fifteen-yard foul, and neither awards an automatic first
 down. It disregards the five, cancels the return and assesses the fifteen from
 the catch against the actual fouling team, using half the distance when needed.
 The receiving team starts first and ten; canceled return scores and fumble
-recoveries do not count. An accepted foul against the kicking team preserves an
-untimed down when time expires.
+recoveries do not count. An accepted foul against the kicking team (a defensive
+foul on the kicking team's chart) preserves an untimed down when time expires; a
+foul by the kicking team itself does not.
 
 After a touchdown, kick for one point or try for two if the season rules permit it.
 Availability is controlled by [season YAML](seasons.md#season-rules), not just the year in the team name.
@@ -246,6 +256,13 @@ status shows one location, for example `1st & Goal @ AWAY 6`.
 Turnover-on-downs results and pass-interference first downs are announced once
 in the final play output; penalty-choice previews and scoring summaries remain separate.
 
+When rerolls produce the same foul more than once, the offended team is offered it
+once. Distinct fouls stay separate choices: a different yardage, an automatic first
+down, or pass interference. The play result is always option `[1]`, so penalty
+options are numbered from `[2]` in both the options preview and the decision prompt,
+and each foul keeps the same number in both places. The reroll log still lists every
+rolled row.
+
 Colorful narration uses a separate random stream: displaying or reformatting a play
 does not advance the game's dice/coaching RNG. Seeded interactive games from older
 versions can consequently follow different sequences; rendering no longer affects
@@ -278,6 +295,11 @@ return to the opposite goal awards two points to the defense. Tries are untimed,
 belong to the touchdown’s period, and do not add ordinary yardage, first downs,
 or turnovers to the box score. The touchdown team still kicks off afterward,
 except when halftime or the final result determines the next phase.
+
+The scoring summary keeps the try on its touchdown's row. A good extra point or
+two-point conversion is listed there, and so is a failed one ("Extra point is no
+good." or "Two-point conversion is no good."). A failed try adds no points and
+no separate scoring line, so the summary still totals to the final score.
 
 ## Strategy Tips
 

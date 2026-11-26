@@ -31,8 +31,9 @@ def trailing_game(minutes: float = 15, deficit: int = 14, home: bool = True):
 
 @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
 @pytest.mark.parametrize("home", [True, False])
-def test_full_quarter_comeback_can_run_without_giving_up_hurry_up_pace(difficulty: str, home: bool) -> None:
+def test_late_comeback_can_run_without_giving_up_hurry_up_pace(difficulty: str, home: bool) -> None:
     game, _ = trailing_game(home=home)
+    game.state.time_remaining = 2.5
     ai = create_computer_ai(difficulty, game, home)
     ai._offense_rng = random.Random(8306)
     counts = Counter()
@@ -119,7 +120,7 @@ def test_hurry_up_goal_line_does_not_choose_long_routes_for_one_yard() -> None:
 
 
 def test_hurry_up_preview_weights_are_read_only_and_match_sampled_candidates() -> None:
-    game, ai = trailing_game()
+    game, ai = trailing_game(minutes=2.5)
     before = deepcopy(game.offensive_call_history), deepcopy(game.state.possession_team.offense), random.getstate()
     weights = ai.get_hurry_up_weights(game)
     with patch.object(ai._offense_rng, "choices", return_value=[next(iter(weights))]) as choose:
@@ -128,12 +129,18 @@ def test_hurry_up_preview_weights_are_read_only_and_match_sampled_candidates() -
     assert (game.offensive_call_history, game.state.possession_team.offense, random.getstate()) == before
 
 
-@pytest.mark.parametrize("mode", ["fourth", "hail", "field-goal", "victory"])
+@pytest.mark.parametrize("mode", ["hail", "field-goal", "victory"])
 def test_terminal_coaching_priorities_still_bypass_hurry_up_mixture(mode: str) -> None:
+    """Kicks, Hail Mary and victory formation keep their own priority.
+
+    Fourth down used to be listed here. AI-037 established that only the
+    fourth-down *decision* outranks the hurry-up mixture: a kick still bypasses
+    it, but a conversion attempt now uses the same mixture as 1st-3rd down.
+    That case is covered by
+    ``tests/test_ai_037_fourth_down_pace.py``.
+    """
     game, ai = trailing_game(minutes=.1)
-    if mode == "fourth":
-        game.state.down, game.state.time_remaining = 4, 1
-    elif mode == "field-goal":
+    if mode == "field-goal":
         game.state.home_score, game.state.away_score = 0, 3
         game.state.ball_position = 80
     elif mode == "victory":
@@ -141,6 +148,27 @@ def test_terminal_coaching_priorities_still_bypass_hurry_up_mixture(mode: str) -
     with patch.object(ai, "get_hurry_up_weights", create=True,
                       side_effect=AssertionError("unexpected hurry-up mixture")):
         assert isinstance(ai.select_offense(game), PlayType)
+
+
+def test_fourth_down_kick_still_bypasses_hurry_up_mixture() -> None:
+    """The fourth-down decision still outranks the mixture when it kicks."""
+    game, ai = trailing_game(minutes=.1)
+    game.state.down, game.state.time_remaining = 4, 1
+    with patch.object(ai, "_fourth_down_decision",
+                      return_value=(PlayType.PUNT, False, 0)), \
+            patch.object(ai, "get_hurry_up_weights", create=True,
+                         side_effect=AssertionError("unexpected hurry-up mixture")):
+        assert ai.select_offense(game) == PlayType.PUNT
+
+
+def test_fourth_down_conversion_uses_hurry_up_mixture() -> None:
+    """AI-037: a conversion attempt is not a separate play-calling universe."""
+    game, ai = trailing_game(minutes=.1)
+    game.state.down, game.state.time_remaining = 4, 1
+    with patch.object(ai, "get_hurry_up_weights",
+                      wraps=ai.get_hurry_up_weights) as mixture:
+        assert isinstance(ai.select_offense(game), PlayType)
+    assert mixture.called
 
 
 def test_eight_point_deficit_is_more_urgent_when_season_has_no_two_point_conversion() -> None:

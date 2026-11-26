@@ -27,8 +27,8 @@ def test_cli_cpu_defense_spends_its_own_timeout(
     game.state.quarter = 4
     game.state.time_remaining = 1.0
     game.state.two_minute_warning_called = True
-    game.state.home_score = 19 if human_home else 3
-    game.state.away_score = 3 if human_home else 19
+    game.state.home_score = 10 if human_home else 3
+    game.state.away_score = 3 if human_home else 10
     if not trailing:
         game.state.home_score, game.state.away_score = game.state.away_score, game.state.home_score
     ai = Mock(use_analysis=False)

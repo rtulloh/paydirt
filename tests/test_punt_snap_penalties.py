@@ -28,7 +28,9 @@ def pending_snap(
     with patch("paydirt.game_engine.roll_chart_dice", side_effect=[(n, f"Roll {n}") for n in [10, 11, 12, 20]]) as rolls:
         method = game.run_play_with_penalty_procedure if procedure else game.run_play
         outcome = method(PlayType.PUNT, DefenseType.STANDARD)
-    assert rolls.call_count == 2
+    # RULE-034: the foul, the yardage reroll and the recovery roll are all
+    # consumed before the choice is presented.
+    assert rolls.call_count == 3
     assert outcome.pending_penalty_decision
     assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == (position, down, distance)
     assert game.state.is_home_possession
@@ -37,7 +39,10 @@ def pending_snap(
     assert not game.play_log
     assert game.state.time_remaining == 10
     assert outcome.result.raw_result == cell
-    assert outcome.result.fumble_recovery_roll == 0
+    # The recovery is known before the choice; nothing is applied to live state.
+    assert outcome.result.fumble_recovery_roll == 12
+    assert outcome.result.fumble_resolved
+    assert outcome.pending_fumble_facts is not None
     assert not outcome.touchdown and not outcome.safety and not outcome.turnover
     return game, outcome, observer
 
@@ -50,12 +55,15 @@ def test_declining_punt_foul_resolves_the_saved_snap_fumble(
     foul: str, procedure: bool, down: int, recovery: int,
 ) -> None:
     game, pending, observer = pending_snap(foul, down, procedure=procedure)
-    with (patch("paydirt.game_engine.roll_chart_dice", return_value=(recovery, "recovery")) as rolls,
+    # RULE-034: the pending outcome already resolved recovery with roll 12.
+    # Declining replays that resolved play; it must not roll recovery again.
+    with (patch("paydirt.game_engine.roll_chart_dice") as rolls,
           patch("paydirt.game_engine.random.uniform", return_value=8)):
         outcome = game.apply_punt_penalty_decision(pending, accept_penalty=False)
     observer.on_result(game, outcome)
     observer.finalize_game(game)
-    keeps = recovery == 20 and down < 4
+    recovery = 12
+    keeps = down < 4
     assert game.state.is_home_possession is keeps
     assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == ((30, 3, 18) if keeps else (70, 1, 10))
     assert outcome.result.result_type == ResultType.FUMBLE
@@ -64,13 +72,13 @@ def test_declining_punt_foul_resolves_the_saved_snap_fumble(
     assert outcome.result.dice_roll == 11
     assert outcome.result.punt_return_dice == 0
     assert not outcome.pending_penalty_decision and not outcome.penalty_applied
-    assert outcome.turnover_on_downs is (down == 4 and recovery == 20)
+    assert outcome.turnover_on_downs is (down == 4 and outcome.result.fumble_recovered)
     assert game.state.home_stats.fumbles_lost == int(recovery == 35)
     assert game.state.home_stats.penalties == game.state.away_stats.penalties == 0
     assert observer.report()["teams"]["HOME"]["rushing_attempts"] == 1
     assert game.play_log == [outcome]
     assert game.state.time_remaining == pytest.approx(10 - 8 / 60)
-    rolls.assert_called_once()
+    rolls.assert_not_called()
     assert not hasattr(game, "_pending_punt_state")
 
 
@@ -126,16 +134,35 @@ def test_accepted_foul_after_snap_reroll_uses_core_half_expiration(foul: str) ->
     assert game.state.home_score == game.state.away_score == 0
 
 
-def test_pending_snap_choice_has_a_core_owned_unresolved_preview() -> None:
+def test_pending_snap_choice_describes_the_completed_recovery() -> None:
+    """RULE-034: the keep-the-play option names the recovered spot, not a gamble.
+
+    The previous expectation here asserted a "recovery pending" label. That
+    label was the defect: the recovery roll is required by the procedure, so
+    the offended team must be told its result before choosing.
+    """
     _, pending, _ = pending_snap("OFF 5", 2)
-    assert pending.penalty_choice.play_result_preview
-    assert "recovery pending" in pending.penalty_choice.play_result_preview.lower()
+    preview = pending.penalty_choice.play_result_preview
+    assert preview
+    assert "recovery pending" not in preview.lower()
+    assert "HOME recovers" in preview
+    assert "3rd & 18 at HOME 30" in preview
 
 
-def test_pending_snap_does_not_fabricate_a_resolved_turnover() -> None:
-    _, pending, _ = pending_snap("OFF 5", 2)
-    assert not pending.result.fumble_resolved
-    assert not pending.result.turnover
+def test_pending_snap_resolves_recovery_without_applying_the_play() -> None:
+    """Recovery facts are known, but live possession, score and log are not.
+
+    The previous expectation asserted ``not pending.result.fumble_resolved``,
+    which encoded the deferred roll. The recovery is now resolved before the
+    choice; what must still hold is that no state was applied.
+    """
+    game, pending, _ = pending_snap("OFF 5", 2)
+    assert pending.result.fumble_resolved
+    assert not pending.result.turnover, "recovery is resolved but the play is not applied"
+    assert game.state.is_home_possession
+    assert (game.state.ball_position, game.state.down) == (40, 2)
+    assert game.state.home_score == game.state.away_score == 0
+    assert not game.play_log
 
 
 def test_pending_snap_penalty_has_a_core_owned_enforcement_preview() -> None:

@@ -192,10 +192,18 @@ def situational_game(
     return engine
 
 
-def test_defense_keeps_a_terminal_made_kick_that_wins_the_game(
+def test_defense_enforces_a_terminal_made_kick_foul_to_run_out_the_clock(
     game: PaydirtGameEngine,
 ) -> None:
-    """Erasing a last-second field goal would hand the offense a winning down."""
+    """RULE-005: enforcement expires the clock, so the defense wins 6-0, not 6-3.
+
+    This test previously expected the defense to keep the made kick. That
+    expectation depended on an accepted *offensive* foul incorrectly setting
+    ``untimed_down_pending``: with a phantom extra down, enforcing traded a won
+    game for a live snap. An offensive foul no longer extends the period, so the
+    replay interval expires the clock and denying the three points is strictly
+    better for the defense.
+    """
     kicking_is_home = game.state.is_home_possession
     game = situational_game(
         seconds=3, quarter=4, kicking_score=0, defending_score=6,
@@ -205,15 +213,15 @@ def test_defense_keeps_a_terminal_made_kick_that_wins_the_game(
     assert outcome.field_goal_made is True
 
     accept_play, index = decide(game, outcome)
-    assert (accept_play, index) == (True, 0)
+    assert (accept_play, index) == (False, 0)
 
     final = game.apply_fg_penalty_decision(outcome, accept_play, index)
-    assert not final.penalty_applied
+    assert final.penalty_applied
     assert game.state.game_over is True
-    # The kick adds three, but the defense still wins 6-3.
-    kicked, defender = ((3, 6) if kicking_is_home else (6, 3))
+    assert game.has_untimed_down() is False
+    # The erased kick never scores: the defense wins 6-0 in either orientation.
+    kicked, defender = ((0, 6) if kicking_is_home else (6, 0))
     assert score(game) == (kicked, defender)
-    assert game.state.home_score != game.state.away_score
 
 
 def test_terminal_guard_does_not_apply_when_time_remains(game: PaydirtGameEngine) -> None:

@@ -181,7 +181,16 @@ class TeamChart:
 
     @property
     def full_name(self) -> str:
-        return f"{self.peripheral.year} {self.peripheral.team_name} {self.peripheral.team_nickname}"
+        components = [str(self.peripheral.year)]
+        for component in (self.peripheral.team_name, self.peripheral.team_nickname):
+            value = component.strip()
+            if not value:
+                continue
+            previous = components[-1].lower()
+            if previous == value.lower() or previous.endswith(f" {value.lower()}"):
+                continue
+            components.append(value)
+        return " ".join(components)
 
     @property
     def short_name(self) -> str:

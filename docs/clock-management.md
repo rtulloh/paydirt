@@ -47,8 +47,11 @@ ordinary ten-second sideline timing on a flagged play.
 
 Special kicks retain their existing timing; offsetting fouls retain their
 separate ten-second timing. At expiry, only an accepted defensive foul or
-offsetting fouls extend the period. This is a selected use of the rulebook's
-alternate method, not an implementation of that entire optional system.
+offsetting fouls extend the period. An accepted offensive foul on a field-goal
+attempt therefore replays the down on the clock: the replay interval can expire
+the period, and it never creates a free snap. This is a selected use of the
+rulebook's alternate method, not an implementation of that entire optional
+system.
 
 ### Interceptions and Other Change-of-Possession Plays
 
@@ -98,6 +101,18 @@ For example, from Q2 0:45 a 35-second touchdown play, untimed PAT, and
 kickoff leave 15 seconds for another snap, even if the kicking team
 recovers a return fumble. These are illustrative durations, not inferred
 rolls from an earlier game. This evidence does not change timing rules.
+
+A quarter-one or quarter-three score announces `END OF QUARTER` with the score
+itself, before the untimed try and before the kickoff, which is taken in the new
+period. The announcement follows the `Clock:` record that reports the period
+ended, so the reading order matches the game order. Halftime is the deliberate
+exception: `END OF QUARTER 2` and the halftime summary still wait for the
+second-half kickoff. The score, the period totals and the quarter the touchdown
+is credited to are unaffected.
+
+The announcement replaces only the banner. A CPU-vs-CPU game with statistics
+enabled still prints its quarterly box score for that period, and a resumed game
+that restores a scoring end-zone interception announces the period once.
 
 ## Saving Time
 
@@ -156,6 +171,18 @@ The same elapsed time must not be reduced twice by overlapping adjustments.
 The CPU uses shared clock-preservation thresholds across difficulty levels. Easy does not deliberately
 waste its timeout budget, and Hard does not receive a different timeout allowance.
 Two-minute warnings in the second and fourth quarters are handled automatically.
+
+A trailing CPU defense only spends a timeout while a comeback is still plausible.
+One- and two-score deficits keep the existing fourth-quarter windows: inside two
+minutes for any deficit, inside four minutes when trailing by at least eight, or
+inside five minutes when trailing by at least fourteen.
+A deficit requiring three or more scores must also fit a bounded scoring drive
+for every remaining score and for the opponent's next score, because the timeout
+does not end the opponent's possession. Thus down 32 with 4:30 left and down 17
+with 2:58 left retain their timeouts, while a genuine two-score state still calls
+one. This is coaching arithmetic, not a win-probability model. The end-of-half
+timeout rules are unchanged. `AI-039` tracks this; `AI-035` covers the offensive
+pace decision in the same late-game state.
 
 ## Spike Modifier and Combinations
 

@@ -53,6 +53,13 @@ RECORD_EXTRAS = {
     },
 }
 
+# Dataclass fields added after the first portable-session format shipped.
+# Older checkpoints legitimately omit them; restore with these closed defaults.
+RECORD_DEFAULTS = {
+    game_state.ScoringPlay: {'try_result': '', 'try_kind': ''},
+    game_state.PlayOutcome: {'pending_fumble_facts': None},
+}
+
 OBJECT_TYPES = {
     'paydirt.game_engine.PaydirtGameEngine', 'paydirt.computer_ai.ComputerAI',
     'paydirt.ai_analysis.OpponentModel', 'paydirt.ai_analysis.OpponentTendencyTracker',
@@ -305,9 +312,10 @@ class Codec:
             if cls is not None and is_dataclass(cls):
                 names = {f.name for f in fields(cls)}
                 extra = set(RECORD_EXTRAS.get(cls, {}))
-                if not names <= set(attrs) or not set(attrs) <= names | extra:
+                field_defaults = RECORD_DEFAULTS.get(cls, {})
+                if not names - field_defaults.keys() <= set(attrs) or not set(attrs) <= names | extra:
                     raise ValueError('Unknown record fields')
-                decoded = {k: dec(v) for k, v in attrs.items()}
+                decoded = {**field_defaults, **{k: dec(v) for k, v in attrs.items()}}
                 _validate_record(cls, decoded)
                 obj = cls(**{k: v for k, v in decoded.items() if k in names})
                 for k in extra & decoded.keys():

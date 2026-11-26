@@ -123,8 +123,21 @@ def _complete_auto_outcome(
     game: PaydirtGameEngine, outcome: PlayOutcome, offense_home: bool,
     quarter_before: int, home_ai: ComputerAI, away_ai: ComputerAI,
     on_result: Callable[[PaydirtGameEngine, PlayOutcome], None] | None = None,
+    on_period_end: Callable[[int], None] | None = None,
 ) -> None:
-    """Display finalized engine results and complete any scoring/kickoff chain."""
+    """Display finalized engine results and complete any scoring/kickoff chain.
+
+    Args:
+        game: The game engine.
+        outcome: The resolved play, including any foul decisions.
+        offense_home: Whether the offense was the home team.
+        quarter_before: Period in which this action started.
+        home_ai: The home coach.
+        away_ai: The away coach.
+        on_result: Called once with the finalized call, before any kick chain.
+        on_period_end: Called with the Q1/Q3 period number when the score ended
+            it, so the caller's quarter handler does not announce it twice.
+    """
     for _ in range(500):
         outcome = _resolve_auto_penalties(game, outcome, offense_home, home_ai, away_ai)
         if on_result is not None:
@@ -145,6 +158,13 @@ def _complete_auto_outcome(
         if outcome.touchdown:
             if not game.can_attempt_conversion_after_touchdown():
                 return
+            # FLOW-043: a Q1/Q3 score ends the period but still owes its try and
+            # a kickoff taken in the new period, so announce the period end
+            # here rather than after the chain has run.
+            if quarter_before in (1, 3) and game.state.quarter == quarter_before + 1:
+                print(f"\n  END OF QUARTER {quarter_before}")
+                if on_period_end is not None:
+                    on_period_end(quarter_before)
             _, description = game.attempt_extra_point()
             print(f"  {description}")
         elif not outcome.field_goal_made and not outcome.safety:
@@ -267,6 +287,17 @@ def run_auto_game(
     play_count = 0
     last_quarter = 1
 
+    announced_periods: set[int] = set()
+
+    def _sync_quarter(announced: int) -> None:
+        """Record a period the score already announced.
+
+        FLOW-043 announces a Q1/Q3 period end with the score. The loop's own
+        transition block must still run for the quarterly box score, so this
+        only marks the banner as printed instead of advancing the tracker.
+        """
+        announced_periods.add(announced)
+
     # Main game loop
     while not game.state.game_over:
         state = game.state
@@ -289,7 +320,9 @@ def run_auto_game(
         # Check for quarter change
         if state.quarter != last_quarter:
             print("\n" + "=" * 70)
-            print(f"  END OF QUARTER {last_quarter}")
+            if last_quarter not in announced_periods:
+                # FLOW-043: a Q1/Q3 score already printed this banner.
+                print(f"  END OF QUARTER {last_quarter}")
             if display_stats:
                 display_box_score(game, f"QUARTER {last_quarter} STATS")
             print("=" * 70)
@@ -390,7 +423,8 @@ def run_auto_game(
                                                         call_spike=use_spike)
 
         _complete_auto_outcome(
-            game, outcome, offense_home, quarter_before, home_ai, away_ai, observe_selected_call)
+            game, outcome, offense_home, quarter_before, home_ai, away_ai,
+            observe_selected_call, _sync_quarter)
 
         play_count += 1
         time.sleep(delay)

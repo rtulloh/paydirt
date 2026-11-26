@@ -166,6 +166,8 @@ offensive plays rather than repeatedly overriding its call with one chart winner
 primary offensive plays use the same policy; B and QT are secondary tables, never standalone calls.
 Goal-line, red-zone, fourth-down, and clock-killing policies still take precedence
 outside hurry-up; hurry-up reuses the chart/history mixture with urgency weighting.
+For fourth down the decision itself takes precedence, and a conversion attempt then
+uses that same hurry-up mixture rather than a separate go-for-it table.
 
 The chart score favors reaching half the distance on first down, 70% on second down,
 and the full distance on third down (rounded up, at least one yard). It also considers
@@ -267,13 +269,15 @@ conceding three points. A missed kick still keeps its existing policy, and the
 kicking team keeps a made kick when it is the offended side.
 
 A terminal made kick is not worth trading for a live down, so one engine-checked
-guard overrides enforcement. The engine projects both choices on a throwaway
-copy, including the resulting score, clock, period, game-over and untimed-down
-state, without touching live state, statistics, the play log or dice. If keeping
-the kick ends the game with the defense ahead and enforcing the foul leaves the
-game unfinished, the defense keeps the kick. This only restores a won game; with
-time remaining the defense still prefers denying the three points, and a tied or
-trailing kick is unaffected.
+guard stands ready to override enforcement. The engine projects both choices on
+a throwaway copy, including the resulting score, clock, period, game-over and
+untimed-down state, without touching live state, statistics, the play log or
+dice. If keeping the kick ends the game with the defense ahead and enforcing the
+foul leaves the game unfinished, the defense keeps the kick. RULE-005 removed
+the phantom extension that made this guard necessary: an accepted offensive kick
+foul no longer adds an untimed down, so enforcement itself expires the clock and
+the guard no longer fires on the reported scenarios. It stays as a safety check
+for any future rule that leaves enforcement live.
 
 When the live game state is available, a trailing defense in the fourth quarter
 adds one late-game check before enforcing an offensive foul. The engine projects
@@ -317,11 +321,30 @@ In regulation Q4, a trailing CPU offense enters hurry-up below the configured mu
 
 This additional gate does not apply while tied or leading, in earlier quarters, or in overtime. When it applies, ordinary, analyzed, red-zone, goal-line, and fourth-down calls request no-huddle consistently; eligible passing calls retain the configured chance to use the sideline designation.
 
+### Fourth-Down Pace
+
+The fourth-down *decision* is evaluated before the two-minute drill, so a punt or field goal keeps its own priority. Once that decision selects a conversion attempt, the attempt uses the same pace and play mixture as first through third down:
+
+- Either pace predicate enables no-huddle. The two-minute drill also covers the end of the second quarter and a Q4 deficit of at least 14 inside the configured `q4_always_minutes` window, so a fourth-down conversion in those states is not left on ordinary pace. A larger Q4 deficit during the rest of the quarter uses the same clock-based hurry-up gates as every other call.
+- Hard's conversion attempt samples the hurry-up chart/history mixture instead of the separate go-for-it table, so the call still respects down, distance, chart strength and recent calls.
+- The sideline designation is drawn from the coaching stream, never the gameplay dice.
+- A punt or field goal keeps its pre-existing pace flagging; reaching the two-minute drill never turns a kick into a conversion.
+
+`AI-037` tracks this. `AI-038` closes the former Q4 `-14` catch-all with the same clock bound described above.
+
 ## Shared Clock Policy
 
 All three modes use the same offensive and defensive timeout thresholds and accounting.
 Neither aggression nor Hard analysis changes those thresholds. See [clock management](clock-management.md)
 for timeout ownership, stopped-clock safeguards, and modifier interactions.
+
+A trailing defense keeps its one- and two-score timeout windows unchanged: four
+minutes at an eight-point deficit and five minutes at fourteen. A
+three-or-more-score deficit must also fit the remaining clock before a timeout
+is spent. The estimate allows a bounded scoring drive for every needed score and
+for the opponent's next score; it is coaching arithmetic, not a win estimate.
+The 32-point fourth-quarter blowout from the 2026-11-25 play-test therefore keeps
+its timeouts, while a one-score state still calls one. `AI-039` tracks this.
 
 ### Hurry-Up Play Choice
 

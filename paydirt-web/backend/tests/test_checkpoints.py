@@ -189,6 +189,74 @@ def test_checkpoint_rejects_wrong_engine_field_types(client, field, value):
     assert set(routes.games) == before
 
 
+def test_checkpoint_without_try_outcome_fields_still_restores(client):
+    """Checkpoints written before AUD-034 omit the try fields on scoring plays."""
+    game_id = new_game(client)
+    engine = routes.games[game_id]['engine']
+    from paydirt.game_state import ScoringPlay
+    engine.state.scoring_plays.append(ScoringPlay(
+        quarter=1, time_remaining=100.0, team='AAA', is_home_team=True,
+        play_type='TD', description='Synthetic touchdown', points=6,
+    ))
+    checkpoint = client.post(f'/api/game/checkpoint/{game_id}').json()['checkpoint']
+    data = json.loads(checkpoint)
+    attrs = data['engine']['attrs']['state']['attrs']['scoring_plays']['sequence'][0]['attrs']
+    attrs.pop('try_result')
+    attrs.pop('try_kind')
+    response = client.post('/api/game/restore', json={'checkpoint': json.dumps(data)})
+    assert response.status_code == 200, response.text
+    restored = routes.games[response.json()['game_id']]
+    play = restored['engine'].state.scoring_plays[0]
+    assert (play.try_result, play.try_kind) == ('', '')
+
+
+def test_checkpoint_without_pending_fumble_facts_still_restores(client):
+    """Checkpoints written before RULE-034 omit pending_fumble_facts from plays."""
+    game_id = new_game(client)
+    engine = routes.games[game_id]['engine']
+    from paydirt.game_state import PlayOutcome
+    from paydirt.play_resolver import (
+        DefenseType,
+        PlayResult,
+        PlayType,
+        ResultType,
+    )
+    engine.play_log.append(PlayOutcome(
+        play_type=PlayType.MEDIUM_PASS, defense_type=DefenseType.STANDARD,
+        result=PlayResult(result_type=ResultType.YARDS, yards=4),
+        description='Synthetic logged play',
+    ))
+    checkpoint = client.post(f'/api/game/checkpoint/{game_id}').json()['checkpoint']
+    data = json.loads(checkpoint)
+    play_log = data['engine']['attrs']['play_log']['sequence']
+    assert play_log
+    for record in play_log:
+        record['attrs'].pop('pending_fumble_facts')
+    response = client.post('/api/game/restore', json={'checkpoint': json.dumps(data)})
+    assert response.status_code == 200, response.text
+    restored = routes.games[response.json()['game_id']]
+    assert restored['engine'].play_log[-1].pending_fumble_facts is None
+
+
+def test_checkpoint_preserves_pending_fumble_facts(client):
+    """A pending snap fumble keeps its resolved recovery across a checkpoint."""
+    from tests.test_rule034_fumble_recovery_before_choice import pending_punt_foul
+    _, pending = pending_punt_foul("F - 10", rolls=[10, 11, 20])
+    assert pending.pending_fumble_facts is not None
+    game_id = new_game(client)
+    engine = routes.games[game_id]['engine']
+    engine.play_log.append(pending)
+    checkpoint = client.post(f'/api/game/checkpoint/{game_id}').json()['checkpoint']
+    restored = client.post('/api/game/restore', json={'checkpoint': checkpoint})
+    assert restored.status_code == 200, restored.text
+    resumed = routes.games[restored.json()['game_id']]['engine']
+    facts = resumed.play_log[-1].pending_fumble_facts
+    assert facts is not None
+    assert facts.recovery_roll == 20
+    assert facts.offense_recovers is True
+    assert facts.ball_position == pending.pending_fumble_facts.ball_position
+
+
 def test_checkpoint_serializes_retained_return_chain(client):
     from paydirt.game_engine import ReturnChain
     from paydirt.play_resolver import PlayResult, ResultType

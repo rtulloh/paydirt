@@ -22,6 +22,11 @@ class ScoringPlay:
     play_type: str  # "TD", "FG", "PAT", "2PT", "Safety", "Def TD", "Def 2PT"
     description: str
     points: int
+    # The resolved try: kind is "PAT" or "2PT", result is "good" or "no good".
+    # A failed try scores nothing, so it never becomes its own scoring play; the
+    # summary reads these instead.
+    try_result: str = ""
+    try_kind: str = ""
 
 
 @dataclass
@@ -251,8 +256,9 @@ class ClockTrace:
     def description(self) -> str:
         """Return display-ready evidence; clients must not reconstruct elapsed time."""
         def clock(quarter: int, seconds: float) -> str:
-            whole = round(seconds)
-            return f"Q{quarter} {whole // 60}:{whole % 60:02d} ({seconds:.3f}s)"
+            minutes = int(seconds // 60)
+            whole_seconds = int(seconds % 60)
+            return f"Q{quarter} {minutes}:{whole_seconds:02d} ({seconds:.3f}s)"
 
         detail = "; period ended" if self.period_ended else ""
         if self.note:
@@ -262,6 +268,39 @@ class ClockTrace:
             f"{clock(self.end_quarter, self.end_seconds)}; "
             f"requested {self.requested_seconds:.3f}s; charged {self.charged_seconds:.3f}s{detail}"
         )
+
+
+@dataclass
+class PendingFumbleFacts:
+    """Completed recovery facts carried while an accept/penalty choice is pending.
+
+    The recovery roll is consumed before the choice is presented, so the
+    offended team compares a known football outcome against enforcement
+    instead of guessing what a later die would say. ``random_state`` is the
+    stream from just before the recovery roll, so declining leaves the dice
+    exactly where they were while the choice was pending.
+
+    A recovery that chains into a return (rolls 17-19 and 37-39) resolves that
+    advance during the preview too. Its resolved chain is carried on the
+    retained ``PlayResult`` and replayed, so decline never rolls the return
+    chart a second time.
+    """
+
+    recovery_roll: int
+    offense_recovers: bool
+    possession_home: bool
+    ball_position: int
+    down: int
+    yards_to_go: int
+    touchdown: bool
+    safety: bool
+    turnover_on_downs: bool
+    home_score: int
+    away_score: int
+    preview: str
+    # Offsetting fouls on a chained return nullify the play: the down replays.
+    replay_down: bool = False
+    random_state: tuple | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass
@@ -317,4 +356,6 @@ class PlayOutcome:
     int_catch_depth: int = 0
     int_catch_field_position: str = ""
     interception_return_situation: str = ""
+    # Completed recovery facts for a retained fumble awaiting a penalty choice.
+    pending_fumble_facts: PendingFumbleFacts | None = None
     int_return_team: str = ""

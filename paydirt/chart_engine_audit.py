@@ -730,8 +730,12 @@ def audit_observer_conformance() -> dict[str, Any]:
             label = f"PUNT/{foul}->F - 10/{'accept' if accept else 'decline'}"
             with patch("paydirt.game_engine.roll_chart_dice", side_effect=lambda dice=dice: (next(dice, 35), "punt foul")):
                 pending = engine.run_play_with_penalty_procedure(PlayType.PUNT, DefenseType.STANDARD)
+                # RULE-034: the recovery roll is completed before the choice, so a
+                # pending snap fumble carries its recovery while live state, the
+                # log and possession stay unapplied.
                 if (not pending.pending_penalty_decision or not pending.result.punt_snap_fumble
-                        or pending.result.fumble_recovery_roll or pending.result.turnover or engine.play_log
+                        or pending.result.fumble_recovery_roll != 35 or pending.result.turnover
+                        or pending.pending_fumble_facts is None or engine.play_log
                         or engine.state.ball_position != 40 or not engine.state.is_home_possession):
                     checks.append({"case": label, "observed": False, "expected": True})
                     errors.append(f"observer {label}: missing or prematurely applied snap-fumble choice")

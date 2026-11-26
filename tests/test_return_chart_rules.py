@@ -71,7 +71,10 @@ class TestInterceptionReturns:
         assert 'Ret:35→"OFF 10"' in outcome.description
         assert 'Ret reroll:20→"52"' in outcome.description
         assert outcome.result.int_return_dice == 35
-        assert outcome.result.int_return_yards == 42  # Net of the penalty.
+        # Disclosed expectation change: this used to assert 42, the net spot
+        # delta. The chart return is 52; the 10-yard foul is reported beside it,
+        # not subtracted from the returner's yardage.
+        assert outcome.result.int_return_yards == 52
 
     def test_def_foul_on_the_return_adds_yards(self) -> None:
         game = game_with_return_chart({35: "DEF 15", 20: "20"}, returning_home=False)
@@ -275,3 +278,39 @@ class TestOffsettingOnOtherReturns:
         assert (game.state.ball_position, game.state.down, game.state.yards_to_go) == (75, 4, 6)
         assert outcome.turnover is False
         assert "OFFSETTING" in outcome.description.upper()
+
+
+class TestEnforcedReturnSummary:
+    """A return-chart foul reports the chart return, then the enforced yards.
+
+    In the 1983 CLE/PIT play-test the interception return cell was ``OFF 15``,
+    the reroll returned 0, and the final spot was the interceptor's own 14.
+    The play line said "Returned -13 yds" and the trace ``R:24→"-13"``: both
+    reported the net spot delta as if it were the chart return.
+    """
+
+    def test_off_15_with_zero_yard_return_reports_zero_not_net_delta(self) -> None:
+        # Intercepted at own 13; the return cell is a foul, the reroll returns 0.
+        game = game_with_return_chart({24: "OFF 15", 31: "0"}, returning_home=False)
+        game.state.ball_position = 80
+        outcome = run(game, interception(), 24, 31)
+
+        result = outcome.result
+        # The actual chart return is zero; the foul is assessed separately.
+        assert result.int_return_yards == 0, (
+            f"chart return should be 0, got {result.int_return_yards}"
+        )
+        assert result.int_spot == 13
+        assert game.state.ball_position == 7
+        assert game.state.away_stats.penalty_yards == 6  # half the distance to the goal
+        assert "Returned -6" not in outcome.description
+        assert 'R:24→"-6"' not in outcome.description
+
+    def test_summary_names_both_the_return_and_the_enforced_yards(self) -> None:
+        game = game_with_return_chart({24: "OFF 15", 31: "0"}, returning_home=False)
+        game.state.ball_position = 80
+        outcome = run(game, interception(), 24, 31)
+
+        text = outcome.description
+        assert "Return: 0 yards" in text
+        assert "OFF 15" in text

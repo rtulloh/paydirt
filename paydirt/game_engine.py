@@ -17,6 +17,7 @@ from .game_state import (
     FieldGoalPenaltyProjection,
     GameState,
     PenaltySituation,
+    PendingFumbleFacts,
     PlayOutcome,
     ScoringPlay,
     TeamStats,
@@ -1205,7 +1206,10 @@ class PaydirtGameEngine:
             stats.turnovers += 1
         touchdown = spot >= 100
         if touchdown:
-            self._score_touchdown()
+            scorer = self.state.home_chart if possession_home else self.state.away_chart
+            self._score_touchdown(
+                narrative=f"{scorer.peripheral.short_name} returns it for a TOUCHDOWN!"
+            )
         elif spot <= 0:
             self._score_safety()
         return touchdown
@@ -1515,7 +1519,10 @@ class PaydirtGameEngine:
             # Receiving team gets the ball at their 53 (kicking team's 47)
             self.state.is_home_possession = not kicking_home
             self.state.ball_position = 100 - ball_position_from_kicker  # = 53 from receiver's view
-            description = f'Onside kick FAILED! Receiving team recovers. (ON:{dice_roll}→"FAIL") Ball at own 53'
+            receiver = (self.state.home_chart if not kicking_home else self.state.away_chart).peripheral.short_name
+            kicker = (self.state.home_chart if kicking_home else self.state.away_chart).peripheral.short_name
+            receiving_spot = format_field_position_with_team(self.state.ball_position, receiver, kicker)
+            description = f'Onside kick FAILED! Receiving team recovers. (ON:{dice_roll}→"FAIL") Ball at {receiving_spot}'
 
         self.state.down = 1
         self.state.yards_to_go = 10
@@ -1721,8 +1728,10 @@ class PaydirtGameEngine:
         touchdown = self._apply_return_chain(chain, accept_choice=False)
         safety = chain.spot <= 0
         turnover = self.state.is_home_possession != offense_home
-        plain_return = turnover and not chain.penalties and not chain.fumbled
-        return_yards = chain.yards if plain_return else (chain.spot - int_spot_from_defense) if turnover else 0
+        # Report the chart's return, never the net spot delta. An enforced
+        # return foul changes where the ball is spotted but is not yardage the
+        # returner gained; the summary names the foul separately.
+        return_yards = chain.yards if turnover else 0
         if txn:
             txn.add_event(
                 create_return_event(
@@ -1793,7 +1802,6 @@ class PaydirtGameEngine:
             down_before: Down before the play
             ytg_before: Yards to go before the play
             txn: Optional transaction to add events to
-
         Returns:
             tuple: (turnover, touchdown, safety, first_down)
         """
@@ -1894,7 +1902,9 @@ class PaydirtGameEngine:
                 self._record_turnover(interception=False)
                 self.state.switch_possession()
                 result.scoring_team = def_team
-                self._score_touchdown()
+                self._score_touchdown(
+                    narrative=f"{def_team} recovers the fumble in the end zone. TOUCHDOWN!"
+                )
                 self.state.ball_position = 97
                 result.fumble_end_zone_touchdown = True
                 result.description = (
@@ -1914,7 +1924,9 @@ class PaydirtGameEngine:
                 # with totals 17, 18, or 19. (Auto TD on 19 only applies to blocked kicks, not fumbles)
                 if recovery_roll in [17, 18, 19]:
                     offense_home = self.state.is_home_possession
-                    chain = self._resolve_return_chain(
+                    # A preview may already have resolved this advance; replay it
+                    # rather than rolling the return chart a second time.
+                    chain = result.fumble_return_chain or self._resolve_return_chain(
                         offense_home, fumble_spot,
                         self.state.possession_team.special_teams.interception_return, "Ret",
                         end_rule=lambda advance: (max(0, min(100, fumble_spot + advance)), False),
@@ -2045,7 +2057,7 @@ class PaydirtGameEngine:
                 # Check for special return on recovery rolls 37, 38, 39
                 if recovery_roll in [37, 38, 39]:
                     offense_home = self.state.is_home_possession
-                    chain = self._resolve_return_chain(
+                    chain = result.fumble_return_chain or self._resolve_return_chain(
                         not offense_home, fumble_spot_defense,
                         self.state.defense_team.special_teams.interception_return, "Ret",
                     )
@@ -2139,6 +2151,10 @@ class PaydirtGameEngine:
         result.fumble_spot = min(fumble_spot, 99)
         result.fumble_recovered = offense_recovers
         result.fumble_resolved = True  # Mark as resolved so we don't re-roll on penalty acceptance
+        if chain is not None:
+            # Keep the resolved advance (including any chained fumble) so the
+            # decline path applies these facts instead of re-rolling them.
+            result.fumble_return_chain = chain
 
         return (turnover, touchdown, safety, first_down)
 
@@ -5642,14 +5658,19 @@ class PaydirtGameEngine:
     def _pending_punt_snap_fumble(
         self, result: PlayResult, punt_roll: int, ball_position: int, penalty: PenaltyOption,
     ) -> PlayOutcome:
-        """Keep the first nonpenalty reroll available without applying a recovery."""
+        """Retain a snap fumble so its resolved recovery can be offered with the foul."""
         return self._pending_punt_retained_result(result, punt_roll, ball_position, penalty, "snap fumble")
 
     def _pending_punt_retained_result(
         self, result: PlayResult, punt_roll: int, ball_position: int, penalty: PenaltyOption,
         kind: str, *, short_drop: bool = False, coffin_corner_yards: int = 0, punt_from: int | None = None,
     ) -> PlayOutcome:
-        """Retain a kick without consuming its recovery or substituting another lookup."""
+        """Retain the first nonpenalty reroll without substituting another lookup.
+
+        An ordinary punt or blocked kick keeps its kick-phase recovery for the
+        decline path. A snap fumble completes its recovery here (RULE-034) so the
+        accept/penalty offer can name the outcome instead of a pending gamble.
+        """
         result.dice_roll = punt_roll
         result.punt_snap_fumble = kind == "snap fumble"
         result.turnover = False
@@ -5670,23 +5691,226 @@ class PaydirtGameEngine:
             "retained_kind": kind,
             "punt_options": {"short_drop": short_drop, "coffin_corner_yards": coffin_corner_yards, "punt_from": punt_from},
         }
-        recovery_pending = kind != "punt"
-        preview = (f"{kind.capitalize()} ({result.raw_result}); recovery pending if the play is kept."
-                   if recovery_pending else self._punt_keep_result_preview(20))
+        if kind == "punt":
+            # A retained punt has no recovery to resolve: keeping it is the
+            # chart's touchback outcome.
+            return PlayOutcome(
+                play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
+                field_position_before=ball_position, field_position_after="pending",
+                down_before=self.state.down, down_after=self.state.down,
+                description=f"Punt-chart penalty {penalty.raw_result}; reroll {punt_roll}: {result.raw_result}. "
+                            "Accept the penalty or decline it and resolve the punt. "
+                            "Touchback if the punt is kept.",
+                penalty_choice=PenaltyChoice(
+                    play_result=result, penalty_options=[penalty],
+                    offended_team="defense" if penalty.penalty_type == "OFF" else "offense",
+                    play_result_preview=self._punt_keep_result_preview(20),
+                ),
+                pending_penalty_decision=True,
+            )
+        if kind == "blocked punt":
+            # A blocked kick resolves a kick-recovery roll rather than a fumble
+            # recovery. The roll stays in the retained-play path, so the choice
+            # preview must not imply the ball is still loose.
+            return PlayOutcome(
+                play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
+                field_position_before=ball_position, field_position_after="pending",
+                down_before=self.state.down, down_after=self.state.down,
+                description=f"Punt-chart penalty {penalty.raw_result}; reroll {punt_roll}: {result.raw_result}. "
+                            "Accept the penalty or decline it to play out the blocked kick.",
+                penalty_choice=PenaltyChoice(
+                    play_result=result, penalty_options=[penalty],
+                    offended_team="defense" if penalty.penalty_type == "OFF" else "offense",
+                    play_result_preview=f"Blocked punt ({result.raw_result}) - kick recovery is rolled when the play is kept",
+                ),
+                pending_penalty_decision=True,
+            )
+        # A fumble requires a recovery roll. Complete it now so the offended
+        # team compares a known outcome against enforcement.
+        facts = self._pending_fumble_facts(result, self.state.down, preview_kind=kind)
+        # Mirror the resolved recovery onto the retained cell so every consumer
+        # (display, trace, decline replay) reads one source of truth. A play
+        # nullified by offsetting return fouls is not a recovery at all.
+        if not facts.replay_down:
+            result.fumble_recovery_roll = facts.recovery_roll
+            result.fumble_recovered = facts.offense_recovers
+            result.fumble_resolved = True
         return PlayOutcome(
             play_type=PlayType.PUNT, defense_type=DefenseType.STANDARD, result=result,
             field_position_before=ball_position, field_position_after="pending",
             down_before=self.state.down, down_after=self.state.down,
             description=f"Punt-chart penalty {penalty.raw_result}; reroll {punt_roll}: {result.raw_result}. "
-                        f"Accept the penalty or decline it and resolve the {kind}. "
-                        + ("Recovery is pending." if recovery_pending else "Touchback if the punt is kept."),
+                        f"{facts.preview}. Accept the penalty or decline it to apply that result.",
             penalty_choice=PenaltyChoice(
                 play_result=result, penalty_options=[penalty],
                 offended_team="defense" if penalty.penalty_type == "OFF" else "offense",
-                play_result_preview=preview,
+                play_result_preview=facts.preview,
             ),
             pending_penalty_decision=True,
+            pending_fumble_facts=facts,
         )
+
+    def _pending_fumble_facts(
+        self, result: PlayResult, check_down: int, *, preview_kind: str,
+    ) -> PendingFumbleFacts:
+        """Complete a retained fumble's recovery before its penalty choice.
+
+        The recovery roll is consumed once, here, and the resulting possession,
+        spot, score and statistics are computed on a throwaway copy of the
+        engine. Nothing is committed to live state, the play log, the clock or
+        the real statistics until the offended team decides.
+
+        Args:
+            result: Retained result carrying the chart's fumble location.
+            check_down: Down to evaluate for a turnover on downs.
+            preview_kind: Human label for the retained play ("snap fumble",
+                "blocked punt").
+
+        Returns:
+            Completed recovery facts, including the restored dice stream.
+        """
+        rng_state = random.getstate()
+        probe = copy(self)
+        probe.state = deepcopy(self.state)
+        probe.play_log = []
+        probe._team_stats_context = {}
+        probe._team_stats_depth = 0
+        probe_result = deepcopy(result)
+        try:
+            turnover, touchdown, safety, _first_down = probe._handle_fumble(
+                probe_result, self.state.ball_position, result.yards, check_down,
+                self.state.yards_to_go,
+            )
+            # An offsetting foul on a chained return nullifies the play before the
+            # resolver records recovery facts, so the retained result is untouched.
+            if probe_result.replay_down:
+                return PendingFumbleFacts(
+                    recovery_roll=probe_result.fumble_recovery_roll,
+                    offense_recovers=probe_result.fumble_recovered,
+                    possession_home=self.state.is_home_possession,
+                    ball_position=self.state.ball_position,
+                    down=self.state.down,
+                    yards_to_go=self.state.yards_to_go,
+                    touchdown=False,
+                    safety=False,
+                    turnover_on_downs=False,
+                    home_score=probe.state.home_score,
+                    away_score=probe.state.away_score,
+                    preview=f"{preview_kind.capitalize()} ({result.raw_result}): "
+                            "offsetting penalties on the return nullify the play - replay the down",
+                    random_state=rng_state,
+                    replay_down=True,
+                )
+            # Carry the resolved advance back from the probe. The retained cell
+            # must replay these facts on decline, not re-roll the return chart.
+            result.fumble_return_chain = probe_result.fumble_return_chain
+            # Own recovery short of the marker on fourth down turns the ball
+            # over on downs, matching the applied-play predicate.
+            turnover_on_downs = (
+                turnover and probe_result.fumble_recovered and not touchdown and not safety
+            )
+            preview = self._retained_fumble_preview(
+                result, probe.state, touchdown=touchdown, safety=safety,
+                turnover_on_downs=turnover_on_downs, kind=preview_kind,
+            )
+            facts = PendingFumbleFacts(
+                recovery_roll=probe_result.fumble_recovery_roll,
+                offense_recovers=probe_result.fumble_recovered,
+                possession_home=probe.state.is_home_possession,
+                ball_position=probe.state.ball_position,
+                down=probe.state.down,
+                yards_to_go=probe.state.yards_to_go,
+                touchdown=bool(touchdown),
+                safety=bool(safety),
+                turnover_on_downs=bool(turnover_on_downs),
+                home_score=probe.state.home_score,
+                away_score=probe.state.away_score,
+                preview=preview,
+                random_state=rng_state,
+            )
+        finally:
+            random.setstate(rng_state)
+        return facts
+
+    def _retained_fumble_preview(
+        self, result: PlayResult, state: GameState, *, touchdown: bool, safety: bool,
+        turnover_on_downs: bool, kind: str,
+    ) -> str:
+        """Describe a completed recovery from the resulting team's viewpoint."""
+        recovering_team = state.possession_team.peripheral.short_name
+        spot_text = format_field_position_with_team(
+            clamp_ball_position(state.ball_position),
+            recovering_team,
+            state.defense_team.peripheral.short_name,
+        )
+        chart = f"{kind.capitalize()} ({result.raw_result})"
+        if touchdown:
+            return f"{chart}: {recovering_team} recovers for a TOUCHDOWN!"
+        if safety:
+            return f"{chart}: SAFETY - {state.defense_team.peripheral.short_name} scores 2"
+        if turnover_on_downs:
+            return f"{chart}: {recovering_team} takes over on downs at {spot_text}"
+        down_text = format_down_and_distance(
+            state.down, state.yards_to_go, 100 - state.ball_position,
+        )
+        return f"{chart}: {recovering_team} recovers, {down_text} at {spot_text}"
+
+    def _handle_retained_fumble(self, result: PlayResult, kind: str) -> PlayOutcome:
+        """Apply a retained fumble whose recovery was resolved before the choice."""
+        down_before, ytg_before = self.state.down, self.state.yards_to_go
+        turnover, touchdown, safety, first_down = self._handle_fumble(
+            result, self.state.ball_position, result.yards, down_before, ytg_before,
+        )
+        result.turnover, result.touchdown, result.first_down = turnover, touchdown, first_down
+        yards = result.yards + (result.fumble_return_yards if result.fumble_recovered else 0)
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=yards,
+            turnover=turnover,
+            turnover_on_downs=turnover and result.fumble_recovered and not touchdown and not safety,
+            touchdown=touchdown,
+            safety=safety,
+            first_down=first_down,
+            field_position_before=self.state.ball_position,
+            field_position_after=self.state.field_position_str(),
+            down_before=down_before,
+            down_after=self.state.down,
+            description=f"{kind.capitalize()}: {result.description}",
+        )
+        self.play_log.append(outcome)
+        self._use_time(10 if result.replay_down else random.uniform(5, 12))
+        outcome.clock_trace = self.last_clock_trace
+        return outcome
+
+    def _nullified_retained_fumble(self, result: PlayResult, kind: str) -> PlayOutcome:
+        """Replay the down after offsetting fouls nullify a retained fumble."""
+        down_before = self.state.down
+        result.replay_down = True
+        result.punt_snap_fumble = True
+        result.description = (
+            "FUMBLE nullified by OFFSETTING PENALTIES on the advance - replay the down"
+        )
+        outcome = PlayOutcome(
+            play_type=PlayType.PUNT,
+            defense_type=DefenseType.STANDARD,
+            result=result,
+            yards_gained=0,
+            field_position_before=self.state.ball_position,
+            field_position_after=self.state.field_position_str(),
+            down_before=down_before,
+            down_after=down_before,
+            description=f"{kind.capitalize()}: {result.description}",
+        )
+        self.play_log.append(outcome)
+        self._use_time(10, defensive_penalty=True)
+        outcome.description = self.check_untimed_down_for_defensive_penalty(
+            outcome.description
+        )
+        result.description = outcome.description
+        outcome.clock_trace = self.last_clock_trace
+        return outcome
 
     def _handle_punt_snap_fumble(
         self, result: PlayResult, punt_roll: int, ball_position: int,
@@ -5861,10 +6085,24 @@ class PaydirtGameEngine:
         if "retained_penalty" in state:
             del self._pending_punt_state
             if not accept_penalty:
+                facts = outcome.pending_fumble_facts
                 if state["retained_result"].punt_snap_fumble:
-                    completed = self._handle_punt_snap_fumble(
-                        state["retained_result"], state["punt_roll"], state["field_pos_before"],
-                    )
+                    # The recovery was already rolled before the choice. Restore
+                    # the dice stream to just after that roll so any chained
+                    # fumble return replays identically, then apply the result
+                    # whose recovery the choice preview described.
+                    if facts is not None and facts.random_state is not None:
+                        random.setstate(facts.random_state)
+                    if facts is not None and facts.replay_down:
+                        # Offsetting fouls on the return nullify the play. Nothing
+                        # is applied: the down replays from the original spot.
+                        completed = self._nullified_retained_fumble(
+                            state["retained_result"], state["retained_kind"],
+                        )
+                    else:
+                        completed = self._handle_retained_fumble(
+                            state["retained_result"], state["retained_kind"],
+                        )
                 else:
                     completed = self._handle_punt(
                         first=(state["punt_roll"], state["punt_result"]), **state["punt_options"],
@@ -6015,6 +6253,8 @@ class PaydirtGameEngine:
 
             self.play_log.append(new_outcome)
             self._use_time(random.uniform(25, 45))
+            # Keep the charge visible: this path consumed a full punt interval.
+            new_outcome.clock_trace = self.last_clock_trace
 
             return new_outcome
 
@@ -6273,6 +6513,8 @@ class PaydirtGameEngine:
         ball_pos_before = getattr(outcome, "_fg_ball_pos_before", self.state.ball_position)
         ytg_before = getattr(outcome, "_fg_ytg_before", self.state.yards_to_go)
 
+        enforced_defensive_foul = False
+
         if accept_play:
             kicking_stats = self.state.offense_stats
             # Accept the FG result - apply the full FG logic
@@ -6389,10 +6631,7 @@ class PaydirtGameEngine:
                 f"{down_distance} at {self.state.field_position_str()}"
             )
 
-            # Preserve the existing FG rekick procedure at the end of a half.
-            if (penalty.penalty_type == 'OFF') and (self.state.time_remaining <= 0.5):
-                self.state.untimed_down_pending = True
-                description += " (HALF EXTENDED - UNTIMED DOWN)"
+            enforced_defensive_foul = penalty.penalty_type != "OFF"
 
             outcome.field_position_after = self.state.field_position_str()
             outcome.description = description
@@ -6400,10 +6639,18 @@ class PaydirtGameEngine:
 
         self.play_log.append(outcome)
 
-        # Only advance time if there's no untimed down pending
-        # (if untimed_down_pending is True, the half extends and clock stays at 0)
         if not self.state.untimed_down_pending:
-            self._use_time(self._field_goal_decision_seconds(accept_play))
+            self._use_time(
+                self._field_goal_decision_seconds(accept_play),
+                defensive_penalty=enforced_defensive_foul,
+            )
+            # Attach the charge like every other clock-consuming path so callers
+            # and audits can verify the replay was timed, not free.
+            outcome.clock_trace = self.last_clock_trace
+            if enforced_defensive_foul:
+                outcome.description = self.check_untimed_down_for_defensive_penalty(
+                    outcome.description
+                )
 
         return outcome
 
@@ -6519,7 +6766,12 @@ class PaydirtGameEngine:
                 parsed.field_goal_snap_fumble = False
                 parsed.fumble_recovered = parsed.fumble_resolved = False
                 parsed.replay_down = True
-            self._use_time(10)
+            # Offsetting fouls nullify the kick and extend an expired period.
+            self._use_time(10, defensive_penalty=True)
+            description = self.check_untimed_down_for_defensive_penalty(
+                "Offsetting penalties on FG attempt - rekick"
+            )
+            parsed.description = description
             # Create a PenaltyChoice for the outcome
             penalty_choice = PenaltyChoice(
                 play_result=parsed,
@@ -6539,7 +6791,7 @@ class PaydirtGameEngine:
                 field_position_after=field_pos_before,
                 down_before=down_before,
                 down_after=down_before,
-                description="Offsetting penalties on FG attempt - rekick",
+                description=description,
                 penalty_choice=penalty_choice,
                 pending_penalty_decision=False,
             )
@@ -6911,6 +7163,7 @@ class PaydirtGameEngine:
         else:
             description = f"Extra point NO GOOD! (Roll: {dice_roll})"
 
+        self._record_try_outcome("PAT", "good" if success else "no good")
         add_team_stat(self.state.offense_stats,"extra_points_attempted")
         add_team_stat(self.state.offense_stats,"extra_points_made",int(success))
         self._recompute_game_over_after_try()
@@ -7000,12 +7253,26 @@ class PaydirtGameEngine:
         else:
             description = f"Two-point conversion NO GOOD! ({play_type.value} for {yards} yards)"
 
+        self._record_try_outcome("2PT", "good" if success else "no good")
         self._recompute_game_over_after_try()
         self._pending_post_score_action = (
             "kickoff" if self.can_kickoff_after_play() else None
         )
         trace = self._record_untimed_clock("untimed two-point try")
         return success, defensive_points, f"{description}\n  {trace.description}"
+
+    def _record_try_outcome(self, kind: str, outcome: str) -> None:
+        """Attach the try's result to its touchdown for the scoring summary.
+
+        A failed try scores nothing, so it must not become a scoring play; the
+        log would then disagree with the final score. Recording the outcome on
+        the touchdown keeps ``scoring_plays`` a record of points while still
+        letting the summary report a miss.
+        """
+        touchdown = self._try_touchdown()
+        if touchdown is not None:
+            touchdown.try_kind = kind
+            touchdown.try_result = outcome
 
     def _try_touchdown(self) -> ScoringPlay | None:
         """Capture the preceding touchdown before resolving an untimed try."""
@@ -7033,6 +7300,7 @@ class PaydirtGameEngine:
 
     def _score_touchdown(
         self, play_type: PlayType = None, yards: int = 0, *, qb_scramble: bool = False,
+        narrative: str = "",
     ) -> None:
         """Record a touchdown with player names from roster."""
         if self.state.is_home_possession:
@@ -7047,7 +7315,7 @@ class PaydirtGameEngine:
             is_home = False
 
         # Generate description with player names
-        description = self._generate_td_description(chart, play_type, yards)
+        description = narrative or self._generate_td_description(chart, play_type, yards)
         if qb_scramble:
             # Preserve the existing scoring-name RNG draw above: narrative repair
             # must not change the dice stream of later plays. Only the QB runs.
