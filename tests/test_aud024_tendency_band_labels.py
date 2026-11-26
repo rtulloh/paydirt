@@ -1,7 +1,7 @@
 """AUD-024: postgame tendency rows must label their aggregation bands."""
 
-from paydirt.ai_analysis import OpponentTendencyTracker
 from paydirt import interactive_game
+from paydirt.ai_analysis import OpponentTendencyTracker
 
 
 def tracker() -> OpponentTendencyTracker:

@@ -59,7 +59,7 @@ def test_two_minute_drill_implies_hurry_up(
 def test_q4_twelve_minute_deficit_is_ordinary_not_two_minute_drill(game_and_ai) -> None:
     game, ai = game_and_ai
     game.state.quarter, game.state.time_remaining = 4, 12.0
-    play, use_oob, no_huddle, *_ = ai.select_offense_with_clock_management(game)
+    play, _use_oob, no_huddle, *_ = ai.select_offense_with_clock_management(game)
     assert ai.last_mode != "Two-Minute Drill"
     assert no_huddle is False
     assert play.value in {
@@ -71,7 +71,7 @@ def test_q4_twelve_minute_deficit_is_ordinary_not_two_minute_drill(game_and_ai) 
 def test_q4_two_thirty_deficit_still_uses_two_minute_drill(game_and_ai) -> None:
     game, ai = game_and_ai
     game.state.quarter, game.state.time_remaining = 4, 2.5
-    play, use_oob, no_huddle, *_ = ai.select_offense_with_clock_management(game)
+    _play, _use_oob, no_huddle, *_ = ai.select_offense_with_clock_management(game)
     assert ai.last_mode == "Two-Minute Drill"
     assert no_huddle is True
     assert ai._needs_hurry_up(game, 2.5, 4, -14)

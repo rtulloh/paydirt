@@ -36,6 +36,7 @@ def test_distinct_city_and_nickname_still_both_render() -> None:
 
 def test_public_sample_team_with_equal_metadata_has_one_component() -> None:
     from pathlib import Path
+
     from paydirt.chart_loader import load_team_chart
 
     chart = load_team_chart(str(Path(__file__).parent.parent / "seasons" / "2026" / "Ironclads"))
